@@ -219,11 +219,12 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      12 desde el 2026-10-01: entró el Panel de Incidentes, con el mismo envoltorio que Monitoreo.
      11 desde el 2026-10-09: salió Conversion, que volvió al front del prototipo con su estética al 100 %, como
      Acquisition (docs/conversion/15, CV15-01). 10 el mismo día: salió Sales, por el mismo camino
-     (docs/sales/15, S15-01). */
+     (docs/sales/15, S15-01). 9 desde el 2026-10-10: salió Conversation, por el mismo camino; sus modos Auditoría y
+     Prompts llevan la estética en un contenedor del panel, no en la sección (docs/conversation/01, CN1-13). */
   assert.equal(
     vistas.length,
-    10,
-    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 10: si entró una pantalla ` +
+    9,
+    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 9: si entró una pantalla ` +
       'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
   );
 
@@ -273,34 +274,14 @@ test('el alcance conserva su ancla de especificidad: un `#id` Y una clase', () =
   assert.equal(primera, ALCANCE, 'la hoja y esta prueba dejaron de hablar del mismo alcance');
 });
 
-test('el contador de prompts que faltan sigue en ámbar, no en el acento', () => {
-  /* El choque que sí necesitaba regla. `app/auditoria.css` lo pinta con `.cl-sub .aud-cnt-falta`
-     —dos clases— y la regla de la estética lleva un `#id`, así que le ganaba y lo devolvía al
-     acento. Su comentario dice por qué importa: `cnt` en acento es «tenés tareas», y este número es
-     «te falta cargar esto». Dos significados con el mismo color se leen como el mismo aviso. */
+test('la barra de pestañas de Conversation se fue, y con ella sus dos reglas', () => {
+  /* Había dos compensaciones para la barra `.cl-sub` que Conversation dibujaba en su cuerpo: que no quedara
+     centrada y que el contador de prompts que faltan siguiera en ámbar. Desde el 2026-10-10 (CN-3) Auditoría y
+     Prompts son dos modos del selector del prototipo, `.mode-seg`, y nadie dibuja esa barra en la pantalla: las
+     reglas se fueron con ella. Lo que queda acotado a `#v-conversation` viste al supervisor, `aud-*`. */
   const hoja = sinComentarios(leerCrudo(ESTETICA));
-  const i = hoja.indexOf('#v-conversation .cl-sub .aud-cnt-falta {');
-  assert.ok(i > 0, 'se fue la regla que le devuelve el ámbar al contador de prompts que faltan');
-  const regla = hoja.slice(i, hoja.indexOf('}', i));
-  assert.match(regla, /var\(--warn\)/, 'el contador dejó de usar el token de advertencia');
-
-  /* Y va DESPUÉS de la regla general del contador, porque con la misma especificidad gana la
-     última. Acá además la gana por el `#id`, pero el orden es lo que la hace legible. */
-  assert.ok(
-    hoja.indexOf(`${ALCANCE} .cl-sub .cnt`) < i,
-    'la regla del contador de Auditoría quedó ANTES que la general, así que no la pisa',
-  );
-});
-
-test('la barra de pestañas de Conversation no queda centrada', () => {
-  /* El tercer choque, y el que menos se ve venir: `align-self: center` centra la cápsula dentro de
-     la fila del encabezado, que es donde vive en las otras dos. En Auditoría la barra la emite el
-     panel —componente de cliente contra vista de servidor— y cuelga de `.cl-page`, un flex en
-     columna: ahí `center` la deja centrada HORIZONTALMENTE, sola en medio de la pantalla. */
-  const hoja = sinComentarios(leerCrudo(ESTETICA));
-  const i = hoja.indexOf('#v-conversation .cl-sub {');
-  assert.ok(i > 0, 'se fue la regla que alinea la barra de Auditoría a la izquierda');
-  assert.match(hoja.slice(i, hoja.indexOf('}', i)), /align-self:\s*flex-start/);
+  assert.ok(!hoja.includes('#v-conversation .cl-sub'), 'volvió una regla para la barra de pestañas de Conversation, que ya no existe');
+  assert.ok(!leer('components/conversation/PanelDeConversation.jsx').includes('cl-sub'), 'Conversation volvió a dibujar la barra de pestañas');
 });
 
 test('los botones del supervisor usan el botón de la aplicación, no una clase sin forma', () => {

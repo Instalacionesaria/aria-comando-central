@@ -302,9 +302,9 @@ export const SECCIONES: readonly Seccion[] = [
     // rutas del auditor apuntando acá pone la suite en rojo — que es exactamente para lo que ese
     // cable trampa existe.
     //
-    // La capacidad de la SECCIÓN sigue siendo `tablero.ver`. Las dos rutas del auditor siguen
-    // exigiendo `auditor.ver` y `auditor.editar` **además**: el portero comprueba la capacidad y
-    // el alcance por separado, así que la pestaña no abre nada a quien no tenga la capacidad.
+    // La capacidad de la SECCIÓN es `auditor.ver`, la misma que pide la ruta (abajo, desde el
+    // 2026-09-21); editar un prompt pide además `auditor.editar`. El portero comprueba la capacidad
+    // y el alcance por separado, así que la pantalla no abre nada a quien no tenga la capacidad.
     clave: 'conversation',
     nombre: 'Conversation',
     /* ── NO ES `tablero.ver`, Y ESO SE DECIDIÓ EL 2026-09-21 ──────────────────

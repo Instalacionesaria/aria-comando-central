@@ -65,7 +65,8 @@ export const HERRAMIENTAS_DE_CONVERSATION: readonly DefinicionDeHerramienta[] = 
     descripcion:
       'Conversation › Lead Flow: de los contactos de la ventana, cuántos agendaron (booking rate), a cuántos se les ' +
       'escribió y cuántos contestaron, la latencia hasta el primer intento y hasta la primera respuesta (p50 y p90), ' +
-      'y los que no recibieron ningún mensaje. Con sus avisos.',
+      'y los que no recibieron ningún mensaje. Con sus avisos. «respondieron» cuenta si el CONTACTO contestó: el ' +
+      'sistema no distingue un mensaje del agente de uno de un flujo del CRM, así que no es el rendimiento del agente.',
     secciones: ['conversation'],
     esquema: ARGUMENTO_PERIODO,
     async ejecutar(argumentos) {

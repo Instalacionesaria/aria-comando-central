@@ -219,24 +219,26 @@ test('la pantalla dibuja DESDE CUÁNDO hay datos, y no la ventana pedida', () =>
      `desde` sale de un `min()` sobre las filas, no de `now() - dias` — eso lo comprueban las pruebas
      de base de los dos módulos. Acá se comprueba que llegue a la pantalla. */
   const jsx = leer(PANEL);
-  assert.match(jsx, /fechaCorta\(r\.desde\)/, 'Lead Flow no dice desde cuándo hay datos');
-  assert.match(jsx, /fechaCorta\(c\.desde\)/, 'Appointment Flow no dice desde cuándo hay datos');
-  assert.match(
-    jsx,
-    /desde el \$\{desde\}/,
-    'la fecha de comienzo no se dibuja: «completo» se lee entonces como toda la historia',
+  assert.match(jsx, /desde=\{fechaCorta\(p\.respuesta\.desde\)\}/, 'Lead Flow no dice desde cuándo hay datos');
+  assert.match(jsx, /desde=\{fechaCorta\(p\.cancelacion\.desde\)\}/, 'Appointment Flow no dice desde cuándo hay datos');
+  assert.equal(
+    [...jsx.matchAll(/desde \? `desde el \$\{desde\}` : null/g)].length,
+    2,
+    'la fecha de comienzo no se dibuja en los dos paneles: «completo» se lee entonces como toda la historia',
   );
 });
 
-test('el período NO se ofrece en las pestañas que no lo usan', () => {
+test('el período NO se ofrece en los modos que no lo usan', () => {
   /* Auditoría y Prompts no están acotadas por ventana. Un segmentado que se enciende encima de una
      lista que no cambia enseña que el control no hace nada — y después tampoco se usa donde sí. */
   const jsx = leer(PANEL);
   assert.match(
     jsx,
-    /\{FLUJOS\[sub\] \? <Periodos/,
+    /\{tablero \? \(\s*<div className="ch-period">[\s\S]{0,300}<Periodos /,
     'el selector de período se dibuja también en Auditoría y Prompts, donde no cambia nada',
   );
+  assert.match(jsx, /const tablero = DEL_TABLERO\.has\(modo\);/);
+  assert.match(jsx, /const DEL_TABLERO = new Set\(\['estado', 'agentes'\]\);/);
 });
 
 test('el vocabulario del período no importa nada que toque la base', () => {

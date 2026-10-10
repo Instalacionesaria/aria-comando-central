@@ -16,14 +16,19 @@
 
 import { pedir } from '../http/cliente.ts';
 import type { ClaveDePeriodo } from '../negocio/periodo.ts';
+import type { PantallaDeConversationArmada } from '../negocio/lecturaDeConversation.ts';
 import type { CasoDelPatron, LaPantalla } from './pantalla.ts';
 import { AGENTES, type Agente } from './veredicto.ts';
 
 const RUTA = '/api/auditoria';
 
-/** Lo que la pantalla recibe: los datos del auditor, los prompts, y sobre qué ventana se midieron. */
+/**
+ * Lo que la pantalla recibe: los datos del auditor, los prompts, lo que dibujan los modos Estado y Agentes
+ * (`pantalla`, CN1-15) y sobre qué ventana se midieron.
+ */
 export type PantallaConPeriodo = LaPantalla & {
   prompts: PromptEnLaPantalla[];
+  pantalla: PantallaDeConversationArmada;
   periodo: ClaveDePeriodo;
 };
 

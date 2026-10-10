@@ -55,6 +55,8 @@ const HOJAS = [
   'app/conversion.css',
   // Y Sales, el día que nace (SA-3).
   'app/sales.css',
+  // Y Conversation, el día que nace (CN-3).
+  'app/conversation.css',
   // Las señales y el plan de los departamentos con detector, el día que nace (AG10 de los agentes).
   'app/senales.css',
   // La cabecera de los departamentos, el día que nace (nueva estructura, E11).

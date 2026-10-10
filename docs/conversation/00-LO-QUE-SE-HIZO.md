@@ -36,13 +36,13 @@ Rate** y el **Show Rate**.
 ## 3 · Lo que hay hoy en la pantalla
 
 `components/views/ConversationView.jsx` monta el panel con la estética de operación
-(`components/views/ConversationView.jsx:46`). El panel, `components/conversation/PanelDeConversation.jsx`, tiene
+(`components/views/ConversationView.jsx:46@6f3bdb5`). El panel, `components/conversation/PanelDeConversation.jsx`, tiene
 cuatro pestañas:
 
 - **Lead Flow y Appointment Flow**, con el segmentado de los cuatro períodos (`lib/negocio/periodo.ts:83-96`):
   - Lead Flow: la cadena del contacto, los tiempos y la atribución por fuente y por campaña;
   - Appointment Flow: las citas, lo que dice el CRM y lo que dice el closer, el precall y el sentimiento;
-  - cada una cierra con su caja de lo que falta, `FLUJOS` (`components/conversation/PanelDeConversation.jsx:95`).
+  - cada una cierra con su caja de lo que falta, `FLUJOS` (`components/conversation/PanelDeConversation.jsx:95@6f3bdb5`).
 - **Auditoría y Prompts**, que dibuja `Cuerpo` de `components/auditoria/PanelDeAuditoria.jsx`: los agentes
   auditados con sus patrones y casos, la tarjeta de señales y el plan, y los prompts de cada agente.
 

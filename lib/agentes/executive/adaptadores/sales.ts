@@ -142,7 +142,9 @@ export const HERRAMIENTAS_DE_SALES: readonly DefinicionDeHerramienta[] = [
   },
   {
     nombre: 'cancelacion_de_citas',
-    descripcion: 'Citas de la ventana: canceladas, reagendadas, asistencia, confirmación y no-shows, con sus avisos.',
+    descripcion:
+      'Citas de la ventana: canceladas, reagendadas, asistencia, confirmación y no-shows, con sus avisos. El no-show ' +
+      'es un conteo que reporta el closer al cerrar el intento, no una tasa.',
     // Está en Sales y en Conversation: se ofrece con cualquiera de las dos (AG-41).
     secciones: ['sales', 'conversation'],
     esquema: ARGUMENTO_PERIODO,

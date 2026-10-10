@@ -38,6 +38,9 @@ const PANELES: Readonly<Record<string, string>> = {
   'components/creative/PanelDeCreative.jsx': 'v-creative',
   'components/conversion/PanelDeConversion.jsx': 'v-conversion',
   'components/sales/PanelDeSales.jsx': 'v-sales',
+  /* Conversation, desde que volvió al front del prototipo (CN-3): sus clases las visten `app/aios.css` y
+     `app/conversation.css`, y ninguna regla de la estética de Inteligencia la alcanza. */
+  'components/conversation/PanelDeConversation.jsx': 'v-conversation',
   /* No es de Inteligencia, y entra igual: es la sexta pantalla que dibuja un panel nuevo, y el modo
      de fallar es el mismo —una clase sin regla que la alcance no se dibuja—. */
   'components/analizadores/PanelDeAnalizadores.jsx': 'v-analizadores',

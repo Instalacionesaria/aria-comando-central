@@ -264,7 +264,7 @@ test('una RECARGA no vacía la pantalla: el reloj no puede borrar lo que alguien
   );
   assert.match(
     fuente,
-    /if \(!esRecarga\) setCargando\(true\)/,
+    /if \(!esRecarga\) \{[^}]*setCargando\(true\)/,
     'una recarga pone «cargando» y reemplaza el cuerpo entero, que es el defecto que `usarLectura` ' +
       'documenta haber pagado',
   );

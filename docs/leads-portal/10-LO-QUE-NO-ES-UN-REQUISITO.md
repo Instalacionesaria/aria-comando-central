@@ -159,7 +159,7 @@ contacto con estos filtros.» (`:4775`).
 | «Fit score», «Intent score» | `aios-command-center_1.html:4857` | dos puntajes que no existen en ninguna tabla (`LP05-15`) |
 | «12 mensajes · sentimiento positivo» | `aios-command-center_1.html:4604` | un análisis de sentimiento que nadie corrió sobre esa persona |
 | el registro de reproducción: «Pausó 22 s», «Retrocedió a 01:40», «Clic en agendar» | `aios-command-center_1.html:4601-4602` | un seguimiento segundo a segundo que el sistema nunca tuvo |
-| «WhatsApp · Sofía» | `aios-command-center_1.html:4604`, `:4681` | el nombre inventado del agente, el mismo que tenía la maqueta de Conversation (`components/views/ConversationView.jsx:26`) |
+| «WhatsApp · Sofía» | `aios-command-center_1.html:4604`, `:4681` | el nombre inventado del agente, el mismo que tenía la maqueta de Conversation (`components/views/ConversationView.jsx:26@6f3bdb5`) |
 
 **Lo que se afirma sobre el sistema, que es peor que un dato inventado:** «VTurb» en la ficha es el
 mismo defecto que los chips de fuente de Conversion (`docs/conversion/09-LO-QUE-NO-ES-UN-REQUISITO.md:49-59`):

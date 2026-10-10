@@ -1234,23 +1234,12 @@
  * esta estética. Es lo mismo que pasa con `.fd-aviso`, `.fd-btn` y el buscador del Pipeline.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── LA BARRA DE PESTAÑAS, Y EL PRIMER CHOQUE ──────────────────────────────
+/* ── LA BARRA DE PESTAÑAS SE FUE ────────────────────────────────────────────
  *
- * `align-self: center` centra la cápsula dentro de la fila del encabezado, que es donde vive en
- * el Closer y en el Setter. En Auditoría la barra la emite el panel —es un componente de cliente
- * y la vista es de servidor, así que no puede subir al encabezado sin mover el estado— y cuelga
- * de `.cl-page`, un flex en columna. Ahí `center` la centraría HORIZONTALMENTE, sola en medio de
- * la pantalla. */
-#v-conversation .cl-sub { align-self: flex-start; }
-
-/* Y el segundo: el contador de prompts que FALTAN. `app/auditoria.css` lo pinta en ámbar con
-   `.cl-sub .aud-cnt-falta` —especificidad de dos clases— y la regla de arriba lleva un `#id`, así
-   que le ganaba y lo devolvía al acento. Es exactamente el doble significado que ese comentario
-   existe para impedir: `cnt` en acento es «tenés tareas», y este número es «te falta cargar algo». */
-#v-conversation .cl-sub .aud-cnt-falta {
-  background: rgb(var(--c-warn) / .16);
-  color: var(--warn);
-}
+ * Acá había dos reglas para la barra `.cl-sub` de Conversation —que no quedara centrada y que el
+ * contador de prompts que faltan siguiera en ámbar—. Desde el 2026-10-10 (CN-3) Auditoría y
+ * Prompts son dos modos del selector del prototipo, `.mode-seg`, y nadie dibuja esa barra en la
+ * pantalla. Lo de abajo sigue: viste lo que el supervisor dibuja adentro de los dos modos. */
 
 /* ── LA TARJETA: el bloque de un agente y el cuadro de un prompt ───────────
  *

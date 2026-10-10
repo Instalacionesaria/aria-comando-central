@@ -106,7 +106,7 @@ Con dos observaciones que valen para las tres pantallas:
    aplica entre todos los bloques.
 2. **La mitad derecha (`.ch-r`) se va entera.** Al 2026-09-21 Creative y Conversion ya la habían borrado, y
    **Sales era la única de las cinco que la conservaba**, lo cual dejaba desactualizado el comentario de
-   `app/inteligencia-estetica.css:42-46`, que afirma que las cinco la comparten. Desde AQ-4 y CV-4,
+   `app/inteligencia-estetica.css:50-54`, que afirma que las cinco la comparten. Desde AQ-4 y CV-4,
    Acquisition y Conversion la vuelven a dibujar, con el encabezado del prototipo.
 
 ## S7-05 · Y la bajada cambia, como en las otras dos

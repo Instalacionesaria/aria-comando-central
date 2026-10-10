@@ -112,10 +112,10 @@ mismas clases.
 y Prompts conservan su aspecto de hoy: su contenido va dentro de un contenedor que lleva la estética de operación, y
 sus reglas de `app/auditoria.css` no cambian.
 
-**Rastro** · El prototipo: `aios-command-center_1.html:2865-2929`. La pantalla de hoy:
-`components/views/ConversationView.jsx:46` y `components/conversation/PanelDeConversation.jsx:95`.
+**Rastro** · El prototipo: `aios-command-center_1.html:2865-2929`. La pantalla de antes:
+`components/views/ConversationView.jsx:46@6f3bdb5` y `components/conversation/PanelDeConversation.jsx:95@6f3bdb5`.
 
-**Estado** · Por construir (CN-3).
+**Estado** · Construido el 2026-10-10 (CN-3).
 
 ### CN1-02 · Frases cortas, de una lista cerrada
 
@@ -126,6 +126,8 @@ sus reglas de `app/auditoria.css` no cambian.
 | cifra o tasa sin dato, o bajo el piso | «—» |
 | la asistencia, en los paneles y en las tarjetas | «Nadie marca la asistencia.» |
 | una tasa con menos de 10 casos | «Pocos casos para una tasa.» |
+| la mediana de la primera respuesta con menos de 10 casos | «Pocos casos para una mediana.» |
+| el sentimiento y los hallazgos, cuando la empresa no audita sus agentes | «La empresa no audita sus agentes.» |
 | el paso de la landing, que no tiene enlace con seguimiento | «Sin enlace con seguimiento.» |
 | un agente de voz | «Sin llamadas registradas.» |
 | el sentimiento sin análisis en la ventana | «Sin análisis en esta ventana.» |
@@ -142,10 +144,14 @@ sus reglas de `app/auditoria.css` no cambian.
 | «De qué está hecho el grupo que asistió» | «De qué está hecho el grupo que agendó» | la asistencia está marcada en 0 citas; decisión del usuario |
 | el paso «Abrieron» de Lead Flow | igual, en «—» | falta el enlace con seguimiento (`docs/OTROS/futuro/lo-que-conversation-no-mide.md`) |
 | «Los rescató Lead Flow» y «Se agendaron solos» | «Conversaron antes» y «Se agendaron solos» | se mide si hubo conversación antes de agendar, no qué agente la tuvo (CN1-10) |
+| «Agendados · todos», el primer paso de Appointment Flow | «Citas» | son las citas ocurridas de la ventana, la misma base que «Citas totales» del panel |
+| «Contactados sin cita», el primer paso de Lead Flow | «Entraron» | la cohorte de la ventana, como en el panel |
+| la asistencia por calidad «Calificado alto / medio / No calificado» | «Alto», «Medio», «Bajo» y «Sin calificar» | los tramos de `tramoDelPuntaje`, con el mismo nombre que en el panel del ICP |
+| «De qué está hecho…», con «% calificado» al lado | con «{N} sin calificar» al lado | los sin calificar no entran en los tres tramos y van aparte |
 | la cifra grande de cada agente de texto | la respuesta de Lead Flow y la confirmación de Appointment Flow | son cifras del flujo: ningún mensaje dice qué agente lo escribió (CN1-11) |
 
-**Estado** · Por construir (CN-3): la lista vivirá en `FRASE` de `components/conversation/comun.jsx`, y una prueba nueva
-exigirá que las dos coincidan en las dos direcciones.
+**Estado** · Construido el 2026-10-10 (CN-3): la lista vive en `FRASE` de `components/conversation/comun.jsx`, y
+`pruebas/codigo/251-la-pantalla-de-conversation.test.ts` exige que las dos coincidan en las dos direcciones.
 
 ### CN1-03 · El encabezado
 
@@ -156,7 +162,7 @@ real (CN1-14) y el segmentado.
 - **Sin «Personalizado»**, sin la clave `mes` y **sin «vs los 7 días previos»**: no hay flechas (CN1-04).
 - El segmentado vale para Estado y Agentes; en Auditoría y Prompts se comporta como hoy.
 
-**Estado** · Por construir (CN-3).
+**Estado** · Construido el 2026-10-10 (CN-3).
 
 ### CN1-04 · Las ventanas y el piso
 
@@ -175,10 +181,10 @@ proporción desde los conteos, de 0 a 1.
 
 **Qué es** · Cifras grandes con su rótulo y, debajo de un «—», una línea de CN1-02. No se dibujan los avisos del
 servidor, las notas de cada cifra, el texto de cada ventana ni la caja de lo que falta de cada flujo
-(`components/conversation/PanelDeConversation.jsx:95`). Viajan igual en la respuesta y en las herramientas del cerebro:
+(`components/conversation/PanelDeConversation.jsx:95@6f3bdb5`). Viajan igual en la respuesta y en las herramientas del cerebro:
 el agente de Conversation es quien explica. Es el `S15-18` de Sales, desde el primer día.
 
-**Estado** · Por construir (CN-3).
+**Estado** · Construido el 2026-10-10 (CN-3).
 
 ### CN1-06 · El panel de Lead Flow
 
@@ -187,7 +193,7 @@ el agente de Conversation es quien explica. Es el `S15-18` de Sales, desde el pr
 **Fórmula** · `indicadoresDelLead` (`lib/negocio/indicadoresDelLead.ts:196`): la cohorte y `agendaron`; la tasa con su
 piso.
 
-**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, por construir (CN-3).
+**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-07 · El panel de Appointment Flow
 
@@ -197,7 +203,7 @@ como presente; sin ninguna marcada, «—» con «Nadie marca la asistencia.».
 **Fórmula** · `tasaDeCancelacion` (`lib/negocio/indicadoresDeCitas.ts:341`): `citas`, `conAsistencia` y
 `sePresentaron`.
 
-**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, por construir (CN-3).
+**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-08 · El panel del ICP
 
@@ -208,7 +214,7 @@ bajo, y los sin calificar aparte—, con su porción.
 los cortes de 75 y 50 (`lib/negocio/tramosDelIcp.ts:38`) y el puntaje 0 como sin calificar: `icpDeLosAgendados`, en
 `lib/negocio/lecturaDeConversation.ts`, agrupa los puntajes con la función y no copia sus umbrales en SQL.
 
-**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, por construir (CN-3).
+**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-09 · La tarjeta de Lead Flow
 
@@ -219,12 +225,12 @@ seguimiento.».
 **Fórmula** · `indicadoresDelLead`: la cohorte, `escritos`, `respondieron` y `agendaron`, cada uno con su porción de la
 cohorte, calculada en el servidor.
 
-**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, por construir (CN-3).
+**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-10 · La tarjeta de Appointment Flow
 
-**Qué es** · El KPI «% agenda a asistencia», en «—» mientras nadie marque la asistencia, y la cadena **Agendaron →
-Confirmaron → Asistieron**. Debajo, los tres bloques del prototipo:
+**Qué es** · El KPI «% agenda a asistencia», en «—» mientras nadie marque la asistencia, y la cadena **Citas →
+Confirmaron → Asistieron** (el prototipo decía «Agendados · todos»: son las citas ocurridas de la ventana). Debajo, los tres bloques del prototipo:
 
 | bloque | dato | fuente |
 |---|---|---|
@@ -236,7 +242,7 @@ Confirmaron → Asistieron**. Debajo, los tres bloques del prototipo:
 conversación antes de agendar. Atribuirle la cita a un agente pide otra medición
 (`docs/OTROS/futuro/lo-que-conversation-no-mide.md`).
 
-**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, por construir (CN-3).
+**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-11 · El modo Agentes
 
@@ -255,23 +261,25 @@ modo Auditoría. **Sin cajones**: el detalle por agente vive en Auditoría.
 **Qué no es** · Las cifras de las tarjetas de texto son **del flujo, no del agente**: ningún mensaje dice qué agente
 lo escribió, y la confirmación es un campo del CRM. Es el desvío declarado en CN1-02; el agente lo explica.
 
-**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, por construir (CN-3).
+**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-12 · Lo demás, en cifras
 
 **Qué es** · Lo que la pantalla de hoy mide y el prototipo no tenía, en una fila de cifras con el vocabulario de los
-paneles: **la respuesta** (la mediana de la primera respuesta), **fuera de horario** (los envíos fuera de horario),
-**el precall** (los que lo vieron entero) y **el sentimiento molesto**. La atribución por fuente y por campaña sale de
+paneles: **la primera respuesta** (la mediana, en minutos), **fuera de horario** (la porción de los contactos que
+entraron fuera de horario), **el precall** (la porción de las citas con cuánto vio registrado) y **los molestos** (la
+porción de conversaciones molestas de los dos flujos juntos). La atribución por fuente y por campaña sale de
 la pantalla: la responde el agente.
 
-**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, por construir (CN-3).
+**Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-13 · Auditoría y Prompts, aparte
 
 **Qué es** · Los dos modos siguen dibujándose con `Cuerpo` de `components/auditoria/PanelDeAuditoria.jsx`, con su
 estética y sus permisos de hoy: `auditor.ver` para mirar y `auditor.editar` para cambiar un prompt. No cambian.
 
-**Estado** · Por construir (CN-3): mudarlos de pestaña a modo sin cambiar lo que dibujan.
+**Estado** · Construido el 2026-10-10 (CN-3): son dos modos del selector, dibujados por `Cuerpo` dentro de un contenedor con
+`estetica-op`.
 
 ### CN1-14 · El plan de acción y las señales
 
@@ -279,7 +287,7 @@ estética y sus permisos de hoy: `auditor.ver` para mirar y `auditor.editar` par
 `components/senales/SenalesDelDepartamento.jsx`, como hoy en Auditoría. La tarjeta de señales sigue en el modo
 Auditoría.
 
-**Estado** · Por construir (CN-3).
+**Estado** · Construido el 2026-10-10 (CN-3): el botón está en `.ch-r` en los cuatro modos.
 
 ### CN1-15 · El servidor calcula; el navegador dibuja
 
@@ -291,8 +299,7 @@ porque los leen el modo Auditoría y el cerebro. El navegador multiplica por 100
 **Estado** · La lectura, construida el 2026-10-10 (CN-1): `lib/negocio/lecturaDeConversation.ts`, con `armarConversation`
 pura, `icpDeLosAgendados`, `asistenciaPorTramo` y `hallazgosAbiertos`. La ruta, construida el 2026-10-10 (CN-2):
 `app/api/auditoria/route.ts` lee la lectura con la ventana del período y publica `pantalla`; los bloques de siempre
-—`cancelacion`, `respuesta`, `atribucion`, `precall`, `sentimiento`— salen de la misma lectura. El dibujo, por
-construir (CN-3).
+—`cancelacion`, `respuesta`, `atribucion`, `precall`, `sentimiento`— salen de la misma lectura. El dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-16 · El cerebro lee lo mismo
 
@@ -310,20 +317,21 @@ entera con la de la ruta, en los cuatro períodos.
 **Qué es** · Los modos Estado y Agentes no dibujan nada de una persona: ni nombres, ni chats, ni frases de una
 conversación. Del prototipo no se copia ningún nombre. La auditoría conserva lo que muestra hoy, con su permiso.
 
-**Estado** · Por construir (CN-3).
+**Estado** · Construido el 2026-10-10 (CN-3).
 
 ### CN1-18 · El teléfono
 
 **Qué es** · A 375 px los paneles se apilan, las tarjetas de flujo y de agente van de a una y la fila de cifras de a
 dos. La página no desliza a lo ancho. Lo nuevo va en `app/conversation.css`.
 
-**Estado** · Por construir (CN-3, CN-5).
+**Estado** · Las reglas, escritas el 2026-10-10 (CN-3) en `app/conversation.css`; la medida en el navegador, por hacer (CN-5).
 
 ### CN1-19 · Los textos que pasan a ser falsos se corrigen en la misma etapa
 
 - Los encabezados de la vista, del panel y de la ruta.
 - Los dos comentarios que dicen `tablero.ver` cuando la sección pide `auditor.ver`
-  (`docs/OTROS/estado actual/04-CONVERSATION.md`, riesgo 20).
+  (`docs/OTROS/estado actual/04-CONVERSATION.md`, riesgo 20): corregidos el 2026-10-10 (CN-3), en
+  `lib/autorizacion/secciones.ts` y `components/views/ConversationView.jsx`.
 - Los comentarios de `app/inteligencia-estetica.css` que nombran a Conversation.
 - La foto `docs/OTROS/estado actual/04-CONVERSATION.md`, reescrita en CN-5.
 
@@ -349,7 +357,7 @@ dos. La página no desliza a lo ancho. Lo nuevo va en `app/conversation.css`.
 | CN-0 | Esta carpeta, `docs/OTROS/futuro/lo-que-conversation-no-mide.md` y la medición de producción con el OK del usuario | **hecho el 2026-10-10**, revisado por el usuario |
 | CN-1 | El servidor: `lecturaDeConversation` con sus pruebas | **hecho el 2026-10-10**: `pruebas/codigo/250-lectura-de-conversation.test.ts` y `pruebas/base/250-lectura-de-conversation.test.ts`, 18 mutaciones muertas |
 | CN-2 | La ruta y el cerebro sobre la lectura | **hecho el 2026-10-10** |
-| CN-3 | El front sobre el marcado del prototipo, `app/conversation.css` y su prueba | por hacer |
+| CN-3 | El front sobre el marcado del prototipo, `app/conversation.css` y su prueba | **hecho el 2026-10-10**: `pruebas/codigo/251-la-pantalla-de-conversation.test.ts` |
 | CN-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
 | CN-5 | La comparación contra el prototipo, los anchos, la subida y la foto 04 | por hacer |
 

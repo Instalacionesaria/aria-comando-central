@@ -1,4 +1,4 @@
-// La pantalla del técnico: dos pestañas, dos agentes, y el nombre atado al CRM. Tipo: Código.
+// La pantalla del técnico: dos modos, dos agentes, y el nombre atado al CRM. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ SE PIDIÓ, Y CUÁL DE ESAS COSAS ERA UN DEFECTO
@@ -39,8 +39,8 @@ import {
 
 const leer = (r: string): string => readFileSync(join(RAIZ, r), 'utf8');
 const PANEL = 'components/auditoria/PanelDeAuditoria.jsx';
-/* El envoltorio: las cuatro pestañas, la carga y los contadores. El panel quedó con lo que dibuja
-   las dos caras del supervisor. Ver el encabezado de los dos archivos. */
+/* El envoltorio: los cuatro modos y la carga. El panel quedó con lo que dibuja las dos caras del
+   supervisor. Ver el encabezado de los dos archivos. */
 const CONVERSATION = 'components/conversation/PanelDeConversation.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -159,10 +159,10 @@ test('el ORDEN de los agentes es el del embudo, y no deja a ninguno afuera', () 
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAS PESTAÑAS, QUE AHORA SON CUATRO Y SON DE CONVERSATION
+// LOS MODOS DE CONVERSATION: EL SUPERVISOR SON LOS DOS ÚLTIMOS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('el supervisor son DOS de las cuatro pestañas de Conversation, y abre en la primera', () => {
+test('el supervisor son DOS de los cuatro modos de Conversation, al final, y abre en el primero', () => {
   /* ── ESTA PANTALLA ERA PROPIA Y AHORA VIVE ADENTRO DE OTRA ─────────────────
    *
    * «Auditoría de agentes» tenía su barra con dos pestañas —Inicio y Prompts— y colgaba del grupo
@@ -170,33 +170,30 @@ test('el supervisor son DOS de las cuatro pestañas de Conversation, y abre en l
    * Appointment Flow: los dos módulos que la arquitectura funcional pone dentro de Conversation
    * Intelligence. Se archivó donde correspondía.
    *
-   * Las dos pestañas subieron al primer nivel en vez de anidarse, y eso es lo que se afirma: la
-   * estética de operación dibuja UNA barra por pantalla, así que anidarlas habría puesto dos
-   * encimadas con la misma forma y distinto contenido. */
+   * Desde el 2026-10-10 (CN-3) las dos son los dos últimos modos del selector del prototipo, después de
+   * Estado y Agentes, y dibujan lo mismo que antes (docs/conversation/01, CN1-13). */
   const jsx = leer(CONVERSATION);
 
-  const bloque = jsx.slice(jsx.indexOf('const SUB = ['), jsx.indexOf('];', jsx.indexOf('const SUB = [')));
+  const bloque = jsx.slice(jsx.indexOf('const MODOS = ['), jsx.indexOf('];', jsx.indexOf('const MODOS = [')));
   const orden = [...bloque.matchAll(/clave: '(\w+)'/g)].map((m) => m[1]!);
   assert.deepEqual(
     orden,
-    ['leadflow', 'appflow', 'auditoria', 'prompts'],
-    'las cuatro pestañas de Conversation no son los dos flujos y después el supervisor',
+    ['estado', 'agentes', 'auditoria', 'prompts'],
+    'los cuatro modos de Conversation no son los dos del prototipo y después el supervisor',
   );
 
-  /* Abre en la PRIMERA. Abrir en otra deja la pestaña de la izquierda sin usar y eso se lee como
-     que no responde — es la misma regla que el Closer y el Setter. Y se afirma derivado de `SUB`,
-     no contra la cadena `'leadflow'`: reordenar las pestañas no tiene que romper esto. */
+  /* Abre en el PRIMERO. Se afirma derivado de `MODOS`, no contra la cadena `'estado'`: reordenar los modos no
+     tiene que romper esto. */
   assert.match(
     jsx,
-    /useState\(SUB\[0\]\.clave\)/,
-    'la pantalla no abre en su primera pestaña, o la fija a mano en vez de derivarla de `SUB`',
+    /useState\(MODOS\[0\]\.clave\)/,
+    'la pantalla no abre en su primer modo, o lo fija a mano en vez de derivarlo de `MODOS`',
   );
 
-  /* ── LOS PROMPTS, SOLO EN SU PESTAÑA ────────────────────────────────────
+  /* ── LOS PROMPTS, SOLO EN SU MODO ───────────────────────────────────────
    *
-   * Lo que hay que impedir es que el cuadro quede en las dos: dos `textarea` en la pestaña de los
-   * análisis son los que empujaban las conversaciones fuera de la pantalla. Sigue detrás de su
-   * condición, ahora dentro del panel, que entiende dos caras. */
+   * Lo que hay que impedir es que el cuadro quede en los dos: dos `textarea` en el modo de los análisis
+   * son los que empujaban las conversaciones fuera de la pantalla. */
   const panel = leer(PANEL);
   assert.equal(
     (panel.match(/<Prompts\s/g) ?? []).length,
@@ -206,35 +203,30 @@ test('el supervisor son DOS de las cuatro pestañas de Conversation, y abre en l
   assert.match(
     panel,
     /sub === 'prompts'\) return <Prompts /,
-    'el bloque de prompts no está detrás de su pestaña',
+    'el bloque de prompts no está detrás de su modo',
   );
+  assert.match(jsx, /sub=\{modo === 'prompts' \? 'prompts' : 'inicio'\}/, 'el modo Prompts no abre la cara de los prompts');
 });
 
-test('la barra de pestañas se dibuja también mientras carga y con error', () => {
-  /* Si la barra viviera después de los `return` de carga y de error, aparecería junto con los datos
-     —la pantalla salta— y quien entra con un error de red se queda sin ninguna pestaña que apretar.
-     Se comprueba por POSICIÓN: la barra tiene que estar antes de todo lo que puede volver temprano.
-     Con la mudanza son dos archivos: la barra vive en el envoltorio y los `return` en el panel, y
-     eso **por construcción** ya la deja afuera. Se afirma igual, porque lo que protege es que no
-     vuelva a meterse adentro. */
+test('el selector de modos se dibuja también mientras carga y con error', () => {
+  /* Si el selector viviera después de los `return` de carga y de error, aparecería junto con los datos
+     —la pantalla salta— y quien entra con un error de red se queda sin ningún modo que apretar. */
   const jsx = leer(CONVERSATION);
-  const barra = jsx.indexOf('className="cl-sub"');
-  assert.ok(barra > 0, 'no está la barra de sub-pestañas');
+  const selector = jsx.indexOf('<Modos valor={modo}');
+  assert.ok(selector > 0, 'no está el selector de modos');
   assert.ok(
-    barra < jsx.indexOf('<Cuerpo'),
-    'la barra se dibuja después del cuerpo, así que desaparece con un error',
+    selector < jsx.indexOf('<Supervisor') && selector < jsx.indexOf('{error ?'),
+    'el selector se dibuja después del cuerpo, así que desaparece con un error',
   );
+  assert.match(jsx, /<div className="mode-seg" role="group" aria-label="Modo">/, 'el selector no es el `.mode-seg` del prototipo');
   assert.ok(
     !/if \(cargando\) return/.test(jsx),
-    'el envoltorio volvió a decidir los estados de carga: eso vive en el panel, y la barra tiene ' +
-      'que quedar por encima de los dos',
+    'el envoltorio volvió a decidir los estados de carga con un `return`: el selector tiene que quedar por ' +
+      'encima de los dos',
   );
-  /* Y el panel sigue devolviendo temprano en sus cuatro estados, que es lo que hace que valga la
-     pena que la barra esté afuera. */
+  /* Y el panel del supervisor sigue devolviendo temprano en sus estados, que es lo que hace que valga la pena
+     que el selector esté afuera. */
   assert.match(leer(PANEL), /if \(cargando\) return/);
-
-  // Y usa la MISMA barra que el Closer y el Setter, no un tercer estilo.
-  assert.match(leer('components/views/CloserView.jsx'), /className="cl-sub"/);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -313,183 +305,71 @@ test('los niveles concuerdan en número: «2 verdes», no «2 verde»', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// EL FRENO LLEGA A LAS TRES PESTAÑAS, NO SOLO A AUDITORÍA
+// EL FRENO LLEGA AL TABLERO, NO SOLO A AUDITORÍA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('las pestañas de flujo NO prometen hallazgos cuando la empresa no audita', () => {
+test('el tablero NO promete hallazgos cuando la empresa no audita', () => {
   /* ── EL DEFECTO, Y ERA FALSO PARA CASI TODA LA FLOTA ──────────────────────
    *
-   * `Flujo` afirmaba sin condición que «sus hallazgos ya se ven en la pestaña Auditoría». Medido el
-   * 2026-09-14 contra producción: de las **12 empresas activas, sólo 4 tienen llave de IA y sólo 1
-   * tiene el identificador del agente en el CRM**. En las demás esa pestaña está vacía, y la línea
-   * mandaba a mirarla como si hubiera algo.
+   * La pestaña de un flujo afirmaba sin condición que «sus hallazgos ya se ven en la pestaña Auditoría».
+   * Medido el 2026-09-14 contra producción: de las **12 empresas activas, sólo 4 tienen llave de IA y sólo 1
+   * tiene el identificador del agente en el CRM**. En las demás esa pestaña está vacía, y la línea mandaba a
+   * mirarla como si hubiera algo.
    *
-   * Es el mismo defecto que esta aplicación persigue en las cifras —prometer un dato que no está— y
-   * el freno que lo dice bien ya existía en `pantalla.noAudita`; sólo lo leía Auditoría.
+   * Desde el 2026-10-10 (CN-3) lo que manda a Auditoría es «Qué corregir · {N} por resolver», sobre las tarjetas
+   * de agente. Con la empresa sin auditar, en vez del número dice su frase: un «0 por resolver» se leería como
+   * que no hay nada que corregir, y lo que pasa es que nadie lo mira.
    *
-   * Se lee el FUENTE y no el resultado porque el freno depende de datos de la empresa, y una prueba
-   * que montara la pantalla con una empresa sin freno pasaría sin tocar esto. */
+   * Se lee el FUENTE y no el resultado porque el freno depende de datos de la empresa, y una prueba que montara
+   * la pantalla con una empresa sin freno pasaría sin tocar esto. */
   const jsx = leer(CONVERSATION);
-
-  // 1 · El componente recibe el freno. Sin esto no puede decidir nada.
-  /* La lista de parámetros NO se fija entera a propósito: la primera versión de esta prueba exigía
-     `{ flujo, noAudita }` exacto y se rompió sola al agregar un tercero, sin que nada estuviera mal.
-     Lo que hay que afirmar es que el freno LLEGA, no cuántos vecinos tiene. */
+  assert.match(jsx, /<QueCorregir n=\{porCorregir\} noAudita=\{p\.noAudita\}/, 'el freno no le llega a «Qué corregir»');
   assert.match(
     jsx,
-    /function Flujo\(\{[^}]*noAudita[^}]*\}\)/,
-    'el flujo no recibe el freno: no puede saber si la empresa audita',
+    /\{noAudita \? \(\s*<span className="gn">\{FRASE\.noAudita\}<\/span>\s*\) : \(\s*<button type="button" className="gn cs-ir" onClick=\{alCorregir\}>/,
+    'la línea que manda a Auditoría sigue siendo incondicional',
   );
-  assert.match(
-    jsx,
-    /<Flujo[^>]*noAudita=\{pantalla\?\.noAudita/,
-    'el freno no se le pasa al flujo desde la pantalla',
-  );
-
-  // 2 · La promesa es CONDICIONAL. Es la mitad que de verdad arregla el defecto.
-  const i = jsx.indexOf('pestaña <b>Auditoría</b>');
-  assert.ok(i > 0, 'se fue la línea que manda a Auditoría');
-  const alrededor = jsx.slice(Math.max(0, i - 400), i);
-  assert.match(
-    alrededor,
-    /noAudita\s*\?/,
-    'la promesa «sus hallazgos ya se ven en Auditoría» sigue siendo incondicional, y es falsa en 11 ' +
-      'de las 12 empresas activas',
-  );
-
-  // 3 · Y cuando frena, lo dice con el MISMO texto que la otra pestaña: dos redacciones del mismo
-  //     hecho se leen como dos problemas distintos.
-  assert.match(jsx, /POR_QUE_NO_AUDITA\[noAudita\]/, 'el flujo no reusa el motivo ya escrito');
-  assert.match(jsx, /Esta empresa todavía no audita/, 'el flujo no dice el freno con el texto de la casa');
+  /* Y el servidor tampoco cuenta hallazgos sin auditoría: la lectura los deja en cero y el sentimiento en «—». */
+  assert.match(leer('lib/negocio/lecturaDeConversation.ts'), /porCorregir: e\.audita \? e\.porCorregir : 0,/);
 });
 
-test('el motivo del freno sale de UN solo sitio, y las dos pantallas lo importan', () => {
-  /* La comprobación de entrada muerta de la de arriba: si alguien copiara el texto del motivo en vez
-     de importarlo, la prueba anterior seguiría pasando y las dos pantallas podrían divergir en el
-     siguiente cambio. */
+test('el motivo del freno sale de UN solo sitio, y Auditoría lo importa', () => {
+  /* El texto largo del motivo —por qué esta empresa no audita— lo dibuja el modo Auditoría, importado de un solo
+     mapa. El tablero no lo copia: dice la frase corta de su lista cerrada (CN1-02). */
+  assert.match(
+    leer(PANEL),
+    /import \{[^}]*POR_QUE_NO_AUDITA/s,
+    'Auditoría no importa el mapa de motivos: si lo copió, va a divergir',
+  );
   const conv = leer(CONVERSATION);
-  const aud = leer(PANEL);
-  const pantallas: [string, string][] = [
-    ['Conversation', conv],
-    ['Auditoría', aud],
-  ];
-  for (const [nombre, jsx] of pantallas) {
-    assert.match(
-      jsx,
-      /import \{[^}]*POR_QUE_NO_AUDITA/s,
-      `${nombre} no importa el mapa de motivos: si lo copió, las dos pantallas van a divergir`,
-    );
-  }
-});
-
-test('la cifra medida va ARRIBA de lo que falta, y sólo en Appointment Flow', () => {
-  /* Dos cosas que se rompen distinto.
-   *
-   * 1 · EL ORDEN. Lo que sí se sabe va primero. Al revés, la pestaña se lee como vacía y nadie llega
-   *     al número: el «qué falta» son tres párrafos.
-   * 2 · EL ALCANCE. La cancelación es de citas, o sea de Appointment Flow. Dibujarla también en Lead
-   *     Flow pondría una cifra correcta bajo un título que no la explica, que es peor que no
-   *     mostrarla — nadie sabría de qué población habla. */
-  const jsx = leer(CONVERSATION);
-
-  assert.match(
-    jsx,
-    /cancelacion=\{sub === 'appflow'/,
-    'la cifra no está acotada a Appointment Flow: la cancelación es de citas',
-  );
-
-  const cifra = jsx.indexOf('<Citas c={cancelacion}');
-  const falta = jsx.indexOf('flujo.falta.map');
-  assert.ok(cifra > 0 && falta > 0, 'falta la cifra o la lista');
-  assert.ok(cifra < falta, 'la lista de lo que falta quedó ANTES de la cifra medida');
+  assert.ok(!conv.includes('Esta empresa todavía no audita'), 'el tablero copió el aviso de Auditoría en vez de usar su frase');
 });
 
 test('la pantalla NO afirma en ningún caso que no se puede calcular nada', () => {
-  /* El defecto que esta prueba persigue no cambió: la pestaña muestra un número Y dice tres
-     centímetros más abajo que «sus indicadores todavía no se pueden calcular». Las dos cosas en la
-     misma pantalla se desmienten, y la que pierde credibilidad es la cifra.
-   *
-   * ── LO QUE CAMBIÓ ES QUE LA AFIRMACIÓN YA NO EXISTE ──────────────────────
-   *
-   * Antes había un aviso general con dos redacciones —una para cuando ya hay cifras y otra para
-   * cuando no— y la prueba comprobaba que la guarda eligiera bien. Esa guarda era el punto débil:
-   * se mantiene a mano, y una quinta cifra que alguien olvide sumarle devuelve el defecto entero.
-   *
-   * El rediseño lo resolvió sacando la afirmación: lo que falta es una lista PLEGADA cuyo resumen
-   * dice cuántos renglones tiene. Un contador no puede mentir sobre lo que ya se calcula, porque no
-   * habla de eso. Así que la propiedad que se comprueba es más fuerte y no tiene mantenimiento: la
-   * frase no está, y el resumen sale de la longitud de la lista y no de un número escrito. */
+  /* El defecto que esta prueba persigue: la pestaña mostraba un número Y decía tres centímetros más abajo que
+     «sus indicadores todavía no se pueden calcular». Las dos cosas en la misma pantalla se desmienten, y la que
+     pierde credibilidad es la cifra. Desde CN-3 la pantalla no dibuja ningún párrafo (CN1-05): lo que falta para
+     medir lo demás está en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`, y lo dice el agente. */
   const jsx = leer(CONVERSATION);
-
-  /* La guarda dentro de una cadena, no en un comentario: este archivo explica el defecto arriba, y
-     un `indexOf` de la frase suelta encontraría la explicación en vez del texto que se dibuja. */
+  /* La guarda dentro de una cadena, no en un comentario: un `indexOf` de la frase suelta encontraría una
+     explicación en vez del texto que se dibuja. */
   assert.ok(
     !/['"`][^'"`]*indicadores todavía no se pueden calcular/.test(jsx),
     'volvió el aviso que afirma que no se puede calcular nada mientras la pantalla muestra cifras',
   );
-
-  /* Y lo que falta sigue estando dicho, plegado, con su contador REAL. `flujo.falta.length` y no un
-     número: escrito a mano, agregar un cuarto renglón deja el resumen diciendo tres. */
-  assert.match(jsx, /<details className="cs-falta-caja">/, 'lo que falta dejó de estar en pantalla');
-  assert.match(
-    jsx,
-    /<summary>[\s\S]{0,200}\{flujo\.falta\.length\}/,
-    'el contador de lo que falta no sale de la lista: escrito a mano se queda viejo',
-  );
 });
 
-test('cada cifra dice SOBRE QUÉ se calculó, y el no-show no se dibuja como tasa', () => {
-  /* Dos defectos que se ven igual de bien en pantalla y significan cosas falsas.
-   *
-   * 1 · Las cuatro cifras NO comparten población: «se reserva con» sale de las citas que tienen
-   *     fecha de reserva, que son menos. Sin decirlo, alguien lee las cuatro como si hablaran de las
-   *     mismas filas y saca conclusiones cruzadas que no se sostienen.
-   * 2 · El no-show son DOS eventos en catorce días. Dibujarlo con un `%` al lado de tres
-   *     porcentajes reales lo vuelve indistinguible de ellos, y una tasa sobre dos eventos se mueve
-   *     cincuenta puntos con el próximo registro. */
-  const jsx = leer(CONVERSATION);
-
-  assert.match(
-    jsx,
-    /detalle=\{`sobre \$\{cancelacion\.conFechaDeReserva\} de \$\{cancelacion\.citas\}`\}/,
-    'la mediana no dice sobre cuántas citas se calculó: se lee con el denominador de las otras',
-  );
-  assert.match(
-    jsx,
-    /detalle="reportados por el closer"/,
-    'el no-show no dice que es un conteo reportado',
-  );
-  assert.ok(
-    !/noShowReportado\}\s*%/.test(jsx) && !/\$\{c\.noShowReportado\} %/.test(jsx),
-    'el no-show se dibuja como porcentaje: con dos eventos eso no es una tasa',
-  );
-  assert.match(
-    jsx,
-    /reporta el closer/,
-    'no se dice quién reporta el no-show, y el CRM no lo sabe',
-  );
-});
-
-test('la cifra de Lead Flow DICE que no sabe a quién se le contestó', () => {
-  /* Es la advertencia que la vuelve honesta. La tasa mide si el CONTACTO contestó, y el sistema
-     todavía no distingue un mensaje del agente de uno de un flujo del CRM —medido: el 71,5 % de lo
-     sellado con el identificador del agente es `workflow`—. Sin esta línea, alguien la lee como el
-     rendimiento del agente y decide con ella.
-     Y va acotada a Lead Flow, como la de citas a Appointment Flow: son de poblaciones distintas. */
-  const jsx = leer(CONVERSATION);
-
-  assert.match(
-    jsx,
-    /respuesta=\{sub === 'leadflow'/,
-    'la cifra de respuesta no está acotada a Lead Flow',
-  );
-  /* Sin `</b>`: la advertencia dejó de ser un párrafo debajo de la cifra y pasó a la nota que se
-     abre desde el ícono, o sea una cadena. Lo que se comprueba sigue siendo la advertencia, no su
-     envoltorio — ver `Nota` en el componente, y el motivo medido en su cabecera. */
-  assert.match(jsx, /\bNO a qui[ée]n\b/i, 'la cifra no advierte que no sabe quién escribió');
-  assert.match(
-    jsx,
-    /flujo del CRM/,
-    'no se nombra el motivo: sin él la advertencia se lee como una fórmula',
-  );
+test('las advertencias que el panel ya no dibuja las dice el cerebro', () => {
+  /* Antes iban debajo de cada cifra: que la respuesta mide si el CONTACTO contestó —el sistema todavía no distingue
+     un mensaje del agente de uno de un flujo del CRM; medido, el 71,5 % de lo sellado con el identificador del
+     agente es `workflow`— y que el no-show son eventos que reporta el closer, no una tasa. El tablero ya no tiene
+     párrafos (CN1-05), y sin estas dos líneas el agente leería la tasa como el rendimiento del agente. */
+  const conversation = leer('lib/agentes/executive/adaptadores/conversation.ts');
+  const leadFlow = conversation.slice(conversation.indexOf("nombre: 'lead_flow'"), conversation.indexOf("nombre: 'atribucion_del_lead'"));
+  assert.match(leadFlow, /CONTACTO contestó/, 'el cerebro no advierte que la respuesta es del contacto');
+  assert.match(leadFlow, /flujo del CRM/, 'no se nombra el motivo: sin él la advertencia se lee como una fórmula');
+  const sales = leer('lib/agentes/executive/adaptadores/sales.ts');
+  const citas = sales.slice(sales.indexOf("nombre: 'cancelacion_de_citas'"), sales.indexOf('secciones:', sales.indexOf("nombre: 'cancelacion_de_citas'")));
+  assert.match(citas, /reporta el closer/, 'no se dice quién reporta el no-show, y el CRM no lo sabe');
+  assert.match(citas, /no una tasa/, 'el no-show se puede leer como una tasa');
 });

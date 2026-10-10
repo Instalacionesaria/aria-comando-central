@@ -155,7 +155,7 @@ un panel de Inteligencia dibuja tenga al menos una regla que alcance a SU vista.
 
 - `app/inteligencia-estetica.css:665-667@a39a732` dice textualmente que la regla de `grid-4` **queda sólo
   porque Sales la sigue emitiendo**. Es la última.
-- `app/inteligencia-estetica.css:42-46` afirma que las cinco pantallas de Inteligencia comparten
+- `app/inteligencia-estetica.css:50-54` afirma que las cinco pantallas de Inteligencia comparten
   `.ch-r`. **No era cierto** el 2026-09-21: Creative y Conversion lo habían borrado, y Sales era la única que
   quedaba. Hoy lo dibujan Acquisition (AQ-4) y Conversion (CV-4), que volvieron al encabezado del prototipo.
 

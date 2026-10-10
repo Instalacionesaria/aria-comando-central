@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CONVERSATION, OTRA VEZ CON EL FRONT DEL PROTOTIPO (CN-3)
+
+   El panel dibuja el marcado de `aios-command-center_1.html:2865-2929` —`cre-head` con el selector de modos bajo
+   el título, `cs-panels` con tres `.pn`, las dos `.csf` del modo Estado y las cuatro `.csa` del modo Agentes— y lo
+   visten las reglas del prototipo, que siguen en `app/aios.css` y no se tocan (docs/conversation/01, CN1-01). La
+   sección no lleva `estetica-op`, y `#v-conversation` salió de los `:is()` de `app/inteligencia-estetica.css`.
+
+   Lo de abajo es lo que el prototipo no tenía, o escribía en un `style` en línea: los colores de los puntos de cada
+   bloque y de las barras de salida, la cabecera de la tarjeta en fila, la línea de un «—», el número que lleva a
+   Auditoría, las tarjetas que no abren cajón, la fila de cifras de abajo, la línea de un fallo y la de la primera
+   carga, el contenedor del supervisor y los anchos chicos. Acotado a `#v-conversation`. Sin colores literales
+   (`104-temas`) ni sombras (`107-sin-sombras`).
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* «No se pudo leer»: una línea, en el color de lo grave. El motivo del servidor va en el `title`. */
+#v-conversation .cs-falla {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--crit);
+}
+
+/* La primera carga, mientras no hay nada que dibujar. */
+#v-conversation .cs-cargando {
+  margin: 0;
+  padding: 20px 0;
+  font-size: 12px;
+  color: var(--txt-faint);
+}
+
+/* ── LA LÍNEA DE UN «—» ──────────────────────────────────────────────────────
+ * Una sola, corta, de la lista cerrada de CN1-02: debajo de una cifra del panel, en el lugar de la barra de un
+ * paso sin conteo, o debajo de la cifra de un agente. Se corta con puntos suspensivos antes que partir la fila. */
+#v-conversation .cs-motivo {
+  display: block;
+  min-width: 0;
+  font-size: 10.5px;
+  color: var(--txt-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#v-conversation .cs-motivo-solo { margin: 0; padding: 4px 0 2px; }
+/* Debajo de una cifra del panel hay lugar para dos renglones: la frase se parte antes que cortarse, y la celda crece
+   lo que haga falta en vez de los 18 px fijos del prototipo, que estaban pensados para la flecha. */
+#v-conversation .pn-d { height: auto; min-height: 18px; }
+#v-conversation .pn-d .cs-motivo { white-space: normal; line-height: 1.35; }
+#v-conversation .csf-key .cs-motivo { margin-top: 4px; }
+
+/* ── LOS DOS FLUJOS ──────────────────────────────────────────────────────── */
+
+/* Los puntos de cada bloque, que el prototipo pintaba con un `style` en línea. */
+#v-conversation .ghead .gdot.cs-gdot-flujos { background: var(--accent); }
+#v-conversation .ghead .gdot.cs-gdot-agentes { background: var(--txt-faint); }
+
+/* La cabecera de la tarjeta en fila, con la cifra clave a la derecha: el prototipo lo escribía en línea. */
+#v-conversation .csf-h.cs-cabeza { display: flex; align-items: flex-start; }
+
+/* El rótulo de una fila de un bloque menor: el prototipo no le daba regla, y en una columna angosta se corta con
+   puntos suspensivos antes que empujar la cifra. */
+#v-conversation .org-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Las barras de las salidas antes de la llamada, con los tonos del prototipo. */
+#v-conversation .org-b i.cs-reprogramaron { background: rgb(var(--c-warn) / .45); }
+#v-conversation .org-b i.cs-cancelaron { background: rgb(var(--c-crit) / .45); }
+
+/* ── LOS CUATRO AGENTES ──────────────────────────────────────────────────── */
+
+/* «{N} por resolver» lleva al modo Auditoría: un botón con la forma del `.gn` del prototipo. */
+#v-conversation .gn.cs-ir {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+#v-conversation .gn.cs-ir:hover { text-decoration: underline; }
+
+/* Las tarjetas no abren cajón (CN1-11): sin la mano ni el salto del prototipo, que prometían algo al apretarlas. */
+#v-conversation .csa { cursor: default; }
+#v-conversation .csa:hover { transform: none; border-color: var(--line); }
+
+/* ── LO DEMÁS, EN CIFRAS (CN1-12) ────────────────────────────────────────── */
+
+#v-conversation .pn-b.cs-cuatro { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* ── AUDITORÍA Y PROMPTS (CN1-13) ────────────────────────────────────────────
+ * El contenedor trae la estética de operación, que es la que los viste. `min-width: 0` para que un prompt largo
+ * no estire la columna del scroller, que es un flex. */
+#v-conversation .estetica-op.cs-supervisor { min-width: 0; }
+
+/* ── LOS ANCHOS ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 1180px) {
+  #v-conversation .cs-panels { grid-template-columns: 1fr 1fr; }
+  #v-conversation .cs-panels > .pn:last-child { grid-column: 1 / -1; }
+  #v-conversation .cs-agents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1120px) {
+  #v-conversation .cs-flows { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  #v-conversation .cs-panels { grid-template-columns: 1fr; }
+  #v-conversation .cre-head .ch-r { width: 100%; }
+  #v-conversation .db-seg { flex-wrap: wrap; }
+  #v-conversation .mode-seg { flex-wrap: wrap; }
+  #v-conversation .cs-agents { grid-template-columns: 1fr; }
+  /* La cifra clave de una tarjeta de flujo, debajo del título: al lado, con su frase, no entra en 375 px. */
+  #v-conversation .csf-h.cs-cabeza { flex-direction: column; gap: 10px; }
+  #v-conversation .csf-key { margin-left: 0; text-align: left; }
+  #v-conversation .csf-key .cs-motivo { white-space: normal; }
+  #v-conversation .pn-b.q4,
+  #v-conversation .pn-b.cs-cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

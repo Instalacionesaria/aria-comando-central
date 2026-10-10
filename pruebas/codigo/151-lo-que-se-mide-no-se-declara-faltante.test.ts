@@ -1,105 +1,70 @@
-// Una cifra que la pantalla DIBUJA no puede estar en su lista de «lo que falta». Tipo: Código.
+// Una cifra que la pantalla DIBUJA no puede estar en la lista de «lo que falta». Tipo: Código.
 //
 // ══════════════════════════════════════════════════════════════════════════════
 // EL DEFECTO QUE ESTO IMPIDE, Y YA SE PAGÓ UNA VEZ
 //
-// `components/conversation/PanelDeConversation.jsx` tiene dos cosas que hablan del mismo tema y no
-// se conocen entre sí: las tarjetas con las cifras, y el objeto `FLUJOS[x].falta`, que enumera en
-// prosa lo que ese flujo todavía no puede medir.
+// Hasta el 2026-10-10, `components/conversation/PanelDeConversation.jsx` tenía dos cosas que hablaban del mismo
+// tema y no se conocían entre sí: las tarjetas con las cifras, y el objeto `FLUJOS[x].falta`, que enumeraba en
+// prosa lo que ese flujo todavía no podía medir.
 //
-// Cuando la migración `049` le dio a la cita su columna `asistio`, la tarjeta «Se presentaron»
-// apareció — y el renglón que decía *«La asistencia: el CRM tiene los campos… y están casi
-// vacíos»* **se quedó tres centímetros más abajo**. La pantalla mostraba un número y debajo
-// afirmaba que ese número no se podía saber.
+// Cuando la migración `049` le dio a la cita su columna `asistio`, la tarjeta «Se presentaron» apareció — y el
+// renglón que decía *«La asistencia: el CRM tiene los campos… y están casi vacíos»* **se quedó tres centímetros más
+// abajo**. La pantalla mostraba un número y debajo afirmaba que ese número no se podía saber. Un cartel que se
+// contradice con la pantalla enseña a no leer los carteles: se pierde la credibilidad de los que sí son ciertos.
 //
-// Eso no es una imprecisión de redacción. Los otros tres renglones de esa lista SÍ son ciertos, y
-// un cartel que se contradice con la pantalla enseña a no leer los carteles: se pierde la
-// credibilidad de los tres que había que leer. Es el mismo argumento que la regla del silencio de
-// `indicadoresDeCitas.ts` — *un aviso que siempre aparece es un aviso que nadie mira*.
+// ── DÓNDE VIVE HOY LA LISTA, Y POR QUÉ LA PRUEBA LA SIGUIÓ ──────────────────
 //
-// ── POR QUÉ ESTO ES UNA TABLA Y NO UNA BÚSQUEDA POR PALABRAS ────────────────
-//
-// La tentación es buscar la raíz de cada título de tarjeta dentro de los títulos de `falta`. No
-// sirve, y el contraejemplo está en el archivo: la tarjeta dice «Reagendadas» y un renglón legítimo
-// de `falta` se llama «El historial de reagendamientos». **Son dos cosas distintas** —la tasa
-// contra la cadena de movimientos— y la prosa del renglón lo explica. Una prueba por raíces se
-// pondría roja sobre un estado correcto, y una prueba que falla cuando todo está bien es una prueba
-// que alguien apaga.
-//
-// Así que la relación se declara acá, a mano, un renglón por cifra publicada. El costo es real y es
-// el punto: **agregar una cifra a la pantalla obliga a pasar por este archivo**, que es exactamente
-// el momento en que hay que releer la lista de al lado.
+// Desde CN-3 la pantalla no dibuja párrafos (docs/conversation/01, CN1-05): cada lugar sin dato va en «—» con una
+// línea, y lo que haría falta para medirlo vive en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`, que el
+// agente de Conversation puede citar. El defecto puede volver ahí: una sección que declare faltante una cifra que la
+// pantalla dibuja con su valor. Así que la relación se sigue declarando acá, a mano, un renglón por cifra publicada.
 // ══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { archivosFuente } from '../apoyo/fuente.ts';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { RAIZ } from '../apoyo/fuente.ts';
 
+const leer = (r: string): string => readFileSync(join(RAIZ, r), 'utf8');
 const PANEL = 'components/conversation/PanelDeConversation.jsx';
+const LECTURA = 'lib/negocio/lecturaDeConversation.ts';
+const FUTURO = 'docs/OTROS/futuro/lo-que-conversation-no-mide.md';
 
-/**
- * Lo que la pantalla ya mide, y la frase que por lo tanto NO puede encabezar un renglón de `falta`.
- *
- * `campo` es la propiedad que el componente lee del servidor: es la prueba de que la cifra existe
- * de verdad y no es un rótulo suelto. `prohibido` es el título exacto que quedaría mintiendo.
- */
-const YA_SE_MIDE: readonly { cifra: string; campo: string; prohibido: string }[] = [
-  {
-    cifra: 'la asistencia a la cita',
-    campo: 'tasaDeAsistencia',
-    prohibido: 'La asistencia',
-  },
-  {
-    cifra: 'la confirmación del agendamiento',
-    campo: 'tasaDeConfirmacion',
-    prohibido: 'La confirmación',
-  },
-  {
-    cifra: 'la respuesta del contacto',
-    campo: 'tasa',
-    prohibido: 'La tasa de respuesta',
-  },
+/** Las cifras que la pantalla dibuja con valor, el campo de la lectura que las da y el título que las negaría. */
+const YA_SE_MIDE: readonly { cifra: string; campo: string; prohibido: RegExp }[] = [
+  { cifra: 'la confirmación del agendamiento', campo: "paso('confirmaron'", prohibido: /^la confirmación\b/i },
+  { cifra: 'la respuesta del contacto', campo: "paso('respondieron'", prohibido: /^la (tasa de )?respuesta\b/i },
+  { cifra: 'la cancelación y el reagendamiento', campo: "paso('cancelaron'", prohibido: /^(la cancelación|el reagendamiento)\b/i },
+  { cifra: 'el ICP de quienes agendaron', campo: 'icpDeLosAgendados(dias)', prohibido: /^el icp\b/i },
+  { cifra: 'el sentimiento', campo: 'sentimientoDe(', prohibido: /^el sentimiento\b/i },
 ];
 
-/** Los títulos de `FLUJOS[*].falta`: el primer elemento de cada par `['Título', 'prosa…']`. */
-function titulosDeLoQueFalta(limpio: string): string[] {
-  const i = limpio.indexOf('const FLUJOS');
-  assert.notEqual(i, -1, 'el panel dejó de declarar `FLUJOS`: si se renombró, renombralo acá');
-  const j = limpio.indexOf('export default function', i);
-  assert.notEqual(j, -1, 'no se encontró el final del bloque de `FLUJOS`');
-  /* Cada renglón es `['Título', 'prosa'],`. Se toma sólo el PRIMER literal de cada par: la prosa
-     puede nombrar cualquier cosa —de hecho debe— y lo que miente es el título. */
-  return [...limpio.slice(i, j).matchAll(/\[\s*'([^']+)'\s*,/g)].map((m) => m[1] as string);
-}
+test('el panel no tiene su propia lista de lo que falta: vive en el documento de futuro', () => {
+  const panel = leer(PANEL);
+  assert.ok(!/const FLUJOS|\.falta\b/.test(panel), 'el panel volvió a escribir su lista de lo que falta: es un párrafo, y vive en el documento');
+  const futuro = leer(FUTURO);
+  const secciones = futuro.split(/^## /m).slice(1);
+  assert.ok(secciones.length >= 5, 'no se leyeron las secciones del documento de futuro');
+  for (const s of secciones) {
+    const titulo = s.split('\n')[0]!.trim();
+    assert.match(s, /\*\*Dónde se dibujaría\*\*/, `«${titulo}» no dice en qué lugar de la pantalla va su «—»`);
+    assert.match(s, /\*\*Por qué no hay dato\*\*/, `«${titulo}» no dice por qué falta`);
+  }
+});
 
 test('una cifra que la pantalla dibuja NO puede estar declarada como faltante', () => {
-  const panel = archivosFuente(['components']).find((a) => a.ruta === PANEL);
-  assert.ok(panel, `${PANEL} no existe: si se movió, hay que moverlo acá también`);
-
-  const titulos = titulosDeLoQueFalta(panel.limpio);
-  assert.ok(
-    titulos.length > 0,
-    'no se encontró ningún renglón de `falta`: la prueba dejó de poder leer el archivo, que es ' +
-      'peor que no tenerla — pasaría siempre',
-  );
-
+  const lectura = leer(LECTURA);
+  const titulos = [...leer(FUTURO).matchAll(/^## \d+ · (.+)$/gm)].map((m) => m[1]!.trim());
+  assert.ok(titulos.length > 0, 'no se leyó ningún título: la prueba dejó de poder leer el documento, y pasaría siempre');
   for (const { cifra, campo, prohibido } of YA_SE_MIDE) {
-    /* Primero se comprueba que la cifra EXISTE. Sin esto, borrar la tarjeta de la pantalla haría
-       pasar la prueba en vez de fallarla, y el renglón de `falta` volvería a ser correcto por un
-       motivo que nadie decidió. */
+    /* La entrada muerta: si la lectura dejara de calcularla, la prueba pasaría por el motivo equivocado. */
     assert.ok(
-      panel.limpio.includes(campo),
-      `la pantalla dejó de leer «${campo}», o sea que ${cifra} ya no se dibuja. Si se quitó a ` +
-        'propósito, hay que sacar su renglón de esta tabla Y volver a declararla como faltante',
+      lectura.includes(campo),
+      `la lectura dejó de calcular ${cifra} («${campo}»). Si se quitó a propósito, sacá su renglón de esta tabla Y ` +
+        'declarala faltante en el documento',
     );
-
-    const choca = titulos.find((t) => t.trim().toLowerCase() === prohibido.toLowerCase());
-    assert.equal(
-      choca,
-      undefined,
-      `«${prohibido}» está en la lista de lo que falta, y ${cifra} SÍ se mide: el panel lee ` +
-        `«${campo}». Una pantalla que dibuja un número y debajo afirma que ese número no se ` +
-        'puede saber enseña a no leer los carteles, y se lleva puestos a los que sí son ciertos',
-    );
+    const choca = titulos.find((t) => prohibido.test(t));
+    assert.equal(choca, undefined, `«${choca}» está en lo que Conversation no mide, y ${cifra} SÍ se dibuja`);
   }
 });

@@ -43,8 +43,8 @@ comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2
 >   cita (`lib/negocio/indicadoresDelLead.ts:237-239`) y declara aparte las congeladas
 >   (`lib/negocio/indicadoresDelLead.ts:308-313`); y `desde` viaja con `mitad` y con un aviso que se
 >   enciende cuando la fecha describe a un caso suelto (`lib/negocio/periodo.ts:147`), dibujado a la
->   vista en las dos tarjetas (`components/conversation/PanelDeConversation.jsx:505` y
->   `components/conversation/PanelDeConversation.jsx:618`).
+>   vista en las dos tarjetas (`components/conversation/PanelDeConversation.jsx:505@6f3bdb5` y
+>   `components/conversation/PanelDeConversation.jsx:618@6f3bdb5`).
 > - **`7f6235c`** (2026-09-16) — no habrá corte por anuncio acá: vive en
 >   `lib/negocio/costoDelAnuncio.ts`, y el porqué quedó escrito en
 >   `lib/negocio/atribucionDelLead.ts:76-93`.
@@ -77,7 +77,7 @@ comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2
 ## 1 · Qué pide el documento
 
 El documento funcional **no vive en el repositorio**. El código lo llama
-`AIOS_Arquitectura_Funcional_v0.2.md` (`components/conversation/PanelDeConversation.jsx:8`) y la
+`AIOS_Arquitectura_Funcional_v0.2.md` (`components/conversation/PanelDeConversation.jsx:8@6f3bdb5`) y la
 carpeta de Leads Portal lo barrió como `CC_Arquitectura_Funcional.md`, en una carpeta local
 (`docs/leads-portal/11-LO-QUE-PIDE-EL-DOCUMENTO.md:3-6`). Los encabezados de abajo se cotejaron el
 2026-09-28 contra ese archivo (§8 empieza en su línea 419, §17 en la 1106). **Conversation no tiene
@@ -122,12 +122,12 @@ Asistencia → Venta · **§17** los otros departamentos todavía sin especifica
 ## 2 · Qué hay hoy en pantalla
 
 La sección es `conversation`, grupo «Inteligencia», con `auditor.ver` desde el 2026-09-21
-(`lib/autorizacion/secciones.ts:305-328`). La vista es `components/views/ConversationView.jsx:43` y
+(`lib/autorizacion/secciones.ts:305-328@6f3bdb5`). La vista es `components/views/ConversationView.jsx:22` y
 todo el cuerpo es `components/conversation/PanelDeConversation.jsx` (989 líneas; 975 en la foto
-anterior). **Cuatro pestañas planas** (`components/conversation/PanelDeConversation.jsx:87-92`):
+anterior). **Cuatro pestañas planas** (`components/conversation/PanelDeConversation.jsx:87-92@6f3bdb5`):
 Lead Flow · Appointment Flow · Auditoría · Prompts. Una sola lectura alimenta las cuatro, en una
 transacción: `GET /api/auditoria` (`app/api/auditoria/route.ts:80-110@e1ccf44`). El reloj recarga cada 60 s
-sólo con la pantalla a la vista (`components/conversation/PanelDeConversation.jsx:215`,
+sólo con la pantalla a la vista (`components/conversation/PanelDeConversation.jsx:119`,
 `lib/cadencia.ts:91`).
 
 **Cómo se midió lo de esta sección.** Con SQL de sólo lectura que copia los predicados de cada
@@ -137,25 +137,25 @@ trabajo no puede levantar un servidor. Las cifras son las que la consulta del m�
 
 ── **LOS TRES CONTROLES QUE GOBIERNAN TODO LO DE ABAJO** ──
 
-**1 · El período** (`components/conversation/PanelDeConversation.jsx:303-322`). Hoy · 7 días · 30
+**1 · El período** (`components/conversation/PanelDeConversation.jsx:206-223`). Hoy · 7 días · 30
 días · Completo, dibujados desde `PERIODOS` (`lib/negocio/periodo.ts:83-96`), 30 por omisión
 (`lib/negocio/periodo.ts:109`). La clave viaja en `?periodo=` y lo que no está en la lista se
 rechaza con 400 (`app/api/auditoria/route.ts:62-63`). Sólo aparece en las dos pestañas de flujo
-(`components/conversation/PanelDeConversation.jsx:259`), y cambiarlo es una carga primera, no una
-recarga (`components/conversation/PanelDeConversation.jsx:175-181`).
+(`components/conversation/PanelDeConversation.jsx:259@6f3bdb5`), y cambiarlo es una carga primera, no una
+recarga (`components/conversation/PanelDeConversation.jsx:175-181@6f3bdb5`).
 
-**2 · `Nota`** (`components/conversation/PanelDeConversation.jsx:346-367`): el porqué de cada cifra
+**2 · `Nota`** (`components/conversation/PanelDeConversation.jsx:346-367@6f3bdb5`): el porqué de cada cifra
 va detrás de una «i» que se abre al pasar el ratón o al tocarla; con `grave`, el texto queda a la
 vista. Lo grave se reserva para lo que no es un matiz sino un hueco.
 
 **3 · Lo que falta, plegado** en un `<details>` nativo con el contador en el resumen
-(`components/conversation/PanelDeConversation.jsx:983-995`).
+(`components/conversation/PanelDeConversation.jsx:983-995@6f3bdb5`).
 
 **Alcance, medido el 2026-09-28:** **13 organizaciones, 11 activas** (el 15 eran 15 y 12); de las
 activas, **5 tienen llave de IA** (eran 4), **1 tiene el identificador del agente** y **1 tiene
 token de CRM**. Una sola organización —la de clave `aria`— tiene datos de negocio: **594 contactos,
 333 citas, 6 108 mensajes** (el 15: 584, 317 y 5 864). En las otras diez activas la pantalla dibuja
-el freno `POR_QUE_NO_AUDITA` (`lib/auditor/vista.ts:206-216`) y cifras vacías.
+el freno `POR_QUE_NO_AUDITA` (`lib/auditor/vista.ts:211-221`) y cifras vacías.
 
 **Y el volumen que cambió la lectura de todo lo de abajo.** Altas en el CRM por semana (lunes):
 08-10 **117** · 08-17 **90** · 08-24 **53** · 08-31 **175** · 09-07 **89** · 09-14 **4** · 09-21
@@ -176,34 +176,34 @@ y `lib/auditor/sentimiento.ts` (200). Cohorte única: `alta_en_el_crm` dentro de
 entre paréntesis, la de la foto anterior (2026-09-15 17:24 UTC; el booking rate, 2026-09-16 14:51
 UTC).
 
-1. **Agendaron (§9.3)**, el titular (`components/conversation/PanelDeConversation.jsx:509-518`):
+1. **Agendaron (§9.3)**, el titular (`components/conversation/PanelDeConversation.jsx:509-518@6f3bdb5`):
    **50,2 % · 139 de 277** (50,4 % · 197 de 391). Sin piso: sólo es `null` con cohorte 0
    (`lib/negocio/indicadoresDelLead.ts:306`). `agendaronSoloCongeladas` es **0** a 30 días —las
    citas congeladas son de agosto y sus contactos ya salieron de la ventana— y 79 en «Completo».
-2. **La cadena** (`components/conversation/PanelDeConversation.jsx:521-550`), cada barra sobre la
+2. **La cadena** (`components/conversation/PanelDeConversation.jsx:521-550@6f3bdb5`), cada barra sobre la
    cohorte: Entraron al CRM **277** · Les escribimos **270 (97,5 %)**, con la nota «7 no recibieron
    ningún mensaje» · Respondieron **161 (58,1 %)**. Ahí termina, a propósito.
-3. **La bifurcación** (`components/conversation/PanelDeConversation.jsx:557-579`): **73** después de
+3. **La bifurcación** (`components/conversation/PanelDeConversation.jsx:557-579@6f3bdb5`): **73** después de
    contestar —«45,3 % de los que contestaron»— y **66** sin contestar nunca; 73 + 66 = 139,
    descuadre 0 (el 15: 94 + 82 = 176, 44,3 %, antes de que `bddb516` cambiara el numerador).
-4. **Cuánto se tarda** (`components/conversation/PanelDeConversation.jsx:906-940`): Respondieron
+4. **Cuánto se tarda** (`components/conversation/PanelDeConversation.jsx:906-940@6f3bdb5`): Respondieron
    **59,6 % · 161 de 270 escritos** (55,5 %); Tardamos en escribir **2,3 min**, «9 de 10 antes de
    10,1 min», sobre 270 (2,8 min y **8,1 h**: la cola lenta de agosto salió de la ventana); Tardan
    en contestar **5,4 min**, «9 de 10 antes de 6 h», sobre 160 (4,2 min y 11 h); Esperan respuesta
    **109** (170).
-5. **De dónde vinieron · por fuente** (`components/conversation/PanelDeConversation.jsx:711`), por
+5. **De dónde vinieron · por fuente** (`components/conversation/PanelDeConversation.jsx:711@6f3bdb5`), por
    cohorte descendente: **Paid Social 47,8 % · 121 de 253 · Direct traffic 92,3 % · 12 de 13 ·
    Social media 50 % · 5 de 10** y «Otras» con 1 contacto sin fuente. Las tres pasan el piso de 10,
    y el orden de las tasas se dio vuelta respecto del 15 —ver riesgo 10—.
-6. **Por campaña** (`components/conversation/PanelDeConversation.jsx:712`): «TOFU · 01-09-26» **43,3
+6. **Por campaña** (`components/conversation/PanelDeConversation.jsx:712@6f3bdb5`): «TOFU · 01-09-26» **43,3
    % · 74 de 171**, «Bofu · Agendas · 28-08-26» **83,7 % · 36 de 43**, «TOFU · 31-08-26» **9,5 % · 2
    de 21** —las tres, idénticas a las del 15, porque ninguna recibió contactos nuevos— y «Otras» con
    **42 contactos y 27 agendados** (177 contactos el 15); 27 de esos 42 no traen campaña. Los
    nombres completos vienen de la base; se abrevian acá.
-7. **Fuera de horario** (`components/conversation/PanelDeConversation.jsx:719-725`): **61 de 152**
+7. **Fuera de horario** (`components/conversation/PanelDeConversation.jsx:719-725@6f3bdb5`): **61 de 152**
    primeros mensajes antes de las 8 o después de las 21 en la zona del contacto (75 de 212); 118 de
    los 270 escritos no traen zona y no entran.
-8. **Sentimiento de Lead Flow** (`components/conversation/PanelDeConversation.jsx:825-828`): sólo el
+8. **Sentimiento de Lead Flow** (`components/conversation/PanelDeConversation.jsx:825-828@6f3bdb5`): sólo el
    aviso grave, porque `juzgadas = 0` en las cuatro ventanas. `chat_pre_agenda` tiene ahora **6
    análisis** (5 el 15): 5 no auditables y 1 auditable del carril de mejora, que no produce
    sentimiento (`lib/auditor/sentimiento.ts:89-93`).
@@ -217,8 +217,8 @@ a las 14:53 al 28 a las 13:37 UTC—, el único texto que lo explica es `respues
 `components/conversation/PanelDeConversation.jsx` los únicos avisos de `respuesta` que se leen son
 `avisoDeLaVentana`, `avisoDelBooking` y `avisoDeLatencias`, comprobado con `grep`. La tarjeta queda
 con «Entraron al CRM 0 · 100 %», porque ese pie es un literal
-(`components/conversation/PanelDeConversation.jsx:527`); lo mismo «Citas del período»
-(`components/conversation/PanelDeConversation.jsx:634`).
+(`components/conversation/PanelDeConversation.jsx:527@6f3bdb5`); lo mismo «Citas del período»
+(`components/conversation/PanelDeConversation.jsx:634@6f3bdb5`).
 
 ── **PESTAÑA APPOINTMENT FLOW** ──
 
@@ -226,36 +226,36 @@ Módulos: `lib/negocio/indicadoresDeCitas.ts` (551 líneas) y `lib/negocio/consu
 (304), con los predicados de `lib/negocio/citasAlcanzables.ts` (220). Ventana: citas con `inicio_el`
 en el período **y ya ocurridas**, sin congeladas ni descartados.
 
-9. **El titular es un hueco** (`components/conversation/PanelDeConversation.jsx:620-625`): «—»,
+9. **El titular es un hueco** (`components/conversation/PanelDeConversation.jsx:620-625@6f3bdb5`): «—»,
    «asistencia · 0 de 106 cerradas». `negocio.citas.asistio` está en **0 de 333** y `showed` en **0
    de 333**, comprobado por las dos vías.
-10. **La cadena** (`components/conversation/PanelDeConversation.jsx:628-657`): Citas del período
+10. **La cadena** (`components/conversation/PanelDeConversation.jsx:628-657@6f3bdb5`): Citas del período
     **106** (127), con la nota de los descartados —**88 citas, que cancelan el 89,8 %** (78 y 91
     %)—; Siguieron en pie **69 (65,1 %)**; Se presentaron «—», barra vacía, «nadie lo registró».
-11. **Las salidas** (`components/conversation/PanelDeConversation.jsx:659-681`): Canceladas **37 ·
+11. **Las salidas** (`components/conversation/PanelDeConversation.jsx:659-681@6f3bdb5`): Canceladas **37 ·
     34,9 %** (52 · 40,9 %); Reagendadas **14 · 13,2 %** (11 · 8,7 %). Con los descartados mezclados
     la tasa sería **59,8 % sobre 194**: casi la mitad de las citas de la ventana son de contactos
     que la empresa ya había rechazado.
-12. **Confirmaron** (`components/conversation/PanelDeConversation.jsx:947-956`): **77,6 % · 59 de 76
+12. **Confirmaron** (`components/conversation/PanelDeConversation.jsx:947-956@6f3bdb5`): **77,6 % · 59 de 76
     contactos** (71,4 % · 65 de 91), sobre 173 contactos con cita. Sigue sin excluir descartados
     (`lib/negocio/indicadoresDeCitas.ts:266-273`): 82 de esos 173 lo son, y 8 de los 76 que
     contestaron.
-13. **Se reserva con** (`components/conversation/PanelDeConversation.jsx:957-962`): **2,4 días**
+13. **Se reserva con** (`components/conversation/PanelDeConversation.jsx:957-962@6f3bdb5`): **2,4 días**
     (mediana 57,2 h), «sobre 105 de 106». La cobertura que el 15 se degradaba (96 de 127) volvió a
     ser casi completa porque las citas sin fecha de reserva salieron de la ventana.
-14. **No-show** (`components/conversation/PanelDeConversation.jsx:963-970`): **2 reportados**,
+14. **No-show** (`components/conversation/PanelDeConversation.jsx:963-970@6f3bdb5`): **2 reportados**,
     conteo y no tasa. `negocio.resultados` tiene **7 filas en total y la última es del 2026-09-09**:
     nadie cerró un intento en diecinueve días.
-15. **Precall · Registró reproducción** (`components/conversation/PanelDeConversation.jsx:782-787`):
+15. **Precall · Registró reproducción** (`components/conversation/PanelDeConversation.jsx:782-787@6f3bdb5`):
     **19,6 % · 10 de 51 clasificados** (19,7 % · 12 de 61). De 65 contactos que llegaron a la
     llamada, 5 sin campo, 41 sin reproducción, 7 parcial, 3 completo y **9 sin rama** (`-20%` 4,
     `Accede: sin reproducir` 3, `Clic a link` 2): los sin rama son **tres veces** los que
     completaron. El desglose fino sigue oculto por el piso (`lib/negocio/consumoDelPrecall.ts:239`)
     y el aviso grave está encendido con sus tres partes.
-16. **Sentimiento de Appointment Flow** (`components/conversation/PanelDeConversation.jsx:831-843`):
+16. **Sentimiento de Appointment Flow** (`components/conversation/PanelDeConversation.jsx:831-843@6f3bdb5`):
     **Quedaron molestos 26,1 % · 6 de 23**, neutrales 14, positivas 3 (25 % · 5 de 20). A 7 días son
     3 juzgadas y la proporción no se publica.
-17. **Los avisos graves de las citas** (`components/conversation/PanelDeConversation.jsx:685-686`),
+17. **Los avisos graves de las citas** (`components/conversation/PanelDeConversation.jsx:685-686@6f3bdb5`),
     los dos encendidos: la asistencia («en ninguna de las 106 citas de los últimos 30 días») y las
     congeladas, que bajaron de **77 a 14** en la ventana.
 
@@ -278,7 +278,7 @@ segmentado en esta pestaña.
     análisis en trece días; el último, hoy a las 06:18 UTC.
 19. **LeadFlow**: **6 análisis, 1 auditable (amarillo)**, 5 sin poder juzgar (5, 0 y 5 el 15).
 20. **Patrones abiertos: 6, con 24 casos, ninguno resuelto** (5 con 20 el 15), ordenados por
-    cantidad y, a igual cantidad, por el caso más reciente (`lib/auditor/vista.ts:100-132`):
+    cantidad y, a igual cantidad, por el caso más reciente (`lib/auditor/vista.ts:105-137`):
     `ignora_pedido_reagendar` ×10 (rojo), `recordatorio_fecha_inconsistente` ×5 (rojo),
     `no_lee_confirmacion_previa` ×4 (amarillo), `presiona_asistencia_con_duda` ×3 (rojo),
     `dato_faltante` ×1 y `no_leyo_a_medias` ×1 (amarillos). Entraron cuatro hallazgos desde el
@@ -291,7 +291,7 @@ segmentado en esta pestaña.
 
 ── **PESTAÑA PROMPTS** ──
 
-22. Contador «2» (`components/conversation/PanelDeConversation.jsx:248-250`):
+22. Contador «2» (`components/conversation/PanelDeConversation.jsx:248-250@6f3bdb5`):
     `negocio.prompts_del_agente` y `negocio.versiones_del_prompt` siguen en **0 filas**. El panel
     aclara que ese prompt sería «de referencia» y no el que corre en el CRM
     (`components/auditoria/PanelDeAuditoria.jsx:455`).
@@ -308,7 +308,7 @@ encienden los dos de Lead Flow, y el de la cola dice que la mitad de los contact
 en «Completo», contra un umbral de 0,25).
 
 Los porcentajes en pantalla llevan **punto** y no coma: `porciento`
-(`components/conversation/PanelDeConversation.jsx:413-416`) interpola sin `Intl` aunque su docblock
+(`components/conversation/PanelDeConversation.jsx:413-416@6f3bdb5`) interpola sin `Intl` aunque su docblock
 prometa coma. Cosmético, sin cambios desde el 15.
 
 ---
@@ -323,10 +323,10 @@ embudo completo, cuatro agentes con nombre de persona, quince líneas de diálog
 existen, seis «incidencias» que imitaban a un supervisor de IA y catorce líneas de prompt sugerido.
 Entre esos literales había un nombre de agente inventado, un nombre de pila en un saludo y las
 iniciales de un cliente en tres sitios; todo está documentado en
-`components/views/ConversationView.jsx:12-33`. **Ningún nombre de persona ni de marca real quedó en
+`components/views/ConversationView.jsx:12-33@6f3bdb5`. **Ningún nombre de persona ni de marca real quedó en
 el código de esta pantalla**: verificado con `grep` el 2026-09-28 sobre `components/conversation/`,
 `components/auditoria/` y `components/views/ConversationView.jsx`, y los dos únicos aciertos
-(`components/views/ConversationView.jsx:26` y `components/views/ConversationView.jsx:28`) están
+(`components/views/ConversationView.jsx:26@6f3bdb5` y `components/views/ConversationView.jsx:28@6f3bdb5`) están
 dentro del comentario que explica que se fueron. Las marcas que sí se ven en pantalla —los nombres
 de campaña de la tabla de atribución— **vienen de la base**, no del código.
 
@@ -367,14 +367,14 @@ existe en ninguna forma.
 ── **TEXTOS FIJOS DENTRO DE LA PROPIA PANTALLA** ──
 
 - **«3 citas de 1052 en todo un año»**, fechado «en septiembre de 2026», en el renglón plegado de la
-  asistencia (`components/conversation/PanelDeConversation.jsx:131`). Bien resuelto: es una medición
+  asistencia (`components/conversation/PanelDeConversation.jsx:131@6f3bdb5`). Bien resuelto: es una medición
   fechada de la subcuenta del CRM, que esta base no puede reproducir (tiene 333 citas).
 - **«el CRM tiene ese campo en 3 de 1052 citas»**, **sin fecha**, dentro del aviso grave de la
   asistencia (`lib/negocio/indicadoresDeCitas.ts:514-516`), visible hoy en las cuatro ventanas. Es
   el único de los tres sin fecha y el único a la vista. Desde esta base: `showed` en 0 de 333 y
   `noshow` en **15 de 333** (3 el 15).
 - **«las 316 citas que había al medirlo»**, detrás del ícono del no-show
-  (`components/conversation/PanelDeConversation.jsx:969`). Fechado; hoy son 333.
+  (`components/conversation/PanelDeConversation.jsx:969@6f3bdb5`). Fechado; hoy son 333.
 - **Los tres valores sin rama nombrados a mano** en el aviso del precall
   (`lib/negocio/consumoDelPrecall.ts:274-275`). Hoy siguen coincidiendo —los 9 sin rama son
   exactamente esos tres valores—, pero el día que el CRM agregue un cuarto el conteo lo contará y la
@@ -433,7 +433,7 @@ usa sólo para el aviso de fuera de horario.
 de IA (32,8 %)**, 790 no traen autor (51,4 %) y 242 son de otro usuario; **74 de los 270** contactos
 escritos recibieron al menos uno del agente (el 15: 44,2 % y 134 de 382). La nota de la cadena que
 dice que «todavía no se distingue un mensaje del agente de uno de un flujo del CRM»
-(`components/conversation/PanelDeConversation.jsx:548`) sigue siendo demasiado pesimista: se
+(`components/conversation/PanelDeConversation.jsx:548@6f3bdb5`) sigue siendo demasiado pesimista: se
 distingue en un tercio de los mensajes.
 
 **6 · El formulario de la landing.** `Form Landing VSL` en **247 de 594**, sin cambios: dejó de
@@ -442,7 +442,7 @@ de 30 días quedan **6 de 277** (140 de 412 el 15), y en dos días no va a queda
 
 **7 · El clic al precall.** `Clic a Video Pre-Call` en 20 contactos, igual que el 15. Es la razón
 del rótulo «Registró reproducción» y no «Vio el video»
-(`components/conversation/PanelDeConversation.jsx:762-768`).
+(`components/conversation/PanelDeConversation.jsx:762-768@6f3bdb5`).
 
 **8 · El estado de envío del mensaje** (`mensajes.estado_entrega` y su familia) — del 2026-09-15, no
 re-medido: la columna se rellena hacia atrás y su conteo no se reproduce ni clavando el corte. Es la
@@ -462,7 +462,7 @@ activas y ninguna inactiva. La pantalla no lo lee: riesgo 22.
 
 ── **Los seis renglones de `FLUJOS[*].falta`, contra la base del 2026-09-28** ──
 
-**L1 · «El recorrido hasta la landing»** (`components/conversation/PanelDeConversation.jsx:101`) —
+**L1 · «El recorrido hasta la landing»** (`components/conversation/PanelDeConversation.jsx:101@6f3bdb5`) —
 **sigue siendo falso para el formulario**: `Form Landing VSL` tiene el vocabulario exacto del §9.5
 (`Agendado` · `Form incompleto sin agendar` · `Form completo sin agendar`) en 247 contactos, y lo
 que pasó es que una automatización del CRM se apagó el 2026-08-31. Lo que cambió es que la
@@ -474,29 +474,29 @@ catálogo, `%trigger%`, `%clic%`, `%click%`, `%abri%`, `%visit%` y `%session%` s
 contactos). La visita tiene una URL de atribución, `Last Landing URL`, en 119 de 277: no es un
 evento de visita.
 
-**L2 · «El histórico de las tasas»** (`components/conversation/PanelDeConversation.jsx:102`) —
+**L2 · «El histórico de las tasas»** (`components/conversation/PanelDeConversation.jsx:102@6f3bdb5`) —
 **cierto**. `reservada_el` en 201 de 333 citas; por semana de inicio, 0 de 24 y 0 de 63 en las
 semanas del 10 y del 17 de agosto, 11 de 42, 66 de 76 y 88 de 92 después, y completa desde el 14 de
 septiembre. No se va a llenar: el barrido mira catorce días hacia atrás (`lib/negocio/citas.ts:74`).
 
-**L3 · «El agente de voz»** (`components/conversation/PanelDeConversation.jsx:103`) — **cierto**:
+**L3 · «El agente de voz»** (`components/conversation/PanelDeConversation.jsx:103@6f3bdb5`) — **cierto**:
 `negocio.llamadas` en 0 filas y ninguna columna con «transcrip» en `information_schema.columns`.
 Concuerda con `lib/auditor/veredicto.ts:46-52`.
 
-**A1 · «La asistencia según el CALENDARIO»** (`components/conversation/PanelDeConversation.jsx:131`)
+**A1 · «La asistencia según el CALENDARIO»** (`components/conversation/PanelDeConversation.jsx:131@6f3bdb5`)
 — **cierto en el fondo, y el calendario empezó a hablar un poco**. `showed` en 0 de 333; `noshow` en
 15, de los cuales 12 pasaron de `confirmed` a `noshow` entre el 2026-09-15 18:04 y el 2026-09-18
 16:04 UTC, cuando `estado_cambiado_el` estrenó contenido; en esos mismos días y hasta el
 2026-09-22 se registraron otros tres cambios, a `cancelled` —dos desde `confirmed` y uno desde
 `noshow`—. `citas.asistio` sigue en 0 de 333.
 
-**A2 · «CUÁNDO vio el precall»** (`components/conversation/PanelDeConversation.jsx:141`) —
+**A2 · «CUÁNDO vio el precall»** (`components/conversation/PanelDeConversation.jsx:141@6f3bdb5`) —
 **cierto**. Ninguno de los campos de video del catálogo trae fecha; de los seis con «fecha» en el
 nombre, el único con volumen es `Fecha de Reunion` (TEXT, 220 contactos; `Fecha Alternativa 1` y
 `Fecha Alternativa 2` están en 1 contacto cada uno y las tres de cuotas en 0), y es por su nombre
 la fecha de la llamada y no la del visionado (no se abrieron sus valores).
 
-**A3 · «El historial de reagendamientos»** (`components/conversation/PanelDeConversation.jsx:142`) —
+**A3 · «El historial de reagendamientos»** (`components/conversation/PanelDeConversation.jsx:142@6f3bdb5`) —
 **cierto**: `reagendada_el` es una sola columna, en 16 de 333 citas, y el calendario se barre una
 vez por hora (`lib/negocio/barrido.ts:214-215`, al minuto 3).
 
@@ -573,12 +573,12 @@ vigentes y releídas en el código el 2026-09-28:
   auditables fuera del carril de mejora (`lib/auditor/sentimiento.ts:89-93`).
 - **Los contadores cuentan auditables; la lista muestra todo**, con su motivo
   (`lib/auditor/pantalla.ts:29-41`).
-- **La severidad del patrón es la del peor caso** (`lib/auditor/vista.ts:120-123`).
+- **La severidad del patrón es la del peor caso** (`lib/auditor/vista.ts:125-128`).
 - **El carril de mejora tiene criterio, disparo y tope propios** (`lib/auditor/mejora.ts:52`,
   `lib/auditor/mejora.ts:55` y `lib/auditor/mejora.ts:63`: una mejora por día).
 - **El hash del prompt se recalcula del texto** (`hashDelPrompt`, `lib/auditor/prompts.ts:64`).
 - **Los nombres que se ven son los del CRM** —LeadFlow · Zona Setter, AppFlow · Zona Closer
-  (`lib/auditor/vista.ts:151-154` y `lib/auditor/vista.ts:166-169`)— y la lista de agentes sale de
+  (`lib/auditor/vista.ts:156-159` y `lib/auditor/vista.ts:171-174`)— y la lista de agentes sale de
   `AGENTES` (`lib/auditor/veredicto.ts:52`). Nombrar un agente a mano está prohibido con un motivo
   caro: en la plataforma anterior la base aceptaba cuatro agentes y el código validaba contra una
   lista de dos, y los patrones de voz no se podían cerrar ni medir su reincidencia
@@ -670,8 +670,8 @@ contacto que escribió antes de que le escribiéramos (161 respondieron, la medi
 
 **15 · Convertir la bifurcación en un cuarto escalón.** A 30 días afirmaría **86,3 %** donde el real
 es 45,3 %; en «Completo», 95,2 % contra 56,7 %; a 7 días, **2 agendados sobre 1 que contestó**. Las
-defensas: la forma (`components/conversation/PanelDeConversation.jsx:557-579`), el pie
-(`components/conversation/PanelDeConversation.jsx:581-585`) y la suma que fija la prueba. Sólo la
+defensas: la forma (`components/conversation/PanelDeConversation.jsx:557-579@6f3bdb5`), el pie
+(`components/conversation/PanelDeConversation.jsx:581-585@6f3bdb5`) y la suma que fija la prueba. Sólo la
 tercera no se rompe en silencio.
 
 **16 · Tasas sin piso sobre uno a cinco casos.** Con la entrada de leads casi en cero, «Hoy» y «7
@@ -697,17 +697,17 @@ una sola el identificador del agente; las cifras de flujo no dependen del audito
 
 **19 · `desde` sin mediana.** Resuelto en Lead Flow —en «Completo» el aviso de la cola está a la
 vista—; `fechaCorta` sigue sin dibujar el año
-(`components/conversation/PanelDeConversation.jsx:399-404`), así que la fila de 2025 se ve como «8
+(`components/conversation/PanelDeConversation.jsx:399-404@6f3bdb5`), así que la fila de 2025 se ve como «8
 de agosto». En las citas el aviso calla en los cuatro períodos, y un campo siempre nulo invita a
 creer que no funciona.
 
 **20 · Dos comentarios dicen que la sección pide `tablero.ver`.**
 `lib/autorizacion/secciones.ts:302` («La capacidad de la SECCIÓN sigue siendo `tablero.ver`»)
-contradice a la línea 315 del mismo archivo, y `components/views/ConversationView.jsx:37-39` dice lo
+contradice a la línea 315 del mismo archivo, y `components/views/ConversationView.jsx:37-39@6f3bdb5` dice lo
 mismo. `8dcb619` cambió el valor y no los dos textos que lo explicaban.
 
 **21 · Los patrones se agrupan sin mirar el agente.** `agruparPorPatron` junta por código
-(`lib/auditor/vista.ts:100-104`) y cada tarjeta se queda con los patrones cuyo **primer caso** es
+(`lib/auditor/vista.ts:105-109`) y cada tarjeta se queda con los patrones cuyo **primer caso** es
 suyo (`components/auditoria/PanelDeAuditoria.jsx:153`), y el primero es el más reciente, porque
 los casos llegan por `detectado_el` descendente (`lib/auditor/pantalla.ts:318`). Desde el
 2026-09-17 `no_lee_confirmacion_previa` tiene casos de los dos agentes —3 de AppFlow y 1 de
@@ -732,7 +732,7 @@ ninguna es ésa. Un `grep` de `frescura` y `tareas_programadas` sobre `lib/audit
 `lib/negocio/citasAlcanzables.ts`, el 2026-09-28, sólo acierta en dos comentarios que la usan como
 analogía (`lib/negocio/indicadoresDeCitas.ts:60` y `lib/negocio/indicadoresDeCitas.ts:415`).
 Lo único que la pantalla dice sobre la edad de lo dibujado es el error de red, que deja las cifras
-en su lugar (`components/conversation/PanelDeConversation.jsx:899-901`). Hoy no muerde —las cinco
+en su lugar (`components/conversation/PanelDeConversation.jsx:899-901@6f3bdb5`). Hoy no muerde —las cinco
 tareas estaban al día a las 23:58 UTC—, pero con el negocio quieto es la peor combinación: todas las
 ventanas miden desde `now()`, así que un barrido caído vaciaría «Hoy» y «7 días» igual que un embudo
 sin entrada (riesgo 3), la pestaña de Auditoría dejaría de sumar análisis sin decir por qué, y la

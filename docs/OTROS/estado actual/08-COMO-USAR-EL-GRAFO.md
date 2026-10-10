@@ -179,8 +179,8 @@ que esta carpeta entrara, también eran 3 saltos, por otro lado: los dos archivo
 `periodo.ts`. El camino real es otro: `app/api/auditoria/route.ts:40` importa `lecturaDeConversation`, que
 importa `tasaDeCancelacion` (`lib/negocio/lecturaDeConversation.ts:33`), y
 la pantalla lee esa ruta por HTTP: importa `leerLaPantalla` de `lib/auditor/vista.ts`
-(`components/conversation/PanelDeConversation.jsx:76`), que pide `RUTA = '/api/auditoria'`
-(`lib/auditor/vista.ts:22`). **Ese salto por HTTP no es una arista**: entre `lib/auditor/vista.ts` y
+(`components/conversation/PanelDeConversation.jsx:41`), que pide `RUTA = '/api/auditoria'`
+(`lib/auditor/vista.ts:23`). **Ese salto por HTTP no es una arista**: entre `lib/auditor/vista.ts` y
 `app/api/auditoria/route.ts` no hay ninguna (fila de esos dos archivos en la § 1). Otro caso, que no
 cambió en ninguno de los tres cortes de estos días:
 `graphify path "cadenaDeCierre.ts" "PanelDeSales"` cruza por un nodo de documento

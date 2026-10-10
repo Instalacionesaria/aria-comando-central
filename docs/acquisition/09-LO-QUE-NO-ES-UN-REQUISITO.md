@@ -589,7 +589,7 @@ LATAM+USA | 01-09-26» y los anuncios «agendamiento - yaping», «El app», «e
 una pantalla de departamento. `lib/aios/conversation.js` eran 559 líneas de las cuales unas 180
 eran literales inventados, y entre ellos **un nombre de agente inventado, un nombre de pila en un
 saludo y las iniciales de un cliente real, repetidas en tres sitios**. El módulo
-entero se borró; el porqué está documentado en `components/views/ConversationView.jsx:12-33` y
+entero se borró; el porqué está documentado en `components/views/ConversationView.jsx:12-33@6f3bdb5` y
 en `docs/OTROS/estado actual/04-CONVERSATION.md:320-331`, que además deja constancia de la
 verificación posterior: «**Ningún nombre de persona ni de marca real quedó en el código de esta
 pantalla**», comprobado con grep el 2026-09-28, y «las marcas que sí se ven en pantalla —los
