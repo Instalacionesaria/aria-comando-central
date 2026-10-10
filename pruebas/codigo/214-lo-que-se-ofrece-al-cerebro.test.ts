@@ -35,7 +35,8 @@ const POR_SECCION: Record<string, string[]> = {
   creative: ['calidad_de_piezas', 'fatiga_de_piezas', 'frescura', 'rendimiento_de_piezas'],
   conversion: ['formulario_de_la_landing', 'frescura', 'pasos_de_conversion', 'recorrido_de_los_leads'],
   conversation: [
-    'atribucion_del_lead', 'auditoria_de_agentes', 'cancelacion_de_citas', 'consumo_del_precall', 'frescura', 'lead_flow', 'sentimiento_por_flujo',
+    'atribucion_del_lead', 'auditoria_de_agentes', 'cancelacion_de_citas', 'consumo_del_precall', 'conversation_en_cifras', 'frescura', 'lead_flow',
+    'sentimiento_por_flujo',
   ],
   sales: [
     'cadena_de_cierre', 'cancelacion_de_citas', 'ciclo_hasta_la_cita', 'cierre_por_closer', 'dinero_del_mes', 'frescura', 'motivos_de_no_venta',

@@ -46,7 +46,7 @@ cuatro pestañas:
 - **Auditoría y Prompts**, que dibuja `Cuerpo` de `components/auditoria/PanelDeAuditoria.jsx`: los agentes
   auditados con sus patrones y casos, la tarjeta de señales y el plan, y los prompts de cada agente.
 
-Una sola ruta, `GET /api/auditoria` (`app/api/auditoria/route.ts:112-157`), compone todo:
+Una sola ruta, `GET /api/auditoria` (`app/api/auditoria/route.ts:112-157@e1ccf44`), compone todo:
 
 | bloque | de dónde sale |
 |---|---|
@@ -60,7 +60,9 @@ Una sola ruta, `GET /api/auditoria` (`app/api/auditoria/route.ts:112-157`), comp
 
 Las ventanas son rodantes, `now()` menos los días. El cerebro tiene `lead_flow`, `atribucion_del_lead`,
 `consumo_del_precall`, `sentimiento_por_flujo`, `auditoria_de_agentes` y `cancelacion_de_citas`
-(`lib/agentes/executive/adaptadores/conversation.ts`). El detector tiene una regla, `CONV-PATRON-ABIERTO`
+(`lib/agentes/executive/adaptadores/conversation.ts`). Desde CN-2 la ruta lee esos bloques de una sola lectura,
+`lecturaDeConversation`, publica además la `pantalla` que arma, y el cerebro suma `conversation_en_cifras`
+(`docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, CN1-15 y CN1-16). El detector tiene una regla, `CONV-PATRON-ABIERTO`
 (`lib/agentes/detectores/conversation.ts:36`).
 
 ## 4 · Los agentes, en los datos

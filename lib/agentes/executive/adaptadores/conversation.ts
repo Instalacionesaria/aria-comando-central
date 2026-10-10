@@ -7,12 +7,18 @@
 // (`resolverAccesoAlAuditor`, que puede dejar un registro de auditoría) y llega como dato.
 //
 // La cancelación de citas también es de Conversation, y vive con las de Sales (`./sales.ts`).
+//
+// `conversation_en_cifras` publica lo que la pantalla ARMA con esas cifras: lee la misma lectura que la ruta,
+// `lecturaDeConversation`, con la misma ventana y el mismo «audita», y devuelve su `pantalla` entera —lo que el
+// cerebro dice de una cifra es lo que se dibuja (CN1-16 de `docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`)—.
+// No lleva nada de una persona: son conteos, tasas y claves.
 
 import { laPantallaDelTecnico, TOPE_DE_CASOS } from '../../../auditor/pantalla.ts';
 import { sentimientoPorFlujo } from '../../../auditor/sentimiento.ts';
 import { indicadoresDelLead } from '../../../negocio/indicadoresDelLead.ts';
 import { atribucionDelLead, type FilaDeAtribucion } from '../../../negocio/atribucionDelLead.ts';
 import { consumoDelPrecall } from '../../../negocio/consumoDelPrecall.ts';
+import { lecturaDeConversation } from '../../../negocio/lecturaDeConversation.ts';
 import { ARGUMENTO_PERIODO, SIN_ARGUMENTOS, type DefinicionDeHerramienta, periodoPedido, primeras, tomar } from './comun.ts';
 
 const fila = (f: FilaDeAtribucion) => tomar(f, ['etiqueta', 'cohorte', 'agendaron', 'tasa', 'esElResto'] as const);
@@ -115,6 +121,28 @@ export const HERRAMIENTAS_DE_CONVERSATION: readonly DefinicionDeHerramienta[] = 
           { ...tomar(s, ['dias', 'juzgadas', 'molestos', 'aviso'] as const), porValor: tomar(s.porValor, ['positivo', 'neutral', 'molesto'] as const) },
         ]),
       );
+    },
+  },
+  {
+    nombre: 'conversation_en_cifras',
+    descripcion:
+      'Conversation: las cifras que la pantalla dibuja, como las dibuja. `paneles`: los contactos de la ventana y ' +
+      'cuántos agendaron, las citas y cuántas asistieron, y de qué ICP es el grupo que agendó (alto, medio, bajo, sin ' +
+      'calificar). `leadFlow` y `appointmentFlow`: el KPI de cada flujo y su cadena paso a paso; en Appointment Flow, ' +
+      'además, las salidas antes de la llamada (reprogramaron, cancelaron), la asistencia por tramo de ICP y si los ' +
+      'que agendaron conversaron antes. `agentes`: las cuatro tarjetas (Lead Flow y Appointment Flow, texto y voz), ' +
+      'con cifras del flujo y no del agente, y su sentimiento. `porCorregir`: los hallazgos abiertos del auditor. ' +
+      '`cifras`: la primera respuesta del contacto (p50 en minutos) y, como porciones, los contactos que entraron ' +
+      'fuera de horario, las citas con el precall registrado y las conversaciones molestas de los dos flujos. Las ' +
+      'tasas y porciones son fracciones de 0 a 1. Una cifra sin valor trae su motivo: `sin_contactos`, `sin_citas`, ' +
+      '`sin_asistencia` (nadie marca la asistencia), `bajo_el_piso` (menos de 10 casos), `sin_enlace` (la landing ' +
+      'no tiene enlace de seguimiento), `sin_llamadas` (los agentes de voz no registran llamadas), `sin_analisis` ' +
+      '(el auditor no juzgó conversaciones en la ventana) o `no_audita` (la empresa no audita sus agentes).',
+    secciones: ['conversation'],
+    esquema: ARGUMENTO_PERIODO,
+    async ejecutar(argumentos, contexto) {
+      const l = await lecturaDeConversation(periodoPedido(argumentos)!.dias, contexto.deLaRuta.noAudita === null);
+      return l.pantalla;
     },
   },
 ];

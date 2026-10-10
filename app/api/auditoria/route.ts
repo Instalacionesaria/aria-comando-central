@@ -37,11 +37,7 @@ import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ulti
 import { textoDeConversation } from '../../../lib/agentes/plan/conversation.ts';
 import { comentarioDelDepartamento, FALTA_DEL_AUDITOR } from '../../../lib/agentes/cabecera.ts';
 import { leerLosPrompts } from '../../../lib/auditor/prompts.ts';
-import { tasaDeCancelacion } from '../../../lib/negocio/indicadoresDeCitas.ts';
-import { indicadoresDelLead } from '../../../lib/negocio/indicadoresDelLead.ts';
-import { atribucionDelLead } from '../../../lib/negocio/atribucionDelLead.ts';
-import { consumoDelPrecall } from '../../../lib/negocio/consumoDelPrecall.ts';
-import { sentimientoPorFlujo } from '../../../lib/auditor/sentimiento.ts';
+import { lecturaDeConversation } from '../../../lib/negocio/lecturaDeConversation.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { AGENTES } from '../../../lib/auditor/veredicto.ts';
 
@@ -77,23 +73,17 @@ export async function GET(peticion: Request): Promise<Response> {
      «completo» elegidos en un flujo, la tarjeta pediría elegir 7 o 30 sin un control a la vista. Así que es la
      de 7 días si se eligió 7, y la de 30 si no, y la tarjeta dice cuál. Las guarda la pasada de cada mañana. */
   const ventana: '7d' | '30d' = periodo.clave === '7d' ? '7d' : '30d';
-  const [pantalla, prompts, cancelacion, respuesta, atribucion, precall, sentimiento, senales, comentario] =
-    await conOrganizacion(
+  const [tecnico, prompts, lectura, senales, comentario] = await conOrganizacion(
     contexto.orgEfectiva,
     async () => [
       await laPantallaDelTecnico(noAudita),
       await leerLosPrompts(),
-      /* Las cinco reciben LA MISMA ventana, y no es una comodidad: la pantalla las dibuja juntas y
-         con ventanas distintas dos cifras de la misma tarjeta hablarían de dos períodos sin decirlo.
-         Es el mismo motivo por el que van en una sola transacción. */
-      await tasaDeCancelacion(periodo.dias),
-      await indicadoresDelLead(periodo.dias),
-      await atribucionDelLead(periodo.dias),
-      await consumoDelPrecall(periodo.dias),
-      /* Uno por agente y no uno solo: son dos conversaciones distintas, y mezclarlas daría un
-         promedio que no describe a ninguna. Medido, hoy pre-agenda no tiene ni un veredicto.
-         La lista sale del catálogo: nombrar un agente acá está prohibido y el motivo es caro. */
-      await sentimientoPorFlujo(periodo.dias),
+      /* Las cifras de los dos flujos y lo que el front del prototipo dibuja con ellas (CN1-15): las cinco
+         funciones de siempre reciben LA MISMA ventana adentro de la lectura, y no es una comodidad —la
+         pantalla las dibuja juntas, y con ventanas distintas dos cifras de la misma tarjeta hablarían de
+         dos períodos sin decirlo—. Es el mismo motivo por el que van en una sola transacción. Sin
+         auditoría no hay hallazgos que corregir: la lectura no los cuenta. */
+      await lecturaDeConversation(periodo.dias, noAudita === null),
       await (async () => {
         const lista = await senalesDeLaPantalla('conversation', ventana, textoDeConversation);
         return {
@@ -110,7 +100,10 @@ export async function GET(peticion: Request): Promise<Response> {
   );
 
   return ok({
-    ...pantalla,
+    ...tecnico,
+    /* Lo que dibujan los modos Estado y Agentes, armado en el servidor (CN1-15): cada tasa de 0 a 1 y cada «—»
+       con su motivo. Los bloques de abajo siguen viajando: los lee el modo Auditoría. */
+    pantalla: lectura.pantalla,
     senales,
     /* El comentario de la cabecera (AG15 de los agentes, `04`, AG-77): de reglas, sin modelo, y no depende del
        período elegido. `null` es la regla del silencio. */
@@ -141,18 +134,19 @@ export async function GET(peticion: Request): Promise<Response> {
        la cancelación se lee de las citas y no del auditor, así que existe aunque el freno esté
        puesto — y es justamente en esas empresas donde una pestaña con algo medido dice más que una
        pestaña vacía. */
-    cancelacion,
+    cancelacion: lectura.citas,
     /* La primera cifra de Lead Flow, y la que parecía bloqueada: no necesita la atribución del
        agente, porque pregunta si el CONTACTO contestó. Ver `indicadoresDelLead`. */
-    respuesta,
+    respuesta: lectura.lead,
     /* De dónde vinieron los que agendaron. Estaba guardado desde la `048` y no lo leía nadie: es la
        atribución que se llegó a proponer conseguir conectando el API de Meta. */
-    atribucion,
+    atribucion: lectura.atribucion,
     /* El consumo del precall (§10.6). La pantalla lo declaraba imposible: los dos campos NUMERICAL
        de porcentaje están vacíos, pero el porcentaje viene adentro del vocabulario de un RADIO. */
-    precall,
+    precall: lectura.precall,
     /* El sentimiento se escribía en cada análisis desde que el auditor existe y no lo leía nadie.
-       Va por flujo porque el §9.7 y el §10.7 lo piden como cifra del departamento. */
-    sentimiento,
+       Va por flujo porque el §9.7 y el §10.7 lo piden como cifra del departamento. Uno por agente y no uno
+       solo: son dos conversaciones distintas, y mezclarlas daría un promedio que no describe a ninguna. */
+    sentimiento: lectura.sentimiento,
   });
 }

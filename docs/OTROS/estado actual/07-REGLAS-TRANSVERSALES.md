@@ -414,12 +414,12 @@ llamada de las 18 dependa del 14.
 `hoy` = 1 día, `7d`, `30d` y `completo` = `DIAS_DE_TODO` = 3650 (`:52`). La pantalla abre en **30 días**
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
-Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:66`,
+Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:62`,
 `app/api/creative/route.ts:66`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:88`,
 `app/api/leads-portal/route.ts:53`).
 
 **El defecto que cierra la lista cerrada** está enunciado en `lib/negocio/periodo.ts:6-17` y convertido
-en prueba en `pruebas/codigo/155-el-periodo-de-conversation.test.ts:58`. Leer `?dias=` como número abre
+en prueba en `pruebas/codigo/155-el-periodo-de-conversation.test.ts:59`. Leer `?dias=` como número abre
 tres agujeros, **y los tres se ven bien en pantalla**:
 
 | Lo que llega | Qué pasa si no se valida | Qué se ve |
@@ -429,16 +429,16 @@ tres agujeros, **y los tres se ven bien en pantalla**:
 | `?dias=-5` | `now() - interval '-5 days'`: una ventana **en el FUTURO** | Cero filas, dibujadas como «no pasó nada» |
 
 Por eso `periodoDe()` (`lib/negocio/periodo.ts:188`) devuelve `null` ante cualquier clave desconocida y
-**`null` significa rechazar**: `app/api/auditoria/route.ts:67` lo convierte en un 400. La prueba exige
-el rechazo con `=== null` y prohíbe el `??` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:126`),
+**`null` significa rechazar**: `app/api/auditoria/route.ts:63` lo convierte en un 400. La prueba exige
+el rechazo con `=== null` y prohíbe el `??` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:127`),
 porque `periodoDe(x) ?? POR_OMISION` compila, se lee razonable y es exactamente el defecto. La única
 ausencia que cae en el valor por omisión es la real, la primera carga sin parámetro (`:79`).
 
 **Y la lista viaja entera hacia los dos lados.** La clave elegida vuelve en la respuesta
-(`app/api/auditoria/route.ts:129`) para que el botón encendido describa lo que el servidor contestó;
-los botones salen de `PERIODOS` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:181`); y la
+(`app/api/auditoria/route.ts:122`) para que el botón encendido describa lo que el servidor contestó;
+los botones salen de `PERIODOS` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:192`); y la
 lectura del navegador exige el período, sin valor por omisión propio (`lib/auditor/vista.ts:41`,
-forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:163`).
+forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:174`).
 
 **Y «completo» no puede leerse como historia.** Por eso las cifras traen `desde`, que es `min()` sobre
 las filas alcanzadas y no `now() - dias` (`lib/negocio/indicadoresDelLead.ts:268`,
@@ -761,7 +761,7 @@ dicen cuándo se mudan a una columna de la organización.
 (`lib/negocio/camposDelCrm.ts:307`) existe para que agregar un indicador no cambie lo que el closer ve.
 
 **28 · Un módulo que comparten el servidor y el navegador no puede importar nada que toque la base.**
-`lib/negocio/periodo.ts:25-34`, forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:231`.
+`lib/negocio/periodo.ts:25-34`, forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:242`.
 El defecto: `DIAS_DE_TODO` vivía en `indicadoresDeCitas.ts` y arrastró el cliente de PostgreSQL al
 paquete del navegador; `next build` lo rechazó. **Desde el 2026-09-26 son dos módulos:**
 `lib/negocio/tramosDelIcp.ts:27-32` («Por lo mismo que `periodo.ts`», `b04fb6c`), forzado por
@@ -1112,7 +1112,7 @@ código. Casos del período, todos medidos después de escritos:
 - El comentario del click-to-landing afirmaba un piso que no existía (`7d1bc8b`).
 - `lib/negocio/atribucionDelLead.ts:148-150` afirma usar «el mismo filtro de cita alcanzable que el
   booking rate», y desde el 2026-09-16 no es el mismo (§ 4). **Abierto el 2026-09-28.**
-- `lib/negocio/periodo.ts:48` y `pruebas/codigo/155-el-periodo-de-conversation.test.ts:97` dicen que la
+- `lib/negocio/periodo.ts:48` y `pruebas/codigo/155-el-periodo-de-conversation.test.ts:98` dicen que la
   fila más vieja del CRM es de 2026; medido el 2026-09-28, `min(alta_en_el_crm)` es **2025-08-08**.
   **Abierto** (sección final).
 
@@ -1148,7 +1148,7 @@ fecha del 2026-09-15 o anterior.
 3 de 1052 citas». La cadena vecina del panel sí está fechada (regla 18). **Sigue igual el 2026-09-28.**
 
 **Encontrado de paso — el comentario de las ventanas que afirma sin medir.** `lib/negocio/periodo.ts:48`
-dice que la fila más vieja es de 2026, y `pruebas/codigo/155-el-periodo-de-conversation.test.ts:97` lo
+dice que la fila más vieja es de 2026, y `pruebas/codigo/155-el-periodo-de-conversation.test.ts:98` lo
 repite. Medido el 2026-09-28: `min(alta_en_el_crm)` es **2025-08-08 13:11 UTC**. La conclusión («la
 ventana no recorta nada») es cierta; el hecho con el que se justifica, no. **Sigue igual.**
 

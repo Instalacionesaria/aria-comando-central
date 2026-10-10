@@ -148,7 +148,8 @@ graphify explain "consumoDelPrecall"
 ```
 
 Devuelve el nodo, su comunidad y sus aristas con archivo y línea: diez, entre ellas quién lo importa
-—la ruta (`app/api/auditoria/route.ts:43`) y su prueba
+—la ruta (`app/api/auditoria/route.ts:43@e1ccf44`; desde el 2026-10-10 la importa la lectura de la pantalla,
+`lib/negocio/lecturaDeConversation.ts:31`) y su prueba
 (`pruebas/base/153-consumo-del-precall.test.ts:24`)— y a quién llama (`datos()`,
 `lib/negocio/consumoDelPrecall.ts:161`). Dos de las diez vienen de este documento, que lo nombra, y
 una, la llamada a `campoPorNombre()`, apareció con el AST completo; el 2026-09-28 eran siete. Es la
@@ -175,7 +176,8 @@ El camino más corto entre dos nodos. **No es el camino de los datos**, y hay qu
 qué. Hoy contesta en 3 saltos y el del medio no es código: es la regla 1 de
 `07-REGLAS-TRANSVERSALES.md`, «El silencio», que nombra a los dos archivos. El 2026-09-28, antes de
 que esta carpeta entrara, también eran 3 saltos, por otro lado: los dos archivos importan
-`periodo.ts`. El camino real es otro: `app/api/auditoria/route.ts:40` importa `tasaDeCancelacion`, y
+`periodo.ts`. El camino real es otro: `app/api/auditoria/route.ts:40` importa `lecturaDeConversation`, que
+importa `tasaDeCancelacion` (`lib/negocio/lecturaDeConversation.ts:33`), y
 la pantalla lee esa ruta por HTTP: importa `leerLaPantalla` de `lib/auditor/vista.ts`
 (`components/conversation/PanelDeConversation.jsx:76`), que pide `RUTA = '/api/auditoria'`
 (`lib/auditor/vista.ts:22`). **Ese salto por HTTP no es una arista**: entre `lib/auditor/vista.ts` y

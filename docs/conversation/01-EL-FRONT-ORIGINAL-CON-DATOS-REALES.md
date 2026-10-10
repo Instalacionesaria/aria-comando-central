@@ -289,14 +289,21 @@ arma, **de 0 a 1**, con el motivo de cada «—». Tiene una mitad pura, probada
 porque los leen el modo Auditoría y el cerebro. El navegador multiplica por 100 en un solo lugar.
 
 **Estado** · La lectura, construida el 2026-10-10 (CN-1): `lib/negocio/lecturaDeConversation.ts`, con `armarConversation`
-pura, `icpDeLosAgendados`, `asistenciaPorTramo` y `hallazgosAbiertos`. La ruta, por construir (CN-2).
+pura, `icpDeLosAgendados`, `asistenciaPorTramo` y `hallazgosAbiertos`. La ruta, construida el 2026-10-10 (CN-2):
+`app/api/auditoria/route.ts` lee la lectura con la ventana del período y publica `pantalla`; los bloques de siempre
+—`cancelacion`, `respuesta`, `atribucion`, `precall`, `sentimiento`— salen de la misma lectura. El dibujo, por
+construir (CN-3).
 
 ### CN1-16 · El cerebro lee lo mismo
 
 **Qué es** · Las herramientas de hoy ya llaman a las mismas funciones. Se suma `conversation_en_cifras`, que lee la
-misma lectura y devuelve lo que la pantalla arma, con el motivo de cada «—» y los avisos que la pantalla no dibuja.
+misma lectura y devuelve lo que la pantalla arma, con el motivo de cada «—». Los avisos que la pantalla no dibuja
+los siguen trayendo las herramientas de cada función: `lead_flow`, `cancelacion_de_citas`, `consumo_del_precall`.
 
-**Estado** · Por construir (CN-2).
+**Estado** · Construido el 2026-10-10 (CN-2): `conversation_en_cifras`, en
+`lib/agentes/executive/adaptadores/conversation.ts`, lee `lecturaDeConversation` con el «audita» que resolvió la ruta
+del cerebro y devuelve su `pantalla`. `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts` la compara
+entera con la de la ruta, en los cuatro períodos.
 
 ### CN1-17 · Sin datos personales
 
@@ -341,7 +348,7 @@ dos. La página no desliza a lo ancho. Lo nuevo va en `app/conversation.css`.
 |---|---|---|
 | CN-0 | Esta carpeta, `docs/OTROS/futuro/lo-que-conversation-no-mide.md` y la medición de producción con el OK del usuario | **hecho el 2026-10-10**, revisado por el usuario |
 | CN-1 | El servidor: `lecturaDeConversation` con sus pruebas | **hecho el 2026-10-10**: `pruebas/codigo/250-lectura-de-conversation.test.ts` y `pruebas/base/250-lectura-de-conversation.test.ts`, 18 mutaciones muertas |
-| CN-2 | La ruta y el cerebro sobre la lectura | por hacer |
+| CN-2 | La ruta y el cerebro sobre la lectura | **hecho el 2026-10-10** |
 | CN-3 | El front sobre el marcado del prototipo, `app/conversation.css` y su prueba | por hacer |
 | CN-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
 | CN-5 | La comparación contra el prototipo, los anchos, la subida y la foto 04 | por hacer |

@@ -36,6 +36,7 @@ const RUTA = 'app/api/auditoria/route.ts';
 const PANEL = 'components/conversation/PanelDeConversation.jsx';
 const VISTA = 'lib/auditor/vista.ts';
 const PERIODO = 'lib/negocio/periodo.ts';
+const LECTURA = 'lib/negocio/lecturaDeConversation.ts';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA LISTA CERRADA
@@ -143,19 +144,29 @@ test('las CINCO cifras reciben la misma ventana, y sale del período', () => {
   /* Con una sola que se quede sin argumento, esa cifra sigue calculándose sobre catorce días
      mientras las otras cuatro cambian con el botón. Las cinco se dibujan en la misma pantalla, así
      que el resultado es una tarjeta donde dos números hablan de dos períodos distintos y nada lo
-     dice. Es la razón por la que las cinco van además en una sola transacción. */
-  const ts = leer(RUTA);
+     dice. Es la razón por la que las cinco van además en una sola transacción.
+     Desde CN-2 la ruta no las llama una por una: lee `lecturaDeConversation` con la ventana del período,
+     y la lectura se la pasa a las cinco y a las dos del ICP. Se miran los dos lados. */
+  assert.match(
+    leer(RUTA),
+    /lecturaDeConversation\(periodo\.dias,/,
+    'la lectura de la pantalla no recibe la ventana del período: se queda en otra sin que nada falle',
+  );
+  const lectura = leer(LECTURA);
+  const cuerpo = lectura.slice(lectura.indexOf('export async function lecturaDeConversation('));
   for (const fn of [
     'tasaDeCancelacion',
     'indicadoresDelLead',
     'atribucionDelLead',
     'consumoDelPrecall',
     'sentimientoPorFlujo',
+    'icpDeLosAgendados',
+    'asistenciaPorTramo',
   ]) {
     assert.match(
-      ts,
-      new RegExp(`${fn}\\(periodo\\.dias\\)`),
-      `${fn} no recibe la ventana del período: se queda en la de por omisión sin que nada falle`,
+      cuerpo,
+      new RegExp(`${fn}\\(dias\\)`),
+      `${fn} no recibe la ventana de la lectura: se queda en la de por omisión sin que nada falle`,
     );
   }
 });

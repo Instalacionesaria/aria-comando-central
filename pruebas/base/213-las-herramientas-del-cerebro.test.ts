@@ -202,6 +202,10 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
     arriba: ['aviso', 'completo', 'conCampo', 'detalleSePublica', 'dias', 'parcial', 'registraron', 'sinRama', 'sobre', 'tasa'],
   },
   sentimiento_por_flujo: { arriba: ['appflow', 'leadflow'] },
+  conversation_en_cifras: {
+    arriba: ['agentes', 'appointmentFlow', 'cifras', 'leadFlow', 'paneles', 'porCorregir'],
+    filas: [['agentes', ['cifra', 'clave', 'desglose', 'motivoDelSentimiento', 'sentimiento']]],
+  },
   dinero_del_mes: { arriba: ['acuerdos', 'cobrado', 'mes', 'nota', 'ventas'], argumentos: {} },
   economia_del_negocio: {
     arriba: ['aviso', 'cobrado', 'costoPorVenta', 'desde', 'gastoEntero', 'gastoHasta', 'hasta', 'inversion', 'mes', 'nota', 'retorno', 'ventas', 'ventasSinMonto'],

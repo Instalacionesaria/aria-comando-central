@@ -136,6 +136,9 @@ for (const { clave } of PERIODOS) {
     assert.deepEqual([precall.sobre, precall.registraron], [p.precall.sobre, p.precall.registraron]);
     const sentimiento = await herramienta('sentimiento_por_flujo', periodo);
     for (const flujo of Object.keys(p.sentimiento)) assert.equal(sentimiento[flujo].juzgadas, p.sentimiento[flujo].juzgadas, flujo);
+    // Lo que el front dibuja, entero y con sus motivos, con el mismo «audita» que la ruta (CN1-16).
+    const cifras = await herramienta('conversation_en_cifras', periodo, 'admin', { noAudita: p.noAudita, integraciones: null });
+    assert.deepEqual(cifras, p.pantalla, 'el cerebro y la pantalla de Conversation dieron otras cifras');
   });
 
   test(`Sales con «${clave}»: la cadena, el ciclo, el cierre por closer, las cifras, los motivos y la cancelación`, async () => {
