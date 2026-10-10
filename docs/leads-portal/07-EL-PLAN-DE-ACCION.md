@@ -287,7 +287,7 @@ apuntando **dentro del rango y a otra cosa**, que es la clase de cita rota que n
 | documento | cita | lo que quiso nombrar | al escribirse | dónde está hoy |
 |---|---|---|---|---|
 | `docs/sales/07-EL-PLAN-DE-ACCION.md:18` | línea 38 | la búsqueda de `lpPlanBtn` | 2026-09-20 (`8a0368a`), con `lpPlanBtn` ya en la 42; la 38 caía dentro del comentario de `lib/aios/period-controls.js:33-39@c4cf2a8`, y en ninguna versión del archivo fue la búsqueda | `aios-command-center_1.html:5711` |
-| `git show 1c55149:"docs/OTROS/estado actual/05-SALES.md"`, línea 39: la foto del 2026-09-15 (el corte del 2026-09-28 lo anota en `docs/OTROS/estado actual/05-SALES.md:201-207`) | línea 40 | el enganche de `lpPlanBtn` | 2026-09-14 (`93a1341`), con `lpPlanBtn` en la 41: citaba la cabecera del bloque | `aios-command-center_1.html:5711` |
+| `git show 1c55149:"docs/OTROS/estado actual/05-SALES.md"`, línea 39: la foto del 2026-09-15 (el corte del 2026-09-28 lo anota en `docs/OTROS/estado actual/05-SALES.md:201-207@51b5d25`) | línea 40 | el enganche de `lpPlanBtn` | 2026-09-14 (`93a1341`), con `lpPlanBtn` en la 41: citaba la cabecera del bloque | `aios-command-center_1.html:5711` |
 
 Ninguno de esos archivos se toca desde acá; queda anotado para que LP-7, que reapunta las citas de
 esta carpeta, sepa que las de al lado también apuntan mal. La de `docs/sales/` es la única dentro de

@@ -14,7 +14,7 @@
 // tres departamentos agregó una copia.
 //
 // La regla 9 del departamento de Sales lo dice con su commit: *«el filtro de citas "alcanzables y no
-// descartadas" es del sistema, no de una pantalla»* (`docs/OTROS/estado actual/05-SALES.md:474-481`).
+// descartadas" es del sistema, no de una pantalla»* (`docs/OTROS/estado actual/05-SALES.md:474-481@51b5d25`).
 //
 // ── SON DOS PREGUNTAS DISTINTAS, Y CONFUNDIRLAS ES EL DEFECTO FINO ──────────
 //

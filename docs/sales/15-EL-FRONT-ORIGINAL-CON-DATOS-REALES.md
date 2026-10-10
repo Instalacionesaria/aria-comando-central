@@ -329,7 +329,8 @@ vuelven los `data-leads`.
 tarjeta de abajo apila sus secciones. Lo nuevo va en `app/sales.css`.
 
 **Estado** · Construido el 2026-10-09 (SA-3) y mirado a 375 px con una pantalla sintética: las cifras de a dos, la
-tabla de closers desliza y la página no. La comparación medida contra el prototipo queda para SA-5.
+tabla de closers desliza y la página no. Medido otra vez en SA-5, a 1440, 1180, 1125 y 375 px: la página no desliza
+a lo ancho en ninguno, y a 375 px la cifra y la porción de cada eslabón van en un renglón.
 
 ### S15-17 · Los textos que pasan a ser falsos se corrigen en la misma etapa
 
@@ -365,7 +366,7 @@ con su regla; y las citas a la pantalla anterior quedaron fijadas al commit dond
 | SA-2 | La ruta y el cerebro sobre la lectura única | **hecho el 2026-10-09**: `pantalla` en la respuesta, `motivos_de_no_venta` en el cerebro, 11 mutaciones muertas |
 | SA-3 | El front sobre el marcado del prototipo, `app/sales.css` y la prueba 249 | **hecho el 2026-10-09**: 24 mutaciones muertas; mirado a 1440 y 375 px |
 | SA-4 | La revisión adversarial, las mutaciones y la suite entera | **hecho el 2026-10-09**: cuatro lentes; ver el anexo al final |
-| SA-5 | La comparación contra el prototipo, los anchos, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |
+| SA-5 | La comparación contra el prototipo, los anchos, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | **hecho el 2026-10-09**, salvo la revisión del usuario en producción: la letra (tamaño, peso y espaciado), los rellenos, los radios y los espacios, medidos en los dos, coinciden; la familia de la letra es la de la marca, Geist, como en Conversion, y sube cada renglón alrededor de 1 px; las cifras son más altas por la frase de debajo (S15-02); las seis columnas guardan la proporción del prototipo en todos los anchos, y a igual ventana son más anchas porque el armazón de la aplicación deja más lugar al contenido —el prototipo a 1440 px mide lo mismo que la pantalla a 1180—; la foto, reescrita |
 
 ---
 

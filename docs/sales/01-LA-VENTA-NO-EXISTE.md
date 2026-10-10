@@ -140,7 +140,7 @@ contestar «¿se presentó?». Sus tres condiciones, cada una con su motivo escr
 quedaba nula.
 
 > Y eso es exactamente el defecto que la regla 7 del departamento anticipa
-> (`docs/OTROS/estado actual/05-SALES.md:461-465`): **Sales no puede deducir la asistencia desde la salida.**
+> (`docs/OTROS/estado actual/05-SALES.md:461-465@51b5d25`): **Sales no puede deducir la asistencia desde la salida.**
 > El propio catálogo documenta por qué se sacó «No-show» de las opciones de `nurture`
 > (`lib/negocio/salidas.ts:183-196`): *«con eso, cualquier inferencia "salida distinta de `no_show`
 > ⟹ apareció" contaba ese caso como asistencia — un show rate inflado sin que nada fallara»*.
