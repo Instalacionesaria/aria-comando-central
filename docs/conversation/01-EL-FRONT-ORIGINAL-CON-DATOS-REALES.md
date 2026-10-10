@@ -277,7 +277,7 @@ herramienta del cerebro lo dice.
 | Appointment Flow · voz | «—», «Sin llamadas registradas.» | — | — |
 
 Debajo de las tarjetas, como en el prototipo, una línea «Qué corregir · {N} por resolver», con los patrones abiertos del
-auditor —uno por agente y código, como los agrupa Auditoría—, que lleva al modo Auditoría. Sin auditoría, «—» con su
+auditor —uno por código, como los agrupa Auditoría—, que lleva al modo Auditoría. Sin auditoría, «—» con su
 frase. **Sin cajones**: el detalle por agente vive en Auditoría.
 
 **Qué no es** · Las cifras de las tarjetas de texto son **del flujo, no del agente**: ningún mensaje dice qué agente
@@ -352,7 +352,8 @@ conversación. Del prototipo no se copia ningún nombre. La auditoría conserva 
 **Qué es** · A 375 px los paneles se apilan, las tarjetas de flujo y de agente van de a una y la fila de cifras de a
 dos. La página no desliza a lo ancho. Lo nuevo va en `app/conversation.css`.
 
-**Estado** · Las reglas, escritas el 2026-10-10 (CN-3) en `app/conversation.css`; la medida en el navegador, por hacer (CN-5).
+**Estado** · Las reglas, escritas el 2026-10-10 (CN-3) en `app/conversation.css`; medido el mismo día (CN-5): a 375 px nada
+desborda a lo ancho en los cuatro modos.
 
 ### CN1-19 · Los textos que pasan a ser falsos se corrigen en la misma etapa
 
@@ -363,7 +364,7 @@ dos. La página no desliza a lo ancho. Lo nuevo va en `app/conversation.css`.
 - Los comentarios de `app/inteligencia-estetica.css` que nombran a Conversation.
 - La foto `docs/OTROS/estado actual/04-CONVERSATION.md`, reescrita en CN-5.
 
-**Estado** · Los textos del código y de estos documentos, corregidos en CN-2 a CN-4; la foto 04, por reescribir en CN-5.
+**Estado** · Los textos del código y de estos documentos, corregidos en CN-2 a CN-4; la foto 04, reescrita en CN-5.
 
 ---
 
@@ -387,7 +388,7 @@ dos. La página no desliza a lo ancho. Lo nuevo va en `app/conversation.css`.
 | CN-2 | La ruta y el cerebro sobre la lectura | **hecho el 2026-10-10** |
 | CN-3 | El front sobre el marcado del prototipo, `app/conversation.css` y su prueba | **hecho el 2026-10-10**: `pruebas/codigo/251-la-pantalla-de-conversation.test.ts` |
 | CN-4 | La revisión adversarial, las mutaciones y la suite entera | **hecho el 2026-10-10**: cuatro lentes —servidor, front, textos y pruebas—; ver el anexo CN-4 |
-| CN-5 | La comparación contra el prototipo, los anchos, la subida y la foto 04 | por hacer |
+| CN-5 | La comparación contra el prototipo, los anchos, la subida y la foto 04 | **hecho el 2026-10-10**: medido contra el prototipo a 1440 px y sin desbordes a 1440, 1180, 1125 y 375 px en los cuatro modos; «por resolver» pasa a contar por código, como Auditoría; la foto 04, reescrita. Falta la revisión del usuario en producción |
 
 ---
 
@@ -419,7 +420,7 @@ Cada hallazgo se verificó contra el código antes de tocar nada.
 | «Entraron fuera de horario» decía algo que no se mide | el rótulo es «Primer mensaje fuera de horario», y así lo dicen CN1-12 y el cerebro |
 | un «—» decía «Sin contactos» o «Sin citas» con contactos o citas (la confirmación sin campo, el precall, fuera de horario sin zona, el origen sin agendados, la respuesta sin escritos o sin respuestas) | cuatro motivos nuevos —`sin_campo`, `sin_agendados`, `sin_escritos`, `sin_respuestas`— con su frase en CN1-02 |
 | las porciones del ICP no llevaban el piso | llevan el piso de 10, y el panel dice por qué falta |
-| «{N} por resolver» contaba hallazgos y no patrones | cuenta patrones, uno por agente y código, como Auditoría |
+| «{N} por resolver» contaba hallazgos y no patrones | cuenta patrones, uno por código, como los agrupa Auditoría (corregido en CN-5: contaba por agente y código, y un código con casos de los dos agentes sumaba dos) |
 | sin auditoría, el cerebro leía «0 por resolver» | la cifra viaja en «—» con `no_audita` |
 | «Confirmaron» cuenta contactos, no citas | se declara en CN1-10 y en el cerebro |
 | «desde el {fecha}» sin año, la cifra clave cortada a anchos intermedios, la frase de un paso sin `title`, «0 min» para medio minuto | la fecha lleva el año si no es el de hoy; el título cede; el `title`; un decimal bajo diez minutos |

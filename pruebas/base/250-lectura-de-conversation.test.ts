@@ -10,8 +10,8 @@
 //     mutaciones: sacar la ventana, sacar la cita, filtrar por calendario o por fecha, cortar con otros umbrales;
 //   · la asistencia por tramo: las citas de la ventana, ocurridas, alcanzables y de contactos no descartados, cada
 //     una en el tramo de su contacto — mutaciones: sacar cualquiera de las cuatro, o mandar todo a un tramo;
-//   · los patrones abiertos: un patrón por agente y código, y sólo los que no se resolvieron — mutación: contar
-//     hallazgos, o contar los resueltos;
+//   · los patrones abiertos: uno por código, como los agrupa Auditoría, y sólo los que no se resolvieron — mutación:
+//     contar hallazgos, contar por agente y código, o contar los resueltos;
 //   · la lectura entera: arma la pantalla con lo leído, y sin auditoría no cuenta patrones y el sentimiento lo dice.
 //
 // La organización `alfa` la comparten otras pruebas: se mide antes y después de sembrar, y se compara la diferencia.
@@ -118,7 +118,7 @@ test('la asistencia por tramo: citas de la ventana, ocurridas, alcanzables y de 
   );
 });
 
-test('los patrones abiertos: uno por agente y código, de los hallazgos que no se resolvieron', async () => {
+test('los patrones abiertos: uno por código, como Auditoría, de los hallazgos que no se resolvieron', async () => {
   await limpiar();
   const antes = await enAlfa(() => patronesAbiertos());
   const k = await unContacto();
@@ -127,17 +127,23 @@ test('los patrones abiertos: uno por agente y código, de los hallazgos que no s
      values ($1, $2, 'chat_post_agenda', true, false, null, 'amarillo', 'C250', 'debounce', 4) returning id`,
     [esc.org, k],
   );
-  // Dos hallazgos abiertos del mismo patrón, uno de otro patrón, y un patrón que sólo tiene un hallazgo resuelto.
-  for (const [patron, resuelto] of [['c250_patron', false], ['c250_patron', false], ['c250_otro', false], ['c250_resuelto', true]] as const) {
+  /* Dos hallazgos abiertos del mismo patrón —uno de cada agente: en Auditoría son UN patrón—, uno de otro patrón, y un
+     patrón que sólo tiene un hallazgo resuelto. */
+  for (const [agente, patron, resuelto] of [
+    ['chat_post_agenda', 'c250_patron', false],
+    ['chat_pre_agenda', 'c250_patron', false],
+    ['chat_post_agenda', 'c250_otro', false],
+    ['chat_post_agenda', 'c250_resuelto', true],
+  ] as const) {
     await esc.admin.query(
       `insert into negocio.hallazgos (org_id, contacto_id, analisis_id, agente, titulo, patron, correccion, evidencia_agente, severidad, categoria, resuelto_el)
-       values ($1, $2, $3, 'chat_post_agenda', 'C250', $4, 'Una corrección.', 'Una línea.', 'amarillo', 'comportamiento', $5)`,
-      [esc.org, k, a.rows[0]!.id, patron, resuelto ? new Date() : null],
+       values ($1, $2, $3, $4, 'C250', $5, 'Una corrección.', 'Una línea.', 'amarillo', 'comportamiento', $6)`,
+      [esc.org, k, a.rows[0]!.id, agente, patron, resuelto ? new Date() : null],
     );
   }
   const despues = await enAlfa(() => patronesAbiertos());
   await limpiar();
-  assert.equal(despues - antes, 2, 'contó hallazgos en vez de patrones, o un patrón resuelto');
+  assert.equal(despues - antes, 2, 'contó hallazgos en vez de patrones, por agente y código, o un patrón resuelto');
 });
 
 test('la lectura entera arma la pantalla con lo leído, y sin auditoría no cuenta patrones', async () => {

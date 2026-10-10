@@ -371,13 +371,14 @@ export async function asistenciaPorTramo(dias: number): Promise<Record<ClaveDeTr
 }
 
 /**
- * Los patrones del auditor que siguen abiertos, de todos los agentes: un patrón por agente y código, como los agrupa
- * el modo Auditoría (CN1-11). Sin ventana, como la pantalla del técnico.
+ * Los patrones del auditor que siguen abiertos, de todos los agentes: uno por código, que es como los agrupa el modo
+ * Auditoría (`agruparPorPatron`, `lib/auditor/vista.ts`) —contados por agente y código, un código con casos de los dos
+ * agentes sumaría dos acá y se vería uno allá—. Sin ventana, como la pantalla del técnico (CN1-11).
  */
 export async function patronesAbiertos(): Promise<number> {
   const fila = await datos()
     .selectFrom('hallazgos')
-    .select(sql<number>`count(distinct (agente, patron))`.as('n'))
+    .select(sql<number>`count(distinct patron)`.as('n'))
     .where('resuelto_el', 'is', null)
     .executeTakeFirst();
   return Number(fila?.n ?? 0);

@@ -590,7 +590,7 @@ una pantalla de departamento. `lib/aios/conversation.js` eran 559 líneas de las
 eran literales inventados, y entre ellos **un nombre de agente inventado, un nombre de pila en un
 saludo y las iniciales de un cliente real, repetidas en tres sitios**. El módulo
 entero se borró; el porqué está documentado en `components/views/ConversationView.jsx:12-33@6f3bdb5` y
-en `docs/OTROS/estado actual/04-CONVERSATION.md:320-331`, que además deja constancia de la
+en `docs/OTROS/estado actual/04-CONVERSATION.md:320-331@89d8c19`, que además deja constancia de la
 verificación posterior: «**Ningún nombre de persona ni de marca real quedó en el código de esta
 pantalla**», comprobado con grep el 2026-09-28, y «las marcas que sí se ven en pantalla —los
 nombres de campaña de la tabla de atribución— **vienen de la base**, no del código».
@@ -599,7 +599,7 @@ nombres de campaña de la tabla de atribución— **vienen de la base**, no del 
 base. Si está en el código, es un defecto.** El mismo archivo registra la regla hermana, con su
 precio: está prohibido nombrar un agente a mano en una ruta, porque en la plataforma anterior la
 base aceptaba cuatro agentes y el código validaba contra una lista de dos, y los patrones «no se
-podían cerrar ni medir su reincidencia» (`04-CONVERSATION.md:580-585`). Y una tercera, que también
+podían cerrar ni medir su reincidencia» (`docs/OTROS/estado actual/04-CONVERSATION.md:580-585@89d8c19`). Y una tercera, que también
 aplica acá: `pruebas/codigo/91-closer-y-setter.test.ts` prohíbe nombrar al proveedor en texto que se
 pinta **«porque lo van a ver clientes»**.
 

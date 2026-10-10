@@ -1,741 +1,459 @@
 # Conversation Intelligence
-> Corte: **2026-09-28**, medido contra producción entre las 18:07 y las 18:45 UTC, salvo el gasto de
-> Meta (23:56 UTC) y los sellos del barrido (23:58 UTC); las cifras principales se volvieron a
-> medir el 2026-09-29 a las 00:16–00:30 UTC con `now()` clavado en 18:07 UTC y dieron lo mismo.
-> Todas las ventanas son móviles (`now() - make_interval`), así que una cifra se reproduce pasando
-> el mismo instante, no repitiendo la consulta, y se mueve sola aunque no entre nada:
-> [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md), a las 22:06 UTC, cuenta 276 contactos, 269
-> escritos y 33 de 103 citas canceladas donde acá dicen 277, 270 y 37 de 106 (a las 23:58 la cohorte
-> seguía en 276), y las dos lecturas son ciertas a su hora, como explica el encabezado de
-> [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md). Cada afirmación lleva su archivo:línea o la consulta que
-> la produjo; lo que no se pudo verificar está dicho como pendiente, no omitido. Para ubicar lo
-> nombrado acá, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
+> Corte: **2026-10-10**, con el código de `89d8c19`. Las cifras de producción son de dos fechas y cada una lo
+> dice: las del **2026-10-10**, medidas para `docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` § 2 con
+> `scripts/supabase.mjs leer` (sólo lectura, sólo conteos); y las del **2026-09-28**, de la foto anterior, que no se
+> re-midieron. Para este corte no se leyó producción. La pantalla se miró en el navegador el 2026-10-10 (CN-5), en el
+> preview local y con una respuesta sintética armada con las cifras de esa medición: lo que «dibuja» cada bloque con
+> los datos de producción está deducido del código y de la medición. Las ventanas son rodantes (`now()` menos los días): lo que
+> depende de la hora vale para el día de su medición. Cada afirmación lleva su `archivo:línea`. Para ubicar lo
+> nombrado, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior —el corte del 2026-09-28,
+> con sus mediciones por hora y los avisos contados uno por uno— se lee con
+> `git show 2421d49:"docs/OTROS/estado actual/04-CONVERSATION.md"`.
 
-**Construido y funcionando. Tablero desde el 2026-09-15 (`13ce499`); el código casi no cambió desde
-entonces. Lo que cambió es el negocio que mide: casi dejó de moverse.**
+**El front del prototipo, con los datos reales, desde el 2026-10-10.** La pestaña vuelve al marcado de
+`aios-command-center_1.html:2865-2929`: tres paneles, el modo **Estado** con las dos tarjetas de flujo y el modo
+**Agentes** con las cuatro tarjetas de agente, y debajo una fila con lo que la pantalla anterior medía y el
+prototipo no tenía. El supervisor sigue entero en dos modos más, **Auditoría** y **Prompts**, con su estética de
+siempre. Todo sale de una sola lectura del servidor, `lecturaDeConversation`, con el piso de 10 en toda tasa, y cada
+«—» dice por qué en una línea: el resto lo explica el agente de Conversation. El titular del negocio cambió poco: a
+30 días entraron **58 contactos** y agendaron **35 (60 %)**; hubo **56 citas** y **ninguna con la asistencia
+marcada** en toda la historia (169 citas; medido el 2026-10-10). El sentimiento de Appointment Flow se apagó como la
+foto anterior anunció: **8 juzgadas** a 30 días, bajo el piso.
 
-Sigue dibujando las mismas **25 cifras** que la foto anterior —23 con número y 2 dibujadas como el
-hueco que son—, todas leídas de `negocio.*` y del auditor, sobre una ventana que se elige entre
-cuatro y que por omisión son 30 días (`lib/negocio/periodo.ts:109`). Pero **ningún anuncio de Meta
-gastó después del 13 de septiembre** (del 14 al 17 hay filas en 0,00; desde el 18, todas nulas: § 2),
-entraron al CRM **8 contactos en quince días** (4, 3 y 1 por semana, contra 175 y 89 las dos semanas
-anteriores) y en los últimos 7 días hubo **27 mensajes** en total, 21 de ellos salientes (a las
-18:07 UTC, sobre los 6 108 de la base). Tres consecuencias, medidas el 2026-09-28: la ventana por
-omisión describe ya casi sólo la primera quincena de septiembre (la mitad de su cohorte ya había
-entrado el 4); «Hoy» y «7 días» publican tasas sobre 1, 3 o 5 casos,
-porque el booking rate, la respuesta, la cancelación y el reagendamiento **no tienen piso**; y el
-sentimiento de Appointment Flow **se va a apagar solo el 2026-10-08**, cuando su denominador baje de
-10 sin que pase nada. Con el negocio quieto, además, **la pantalla no dice si su dato está al día**:
-un barrido caído se vería igual que un embudo sin entrada (riesgo 22). Y tres defectos nuevos,
-ninguno a la vista en la ventana por omisión: la atribución y el booking rate dejaron de contar lo
-mismo (sólo se nota en «Completo»: las filas suman 200 agendados y el titular dice 279), un
-hallazgo de LeadFlow se dibuja dentro de la tarjeta de AppFlow porque los patrones se agrupan sin
-mirar el agente, y dos
-comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2026-09-21 pide
-`auditor.ver`. Lo que Executive publica en nombre de este departamento sigue siendo inventado.
-
-> **Desde el corte del 2026-09-15**
+> **Desde el corte del 2026-09-28**
 >
-> - **`13ce499`** (2026-09-15, 16:56 UTC) — el tablero: selector de cuatro períodos, cadena cortada
->   en «respondieron» y bifurcación. Entró 28 minutos antes de la medición de la foto anterior, cuya
->   versión en disco ya lo describía (se reescribió en `bddb516` y `c8494e6`, el 2026-09-16).
-> - **`bddb516`** (2026-09-16) — dos correcciones de Lead Flow. El booking rate cuenta **cualquier**
->   cita (`lib/negocio/indicadoresDelLead.ts:237-239`) y declara aparte las congeladas
->   (`lib/negocio/indicadoresDelLead.ts:308-313`); y `desde` viaja con `mitad` y con un aviso que se
->   enciende cuando la fecha describe a un caso suelto (`lib/negocio/periodo.ts:147`), dibujado a la
->   vista en las dos tarjetas (`components/conversation/PanelDeConversation.jsx:505@6f3bdb5` y
->   `components/conversation/PanelDeConversation.jsx:618@6f3bdb5`).
-> - **`7f6235c`** (2026-09-16) — no habrá corte por anuncio acá: vive en
->   `lib/negocio/costoDelAnuncio.ts`, y el porqué quedó escrito en
->   `lib/negocio/atribucionDelLead.ts:76-93`.
-> - **`d8b542e`** (2026-09-17) — un rol de plataforma que guarda un prompt o resuelve una
->   intervención en otra empresa queda como autor nulo (`app/api/auditoria/prompts/route.ts:94`,
->   `lib/auditor/intervencion.ts:186-193`).
-> - **`1164984`** (2026-09-21, de la etapa 3 de Sales) — los predicados de cita se mudaron a
->   `lib/negocio/citasAlcanzables.ts` —`alcanzable`, `cancelada`, `descartado` y
->   `tieneCitaAlcanzable`, de `lib/negocio/citasAlcanzables.ts:54` a
->   `lib/negocio/citasAlcanzables.ts:135`—, y `tasaDeCancelacion` los instancia
->   (`lib/negocio/indicadoresDeCitas.ts:349-351`). Sales consume esa misma función
->   (`app/api/sales/route.ts:109@48ee16d`): la cancelación de las dos pantallas es un solo número.
-> - **`8dcb619`** (2026-09-21) — la sección `conversation` pide `auditor.ver`
->   (`lib/autorizacion/secciones.ts:326`), la misma capacidad que su ruta
->   (`app/api/auditoria/route.ts:55`). Antes la pestaña de permisos ofrecía la casilla a un rol que
->   después recibía 403.
-> - **`db120a1`** (2026-09-26, Leads Portal) — `ramaDelPrecall` se exporta
->   (`lib/negocio/consumoDelPrecall.ts:313-315`) y la ficha del portal la usa
->   (`lib/negocio/fichaDelLeadDelPortal.ts:30`): el vocabulario del precall dejó de ser sólo de acá.
-> - **No son de acá** `a6d8f48`, `60844ac` y `1e41fa7` (2026-09-22, «histórico de conversaciones»):
->   tocan `lib/fundaciones/`, `components/fundaciones/`, `app/api/fundaciones/`,
->   `app/api/tools/conversar/route.ts`, `lib/datos/esquema.ts` y cuatro pruebas. Son la charla de
->   una empresa con el agente de ICP & Oferta, no las conversaciones con leads que este departamento
->   supervisa. Comprobado con `git show --stat` de los tres.
-> - **Ningún commit tocó `components/conversation/` después de `bddb516`**
->   (`git log --since=2026-09-15`). Todas las cifras que cambiaron, cambiaron por los datos.
+> - **2026-10-01 · `4e9a242`** — E7 de la nueva estructura: la maqueta del Executive se va, y con ella las cifras
+>   inventadas que publicaba en nombre de Conversation (riesgo 1).
+> - **2026-10-02 · `624a941`** — E11: la cabecera del departamento; con ella a la vista, `app/departamentos.css`
+>   oculta el título y la bajada de las pantallas del prototipo.
+> - **2026-10-04 · `cd851b3`** — AG2 de los agentes: cada llamada del auditor deja su uso, y sus fallos van al Panel
+>   de Incidentes.
+> - **2026-10-05 · `13723a0`, `5f15c01`** — AG6 y AG7: el cerebro con sus herramientas de Conversation y su ruta,
+>   `app/api/auditoria/cerebro/route.ts`.
+> - **2026-10-06 · `8933e20`** — AG13: Conversation en la tabla común de señales; el detector traduce los hallazgos
+>   del auditor (`CONV-PATRON-ABIERTO`) y nace el plan de acción.
+> - **2026-10-06 · `fe727e5`** — AG15 (4): el comentario de la cabecera llega con la pantalla.
+> - **2026-10-10 · `1878f30`** — CN-0: el usuario decide volver al front del prototipo con los datos reales, y nacen
+>   `docs/conversation/00-LO-QUE-SE-HIZO.md`, `docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`
+>   (requisitos `CN1-01` a `CN1-19`) y `docs/OTROS/futuro/lo-que-conversation-no-mide.md`. Es la primera carpeta de
+>   requisitos propia de Conversation.
+> - **2026-10-10 · `e1ccf44`** — CN-1: `lib/negocio/lecturaDeConversation.ts`, con el piso en toda tasa.
+> - **2026-10-10 · `6f3bdb5`** — CN-2: la ruta y el cerebro sobre la lectura; herramienta nueva
+>   `conversation_en_cifras`.
+> - **2026-10-10 · `a6e6309`** — CN-3: la pantalla nueva y `app/conversation.css`; `#v-conversation` sale de
+>   `app/inteligencia-estetica.css` y la sección deja la estética de operación.
+> - **2026-10-10 · `89d8c19`** — CN-4: la revisión adversarial; cuatro motivos nuevos para un «—», el precall sobre
+>   sus clasificados y «Qué corregir» contando patrones (anexo CN-4 del doc 01). Falta CN-5: la comparación contra
+>   el prototipo, los anchos medidos y la subida.
 
 ---
 
 ## 1 · Qué pide el documento
 
-El documento funcional **no vive en el repositorio**. El código lo llama
-`AIOS_Arquitectura_Funcional_v0.2.md` (`components/conversation/PanelDeConversation.jsx:8@6f3bdb5`) y la
-carpeta de Leads Portal lo barrió como `CC_Arquitectura_Funcional.md`, en una carpeta local
-(`docs/leads-portal/11-LO-QUE-PIDE-EL-DOCUMENTO.md:3-6`). Los encabezados de abajo se cotejaron el
-2026-09-28 contra ese archivo (§8 empieza en su línea 419, §17 en la 1106). **Conversation no tiene
-carpeta de requisitos propia en `docs/`** —hay de Acquisition, Creative, Conversion, Sales y Leads
-Portal—, así que este resumen es la única traducción del documento que hay en el repositorio.
+El documento funcional no vive en el repositorio. El código lo llama `AIOS_Arquitectura_Funcional_v0.2.md`
+(`lib/autorizacion/secciones.ts:293`). El resumen de abajo es el de la foto anterior, cotejado el 2026-09-28 contra ese
+archivo local, y no se volvió a cotejar:
 
-**§8 — Misión.** Supervisar, analizar y mejorar las conversaciones automatizadas. Dos módulos, cada
-uno con agente de texto, agente de voz y Supervisor: **Lead Flow** (conseguir la cita) y
-**Appointment Flow** (que asista).
+- **§8 — Misión.** Supervisar, analizar y mejorar las conversaciones automatizadas. Dos módulos, cada uno con agente de
+  texto, agente de voz y Supervisor: **Lead Flow** (conseguir la cita) y **Appointment Flow** (que asista).
+- **§9 — Lead Flow.** KPI principal **Booking Rate** con su denominador (§9.3); un **trigger link** que separe enlace
+  enviado / abierto / landing visitada / formulario / cita (§9.5); lo consumible, con zona horaria, atribución,
+  calificación e historial con sentimiento (§9.6); veinte KPIs (§9.7).
+- **§10 — Appointment Flow.** KPI principal **Show Rate** (§10.3); ICP score y segmento, closer, confirmación,
+  cancelaciones, reagendamientos, VSL y precall (§10.5); tres ramas del precall (§10.6); dieciséis KPIs, seis de ellos
+  cortes del show rate (§10.7).
+- **§11 — Supervisor.** No conversa: evalúa. El prompt activo y su versión (§11.2), dos evaluaciones separadas
+  (§11.3), el vocabulario `issue_source` (§11.4), un resultado estructurado de diecisiete campos (§11.7) y un humano
+  que publica el prompt nuevo (§11.8).
+- **§12 a §17**: recomendaciones, cinco responsables, la medición de impacto (§14), lo que se entrega a Executive con
+  los datos faltantes (§15), y las pruebas de trazabilidad de Anuncio a Venta (§16.2).
 
-**§9 — Lead Flow.** Convertir contactos sin cita en citas, guiándolos a la landing sin agendar
-dentro de la conversación (§9.1). KPI principal **Booking Rate** con el denominador declarado
-(§9.3). §9.5 pide un **trigger link** que separe enlace enviado / abierto / landing visitada /
-formulario iniciado / completado / cita. §9.6 lista lo consumible: datos básicos con **zona
-horaria**, **atribución** (campaña, ad set, anuncio, UTM de primer y último toque), calificación
-previa e historial con **sentimiento**. §9.7 pide veinte KPIs, entre ellos los tiempos hasta el
-primer intento y la primera respuesta, agendamientos **por fuente y anuncio**, sentimiento, errores
-e intervención humana.
-
-**§10 — Appointment Flow.** Convertir citas en asistencias; KPI principal **Show Rate** (§10.3).
-§10.5 pide **ICP score y segmento ICP**, closer, tiempo entre agendamiento y cita, confirmación,
-cancelaciones, reagendamientos y el consumo del VSL y del precall «cuando exista tracking individual
-verificable». §10.6: tres ramas del precall (no vio / parcial / completo). §10.7: dieciséis KPIs,
-seis de ellos cortes del show rate (por ICP, anuncio, closer, anticipación, VSL, precall).
-
-**§11 — Supervisor.** No conversa: evalúa. §11.2 le exige el **prompt activo y su versión**; §11.3,
-dos evaluaciones separadas (ejecución del agente / calidad del prompt); §11.4, el vocabulario
-`issue_source` de seis valores; §11.6, cuatro categorías de error. **§11.7** exige un resultado
-estructurado de **diecisiete** campos —la foto anterior decía dieciséis y listaba diecisiete— y
-prohíbe guardar «únicamente un párrafo libre». §11.8: el supervisor propone y un humano publica la
-versión nueva del prompt.
-
-**§12** recomendaciones locales · **§13** cinco responsables con sus reportes y tareas · **§14**
-medición de impacto con seis estados en fila, de Propuesta a En medición, y un cierre con tres
-salidas, Validada/Iterar/Revertir (la foto anterior decía «ocho estados») · **§15** lo que se
-entrega a Executive, **datos faltantes** incluidos · **§16.2** la prioridad técnica inmediata: ocho
-pruebas de trazabilidad Anuncio → Landing → Sesión → VSL → Formulario → Contacto → ICP → Cita →
-Asistencia → Venta · **§17** los otros departamentos todavía sin especificación detallada.
+Lo que pidió el usuario el 2026-10-10 —la forma del prototipo con el dato, y es un tablero— está en
+`docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` § 1, con cinco decisiones suyas y seis respuestas por
+omisión (`CN1-P01` a `CN1-P06`; § 6 del mismo documento). Lo construido antes, con su historia, en
+`docs/conversation/00-LO-QUE-SE-HIZO.md`.
 
 ---
 
 ## 2 · Qué hay hoy en pantalla
 
-La sección es `conversation`, grupo «Inteligencia», con `auditor.ver` desde el 2026-09-21
-(`lib/autorizacion/secciones.ts:305-328@6f3bdb5`). La vista es `components/views/ConversationView.jsx:23` y
-todo el cuerpo es `components/conversation/PanelDeConversation.jsx` (989 líneas; 975 en la foto
-anterior). **Cuatro pestañas planas** (`components/conversation/PanelDeConversation.jsx:87-92@6f3bdb5`):
-Lead Flow · Appointment Flow · Auditoría · Prompts. Una sola lectura alimenta las cuatro, en una
-transacción: `GET /api/auditoria` (`app/api/auditoria/route.ts:80-110@e1ccf44`). El reloj recarga cada 60 s
-sólo con la pantalla a la vista (`components/conversation/PanelDeConversation.jsx:119`,
-`lib/cadencia.ts:91`).
+**La sección.** `lib/autorizacion/secciones.ts:308-330`: clave `conversation`, grupo «Inteligencia», capacidad
+`auditor.ver`. La vista es `components/views/ConversationView.jsx:23-31`, el envoltorio del prototipo
+`view-scroll cre-scroll`, **sin `estetica-op`** (CN1-01). El panel recarga cada 60 s sólo con la pestaña a la vista
+(`components/conversation/PanelDeConversation.jsx:117-119`, `lib/cadencia.ts:91`).
 
-**Cómo se midió lo de esta sección.** Con SQL de sólo lectura que copia los predicados de cada
-módulo (`scripts/supabase.mjs leer`); ni se ejecutó el módulo ni se abrió la pantalla, porque este
-trabajo no puede levantar un servidor. Las cifras son las que la consulta del módulo devolvería;
-**cómo se ven dibujadas no está verificado en un navegador**.
+**La ruta.** `app/api/auditoria/route.ts:54-155`, un solo `GET`: pide `auditor.ver` al portero
+(`app/api/auditoria/route.ts:55`), **rechaza** con 400 un período fuera de la lista (`app/api/auditoria/route.ts:63-64`)
+y, en una sola transacción, lee la pantalla del técnico, los prompts, `lecturaDeConversation`, las señales y el
+comentario de la cabecera (`app/api/auditoria/route.ts:77-101`). La respuesta suma `pantalla`, lo que el tablero arma
+(`app/api/auditoria/route.ts:108`); los bloques de siempre —`cancelacion`, `respuesta`, `atribucion`, `precall`,
+`sentimiento`— siguen viajando de la misma lectura (`app/api/auditoria/route.ts:139-153`), y de ellos el tablero toma
+sólo desde cuándo hay datos. Antes de CN-2 la ruta llamaba a cada función por separado
+(`app/api/auditoria/route.ts:80-110@e1ccf44`).
 
-── **LOS TRES CONTROLES QUE GOBIERNAN TODO LO DE ABAJO** ──
+**La lectura.** `lib/negocio/lecturaDeConversation.ts` tiene una mitad pura, `armarConversation`
+(`lib/negocio/lecturaDeConversation.ts:167-316`), y otra que lee: compone `indicadoresDelLead`, `tasaDeCancelacion`,
+`atribucionDelLead`, `consumoDelPrecall` y `sentimientoPorFlujo` con tres lecturas propias —el ICP de quienes agendaron,
+la asistencia por tramo y los patrones abiertos— (`lib/negocio/lecturaDeConversation.ts:402-419`). Todo lo de
+`pantalla` viaja de 0 a 1; el navegador multiplica por 100 en un solo lugar (`components/conversation/comun.jsx:78`).
 
-**1 · El período** (`components/conversation/PanelDeConversation.jsx:208-225`). Hoy · 7 días · 30
-días · Completo, dibujados desde `PERIODOS` (`lib/negocio/periodo.ts:83-96`), 30 por omisión
-(`lib/negocio/periodo.ts:109`). La clave viaja en `?periodo=` y lo que no está en la lista se
-rechaza con 400 (`app/api/auditoria/route.ts:63-64`). Sólo aparece en las dos pestañas de flujo
-(`components/conversation/PanelDeConversation.jsx:259@6f3bdb5`), y cambiarlo es una carga primera, no una
-recarga (`components/conversation/PanelDeConversation.jsx:175-181@6f3bdb5`).
+**Los cuatro modos** (`components/conversation/PanelDeConversation.jsx:50-55`): **Estado** y **Agentes** son el
+prototipo y llevan el segmentado (`components/conversation/PanelDeConversation.jsx:144-150`); **Auditoría** y
+**Prompts** son el supervisor de siempre, `Cuerpo` de `components/auditoria/PanelDeAuditoria.jsx`, dibujado dentro de
+un contenedor con `estetica-op` (`components/conversation/PanelDeConversation.jsx:170-184`), sin segmentado: sus
+listas cuentan toda la historia. El encabezado lleva «Conversation», la bajada del prototipo, el selector y, a la
+derecha, el «Plan de acción» real en los cuatro modos (`components/conversation/PanelDeConversation.jsx:130-152`). Con
+la cabecera del departamento a la vista, `app/departamentos.css:208` oculta el título y la bajada. Sin
+«Personalizado», sin la clave `mes` y sin «vs los 7 días previos»: no hay flechas (CN1-03, CN1-04).
 
-**2 · `Nota`** (`components/conversation/PanelDeConversation.jsx:346-367@6f3bdb5`): el porqué de cada cifra
-va detrás de una «i» que se abre al pasar el ratón o al tocarla; con `grave`, el texto queda a la
-vista. Lo grave se reserva para lo que no es un matiz sino un hueco.
+**Lo que dibuja**, en el orden del panel, y lo que daba el 2026-10-10 a 30 días —el período con que abre
+(`lib/negocio/periodo.ts:109`)—, deducido de la medición de ese día (no leído de la pantalla):
 
-**3 · Lo que falta, plegado** en un `<details>` nativo con el contador en el resumen
-(`components/conversation/PanelDeConversation.jsx:983-995@6f3bdb5`).
+| bloque | dónde | el 2026-10-10, a 30 días |
+|---|---|---|
+| Panel Lead Flow: «Contactos», con «desde el {fecha}», y «Agendó» con el booking rate | `components/conversation/PanelDeConversation.jsx:293-310` | **58**; **35 · 60 %** |
+| Panel Appointment Flow: «Citas totales» y «Asistieron» con la tasa | `components/conversation/PanelDeConversation.jsx:313-330` | **56**; «—», «Nadie marca la asistencia.» |
+| Panel «De qué está hecho el grupo que agendó»: Agendaron y Alto · Medio · Bajo con su porción, y «{N} sin calificar» en el título | `components/conversation/PanelDeConversation.jsx:337-353` | 35; alto 7 · medio 7 · bajo 6, 15 sin calificar (aproximado: ver § 4) |
+| **Estado** · tarjeta Lead Flow: «contacto a agenda» y la cadena Entraron → Les escribimos → Respondieron → Abrieron la landing → Agendaron | `components/conversation/PanelDeConversation.jsx:412-429` | 60 %; 58 · 52 (90 %) · 35 (60 %) · «—» «Sin enlace con seguimiento.» · 35 (60 %) |
+| **Estado** · tarjeta Appointment Flow: «agenda a asistencia», la cadena Citas → Confirmaron → Asistieron, las salidas, la asistencia por calidad y de dónde viene la cita | `components/conversation/PanelDeConversation.jsx:435-463` | «—»; 56 · no medido · «—»; Reprogramaron 7 (13 %), Cancelaron 15 (27 %); una sola línea «Nadie marca la asistencia.» (`components/conversation/PanelDeConversation.jsx:469-495`); el origen, no medido |
+| **Agentes** · cuatro tarjetas: Lead Flow y Appointment Flow, texto y voz | `components/conversation/PanelDeConversation.jsx:523-564` | Lead Flow · texto: **67 % de respuesta** (35 de 52), sentimiento «—» «Sin análisis en esta ventana.»; Appointment Flow · texto: la confirmación, no medida, y sentimiento «—» «Pocos casos para una tasa.» (8 juzgadas); las dos de voz: «—», «Sin llamadas registradas.» |
+| **Agentes** · «Qué corregir · {N} por resolver», que lleva al modo Auditoría | `components/conversation/PanelDeConversation.jsx:502-517` | **8 por resolver**: 7 patrones de AppFlow y 1 de LeadFlow (26 + 1 hallazgos abiertos) |
+| «Lo demás, en cifras»: Primera respuesta · Primer mensaje fuera de horario · Precall registrado · Molestos | `components/conversation/PanelDeConversation.jsx:570-583` | las tres primeras, no medidas; Molestos «—», «Pocos casos para una tasa.» (8 juzgadas entre los dos flujos) |
 
-**Alcance, medido el 2026-09-28:** **13 organizaciones, 11 activas** (el 15 eran 15 y 12); de las
-activas, **5 tienen llave de IA** (eran 4), **1 tiene el identificador del agente** y **1 tiene
-token de CRM**. Una sola organización —la de clave `aria`— tiene datos de negocio: **594 contactos,
-333 citas, 6 108 mensajes** (el 15: 584, 317 y 5 864). En las otras diez activas la pantalla dibuja
-el freno `POR_QUE_NO_AUDITA` (`lib/auditor/vista.ts:212-222`) y cifras vacías.
+**Las cuatro cifras de abajo** (CN1-12): **la primera respuesta** es la mediana en minutos, con piso de 10 respuestas
+y su propia frase, «Pocos casos para una mediana.» (`lib/negocio/lecturaDeConversation.ts:295-300`); **el primer
+mensaje fuera de horario** es la porción de primeros mensajes que salieron antes de las 8 o desde las 21 en la zona
+del contacto, sobre los escritos con zona (`lib/negocio/lecturaDeConversation.ts:303-306`); **el precall** es la
+porción de contactos con cita que registraron haber visto el video, **sobre los que tienen el campo clasificado**, la
+base del módulo (`lib/negocio/lecturaDeConversation.ts:308-312`, `lib/negocio/consumoDelPrecall.ts:232`); y **los
+molestos** juntan las conversaciones juzgadas de los dos flujos, con el piso sobre la suma
+(`lib/negocio/lecturaDeConversation.ts:207-218`). La atribución por fuente y por campaña salió de la pantalla: la
+responde el agente.
 
-**Y el volumen que cambió la lectura de todo lo de abajo.** Altas en el CRM por semana (lunes):
-08-10 **117** · 08-17 **90** · 08-24 **53** · 08-31 **175** · 09-07 **89** · 09-14 **4** · 09-21
-**3** · 09-28 **1** (a las 18:07 UTC del lunes). Citas por semana de inicio: 76 · 92 · **27** ·
-**6** · **3** desde la del 31 de agosto. En `negocio.metricas_de_anuncio` **no hay un solo día con
-gasto ni con impresiones después del 13**: 13 filas en 0,00, todas del 14 al 17, y 1 172 **nulas**
-—303 del 14 al 17 y las 869 que hay desde el 18—, y nulo es «el anuncio no entregó ese día», no un
-cero (`lib/negocio/recolectarAnuncios.ts:242-244`). Medido el 2026-09-28 a las 23:56 UTC, con el
-colector sincronizando hasta las 06:20 UTC de ese día. El barrido está vivo —el último contacto lo
-creó hoy a las 13:50 UTC—, así que el hueco es de leads y no de ingesta. **Por qué se pausó la pauta
-no está verificado**: no hay en la base nada que lo diga.
+**Las tarjetas de agente son cifras del flujo, no del agente** (CN1-11): ningún mensaje dice qué agente lo escribió y
+la confirmación es un campo del CRM. La de texto de Lead Flow publica la respuesta —respondieron sobre escritos—, con
+escritos, respondieron y agendaron debajo; la de Appointment Flow, la confirmación, con citas, confirmaron,
+reprogramaron y cancelaron (`lib/negocio/lecturaDeConversation.ts:265-291`). Las de voz no tienen dato
+(`lib/negocio/lecturaDeConversation.ts:199-205`). Las tarjetas no abren cajón (`app/conversation.css:88-89`).
 
-── **PESTAÑA LEAD FLOW** ──
+**«Qué corregir · {N} por resolver»** cuenta patrones abiertos, uno por código como los agrupa Auditoría
+(`lib/negocio/lecturaDeConversation.ts:378-385`), sin ventana, como la pantalla del técnico. Sin auditoría no cuenta:
+dice «La empresa no audita sus agentes.» (`lib/negocio/lecturaDeConversation.ts:292`). Ver riesgo 21.
 
-Módulos: `lib/negocio/indicadoresDelLead.ts` (448 líneas), `lib/negocio/atribucionDelLead.ts` (279)
-y `lib/auditor/sentimiento.ts` (200). Cohorte única: `alta_en_el_crm` dentro de la ventana
-(`lib/negocio/indicadoresDelLead.ts:197`). Todas las cifras, a 30 días y medidas el 2026-09-28;
-entre paréntesis, la de la foto anterior (2026-09-15 17:24 UTC; el booking rate, 2026-09-16 14:51
-UTC).
+**Los desvíos de rótulo**, declarados en CN1-02: «Contactos» por «Contactos sin cita»; «el grupo que agendó» por «el
+grupo que asistió», porque la asistencia está en 0; «Conversaron antes» por «Los rescató Lead Flow», porque se mide si
+hubo conversación antes de agendar y no qué agente la tuvo; «Citas» por «Agendados · todos»; «Entraron» por
+«Contactados sin cita»; cinco pasos en la cadena de Lead Flow y no cuatro; los tramos Alto, Medio, Bajo y Sin
+calificar de `tramoDelPuntaje`; «molesto» por «negativo»; «prompts y conversaciones marcadas», sin «datos inválidos»,
+que el auditor no detecta; y la cifra grande de cada agente de texto, que es del flujo.
 
-1. **Agendaron (§9.3)**, el titular (`components/conversation/PanelDeConversation.jsx:509-518@6f3bdb5`):
-   **50,2 % · 139 de 277** (50,4 % · 197 de 391). Sin piso: sólo es `null` con cohorte 0
-   (`lib/negocio/indicadoresDelLead.ts:306`). `agendaronSoloCongeladas` es **0** a 30 días —las
-   citas congeladas son de agosto y sus contactos ya salieron de la ventana— y 79 en «Completo».
-2. **La cadena** (`components/conversation/PanelDeConversation.jsx:521-550@6f3bdb5`), cada barra sobre la
-   cohorte: Entraron al CRM **277** · Les escribimos **270 (97,5 %)**, con la nota «7 no recibieron
-   ningún mensaje» · Respondieron **161 (58,1 %)**. Ahí termina, a propósito.
-3. **La bifurcación** (`components/conversation/PanelDeConversation.jsx:557-579@6f3bdb5`): **73** después de
-   contestar —«45,3 % de los que contestaron»— y **66** sin contestar nunca; 73 + 66 = 139,
-   descuadre 0 (el 15: 94 + 82 = 176, 44,3 %, antes de que `bddb516` cambiara el numerador).
-4. **Cuánto se tarda** (`components/conversation/PanelDeConversation.jsx:906-940@6f3bdb5`): Respondieron
-   **59,6 % · 161 de 270 escritos** (55,5 %); Tardamos en escribir **2,3 min**, «9 de 10 antes de
-   10,1 min», sobre 270 (2,8 min y **8,1 h**: la cola lenta de agosto salió de la ventana); Tardan
-   en contestar **5,4 min**, «9 de 10 antes de 6 h», sobre 160 (4,2 min y 11 h); Esperan respuesta
-   **109** (170).
-5. **De dónde vinieron · por fuente** (`components/conversation/PanelDeConversation.jsx:711@6f3bdb5`), por
-   cohorte descendente: **Paid Social 47,8 % · 121 de 253 · Direct traffic 92,3 % · 12 de 13 ·
-   Social media 50 % · 5 de 10** y «Otras» con 1 contacto sin fuente. Las tres pasan el piso de 10,
-   y el orden de las tasas se dio vuelta respecto del 15 —ver riesgo 10—.
-6. **Por campaña** (`components/conversation/PanelDeConversation.jsx:712@6f3bdb5`): «TOFU · 01-09-26» **43,3
-   % · 74 de 171**, «Bofu · Agendas · 28-08-26» **83,7 % · 36 de 43**, «TOFU · 31-08-26» **9,5 % · 2
-   de 21** —las tres, idénticas a las del 15, porque ninguna recibió contactos nuevos— y «Otras» con
-   **42 contactos y 27 agendados** (177 contactos el 15); 27 de esos 42 no traen campaña. Los
-   nombres completos vienen de la base; se abrevian acá.
-7. **Fuera de horario** (`components/conversation/PanelDeConversation.jsx:719-725@6f3bdb5`): **61 de 152**
-   primeros mensajes antes de las 8 o después de las 21 en la zona del contacto (75 de 212); 118 de
-   los 270 escritos no traen zona y no entran.
-8. **Sentimiento de Lead Flow** (`components/conversation/PanelDeConversation.jsx:825-828@6f3bdb5`): sólo el
-   aviso grave, porque `juzgadas = 0` en las cuatro ventanas. `chat_pre_agenda` tiene ahora **6
-   análisis** (5 el 15): 5 no auditables y 1 auditable del carril de mejora, que no produce
-   sentimiento (`lib/auditor/sentimiento.ts:89-93`).
+**Las bases de la cadena de Appointment Flow no son la misma** (CN1-10). «Citas» son citas ocurridas de contactos no
+descartados. **«Confirmaron» cuenta CONTACTOS** con cita en la ventana, descartados incluidos, y su porción es sobre
+los que respondieron el campo del CRM (`lib/negocio/lecturaDeConversation.ts:245-246`,
+`lib/negocio/indicadoresDeCitas.ts:245`): el conteo puede no cuadrar con el de las citas, y su barra no es una porción
+de ellas. «Asistieron» es sobre las citas con la asistencia marcada. La pantalla no lo dice; lo dice la herramienta
+del cerebro (`lib/agentes/executive/adaptadores/conversation.ts:134-136`).
 
-**«Hoy» y «7 días» ya no son ventanas con datos, y se dibujan igual.** A las 18:07 UTC: «Hoy» tiene
-**1 contacto**, y el titular publica **0 % · 0 de 1**; «7 días» tiene 3 y publica **66,7 % · 2 de
-3**, con la respuesta en **33,3 % · 1 de 3** y «Tardan en contestar» en 40,8 h sobre **un**
-contacto. Ninguna de esas cifras tiene piso. Y cuando «Hoy» queda en cero —pasó, por ejemplo, del 26
-a las 14:53 al 28 a las 13:37 UTC—, el único texto que lo explica es `respuesta.aviso`
-(`lib/negocio/indicadoresDelLead.ts:407-410`), que **sigue sin dibujarse**: en
-`components/conversation/PanelDeConversation.jsx` los únicos avisos de `respuesta` que se leen son
-`avisoDeLaVentana`, `avisoDelBooking` y `avisoDeLatencias`, comprobado con `grep`. La tarjeta queda
-con «Entraron al CRM 0 · 100 %», porque ese pie es un literal
-(`components/conversation/PanelDeConversation.jsx:527@6f3bdb5`); lo mismo «Citas del período»
-(`components/conversation/PanelDeConversation.jsx:634@6f3bdb5`).
+**Cada «—» dice por qué, con una frase de una lista cerrada.** Doce motivos (`lib/negocio/lecturaDeConversation.ts:48-60`),
+cada uno con su frase (`components/conversation/comun.jsx:28-41`), más el «—» mismo, la de la mediana, la de la
+primera carga y la del fallo: dieciséis frases en `FRASE` (`components/conversation/comun.jsx:8-25`), las mismas de la tabla de CN1-02, y
+`pruebas/codigo/251-la-pantalla-de-conversation.test.ts` exige que coincidan en las dos direcciones. Un cero es un
+cero medido. No se dibujan avisos, notas de cada cifra ni la caja de lo que falta (CN1-05): viajan en la respuesta y
+en las herramientas del cerebro.
 
-── **PESTAÑA APPOINTMENT FLOW** ──
+**Ventanas y piso.** Hoy · 7 días · 30 días · Completo (`lib/negocio/periodo.ts:83-96`), **rodantes** (`CN1-P01`), sin
+comparación contra la ventana anterior. Tres poblaciones en una pantalla, todas con la misma cantidad de días: la
+COHORTE de contactos por `alta_en_el_crm` para Lead Flow, el ICP, el origen y las cifras de abajo; las CITAS ocurridas
+en la ventana, alcanzables y de no descartados, para Appointment Flow (`lib/negocio/lecturaDeConversation.ts:344-358`);
+y los ANÁLISIS del auditor por `analizado_el` para el sentimiento (`lib/auditor/sentimiento.ts:89-93`). «Qué corregir»
+no tiene ventana. **Toda tasa lleva el piso de 10 sobre su denominador** (`CN1-P02`): `tasa`
+(`lib/negocio/lecturaDeConversation.ts:142-146`) sobre `PISO_DE_UNA_TASA` (`lib/negocio/indicadoresDeCitas.ts:329`),
+también el booking rate, la respuesta, la cancelación y el reagendamiento, que los módulos publican sin él; las
+porciones del ICP lo llevan sobre el total de quienes agendaron (`lib/negocio/lecturaDeConversation.ts:175-185`), y el
+sentimiento sobre los juzgados (`lib/negocio/lecturaDeConversation.ts:155-164`). El piso se aplica en la lectura, no
+en las funciones, que comparten otras pantallas.
 
-Módulos: `lib/negocio/indicadoresDeCitas.ts` (551 líneas) y `lib/negocio/consumoDelPrecall.ts`
-(304), con los predicados de `lib/negocio/citasAlcanzables.ts` (220). Ventana: citas con `inicio_el`
-en el período **y ya ocurridas**, sin congeladas ni descartados.
+**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:120`) con las
+señales que trae la ruta (`components/conversation/PanelDeConversation.jsx:141`): el plan de la pasada de la mañana,
+de 7 días con «7 días» y de 30 con los otros tres (`app/api/auditoria/route.ts:76`). El detector tiene una sola regla,
+`CONV-PATRON-ABIERTO` (`lib/agentes/detectores/conversation.ts:36-49`): traduce los hallazgos abiertos del auditor,
+no mide. La tarjeta de señales sigue en el modo Auditoría.
 
-9. **El titular es un hueco** (`components/conversation/PanelDeConversation.jsx:620-625@6f3bdb5`): «—»,
-   «asistencia · 0 de 106 cerradas». `negocio.citas.asistio` está en **0 de 333** y `showed` en **0
-   de 333**, comprobado por las dos vías.
-10. **La cadena** (`components/conversation/PanelDeConversation.jsx:628-657@6f3bdb5`): Citas del período
-    **106** (127), con la nota de los descartados —**88 citas, que cancelan el 89,8 %** (78 y 91
-    %)—; Siguieron en pie **69 (65,1 %)**; Se presentaron «—», barra vacía, «nadie lo registró».
-11. **Las salidas** (`components/conversation/PanelDeConversation.jsx:659-681@6f3bdb5`): Canceladas **37 ·
-    34,9 %** (52 · 40,9 %); Reagendadas **14 · 13,2 %** (11 · 8,7 %). Con los descartados mezclados
-    la tasa sería **59,8 % sobre 194**: casi la mitad de las citas de la ventana son de contactos
-    que la empresa ya había rechazado.
-12. **Confirmaron** (`components/conversation/PanelDeConversation.jsx:947-956@6f3bdb5`): **77,6 % · 59 de 76
-    contactos** (71,4 % · 65 de 91), sobre 173 contactos con cita. Sigue sin excluir descartados
-    (`lib/negocio/indicadoresDeCitas.ts:266-273`): 82 de esos 173 lo son, y 8 de los 76 que
-    contestaron.
-13. **Se reserva con** (`components/conversation/PanelDeConversation.jsx:957-962@6f3bdb5`): **2,4 días**
-    (mediana 57,2 h), «sobre 105 de 106». La cobertura que el 15 se degradaba (96 de 127) volvió a
-    ser casi completa porque las citas sin fecha de reserva salieron de la ventana.
-14. **No-show** (`components/conversation/PanelDeConversation.jsx:963-970@6f3bdb5`): **2 reportados**,
-    conteo y no tasa. `negocio.resultados` tiene **7 filas en total y la última es del 2026-09-09**:
-    nadie cerró un intento en diecinueve días.
-15. **Precall · Registró reproducción** (`components/conversation/PanelDeConversation.jsx:782-787@6f3bdb5`):
-    **19,6 % · 10 de 51 clasificados** (19,7 % · 12 de 61). De 65 contactos que llegaron a la
-    llamada, 5 sin campo, 41 sin reproducción, 7 parcial, 3 completo y **9 sin rama** (`-20%` 4,
-    `Accede: sin reproducir` 3, `Clic a link` 2): los sin rama son **tres veces** los que
-    completaron. El desglose fino sigue oculto por el piso (`lib/negocio/consumoDelPrecall.ts:250`)
-    y el aviso grave está encendido con sus tres partes.
-16. **Sentimiento de Appointment Flow** (`components/conversation/PanelDeConversation.jsx:831-843@6f3bdb5`):
-    **Quedaron molestos 26,1 % · 6 de 23**, neutrales 14, positivas 3 (25 % · 5 de 20). A 7 días son
-    3 juzgadas y la proporción no se publica.
-17. **Los avisos graves de las citas** (`components/conversation/PanelDeConversation.jsx:685-686@6f3bdb5`),
-    los dos encendidos: la asistencia («en ninguna de las 106 citas de los últimos 30 días») y las
-    congeladas, que bajaron de **77 a 14** en la ventana.
+**El cerebro.** Seis herramientas en `lib/agentes/executive/adaptadores/conversation.ts` —`auditoria_de_agentes`,
+`lead_flow`, `atribucion_del_lead`, `consumo_del_precall`, `sentimiento_por_flujo` y `conversation_en_cifras`— y
+`cancelacion_de_citas`, que vive con las de Sales (`lib/agentes/executive/adaptadores/sales.ts:144`).
+**`conversation_en_cifras`** (`lib/agentes/executive/adaptadores/conversation.ts:127-154`) lee la misma lectura con el
+«audita» que resolvió la ruta del cerebro y devuelve su `pantalla` entera, con el motivo de cada «—»; la compara con
+la de la ruta, en los cuatro períodos, `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:140`. Las
+demás traen los avisos que la pantalla no dibuja. La frescura de las cinco tareas de las que vive la pantalla la da
+`frescura` (`lib/agentes/executive/adaptadores/plataforma.ts:37`).
 
-**«30 días» y «Completo» ya no son idénticas.** El 15 devolvían las mismas 127 citas; hoy «Completo»
-son **142 citas, 56 canceladas (39,4 %)** contra 106 y 34,9 %, porque la ventana de 30 días ya
-empieza el 29 de agosto y la cita alcanzable más vieja sigue siendo del 24. «7 días» publica **40 %
-· 2 de 5** y «Hoy» **0 % · 0 de 1**: `tasaDeCancelacion` sólo devuelve `null` con cero citas
-(`lib/negocio/indicadoresDeCitas.ts:449`), y el reagendamiento igual
-(`lib/negocio/indicadoresDeCitas.ts:462`). Como Sales consume la misma función, su cifra de cabecera
-hereda los mismos números.
+**Lo que se midió en el navegador (CN-5, 2026-10-10).** Contra el prototipo servido en local, a 1440 px: los paneles
+guardan la proporción (303 · 303 · 503 px contra 315 · 315 · 523, con 1144 px de ancho útil contra 1188), las filas de
+las cadenas miden lo mismo (42 y 31 px contra 41 y 30) y los tamaños de letra son iguales. Los paneles miden 13 px
+más alto porque la línea de debajo de una cifra se parte en dos renglones, y el selector es más ancho porque tiene
+cuatro modos y cuatro períodos. A 1440, 1180, 1125 y 375 px, en los cuatro modos, nada desborda a lo ancho y ninguna
+cifra queda cortada; las reglas de los anchos están en `app/conversation.css:102-122`. Las pruebas: `pruebas/codigo/250-lectura-de-conversation.test.ts`,
+`pruebas/base/250-lectura-de-conversation.test.ts` y `pruebas/codigo/251-la-pantalla-de-conversation.test.ts`.
 
-── **PESTAÑA AUDITORÍA (el Supervisor del §11)** ──
-
-`lib/auditor/pantalla.ts` (394 líneas) y `components/auditoria/PanelDeAuditoria.jsx` (520). Las
-tarjetas cuentan **toda la historia** (`lib/auditor/pantalla.ts:220-266`) y por eso no hay
-segmentado en esta pestaña.
-
-18. **AppFlow**: **64 análisis, 50 auditables · 30 verdes / 17 amarillos / 3 rojos**, 14 sin poder
-    juzgar y **3 intervenciones abiertas** (42 análisis, 35 auditables, 17/16/2 el 15). Veintidós
-    análisis en trece días; el último, hoy a las 06:18 UTC.
-19. **LeadFlow**: **6 análisis, 1 auditable (amarillo)**, 5 sin poder juzgar (5, 0 y 5 el 15).
-20. **Patrones abiertos: 6, con 24 casos, ninguno resuelto** (5 con 20 el 15), ordenados por
-    cantidad y, a igual cantidad, por el caso más reciente (`lib/auditor/vista.ts:106-138`):
-    `ignora_pedido_reagendar` ×10 (rojo), `recordatorio_fecha_inconsistente` ×5 (rojo),
-    `no_lee_confirmacion_previa` ×4 (amarillo), `presiona_asistencia_con_duda` ×3 (rojo),
-    `dato_faltante` ×1 y `no_leyo_a_medias` ×1 (amarillos). Entraron cuatro hallazgos desde el
-    corte, el último el 2026-09-21. **Uno es de
-    LeadFlow y se dibuja en la tarjeta de AppFlow**: ver riesgo 21.
-21. **La lista de conversaciones** tiene tope de 50 (`lib/auditor/pantalla.ts:51`) y **hoy corta**:
-    hay 70 análisis. AppFlow muestra 44 de 64 y lo dice. LeadFlow muestra sus 6 de 6 y **también
-    dice que el tope cortó la lista**, porque `hayMas` es uno solo para las dos tarjetas
-    (`lib/auditor/pantalla.ts:405`, `components/auditoria/PanelDeAuditoria.jsx:152`).
-
-── **PESTAÑA PROMPTS** ──
-
-22. Contador «2» (`components/conversation/PanelDeConversation.jsx:248-250@6f3bdb5`):
-    `negocio.prompts_del_agente` y `negocio.versiones_del_prompt` siguen en **0 filas**. El panel
-    aclara que ese prompt sería «de referencia» y no el que corre en el CRM
-    (`components/auditoria/PanelDeAuditoria.jsx:452`).
-
-── **LOS AVISOS, CONTADOS HOY** ──
-
-De los nueve huecos de aviso que midió el rediseño, a 30 días siguen encendidos **siete**, los
-mismos del 15: `respuesta.aviso` (que no se dibuja), `avisoDeLatencias` (detrás de un ícono), el de
-la atribución, el de las congeladas, el de la asistencia, el del precall y el del sentimiento de
-LeadFlow. Callan el de la confirmación y el del sentimiento de AppFlow. Los tres que agregó
-`bddb516` —`avisoDelBooking` y los dos `avisoDeLaVentana`— callan a 30 días; en «Completo» se
-encienden los dos de Lead Flow, y el de la cola dice que la mitad de los contactos entró después del
-28 de agosto de 2026. El de las citas calla en los cuatro períodos (proporción 0,70 a 30 días y 0,68
-en «Completo», contra un umbral de 0,25).
-
-Los porcentajes en pantalla llevan **punto** y no coma: `porciento`
-(`components/conversation/PanelDeConversation.jsx:413-416@6f3bdb5`) interpola sin `Intl` aunque su docblock
-prometa coma. Cosmético, sin cambios desde el 15.
+**Quién la ve.** Los 3 roles de producción llevaban `auditor.ver` el 2026-09-28; no re-medido. Editar un prompt pide
+además `auditor.editar`.
 
 ---
 
-## 3 · Lo que era maqueta, y qué la reemplazó
+## 3 · Lo que era maqueta y qué la reemplazó
 
-── **LO QUE SE BORRÓ** ──
+**La maqueta se fue el 2026-09-10 y su forma volvió el 2026-10-10.** `lib/aios/conversation.js` se borró en `f0f09b7`:
+559 líneas, unas 180 de literales inventados —un embudo, cuatro agentes con nombre de persona, quince líneas de
+diálogo y seis «incidencias» que imitaban a un supervisor—. La reemplazó un tablero propio de cuatro pestañas planas
+con la estética de operación (`components/conversation/PanelDeConversation.jsx:87-92@6f3bdb5`), con el porqué de cada
+cifra detrás de un ícono y una caja de lo que falta por flujo (`components/conversation/PanelDeConversation.jsx:95@6f3bdb5`).
+El 2026-10-10 volvió el marcado del prototipo y se quedó el dato:
 
-`lib/aios/conversation.js` **ya no existe** —se borró el 2026-09-10, en `f0f09b7`; hoy `lib/aios/`
-tiene 8 archivos (13 el 15) y ninguno es ése—. Eran 559 líneas, ~180 de literales inventados: un
-embudo completo, cuatro agentes con nombre de persona, quince líneas de diálogo de clientes que no
-existen, seis «incidencias» que imitaban a un supervisor de IA y catorce líneas de prompt sugerido.
-Entre esos literales había un nombre de agente inventado, un nombre de pila en un saludo y las
-iniciales de un cliente en tres sitios; todo está documentado en
-`components/views/ConversationView.jsx:12-33@6f3bdb5`. **Ningún nombre de persona ni de marca real quedó en
-el código de esta pantalla**: verificado con `grep` el 2026-09-28 sobre `components/conversation/`,
-`components/auditoria/` y `components/views/ConversationView.jsx`, y los dos únicos aciertos
-(`components/views/ConversationView.jsx:26@6f3bdb5` y `components/views/ConversationView.jsx:28@6f3bdb5`) están
-dentro del comentario que explica que se fueron. Las marcas que sí se ven en pantalla —los nombres
-de campaña de la tabla de atribución— **vienen de la base**, no del código.
+| lo que dibujaba el prototipo | qué hay hoy |
+|---|---|
+| Selector Estado · Agentes, «Plan de acción» sin oyente, «vs los 7 días previos», Hoy / 7 días / 30 días con la clave inválida `mes`, y «Personalizado» | Estado · Agentes · Auditoría · Prompts; el plan real; el segmentado de los cuatro períodos del sistema; sin comparación ni rango libre |
+| Tres paneles con cifras a mano, y «De qué está hecho el grupo que asistió», cuyos asistentes por ICP sumaban 74 contra 138 | los tres paneles con la cohorte, las citas y el ICP de quienes agendaron, por `tramoDelPuntaje` |
+| La cadena de Lead Flow de cuatro pasos y la de Appointment Flow de tres, con sus tres bloques | cinco pasos en Lead Flow, con la landing en «—»; la de Appointment Flow con sus bloques, la asistencia en «—» |
+| Cuatro agentes con nombre de persona; el de texto de Lead Flow, 58 % de agendados sobre 346 cuando la cadena decía 121 | cuatro tarjetas sin nombres, con cifras del flujo declaradas como tales; las de voz en «—» |
+| «Qué corregir» con una lista de correcciones y cajones con chats y prompts | «Qué corregir · {N} por resolver», que lleva a Auditoría; sin cajones (`CN1-P06`) |
 
-── **LO QUE EXECUTIVE TODAVÍA INVENTA EN NOMBRE DE ESTE DEPARTAMENTO** ──
+Las cifras del prototipo están en `docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` § 1. **Ningún nombre
+del prototipo se copió** (CN1-17): los tres nombres que la maqueta tenía —un agente, un saludo y las iniciales de un
+cliente— no aparecen en `components/conversation/`, `components/auditoria/`, `components/views/ConversationView.jsx`,
+`app/conversation.css` ni `lib/negocio/lecturaDeConversation.ts` (`grep` del 2026-10-10). El comentario que los
+nombraba para explicar que se habían ido salió de la vista en CN-3; sigue en la historia
+(`components/views/ConversationView.jsx:12-33@6f3bdb5`).
 
-Ninguno de los cuatro cambió desde el 15 (`git log --since=2026-09-15` sobre los tres archivos sólo
-muestra `0add4cc`, que cambió cómo se cierra el cajón en `lib/aios/executive-panel.js` y no tocó
-ningún dato). Los tres módulos siguen arrancando desde `lib/aios/index.js:29-37@c4cf2a8`. Es la única
-pantalla que habla por Conversation: `grep` de «Lead Flow», «agente de voz» y «show rate» en
-`components/`, `app/` y `lib/aios/`, fuera de `components/conversation/` y `components/auditoria/`,
-el 2026-09-28, sólo acierta en `lib/aios/executive.js` y en dos comentarios de la ruta de esta misma
-pantalla (`app/api/auditoria/route.ts:135` y `app/api/auditoria/route.ts:140`). En `lib/negocio/`
-hay más aciertos, todos comentarios o un texto de Sales (`lib/negocio/huecosDeSales.ts:89`) que no
-habla por este departamento.
+**Lo que Executive inventaba en nombre de este departamento ya no existe**: la maqueta del Executive se retiró el
+2026-10-01 (`4e9a242`), y con ella el «58 % de efectividad en Lead Flow», el hallazgo sobre 22 llamadas de un agente
+de voz sin una sola fila y el embudo «Conversaciones» (la foto anterior los listaba en su § 3).
 
-**3.1 · La tarjeta de Conversation** (`lib/aios/executive.js:190-193@c4cf2a8`): «58 % de efectividad en Lead
-Flow · +3 pts» y «El agente de voz no reconfirma día y hora en 14 de 22 llamadas». El 58 % se podría
-reemplazar hoy por el booking rate (50,2 %, 139 de 277) o por la respuesta (59,6 %, 161 de 270); el
-«+3 pts» no, porque no hay línea base; y el hallazgo de voz es indefendible en cualquier forma:
-`negocio.llamadas` tiene **0 filas** y ninguna columna de transcripción, medido el 2026-09-28.
-
-**3.2 · El paso «Conversaciones» del embudo** (`lib/aios/executive.js:15-21@c4cf2a8`, y el paso en
-`lib/aios/executive.js:24@c4cf2a8`): 41 / 268 / 1072 / 2787 / 6840, y con esa serie se elige el cuello de
-botella que se pinta en rojo (`lib/aios/executive.js:38@c4cf2a8`). Reemplazable a medias: contactos,
-escritos y agendados se miden hoy (277, 270, 139 a 30 días); «Visitas landing» y «Citas asistidas»
-no tienen dato.
-
-**3.3 · Las preguntas sugeridas** (`lib/aios/executive-chat.js:22@c4cf2a8`) caen las tres en la respuesta
-`default` (`lib/aios/executive-chat.js:30-39@c4cf2a8`), que habla de la landing y del móvil. Sólo «¿Qué
-agente necesita ajuste?» tendría respuesta medida: AppFlow, 17 amarillos y 3 rojos sobre 50
-auditables, 23 casos abiertos en 6 patrones.
-
-**3.4 · La tarjeta de cambio «Video de bienvenida en la página de gracias»**, «Solo 54 % le da
-play», con Conversation como fuente (`lib/aios/executive-panel.js:36-38@c4cf2a8`; la foto anterior la
-ubicaba cinco líneas más arriba, en la 31-33, antes de `0add4cc`). No reemplazable: el §14 no
-existe en ninguna forma.
-
-── **TEXTOS FIJOS DENTRO DE LA PROPIA PANTALLA** ──
-
-- **«3 citas de 1052 en todo un año»**, fechado «en septiembre de 2026», en el renglón plegado de la
-  asistencia (`components/conversation/PanelDeConversation.jsx:131@6f3bdb5`). Bien resuelto: es una medición
-  fechada de la subcuenta del CRM, que esta base no puede reproducir (tiene 333 citas).
-- **«el CRM tiene ese campo en 3 de 1052 citas»**, **sin fecha**, dentro del aviso grave de la
-  asistencia (`lib/negocio/indicadoresDeCitas.ts:514-516`), visible hoy en las cuatro ventanas. Es
-  el único de los tres sin fecha y el único a la vista. Desde esta base: `showed` en 0 de 333 y
-  `noshow` en **15 de 333** (3 el 15).
-- **«las 316 citas que había al medirlo»**, detrás del ícono del no-show
-  (`components/conversation/PanelDeConversation.jsx:969@6f3bdb5`). Fechado; hoy son 333.
-- **Los tres valores sin rama nombrados a mano** en el aviso del precall
-  (`lib/negocio/consumoDelPrecall.ts:285-286`). Hoy siguen coincidiendo —los 9 sin rama son
-  exactamente esos tres valores—, pero el día que el CRM agregue un cuarto el conteo lo contará y la
-  frase no.
-- **El mapa `RAMA`** (`lib/negocio/consumoDelPrecall.ts:94-102`) y su censo fechado el 2026-09-14
-  (`lib/negocio/consumoDelPrecall.ts:69-72`). Censo del 2026-09-28 sobre 222 contactos:
-  `Sin abrir (0%)` 130 · `Nada` 50 · `76–100%` 12 · `1–25%` 11 · `-20%` 6 · `51–75%` 4 ·
-  `Accede: sin reproducir` 3 · `26–50%` 2 · `Clic a link` 2 · `40-60%` 2. **Los mismos diez
-  valores**; ninguno nuevo.
-- **Los nombres de campo como constantes** —`CAMPO_DE_CONFIRMACION`
-  (`lib/negocio/indicadoresDeCitas.ts:208`), `CONFIRMO` (`lib/negocio/indicadoresDeCitas.ts:211`) y
-  `CAMPO_DEL_PRECALL` (`lib/negocio/consumoDelPrecall.ts:64`)—. Configuración de una empresa
-  disfrazada de constante, declarada así en los dos archivos; el identificador del campo se resuelve
-  por nombre, y los dos nombres siguen resolviendo en el catálogo de hoy (195 campos; 170 el 15).
+**Textos fijos que siguen en los módulos**, ya no a la vista porque los avisos no se dibujan, pero en la respuesta y
+en el cerebro: «el CRM tiene ese campo en 3 de 1052 citas», sin fecha, en el aviso de la asistencia
+(`lib/negocio/indicadoresDeCitas.ts:514-516`); y los tres valores del precall sin rama nombrados a mano
+(`lib/negocio/consumoDelPrecall.ts:283-289`).
 
 ---
 
 ## 4 · Datos que ya tenemos
 
-Medido el 2026-09-28 sobre la única organización con datos. Las coberturas son sobre la cohorte de
-30 días —**277 contactos** con alta desde el 2026-08-29— salvo donde se dice otra cosa. Esa cohorte
-es de otra época que la del 15 (412 contactos, del 16 de agosto al 15 de septiembre): los
-porcentajes no son comparables como tendencia.
+Medido el 2026-10-10, con `scripts/supabase.mjs leer`, sobre la única organización con datos de negocio, con los
+predicados de cada módulo (`docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` § 2):
 
-── **Lo que el documento pide y ya se dibuja** ──
+| ventana | contactos | les escribimos | respondieron | agendaron | ICP de quienes agendaron (alto · medio · bajo · sin calificar) |
+|---|---|---|---|---|---|
+| 7 días | 7 | 6 | 4 | 4 | 0 · 0 · 0 · 4 |
+| 30 días | 58 | 52 | 35 | 35 (60 %) | 7 · 7 · 6 · 15 |
+| toda la historia | 596 | 542 | 306 | 300 | 86 · 98 · 78 · 38 |
 
-§9.3 booking rate con su denominador; §9.7 respuesta, tiempo hasta el primer intento y la primera
-respuesta, conversaciones sin atender, agendamientos por fuente y por campaña, y sentimiento; §10.7
-cancelación, reagendamiento, anticipación, confirmación, no-show reportado, consumo del precall y
-sentimiento; §10.6 las tres ramas más la cuarta que el documento no tiene; §11 el supervisor, con
-sus 70 análisis y 24 hallazgos. Las cifras están en la sección 2.
+| ventana | citas ocurridas | canceladas | reprogramadas | con la asistencia marcada |
+|---|---|---|---|---|
+| 7 días | 12 | 4 | 2 | 0 |
+| 30 días | 56 | 15 | 7 | 0 |
+| toda la historia | 169 | 63 | 17 | 0 |
 
-── **Lo que ya está guardado y la pantalla todavía no usa** ──
+**El ICP de esa medición es aproximado**: se contó en SQL con los cortes de 75 y 50 y el puntaje 0 dentro de «bajo», y
+la pantalla usa `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85`), que lo cuenta como «sin calificar»
+(`lib/negocio/lecturaDeConversation.ts:326-337`): algún contacto puede pasar de «bajo» a «sin calificar». Desde CN-1
+Conversation usa el tramo de Leads Portal, que la foto anterior daba como guardado y sin usar.
 
-**1 · El anuncio.** `atribucion_primera->>'adId'` en **199 de 277 (71,8 %)**, once anuncios
-distintos; `adSource = facebook` en 201. El corte por anuncio se decidió no hacerlo acá: vive en
-`lib/negocio/costoDelAnuncio.ts`, por los motivos de `lib/negocio/atribucionDelLead.ts:76-93`.
+**El auditor**: 26 hallazgos abiertos de Appointment Flow en 7 patrones y 1 de Lead Flow. **El sentimiento**: a 30
+días, Appointment Flow tiene 8 análisis juzgados —1 positivo, 6 neutrales, 1 molesto—; Lead Flow, ninguno: sus 4
+análisis de 30 días no son auditables.
 
-**2 · El ad set y las UTM.** `Last UTM Medium (Adset)` en **204 de 277**; en el primer toque
-`utmSource` 264, `utmContent` 258, `fbclid` 56; en el último, `sessionSource` 276 y `adId` 70. Las
-dos atribuciones están casi completas y la pantalla sólo lee la primera.
+**No se midió el 2026-10-10**: la confirmación, el origen de la cita, la mediana de la primera respuesta, el primer
+mensaje fuera de horario y el precall. Las cifras del 2026-09-28, como historia y a 30 días: confirmaron 59 de 76
+contactos; la primera respuesta, 5,4 min; fuera de horario, 61 de 152; el precall, 10 de 51 clasificados; la
+bifurcación, 73 después de contestar y 66 sin contestar.
 
-**3 · El ICP score, y ahora también su segmento.** `Puntaje | ICP` en **272 de 277 (98,2 %)**, 23 de
-ellos en `"0"`. Lo nuevo: el §10.5 pide «segmento ICP» y la decisión que la foto anterior dejaba
-pendiente **ya se tomó, en Leads Portal**: tramos 75 y 50 (`lib/negocio/tramosDelIcp.ts:38` y
-`lib/negocio/tramosDelIcp.ts:41`), con el 0 contado como «sin calificar»
-(`lib/negocio/tramosDelIcp.ts:85-90`). Conversation no los usa; el día que publique un booking rate
-por tramo tiene que importar ese archivo y no repetir los números
-(`docs/leads-portal/11-LO-QUE-PIDE-EL-DOCUMENTO.md:316-320`). `perfil_icp`, `Pre-Score | ICP` y
-`Lead Score` siguen en 0 de 277.
+**Lo guardado que la pantalla no usa**, del 2026-09-28 y no re-medido: el anuncio de primer toque en el 71,8 % de la
+cohorte (el corte por anuncio vive en `lib/negocio/costoDelAnuncio.ts`, por los motivos de
+`lib/negocio/atribucionDelLead.ts:76-93`); el ad set y las UTM de los dos toques; la zona horaria en 157 de 277, usada
+sólo para fuera de horario; el autor de cada saliente —un tercio del agente de IA—; el formulario de la landing, que
+dejó de escribirse el 2026-08-31; el clic al precall en 20 contactos; el estado de entrega del mensaje; y el sello del
+barrido de las cinco tareas de esta pantalla, que la pantalla no lee (riesgo 22).
 
-**4 · La zona horaria.** `zona_horaria_del_lead` en **157 de 277** (314 de 594 en toda la base). Se
-usa sólo para el aviso de fuera de horario.
-
-**5 · Quién escribió cada saliente.** De los **1 536** salientes a la cohorte, **504 son del agente
-de IA (32,8 %)**, 790 no traen autor (51,4 %) y 242 son de otro usuario; **74 de los 270** contactos
-escritos recibieron al menos uno del agente (el 15: 44,2 % y 134 de 382). La nota de la cadena que
-dice que «todavía no se distingue un mensaje del agente de uno de un flujo del CRM»
-(`components/conversation/PanelDeConversation.jsx:548@6f3bdb5`) sigue siendo demasiado pesimista: se
-distingue en un tercio de los mensajes.
-
-**6 · El formulario de la landing.** `Form Landing VSL` en **247 de 594**, sin cambios: dejó de
-escribirse el 2026-08-31 y está en **0 de los 245** contactos con alta en septiembre. En la cohorte
-de 30 días quedan **6 de 277** (140 de 412 el 15), y en dos días no va a quedar ninguno.
-
-**7 · El clic al precall.** `Clic a Video Pre-Call` en 20 contactos, igual que el 15. Es la razón
-del rótulo «Registró reproducción» y no «Vio el video»
-(`components/conversation/PanelDeConversation.jsx:762-768@6f3bdb5`).
-
-**8 · El estado de envío del mensaje** (`mensajes.estado_entrega` y su familia) — del 2026-09-15, no
-re-medido: la columna se rellena hacia atrás y su conteo no se reproduce ni clavando el corte. Es la
-materia prima de la «tasa de errores» del §9.7 y del §10.7.
-
-**9 · El sello del barrido.** `negocio.tareas_programadas` guarda, por empresa y tarea, cuándo pasó
-el cron y cómo terminó. Medido el 2026-09-28 a las 23:58 UTC, en la organización `aria` las cinco
-tareas de las que vive esta pantalla estaban en `corrio` y dentro de su umbral: `contactos`,
-`mensajes` y `auditoria` hace 7 minutos (umbral 80), `citas` hace 54 (umbral 180) y `mejora` hace
-1 060, unas 17,7 h (umbral 3 000; los tres horarios, `lib/negocio/barrido.ts:202-206`,
-`lib/negocio/barrido.ts:214-218` y `lib/negocio/barrido.ts:251-255`). Tienen sello las 11 empresas
-activas y ninguna inactiva. La pantalla no lo lee: riesgo 22.
+**El volumen.** El 2026-09-28 la cohorte de 30 días eran 277 contactos y ningún anuncio había gastado después del 13
+de septiembre; el 2026-10-10 son 58. No se re-midió el gasto.
 
 ---
 
 ## 5 · Datos que faltan, y de dónde tendrían que venir
 
-── **Los seis renglones de `FLUJOS[*].falta`, contra la base del 2026-09-28** ──
+Lo que la pantalla no mide, y qué haría falta, está en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`. En resumen,
+con la foto del 2026-09-28 donde no se re-midió:
 
-**L1 · «El recorrido hasta la landing»** (`components/conversation/PanelDeConversation.jsx:101@6f3bdb5`) —
-**sigue siendo falso para el formulario**: `Form Landing VSL` tiene el vocabulario exacto del §9.5
-(`Agendado` · `Form incompleto sin agendar` · `Form completo sin agendar`) en 247 contactos, y lo
-que pasó es que una automatización del CRM se apagó el 2026-08-31. Lo que cambió es que la
-contradicción **se está yendo de la pantalla sola**: el 15 la cohorte que el tablero dibujaba traía
-el campo en 140 de 412; hoy en 6 de 277; a fin de mes, en ninguno. El renglón va a parecer cierto
-mirando la pantalla sin haberlo sido nunca. Lo del enlace sí es cierto: en los 195 campos del
-catálogo, `%trigger%`, `%clic%`, `%click%`, `%abri%`, `%visit%` y `%session%` sólo encuentran
-`Clic a Video Pre-Call` (del precall) y `Last FB ClickId` (el clic del anuncio de Meta, en 85
-contactos). La visita tiene una URL de atribución, `Last Landing URL`, en 119 de 277: no es un
-evento de visita.
+**1 · Los agentes de voz.** `negocio.llamadas` sin filas y ningún proceso que la llene. Las llamadas de los
+Analizadores son reuniones con el closer, no llamadas de un agente.
 
-**L2 · «El histórico de las tasas»** (`components/conversation/PanelDeConversation.jsx:102@6f3bdb5`) —
-**cierto**. `reservada_el` en 201 de 333 citas; por semana de inicio, 0 de 24 y 0 de 63 en las
-semanas del 10 y del 17 de agosto, 11 de 42, 66 de 76 y 88 de 92 después, y completa desde el 14 de
-septiembre. No se va a llenar: el barrido mira catorce días hacia atrás (`lib/negocio/citas.ts:74`).
+**2 · La landing, después del mensaje.** El trigger link del §9.5 no existe: el paso «Abrieron la landing» va en «—».
 
-**L3 · «El agente de voz»** (`components/conversation/PanelDeConversation.jsx:103@6f3bdb5`) — **cierto**:
-`negocio.llamadas` en 0 filas y ninguna columna con «transcrip» en `information_schema.columns`.
-Concuerda con `lib/auditor/veredicto.ts:46-52`.
+**3 · La asistencia.** 0 de 169 citas marcadas en toda la historia (2026-10-10). La columna y el escritor existen; lo
+que falta es que los closers la marquen. Con ella caen el KPI de Appointment Flow, la asistencia por calidad y los
+seis cortes del show rate del §10.7.
 
-**A1 · «La asistencia según el CALENDARIO»** (`components/conversation/PanelDeConversation.jsx:131@6f3bdb5`)
-— **cierto en el fondo, y el calendario empezó a hablar un poco**. `showed` en 0 de 333; `noshow` en
-15, de los cuales 12 pasaron de `confirmed` a `noshow` entre el 2026-09-15 18:04 y el 2026-09-18
-16:04 UTC, cuando `estado_cambiado_el` estrenó contenido; en esos mismos días y hasta el
-2026-09-22 se registraron otros tres cambios, a `cancelled` —dos desde `confirmed` y uno desde
-`noshow`—. `citas.asistio` sigue en 0 de 333.
+**4 · De dónde viene la cita, atribuida al agente.** Ningún mensaje dice qué agente lo escribió: se mide si la persona
+conversó antes de agendar, no si el agente la rescató.
 
-**A2 · «CUÁNDO vio el precall»** (`components/conversation/PanelDeConversation.jsx:141@6f3bdb5`) —
-**cierto**. Ninguno de los campos de video del catálogo trae fecha; de los seis con «fecha» en el
-nombre, el único con volumen es `Fecha de Reunion` (TEXT, 220 contactos; `Fecha Alternativa 1` y
-`Fecha Alternativa 2` están en 1 contacto cada uno y las tres de cuotas en 0), y es por su nombre
-la fecha de la llamada y no la del visionado (no se abrieron sus valores).
+**5 · Las escaladas y la intervención humana.** No se registra cuándo una persona toma una conversación.
 
-**A3 · «El historial de reagendamientos»** (`components/conversation/PanelDeConversation.jsx:142@6f3bdb5`) —
-**cierto**: `reagendada_el` es una sola columna, en 16 de 333 citas, y el calendario se barre una
-vez por hora (`lib/negocio/barrido.ts:214-215`, al minuto 3).
+**6 · El VSL.** En cero en todos los contactos medidos el 2026-09-28; vive en Conversion.
 
-── **Falta en el CRM** ──
-
-**1 · El trigger link del §9.5** (§16.2, prueba 4). Un sistema aparte —un redirector con un token
-por contacto—; sin él, link sent / link open / landing visit rate y el tiempo hasta el envío del
-enlace no tienen de dónde salir. **2 · El formulario**, que no falta: se apagó (arriba). **3 · El
-VSL individual** (§16.2, prueba 5): `VSL % máximo visto` y `VSL segundos vistos` en 79 contactos,
-**los 79 en cero**, sin cambios; la prueba 5 sigue FALLADA con evidencia. **4 · La fecha del
-precall.** **5 · La asistencia**, por ninguna de las dos vías: con ella caen los seis cortes del
-show rate del §10.7.
-
-── **Falta en la landing** ──
-
-**6 · `visitor_id` y `session_id`** (§16.2, pruebas 2 y 3): no existe nada con esa forma. La cadena
-del §16.2 sigue cortada en «Sesión», y con el VSL en cero, dos eslabones seguidos.
-
-── **Falta como registro nuestro** ──
-
-**7 · Cinco de los diecisiete campos del §11.7.** `negocio.analisis_del_agente` tiene 23 columnas y
-`negocio.hallazgos` 20 (contadas el 2026-09-28). Faltan **`issue_source`, `effectiveness_score` y
-`confidence`**: ni el vocabulario del §11.4 ni `effectiveness` aparecen en `lib/`, `components/` o
-`app/`, y `confidence` aparece sólo fuera del auditor —en el analizador de llamadas de venta
-(`lib/analizadores/`, `components/analizadores/`) y en un comentario de Acquisition—. Tampoco
-tienen columna `agent_type` ni `objective` (`objective` sólo aparece como el objetivo de campaña de
-Meta, en `lib/ghl/anuncios.ts` y `lib/negocio/recolectarAnuncios.ts`). **8 · La segunda evaluación del §11.3**, la del prompt. **9 · El prompt
-y su versión** (§11.2, §11.8): las dos tablas en 0 filas. **10 · El §14 entero**: los 24 hallazgos
-tienen `resuelto_el` nulo. **11 · Los cinco responsables del §13**: hoy hay una capacidad,
-`auditor.ver`, que llevan los 3 roles de `identidad.roles` (re-medido el 2026-09-28: 3 de 3 con
-`auditor.ver` y con `tablero.ver`; el 2026-09-21, según `8dcb619`, era igual). **12 · El canal
-hacia Executive del §15**: lo que Executive muestra es inventado.
+**Y del supervisor (§11, §14, §15)**, de la foto anterior: el prompt y su versión, con las dos tablas en 0 filas el
+2026-09-28; la segunda evaluación del §11.3; `effectiveness_score` y `confidence` del §11.7; y el §14 entero —ningún
+hallazgo tenía `resuelto_el`—. El `issue_source` del §11.4 no se guarda en los hallazgos, pero desde AG13 el detector lo
+deduce al publicar cada señal (`lib/agentes/detectores/conversation.ts:51-56`). El canal hacia Executive del §15 es
+hoy la tabla común de señales y el cerebro, no una tarjeta inventada.
 
 ---
 
 ## 6 · Reglas propias
 
-Las transversales —el silencio, el piso de 10, los dos ceros, las citas congeladas— están en
-[07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md). Acá, las de este departamento, todas
-vigentes y releídas en el código el 2026-09-28:
+Las transversales —el silencio, el piso de 10, los dos ceros— están en
+[07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md). Las de este departamento:
 
-- **Los dos vocabularios del supervisor no se mezclan.** Post-agenda
-  (`lib/auditor/veredicto.ts:97-112`) y pre-agenda (`lib/auditor/veredicto.ts:134-149`) son siete
-  criterios cada una y comparten sólo `dato_faltante`; auditar una con la rúbrica de la otra da un
-  resultado «convincente y falso» (`lib/auditor/veredicto.ts:128-129`). Ningún promedio junta a los
-  dos agentes.
-- **El nivel se deriva, no se le cree al modelo** (`nivelDerivado`, `lib/auditor/veredicto.ts:259`):
-  con intervención es rojo por definición, y así un error del modelo no tumba la escritura con la
-  inferencia ya pagada.
-- **La ventana es una palabra de una lista cerrada** (`lib/negocio/periodo.ts:1-34`): lo que no está
-  se rechaza (`lib/negocio/periodo.ts:188-193`), y el archivo no importa nada porque lo usa el
-  navegador (`lib/negocio/periodo.ts:25-34`).
-- **«Completo» es una ventana grande, no un centinela** (`DIAS_DE_TODO = 3650`,
-  `lib/negocio/periodo.ts:52`), y por eso existen `desde`, `mitad` y el aviso de la cola.
-- **`desde` es la fila más vieja real, calculada en la misma pasada que sus conteos**
-  (`lib/negocio/indicadoresDelLead.ts:265-275`, `lib/negocio/indicadoresDeCitas.ts:400-412`).
-- **La cadena se corta donde deja de ser monótona.** Un embudo exige que cada escalón sea
-  subconjunto del anterior, y agendar no exige haber contestado. La suma de la bifurcación se
-  calcula en el módulo (`lib/negocio/indicadoresDelLead.ts:315`) y la fija una prueba
-  (`pruebas/base/150-indicadores-del-lead.test.ts:558`).
-- **Agendar es el evento**: el booking rate cuenta cualquier cita, futura o congelada
-  (`lib/negocio/indicadoresDelLead.ts:209-239`); la cancelación necesita las dos exclusiones porque
-  pregunta otra cosa. Lo fija `pruebas/base/150-indicadores-del-lead.test.ts:248`.
-- **La cohorte de Lead Flow es por `alta_en_el_crm` y sin filtro de territorio**
-  (`lib/negocio/indicadoresDelLead.ts:1-44`).
-- **Las tres exclusiones de Appointment Flow se declaran, nunca se suman en silencio**: congeladas,
-  descartados por etiqueta (`lib/negocio/citasAlcanzables.ts:79`, con la lista en
-  `lib/ghl/contrato.ts:231-238`) y futuras.
-- **El precall: dos regímenes, una cuarta categoría y escalas que no se promedian**
-  (`lib/negocio/consumoDelPrecall.ts:44-51` y `lib/negocio/consumoDelPrecall.ts:74-93`).
-  `Sin abrir (0%)` y `Nada` van a la misma rama; `Accede: sin reproducir` no tiene rama a propósito.
-- **El sentimiento es de la conversación, nunca de la persona**, y se publica el molesto
-  (`lib/auditor/sentimiento.ts:29-42` y `lib/auditor/sentimiento.ts:57-64`); su denominador son las
-  auditables fuera del carril de mejora (`lib/auditor/sentimiento.ts:89-93`).
-- **Los contadores cuentan auditables; la lista muestra todo**, con su motivo
-  (`lib/auditor/pantalla.ts:29-41`).
-- **La severidad del patrón es la del peor caso** (`lib/auditor/vista.ts:126-129`).
-- **El carril de mejora tiene criterio, disparo y tope propios** (`lib/auditor/mejora.ts:52`,
-  `lib/auditor/mejora.ts:55` y `lib/auditor/mejora.ts:63`: una mejora por día).
-- **El hash del prompt se recalcula del texto** (`hashDelPrompt`, `lib/auditor/prompts.ts:64`).
-- **Los nombres que se ven son los del CRM** —LeadFlow · Zona Setter, AppFlow · Zona Closer
-  (`lib/auditor/vista.ts:157-160` y `lib/auditor/vista.ts:172-175`)— y la lista de agentes sale de
-  `AGENTES` (`lib/auditor/veredicto.ts:52`). Nombrar un agente a mano está prohibido con un motivo
-  caro: en la plataforma anterior la base aceptaba cuatro agentes y el código validaba contra una
-  lista de dos, y los patrones de voz no se podían cerrar ni medir su reincidencia
-  (`pruebas/codigo/114-derivacion-del-nivel.test.ts:267-276`).
-- **No se nombra al proveedor en texto que se pinta.** Se cumple —cero apariciones fuera de
-  comentarios en los nueve archivos de la pantalla, contadas el 2026-09-28— pero **ninguna prueba lo
-  vigila acá**: la de `pruebas/codigo/91-closer-y-setter.test.ts:778` barre sólo cuatro archivos del
-  Closer.
-- **Cada llamada del auditor deja su uso, y sus fallos van al Panel de Incidentes** (desde AG2 de los
-  agentes, 2026-10-04, después de este corte). El carril rojo escribe una fila de `negocio.uso_de_ia`
-  por conversación juzgada (`auditor`, con el contacto como referencia) y junta sus fallos en UN
-  incidente por situación y por corrida (`lib/incidentes/agrupados.ts`): con el proveedor caído, uno
-  por conversación llenaría el panel cada diez minutos. El de mejora (`auditor_mejora`) anota el suyo
-  sin agrupar, porque es una llamada por día. Las pruebas: `pruebas/base/95-camino-del-auditor.test.ts`
-  y `pruebas/base/92-carril-amarillo.test.ts`.
+**1 · Un «—» dice por qué, y un cero es un cero medido.** Doce motivos (`lib/negocio/lecturaDeConversation.ts:48-60`),
+y cada uno dice por qué falta ESA cifra: «sin contactos» al lado de «Contactos 50» sería falso
+(`lib/negocio/lecturaDeConversation.ts:45-46`). La frase sale de una lista cerrada (CN1-02).
+
+**2 · Toda tasa de la pantalla lleva el piso de 10 sobre su denominador**, en la lectura y no en las funciones
+compartidas (`lib/negocio/lecturaDeConversation.ts:142-146`).
+
+**3 · El servidor calcula; el navegador dibuja.** Todo viaja de 0 a 1 y se multiplica por 100 en un solo lugar
+(`components/conversation/comun.jsx:78`). Lo que dice el cerebro de una cifra es lo que se dibuja (CN1-16).
+
+**4 · Es un tablero: cifras con su rótulo, y la explicación es del agente** (CN1-05).
+
+**5 · Las tarjetas de agente son del flujo, y se declara** (CN1-11). Ningún mensaje dice qué agente lo escribió.
+
+**6 · Ningún dato de una persona en Estado y Agentes** (CN1-17): ni nombres, ni chats, ni frases. Auditoría conserva lo
+que muestra, con su permiso, y al cerebro no viajan los casos ni las conversaciones
+(`lib/agentes/executive/adaptadores/conversation.ts:4-7`).
+
+**7 · La cadena de Lead Flow no es un embudo.** Agendar no exige haber contestado: cada paso es una porción de la
+cohorte (`lib/negocio/lecturaDeConversation.ts:232-239`), y la bifurcación suma el total
+(`pruebas/base/150-indicadores-del-lead.test.ts:593-597`).
+
+**8 · Agendar es el evento**: el booking rate cuenta cualquier cita, futura o congelada
+(`lib/negocio/indicadoresDelLead.ts:209-211`, `lib/negocio/indicadoresDelLead.ts:237-239`); la cancelación necesita
+las exclusiones porque pregunta otra cosa.
+
+**9 · El denominador de la asistencia lleva `asistio is not null`** (`lib/negocio/indicadoresDeCitas.ts:385-399`), y la
+asistencia por tramo lo repite (`lib/negocio/lecturaDeConversation.ts:350-351`).
+
+**10 · Los dos vocabularios del supervisor no se mezclan.** Post-agenda (`lib/auditor/veredicto.ts:97`) y pre-agenda
+(`lib/auditor/veredicto.ts:134`) tienen rúbricas distintas, y cruzarlas da un resultado «convincente y falso»
+(`lib/auditor/veredicto.ts:128-129`). El nivel se deriva, no se le cree al modelo (`lib/auditor/veredicto.ts:259`).
+
+**11 · El sentimiento es de la conversación, nunca de la persona** (`lib/auditor/sentimiento.ts:29-31`), y su
+denominador son las auditables fuera del carril de mejora (`lib/auditor/sentimiento.ts:89-93`).
+
+**12 · La ventana es una palabra de una lista cerrada**, y lo que no está se rechaza (`lib/negocio/periodo.ts:188-193`).
+«Completo» es una ventana grande, no un centinela (`lib/negocio/periodo.ts:52`).
+
+**13 · Los nombres de los agentes son los del CRM** —LeadFlow y AppFlow (`lib/auditor/vista.ts:157-160`)— y la lista
+sale de `AGENTES` (`lib/auditor/veredicto.ts:52`). Nombrar un agente a mano está prohibido.
+
+**14 · La severidad del patrón es la del peor caso** (`lib/auditor/vista.ts:126-129`).
 
 ---
 
 ## 7 · Riesgos
 
-**1 · Executive sigue publicando cifras inventadas en nombre de este departamento.** Sin cambios
-desde el 15 (sección 3): la gerencia ve «58 % de efectividad» y un hallazgo sobre 22 llamadas de un
-agente de voz del que no hay una sola fila.
+Los 22 de la foto anterior, con su estado al 2026-10-10, y tres nuevos.
 
-**2 · Una falta declarada sin censar la base, que ahora se va a ver cierta.** L1 dice que el
-formulario no se registra en ninguna parte y el campo está en 247 contactos. A fin de mes la ventana
-por omisión ya no va a tener ninguno, y el renglón falso va a coincidir con lo que la pantalla
-muestra. Regla que sigue valiendo: antes de escribir una falta, censar `negocio.campos_del_crm` por
-nombre y contar coberturas en toda la base, no en la ventana.
+**1 · Executive publicaba cifras inventadas en nombre de Conversation.** **Cerrado** el 2026-10-01 (`4e9a242`).
 
-**3 · Confundir «se dejó de escribir» con «no existe» — y ahora con «el negocio se cayó».** El VSL
-(2026-08-30) y el formulario (2026-08-31) se apagaron el mismo fin de semana; desde el 14 de
-septiembre se apagó además la pauta. Las cifras de 30 días van a ir vaciándose día a día sin que
-cambie nada de lo que miden, y quien compare dos semanas va a leer un derrumbe del agente o de la
-agenda donde lo que hay es un embudo sin entrada. Ninguna cifra de la pantalla dice cuánto entró.
+**2 · Una falta declarada sin censar la base.** La caja de lo que falta decía que el formulario no se registraba, con
+el campo en 247 contactos. **Cerrado** con la caja, que se fue en CN-3 (`a6e6309`): el «—» de la landing dice «Sin
+enlace con seguimiento.», que es cierto. La regla queda: antes de escribir una falta, censar el catálogo del CRM y
+contar en toda la base.
 
-**4 · Los ceros del VSL.** 79 de 79 en cero. Un «show rate según consumo del VSL» sobre eso diría
-que nadie ve el video, con un medidor roto como fuente.
+**3 · Confundir «se dejó de escribir» con «el negocio se cayó».** **Abierto.** La cohorte de 30 días pasó de 277 a 58
+contactos sin que cambie nada de lo que se mide, y ninguna cifra de la pantalla dice cuánto entró antes.
 
-**5 · El show rate no tiene ninguna vía abierta.** `asistio` en 0 de 333, `showed` en 0, y el
-reporte del closer quieto desde el 2026-09-09. Una tasa sin `asistio is not null` en el denominador
-diría que no viene nadie; el módulo lo evita (`lib/negocio/indicadoresDeCitas.ts:385-399`) y cada
-corte nuevo del §10.7 puede volver a caer.
+**4 · Los ceros del VSL.** **Abierto**, sin consecuencia en pantalla: el VSL no se dibuja.
 
-**6 · Dos ventanas en la misma pantalla.** Las tarjetas del supervisor cuentan toda la historia
-(`lib/auditor/pantalla.ts:220-266`); el sentimiento, treinta días. «30 verdes» al lado de «26,1 %
-molestos» con el botón «30 días» encendido se lee como si hablaran del mismo período.
+**5 · El show rate no tiene ninguna vía abierta.** **Abierto**: 0 de 169 citas marcadas. Una tasa sin
+`asistio is not null` diría que no viene nadie.
 
-**7 · El sentimiento de AppFlow se apaga solo el 2026-10-08.** Sus 23 juzgadas tienen fechas: 10 del
-2026-09-01, 10 entre el 6 y el 12 y 3 del 21. Salen de la ventana el 1, el 6, el 7 y el 8 de
-octubre, y el 8 quedan 8, bajo el piso de 10 (`lib/auditor/sentimiento.ts:126-129`), salvo que el
-auditor juzgue dos o más en esos diez días: en los trece anteriores juzgó 3. El aviso de ese caso
-existe (`lib/auditor/sentimiento.ts:158-164`), pero se va a leer como que el auditor dejó de
-funcionar.
+**6 · Dos ventanas en la misma pantalla.** **Cambió.** Auditoría ya es un modo aparte, sin segmentado. Pero en Agentes,
+«Qué corregir · {N}» cuenta patrones de toda la historia (`lib/negocio/lecturaDeConversation.ts:373-385`) debajo de
+tarjetas que miden la ventana elegida, y nada lo dice.
 
-**8 · El supervisor audita sin saber qué se le pidió al agente.** Prompts y versiones en 0 filas:
-mide ejecución sin controlar diseño, y `elPromptCambio` no puede encenderse nunca.
+**7 · El sentimiento de Appointment Flow se apagaba solo el 2026-10-08.** **Pasó**: 8 juzgadas a 30 días el
+2026-10-10, y la tarjeta dice «—» con «Pocos casos para una tasa.». Es correcto, y se puede leer como que el auditor
+dejó de funcionar.
 
-**9 · El vocabulario del CRM se mueve y la única alarma es un contador.** El censo del precall está
-completo hoy, pero `negocio.campos_del_crm` no guarda las opciones declaradas: un valor nuevo sólo
-se vería como `sinRama` subiendo, con el aviso nombrando los tres viejos.
+**8 · El supervisor audita sin saber qué se le pidió al agente.** **Abierto**; prompts y versiones en 0 filas el
+2026-09-28, no re-medido.
 
-**10 · La comparación entre fuentes que el propio módulo prohíbe se dibuja ahora al revés.** El
-encabezado de `lib/negocio/atribucionDelLead.ts:22-37` advierte que una fuente chica con tasa alta
-al lado de Paid Social dice que «lo pago es lo que peor convierte», con catorce contactos. Hoy es
-exactamente eso: **Direct traffic 92,3 % sobre 13** y Social media 50 % sobre 10, contra Paid Social
-47,8 % sobre 253, y las tres pasan el piso. El 15 salvaba la pantalla la casualidad del orden; esa
-casualidad se terminó.
+**9 · El vocabulario del CRM se mueve y la única alarma es un contador.** **Abierto**: el aviso del precall sigue
+nombrando a mano los tres valores sin rama (`lib/negocio/consumoDelPrecall.ts:283-289`).
 
-**11 · La agrupación de campañas.** Sigue partida la misma campaña en dos filas por un `+` contra un
-espacio (43 y 2 contactos), sigue un `{{campaign.name}}` sin expandir en 2 y apareció un valor de
-campaña que es el nombre de una persona, en 1 contacto. Los tres quedan escondidos en «Otras» por el
-piso; si el tercero llegara a 10 contactos, la tabla mostraría el nombre de una persona como si
-fuera una campaña.
+**10 · La comparación entre fuentes que el módulo prohíbe.** **Cambió**: la atribución por fuente y por campaña salió
+de la pantalla (CN1-12). Sigue en `atribucion_del_lead` (`lib/agentes/executive/adaptadores/conversation.ts:81-97`),
+con tasas nulas bajo el piso; el riesgo lo corre ahora el agente al compararlas.
 
-**12 · La respuesta es de la conversación, no del agente.** Publicarla como rendimiento del agente
-es falso; la fina, sobre 74 contactos con mensaje del agente, necesita decir su denominador.
+**11 · La agrupación de campañas.** **Abierto**, y sólo en el cerebro: la misma campaña partida en dos filas y un
+valor que era el nombre de una persona, escondidos en «Otras» por el piso (2026-09-28).
 
-**13 · El censurado de las latencias.** Los 109 escritos que no contestaron no son latencia cero ni
-infinita, y no son una muestra al azar: reciben una mediana de **4 salientes contra 1** antes de la
-primera respuesta de quienes sí contestaron (109 y 160 contactos), la misma dirección que el
-comentario del módulo (`lib/negocio/indicadoresDelLead.ts:432-434`).
+**12 · La respuesta es de la conversación, no del agente.** **Cambió, y quedó más expuesto**: es la cifra grande de la
+tarjeta «Lead Flow · Texto» (`lib/negocio/lecturaDeConversation.ts:268`). El desvío está declarado (CN1-02, CN1-11),
+pero la pantalla no tiene dónde decirlo: lo dice el agente.
 
-**14 · La guarda `>= 0` excluye filas sin decirlo.** A 30 días saca de la latencia de respuesta 1
-contacto que escribió antes de que le escribiéramos (161 respondieron, la mediana es sobre 160); en
-«Completo», 1 del primer intento y 8 de la respuesta. La guarda está justificada
-(`lib/negocio/indicadoresDelLead.ts:331-339`), pero `avisoDeLatencias` sólo declara a los censurados
-(`lib/negocio/indicadoresDelLead.ts:436-448`), no a éstos.
+**13 · El censurado de las latencias.** **Abierto**: «Primera respuesta» es la mediana de los que contestaron, y el
+aviso que cuenta a los que no (`lib/negocio/indicadoresDelLead.ts:436-448`) no se dibuja.
 
-**15 · Convertir la bifurcación en un cuarto escalón.** A 30 días afirmaría **86,3 %** donde el real
-es 45,3 %; en «Completo», 95,2 % contra 56,7 %; a 7 días, **2 agendados sobre 1 que contestó**. Las
-defensas: la forma (`components/conversation/PanelDeConversation.jsx:557-579@6f3bdb5`), el pie
-(`components/conversation/PanelDeConversation.jsx:581-585@6f3bdb5`) y la suma que fija la prueba. Sólo la
-tercera no se rompe en silencio.
+**14 · La guarda `>= 0` excluye filas sin decirlo.** **Abierto**, sin cambios (`lib/negocio/indicadoresDelLead.ts:331-339`).
 
-**16 · Tasas sin piso sobre uno a cinco casos.** Con la entrada de leads casi en cero, «Hoy» y «7
-días» publican 0 %, 66,7 %, 33,3 % y 40 % sobre 1, 3 y 5 casos. El piso de 10 lo aplican siete
-cifras, y el booking rate, la respuesta, la cancelación y el reagendamiento no están entre ellas
-(`lib/negocio/indicadoresDelLead.ts:306`, `lib/negocio/indicadoresDelLead.ts:318`,
-`lib/negocio/indicadoresDeCitas.ts:449` y `lib/negocio/indicadoresDeCitas.ts:462`). No es nuevo en
-el código; lo nuevo es que ahora es lo normal. Y Sales hereda la cancelación.
+**15 · Convertir la bifurcación en un escalón.** **Cambió.** La cadena de Lead Flow volvió a terminar en «Agendaron»,
+después de «Respondieron», como en el prototipo. Ninguna porción miente —todas son sobre la cohorte
+(`lib/negocio/lecturaDeConversation.ts:232-239`)—, pero la forma se lee como embudo y agendar no es un subconjunto de
+responder. La bifurcación vive en «De dónde viene la cita», sobre los que agendaron
+(`lib/negocio/lecturaDeConversation.ts:260-263`), y la suma la fija la prueba de la regla 7.
 
-**17 · La atribución y el booking rate dejaron de contar lo mismo, y el comentario dice lo
-contrario.** `bddb516` sacó el filtro de cita alcanzable del booking rate y no de
-`atribucionDelLead`, que sigue usando `tieneCitaAlcanzable` (`lib/negocio/atribucionDelLead.ts:151`)
-bajo un comentario que afirma que es «el mismo filtro de cita alcanzable que el booking rate» y que
-sin eso las filas no sumarían la cifra de al lado (`lib/negocio/atribucionDelLead.ts:148-150`). A 30
-días no se nota —ningún contacto de la ventana tiene sólo citas congeladas—; en «Completo» las filas
-suman **200** agendados y el titular dice **279**: las 79 congeladas. El riesgo inverso, volver a
-poner el filtro en el booking rate, lo sigue vigilando
-`pruebas/base/150-indicadores-del-lead.test.ts:248`.
+**16 · Tasas sin piso sobre uno a cinco casos.** **Cerrado en la pantalla** en CN-1 (`e1ccf44`). Las funciones siguen
+sin piso (`lib/negocio/indicadoresDeCitas.ts:449`), y Sales dibuja la cancelación con ellas.
 
-**18 · Diez de las once empresas activas verían esta pantalla vacía.** Una sola tiene token de CRM y
-una sola el identificador del agente; las cifras de flujo no dependen del auditor pero sí de
-`negocio.*`, que está vacío en las otras diez. La pantalla es real para una empresa.
+**17 · La atribución y el booking rate dejaron de contar lo mismo.** **Abierto**: la atribución sigue con el filtro de
+cita alcanzable bajo un comentario que dice que es el mismo que el booking rate
+(`lib/negocio/atribucionDelLead.ts:148-151`). Ya no se ve en pantalla, pero sí en el cerebro: en «Completo», el 2026-09-28, las filas sumaban 200 agendados y el
+booking rate decía 279.
 
-**19 · `desde` sin mediana.** Resuelto en Lead Flow —en «Completo» el aviso de la cola está a la
-vista—; `fechaCorta` sigue sin dibujar el año
-(`components/conversation/PanelDeConversation.jsx:399-404@6f3bdb5`), así que la fila de 2025 se ve como «8
-de agosto». En las citas el aviso calla en los cuatro períodos, y un campo siempre nulo invita a
-creer que no funciona.
+**18 · Diez de las once empresas activas verían esta pantalla vacía.** **Abierto**, no re-medido. Sin auditoría, el
+sentimiento y «Qué corregir» dicen «La empresa no audita sus agentes.»; las cifras de los flujos dependen de
+`negocio.*`.
 
-**20 · Dos comentarios dicen que la sección pide `tablero.ver`.**
-`lib/autorizacion/secciones.ts:302` («La capacidad de la SECCIÓN sigue siendo `tablero.ver`»)
-contradice a la línea 315 del mismo archivo, y `components/views/ConversationView.jsx:37-39@6f3bdb5` dice lo
-mismo. `8dcb619` cambió el valor y no los dos textos que lo explicaban.
+**19 · `desde` sin año.** **Cerrado** en CN-4 (`89d8c19`): la fecha lleva el año cuando no es el de hoy
+(`components/conversation/comun.jsx:91-97`).
 
-**21 · Los patrones se agrupan sin mirar el agente.** `agruparPorPatron` junta por código
-(`lib/auditor/vista.ts:106-110`) y cada tarjeta se queda con los patrones cuyo **primer caso** es
-suyo (`components/auditoria/PanelDeAuditoria.jsx:150`), y el primero es el más reciente, porque
-los casos llegan por `detectado_el` descendente (`lib/auditor/pantalla.ts:318`). Desde el
-2026-09-17 `no_lee_confirmacion_previa` tiene casos de los dos agentes —3 de AppFlow y 1 de
-LeadFlow—; hasta el 2026-09-21 el más reciente era el de LeadFlow y el patrón entero se dibujaba en
-su tarjeta, y desde ese día es uno de AppFlow, así que hoy **el caso de LeadFlow se dibuja dentro de
-la tarjeta de AppFlow**, y la de LeadFlow afirma «Sin hallazgos abiertos para LeadFlow»
-(`components/auditoria/PanelDeAuditoria.jsx:276-288`) teniendo uno. Deducido del código y de las
-filas; no visto en pantalla. Es la regla de los dos vocabularios rota en el último paso, el que ya
-no mira la base.
+**20 · Dos comentarios decían que la sección pide `tablero.ver`.** **Cerrado** en CN-3 (`a6e6309`):
+`lib/autorizacion/secciones.ts:305-307` y `components/views/ConversationView.jsx:16-18`.
 
-**22 · La pantalla no avisa si su dato está viejo.** Las tres primeras pestañas dibujan filas que
-escriben cinco tareas del cron —`contactos`, `mensajes`, `auditoria`, `citas` y `mejora` (ítem 9 de
-la sección 4)—, y la plataforma ya tiene con qué decirlo: `frescuraDe(tarea)`
-(`lib/negocio/frescura.ts:112`) devuelve un aviso que sólo calla cuando la tarea está al día
-(`lib/negocio/frescura.ts:49-59`), y lo leen la Agenda del Closer, el chat de la ficha y Leads
-Portal, éste sobre las mismas `contactos` y `citas` (`app/api/leads-portal/route.ts:63-64`).
-Conversation no: `GET /api/auditoria` arma nueve lecturas —la octava, las señales del auditor traducidas (AG13 de los agentes); la novena, el comentario de la cabecera (AG15)— (`app/api/auditoria/route.ts:80-110@e1ccf44`) y
-ninguna es ésa. Un `grep` de `frescura` y `tareas_programadas` sobre `lib/auditor/`,
-`components/conversation/`, `components/auditoria/`, `app/api/auditoria/`,
-`lib/negocio/indicadoresDelLead.ts`, `lib/negocio/indicadoresDeCitas.ts`,
-`lib/negocio/atribucionDelLead.ts`, `lib/negocio/consumoDelPrecall.ts` y
-`lib/negocio/citasAlcanzables.ts`, el 2026-09-28, sólo acierta en dos comentarios que la usan como
-analogía (`lib/negocio/indicadoresDeCitas.ts:60` y `lib/negocio/indicadoresDeCitas.ts:415`).
-Lo único que la pantalla dice sobre la edad de lo dibujado es el error de red, que deja las cifras
-en su lugar (`components/conversation/PanelDeConversation.jsx:899-901@6f3bdb5`). Hoy no muerde —las cinco
-tareas estaban al día a las 23:58 UTC—, pero con el negocio quieto es la peor combinación: todas las
-ventanas miden desde `now()`, así que un barrido caído vaciaría «Hoy» y «7 días» igual que un embudo
-sin entrada (riesgo 3), la pestaña de Auditoría dejaría de sumar análisis sin decir por qué, y la
-pantalla no tendría con qué distinguir una cosa de la otra. Tampoco lo anota el § 8 de
-[17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md), que enumera los tableros sin frescura y deja afuera a
-éste.
+**21 · Los patrones se agrupan sin mirar el agente.** **Abierto** (`CN1-P07`: la auditoría no cambia).
+`agruparPorPatron` junta por código (`lib/auditor/vista.ts:106-138`) y cada tarjeta se queda con los patrones cuyo
+caso más reciente es suyo (`components/auditoria/PanelDeAuditoria.jsx:150`). «Qué corregir» cuenta igual, por código
+(`lib/negocio/lecturaDeConversation.ts:380`): en CN-4 contaba por agente y código, y un código con casos de los dos
+agentes sumaba dos en «{N} por resolver» mientras Auditoría dibujaba uno; se corrigió en CN-5.
+
+**22 · La pantalla no avisa si su dato está viejo.** **Cambió** (`CN1-P08`): la pantalla sigue sin decirlo, y el
+comentario de la cabecera no mira la frescura para Conversation (`lib/agentes/cabecera.ts:124`). Lo dice el cerebro
+con `frescura`, que cubre las cinco tareas de esta pantalla (`lib/agentes/executive/adaptadores/plataforma.ts:37`), y el
+detector pasa a «sin medición» si el auditor no está al día (`lib/agentes/detectores/conversation.ts:27-28`). Con el
+barrido caído, «Hoy» y «7 días» se vaciarían igual que un embudo sin entrada, y sólo lo distingue quien le pregunte
+al agente.
+
+**23 · «Confirmaron» no es una porción de «Citas».** **Nuevo** (CN1-10): cuenta contactos, descartados incluidos, y su
+barra es sobre los que respondieron el campo. En la misma cadena que «Citas», el conteo puede no cuadrar con el de las
+citas, y la pantalla no lo explica: lo dice el agente.
+
+**24 · «Molestos» junta los dos flujos.** **Nuevo** (CN1-12). La ruta de antes de CN-2 sostenía lo contrario: uno por
+agente, porque mezclarlos da un promedio que no describe a ninguno (`app/api/auditoria/route.ts:93-95@e1ccf44`). Hoy
+no se nota —Lead Flow no tiene juzgadas, así que la cifra es la de Appointment Flow sola—; el día que las tenga, la
+fila de abajo y las tarjetas de agente dirán cosas distintas.
+
+**25 · La pantalla no se vio con los datos de producción.** **Nuevo**: CN-5 la midió con una respuesta sintética; la
+revisión del usuario en producción está pendiente. **El cuello de botella de Conversation no es técnico**: la pantalla está, con todo lo que el
+sistema mide, y sigue sin poder llenarse la asistencia, la voz, la landing y la atribución de la cita al agente.
