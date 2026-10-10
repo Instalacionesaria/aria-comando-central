@@ -114,7 +114,7 @@ y `app/sales.css`; `#v-sales` salió de `app/inteligencia-estetica.css`. Lo prue
 | situación | texto |
 |---|---|
 | cifra o tasa sin dato, o bajo el piso | «—» |
-| sección o métrica sin fuente | «Sin dato» |
+| un closer sin vínculo con el CRM, en su subfila y en sus columnas del CRM | «Sin vínculo con el CRM.» |
 | la asistencia, en las cifras y en la tabla | «Nadie marca la asistencia.» |
 | la asistencia sin ninguna cita en la ventana | «Sin citas en esta ventana.» |
 | ventas o revenue sin ningún resultado en la ventana | «Nadie registró en esta ventana.» |
@@ -130,7 +130,8 @@ y `app/sales.css`; `#v-sales` salió de `app/inteligencia-estetica.css`. Lo prue
 | la primera carga | «Cargando…» |
 | la lectura falló | «No se pudo leer. Reintenta.» |
 
-Lo que el servidor escribe —los avisos de la cadena, de la cancelación, del ciclo y del dinero— va como viene.
+Lo que el servidor escribe —los avisos de la cadena, de la cancelación, del ciclo y del dinero, y las notas de la
+tabla— no se dibuja desde SA-8 (S15-18): viaja en la respuesta y lo da el agente de Sales.
 
 **Los desvíos de rótulo, declarados** ·
 
@@ -526,7 +527,8 @@ el `hint` dice «1 llamada sin cierre».
 **Lo que sale de la pantalla** · El p90 del ciclo, las coberturas, las ventas y los acuerdos del mes y todos los
 avisos. Siguen en la respuesta y en el cerebro (S15-18).
 
-**Un «—»** · Con su línea: la cadena con la cohorte vacía, «Sin contactos en este período»; la cancelación sin
+**Un «—», o un cero** · Con su línea: la cadena con la cohorte vacía dice **0** en los cinco eslabones —es un cero
+medido: no entró nadie—, sin porcentajes, y «Sin contactos en este período» bajo el primero; la cancelación sin
 citas, «Sin citas en esta ventana.»; la mediana bajo el piso, «Pocos contactos para una mediana.»; el cobrado sin
 registros, «Nadie registró este mes.» —es del mes calendario, no de la ventana— o «Sin closers configurados.», los
 dos motivos que separa `dineroDelMes`. Los rótulos de los eslabones son cortos y viven en el front (`ESLABON` de
@@ -537,8 +539,9 @@ dos motivos que separa `dineroDelMes`. Los rótulos de los eslabones son cortos 
 ### S15-21 · La lista de frases, después de SA-8
 
 S15-02 cambia así en SA-8, con el código: **entran** «Sin llamadas sin cierre en esta ventana.», «Sin objeción
-clasificada», «Pocos contactos para una mediana.» y «Nadie registró este mes.»; **salen** «Sin motivos registrados.» y
-«Fuera del catálogo», que eran de los motivos de Avanzar, y el desvío «{N} sin venta», porque el `hint` vuelve a ser el
+clasificada», «Pocos contactos para una mediana.», «Nadie registró este mes.» y, con la revisión de SA-9, «Sin
+vínculo con el CRM.»; **salen** «Sin motivos registrados.» y «Fuera del catálogo», que eran de los motivos de Avanzar,
+y «Sin dato», que sólo usaba la subfila del closer sin vínculo, y el desvío «{N} sin venta», porque el `hint` vuelve a ser el
 del prototipo. Las demás quedan. La prueba 249 sigue exigiendo que la constante `FRASE` y la tabla de S15-02
 coincidan en las dos direcciones.
 
@@ -559,4 +562,4 @@ motivo del catálogo. Las demás herramientas ya traen los avisos que la pantall
 | SA-6 | Esta sección, la medición de las llamadas HT con el OK del usuario y la nota en `docs/OTROS/futuro/lo-que-sales-no-mide.md` | **hecho el 2026-10-09**, revisado por el usuario |
 | SA-7 | El servidor: los motivos de las llamadas HT en la lectura, la ruta y el cerebro, con sus pruebas | **hecho el 2026-10-09**: 14 mutaciones muertas; se sube con SA-8, porque la pantalla de hoy lee los motivos con la forma vieja |
 | SA-8 | La pantalla: sin párrafos, los motivos de las llamadas y la cadena en cifras; la lista de frases y la prueba 249 | **hecho el 2026-10-09** |
-| SA-9 | La revisión, las mutaciones, la suite entera, el navegador, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |
+| SA-9 | La revisión, las mutaciones, la suite entera, el navegador, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | **hecho el 2026-10-09**, salvo la subida y la revisión del usuario: una lente adversarial; el closer sin vínculo con su motivo («Sin vínculo con el CRM.», que reemplaza a «Sin dato»); cuatro textos y dos citas corregidos; las pruebas de la tarjeta vacía, la fila gris, la ventana por creación, las que se reanalizan y la posición de la categoría; 9 mutaciones muertas; la foto al día |

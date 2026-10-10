@@ -125,7 +125,7 @@ test('cada cifra y cada columna sale del lugar que le toca en `pantalla`', () =>
   }
   const filas = funcion(panel(), 'Closers');
   const orden = [
-    'o(f.agendadas, miles)',
+    "<Celda c={{ valor: f.agendadas, motivo: f.agendadas === null ? 'sin_vinculo' : null }} formato={miles} />",
     '<Celda c={f.asistieron} formato={miles} />',
     '<Celda c={f.ventas} formato={miles} />',
     '<Celda c={f.cierre} formato={pf} />',
@@ -169,7 +169,7 @@ test('las frases son las de S15-02, ni una más ni una menos', () => {
 test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor', () => {
   const tipo = /export type MotivoDeLaCifra =([^;]+);/.exec(leer('lib/negocio/lecturaDeSales.ts'))?.[1] ?? '';
   const delServidor = [...tipo.matchAll(/'(\w+)'/g)].map((m) => m[1]!).sort();
-  assert.equal(delServidor.length, 6, 'no se leyeron los motivos del servidor');
+  assert.equal(delServidor.length, 7, 'no se leyeron los motivos del servidor');
   const c = comun();
   const frases = c.slice(c.indexOf('export const FRASE = {'), c.indexOf('};', c.indexOf('export const FRASE = {')));
   const texto = Object.fromEntries([...frases.matchAll(/(\w+): '([^']+)'/g)].map((m) => [m[1], m[2]]));
@@ -180,6 +180,7 @@ test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor'
      conjuntos y dirían «Pocos intentos» de una ventana sin un solo registro. */
   assert.deepEqual(mapa, {
     sin_closers: 'Sin closers configurados.',
+    sin_vinculo: 'Sin vínculo con el CRM.',
     sin_citas: 'Sin citas en esta ventana.',
     sin_asistencia: 'Nadie marca la asistencia.',
     sin_registros: 'Nadie registró en esta ventana.',
@@ -273,7 +274,7 @@ test('lo nuevo vive en `app/sales.css`, acotado; ninguna otra hoja alcanza a la 
 
 test('sin párrafos: el panel no dibuja avisos del servidor ni el texto de una ventana (S15-18)', () => {
   const t = panel();
-  assert.doesNotMatch(t, /\.aviso\b|avisoDelTecho|\.falta\b|\.que\b|ventanas/, 'el panel volvió a dibujar un aviso, un motivo largo o el texto de una ventana');
+  assert.doesNotMatch(t, /\.aviso\b|avisoDelTecho|\.falta\b|\.que\b|ventanas|\.p90\b|cobertura/, 'el panel volvió a dibujar un aviso, el p90, una cobertura o el texto de una ventana (S15-20)');
   // Debajo de una cifra, una sola línea: la de la lista cerrada o un porcentaje.
   assert.match(funcion(t, 'Stat'), /\{debajo \? <div className="sl-motivo">\{debajo\}<\/div> : null\}/);
   assert.equal([...funcion(t, 'Stat').matchAll(/sl-motivo/g)].length, 1, 'una cifra lleva más de una línea debajo');
@@ -304,4 +305,19 @@ test('la tarjeta de abajo: cada «—» con su línea, y el cobrado con la del m
   assert.match(c, /const cobradoFalta = sinClosers \? FRASE\.sinClosers : FRASE\.sinRegistrosDelMes;/, 'el cobrado es del mes, no de la ventana');
   assert.match(c, /debajo=\{dinero\.cobrado\.valor === null \? cobradoFalta : FRASE\.reportado\}/, 'el cobrado no dice «reportado por el closer»');
   assert.match(c, /rotulo=\{ESLABON\[e\.clave\]\}\s*valor=\{miles\(e\.contactos\)\}/, 'un eslabón no dibuja su cifra del servidor');
+});
+
+test('los motivos sin llamadas, la fila gris y la línea de cada eslabón (S15-19, S15-20)', () => {
+  const m = funcion(panel(), 'Motivos');
+  assert.match(m, /\{m\.sinCierre === 0 \? \(\s*<p className="sl-vacio">\{FRASE\.sinLlamadas\}<\/p>/, 'sin llamadas sin cierre la tarjeta no lo dice');
+  assert.match(
+    m,
+    /\{m\.sinObjecion > 0 \? \(\s*<FilaDeMotivo nombre=\{FRASE\.sinObjecion\} n=\{m\.sinObjecion\} porcion=\{m\.porcionSinObjecion\} clase="sl-fuera" \/>/,
+    'se perdió la fila de «Sin objeción clasificada», o su barra gris',
+  );
+  assert.match(
+    funcion(panel(), 'LaCadenaComercial'),
+    /debajo=\{e\.porcionDeLaCohorte === null \? \(i === 0 \? FRASE\.sinContactos : null\) : pf\(e\.porcionDeLaCohorte\)\}/,
+    'el porcentaje de un eslabón, o la línea de la cohorte vacía, cambió',
+  );
 });

@@ -1,6 +1,6 @@
 # Sales Intelligence
-> Corte: **2026-10-09**, con el código de `51b5d25`. Las cifras de producción son de dos fechas y cada una lo
-> dice: las del **2026-10-09**, medidas para `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (§ 2) con
+> Corte: **2026-10-09**, con el código de `904968a`. Las cifras de producción son de dos fechas y cada una lo
+> dice: las del **2026-10-09**, medidas para `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (§ 2 y § 7) con
 > `scripts/supabase.mjs leer` (sólo lectura, sólo agregados); y las del **2026-09-28**, de la foto anterior, que no
 > se re-midieron. Para este corte no se leyó producción. Las ventanas son rodantes: lo que depende de la hora vale
 > para el día de su medición. Cada afirmación lleva su `archivo:línea`. Para ubicar lo nombrado, ver
@@ -10,8 +10,10 @@
 
 **El front del prototipo, con los datos reales, desde el 2026-10-09.** La pestaña —«Closing» en el menú— vuelve al
 marcado de `aios-command-center_1.html:2931-2995`: las cuatro cifras, la tabla de closers y los motivos de no venta,
-y debajo una tarjeta más con lo que la pantalla anterior medía. Todo sale de una sola lectura del servidor,
-`lecturaDeSales`, y cada «—» dice por qué. El titular no cambió: **nadie registra**. `negocio.resultados` sigue con
+y debajo una tarjeta más con lo que la pantalla anterior medía, en cifras. Todo sale de una sola lectura del servidor,
+`lecturaDeSales`, y cada «—» dice por qué en una línea: el resto de la explicación la da el agente de Sales. Los
+motivos de no venta salen solos, de las llamadas HT que terminaron sin cierre: **4 en 30 días**, la mayoría por
+precio (medido el 2026-10-09). El titular no cambió: **nadie registra**. `negocio.resultados` sigue con
 **7 filas, ninguna venta y ningún monto**, y la última es del 2026-09-09 (medido el 2026-10-09): un mes sin un solo
 resultado. La asistencia está marcada en **0 de 363** citas.
 
@@ -36,6 +38,12 @@ resultado. La asistencia está marcada en **0 de 363** citas.
 >   `app/inteligencia-estetica.css` y la sección deja la estética de operación.
 > - **2026-10-09 · `51b5d25`** — SA-4: la revisión adversarial; tres motivos nuevos para un «—» y la mitad del
 >   cierre para el cerebro.
+> - **2026-10-09 · `7900472`** — SA-5: la comparación medida contra el prototipo y esta foto. El usuario revisó la
+>   pantalla en producción y pidió una segunda ronda (doc 15 § 7).
+> - **2026-10-09 · `f599b51`** — SA-6: la segunda ronda, documentada, con la medición de las llamadas HT.
+> - **2026-10-09 · `ee57d33`** — SA-7: `lib/negocio/motivosDeLasLlamadas.ts`; los motivos de la pantalla salen de las
+>   llamadas HT sin cierre, y lo que registra el closer queda para el agente.
+> - **2026-10-09 · `904968a`** — SA-8: el tablero sin párrafos, los motivos de las llamadas y la cadena en cifras.
 
 ---
 
@@ -97,7 +105,8 @@ ciclo. Los closers se leen una vez. Todo lo que va en `pantalla` viaja de 0 a 1;
 | módulo | qué calcula | dueño |
 |---|---|---|
 | `lib/negocio/lecturaDeSales.ts` | las cuatro cifras, la tabla, los motivos y la tarjeta de abajo, con el motivo de cada «—» | Sales |
-| `lib/negocio/motivosDeNoVenta.ts` | los «No le interesa» de los closers por motivo del catálogo; lo que no casa, aparte | Sales |
+| `lib/negocio/motivosDeLasLlamadas.ts` | las llamadas HT sin cierre, por categoría de objeción; las sin ninguna clasificada, aparte | Sales |
+| `lib/negocio/motivosDeNoVenta.ts` | los «No le interesa» de los closers por motivo del catálogo, para el agente | Sales |
 | `lib/negocio/cierrePorCloser.ts` | una fila por closer configurado, dos ejes, con el monto reportado y las ventas sin monto | Sales |
 | `lib/negocio/dineroDelMes.ts` | cobrado, ventas y acuerdos del mes calendario | compartido con el Inicio del Closer |
 | `lib/negocio/indicadoresDeCitas.ts` | la tasa de cancelación (`tasaDeCancelacion`) | Conversation; Sales es su segundo consumidor |
@@ -111,14 +120,14 @@ período con que abre (`lib/negocio/periodo.ts:109`)—, deducido de la medició
 
 | bloque | dónde | el 2026-10-09, a 30 días |
 |---|---|---|
-| El encabezado: «Sales», «Cierre, closers y motivos de pérdida» y el segmentado de cuatro períodos | `components/sales/PanelDeSales.jsx:46`, `:133` | con la cabecera del departamento a la vista, sólo el segmentado |
+| El encabezado: «Sales», «Cierre, closers y motivos de pérdida» y el segmentado de cuatro períodos | `components/sales/PanelDeSales.jsx:46`, `:136` | con la cabecera del departamento a la vista, sólo el segmentado |
 | Asistencias | `components/sales/PanelDeSales.jsx:177` | «—», «Nadie marca la asistencia.» (0 de 363 citas marcadas) |
 | Tasa de cierre | igual | «—», «Pocos intentos para una tasa.» (1 intento) |
 | Ventas | igual | **0**, cero medido: hubo 1 resultado y ninguna venta |
 | Revenue reportado | igual | **$0**, «reportado por el closer» |
-| Closers: seis columnas, una fila por closer configurado | `components/sales/PanelDeSales.jsx:221` | 3 filas; la nota de cada una, debajo de la tabla |
-| Motivos de no venta, con «{N} sin venta» | `components/sales/PanelDeSales.jsx:265` | «1 sin venta» y «Sin motivos registrados.»: el único «No le interesa» es de agosto |
-| La cadena comercial: la cadena, la cancelación, el ciclo, el dinero del mes y la cobertura | `components/sales/PanelDeSales.jsx:305` | no re-medido; el 2026-09-28 la cancelación era 34,9 % y la cadena terminaba en 0 ventas |
+| Closers: seis columnas, una fila por closer configurado | `components/sales/PanelDeSales.jsx:221` | 3 filas, sin notas: las da el agente |
+| Motivos de no venta, con «{N} llamadas sin cierre» | `components/sales/PanelDeSales.jsx:263` | «4 llamadas sin cierre»: Precio 3 · No es para su negocio 2 · No confía en el resultado 1 |
+| La cadena comercial, en cifras: los cinco eslabones, y la cancelación, los días hasta la cita y el cobrado del mes | `components/sales/PanelDeSales.jsx:303` | no re-medido; el 2026-09-28 la cancelación era 34,9 % y la cadena terminaba en 0 ventas; el cobrado de octubre, «—» con «Nadie registró este mes.» |
 
 **El borde de la ventana.** Ese único resultado de 30 días es del 2026-09-09: la ventana lo alcanzaba por un día.
 Desde el 2026-10-10, sin un registro nuevo, Ventas, Revenue y Tasa de cierre dicen «—» con «Nadie registró en esta
@@ -130,6 +139,8 @@ de designación y nunca por tasa (`lib/negocio/cierrePorCloser.ts:235-244`). Age
 CRM; Ventas, Cierre y Revenue, lo que cada persona registró (`lib/negocio/cierrePorCloser.ts:516-520`). La subfila
 dice «{N} contactos asignados» —la asignación por ICP del prototipo no existe—. **La tabla muestra el nombre real de
 cada closer**, a propósito: es una evaluación de desempeño y la trata como tal (`lib/negocio/cierrePorCloser.ts:11-13`).
+La nota de la tabla y la de cada fila —por qué una tasa no está, qué eje cuenta cada columna— no se dibujan: viajan en
+`cierre_por_closer` y las da el agente (doc 15, S15-18).
 Los plantones del calendario, que la tabla anterior publicaba como columna, ya no se dibujan.
 
 **Ventanas y pisos.** Cuatro ventanas en una pantalla: el MES calendario en la zona de la empresa para el dinero
@@ -166,12 +177,12 @@ dibujaba 23 valores escritos a mano que cerraban entre sí, uno al lado del nomb
 |---|---|
 | Asistencias 74, Tasa de cierre 24 %, Ventas 18, Revenue reportado $55,200 | las cuatro, con los rótulos del prototipo; cada «—» con su motivo y cada cero, medido |
 | Tabla de dos filas: un closer real con su nombre, «ICP alto asignado» y 44/31/10/32 %/$31,000; y «Asesor comercial», 63/43/8/19 %/$24,200 | una fila por closer configurado, con las seis columnas del prototipo y lo registrado de cada uno; «{N} contactos asignados» |
-| «Motivos de no venta»: «56 llamadas sin cierre», Precio 21, No es quien decide 13, Sin necesidad clara 12, Pidió tiempo 10 | los del catálogo de «No le interesa», con «{N} sin venta»; lo que no casa, en «Fuera del catálogo» |
+| «Motivos de no venta»: «56 llamadas sin cierre», Precio 21, No es quien decide 13, Sin necesidad clara 12, Pidió tiempo 10 | «{N} llamadas sin cierre», de verdad: las llamadas HT sin cierre por las seis categorías de objeción del analizador, de más a menos |
 | Selector «Hoy / 7 días / 30 días», cuyo tercer botón mandaba `data-p="mes"` | el segmentado de las cuatro claves de `lib/negocio/periodo.ts:83-96`, que enciende el botón que el servidor contestó |
 | Píldora «Personalizado» y botón «Plan de acción» (`slPlanBtn`), sin oyente | nada: Sales no tiene detector, y un rango libre no lo reproduce ninguna otra pantalla (S15-03) |
 
-Los desvíos de rótulo y de color están declarados en S15-02 del doc 15: «{N} contactos asignados», «{N} sin venta»,
-los motivos del catálogo, «Agendadas» como citas del CRM y el color de las barras por su origen.
+Los desvíos de rótulo y de color están declarados en S15-02 del doc 15: «{N} contactos asignados», los motivos como
+categorías del analizador, «Agendadas» como citas del CRM y el color de las barras por lo que es cada fila.
 
 **El nombre de la maqueta sigue en el repositorio**, que es público: en el prototipo `aios-command-center_1.html`,
 `lib/ghl/calendarios.ts`, `components/negocio/Fila.jsx`, `components/views/CloserView.jsx`,
@@ -215,9 +226,10 @@ plantones y 2 «showed».
 **Los closers: 3**, los tres con su usuario del CRM; dos registraron alguna vez. La comisión, al 10 % para los tres y
 sin meta mensual (medido el 2026-09-28).
 
-**Las llamadas de venta.** Los Analizadores guardaban 115 llamadas el 2026-09-28; de las 38 HT analizadas,
-`NO_CERRADA` 36, `INDETERMINADO` 2 y `CERRADA` 0 (`lib/analizadores/nucleo/ht.ts:133-138`). Es una lectura de un
-modelo, no un registro del closer; no re-medido.
+**Las llamadas de venta.** Los Analizadores guardaban 115 llamadas el 2026-09-28. El 2026-10-09 había **38 llamadas HT
+analizadas que terminaron sin cierre** (`NO_CERRADA`, `lib/analizadores/nucleo/ht.ts:133-138`), 4 de ellas en los
+últimos 30 días, con sus 87 objeciones clasificadas; ninguna `CERRADA` (el 2026-09-28 eran 36 de 38, con 2
+`INDETERMINADO`). Es una lectura de un modelo, no un registro del closer, y es la fuente de los motivos de no venta.
 
 ---
 
@@ -251,9 +263,11 @@ comisiones.
 
 **7 · El cobro verificado.** Ninguna integración de pagos. El revenue es siempre «reportado por el closer».
 
-**8 · Los motivos de pérdida, con dato.** La tarjeta existe desde el 2026-10-09 y agrupa lo que el closer registra;
-hay 1 fila en toda la historia. Los campos del CRM con motivos están en tres contactos o menos
-(`docs/sales/05-LOS-MOTIVOS-DE-NO-VENTA.md:118`).
+**8 · Los motivos de pérdida, de una fuente que no es el closer.** La tarjeta los saca de las llamadas HT sin
+cierre, por la categoría de sus objeciones: 4 en 30 días y 38 en toda la historia, con todas sus objeciones
+clasificadas (medido el 2026-10-09). Es lo que un modelo leyó en la transcripción, no una pérdida reportada; lo que el
+closer registra en Avanzar tiene 1 fila en toda la historia y lo da el agente. Los campos del CRM con motivos están en
+tres contactos o menos (`docs/sales/05-LOS-MOTIVOS-DE-NO-VENTA.md:118`).
 
 **9 · El plan y las señales.** Sales no tiene detector (`lib/agentes/senales/tipos.ts:6-7`); el «Plan de acción» del
 prototipo no se dibuja hasta que lo tenga.
@@ -274,9 +288,9 @@ y `lib/negocio/etapas.ts:78`.
 lleva «reportado por el closer» debajo de la cifra (`components/sales/PanelDeSales.jsx:177`), y el cobrado del mes
 también. Ninguna «CERRADA» del analizador puede reemplazarlo: es la lectura de un modelo.
 
-**4 · Un «—» dice por qué, y un cero es un cero medido.** Seis motivos cerrados (`lib/negocio/lecturaDeSales.ts:53`),
-cada uno con su frase de la lista de S15-02 (`components/sales/comun.jsx:28`): sin closers, sin citas, sin asistencia
-marcada, sin registros en la ventana, bajo el piso y una venta sin monto. Es la regla de los dos ceros de
+**4 · Un «—» dice por qué, y un cero es un cero medido.** Siete motivos cerrados (`lib/negocio/lecturaDeSales.ts:53`),
+cada uno con su frase de la lista de S15-02 (`components/sales/comun.jsx:28`): sin closers, un closer sin vínculo con
+el CRM, sin citas, sin asistencia marcada, sin registros en la ventana, bajo el piso y una venta sin monto. Es la regla de los dos ceros de
 `lib/negocio/comision.ts:14-28` llevada a la pantalla: un `?? 0` convertiría «nadie registró» en «no se vendió».
 
 **5 · El piso de 10, y es del DENOMINADOR.** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`). El
@@ -297,10 +311,15 @@ presentaron entre las citas con la asistencia respondida; sin ninguna respondida
 
 **10 · Los identificadores del CRM se resuelven por NOMBRE, nunca a mano.** `lib/negocio/salidas.ts:73-77`.
 
-**11 · Los motivos se leen de `resultados.detalle`, y su texto libre no viaja.** Sólo el nombre del motivo cuando casa
-con el catálogo; lo demás se cuenta en «Fuera del catálogo» (`lib/negocio/motivosDeNoVenta.ts:50`). La base 166
-prueba que un texto libre no sale en la respuesta. Las filas viejas conservan su texto
-(`lib/negocio/salidas.ts:196-197`), así que el agrupador tolera valores que ya no están en el catálogo.
+**11 · De un motivo viaja la categoría, nunca el texto.** Los de la tarjeta, por la categoría vigente de cada
+objeción —la de la misma posición y la misma huella de su texto—, sin la frase ni quién organizó la reunión
+(`lib/negocio/motivosDeLasLlamadas.ts`). Los que registra el closer, por el nombre del motivo cuando casa con el
+catálogo; lo demás se cuenta en «Fuera del catálogo» (`lib/negocio/motivosDeNoVenta.ts:50`), y la base 166 prueba que
+un texto libre no sale en la respuesta.
+
+**12 · Es un tablero: cifras con su rótulo, y la explicación es del agente.** Bajo un «—», una sola línea de la lista
+cerrada; los avisos, las notas y el texto de cada ventana viajan en la respuesta y en las herramientas del cerebro,
+y la pantalla no los dibuja (doc 15, S15-18).
 
 ---
 
@@ -315,8 +334,8 @@ nadie haga nada (§ 2). Es correcto, y quien lo vea puede leerlo como una rotura
 tarjeta de abajo la dibuja con su decimal sobre cualquier denominador: con «Hoy» o «7 días», pocas citas mueven la
 tasa muchos puntos. Las demás tasas de la pantalla sí tienen piso.
 
-**Poner nombres reales al lado de números.** La tabla lo hace a propósito, con números medidos, sin ranking y con la
-nota de cada fila a la vista. Lo que sí sería un defecto es una cifra inventada al lado de un nombre, que es lo que
+**Poner nombres reales al lado de números.** La tabla lo hace a propósito, con números medidos y sin ranking; por qué
+a una fila le falta una tasa lo explica el agente. Lo que sí sería un defecto es una cifra inventada al lado de un nombre, que es lo que
 hacía la maqueta.
 
 **Sumar `venta_chica` con `venta`, lo prometido con lo cobrado, o una venta sin monto como cero.** Hoy dan cero
@@ -325,9 +344,11 @@ porque no hay ninguna venta, así que el defecto entraría sin síntomas. Las pr
 **Confundir «nadie registró la asistencia» con «nadie asistió».** Con 0 de 363 marcadas, una cuenta sin
 `asistio is not null` daría 0 % y dispararía una crisis que no existe.
 
-**Tomar el «showed» del calendario o el resultado del analizador como dato de Sales.** Los dos están cerca y tientan:
-el calendario empezó a marcar presentes y el analizador clasifica llamadas como `CERRADA`. Ninguno es lo que el closer
-reportó; sumarlos daría una asistencia o un cierre plausibles con otra definición adentro (S15-P04).
+**Tomar el «showed» del calendario o el resultado del analizador como venta o como asistencia.** Los dos están cerca y
+tientan: el calendario empezó a marcar presentes y el analizador clasifica llamadas como `CERRADA`. Ninguno es lo que el
+closer reportó; sumarlos daría una asistencia o un cierre plausibles con otra definición adentro (S15-P04). El
+analizador SÍ es la fuente de los motivos de no venta, por decisión del usuario, y la tarjeta lo dice con su `hint`:
+son llamadas, no ventas perdidas registradas.
 
 **Dos pantallas, dos respuestas a «¿hubo una venta?».** El Pipeline del Closer clasifica por etiqueta cuando nadie
 escribió la etapa (`lib/negocio/etapas.ts:222-261`); Sales, Leads Portal y el dinero del mes leen `negocio.resultados`.
@@ -336,6 +357,7 @@ sino de dónde se anota.
 
 **Lo que se puede construir hoy, y lo que no.** La pantalla del prototipo está construida con todo lo que el sistema
 mide. Sigue sin poder llenarse: la tasa de cierre (0 ventas), la asistencia y el show rate (0 de 363), el revenue
-(0 montos), los motivos (1 fila), la llamada de venta enganchada a la cita y la asignación por ICP. **El cuello de
+(0 montos), la llamada de venta enganchada a la cita y la asignación por ICP. Los motivos de no venta, en cambio, ya
+tienen dato, porque salen de las llamadas analizadas. **El cuello de
 botella de Sales sigue sin ser técnico**: la pantalla está, el escritor está (`lib/negocio/avanzar.ts:248`), la
 comisión está configurada, y en un mes no se registró un solo resultado en Avanzar.

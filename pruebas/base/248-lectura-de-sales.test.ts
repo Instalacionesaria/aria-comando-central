@@ -274,12 +274,16 @@ async function unaLlamada(o: {
   tipo?: 'HT' | 'OB';
   resultado: 'CERRADA' | 'NO_CERRADA' | 'INDETERMINADO';
   haceDias?: number;
-  objeciones?: { texto: string; categoria: string | null; vieja?: boolean }[];
+  /** Sin fecha de reunión: la ventana mira cuándo se creó la llamada. */
+  sinFecha?: boolean;
+  /** Otro estado que `DONE`: una llamada que se está analizando otra vez, con el análisis viejo puesto. */
+  estado?: string;
+  objeciones?: { texto: string; categoria: string | null; vieja?: boolean; indice?: number }[];
 }): Promise<void> {
   const { rows } = await esc.admin.query<{ id: string }>(
     `insert into negocio.analizador_llamadas (org_id, tipo, proveedor, estado, fecha_de_la_reunion)
-     values ($1, $2, 'MANUAL', 'DONE', now() - make_interval(days => $3) - interval '1 hour') returning id`,
-    [esc.org, o.tipo ?? 'HT', o.haceDias ?? 0],
+     values ($1, $2, 'MANUAL', $4, case when $5 then null else now() - make_interval(days => $3) - interval '1 hour' end) returning id`,
+    [esc.org, o.tipo ?? 'HT', o.haceDias ?? 0, o.estado ?? 'DONE', o.sinFecha ?? false],
   );
   const id = rows[0]!.id;
   const objeciones = o.objeciones ?? [];
@@ -293,7 +297,7 @@ async function unaLlamada(o: {
     await esc.admin.query(
       `insert into negocio.objeciones_clasificadas (org_id, llamada_id, indice, huella, categoria, modelo)
        values ($1, $2, $3, md5($4), $5, 'claude-haiku-5')`,
-      [esc.org, id, i, x.vieja ? `${x.texto} (antes)` : x.texto, x.categoria],
+      [esc.org, id, x.indice ?? i, x.vieja ? `${x.texto} (antes)` : x.texto, x.categoria],
     );
   }
 }
@@ -340,4 +344,32 @@ test('la lectura de la pantalla trae los motivos de las llamadas, y aparte lo qu
   await sinLlamadas();
   assert.deepEqual([l.pantalla.motivos.sinCierre, l.pantalla.motivos.filas.map((f) => f.categoria)], [1, ['momento']]);
   assert.deepEqual([l.pantalla.registrados.total, l.pantalla.registrados.filas.map((f) => f.motivo)], [1, ['Precio']]);
+});
+
+test('la ventana mira la creación sin fecha de reunión; las que se reanalizan no cuentan; la categoría casa por su posición', async () => {
+  await sinLlamadas();
+  // Sin fecha de reunión: cuenta por su creación, que es ahora.
+  await unaLlamada({ resultado: 'NO_CERRADA', sinFecha: true, objeciones: [{ texto: 'Es caro.', categoria: 'precio' }] });
+  // Una que se está analizando otra vez: su análisis es el viejo, y no cuenta.
+  await unaLlamada({ resultado: 'NO_CERRADA', estado: 'PENDING', objeciones: [{ texto: 'Es caro.', categoria: 'precio' }] });
+  /* Dos objeciones con la clasificación de la primera también en la posición 1, con otra categoría: la de un análisis
+     que cambió el orden. Por la posición, la segunda no casa (su texto es otro) y la fila vieja tampoco. */
+  await unaLlamada({ resultado: 'NO_CERRADA', objeciones: [
+    { texto: 'Lo tengo que pensar.', categoria: 'momento' },
+    { texto: 'Otra cosa.', categoria: null },
+  ] });
+  await esc.admin.query(
+    `insert into negocio.objeciones_clasificadas (org_id, llamada_id, indice, huella, categoria, modelo)
+     select org_id, llamada_id, 1, huella, 'confianza', modelo from negocio.objeciones_clasificadas
+      where org_id = $1 and indice = 0 and categoria = 'momento'`,
+    [esc.org],
+  );
+  const m = await enAlfa(() => motivosDeLasLlamadas(30));
+  await sinLlamadas();
+  assert.equal(m.sinCierre, 2, 'se contó la que se reanaliza, o se perdió la que no tiene fecha de reunión');
+  assert.deepEqual(
+    m.filas.map((f) => [f.categoria, f.llamadas]).sort(),
+    [['momento', 1], ['precio', 1]],
+    'la categoría casó sin mirar la posición de la objeción',
+  );
 });

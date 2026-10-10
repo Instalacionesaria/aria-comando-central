@@ -142,8 +142,8 @@ test('la tabla lleva las seis columnas del prototipo, cada una con su eje y su m
   assert.deepEqual(b!.asistieron, { valor: 3, motivo: null });
   assert.deepEqual(b!.cierre, { valor: 4 / 12, motivo: null });
   assert.deepEqual(b!.revenue, { valor: 4000, motivo: null });
-  // Sin vínculo con el CRM: «—» sin motivo; la nota de la fila dice por qué.
-  assert.deepEqual([c!.agendadas, c!.asistieron], [null, { valor: null, motivo: null }]);
+  // Sin vínculo con el CRM: «—» con su motivo, que la pantalla dice en la celda.
+  assert.deepEqual([c!.agendadas, c!.asistieron], [null, { valor: null, motivo: 'sin_vinculo' }]);
   // Con intentos y sin ventas, cero medido; sin citas, «—» porque no hubo.
   assert.deepEqual([d!.ventas, d!.revenue], [{ valor: 0, motivo: null }, { valor: 0, motivo: null }]);
   assert.deepEqual(d!.asistieron, { valor: null, motivo: 'sin_citas' });

@@ -239,11 +239,9 @@ function Closers({ t }) {
               <div className="row-i sl-closers" role="row" key={f.usuarioId}>
                 <div role="cell">
                   <div className="rn">{f.nombre}</div>
-                  <div className="rs">{f.contactos === null ? FRASE.sinDato : `${miles(f.contactos)} contactos asignados`}</div>
+                  <div className="rs">{f.contactos === null ? FRASE.sinVinculo : `${miles(f.contactos)} contactos asignados`}</div>
                 </div>
-                <div className="num" role="cell">
-                  {o(f.agendadas, miles)}
-                </div>
+                <Celda c={{ valor: f.agendadas, motivo: f.agendadas === null ? 'sin_vinculo' : null }} formato={miles} />
                 <Celda c={f.asistieron} formato={miles} />
                 <Celda c={f.ventas} formato={miles} />
                 <Celda c={f.cierre} formato={pf} />

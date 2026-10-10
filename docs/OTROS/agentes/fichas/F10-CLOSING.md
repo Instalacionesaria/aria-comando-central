@@ -14,7 +14,7 @@
 ## Lo que el cerebro lee acá
 
 `dinero_del_mes`, `cancelacion_de_citas`, `cadena_de_cierre`, `ciclo_hasta_la_cita`, `cierre_por_closer` y
-`motivos_de_no_venta`, con los mismos argumentos que la lectura de la pantalla (`lib/negocio/lecturaDeSales.ts:256-260` y `lib/negocio/lecturaDeSales.ts:284-288`); y `economia_del_negocio` si la persona ve
+`motivos_de_no_venta`, con los mismos argumentos que la lectura de la pantalla (`lib/negocio/lecturaDeSales.ts:256-262` y `lib/negocio/lecturaDeSales.ts:284-288`); y `economia_del_negocio` si la persona ve
 también Acquisition.
 
 ## Requisitos

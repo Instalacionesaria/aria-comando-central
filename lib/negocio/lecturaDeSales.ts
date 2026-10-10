@@ -45,12 +45,12 @@ import { motivosDeNoVenta, type MotivosDeNoVenta } from './motivosDeNoVenta.ts';
 // ─── Los tipos ──────────────────────────────────────────────────────────────
 
 /**
- * Por qué una cifra no tiene valor: `sin_closers` —no hay closers configurados—, `sin_citas` —no hubo citas en la
- * ventana—, `sin_asistencia` —hubo y nadie marcó la asistencia—, `sin_registros` —nadie registró un resultado en
+ * Por qué una cifra no tiene valor: `sin_closers` —no hay closers configurados—, `sin_vinculo` —el closer no está
+ * vinculado a un usuario del CRM, así que no hay citas que mirar—, `sin_citas` —no hubo citas en la ventana—, `sin_asistencia` —hubo y nadie marcó la asistencia—, `sin_registros` —nadie registró un resultado en
  * la ventana—, `bajo_el_piso` —hay registros, pocos para una tasa— o `venta_sin_monto` —alguna venta no trae su
  * monto—. La frase la elige la pantalla de su lista cerrada (S15-02).
  */
-export type MotivoDeLaCifra = 'sin_closers' | 'sin_citas' | 'sin_asistencia' | 'sin_registros' | 'bajo_el_piso' | 'venta_sin_monto';
+export type MotivoDeLaCifra = 'sin_closers' | 'sin_vinculo' | 'sin_citas' | 'sin_asistencia' | 'sin_registros' | 'bajo_el_piso' | 'venta_sin_monto';
 
 export interface CifraDeSales {
   /** Un conteo, un monto o una proporción de 0 a 1. `null`: «—», y el motivo dice por qué. */
@@ -182,10 +182,10 @@ export function armarCierre(e: EntradaDelCierre): CierreArmado {
     nombre: f.nombre,
     contactos: f.contactos,
     agendadas: f.citas,
-    /* Sin vínculo con el CRM no hay citas que mirar: «—» sin motivo, y la nota de la fila dice por qué. */
+    /* Sin vínculo con el CRM no hay citas que mirar: «—» con su motivo, que la pantalla dice en la celda (S15-18). */
     asistieron:
       f.conAsistencia === null
-        ? sinValor(null)
+        ? sinValor('sin_vinculo')
         : f.citas === 0
           ? sinValor('sin_citas')
           : f.conAsistencia === 0

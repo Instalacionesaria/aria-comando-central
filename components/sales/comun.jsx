@@ -7,7 +7,6 @@
    sin cierre»— no son frases de un hueco: son rótulos. */
 export const FRASE = {
   guion: '—',
-  sinDato: 'Sin dato',
   sinAsistencia: 'Nadie marca la asistencia.',
   sinRegistros: 'Nadie registró en esta ventana.',
   sinRegistrosDelMes: 'Nadie registró este mes.',
@@ -19,6 +18,7 @@ export const FRASE = {
   sinObjecion: 'Sin objeción clasificada',
   pocosContactos: 'Pocos contactos para una mediana.',
   sinClosers: 'Sin closers configurados.',
+  sinVinculo: 'Sin vínculo con el CRM.',
   sinContactos: 'Sin contactos en este período',
   cargando: 'Cargando…',
   fallo: 'No se pudo leer. Reintenta.',
@@ -27,6 +27,7 @@ export const FRASE = {
 /** La frase de cada motivo por el que una cifra no tiene valor (`MotivoDeLaCifra` de `lecturaDeSales.ts`). */
 export const FRASE_DEL_MOTIVO = {
   sin_closers: FRASE.sinClosers,
+  sin_vinculo: FRASE.sinVinculo,
   sin_citas: FRASE.sinCitas,
   sin_asistencia: FRASE.sinAsistencia,
   sin_registros: FRASE.sinRegistros,

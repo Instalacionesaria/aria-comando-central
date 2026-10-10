@@ -92,7 +92,8 @@ export const HERRAMIENTAS_DE_SALES: readonly DefinicionDeHerramienta[] = [
       'Sales: las cuatro cifras de arriba de la pantalla (`cifras`: asistencias, tasa de cierre, ventas y revenue ' +
       'reportado, la tasa como fracción de 0 a 1) y, por closer, citas, cancelaciones, asistencia, intentos ' +
       'registrados, ventas, el monto reportado de esas ventas y la tasa de cierre. Una cifra sin valor trae su ' +
-      'motivo: `sin_closers` (no hay closers configurados), `sin_citas` (no hubo citas), `sin_asistencia` (nadie ' +
+      'motivo: `sin_closers` (no hay closers configurados), `sin_vinculo` (el closer no está vinculado al CRM), ' +
+      '`sin_citas` (no hubo citas), `sin_asistencia` (nadie ' +
       'marca la asistencia), `sin_registros` (ningún resultado en la ventana), `bajo_el_piso` (menos de 10 ' +
       'intentos) o `venta_sin_monto` (alguna venta no trae monto; `ventasSinMonto` dice cuántas). Ventas, revenue y ' +
       'tasa son lo que registraron los closers; el revenue ' +
