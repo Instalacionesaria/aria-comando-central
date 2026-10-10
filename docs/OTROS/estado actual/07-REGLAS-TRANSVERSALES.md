@@ -125,7 +125,7 @@ los de Acquisition, Creative, Conversion, Sales y Leads Portal—. Los de Conver
 | `lib/negocio/indicadoresDelLead.ts:183` | `aviso` (Lead Flow) | **nadie — ver abajo** |
 | `lib/negocio/indicadoresDelLead.ts:185` | `avisoDeLatencias` | `components/conversation/PanelDeConversation.jsx:933@6f3bdb5` |
 | `lib/negocio/atribucionDelLead.ts:69` | `aviso` | `components/conversation/PanelDeConversation.jsx:727@6f3bdb5` |
-| `lib/negocio/consumoDelPrecall.ts:133` | `aviso` | `components/conversation/PanelDeConversation.jsx:803@6f3bdb5` |
+| `lib/negocio/consumoDelPrecall.ts:140` | `aviso` | `components/conversation/PanelDeConversation.jsx:803@6f3bdb5` |
 | `lib/auditor/sentimiento.ts:65` | `aviso` | `components/conversation/PanelDeConversation.jsx:827@6f3bdb5` y `:835@6f3bdb5` |
 | `lib/negocio/frescura.ts:58` y `:215` | `aviso` (frescura del barrido) | no re-verificado |
 
@@ -175,7 +175,7 @@ propio piso», y el motivo sigue escrito en `lib/negocio/indicadoresDeCitas.ts:3
 (la foto anterior listaba ocho cifras en cuatro archivos). Los de Conversation, re-verificados: la asistencia
 (`lib/negocio/indicadoresDeCitas.ts:473-476`), la confirmación (`:482-485`), los descartados
 (`:492-495`), las filas de atribución (`lib/negocio/atribucionDelLead.ts:174`), el consumo del precall
-y su desglose fino con las dos ramas sobre el piso (`lib/negocio/consumoDelPrecall.ts:231` y `:239`),
+y su desglose fino con las dos ramas sobre el piso (`lib/negocio/consumoDelPrecall.ts:242` y `:239`),
 y la proporción de molestos (`lib/auditor/sentimiento.ts:127`). Entre los nuevos, el commit `7d1bc8b`
 dejó escrita la variante que hay que evitar: el click-to-landing de Creative **no tenía piso** y el
 comentario de arriba afirmaba que sí —8 de 24 piezas tenían menos de diez clics, y la menor, con uno,
@@ -414,7 +414,7 @@ llamada de las 18 dependa del 14.
 `hoy` = 1 día, `7d`, `30d` y `completo` = `DIAS_DE_TODO` = 3650 (`:52`). La pantalla abre en **30 días**
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
-Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:62`,
+Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:63`,
 `app/api/creative/route.ts:66`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:88`,
 `app/api/leads-portal/route.ts:53`).
 
@@ -429,15 +429,15 @@ tres agujeros, **y los tres se ven bien en pantalla**:
 | `?dias=-5` | `now() - interval '-5 days'`: una ventana **en el FUTURO** | Cero filas, dibujadas como «no pasó nada» |
 
 Por eso `periodoDe()` (`lib/negocio/periodo.ts:188`) devuelve `null` ante cualquier clave desconocida y
-**`null` significa rechazar**: `app/api/auditoria/route.ts:63` lo convierte en un 400. La prueba exige
+**`null` significa rechazar**: `app/api/auditoria/route.ts:64` lo convierte en un 400. La prueba exige
 el rechazo con `=== null` y prohíbe el `??` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:127`),
 porque `periodoDe(x) ?? POR_OMISION` compila, se lee razonable y es exactamente el defecto. La única
 ausencia que cae en el valor por omisión es la real, la primera carga sin parámetro (`:79`).
 
 **Y la lista viaja entera hacia los dos lados.** La clave elegida vuelve en la respuesta
-(`app/api/auditoria/route.ts:122`) para que el botón encendido describa lo que el servidor contestó;
+(`app/api/auditoria/route.ts:124`) para que el botón encendido describa lo que el servidor contestó;
 los botones salen de `PERIODOS` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:192`); y la
-lectura del navegador exige el período, sin valor por omisión propio (`lib/auditor/vista.ts:46`,
+lectura del navegador exige el período, sin valor por omisión propio (`lib/auditor/vista.ts:47`,
 forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:174`).
 
 **Y «completo» no puede leerse como historia.** Por eso las cifras traen `desde`, que es `min()` sobre
@@ -793,7 +793,7 @@ qué compartir sirve: aceptar las congeladas en el módulo compartido rompe 7 pr
 cuando antes mutar el predicado de un módulo dejaba a los otros ocho intactos (mensaje de `1164984`).
 **Lo que no quedó en un solo lugar, medido con `grep` el 2026-09-28:** dos consultas de Conversation
 siguen escribiendo el predicado a mano —la confirmación (`lib/negocio/indicadoresDeCitas.ts:270`) y el
-precall (`lib/negocio/consumoDelPrecall.ts:192`, que además reescribe `cancelada` como
+precall (`lib/negocio/consumoDelPrecall.ts:201`, que además reescribe `cancelada` como
 `<> all(ESTADOS_CANCELADOS)` en `:195`)—, y «agendó» tiene dos definiciones en el producto (§ 4).
 
 **31 · La bandera `sinOperacionesTodavia` y la primera ruta de una pantalla se mueven en el mismo

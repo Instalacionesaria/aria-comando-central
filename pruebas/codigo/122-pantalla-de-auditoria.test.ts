@@ -323,14 +323,14 @@ test('el tablero NO promete hallazgos cuando la empresa no audita', () => {
    * Se lee el FUENTE y no el resultado porque el freno depende de datos de la empresa, y una prueba que montara
    * la pantalla con una empresa sin freno pasaría sin tocar esto. */
   const jsx = leer(CONVERSATION);
-  assert.match(jsx, /<QueCorregir n=\{porCorregir\} noAudita=\{p\.noAudita\}/, 'el freno no le llega a «Qué corregir»');
+  assert.match(jsx, /<QueCorregir c=\{porCorregir\} alCorregir=\{alCorregir\} \/>/, 'el freno no le llega a «Qué corregir»');
   assert.match(
     jsx,
-    /\{noAudita \? \(\s*<span className="gn">\{FRASE\.noAudita\}<\/span>\s*\) : \(\s*<button type="button" className="gn cs-ir" onClick=\{alCorregir\}>/,
+    /\{c\.valor === null \? \(\s*<span className="gn">\{FRASE_DEL_MOTIVO\[c\.motivo\] \?\? FRASE\.guion\}<\/span>\s*\) : \(\s*<button type="button" className="gn cs-ir" onClick=\{alCorregir\}>/,
     'la línea que manda a Auditoría sigue siendo incondicional',
   );
-  /* Y el servidor tampoco cuenta hallazgos sin auditoría: la lectura los deja en cero y el sentimiento en «—». */
-  assert.match(leer('lib/negocio/lecturaDeConversation.ts'), /porCorregir: e\.audita \? e\.porCorregir : 0,/);
+  /* Y el servidor no cuenta patrones sin auditoría: la cifra viaja en «—» con su motivo, y el sentimiento también. */
+  assert.match(leer('lib/negocio/lecturaDeConversation.ts'), /porCorregir: e\.audita \? conValor\(e\.porCorregir\) : sinValor\('no_audita'\),/);
 });
 
 test('el motivo del freno sale de UN solo sitio, y Auditoría lo importa', () => {
@@ -349,7 +349,8 @@ test('la pantalla NO afirma en ningún caso que no se puede calcular nada', () =
   /* El defecto que esta prueba persigue: la pestaña mostraba un número Y decía tres centímetros más abajo que
      «sus indicadores todavía no se pueden calcular». Las dos cosas en la misma pantalla se desmienten, y la que
      pierde credibilidad es la cifra. Desde CN-3 la pantalla no dibuja ningún párrafo (CN1-05): lo que falta para
-     medir lo demás está en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`, y lo dice el agente. */
+     medir lo demás está en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`, y cada «—» dice su porqué en una
+     línea. */
   const jsx = leer(CONVERSATION);
   /* La guarda dentro de una cadena, no en un comentario: un `indexOf` de la frase suelta encontraría una
      explicación en vez del texto que se dibuja. */

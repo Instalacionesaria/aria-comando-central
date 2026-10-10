@@ -14,6 +14,10 @@ export const FRASE = {
   sinLlamadas: 'Sin llamadas registradas.',
   sinAnalisis: 'Sin análisis en esta ventana.',
   noAudita: 'La empresa no audita sus agentes.',
+  sinCampo: 'El CRM no lo registra.',
+  sinAgendados: 'Nadie agendó en esta ventana.',
+  sinEscritos: 'Sin mensajes en esta ventana.',
+  sinRespuestas: 'Nadie respondió en esta ventana.',
   sinContactos: 'Sin contactos en este período',
   sinCitas: 'Sin citas en esta ventana.',
   cargando: 'Cargando…',
@@ -30,6 +34,10 @@ export const FRASE_DEL_MOTIVO = {
   sin_llamadas: FRASE.sinLlamadas,
   sin_analisis: FRASE.sinAnalisis,
   no_audita: FRASE.noAudita,
+  sin_campo: FRASE.sinCampo,
+  sin_agendados: FRASE.sinAgendados,
+  sin_escritos: FRASE.sinEscritos,
+  sin_respuestas: FRASE.sinRespuestas,
 };
 
 /* Los pasos de las cadenas y los conteos de las tarjetas de agente, con su rótulo (CN1-09 a CN1-11). La clave es
@@ -77,20 +85,23 @@ export const o = (v, formato) => (v === null || v === undefined ? FRASE.guion : 
 /**
  * La fecha desde la que hay datos, en la zona de quien mira: se compara con el calendario de quien mira («desde el
  * lunes pasado»), y en UTC quien está en Lima vería un día menos cada vez que el primer registro cayó después de las
- * 19 h. Con «Completo», es lo que impide leer tres semanas como toda la historia.
+ * 19 h. Con «Completo», es lo que impide leer tres semanas como toda la historia. Con el año cuando no es el de
+ * hoy: «desde el 8 de agosto» de otro año se leería como el de éste.
  */
 export const fechaCorta = (iso) => {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long' }).format(d);
+  const otroAno = d.getFullYear() !== new Date().getFullYear();
+  return new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', ...(otroAno ? { year: 'numeric' } : {}) }).format(d);
 };
 
 /**
- * Unos minutos, en la unidad que se lee: la mediana de la primera respuesta va de minutos a días según la
- * empresa, y «371 min» obliga a dividir de cabeza.
+ * Unos minutos, en la unidad que se lee: la mediana de la primera respuesta va de segundos a días según la
+ * empresa, y «371 min» obliga a dividir de cabeza. Bajo diez minutos, con un decimal: «0 min» se leería instantáneo.
  */
 export const minutos = (m) => {
+  if (m < 10) return `${(Math.round(m * 10) / 10).toLocaleString('es-PE')} min`;
   if (m < 90) return `${Math.round(m)} min`;
   if (m < 60 * 48) return `${(Math.round(m / 6) / 10).toLocaleString('es-PE')} h`;
   return `${(Math.round(m / 144) / 10).toLocaleString('es-PE')} d`;

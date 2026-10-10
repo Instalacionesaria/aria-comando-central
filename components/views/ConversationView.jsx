@@ -1,8 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
  * LA VISTA `conversation` — Conversation Intelligence, con el front del prototipo (docs/conversation/01, CN-3)
  *
- * Del 2026-09-14 al 2026-10-10 esta vista llevó la estética de operación (`estetica-op`) y un panel de cuatro
- * pestañas —Lead Flow, Appointment Flow, Auditoría y Prompts— con un párrafo debajo de cada cifra. Volvió al
+ * Desde septiembre de 2026 (`833fc51`, `f0f09b7`) hasta el 2026-10-10 esta vista llevó la estética de operación
+ * (`estetica-op`) y un panel de cuatro pestañas —Lead Flow, Appointment Flow, Auditoría y Prompts— con las notas
+ * de cada cifra detrás de un ícono. Volvió al
  * marcado de `aios-command-center_1.html:2865-2929`: el panel dibuja el encabezado con sus modos, los tres
  * paneles y las tarjetas del prototipo con los datos de `lecturaDeConversation`, y la sección no lleva
  * `estetica-op`, que era la capa que cambiaba el look (CN1-01). Auditoría y Prompts siguen con esa estética: el

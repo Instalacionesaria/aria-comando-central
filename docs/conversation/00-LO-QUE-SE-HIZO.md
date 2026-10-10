@@ -33,7 +33,10 @@ Rate** y el **Show Rate**.
 | 2026-09-21 | `1164984`, `8dcb619` | Los predicados de cita en `lib/negocio/citasAlcanzables.ts`; la sección pide `auditor.ver` |
 | 2026-10-04 a 10-06 | `cd851b3`, `13723a0`, `5f15c01`, `8933e20`, `fe727e5` | Los agentes: el uso del auditor, el cerebro con sus herramientas, Conversation en la tabla común de señales (el detector y el plan) y el comentario de la cabecera |
 
-## 3 · Lo que hay hoy en la pantalla
+## 3 · Lo que había en la pantalla hasta CN-3
+
+(Así era la pestaña cuando se escribió este documento. Desde el 2026-10-10 dibuja el front del prototipo:
+`docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`.)
 
 `components/views/ConversationView.jsx` monta el panel con la estética de operación
 (`components/views/ConversationView.jsx:46@6f3bdb5`). El panel, `components/conversation/PanelDeConversation.jsx`, tiene
@@ -53,7 +56,7 @@ Una sola ruta, `GET /api/auditoria` (`app/api/auditoria/route.ts:112-157@e1ccf44
 | la cadena del lead | `lib/negocio/indicadoresDelLead.ts:196` |
 | la atribución | `lib/negocio/atribucionDelLead.ts:94` |
 | las citas, la cancelación, el reagendamiento, la confirmación y la asistencia | `tasaDeCancelacion`, en `lib/negocio/indicadoresDeCitas.ts` |
-| el precall | `lib/negocio/consumoDelPrecall.ts:136` |
+| el precall | `lib/negocio/consumoDelPrecall.ts:143` |
 | el sentimiento por flujo | `lib/auditor/sentimiento.ts:190` |
 | la auditoría | `laPantallaDelTecnico`, en `lib/auditor/pantalla.ts` |
 | las señales, el plan y el comentario de la cabecera | `lib/agentes/senales/lectura.ts` y `lib/agentes/cabecera.ts` |
@@ -88,13 +91,13 @@ días.
 
 ## 6 · Lo que la foto dejó señalado
 
-Los riesgos de `docs/OTROS/estado actual/04-CONVERSATION.md` § 7 que siguen abiertos y que el front nuevo toca:
+Los riesgos de `docs/OTROS/estado actual/04-CONVERSATION.md` § 7 que seguían abiertos y que el front nuevo toca:
 
 - **tasas sin piso** sobre 1 a 5 casos (riesgo 16): el booking rate, la respuesta, la cancelación y el
-  reagendamiento no lo aplican;
+  reagendamiento no lo aplicaban. Cerrado en CN-1: la lectura de la pantalla les pone el piso;
 - **la pantalla no dice si su dato está viejo** (riesgo 22);
 - **un hallazgo de LeadFlow se dibuja en la tarjeta de AppFlow** (riesgo 21);
-- **dos comentarios dicen `tablero.ver`** cuando la sección pide `auditor.ver` (riesgo 20).
+- **dos comentarios dicen `tablero.ver`** cuando la sección pide `auditor.ver` (riesgo 20). Cerrado en CN-3.
 
 El primer riesgo de la foto —Executive publicaba cifras inventadas en nombre de Conversation— se cerró el 2026-10-01,
 cuando la maqueta del Executive se retiró (`4e9a242`).

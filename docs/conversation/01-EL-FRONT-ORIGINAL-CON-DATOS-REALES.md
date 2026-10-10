@@ -128,6 +128,10 @@ sus reglas de `app/auditoria.css` no cambian.
 | una tasa con menos de 10 casos | «Pocos casos para una tasa.» |
 | la mediana de la primera respuesta con menos de 10 casos | «Pocos casos para una mediana.» |
 | el sentimiento y los hallazgos, cuando la empresa no audita sus agentes | «La empresa no audita sus agentes.» |
+| hay citas o contactos, y el CRM no registra el dato: la confirmación, el precall o la zona horaria | «El CRM no lo registra.» |
+| hay contactos y nadie agendó | «Nadie agendó en esta ventana.» |
+| hay contactos y a nadie se le escribió | «Sin mensajes en esta ventana.» |
+| se les escribió y nadie contestó | «Nadie respondió en esta ventana.» |
 | el paso de la landing, que no tiene enlace con seguimiento | «Sin enlace con seguimiento.» |
 | un agente de voz | «Sin llamadas registradas.» |
 | el sentimiento sin análisis en la ventana | «Sin análisis en esta ventana.» |
@@ -148,6 +152,12 @@ sus reglas de `app/auditoria.css` no cambian.
 | «Contactados sin cita», el primer paso de Lead Flow | «Entraron» | la cohorte de la ventana, como en el panel |
 | la asistencia por calidad «Calificado alto / medio / No calificado» | «Alto», «Medio», «Bajo» y «Sin calificar» | los tramos de `tramoDelPuntaje`, con el mismo nombre que en el panel del ICP |
 | «De qué está hecho…», con «% calificado» al lado | con «{N} sin calificar» al lado | los sin calificar no entran en los tres tramos y van aparte |
+| «Asistentes», el total del panel del ICP | «Agendaron» | es el grupo que agendó |
+| la cadena de Lead Flow, de cuatro pasos | cinco: se suma «Les escribimos» después de «Entraron» | es lo que se mide entre la entrada y la respuesta; la landing sigue, en «—» |
+| «rescata a quien no agendó solo», bajo el panel de Lead Flow | «que agende quien no lo hizo solo» | «rescata» le atribuye la cita al agente (CN1-10) |
+| «{N}% negativo», el sentimiento de un agente | «{N}% molesto» | es el valor del vocabulario del auditor |
+| «prompts, datos inválidos y conversaciones marcadas», bajo «Qué corregir» | «prompts y conversaciones marcadas» | el auditor no detecta datos inválidos |
+| el rol de cada agente | reescrito en una línea, sin la landing de un cliente ni nombres | CN1-17 |
 | la cifra grande de cada agente de texto | la respuesta de Lead Flow y la confirmación de Appointment Flow | son cifras del flujo: ningún mensaje dice qué agente lo escribió (CN1-11) |
 
 **Estado** · Construido el 2026-10-10 (CN-3): la lista vive en `FRASE` de `components/conversation/comun.jsx`, y
@@ -181,14 +191,17 @@ proporción desde los conteos, de 0 a 1.
 
 **Qué es** · Cifras grandes con su rótulo y, debajo de un «—», una línea de CN1-02. No se dibujan los avisos del
 servidor, las notas de cada cifra, el texto de cada ventana ni la caja de lo que falta de cada flujo
-(`components/conversation/PanelDeConversation.jsx:95@6f3bdb5`). Viajan igual en la respuesta y en las herramientas del cerebro:
-el agente de Conversation es quien explica. Es el `S15-18` de Sales, desde el primer día.
+(`components/conversation/PanelDeConversation.jsx:95@6f3bdb5`). Los avisos y las notas viajan igual en la respuesta y en
+las herramientas del cerebro, y el agente de Conversation es quien explica; la caja de lo que falta estaba escrita en el
+componente y se fue con él: lo que haría falta para medir cada «—» está en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`.
+Es el `S15-18` de Sales, desde el primer día.
 
 **Estado** · Construido el 2026-10-10 (CN-3).
 
 ### CN1-06 · El panel de Lead Flow
 
-**Qué es** · «Contactos»: la cohorte de la ventana. «Agendó»: cuántos agendaron, con el booking rate debajo.
+**Qué es** · «Contactos»: la cohorte de la ventana, con «desde el {fecha}» debajo. «Agendó»: cuántos agendaron, con el
+booking rate al lado.
 
 **Fórmula** · `indicadoresDelLead` (`lib/negocio/indicadoresDelLead.ts:196`): la cohorte y `agendaron`; la tasa con su
 piso.
@@ -208,7 +221,8 @@ como presente; sin ninguna marcada, «—» con «Nadie marca la asistencia.».
 ### CN1-08 · El panel del ICP
 
 **Qué es** · «De qué está hecho el grupo que agendó»: quienes agendaron en la ventana, por tramo de ICP —alto, medio y
-bajo, y los sin calificar aparte—, con su porción.
+bajo, y los sin calificar aparte—, con su porción sobre todos los que agendaron, sin calificar incluidos, y con el piso de
+10 sobre ese total.
 
 **Fórmula** · La misma cohorte de `indicadoresDelLead`, por `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85`), con
 los cortes de 75 y 50 (`lib/negocio/tramosDelIcp.ts:38`) y el puntaje 0 como sin calificar: `icpDeLosAgendados`, en
@@ -218,9 +232,10 @@ los cortes de 75 y 50 (`lib/negocio/tramosDelIcp.ts:38`) y el puntaje 0 como sin
 
 ### CN1-09 · La tarjeta de Lead Flow
 
-**Qué es** · El KPI «% contacto a agenda» —el booking rate— y la cadena de cuatro pasos del prototipo: **Entraron → Les
-escribimos → Respondieron → Agendaron**. El paso del prototipo «Abrieron» (la landing) va en «—» con «Sin enlace con
-seguimiento.».
+**Qué es** · El KPI «% contacto a agenda» —el booking rate— y la cadena del prototipo —Contactados sin cita → Respondieron
+→ Abrieron la landing → Agendaron— con cinco pasos: **Entraron → Les escribimos → Respondieron → Abrieron la landing →
+Agendaron**, todos sobre la cohorte. «Les escribimos» es el paso que se suma; «Abrieron la landing» va en «—» con «Sin
+enlace con seguimiento.».
 
 **Fórmula** · `indicadoresDelLead`: la cohorte, `escritos`, `respondieron` y `agendaron`, cada uno con su porción de la
 cohorte, calculada en el servidor.
@@ -242,6 +257,12 @@ Confirmaron → Asistieron** (el prototipo decía «Agendados · todos»: son la
 conversación antes de agendar. Atribuirle la cita a un agente pide otra medición
 (`docs/OTROS/futuro/lo-que-conversation-no-mide.md`).
 
+**Las bases, que no son la misma** · «Citas» son citas ocurridas de la ventana, de contactos no descartados. «Confirmaron»
+son CONTACTOS con cita en la ventana, descartados incluidos, y su porción es sobre los que respondieron el campo del CRM
+(`indicadoresDeCitas.ts`, `confirmacionEnLaVentana`): el conteo puede no cuadrar con el de las citas, y la barra no es
+una porción de las citas. «Asistieron» es sobre las citas con la asistencia marcada. Lo explica el agente; la
+herramienta del cerebro lo dice.
+
 **Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
 
 ### CN1-11 · El modo Agentes
@@ -252,11 +273,12 @@ conversación antes de agendar. Atribuirle la cita a un agente pide otra medici�
 |---|---|---|---|
 | Lead Flow · texto | la respuesta: respondieron sobre les escribimos | les escribimos, respondieron, agendaron | el de `leadflow` |
 | Lead Flow · voz | «—», «Sin llamadas registradas.» | — | — |
-| Appointment Flow · texto | la confirmación de las citas | citas, confirmaron, reprogramaron, cancelaron | el de `appflow` |
+| Appointment Flow · texto | la confirmación: los contactos que confirmaron sobre los que respondieron el campo | citas, confirmaron, reprogramaron, cancelaron | el de `appflow` |
 | Appointment Flow · voz | «—», «Sin llamadas registradas.» | — | — |
 
-Sobre las tarjetas, una línea «Qué corregir · {N} por resolver», con los patrones abiertos del auditor, que lleva al
-modo Auditoría. **Sin cajones**: el detalle por agente vive en Auditoría.
+Debajo de las tarjetas, como en el prototipo, una línea «Qué corregir · {N} por resolver», con los patrones abiertos del
+auditor —uno por agente y código, como los agrupa Auditoría—, que lleva al modo Auditoría. Sin auditoría, «—» con su
+frase. **Sin cajones**: el detalle por agente vive en Auditoría.
 
 **Qué no es** · Las cifras de las tarjetas de texto son **del flujo, no del agente**: ningún mensaje dice qué agente
 lo escribió, y la confirmación es un campo del CRM. Es el desvío declarado en CN1-02; el agente lo explica.
@@ -266,9 +288,11 @@ lo escribió, y la confirmación es un campo del CRM. Es el desvío declarado en
 ### CN1-12 · Lo demás, en cifras
 
 **Qué es** · Lo que la pantalla de hoy mide y el prototipo no tenía, en una fila de cifras con el vocabulario de los
-paneles: **la primera respuesta** (la mediana, en minutos), **fuera de horario** (la porción de los contactos que
-entraron fuera de horario), **el precall** (la porción de las citas con cuánto vio registrado) y **los molestos** (la
-porción de conversaciones molestas de los dos flujos juntos). La atribución por fuente y por campaña sale de
+paneles: **la primera respuesta** (la mediana, en minutos), **el primer mensaje fuera de horario** (la porción de
+primeros mensajes que salieron antes de las 8 o desde las 21 en la zona del contacto, sobre los contactos escritos que
+tienen zona, `atribucionDelLead`), **el precall** (los contactos con cita que registraron haber visto el video, sobre los
+que tienen el campo con un valor clasificado —la misma base que `consumoDelPrecall`—) y **los molestos** (la porción de
+conversaciones molestas de los dos flujos juntos). La atribución por fuente y por campaña sale de
 la pantalla: la responde el agente.
 
 **Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).
@@ -276,7 +300,10 @@ la pantalla: la responde el agente.
 ### CN1-13 · Auditoría y Prompts, aparte
 
 **Qué es** · Los dos modos siguen dibujándose con `Cuerpo` de `components/auditoria/PanelDeAuditoria.jsx`, con su
-estética y sus permisos de hoy: `auditor.ver` para mirar y `auditor.editar` para cambiar un prompt. No cambian.
+estética y sus permisos de hoy: `auditor.ver` para mirar y `auditor.editar` para cambiar un prompt. Lo que dibujan no
+cambia. Cambia lo de alrededor, y se declara: los contadores de la barra vieja —patrones abiertos, y prompts que faltan
+en ámbar— se fueron con ella (el número de patrones está en «Qué corregir»), y el margen de la página es el del
+prototipo, no el de la estética de operación.
 
 **Estado** · Construido el 2026-10-10 (CN-3): son dos modos del selector, dibujados por `Cuerpo` dentro de un contenedor con
 `estetica-op`.
@@ -293,8 +320,9 @@ Auditoría.
 
 **Qué es** · Una sola lectura nueva, `lecturaDeConversation`, compone los módulos de hoy y entrega lo que la pantalla
 arma, **de 0 a 1**, con el motivo de cada «—». Tiene una mitad pura, probada sin base, y otra que lee, como
-`lib/negocio/lecturaDeSales.ts`. La ruta `app/api/auditoria/route.ts` suma `pantalla`; los bloques de siempre siguen,
-porque los leen el modo Auditoría y el cerebro. El navegador multiplica por 100 en un solo lugar.
+`lib/negocio/lecturaDeSales.ts`. La ruta `app/api/auditoria/route.ts` suma `pantalla`; los bloques de siempre siguen
+viajando —el tablero lee de ellos desde cuándo hay datos, y con sus avisos son la respuesta completa de la ruta—. El
+cerebro no los lee: llama a las mismas funciones. El navegador multiplica por 100 en un solo lugar.
 
 **Estado** · La lectura, construida el 2026-10-10 (CN-1): `lib/negocio/lecturaDeConversation.ts`, con `armarConversation`
 pura, `icpDeLosAgendados`, `asistenciaPorTramo` y `hallazgosAbiertos`. La ruta, construida el 2026-10-10 (CN-2):
@@ -335,7 +363,7 @@ dos. La página no desliza a lo ancho. Lo nuevo va en `app/conversation.css`.
 - Los comentarios de `app/inteligencia-estetica.css` que nombran a Conversation.
 - La foto `docs/OTROS/estado actual/04-CONVERSATION.md`, reescrita en CN-5.
 
-**Estado** · Por construir (CN-0 a CN-5).
+**Estado** · Los textos del código y de estos documentos, corregidos en CN-2 a CN-4; la foto 04, por reescribir en CN-5.
 
 ---
 
@@ -358,7 +386,7 @@ dos. La página no desliza a lo ancho. Lo nuevo va en `app/conversation.css`.
 | CN-1 | El servidor: `lecturaDeConversation` con sus pruebas | **hecho el 2026-10-10**: `pruebas/codigo/250-lectura-de-conversation.test.ts` y `pruebas/base/250-lectura-de-conversation.test.ts`, 18 mutaciones muertas |
 | CN-2 | La ruta y el cerebro sobre la lectura | **hecho el 2026-10-10** |
 | CN-3 | El front sobre el marcado del prototipo, `app/conversation.css` y su prueba | **hecho el 2026-10-10**: `pruebas/codigo/251-la-pantalla-de-conversation.test.ts` |
-| CN-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
+| CN-4 | La revisión adversarial, las mutaciones y la suite entera | **hecho el 2026-10-10**: cuatro lentes —servidor, front, textos y pruebas—; ver el anexo CN-4 |
 | CN-5 | La comparación contra el prototipo, los anchos, la subida y la foto 04 | por hacer |
 
 ---
@@ -377,3 +405,26 @@ Cada una tiene una respuesta tomada por defecto, que es la que se construye si n
 | `CN1-P06` | ¿Sin cajones en Agentes, y «Qué corregir» lleva a Auditoría? | sí (CN1-11) |
 | `CN1-P07` | ¿Se corrige el hallazgo de LeadFlow que se dibuja en la tarjeta de AppFlow? | queda fuera de este plan: la auditoría no cambia |
 | `CN1-P08` | ¿La pantalla dice si su dato está viejo? | no: lo dice el agente |
+
+---
+
+## Anexo CN-4 · Lo que encontró la revisión, y qué se hizo
+
+Cuatro revisores independientes —el servidor, el front, los textos y las pruebas— leyeron CN-0 a CN-3 el 2026-10-10.
+Cada hallazgo se verificó contra el código antes de tocar nada.
+
+| hallazgo | qué se hizo |
+|---|---|
+| el precall se dividía por todos los contactos con cita, no por los que tienen el campo clasificado | la base es la del módulo; `consumoDelPrecall` publica `clasificados` y `hayCampo` |
+| «Entraron fuera de horario» decía algo que no se mide | el rótulo es «Primer mensaje fuera de horario», y así lo dicen CN1-12 y el cerebro |
+| un «—» decía «Sin contactos» o «Sin citas» con contactos o citas (la confirmación sin campo, el precall, fuera de horario sin zona, el origen sin agendados, la respuesta sin escritos o sin respuestas) | cuatro motivos nuevos —`sin_campo`, `sin_agendados`, `sin_escritos`, `sin_respuestas`— con su frase en CN1-02 |
+| las porciones del ICP no llevaban el piso | llevan el piso de 10, y el panel dice por qué falta |
+| «{N} por resolver» contaba hallazgos y no patrones | cuenta patrones, uno por agente y código, como Auditoría |
+| sin auditoría, el cerebro leía «0 por resolver» | la cifra viaja en «—» con `no_audita` |
+| «Confirmaron» cuenta contactos, no citas | se declara en CN1-10 y en el cerebro |
+| «desde el {fecha}» sin año, la cifra clave cortada a anchos intermedios, la frase de un paso sin `title`, «0 min» para medio minuto | la fecha lleva el año si no es el de hoy; el título cede; el `title`; un decimal bajo diez minutos |
+| «Qué corregir» iba antes de las tarjetas | va después, como en el prototipo |
+| «Reintentar» y «Guardar» entraban como recarga | van como carga primera |
+| comentarios y textos que quedaron viejos (la ruta, la sección, el panel de Auditoría, la vista, CN1-05, CN1-09, CN1-13, CN1-15, el doc 00) | corregidos |
+| quince mutaciones vivas —la carga, el sentimiento cruzado, los rótulos cruzados, los filtros del ICP y de la asistencia, el «audita» que no llegaba— | las pruebas 250 y 251 las ven; sus mutaciones están muertas |
+| las reglas muertas de `app/inteligencia-estetica.css` | se quedan, declaradas, hasta que Creative vuelva al prototipo |

@@ -23,8 +23,9 @@ import { AGENTES, type Agente } from './veredicto.ts';
 const RUTA = '/api/auditoria';
 
 /**
- * Lo que la pantalla recibe: los datos del auditor, los prompts, lo que dibujan los modos Estado y Agentes
- * (`pantalla`, CN1-15) y sobre qué ventana se midieron.
+ * Lo que la pantalla recibe, en lo que este tipo declara: los datos del auditor, los prompts, lo que dibujan los modos
+ * Estado y Agentes (`pantalla`, CN1-15) y sobre qué ventana se midieron. La ruta manda además las señales, el
+ * comentario de la cabecera y los bloques de cada cifra (`app/api/auditoria/route.ts`), que el panel lee sin tipar.
  */
 export type PantallaConPeriodo = LaPantalla & {
   prompts: PromptEnLaPantalla[];

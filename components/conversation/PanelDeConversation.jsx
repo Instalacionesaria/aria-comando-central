@@ -118,7 +118,8 @@ export default function PanelDeConversation() {
   const recargar = useCallback(() => cargar(true), [cargar]);
   usarReloj(aLaVista ? 'conversation:tic' : null, recargar, CADENCIA.inteligencia);
 
-  /* Los patrones agrupados UNA vez, acá: los dibuja Auditoría. */
+  /* Los patrones agrupados UNA vez, acá: los dibuja Auditoría. Su «Reintentar» y el «Guardar» de un prompt llaman a
+     `cargar()` sin argumentos —una carga primera—: con `onClick={cargar}` el evento llegaría como `esRecarga`. */
   const patrones = pantalla ? agruparPorPatron(pantalla.casos) : [];
   const tablero = DEL_TABLERO.has(modo);
 
@@ -135,7 +136,8 @@ export default function PanelDeConversation() {
           <Modos valor={modo} alElegir={setModo} />
         </div>
         <div className="ch-r">
-          {/* El plan de la pasada de la mañana (CN1-14). Con «Hoy» y «Completo» dice que el plan es de 7 y 30 días. */}
+          {/* El plan de la pasada de la mañana (CN1-14): el de 7 días con «7 días», y el de 30 con los otros tres —la ruta
+              elige la ventana—. */}
           {pantalla ? <BotonDelPlan departamento="conversation" senales={pantalla.senales} /> : null}
           {/* El segmentado sólo en los dos modos que miden: las listas de Auditoría y Prompts no se acotan por
               ventana, y un control que no cambia nada enseña a no usarlo (CN1-03). */}
@@ -176,7 +178,7 @@ export default function PanelDeConversation() {
               sub={modo === 'prompts' ? 'prompts' : 'inicio'}
               abierto={abierto}
               alAbrir={(p) => setAbierto(abierto === p ? null : p)}
-              alRecargar={cargar}
+              alRecargar={() => cargar()}
             />
           </div>
         </div>
@@ -246,7 +248,6 @@ function Tablero({ p, modo, alCorregir }) {
         </div>
       ) : (
         <div className="cs-view">
-          <QueCorregir n={porCorregir} noAudita={p.noAudita} alCorregir={alCorregir} />
           <div className="ghead">
             <span className="gdot cs-gdot-agentes" />
             <span className="gt">Los cuatro agentes</span>
@@ -257,6 +258,7 @@ function Tablero({ p, modo, alCorregir }) {
               <TarjetaDeAgente key={a.clave} a={a} />
             ))}
           </div>
+          <QueCorregir c={porCorregir} alCorregir={alCorregir} />
         </div>
       )}
       <LoDemas c={cifras} />
@@ -329,7 +331,8 @@ function PanelDeAppointmentFlow({ c, kpi, desde }) {
 
 /**
  * «De qué está hecho el grupo que agendó» (CN1-08): quienes agendaron y los tres tramos del prototipo, cada uno con
- * su porción. Los sin calificar van en el rótulo del panel, donde el prototipo decía cuánto era calificado.
+ * su porción sobre todos los que agendaron, con el piso de 10. Los sin calificar van en el rótulo del panel, donde el
+ * prototipo decía cuánto era calificado.
  */
 function PanelDelIcp({ icp }) {
   const tramo = Object.fromEntries(icp.tramos.map((t) => [t.clave, t]));
@@ -340,7 +343,7 @@ function PanelDelIcp({ icp }) {
         De qué está hecho el grupo que agendó {sinCalificar > 0 ? <em>{`${miles(sinCalificar)} sin calificar`}</em> : null}
       </div>
       <div className="pn-b q4">
-        <Par rotulo="Agendaron" valor={miles(icp.agendaron)} debajo={icp.agendaron === 0 ? FRASE.sinContactos : null} />
+        <Par rotulo="Agendaron" valor={miles(icp.agendaron)} debajo={icp.motivo === null ? null : (FRASE_DEL_MOTIVO[icp.motivo] ?? null)} />
         {['alto', 'medio', 'bajo'].map((clave) => (
           <Par key={clave} rotulo={TRAMO[clave]} valor={miles(tramo[clave].n)} tasa={tramo[clave].porcion === null ? null : pf(tramo[clave].porcion)} />
         ))}
@@ -362,7 +365,9 @@ function Eslabon({ paso }) {
       <span className="csr-n">{PASO[paso.clave]}</span>
       <span className="csr-v">{o(paso.valor.valor, miles)}</span>
       {sinValor ? (
-        <span className="cs-motivo">{sinValor}</span>
+        <span className="cs-motivo" title={sinValor}>
+          {sinValor}
+        </span>
       ) : (
         <span className="csr-b">
           <i style={{ width: paso.porcion.valor === null ? 0 : pf(paso.porcion.valor) }} />
@@ -408,7 +413,7 @@ function TarjetaDeLeadFlow({ f }) {
   return (
     <div className="csf">
       <div className="csf-h cs-cabeza">
-        <div>
+        <div className="cs-titulo">
           <div className="csf-t">Lead Flow</div>
           <div className="csf-m">Que agende quien no lo hizo solo</div>
         </div>
@@ -431,7 +436,7 @@ function TarjetaDeAppointmentFlow({ f }) {
   return (
     <div className="csf">
       <div className="csf-h cs-cabeza">
-        <div>
+        <div className="cs-titulo">
           <div className="csf-t">Appointment Flow</div>
           <div className="csf-m">Que asista · todas las citas, vengan de donde vengan</div>
         </div>
@@ -490,20 +495,21 @@ function Calidad({ filas }) {
 }
 
 /**
- * «Qué corregir · {N} por resolver» (CN1-11): los hallazgos abiertos del auditor, sobre las tarjetas, y el número
- * lleva al modo Auditoría. Sin auditoría no hay hallazgos que contar: lo dice con su frase.
+ * «Qué corregir · {N} por resolver» (CN1-11): los patrones abiertos del auditor, debajo de las tarjetas como en el
+ * prototipo, y el número lleva al modo Auditoría. Sin auditoría no hay patrones que contar: lo dice con su frase y no
+ * con un cero, que se leería como que no hay nada que corregir.
  */
-function QueCorregir({ n, noAudita, alCorregir }) {
+function QueCorregir({ c, alCorregir }) {
   return (
     <div className="ghead bad">
       <span className="gdot" />
       <span className="gt">Qué corregir</span>
       <span className="gsub">prompts y conversaciones marcadas</span>
-      {noAudita ? (
-        <span className="gn">{FRASE.noAudita}</span>
+      {c.valor === null ? (
+        <span className="gn">{FRASE_DEL_MOTIVO[c.motivo] ?? FRASE.guion}</span>
       ) : (
         <button type="button" className="gn cs-ir" onClick={alCorregir}>
-          {`${miles(n)} por resolver`}
+          {`${miles(c.valor)} por resolver`}
         </button>
       )}
     </div>
@@ -568,7 +574,7 @@ function LoDemas({ c }) {
       <div className="pn-h">Lo demás, en cifras</div>
       <div className="pn-b cs-cuatro">
         <Par rotulo="Primera respuesta" valor={o(c.respuesta.valor, minutos)} debajo={respuesta} />
-        <Par rotulo="Entraron fuera de horario" valor={o(c.fueraDeHorario.valor, pf)} debajo={motivo(c.fueraDeHorario)} />
+        <Par rotulo="Primer mensaje fuera de horario" valor={o(c.fueraDeHorario.valor, pf)} debajo={motivo(c.fueraDeHorario)} />
         <Par rotulo="Precall registrado" valor={o(c.precall.valor, pf)} debajo={motivo(c.precall)} />
         <Par rotulo="Molestos" valor={o(c.molestos.valor, pf)} debajo={motivo(c.molestos)} />
       </div>

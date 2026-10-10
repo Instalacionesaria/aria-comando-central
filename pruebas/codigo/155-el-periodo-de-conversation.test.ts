@@ -140,7 +140,7 @@ test('la ruta valida contra la lista y contesta 400, en vez de servir otra venta
   );
 });
 
-test('las CINCO cifras reciben la misma ventana, y sale del período', () => {
+test('las cifras de la pantalla reciben la misma ventana, y sale del período', () => {
   /* Con una sola que se quede sin argumento, esa cifra sigue calculándose sobre catorce días
      mientras las otras cuatro cambian con el botón. Las cinco se dibujan en la misma pantalla, así
      que el resultado es una tarjeta donde dos números hablan de dos períodos distintos y nada lo

@@ -480,7 +480,7 @@ sobre `campos_del_crm` por esos dos identificadores). `lib/ghl/contrato.ts:325` 
 están fuera y no hay forma de traerlos sin cambiar `carpetas_del_crm.grupo`. Para el **código de
 negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:307`) resuelve un campo
 por su nombre **saltándose el filtro de carpetas**. El 2026-09-15 la usaban dos módulos; hoy seis:
-`lib/negocio/consumoDelPrecall.ts:150`, `lib/negocio/indicadoresDeCitas.ts:248`,
+`lib/negocio/consumoDelPrecall.ts:159`, `lib/negocio/indicadoresDeCitas.ts:248`,
 `lib/negocio/calidadDelCreativo.ts:135`, `lib/negocio/embudoDelFormulario.ts:178`,
 `lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:212-214`. De los campos que se
 leen así, dos viven en carpetas sin grupo: «Confirmación Agendamiento»

@@ -288,7 +288,7 @@ export const SECCIONES: readonly Seccion[] = [
     menu: { grupo: 'Inteligencia', icono: '#i-conv', galon: true },
   },
   {
-    // ── CONVERSATION SE QUEDÓ CON EL SUPERVISOR, Y POR ESO YA NO ES DEL PROTOTIPO ──
+    // ── CONVERSATION SE QUEDÓ CON EL SUPERVISOR (Y DESDE CN-3 VUELVE A DIBUJAR EL PROTOTIPO) ──
     //
     // `AIOS_Arquitectura_Funcional_v0.2.md` § 8 define este departamento con dos módulos —Lead
     // Flow y Appointment Flow— y un Supervisor por módulo. Ese supervisor **ya estaba escrito**,
@@ -320,7 +320,7 @@ export const SECCIONES: readonly Seccion[] = [
      * nada avisara.
      *
      * Se alineó la SECCIÓN a la ruta y no al revés, y el motivo es la dirección: Conversation no es
-     * un tablero, es el supervisor de los agentes. Leer lo que un agente le dijo a un cliente es
+     * sólo un tablero, es el supervisor de los agentes. Leer lo que un agente le dijo a un cliente es
      * otra cosa que leer cifras agregadas, y el catálogo separa `auditor.ver` de `tablero.ver` a
      * propósito. Igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos.
      *

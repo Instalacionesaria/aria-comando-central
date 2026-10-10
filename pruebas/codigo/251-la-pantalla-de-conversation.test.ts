@@ -20,6 +20,8 @@
 //     cambiar una, o intercambiar dos;
 //   · los pasos, los tramos y los agentes son los del servidor, cada uno con su rótulo — mutación: sacar uno;
 //   · no vuelven «Personalizado», la clave `mes`, las flechas, los nombres de la maqueta ni los cajones;
+//   · la carga: la última lectura gana, la recarga no pisa a la primera y la primera se apaga — mutación: borrar
+//     una de las tres guardas (CN-4);
 //   · se multiplica por 100 en un solo lugar, y el panel no divide — mutación: un segundo `* 100`;
 //   · sin párrafos: el panel no dibuja avisos del servidor ni lo que falta para medir — mutación: volver a dibujar
 //     un aviso;
@@ -154,7 +156,9 @@ test('cada bloque sale del lugar que le toca en `pantalla`, y en el orden del pr
     'los tres paneles no van en el orden del prototipo, o leen otro lugar',
   );
   assert.match(t, /<TarjetaDeLeadFlow f=\{leadFlow\} \/>\s*<TarjetaDeAppointmentFlow f=\{appointmentFlow\} \/>/);
-  assert.match(t, /<QueCorregir n=\{porCorregir\} noAudita=\{p\.noAudita\} alCorregir=\{alCorregir\} \/>/);
+  assert.match(t, /\{modo === 'estado' \? \(\s*<div className="cs-view">\s*<div className="ghead">\s*<span className="gdot cs-gdot-flujos" \/>/, 'Estado no dibuja los flujos');
+  assert.match(t, /agentes\.map[\s\S]*<\/div>\s*<QueCorregir c=\{porCorregir\} alCorregir=\{alCorregir\} \/>/, '«Qué corregir» no va debajo de las tarjetas, como en el prototipo');
+  assert.match(funcion(panel(), 'PanelDeConversation'), /<Periodos valor=\{pantalla\?\.periodo \?\? periodo\} /, 'el segmentado enciende lo pedido y no lo contestado');
   assert.match(t, /agentes\.map\(\(a\) => \(\s*<TarjetaDeAgente key=\{a\.clave\} a=\{a\} \/>/);
   assert.match(t, /<LoDemas c=\{cifras\} \/>/);
   // «Qué corregir» lleva al modo Auditoría (CN1-11).
@@ -163,7 +167,7 @@ test('cada bloque sale del lugar que le toca en `pantalla`, y en el orden del pr
   const d = funcion(panel(), 'LoDemas');
   for (const [rotulo, clave, formato] of [
     ['Primera respuesta', 'respuesta', 'minutos'],
-    ['Entraron fuera de horario', 'fueraDeHorario', 'pf'],
+    ['Primer mensaje fuera de horario', 'fueraDeHorario', 'pf'],
     ['Precall registrado', 'precall', 'pf'],
     ['Molestos', 'molestos', 'pf'],
   ]) {
@@ -185,7 +189,7 @@ test('las frases son las de CN1-02, ni una más ni una menos', () => {
 test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor', () => {
   const tipo = /export type MotivoDeLaCifra =([^;]+);/.exec(leer('lib/negocio/lecturaDeConversation.ts'))?.[1] ?? '';
   const delServidor = [...tipo.matchAll(/'(\w+)'/g)].map((m) => m[1]!).sort();
-  assert.equal(delServidor.length, 8, 'no se leyeron los motivos del servidor');
+  assert.equal(delServidor.length, 12, 'no se leyeron los motivos del servidor');
   const c = comun();
   const frases = c.slice(c.indexOf('export const FRASE = {'), c.indexOf('};', c.indexOf('export const FRASE = {')));
   const texto = Object.fromEntries([...frases.matchAll(/(\w+): '([^']+)'/g)].map((m) => [m[1], m[2]]));
@@ -202,14 +206,26 @@ test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor'
     sin_llamadas: 'Sin llamadas registradas.',
     sin_analisis: 'Sin análisis en esta ventana.',
     no_audita: 'La empresa no audita sus agentes.',
+    sin_campo: 'El CRM no lo registra.',
+    sin_agendados: 'Nadie agendó en esta ventana.',
+    sin_escritos: 'Sin mensajes en esta ventana.',
+    sin_respuestas: 'Nadie respondió en esta ventana.',
   });
   assert.match(panel(), /const motivo = \(c\) => \(c\.valor === null \? \(FRASE_DEL_MOTIVO\[c\.motivo\] \?\? null\) : null\);/);
   // La mediana bajo el piso no es «una tasa» (CN1-02).
   assert.match(funcion(panel(), 'LoDemas'), /c\.respuesta\.valor === null && c\.respuesta\.motivo === 'bajo_el_piso' \? FRASE\.pocosParaMediana : motivo\(c\.respuesta\)/);
   // Un paso sin conteo dice su frase en el lugar de la barra (la landing, la asistencia).
-  assert.match(funcion(panel(), 'Eslabon'), /\{sinValor \? \(\s*<span className="cs-motivo">\{sinValor\}<\/span>/);
+  assert.match(funcion(panel(), 'Eslabon'), /\{sinValor \? \(\s*<span className="cs-motivo" title=\{sinValor\}>\s*\{sinValor\}\s*<\/span>/);
   // Sin auditoría, «Qué corregir» lo dice con su frase y no con un cero.
-  assert.match(funcion(panel(), 'QueCorregir'), /\{noAudita \? \(\s*<span className="gn">\{FRASE\.noAudita\}<\/span>/);
+  assert.match(funcion(panel(), 'QueCorregir'), /\{c\.valor === null \? \(\s*<span className="gn">\{FRASE_DEL_MOTIVO\[c\.motivo\] \?\? FRASE\.guion\}<\/span>/);
+  // Cada «—» de un panel dice el porqué de su conteo o, si no, el de su tasa; el paso, en su `title`.
+  assert.match(funcion(panel(), 'PanelDeLeadFlow'), /debajo=\{motivo\(c\.agendaron\) \?\? motivo\(c\.bookingRate\)\}/);
+  assert.match(funcion(panel(), 'PanelDeAppointmentFlow'), /debajo=\{motivo\(c\.asistieron\) \?\? motivo\(kpi\)\}/);
+  assert.match(funcion(panel(), 'PanelDelIcp'), /debajo=\{icp\.motivo === null \? null : \(FRASE_DEL_MOTIVO\[icp\.motivo\] \?\? null\)\}/);
+  assert.match(funcion(panel(), 'Eslabon'), /<span className="csr-p" title=\{sinPorcion \?\? undefined\}>/);
+  assert.match(funcion(panel(), 'Eslabon'), /<span className="cs-motivo" title=\{sinValor\}>/);
+  // La calidad junta las frases sólo si todos los tramos están en «—» por el mismo motivo.
+  assert.match(funcion(panel(), 'Calidad'), /motivos\.size === 1 && !motivos\.has\('con_valor'\)/);
 });
 
 test('los pasos, los tramos y los agentes son los del servidor, cada uno con su rótulo', () => {
@@ -219,11 +235,32 @@ test('los pasos, los tramos y los agentes son los del servidor, cada uno con su 
   delServidor.delete('conversaron_antes');
   delServidor.delete('solos');
   assert.deepEqual(claves('PASO').sort(), [...delServidor].sort(), 'un paso del servidor no tiene rótulo, o sobra uno');
+  /* Y lo que dice cada rótulo: dos intercambiados pasarían por las claves. Son los de CN1-09 a CN1-11. */
+  const c = comun();
+  for (const par of [
+    "entraron: 'Entraron'", "escritos: 'Les escribimos'", "respondieron: 'Respondieron'", "abrieron: 'Abrieron la landing'",
+    "agendaron: 'Agendaron'", "citas: 'Citas'", "confirmaron: 'Confirmaron'", "asistieron: 'Asistieron'",
+    "reprogramaron: 'Reprogramaron'", "cancelaron: 'Cancelaron'",
+    "alto: 'Alto'", "medio: 'Medio'", "bajo: 'Bajo'", "sin_calificar: 'Sin calificar'",
+  ]) {
+    assert.ok(c.includes(par), `cambió el rótulo \`${par}\``);
+  }
+  assert.match(c, /leadflow_texto: \{ flujo: 'Lead Flow', canal: 'txt',[^}]*cifra: 'de respuesta' \}/);
+  assert.match(c, /appflow_texto: \{ flujo: 'Appointment Flow', canal: 'txt',[^}]*cifra: 'de confirmación' \}/);
+  assert.match(c, /leadflow_voz: \{ flujo: 'Lead Flow', canal: 'voz',[^}]*cifra: null \}/);
+  assert.match(c, /appflow_voz: \{ flujo: 'Appointment Flow', canal: 'voz',[^}]*cifra: null \}/);
   assert.match(lectura, /\{ clave: 'asistieron', valor: asistieron, porcion: tasaDeAsistencia \}/);
   const tramos = /ORDEN_DE_TRAMOS: readonly ClaveDeTramo\[\] = \[([^\]]+)\]/.exec(lectura)?.[1] ?? '';
   assert.deepEqual(claves('TRAMO'), [...tramos.matchAll(/'(\w+)'/g)].map((m) => m[1]!), 'un tramo del servidor no tiene rótulo');
   const tipo = /clave: ('leadflow_texto'[^;]+);/.exec(lectura)?.[1] ?? '';
   assert.deepEqual(claves('AGENTE'), [...tipo.matchAll(/'(\w+)'/g)].map((m) => m[1]!), 'un agente del servidor no tiene tarjeta, o cambiaron de orden');
+  // El molesto es el molesto, y cada tramo de la barra el suyo.
+  const tarjeta = funcion(panel(), 'TarjetaDeAgente');
+  assert.match(tarjeta, /`\$\{pf\(a\.sentimiento\.molesto\)\} molesto`/);
+  assert.match(
+    tarjeta,
+    /<i className="p" style=\{\{ width: pf\(a\.sentimiento\.positivo\) \}\} \/>\s*<i className="n" style=\{\{ width: pf\(a\.sentimiento\.neutral\) \}\} \/>\s*<i className="g" style=\{\{ width: pf\(a\.sentimiento\.molesto\) \}\} \/>/,
+  );
   // Las de voz en «—», y su frase no se repite en el sentimiento.
   assert.match(funcion(panel(), 'TarjetaDeAgente'), /a\.motivoDelSentimiento === 'sin_llamadas' \? null :/);
   assert.match(funcion(panel(), 'TarjetaDeAgente'), /<span>\{a\.cifra\.valor === null \? motivo\(a\.cifra\) : d\.cifra\}<\/span>/);
@@ -237,8 +274,6 @@ test('no vuelven «Personalizado», la clave `mes`, las flechas, los nombres de 
     ["'mes'", 'la clave `mes` no es un período (CN1-04)'],
     ['vs los 7 días previos', 'sin comparación (CN1-04)'],
     ['dlt', 'sin flechas (CN1-04)'],
-    ['Sofía', 'un nombre de la maqueta (CN1-17)'],
-    ['BCL', 'las iniciales de un cliente (CN1-17)'],
     ['data-leads', 'abría un cajón con personas inventadas (CN1-17)'],
     ['data-ag', 'abría el cajón de un agente (CN1-11)'],
     ['iss-bar', 'la lista de correcciones del prototipo; el detalle vive en Auditoría (CN1-11)'],
@@ -248,6 +283,22 @@ test('no vuelven «Personalizado», la clave `mes`, las flechas, los nombres de 
   ] as const) {
     assert.ok(!fuente.includes(pieza), `volvió \`${pieza}\`: ${motivo}`);
   }
+  /* Los nombres de persona de la maqueta y las iniciales del cliente se leen del prototipo, sin copiarlos acá: el
+     repositorio es público (CN1-17). */
+  const { js } = prototipo();
+  const nombres = [...js.matchAll(/n:'([^'·]+?) · /g)].map((m) => m[1]!.trim());
+  const iniciales = [...js.matchAll(/landing ([A-Z]{2,})/g)].map((m) => m[1]!);
+  assert.ok(nombres.length > 0 && iniciales.length > 0, 'no se leyeron los nombres de la maqueta');
+  for (const pieza of [...nombres, ...iniciales]) assert.ok(!fuente.includes(pieza), 'volvió un nombre o unas iniciales de la maqueta (CN1-17)');
+});
+
+test('la carga: la última lectura gana, la recarga no pisa a la primera, y la primera se apaga', () => {
+  const p = funcion(panel(), 'PanelDeConversation');
+  assert.match(p, /if \(esRecarga && primeraEnVuelo\.current\) return;/, 'una recarga del reloj deja sin efecto a la carga primera');
+  assert.match(p, /const esta = \+\+ultima\.current;[\s\S]*const r = await leerLaPantalla\(periodo\);\s*if \(esta !== ultima\.current\) return;/, 'una respuesta tardía pisa a la nueva');
+  assert.match(p, /if \(!esRecarga\) primeraEnVuelo\.current = false;/, 'la primera carga nunca se apaga: el reloj deja de recargar');
+  // «Reintentar» y «Guardar» van como carga primera: el evento del clic no es una recarga.
+  assert.match(p, /alRecargar=\{\(\) => cargar\(\)\}/);
 });
 
 test('el navegador no calcula: se multiplica por 100 en un solo lugar, y el panel no divide', () => {

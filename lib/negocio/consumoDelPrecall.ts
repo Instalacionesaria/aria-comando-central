@@ -109,6 +109,13 @@ export interface ConsumoDelPrecall {
   conCampo: number;
   /** Cuántos registraron ALGUNA reproducción (parcial o completa). */
   registraron: number;
+  /**
+   * La base de la tasa: los que tienen el campo con un valor que se pudo clasificar. Viaja para que quien recalcule la
+   * tasa —la pantalla de Conversation la quiere de 0 a 1— use la misma base y no `sobre`.
+   */
+  clasificados: number;
+  /** `false` cuando el CRM no tiene el campo: no es que nadie haya visto el video. */
+  hayCampo: boolean;
   /** De 0 a 100. `null` por debajo del piso, o sin el campo en el CRM. */
   tasa: number | null;
   /** El desglose fino. Se devuelve siempre; `detalleSePublica` dice si alcanza para dibujarlo. */
@@ -139,6 +146,8 @@ export async function consumoDelPrecall(dias = DIAS_DE_LA_TASA): Promise<Consumo
     sobre: 0,
     conCampo: 0,
     registraron: 0,
+    clasificados: 0,
+    hayCampo: false,
     tasa: null,
     parcial: 0,
     completo: 0,
@@ -227,6 +236,8 @@ export async function consumoDelPrecall(dias = DIAS_DE_LA_TASA): Promise<Consumo
     sobre,
     conCampo,
     registraron,
+    clasificados,
+    hayCampo: true,
     tasa:
       clasificados < PISO_DE_UNA_TASA
         ? null

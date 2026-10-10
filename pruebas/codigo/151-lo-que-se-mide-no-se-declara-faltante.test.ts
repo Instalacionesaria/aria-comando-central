@@ -15,8 +15,8 @@
 // ── DÓNDE VIVE HOY LA LISTA, Y POR QUÉ LA PRUEBA LA SIGUIÓ ──────────────────
 //
 // Desde CN-3 la pantalla no dibuja párrafos (docs/conversation/01, CN1-05): cada lugar sin dato va en «—» con una
-// línea, y lo que haría falta para medirlo vive en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`, que el
-// agente de Conversation puede citar. El defecto puede volver ahí: una sección que declare faltante una cifra que la
+// línea, y lo que haría falta para medirlo vive en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`. El
+// defecto puede volver ahí: una sección que declare faltante una cifra que la
 // pantalla dibuja con su valor. Así que la relación se sigue declarando acá, a mano, un renglón por cifra publicada.
 // ══════════════════════════════════════════════════════════════════════════════
 

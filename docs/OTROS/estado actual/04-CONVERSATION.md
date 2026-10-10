@@ -59,10 +59,10 @@ comentarios siguen diciendo que la sección pide `tablero.ver` cuando desde el 2
 >   (`app/api/sales/route.ts:109@48ee16d`): la cancelación de las dos pantallas es un solo número.
 > - **`8dcb619`** (2026-09-21) — la sección `conversation` pide `auditor.ver`
 >   (`lib/autorizacion/secciones.ts:326`), la misma capacidad que su ruta
->   (`app/api/auditoria/route.ts:54`). Antes la pestaña de permisos ofrecía la casilla a un rol que
+>   (`app/api/auditoria/route.ts:55`). Antes la pestaña de permisos ofrecía la casilla a un rol que
 >   después recibía 403.
 > - **`db120a1`** (2026-09-26, Leads Portal) — `ramaDelPrecall` se exporta
->   (`lib/negocio/consumoDelPrecall.ts:302-304`) y la ficha del portal la usa
+>   (`lib/negocio/consumoDelPrecall.ts:313-315`) y la ficha del portal la usa
 >   (`lib/negocio/fichaDelLeadDelPortal.ts:30`): el vocabulario del precall dejó de ser sólo de acá.
 > - **No son de acá** `a6d8f48`, `60844ac` y `1e41fa7` (2026-09-22, «histórico de conversaciones»):
 >   tocan `lib/fundaciones/`, `components/fundaciones/`, `app/api/fundaciones/`,
@@ -122,7 +122,7 @@ Asistencia → Venta · **§17** los otros departamentos todavía sin especifica
 ## 2 · Qué hay hoy en pantalla
 
 La sección es `conversation`, grupo «Inteligencia», con `auditor.ver` desde el 2026-09-21
-(`lib/autorizacion/secciones.ts:305-328@6f3bdb5`). La vista es `components/views/ConversationView.jsx:22` y
+(`lib/autorizacion/secciones.ts:305-328@6f3bdb5`). La vista es `components/views/ConversationView.jsx:23` y
 todo el cuerpo es `components/conversation/PanelDeConversation.jsx` (989 líneas; 975 en la foto
 anterior). **Cuatro pestañas planas** (`components/conversation/PanelDeConversation.jsx:87-92@6f3bdb5`):
 Lead Flow · Appointment Flow · Auditoría · Prompts. Una sola lectura alimenta las cuatro, en una
@@ -137,10 +137,10 @@ trabajo no puede levantar un servidor. Las cifras son las que la consulta del m�
 
 ── **LOS TRES CONTROLES QUE GOBIERNAN TODO LO DE ABAJO** ──
 
-**1 · El período** (`components/conversation/PanelDeConversation.jsx:206-223`). Hoy · 7 días · 30
+**1 · El período** (`components/conversation/PanelDeConversation.jsx:208-225`). Hoy · 7 días · 30
 días · Completo, dibujados desde `PERIODOS` (`lib/negocio/periodo.ts:83-96`), 30 por omisión
 (`lib/negocio/periodo.ts:109`). La clave viaja en `?periodo=` y lo que no está en la lista se
-rechaza con 400 (`app/api/auditoria/route.ts:62-63`). Sólo aparece en las dos pestañas de flujo
+rechaza con 400 (`app/api/auditoria/route.ts:63-64`). Sólo aparece en las dos pestañas de flujo
 (`components/conversation/PanelDeConversation.jsx:259@6f3bdb5`), y cambiarlo es una carga primera, no una
 recarga (`components/conversation/PanelDeConversation.jsx:175-181@6f3bdb5`).
 
@@ -155,7 +155,7 @@ vista. Lo grave se reserva para lo que no es un matiz sino un hueco.
 activas, **5 tienen llave de IA** (eran 4), **1 tiene el identificador del agente** y **1 tiene
 token de CRM**. Una sola organización —la de clave `aria`— tiene datos de negocio: **594 contactos,
 333 citas, 6 108 mensajes** (el 15: 584, 317 y 5 864). En las otras diez activas la pantalla dibuja
-el freno `POR_QUE_NO_AUDITA` (`lib/auditor/vista.ts:211-221`) y cifras vacías.
+el freno `POR_QUE_NO_AUDITA` (`lib/auditor/vista.ts:212-222`) y cifras vacías.
 
 **Y el volumen que cambió la lectura de todo lo de abajo.** Altas en el CRM por semana (lunes):
 08-10 **117** · 08-17 **90** · 08-24 **53** · 08-31 **175** · 09-07 **89** · 09-14 **4** · 09-21
@@ -250,7 +250,7 @@ en el período **y ya ocurridas**, sin congeladas ni descartados.
     **19,6 % · 10 de 51 clasificados** (19,7 % · 12 de 61). De 65 contactos que llegaron a la
     llamada, 5 sin campo, 41 sin reproducción, 7 parcial, 3 completo y **9 sin rama** (`-20%` 4,
     `Accede: sin reproducir` 3, `Clic a link` 2): los sin rama son **tres veces** los que
-    completaron. El desglose fino sigue oculto por el piso (`lib/negocio/consumoDelPrecall.ts:239`)
+    completaron. El desglose fino sigue oculto por el piso (`lib/negocio/consumoDelPrecall.ts:250`)
     y el aviso grave está encendido con sus tres partes.
 16. **Sentimiento de Appointment Flow** (`components/conversation/PanelDeConversation.jsx:831-843@6f3bdb5`):
     **Quedaron molestos 26,1 % · 6 de 23**, neutrales 14, positivas 3 (25 % · 5 de 20). A 7 días son
@@ -278,7 +278,7 @@ segmentado en esta pestaña.
     análisis en trece días; el último, hoy a las 06:18 UTC.
 19. **LeadFlow**: **6 análisis, 1 auditable (amarillo)**, 5 sin poder juzgar (5, 0 y 5 el 15).
 20. **Patrones abiertos: 6, con 24 casos, ninguno resuelto** (5 con 20 el 15), ordenados por
-    cantidad y, a igual cantidad, por el caso más reciente (`lib/auditor/vista.ts:105-137`):
+    cantidad y, a igual cantidad, por el caso más reciente (`lib/auditor/vista.ts:106-138`):
     `ignora_pedido_reagendar` ×10 (rojo), `recordatorio_fecha_inconsistente` ×5 (rojo),
     `no_lee_confirmacion_previa` ×4 (amarillo), `presiona_asistencia_con_duda` ×3 (rojo),
     `dato_faltante` ×1 y `no_leyo_a_medias` ×1 (amarillos). Entraron cuatro hallazgos desde el
@@ -287,14 +287,14 @@ segmentado en esta pestaña.
 21. **La lista de conversaciones** tiene tope de 50 (`lib/auditor/pantalla.ts:51`) y **hoy corta**:
     hay 70 análisis. AppFlow muestra 44 de 64 y lo dice. LeadFlow muestra sus 6 de 6 y **también
     dice que el tope cortó la lista**, porque `hayMas` es uno solo para las dos tarjetas
-    (`lib/auditor/pantalla.ts:405`, `components/auditoria/PanelDeAuditoria.jsx:155`).
+    (`lib/auditor/pantalla.ts:405`, `components/auditoria/PanelDeAuditoria.jsx:152`).
 
 ── **PESTAÑA PROMPTS** ──
 
 22. Contador «2» (`components/conversation/PanelDeConversation.jsx:248-250@6f3bdb5`):
     `negocio.prompts_del_agente` y `negocio.versiones_del_prompt` siguen en **0 filas**. El panel
     aclara que ese prompt sería «de referencia» y no el que corre en el CRM
-    (`components/auditoria/PanelDeAuditoria.jsx:455`).
+    (`components/auditoria/PanelDeAuditoria.jsx:452`).
 
 ── **LOS AVISOS, CONTADOS HOY** ──
 
@@ -338,7 +338,7 @@ ningún dato). Los tres módulos siguen arrancando desde `lib/aios/index.js:29-3
 pantalla que habla por Conversation: `grep` de «Lead Flow», «agente de voz» y «show rate» en
 `components/`, `app/` y `lib/aios/`, fuera de `components/conversation/` y `components/auditoria/`,
 el 2026-09-28, sólo acierta en `lib/aios/executive.js` y en dos comentarios de la ruta de esta misma
-pantalla (`app/api/auditoria/route.ts:133` y `app/api/auditoria/route.ts:138`). En `lib/negocio/`
+pantalla (`app/api/auditoria/route.ts:135` y `app/api/auditoria/route.ts:140`). En `lib/negocio/`
 hay más aciertos, todos comentarios o un texto de Sales (`lib/negocio/huecosDeSales.ts:89`) que no
 habla por este departamento.
 
@@ -376,7 +376,7 @@ existe en ninguna forma.
 - **«las 316 citas que había al medirlo»**, detrás del ícono del no-show
   (`components/conversation/PanelDeConversation.jsx:969@6f3bdb5`). Fechado; hoy son 333.
 - **Los tres valores sin rama nombrados a mano** en el aviso del precall
-  (`lib/negocio/consumoDelPrecall.ts:274-275`). Hoy siguen coincidiendo —los 9 sin rama son
+  (`lib/negocio/consumoDelPrecall.ts:285-286`). Hoy siguen coincidiendo —los 9 sin rama son
   exactamente esos tres valores—, pero el día que el CRM agregue un cuarto el conteo lo contará y la
   frase no.
 - **El mapa `RAMA`** (`lib/negocio/consumoDelPrecall.ts:94-102`) y su censo fechado el 2026-09-14
@@ -573,12 +573,12 @@ vigentes y releídas en el código el 2026-09-28:
   auditables fuera del carril de mejora (`lib/auditor/sentimiento.ts:89-93`).
 - **Los contadores cuentan auditables; la lista muestra todo**, con su motivo
   (`lib/auditor/pantalla.ts:29-41`).
-- **La severidad del patrón es la del peor caso** (`lib/auditor/vista.ts:125-128`).
+- **La severidad del patrón es la del peor caso** (`lib/auditor/vista.ts:126-129`).
 - **El carril de mejora tiene criterio, disparo y tope propios** (`lib/auditor/mejora.ts:52`,
   `lib/auditor/mejora.ts:55` y `lib/auditor/mejora.ts:63`: una mejora por día).
 - **El hash del prompt se recalcula del texto** (`hashDelPrompt`, `lib/auditor/prompts.ts:64`).
 - **Los nombres que se ven son los del CRM** —LeadFlow · Zona Setter, AppFlow · Zona Closer
-  (`lib/auditor/vista.ts:156-159` y `lib/auditor/vista.ts:171-174`)— y la lista de agentes sale de
+  (`lib/auditor/vista.ts:157-160` y `lib/auditor/vista.ts:172-175`)— y la lista de agentes sale de
   `AGENTES` (`lib/auditor/veredicto.ts:52`). Nombrar un agente a mano está prohibido con un motivo
   caro: en la plataforma anterior la base aceptaba cuatro agentes y el código validaba contra una
   lista de dos, y los patrones de voz no se podían cerrar ni medir su reincidencia
@@ -707,14 +707,14 @@ contradice a la línea 315 del mismo archivo, y `components/views/ConversationVi
 mismo. `8dcb619` cambió el valor y no los dos textos que lo explicaban.
 
 **21 · Los patrones se agrupan sin mirar el agente.** `agruparPorPatron` junta por código
-(`lib/auditor/vista.ts:105-109`) y cada tarjeta se queda con los patrones cuyo **primer caso** es
-suyo (`components/auditoria/PanelDeAuditoria.jsx:153`), y el primero es el más reciente, porque
+(`lib/auditor/vista.ts:106-110`) y cada tarjeta se queda con los patrones cuyo **primer caso** es
+suyo (`components/auditoria/PanelDeAuditoria.jsx:150`), y el primero es el más reciente, porque
 los casos llegan por `detectado_el` descendente (`lib/auditor/pantalla.ts:318`). Desde el
 2026-09-17 `no_lee_confirmacion_previa` tiene casos de los dos agentes —3 de AppFlow y 1 de
 LeadFlow—; hasta el 2026-09-21 el más reciente era el de LeadFlow y el patrón entero se dibujaba en
 su tarjeta, y desde ese día es uno de AppFlow, así que hoy **el caso de LeadFlow se dibuja dentro de
 la tarjeta de AppFlow**, y la de LeadFlow afirma «Sin hallazgos abiertos para LeadFlow»
-(`components/auditoria/PanelDeAuditoria.jsx:279-291`) teniendo uno. Deducido del código y de las
+(`components/auditoria/PanelDeAuditoria.jsx:276-288`) teniendo uno. Deducido del código y de las
 filas; no visto en pantalla. Es la regla de los dos vocabularios rota en el último paso, el que ya
 no mira la base.
 

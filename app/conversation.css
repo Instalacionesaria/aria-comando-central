@@ -30,7 +30,8 @@
 
 /* ── LA LÍNEA DE UN «—» ──────────────────────────────────────────────────────
  * Una sola, corta, de la lista cerrada de CN1-02: debajo de una cifra del panel, en el lugar de la barra de un
- * paso sin conteo, o debajo de la cifra de un agente. Se corta con puntos suspensivos antes que partir la fila. */
+ * paso sin conteo, o debajo de la cifra de un agente. En una fila se corta con puntos suspensivos antes que partirla
+ * —el paso lleva la frase entera en el `title`—; debajo de una cifra del panel o de la cifra clave, se parte. */
 #v-conversation .cs-motivo {
   display: block;
   min-width: 0;
@@ -53,8 +54,11 @@
 #v-conversation .ghead .gdot.cs-gdot-flujos { background: var(--accent); }
 #v-conversation .ghead .gdot.cs-gdot-agentes { background: var(--txt-faint); }
 
-/* La cabecera de la tarjeta en fila, con la cifra clave a la derecha: el prototipo lo escribía en línea. */
+/* La cabecera de la tarjeta en fila, con la cifra clave a la derecha: el prototipo lo escribía en línea. El título
+   cede y se corta con su `nowrap`; la frase de la cifra clave se parte, así la cifra nunca queda afuera. */
 #v-conversation .csf-h.cs-cabeza { display: flex; align-items: flex-start; }
+#v-conversation .csf-h .cs-titulo { min-width: 0; }
+#v-conversation .csf-key .cs-motivo { white-space: normal; max-width: 180px; margin-left: auto; }
 
 /* El rótulo de una fila de un bloque menor: el prototipo no le daba regla, y en una columna angosta se corta con
    puntos suspensivos antes que empujar la cifra. */
@@ -79,7 +83,8 @@
 }
 #v-conversation .gn.cs-ir:hover { text-decoration: underline; }
 
-/* Las tarjetas no abren cajón (CN1-11): sin la mano ni el salto del prototipo, que prometían algo al apretarlas. */
+/* Las tarjetas no abren cajón (CN1-11): sin la mano ni el salto del prototipo, que prometían algo al apretarlas. La
+   sombra del prototipo al pasar el cursor queda: esta hoja no declara sombras (`107-sin-sombras`). */
 #v-conversation .csa { cursor: default; }
 #v-conversation .csa:hover { transform: none; border-color: var(--line); }
 
@@ -111,7 +116,7 @@
   /* La cifra clave de una tarjeta de flujo, debajo del título: al lado, con su frase, no entra en 375 px. */
   #v-conversation .csf-h.cs-cabeza { flex-direction: column; gap: 10px; }
   #v-conversation .csf-key { margin-left: 0; text-align: left; }
-  #v-conversation .csf-key .cs-motivo { white-space: normal; }
+  #v-conversation .csf-key .cs-motivo { margin-left: 0; }
   #v-conversation .pn-b.q4,
   #v-conversation .pn-b.cs-cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

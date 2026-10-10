@@ -39,7 +39,11 @@ import { type ClaveDeTramo, tramoDelPuntaje } from './tramosDelIcp.ts';
  * Por qué una cifra no tiene valor: `sin_contactos` —la cohorte está vacía—, `sin_citas` —no hubo citas en la
  * ventana—, `sin_asistencia` —nadie marcó la asistencia—, `bajo_el_piso` —hay casos, pocos para una tasa—,
  * `sin_enlace` —el paso de la landing no tiene enlace con seguimiento—, `sin_llamadas` —un agente de voz—,
- * `sin_analisis` —el sentimiento sin análisis en la ventana— o `no_audita` —la empresa no audita sus agentes—.
+ * `sin_analisis` —el sentimiento sin análisis en la ventana—, `no_audita` —la empresa no audita sus agentes—,
+ * `sin_campo` —hay citas o contactos, y el CRM no registra el dato: la confirmación, el precall o la zona horaria—,
+ * `sin_agendados` —hay contactos y nadie agendó—, `sin_escritos` —hay contactos y a nadie se le escribió— o
+ * `sin_respuestas` —se les escribió y nadie contestó—. Cada uno dice por qué falta ESA cifra: un «sin contactos» al
+ * lado de «Contactos 50» es falso aunque la cifra no exista.
  */
 export type MotivoDeLaCifra =
   | 'sin_contactos'
@@ -49,7 +53,11 @@ export type MotivoDeLaCifra =
   | 'sin_enlace'
   | 'sin_llamadas'
   | 'sin_analisis'
-  | 'no_audita';
+  | 'no_audita'
+  | 'sin_campo'
+  | 'sin_agendados'
+  | 'sin_escritos'
+  | 'sin_respuestas';
 
 export interface Cifra {
   /** Un conteo, una proporción de 0 a 1 o unos minutos. `null`: «—», y el motivo dice por qué. */
@@ -57,17 +65,25 @@ export interface Cifra {
   motivo: MotivoDeLaCifra | null;
 }
 
-/** Un paso de una cadena: su conteo y su porción, de 0 a 1, sobre la base de la cadena. */
+/**
+ * Un paso de una cadena: su conteo y su porción, de 0 a 1, sobre la base de ESE paso. En Lead Flow es la cohorte para
+ * todos; en Appointment Flow la confirmación es sobre quienes respondieron el campo y la asistencia sobre las citas
+ * con la asistencia marcada (CN1-10).
+ */
 export interface Paso {
   clave: string;
   valor: Cifra;
   porcion: Cifra;
 }
 
-/** El ICP de quienes agendaron: el `hint` es el total y cada tramo trae su conteo y su porción. */
+/**
+ * El ICP de quienes agendaron: el total y cada tramo con su conteo y su porción sobre ese total, sin calificar incluidos.
+ * Las porciones llevan el piso de 10 sobre el total; sin porción, `motivo` dice por qué.
+ */
 export interface IcpDeLosAgendados {
   agendaron: number;
   tramos: { clave: ClaveDeTramo; n: number; porcion: number | null }[];
+  motivo: MotivoDeLaCifra | null;
 }
 
 export interface TarjetaDeAgente {
@@ -97,8 +113,8 @@ export interface PantallaDeConversationArmada {
     origen: { conversaronAntes: Paso; solos: Paso };
   };
   agentes: TarjetaDeAgente[];
-  /** Los hallazgos abiertos del auditor: «Qué corregir · {N} por resolver». */
-  porCorregir: number;
+  /** Los patrones abiertos del auditor: «Qué corregir · {N} por resolver». Sin auditoría, «—» con su motivo. */
+  porCorregir: Cifra;
   /** Lo que el prototipo no tenía (CN1-12). */
   cifras: { respuesta: Cifra; fueraDeHorario: Cifra; precall: Cifra; molestos: Cifra };
 }
@@ -153,14 +169,19 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
   const c = e.citas;
   const sinCohorte = l.cohorte === 0;
 
+  /* Sin la cohorte vacía, el motivo de lo que no se puede calcular sobre una base del lead es el de esa base. */
+  const vacioDe = (motivo: MotivoDeLaCifra): MotivoDeLaCifra => (sinCohorte ? 'sin_contactos' : motivo);
+
   const totalIcp = ORDEN_DE_TRAMOS.reduce((s, k) => s + (e.icp[k] ?? 0), 0);
+  const conPiso = totalIcp >= PISO_DE_UNA_TASA;
   const icp: IcpDeLosAgendados = {
     agendaron: totalIcp,
     tramos: ORDEN_DE_TRAMOS.map((clave) => ({
       clave,
       n: e.icp[clave] ?? 0,
-      porcion: totalIcp === 0 ? null : (e.icp[clave] ?? 0) / totalIcp,
+      porcion: conPiso ? (e.icp[clave] ?? 0) / totalIcp : null,
     })),
+    motivo: totalIcp === 0 ? vacioDe('sin_agendados') : conPiso ? null : 'bajo_el_piso',
   };
 
   /* La asistencia: sin citas, no hubo a quién; con citas y ninguna marcada, nadie respondió la pregunta. */
@@ -168,6 +189,10 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
     c.citas === 0 ? sinValor('sin_citas') : c.conAsistencia === 0 ? sinValor('sin_asistencia') : conValor(c.sePresentaron);
   const tasaDeAsistencia =
     c.citas === 0 ? sinValor('sin_citas') : c.conAsistencia === 0 ? sinValor('sin_asistencia') : tasa(c.sePresentaron, c.conAsistencia, 'sin_asistencia');
+
+  /* La confirmación es un campo del CRM del contacto: con citas y nadie que lo haya respondido —o sin el campo—, el
+     CRM no lo registra; no es que no haya citas. */
+  const sinConfirmacion: MotivoDeLaCifra = c.citas === 0 ? 'sin_citas' : 'sin_campo';
 
   const sentLead = sentimientoDe(e.sentimiento['leadflow'], e.audita);
   const sentApp = sentimientoDe(e.sentimiento['appflow'], e.audita);
@@ -218,7 +243,7 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
       cadena: [
         paso('citas', c.citas, c.citas, 'sin_citas'),
         /* La confirmación es un campo del CRM del contacto: su base son quienes lo respondieron, no las citas. */
-        paso('confirmaron', c.confirmaron, c.conConfirmacion, 'sin_citas'),
+        paso('confirmaron', c.confirmaron, c.conConfirmacion, sinConfirmacion),
         { clave: 'asistieron', valor: asistieron, porcion: tasaDeAsistencia },
       ],
       salidas: {
@@ -233,14 +258,14 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
         };
       }),
       origen: {
-        conversaronAntes: paso('conversaron_antes', l.agendaronTrasResponder, l.agendaron, 'sin_contactos'),
-        solos: paso('solos', l.agendaronSinResponder, l.agendaron, 'sin_contactos'),
+        conversaronAntes: paso('conversaron_antes', l.agendaronTrasResponder, l.agendaron, vacioDe('sin_agendados')),
+        solos: paso('solos', l.agendaronSinResponder, l.agendaron, vacioDe('sin_agendados')),
       },
     },
     agentes: [
       {
         clave: 'leadflow_texto',
-        cifra: tasa(l.respondieron, l.escritos, 'sin_contactos'),
+        cifra: tasa(l.respondieron, l.escritos, vacioDe('sin_escritos')),
         desglose: [
           { clave: 'escritos', n: l.escritos },
           { clave: 'respondieron', n: l.respondieron },
@@ -252,7 +277,7 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
       voz('leadflow_voz'),
       {
         clave: 'appflow_texto',
-        cifra: tasa(c.confirmaron, c.conConfirmacion, 'sin_citas'),
+        cifra: tasa(c.confirmaron, c.conConfirmacion, sinConfirmacion),
         desglose: [
           { clave: 'citas', n: c.citas },
           { clave: 'confirmaron', n: c.confirmaron },
@@ -264,19 +289,27 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
       },
       voz('appflow_voz'),
     ],
-    porCorregir: e.audita ? e.porCorregir : 0,
+    porCorregir: e.audita ? conValor(e.porCorregir) : sinValor('no_audita'),
     cifras: {
+      /* `null` es cero respuestas medidas: sin cohorte, sin escritos o sin nadie que contestara. */
       respuesta:
         l.hastaLaPrimeraRespuesta === null
-          ? sinValor(sinCohorte ? 'sin_contactos' : 'bajo_el_piso')
+          ? sinValor(vacioDe(l.escritos === 0 ? 'sin_escritos' : l.respondieron === 0 ? 'sin_respuestas' : 'bajo_el_piso'))
           : l.hastaLaPrimeraRespuesta.sobre < PISO_DE_UNA_TASA
             ? sinValor('bajo_el_piso')
             : conValor(l.hastaLaPrimeraRespuesta.p50),
+      /* Los primeros mensajes que salieron fuera del horario del contacto (8 a 21 en su zona), sobre los contactos
+         escritos que tienen zona. `null`: ninguno la tiene. */
       fueraDeHorario:
         e.atribucion.fueraDeHorario === null
-          ? sinValor('sin_contactos')
-          : tasa(e.atribucion.fueraDeHorario.contactos, e.atribucion.fueraDeHorario.sobre, 'sin_contactos'),
-      precall: tasa(e.precall.registraron, e.precall.sobre, 'sin_citas'),
+          ? sinValor(vacioDe(l.escritos === 0 ? 'sin_escritos' : 'sin_campo'))
+          : tasa(e.atribucion.fueraDeHorario.contactos, e.atribucion.fueraDeHorario.sobre, vacioDe('sin_escritos')),
+      /* Sobre los contactos con el campo clasificado, como el módulo: los sin campo o sin rama no son «no lo vio». */
+      precall: !e.precall.hayCampo
+        ? sinValor('sin_campo')
+        : e.precall.sobre === 0
+          ? sinValor('sin_citas')
+          : tasa(e.precall.registraron, e.precall.clasificados, 'sin_campo'),
       molestos,
     },
   };
@@ -337,11 +370,14 @@ export async function asistenciaPorTramo(dias: number): Promise<Record<ClaveDeTr
   return salida;
 }
 
-/** Los hallazgos del auditor que siguen abiertos, de todos los agentes. Sin ventana, como la pantalla del técnico. */
-export async function hallazgosAbiertos(): Promise<number> {
+/**
+ * Los patrones del auditor que siguen abiertos, de todos los agentes: un patrón por agente y código, como los agrupa
+ * el modo Auditoría (CN1-11). Sin ventana, como la pantalla del técnico.
+ */
+export async function patronesAbiertos(): Promise<number> {
   const fila = await datos()
     .selectFrom('hallazgos')
-    .select(sql<number>`count(*)`.as('n'))
+    .select(sql<number>`count(distinct (agente, patron))`.as('n'))
     .where('resuelto_el', 'is', null)
     .executeTakeFirst();
   return Number(fila?.n ?? 0);
@@ -370,7 +406,7 @@ export async function lecturaDeConversation(dias: number, audita: boolean): Prom
   const sentimiento = await sentimientoPorFlujo(dias);
   const icp = await icpDeLosAgendados(dias);
   const asistencia = await asistenciaPorTramo(dias);
-  const porCorregir = audita ? await hallazgosAbiertos() : 0;
+  const porCorregir = audita ? await patronesAbiertos() : 0;
   return {
     lead,
     citas,

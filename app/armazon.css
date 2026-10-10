@@ -470,8 +470,8 @@
 
   /* ── LA TIRA DE PESTAÑAS SE DESLIZA, NO ARRASTRA LA PÁGINA ───────────────
    *
-   * `.cl-sub` —«Inicio · Mi Día · Pipeline · Agenda» en Closer y Setter, «Lead Flow · Appointment
-   * Flow · Prompts» en Conversation— mide 350 px de contenido. Es hijo de un flex en COLUMNA, así
+   * `.cl-sub` —«Inicio · Mi Día · Pipeline · Agenda» en Closer y Setter, y hasta el 2026-10-10
+   * «Lead Flow · Appointment Flow · Prompts» en Conversation— mide 350 px de contenido. Es hijo de un flex en COLUMNA, así
    * que su ancho lo fija su contenido y no su padre: medido, 350 px dentro de un padre de 291.
    *
    * Por eso `overflow-x` solo no alcanzaba y hubo que medirlo dos veces: la caja misma sobresalía,

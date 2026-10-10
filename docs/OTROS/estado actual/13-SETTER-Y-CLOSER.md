@@ -133,7 +133,7 @@ mismo Pipeline y la lista de Contactos del setter (`components/views/SetterView.
 auditoría**, aunque tres comentarios digan que sí (`components/negocio/Ficha.jsx:13-14`,
 `lib/autorizacion/secciones.ts:572-573`, `lib/autorizacion/secciones.ts:586-587`): ningún archivo
 de `components/conversation/` ni de `components/auditoria/` la importa, y la lista de la auditoría
-abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:298`). Leads Portal tiene
+abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:295`). Leads Portal tiene
 su propia ficha, `components/leads-portal/FichaDelLead.jsx`, que es otro componente.
 
 El encabezado es sólo estado, y su única acción es Avanzar (`components/negocio/Ficha.jsx:1076-1078`,

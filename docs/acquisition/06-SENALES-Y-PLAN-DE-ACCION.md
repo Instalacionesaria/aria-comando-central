@@ -71,7 +71,7 @@ detalle, no al abrir la evidencia: en la señal.
 - **Estado:** la regla ya existe y es del sistema, no de esta pantalla. `PISO_DE_UNA_TASA = 10` en
   `lib/negocio/indicadoresDeCitas.ts:329`, con su motivo escrito ahí mismo: *«una tasa sobre dos
   eventos no es una tasa — es un número que se mueve cincuenta puntos con el próximo registro»*.
-  La aplican `lib/negocio/atribucionDelLead.ts:158`, `lib/negocio/consumoDelPrecall.ts:231` y
+  La aplican `lib/negocio/atribucionDelLead.ts:158`, `lib/negocio/consumoDelPrecall.ts:242` y
   `lib/auditor/sentimiento.ts:127`.
 
 ### A6-02 · Por debajo de diez casos la señal se cuenta y no se publica

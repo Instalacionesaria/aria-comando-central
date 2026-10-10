@@ -90,13 +90,13 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | `pasos_de_conversion` | `lecturaDeConversion(periodo, zona).pasos`, desde el 2026-10-08 | conversion (`tablero.ver`) | `app/api/conversion/route.ts:79` | la tira y los cinco pasos, en días cerrados |
 | `recorrido_de_los_leads` | `lecturaDeConversion(periodo, zona).recorrido`; hasta el 2026-10-08, `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:79` | conteos, no tasas |
 | `formulario_de_la_landing` | `lecturaDeConversion(periodo, zona).formulario`; hasta el 2026-10-08, `embudoDelFormulario(periodo.dias)` | conversion | `app/api/conversion/route.ts:79` | sus huecos |
-| `auditoria_de_agentes` | `laPantallaDelTecnico(noAudita)` | conversation (`auditor.ver`) | `app/api/auditoria/route.ts:79` | por qué no audita, traducido por `porQueNoAudita` (`lib/auditor/pantalla.ts`), la misma función que la pantalla; las tarjetas y cuántos casos hay por patrón, con `casosTruncados` si la pantalla llegó a su tope de casos: **sin los casos ni las conversaciones**, que llevan el contacto y frases textuales |
-| `cancelacion_de_citas` | `tasaDeCancelacion(periodo.dias)` | conversation o sales | `lib/negocio/lecturaDeConversation.ts:367`, `lib/negocio/lecturaDeSales.ts:258` | sus avisos |
-| `lead_flow` | `indicadoresDelLead(periodo.dias)` | conversation | `lib/negocio/lecturaDeConversation.ts:366` | aviso y latencias |
-| `atribucion_del_lead` | `atribucionDelLead(periodo.dias)` | conversation | `lib/negocio/lecturaDeConversation.ts:368` | piso |
-| `consumo_del_precall` | `consumoDelPrecall(periodo.dias)` | conversation | `lib/negocio/lecturaDeConversation.ts:369` | aviso |
-| `sentimiento_por_flujo` | `sentimientoPorFlujo(periodo.dias)` | conversation | `lib/negocio/lecturaDeConversation.ts:370` | `null` bajo 10 |
-| `conversation_en_cifras` | `lecturaDeConversation(periodo.dias, audita).pantalla`, desde el 2026-10-10 | conversation | `app/api/auditoria/route.ts:86` | lo que dibujan los modos Estado y Agentes, de 0 a 1 y con el motivo de cada «—» |
+| `auditoria_de_agentes` | `laPantallaDelTecnico(noAudita)` | conversation (`auditor.ver`) | `app/api/auditoria/route.ts:80` | por qué no audita, traducido por `porQueNoAudita` (`lib/auditor/pantalla.ts`), la misma función que la pantalla; las tarjetas y cuántos casos hay por patrón, con `casosTruncados` si la pantalla llegó a su tope de casos: **sin los casos ni las conversaciones**, que llevan el contacto y frases textuales |
+| `cancelacion_de_citas` | `tasaDeCancelacion(periodo.dias)` | conversation o sales | `lib/negocio/lecturaDeConversation.ts:403`, `lib/negocio/lecturaDeSales.ts:258` | sus avisos |
+| `lead_flow` | `indicadoresDelLead(periodo.dias)` | conversation | `lib/negocio/lecturaDeConversation.ts:402` | aviso y latencias |
+| `atribucion_del_lead` | `atribucionDelLead(periodo.dias)` | conversation | `lib/negocio/lecturaDeConversation.ts:404` | piso |
+| `consumo_del_precall` | `consumoDelPrecall(periodo.dias)` | conversation | `lib/negocio/lecturaDeConversation.ts:405` | aviso |
+| `sentimiento_por_flujo` | `sentimientoPorFlujo(periodo.dias)` | conversation | `lib/negocio/lecturaDeConversation.ts:406` | `null` bajo 10 |
+| `conversation_en_cifras` | `lecturaDeConversation(periodo.dias, audita).pantalla`, desde el 2026-10-10 | conversation | `app/api/auditoria/route.ts:87` | lo que dibujan los modos Estado y Agentes, de 0 a 1 y con el motivo de cada «—» |
 | `dinero_del_mes` | `dineroDelMes(zona, sujetoDelDinero(catalogo))` | sales (`tablero.ver`) | `lib/negocio/lecturaDeSales.ts:286` | **mes calendario**, que no gobierna el selector; «venta reportada» |
 | `cadena_de_cierre` | `cadenaDeCierre(periodo.dias)` | sales | `lib/negocio/lecturaDeSales.ts:287` | el aviso de citas que nadie registró |
 | `ciclo_hasta_la_cita` | `cicloHastaLaCita(periodo.dias)` | sales | `lib/negocio/lecturaDeSales.ts:288` | aviso de techo |

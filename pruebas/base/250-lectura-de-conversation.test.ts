@@ -5,12 +5,14 @@
 //
 // La mitad pura la cuida `pruebas/codigo/250-lectura-de-conversation.test.ts`. Acá se mira lo que sólo se ve con filas:
 //
-//   · el ICP de quienes agendaron: la cohorte de la ventana con alguna cita, por `tramoDelPuntaje` —el cero es sin
-//     calificar— — mutaciones: sacar la ventana, sacar la cita, cortar con otros umbrales;
-//   · la asistencia por tramo: las citas ocurridas, alcanzables y de contactos no descartados — mutaciones: sacar
-//     cualquiera de las tres;
-//   · los hallazgos abiertos: sólo los que no se resolvieron — mutación: contar los resueltos;
-//   · la lectura entera: arma la pantalla con lo leído, y sin auditoría no cuenta hallazgos.
+//   · el ICP de quienes agendaron: la cohorte de la ventana con CUALQUIER cita —con o sin calendario, pasada o
+//     futura, como el `agendaron` de `indicadoresDelLead`—, por `tramoDelPuntaje` —el cero es sin calificar— —
+//     mutaciones: sacar la ventana, sacar la cita, filtrar por calendario o por fecha, cortar con otros umbrales;
+//   · la asistencia por tramo: las citas de la ventana, ocurridas, alcanzables y de contactos no descartados, cada
+//     una en el tramo de su contacto — mutaciones: sacar cualquiera de las cuatro, o mandar todo a un tramo;
+//   · los patrones abiertos: un patrón por agente y código, y sólo los que no se resolvieron — mutación: contar
+//     hallazgos, o contar los resueltos;
+//   · la lectura entera: arma la pantalla con lo leído, y sin auditoría no cuenta patrones y el sentimiento lo dice.
 //
 // La organización `alfa` la comparten otras pruebas: se mide antes y después de sembrar, y se compara la diferencia.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -24,8 +26,8 @@ import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import {
   asistenciaPorTramo,
-  hallazgosAbiertos,
   icpDeLosAgendados,
+  patronesAbiertos,
   lecturaDeConversation,
 } from '../../lib/negocio/lecturaDeConversation.ts';
 
@@ -72,67 +74,81 @@ after(async () => {
   await cerrarClientes();
 });
 
-test('el ICP de quienes agendaron: la cohorte de la ventana con alguna cita, por tramo, y el cero es sin calificar', async () => {
+test('el ICP de quienes agendaron: la cohorte de la ventana con cualquier cita, por tramo, y el cero es sin calificar', async () => {
   await limpiar();
   const antes = await enAlfa(() => icpDeLosAgendados(30));
   for (const score of [80, 75, 60, 10, 0, null]) await unaCita(await unContacto({ score }));
+  // También cuentan: una cita sin calendario y una futura, como en el `agendaron` del panel de al lado.
+  await unaCita(await unContacto({ score: 85 }), { sinCalendario: true });
+  await unaCita(await unContacto({ score: 55 }), { haceHoras: -48 });
   // Lo que no cuenta: sin cita, y con cita pero dado de alta antes de la ventana.
   await unContacto({ score: 90 });
   await unaCita(await unContacto({ score: 90, haceDias: 40 }));
   const despues = await enAlfa(() => icpDeLosAgendados(30));
   await limpiar();
   const delta = Object.fromEntries((['alto', 'medio', 'bajo', 'sin_calificar'] as const).map((k) => [k, despues[k] - antes[k]]));
-  assert.deepEqual(delta, { alto: 2, medio: 1, bajo: 1, sin_calificar: 2 }, 'contó a alguien sin cita o fuera de la ventana, o cortó con otros umbrales');
+  assert.deepEqual(
+    delta,
+    { alto: 3, medio: 2, bajo: 1, sin_calificar: 2 },
+    'contó a alguien sin cita o fuera de la ventana, dejó afuera una cita sin calendario o futura, o cortó con otros umbrales',
+  );
 });
 
-test('la asistencia por tramo: citas ocurridas, alcanzables y de contactos no descartados', async () => {
+test('la asistencia por tramo: citas de la ventana, ocurridas, alcanzables y de contactos no descartados', async () => {
   await limpiar();
   const antes = await enAlfa(() => asistenciaPorTramo(30));
   const alto = await unContacto({ score: 80 });
   await unaCita(alto, { asistio: true });
   await unaCita(alto, { asistio: false });
   await unaCita(alto, { asistio: null });
-  // Lo que no cuenta: una futura, una sin calendario y una de un contacto descartado.
+  // Lo que no cuenta: una futura, una sin calendario, una de un contacto descartado y una de antes de la ventana.
   await unaCita(alto, { haceHoras: -48, asistio: true });
   await unaCita(alto, { sinCalendario: true, asistio: true });
   await unaCita(await unContacto({ score: 80, etiquetas: ['Rechazado'] }), { asistio: true });
+  await unaCita(alto, { haceHoras: 40 * 24, asistio: true });
+  // Y otro tramo, para ver que cada cita va al de su contacto.
+  await unaCita(await unContacto({ score: 60 }), { asistio: false });
   const despues = await enAlfa(() => asistenciaPorTramo(30));
   await limpiar();
+  const delta = (t: 'alto' | 'medio') => [despues[t].conAsistencia - antes[t].conAsistencia, despues[t].sePresentaron - antes[t].sePresentaron];
   assert.deepEqual(
-    [despues.alto.conAsistencia - antes.alto.conAsistencia, despues.alto.sePresentaron - antes.alto.sePresentaron],
-    [2, 1],
-    'contó una cita futura, una sin calendario o una de un contacto descartado',
+    [delta('alto'), delta('medio')],
+    [[2, 1], [1, 0]],
+    'contó una cita futura, sin calendario, de un descartado o de antes de la ventana, o mandó una cita a otro tramo',
   );
 });
 
-test('los hallazgos abiertos son los que no se resolvieron', async () => {
+test('los patrones abiertos: uno por agente y código, de los hallazgos que no se resolvieron', async () => {
   await limpiar();
-  const antes = await enAlfa(() => hallazgosAbiertos());
+  const antes = await enAlfa(() => patronesAbiertos());
   const k = await unContacto();
   const a = await esc.admin.query<{ id: string }>(
     `insert into negocio.analisis_del_agente (org_id, contacto_id, agente, auditable, intervencion, motivo, nivel, resumen, disparo, mensajes_del_agente)
      values ($1, $2, 'chat_post_agenda', true, false, null, 'amarillo', 'C250', 'debounce', 4) returning id`,
     [esc.org, k],
   );
-  for (const resuelto of [false, true]) {
+  // Dos hallazgos abiertos del mismo patrón, uno de otro patrón, y un patrón que sólo tiene un hallazgo resuelto.
+  for (const [patron, resuelto] of [['c250_patron', false], ['c250_patron', false], ['c250_otro', false], ['c250_resuelto', true]] as const) {
     await esc.admin.query(
       `insert into negocio.hallazgos (org_id, contacto_id, analisis_id, agente, titulo, patron, correccion, evidencia_agente, severidad, categoria, resuelto_el)
-       values ($1, $2, $3, 'chat_post_agenda', 'C250', 'c250_patron', 'Una corrección.', 'Una línea.', 'amarillo', 'comportamiento', $4)`,
-      [esc.org, k, a.rows[0]!.id, resuelto ? new Date() : null],
+       values ($1, $2, $3, 'chat_post_agenda', 'C250', $4, 'Una corrección.', 'Una línea.', 'amarillo', 'comportamiento', $5)`,
+      [esc.org, k, a.rows[0]!.id, patron, resuelto ? new Date() : null],
     );
   }
-  const despues = await enAlfa(() => hallazgosAbiertos());
+  const despues = await enAlfa(() => patronesAbiertos());
   await limpiar();
-  assert.equal(despues - antes, 1, 'se contó un hallazgo resuelto');
+  assert.equal(despues - antes, 2, 'contó hallazgos en vez de patrones, o un patrón resuelto');
 });
 
-test('la lectura entera arma la pantalla con lo leído, y sin auditoría no cuenta hallazgos', async () => {
+test('la lectura entera arma la pantalla con lo leído, y sin auditoría no cuenta patrones', async () => {
   await limpiar();
   const l = await enAlfa(() => lecturaDeConversation(30, true));
   assert.equal(l.pantalla.paneles.leadFlow.contactos.valor, l.lead.cohorte, 'el panel no es la cohorte que se leyó');
   assert.equal(l.pantalla.paneles.appointmentFlow.citas.valor, l.citas.citas);
   assert.deepEqual(l.pantalla.agentes.map((a) => a.clave), ['leadflow_texto', 'leadflow_voz', 'appflow_texto', 'appflow_voz']);
-  assert.equal(l.pantalla.porCorregir, await enAlfa(() => hallazgosAbiertos()));
+  assert.deepEqual(l.pantalla.porCorregir, { valor: await enAlfa(() => patronesAbiertos()), motivo: null });
   const sinAuditar = await enAlfa(() => lecturaDeConversation(30, false));
-  assert.equal(sinAuditar.pantalla.porCorregir, 0);
+  // El «audita» llega a la mitad pura: lo dicen el contador y el sentimiento, no sólo un cero.
+  assert.deepEqual(sinAuditar.pantalla.porCorregir, { valor: null, motivo: 'no_audita' });
+  assert.equal(sinAuditar.pantalla.agentes[0]!.motivoDelSentimiento, 'no_audita');
 });

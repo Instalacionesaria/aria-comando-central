@@ -1,13 +1,14 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// La pantalla del técnico: las tarjetas, los patrones, las conversaciones y los prompts.
+// La pantalla de Conversation: lo que dibuja el tablero (`pantalla`, CN-2 de docs/conversation/01), y las tarjetas,
+// los patrones, las conversaciones y los prompts del supervisor.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNA SOLA LECTURA PARA TODA LA PANTALLA, Y NO ES PEREZA
 //
-// Cuatro bloques —tarjetas, casos, conversaciones y los prompts cargados— en un `GET`. Podrían ser
-// cuatro rutas, y sería peor por dos motivos, uno de corrección y uno de producto:
+// Los bloques del supervisor —tarjetas, casos, conversaciones y los prompts cargados— y la `pantalla` del tablero
+// en un `GET`. Podrían ser varias rutas, y sería peor por dos motivos, uno de corrección y uno de producto:
 //
 //   · **`ADR-0304` compara conjuntos de capacidades entre los `GET` de una misma pantalla**, y cuatro
 //     rutas son cuatro lugares donde ese conjunto puede divergir. Con uno solo, la pregunta no existe.
@@ -102,7 +103,8 @@ export async function GET(peticion: Request): Promise<Response> {
   return ok({
     ...tecnico,
     /* Lo que dibujan los modos Estado y Agentes, armado en el servidor (CN1-15): cada tasa de 0 a 1 y cada «—»
-       con su motivo. Los bloques de abajo siguen viajando: los lee el modo Auditoría. */
+       con su motivo. Los bloques de abajo siguen viajando: el tablero lee de ellos desde cuándo hay datos
+       (`respuesta.desde`, `cancelacion.desde`), y con sus avisos son la respuesta completa de esta ruta. */
     pantalla: lectura.pantalla,
     senales,
     /* El comentario de la cabecera (AG15 de los agentes, `04`, AG-77): de reglas, sin modelo, y no depende del
@@ -145,8 +147,9 @@ export async function GET(peticion: Request): Promise<Response> {
        de porcentaje están vacíos, pero el porcentaje viene adentro del vocabulario de un RADIO. */
     precall: lectura.precall,
     /* El sentimiento se escribía en cada análisis desde que el auditor existe y no lo leía nadie.
-       Va por flujo porque el §9.7 y el §10.7 lo piden como cifra del departamento. Uno por agente y no uno
-       solo: son dos conversaciones distintas, y mezclarlas daría un promedio que no describe a ninguna. */
+       Va por flujo porque el §9.7 y el §10.7 lo piden como cifra del departamento: uno por agente, que es como
+       lo dibujan las tarjetas. La fila «Molestos» del tablero los junta a propósito, con su piso, como una sola
+       cifra del departamento (CN1-12). */
     sentimiento: lectura.sentimiento,
   });
 }

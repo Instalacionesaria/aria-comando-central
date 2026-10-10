@@ -183,6 +183,8 @@ test('LOS QUE NO SE PUEDEN CLASIFICAR se cuentan aparte, no se fuerzan a una ram
   /* Y NO entran al denominador: meterlos del lado de «no registró» afirmaría que no reprodujeron,
      que es justamente lo que no se sabe de ellos. */
   assert.equal(r.tasa, 50, 'los no clasificados entraron al denominador de la tasa');
+  // La base viaja, para quien recalcule la tasa —la pantalla de Conversation la quiere de 0 a 1—.
+  assert.deepEqual([r.clasificados, r.hayCampo], [10, true], 'la base que publica no es la de su tasa');
   assert.match(String(r.aviso), /no se puede clasificar/);
 });
 
@@ -223,6 +225,7 @@ test('sin el campo en el catálogo se dice que MIREN EL CRM, no que nadie ve el 
 
   const r = await leer();
   assert.equal(r.tasa, null);
+  assert.equal(r.hayCampo, false, 'sin el campo, la pantalla de Conversation diría «sin citas»');
   assert.match(String(r.aviso), /no tiene un campo/);
   assert.match(String(r.aviso), /no es que nadie vea el video/);
 });

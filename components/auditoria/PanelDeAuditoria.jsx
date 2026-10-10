@@ -23,21 +23,18 @@
 
    Este panel tenía su propia barra `.cl-sub` y su propia carga. Las dos subieron a
    `components/conversation/PanelDeConversation.jsx` cuando esta pantalla pasó a ser dos pestañas
-   de **Conversation**, y el motivo no es de prolijidad: la estética de operación dibuja **una**
-   barra de sub-pestañas por pantalla, así que dejar la suya acá habría puesto dos barras
-   encimadas — la de Conversation arriba y la del panel abajo, con la misma forma y distinto
-   contenido.
+   de **Conversation**; desde el 2026-10-10 (CN-3) son los dos últimos modos del selector del
+   prototipo, `.mode-seg`, y la carga es la del tablero entero.
 
    Lo que queda acá es `Cuerpo` y todo lo que dibuja. Recibe `sub` por propiedad y **no sabe** de
    dónde viene: le da igual si el conmutador está en su propia barra o dos niveles más arriba.
 
-   Y por qué la CARGA también subió, que es lo menos obvio: los contadores de las pestañas —cuántos
-   patrones abiertos, cuántos prompts sin cargar— salen de los datos. Con la carga acá, la barra de
-   arriba habría necesitado que este componente le avisara hacia atrás, y ese es el cableado que
-   deja dos fuentes para el mismo número. Con la carga arriba, hay una.
+   La CARGA subió porque la pantalla de Conversation es UNA lectura —el tablero y el supervisor en el
+   mismo `GET`— y una sola fuente para cada número es lo que evita que dos lugares de la misma
+   pantalla digan cosas distintas.
 
-   La barra se dibuja SIEMPRE, también mientras carga y con error. Una barra que aparece cuando
-   llegan los datos hace que la pantalla salte, y deja sin salida a quien entró con un error.
+   El selector se dibuja SIEMPRE, también mientras carga y con error. Uno que aparece cuando llegan
+   los datos hace que la pantalla salte, y deja sin salida a quien entró con un error.
 
    ── Y LOS ANÁLISIS VAN SEPARADOS POR AGENTE, NO EN UNA LISTA SOLA ─────────
 
