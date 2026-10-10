@@ -26,9 +26,12 @@
  *   · **La tabla no ordena a nadie** (S15-09): las filas son las de los closers configurados, en el orden en que
  *     se los designó, y la subfila dice cuántos contactos les asigna el CRM —la asignación por ICP del
  *     prototipo no existe—.
- *   · **Los motivos son los del catálogo de Avanzar** (S15-11), y lo que no casa va en su propia fila.
- *   · **Debajo, la cadena comercial** (S15-12): lo que la pantalla anterior medía y el prototipo no tenía, en
- *     una tarjeta más con el mismo vocabulario.
+ *   · **Los motivos salen de las llamadas HT sin cierre** (S15-19), por la categoría de sus objeciones, con el
+ *     `hint` del prototipo: «{N} llamadas sin cierre».
+ *   · **Debajo, la cadena comercial en cifras** (S15-20): lo que la pantalla anterior medía y el prototipo no
+ *     tenía, con el vocabulario de las cuatro de arriba.
+ *   · **Sin párrafos** (S15-18): es un tablero. Las notas de la tabla, los avisos y qué población cuenta cada
+ *     ventana siguen viajando, y los da el agente de Sales cuando se le pregunta.
  *   · **Ningún dato de un contacto** (S15-15): ni nombres de prospectos ni el texto libre de un resultado.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -38,7 +41,7 @@ import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { leerSales } from '@/lib/negocio/vistaDeSales';
-import { FRASE, FRASE_DEL_MOTIVO, cien, miles, o, pf, pf1, plata } from './comun.jsx';
+import { ESLABON, FRASE, FRASE_DEL_MOTIVO, MOTIVO_DE_LA_CATEGORIA, cien, dias, miles, o, pf, pf1, plata } from './comun.jsx';
 
 export default function PanelDeSales() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
@@ -161,7 +164,7 @@ function Cuerpo({ p }) {
       </div>
       <Closers t={closers} />
       <Motivos m={motivos} />
-      <LaCadenaComercial c={comercial} cadena={p.cadena} dinero={p.dinero} ventanas={p.ventanas} />
+      <LaCadenaComercial c={comercial} cadena={p.cadena} dinero={p.dinero} sinClosers={closers.filas.length === 0} />
     </>
   );
 }
@@ -175,11 +178,18 @@ function Cifra({ rotulo, c, formato, esRevenue = false }) {
   const debajo = c.valor === null ? (FRASE_DEL_MOTIVO[c.motivo] ?? null) : esRevenue ? FRASE.reportado : null;
   return (
     <div className="card">
-      <div className="card-body stat">
-        <div className="s-l">{rotulo}</div>
-        <div className={esRevenue && c.valor !== null ? 's-v sl-rev' : 's-v'}>{o(c.valor, formato)}</div>
-        {debajo ? <div className="sl-motivo">{debajo}</div> : null}
-      </div>
+      <Stat rotulo={rotulo} valor={o(c.valor, formato)} debajo={debajo} rev={esRevenue && c.valor !== null} />
+    </div>
+  );
+}
+
+/** Una cifra del vocabulario del prototipo —`stat`, `s-l`, `s-v`— con, debajo, una sola línea corta (S15-18). */
+function Stat({ rotulo, valor, debajo = null, rev = false }) {
+  return (
+    <div className="card-body stat">
+      <div className="s-l">{rotulo}</div>
+      <div className={rev ? 's-v sl-rev' : 's-v'}>{valor}</div>
+      {debajo ? <div className="sl-motivo">{debajo}</div> : null}
     </div>
   );
 }
@@ -206,8 +216,7 @@ function Celda({ c, formato, rev = false }) {
 /**
  * La tarjeta «Closers» (S15-09): las seis columnas del prototipo, una fila por closer configurado, sin ranking.
  * Agendadas y Asistieron son citas del CRM; Ventas, Cierre y Revenue, lo que la persona registró. La nota de la
- * tabla, que escribe el servidor, lo dice; la de cada fila va debajo, con su nombre, porque un `title` no se lee
- * en el teléfono ni con el teclado.
+ * tabla y la de cada fila no se dibujan (S15-18): las da el agente de Sales, que las recibe en `cierre_por_closer`.
  */
 function Closers({ t }) {
   return (
@@ -244,38 +253,31 @@ function Closers({ t }) {
           </div>
         </div>
       )}
-      {t.aviso ? <p className="sl-aviso">{t.aviso}</p> : null}
-      {t.filas.map((f) =>
-        f.aviso ? (
-          <p className="sl-aviso" key={f.usuarioId}>
-            <b>{f.nombre}</b>: {f.aviso}
-          </p>
-        ) : null,
-      )}
     </div>
   );
 }
 
 /**
- * La tarjeta «Motivos de no venta» (S15-10 y S15-11): los «No le interesa» de los closers, por el catálogo de
- * Avanzar y en su orden, con la barra de cada uno sobre el total. Lo que no casa con el catálogo va en su propia
- * fila, con el otro color, y su texto no viaja.
+ * La tarjeta «Motivos de no venta» (S15-19): las llamadas HT sin cierre de la ventana, por la categoría de sus
+ * objeciones, de más a menos, con la barra de cada una sobre las llamadas sin cierre. Una llamada con dos categorías
+ * cuenta en las dos. Las que no tienen ninguna clasificada van en su propia fila, con el otro color.
  */
 function Motivos({ m }) {
+  const hint = `${miles(m.sinCierre)} ${m.sinCierre === 1 ? 'llamada' : 'llamadas'} sin cierre`;
   return (
     <div className="card">
       <div className="card-head">
-        Motivos de no venta <span className="hint">{`${miles(m.sinVenta)} sin venta`}</span>
+        Motivos de no venta <span className="hint">{hint}</span>
       </div>
-      {m.total === 0 ? (
-        <p className="sl-vacio">{FRASE.sinMotivos}</p>
+      {m.sinCierre === 0 ? (
+        <p className="sl-vacio">{FRASE.sinLlamadas}</p>
       ) : (
         <div className="rows">
           {m.filas.map((f) => (
-            <FilaDeMotivo key={f.motivo} nombre={f.motivo} n={f.resultados} porcion={f.porcion} clase="sl-catalogo" />
+            <FilaDeMotivo key={f.categoria} nombre={MOTIVO_DE_LA_CATEGORIA[f.categoria]} n={f.llamadas} porcion={f.porcion} clase="sl-catalogo" />
           ))}
-          {m.fueraDelCatalogo > 0 ? (
-            <FilaDeMotivo nombre={FRASE.fueraDelCatalogo} n={m.fueraDelCatalogo} porcion={m.porcionFueraDelCatalogo} clase="sl-fuera" />
+          {m.sinObjecion > 0 ? (
+            <FilaDeMotivo nombre={FRASE.sinObjecion} n={m.sinObjecion} porcion={m.porcionSinObjecion} clase="sl-fuera" />
           ) : null}
         </div>
       )}
@@ -296,100 +298,35 @@ function FilaDeMotivo({ nombre, n, porcion, clase }) {
 }
 
 /**
- * Lo que la pantalla anterior medía y el prototipo no tenía, en una tarjeta más con el mismo vocabulario
- * (S15-12): la cadena de cierre, la cancelación, el ciclo hasta la cita, el dinero del mes y la cobertura. Cada
- * sección dice qué población cuenta, con el texto de `ventanasDeSales.ts`, y lleva su aviso del servidor como
- * viene.
+ * La cadena comercial, en cifras (S15-20): los cinco eslabones, en contactos, con el porcentaje de la cohorte
+ * debajo, y el cierre del período —la cancelación, los días hasta la cita y el cobrado del mes—. Sin descripciones
+ * ni avisos: qué población cuenta cada una lo dice el agente de Sales (S15-18).
  */
-function LaCadenaComercial({ c, cadena, dinero, ventanas }) {
+function LaCadenaComercial({ c, cadena, dinero, sinClosers }) {
+  const cobradoFalta = sinClosers ? FRASE.sinClosers : FRASE.sinRegistrosDelMes;
   return (
     <div className="card">
       <div className="card-head">La cadena comercial</div>
-
-      <Seccion titulo="Del contacto a la venta" que={ventanas.cohorte.que} />
-      {cadena.cohorte === 0 ? (
-        <p className="sl-vacio">{FRASE.sinContactos}</p>
-      ) : (
-        <div className="rows">
-          {cadena.eslabones.map((e) => (
-            <div className="row-i sl-eslabon" key={e.clave} title={e.que}>
-              <div className="rn">{e.titulo}</div>
-              <div className="num">{miles(e.contactos)}</div>
-              <div className="mini-bar">
-                <i className="sl-barra" style={{ width: `${cien(e.porcionDeLaCohorte ?? 0)}%` }} />
-              </div>
-              <div className="num">{o(e.porcionDeLaCohorte, pf)}</div>
-            </div>
-          ))}
-        </div>
-      )}
-      {cadena.aviso ? <p className="sl-aviso">{cadena.aviso}</p> : null}
-
-      <Seccion titulo="Cancelación" que={ventanas.citas.que} />
-      <div className="rows">
-        <Par nombre="Citas de la ventana" valor={miles(c.cancelacion.citas)} />
-        <Par nombre="Canceladas" valor={miles(c.cancelacion.canceladas)} />
-        <Par nombre="Tasa de cancelación" valor={o(c.cancelacion.tasa, pf1)} />
+      <div className="sl-cifras sl-cinco">
+        {cadena.eslabones.map((e, i) => (
+          <Stat
+            key={e.clave}
+            rotulo={ESLABON[e.clave]}
+            valor={miles(e.contactos)}
+            debajo={e.porcionDeLaCohorte === null ? (i === 0 ? FRASE.sinContactos : null) : pf(e.porcionDeLaCohorte)}
+          />
+        ))}
       </div>
-      {c.cancelacion.aviso ? <p className="sl-aviso">{c.cancelacion.aviso}</p> : null}
-
-      <Seccion titulo="Del alta a la primera cita" que={ventanas.cohorte.que} />
-      <div className="rows">
-        <Par nombre="La mitad agenda antes de" valor={o(c.ciclo.p50, (d) => `${d} d`)} />
-        <Par nombre="Uno de cada diez tarda más de" valor={o(c.ciclo.p90, (d) => `${d} d`)} />
-        <Par nombre="Medido sobre" valor={`${miles(c.ciclo.cobertura.con)} de ${miles(c.ciclo.cobertura.sobre)}`} />
+      <div className="sl-cifras sl-tres">
+        <Stat rotulo="Cancelación" valor={o(c.cancelacion.tasa, pf1)} debajo={c.cancelacion.tasa === null ? FRASE.sinCitas : null} />
+        <Stat rotulo="Días hasta la cita" valor={o(c.ciclo.p50, dias)} debajo={c.ciclo.p50 === null ? FRASE.pocosContactos : null} />
+        <Stat
+          rotulo={`Cobrado de ${dinero.mes}`}
+          valor={o(dinero.cobrado.valor, plata)}
+          debajo={dinero.cobrado.valor === null ? cobradoFalta : FRASE.reportado}
+          rev={dinero.cobrado.valor !== null}
+        />
       </div>
-      {c.ciclo.avisoDelTecho ? <p className="sl-aviso sl-grave">{c.ciclo.avisoDelTecho}</p> : null}
-      {c.ciclo.aviso ? <p className="sl-aviso">{c.ciclo.aviso}</p> : null}
-
-      {/* El único bloque que no obedece al segmentado: es del mes calendario, con su nombre (S15-12). */}
-      <Seccion titulo={`Dinero de ${dinero.mes}`} que={ventanas.mes.que} />
-      <div className="rows">
-        <Par nombre="Cobrado" sub={FRASE.reportado} valor={o(dinero.cobrado.valor, plata)} />
-        <Par nombre="Ventas registradas" valor={o(dinero.ventas.valor, miles)} />
-        <Par nombre="Acuerdos sin pagar" valor={o(dinero.acuerdos.valor, miles)} />
-      </div>
-      {dinero.cobrado.falta ? <p className="sl-aviso">{dinero.cobrado.falta}</p> : null}
-
-      <Seccion titulo="Cobertura" que="Cuánto cubren las cifras: una fila cuenta personas y la otra, citas." />
-      <div className="rows">
-        <Proporcion nombre="Contactos con fecha de alta" p={c.cobertura.cohorte} />
-        <Proporcion nombre="Citas que caen en una fila de closer" p={c.cobertura.tabla} />
-      </div>
-    </div>
-  );
-}
-
-function Seccion({ titulo, que }) {
-  return (
-    <div className="sl-sec">
-      <span className="sl-sec-t">{titulo}</span>
-      <span className="sl-sec-m">{que}</span>
-    </div>
-  );
-}
-
-function Par({ nombre, sub, valor }) {
-  return (
-    <div className="row-i sl-par">
-      <div>
-        <div className="rn">{nombre}</div>
-        {sub ? <div className="rs">{sub}</div> : null}
-      </div>
-      <div className="num">{valor}</div>
-    </div>
-  );
-}
-
-function Proporcion({ nombre, p }) {
-  return (
-    <div className="row-i sl-eslabon">
-      <div className="rn">{nombre}</div>
-      <div className="num">{`${miles(p.con)} de ${miles(p.sobre)}`}</div>
-      <div className="mini-bar">
-        <i className="sl-barra" style={{ width: `${cien(p.porcion ?? 0)}%` }} />
-      </div>
-      <div className="num">{o(p.porcion, pf)}</div>
     </div>
   );
 }

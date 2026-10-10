@@ -90,9 +90,10 @@ export interface Proporcion {
 }
 
 /**
- * Lo de la tarjeta de abajo que se arma acá: las coberturas, la cancelación de 0 a 1 y el ciclo (S15-12). Los
- * eslabones de la cadena, el dinero del mes y el texto de cada ventana la pantalla los lee de sus bloques de
- * siempre, que ya viajan hechos.
+ * Lo de la tarjeta de abajo que se arma acá: las coberturas, la cancelación de 0 a 1 y el ciclo. Los eslabones de
+ * la cadena y el dinero del mes la pantalla los lee de sus bloques de siempre, que ya viajan hechos. Desde SA-8 la
+ * tarjeta dibuja sólo la cancelación, la mediana y el cobrado (S15-20); las coberturas, el p90 y los avisos viajan
+ * para el agente.
  */
 export interface ComercialDeSales {
   cobertura: { cohorte: Proporcion; tabla: Proporcion };

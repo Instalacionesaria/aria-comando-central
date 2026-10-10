@@ -75,8 +75,8 @@ omisión (§ 6 del mismo documento).
 
 **La sección.** `lib/autorizacion/secciones.ts:333-338`: clave `sales`, nombre «Closing», capacidad `tablero.ver`.
 La vista se registra en `components/CommandCenter.jsx:45` y se dibujan sólo las secciones visibles de la sesión
-(`components/CommandCenter.jsx:65-72`). El panel pide `/api/sales` al montarse (`components/sales/PanelDeSales.jsx:72`)
-y lo refresca cada 60 s sólo con la pestaña a la vista (`components/sales/PanelDeSales.jsx:97`,
+(`components/CommandCenter.jsx:65-72`). El panel pide `/api/sales` al montarse (`components/sales/PanelDeSales.jsx:75`)
+y lo refresca cada 60 s sólo con la pestaña a la vista (`components/sales/PanelDeSales.jsx:100`,
 `lib/cadencia.ts:91`). `components/views/SalesView.jsx` es el envoltorio del prototipo, `view-scroll cre-scroll`,
 sin `estetica-op` (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-01).
 
@@ -87,8 +87,8 @@ la organización (`:96`). La respuesta lleva los bloques de siempre —`ventanas
 viajan: cada «—» dice su motivo, y lo que no se mide está en `docs/OTROS/futuro/lo-que-sales-no-mide.md`.
 
 **La lectura.** `lib/negocio/lecturaDeSales.ts` tiene dos mitades puras —`armarCierre`
-(`lib/negocio/lecturaDeSales.ts:149`) y `armarSales` (`:197`)— y dos que leen: `lecturaDelCierre` (`:244`), con los
-closers, la cancelación, la tabla y los motivos, y `lecturaDeSales` (`:270`), que le suma el dinero, la cadena y el
+(`lib/negocio/lecturaDeSales.ts:160`) y `armarSales` (`:209`)— y dos que leen: `lecturaDelCierre` (`:256`), con los
+closers, la cancelación, la tabla y los motivos, y `lecturaDeSales` (`:284`), que le suma el dinero, la cadena y el
 ciclo. Los closers se leen una vez. Todo lo que va en `pantalla` viaja de 0 a 1; la cancelación de siempre sigue de
 0 a 100, porque la comparten Conversation, el Closer y el cerebro.
 
@@ -111,14 +111,14 @@ período con que abre (`lib/negocio/periodo.ts:109`)—, deducido de la medició
 
 | bloque | dónde | el 2026-10-09, a 30 días |
 |---|---|---|
-| El encabezado: «Sales», «Cierre, closers y motivos de pérdida» y el segmentado de cuatro períodos | `components/sales/PanelDeSales.jsx:43`, `:133` | con la cabecera del departamento a la vista, sólo el segmentado |
-| Asistencias | `components/sales/PanelDeSales.jsx:174` | «—», «Nadie marca la asistencia.» (0 de 363 citas marcadas) |
+| El encabezado: «Sales», «Cierre, closers y motivos de pérdida» y el segmentado de cuatro períodos | `components/sales/PanelDeSales.jsx:46`, `:133` | con la cabecera del departamento a la vista, sólo el segmentado |
+| Asistencias | `components/sales/PanelDeSales.jsx:177` | «—», «Nadie marca la asistencia.» (0 de 363 citas marcadas) |
 | Tasa de cierre | igual | «—», «Pocos intentos para una tasa.» (1 intento) |
 | Ventas | igual | **0**, cero medido: hubo 1 resultado y ninguna venta |
 | Revenue reportado | igual | **$0**, «reportado por el closer» |
-| Closers: seis columnas, una fila por closer configurado | `components/sales/PanelDeSales.jsx:212` | 3 filas; la nota de cada una, debajo de la tabla |
-| Motivos de no venta, con «{N} sin venta» | `components/sales/PanelDeSales.jsx:264` | «1 sin venta» y «Sin motivos registrados.»: el único «No le interesa» es de agosto |
-| La cadena comercial: la cadena, la cancelación, el ciclo, el dinero del mes y la cobertura | `components/sales/PanelDeSales.jsx:304` | no re-medido; el 2026-09-28 la cancelación era 34,9 % y la cadena terminaba en 0 ventas |
+| Closers: seis columnas, una fila por closer configurado | `components/sales/PanelDeSales.jsx:221` | 3 filas; la nota de cada una, debajo de la tabla |
+| Motivos de no venta, con «{N} sin venta» | `components/sales/PanelDeSales.jsx:265` | «1 sin venta» y «Sin motivos registrados.»: el único «No le interesa» es de agosto |
+| La cadena comercial: la cadena, la cancelación, el ciclo, el dinero del mes y la cobertura | `components/sales/PanelDeSales.jsx:305` | no re-medido; el 2026-09-28 la cancelación era 34,9 % y la cadena terminaba en 0 ventas |
 
 **El borde de la ventana.** Ese único resultado de 30 días es del 2026-09-09: la ventana lo alcanzaba por un día.
 Desde el 2026-10-10, sin un registro nuevo, Ventas, Revenue y Tasa de cierre dicen «—» con «Nadie registró en esta
@@ -271,11 +271,11 @@ y el predicado compartido (`lib/negocio/ventasDelContacto.ts:27`); el monto de c
 y `lib/negocio/etapas.ts:78`.
 
 **3 · Es venta REPORTADA, no pago verificado.** El §5.4 lo exige por escrito (línea 288 del documento). El revenue
-lleva «reportado por el closer» debajo de la cifra (`components/sales/PanelDeSales.jsx:174`), y el cobrado del mes
+lleva «reportado por el closer» debajo de la cifra (`components/sales/PanelDeSales.jsx:177`), y el cobrado del mes
 también. Ninguna «CERRADA» del analizador puede reemplazarlo: es la lectura de un modelo.
 
-**4 · Un «—» dice por qué, y un cero es un cero medido.** Seis motivos cerrados (`lib/negocio/lecturaDeSales.ts:49`),
-cada uno con su frase de la lista de S15-02 (`components/sales/comun.jsx:26`): sin closers, sin citas, sin asistencia
+**4 · Un «—» dice por qué, y un cero es un cero medido.** Seis motivos cerrados (`lib/negocio/lecturaDeSales.ts:53`),
+cada uno con su frase de la lista de S15-02 (`components/sales/comun.jsx:28`): sin closers, sin citas, sin asistencia
 marcada, sin registros en la ventana, bajo el piso y una venta sin monto. Es la regla de los dos ceros de
 `lib/negocio/comision.ts:14-28` llevada a la pantalla: un `?? 0` convertiría «nadie registró» en «no se vendió».
 

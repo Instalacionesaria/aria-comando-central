@@ -8,9 +8,8 @@
    `:is()` de `app/inteligencia-estetica.css`.
 
    Lo de abajo es lo que el prototipo no tenía, o tenía en línea: las rejillas de las filas y el color del revenue
-   (el prototipo los escribía en `style=`), la frase debajo de una cifra sin dato, la línea de un fallo y la de
-   la primera carga, los avisos del servidor, las secciones de la tarjeta de abajo y el teléfono. Acotado a
-   `#v-sales`. Sin colores literales (`104-temas`) ni sombras (`107-sin-sombras`).
+   (el prototipo los escribía en `style=`), la línea debajo de una cifra, la de un fallo y la de la primera carga,
+   las dos filas de cifras de la tarjeta de abajo y el teléfono. Acotado a `#v-sales`. Sin colores literales (`104-temas`) ni sombras (`107-sin-sombras`).
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* «No se pudo leer»: una línea, en el color de lo grave. El motivo del servidor va en el `title`. */
@@ -34,7 +33,7 @@
    color de las otras cifras: la clase sólo se pone con un monto. */
 #v-sales .stat .s-v.sl-rev { color: var(--exec); }
 
-/* El motivo de un «—», o «reportado por el closer», debajo de la cifra (S15-02). */
+/* El motivo de un «—», «reportado por el closer» o el porcentaje de un eslabón, debajo de la cifra: una línea. */
 #v-sales .stat .sl-motivo {
   margin-top: 3px;
   font-size: 10.5px;
@@ -46,21 +45,17 @@
 /* Las rejillas que el prototipo escribía en `style=`: la de la tabla de closers y la de los motivos. */
 #v-sales .sl-closers { grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr 1.1fr; }
 #v-sales .sl-motivos { grid-template-columns: 1.6fr .6fr 2fr; }
-/* Las de la tarjeta de abajo: un eslabón con su cifra, su barra y su porción; un par de rótulo y cifra. */
-#v-sales .sl-eslabon { grid-template-columns: 1.6fr .6fr 2fr .6fr; }
-#v-sales .sl-par { grid-template-columns: minmax(0, 1fr) auto; }
 
 /* Ninguna fila abre nada: el puntero de mano del prototipo prometería un clic. */
 #v-sales .row-i { cursor: default; }
 
 /* Los colores de las barras. El prototipo pintaba las dos primeras en el de alerta y las otras en gris, por su
-   lugar; acá el color dice de dónde viene el motivo —del catálogo, en el de alerta; de fuera, en gris—, que es el
-   desvío declarado en S15-02. Las proporciones de la tarjeta de abajo, en el acento. */
+   lugar; acá el color dice qué es la fila —una categoría de objeción, en el de alerta; las llamadas sin ninguna
+   clasificada, en gris—, que es el desvío declarado en S15-02. */
 #v-sales .mini-bar i.sl-catalogo { background: var(--warn); }
 #v-sales .mini-bar i.sl-fuera { background: var(--txt-faint); }
-#v-sales .mini-bar i.sl-barra { background: var(--accent); }
 
-/* Una tarjeta sin filas: sin closers, sin motivos o sin contactos en la cohorte. */
+/* Una tarjeta sin filas: sin closers o sin llamadas sin cierre. */
 #v-sales .sl-vacio {
   margin: 0;
   padding: 12px 16px;
@@ -68,42 +63,20 @@
   color: var(--txt-faint);
 }
 
-/* El aviso del servidor, como viene, al pie de su bloque; también la nota de cada closer, con su nombre. */
-#v-sales .sl-aviso {
-  margin: 0;
-  padding: 10px 16px;
-  border-top: 1px solid var(--line);
-  font-size: 11px;
-  line-height: 1.55;
-  color: var(--txt-faint);
-}
-/* El techo del ciclo, a la vista: con «7 días» la mediana no puede pasar de 7. */
-#v-sales .sl-aviso.sl-grave { color: var(--warn); }
-
-/* ── LAS SECCIONES DE LA TARJETA DE ABAJO ────────────────────────────────── */
-
-/* El encabezado de cada sección, con la franja del `col-head` del prototipo: el título y qué población cuenta. */
-#v-sales .sl-sec {
-  border-top: 1px solid var(--line);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 10px;
-  padding: 9px 16px;
-  border-bottom: 1px solid var(--line);
-  background: rgb(var(--c-nube) / 0.022);
-}
-#v-sales .sl-sec-t { font-size: 12px; font-weight: 600; letter-spacing: -0.01em; }
-#v-sales .sl-sec-m { font-size: 10.5px; color: var(--txt-faint); }
-/* Cada sección empieza con su línea, venga de filas, de un aviso o de un vacío; la primera ya la tiene en el
-   borde del `card-head`. */
-#v-sales .card-head + .sl-sec { border-top: 0; }
+/* ── LA TARJETA DE ABAJO, EN CIFRAS (S15-20) ───────────────────────────────
+ *
+ * Dos filas de cifras con el vocabulario de las cuatro de arriba —`stat`, `s-l`, `s-v`—: los cinco eslabones, y
+ * la cancelación, los días hasta la cita y el cobrado del mes. La línea entre las dos la pone `.sl-tres`; la de
+ * arriba de todo, el `card-head`. */
+#v-sales .sl-cifras { display: grid; }
+#v-sales .sl-cinco { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+#v-sales .sl-tres { grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
 
 /* ── EL TELÉFONO, A 375 px (S15-16) ────────────────────────────────────────
  *
  * Debajo del corte del menú (760 px, `app/armazon.css`): las cuatro cifras van de a dos, el segmentado ocupa el
- * ancho y parte sus botones si no entran, y la tabla de closers desliza a lo ancho, como las de Acquisition:
- * apretar seis columnas en 375 px partiría las cifras en dos renglones. */
+ * ancho y parte sus botones si no entran, la tabla de closers desliza a lo ancho, como las de Acquisition
+ * —apretar seis columnas en 375 px partiría las cifras en dos renglones—, y las cifras de abajo se apilan. */
 @media (max-width: 760px) {
   #v-sales .grid-4 { grid-template-columns: repeat(2, 1fr); }
   #v-sales .cre-head .ch-r { width: 100%; }
@@ -111,7 +84,7 @@
   #v-sales .sl-desliza { overflow-x: auto; }
   #v-sales .sl-desliza > .col-head { min-width: 560px; }
   #v-sales .sl-desliza > .rows { min-width: 560px; }
-  /* La cifra y la porción toman su ancho —«596 de 620» no se parte— y la barra, lo que queda. */
-  #v-sales .sl-eslabon { grid-template-columns: minmax(0, 1fr) auto minmax(40px, .8fr) auto; }
-  #v-sales .sl-eslabon .num { white-space: nowrap; }
+  /* Las dos filas de cifras de abajo, de a dos y de a una: cinco en 375 px partirían cada rótulo. */
+  #v-sales .sl-cinco { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #v-sales .sl-tres { grid-template-columns: minmax(0, 1fr); }
 }

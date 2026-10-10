@@ -21,6 +21,10 @@
 //     `slice`;
 //   · no vuelven el plan, «Personalizado», la clave `mes`, los nombres de la maqueta ni «ICP alto asignado»;
 //   · se multiplica por 100 en un solo lugar — mutación: un segundo `* 100`;
+//   · sin párrafos: el panel no dibuja ningún aviso del servidor ni el texto de una ventana — mutación: volver a
+//     dibujar la nota de la tabla;
+//   · los motivos son las seis categorías del analizador y los eslabones los cinco del servidor, cada uno con su
+//     rótulo — mutación: sacar una categoría;
 //   · lo nuevo vive en `app/sales.css`, acotado, y ninguna otra hoja alcanza a la vista.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -96,7 +100,12 @@ test('las cuatro cifras y las seis columnas llevan los rótulos del prototipo, e
   assert.match(proto, /<div class="card-head">Closers<\/div>/);
   assert.match(closers, /<div className="card-head">Closers<\/div>/);
   assert.match(proto, /<div class="card-head">Motivos de no venta <span class="hint">/);
-  assert.match(funcion(panel(), 'Motivos'), /<div className="card-head">\s*Motivos de no venta <span className="hint">\{`\$\{miles\(m\.sinVenta\)\} sin venta`\}<\/span>/, 'el `hint` no es «{N} sin venta» (S15-10)');
+  // El `hint` del prototipo, «56 llamadas sin cierre», con el número de verdad (S15-19).
+  assert.match(proto, /<span class="hint">\d+ llamadas sin cierre<\/span>/);
+  const motivos = funcion(panel(), 'Motivos');
+  assert.match(motivos, /const hint = `\$\{miles\(m\.sinCierre\)\} \$\{m\.sinCierre === 1 \? 'llamada' : 'llamadas'\} sin cierre`;/, 'el `hint` no es «{N} llamadas sin cierre» (S15-19)');
+  assert.match(motivos, /<div className="card-head">\s*Motivos de no venta <span className="hint">\{hint\}<\/span>/);
+  assert.match(motivos, /nombre=\{MOTIVO_DE_LA_CATEGORIA\[f\.categoria\]\} n=\{f\.llamadas\} porcion=\{f\.porcion\}/, 'una fila no dibuja la categoría, las llamadas o la porción del servidor');
 });
 
 test('cada cifra y cada columna sale del lugar que le toca en `pantalla`', () => {
@@ -125,7 +134,7 @@ test('cada cifra y cada columna sale del lugar que le toca en `pantalla`', () =>
   assert.ok(orden.every((x) => x !== -1), `falta una columna, o cambió su formato: ${JSON.stringify(orden)}`);
   assert.deepEqual([...orden].sort((a, b) => a - b), orden, 'las columnas cambiaron de orden');
   // La cancelación, con el decimal con que la publica `tasaDeCancelacion` y la dibuja Conversation.
-  assert.match(funcion(panel(), 'LaCadenaComercial'), /<Par nombre="Tasa de cancelación" valor=\{o\(c\.cancelacion\.tasa, pf1\)\} \/>/);
+  assert.match(funcion(panel(), 'LaCadenaComercial'), /<Stat rotulo="Cancelación" valor=\{o\(c\.cancelacion\.tasa, pf1\)\}/);
   assert.match(filas, /`\$\{miles\(f\.contactos\)\} contactos asignados`/, 'la subfila no es «{N} contactos asignados» (S15-02)');
 });
 
@@ -138,7 +147,10 @@ test('los bloques van en el orden del prototipo, y debajo la cadena comercial', 
   const orden = ['className="grid-4"', '<Closers', '<Motivos', '<LaCadenaComercial'].map((x) => cuerpo.indexOf(x));
   assert.ok(orden.every((x) => x !== -1), `falta un bloque: ${JSON.stringify(orden)}`);
   assert.deepEqual([...orden].sort((a, b) => a - b), orden, 'los bloques no van en el orden del prototipo (S15-12)');
-  assert.match(funcion(t, 'Cifra'), /<div className="card">\s*<div className="card-body stat">\s*<div className="s-l">/);
+  assert.match(funcion(t, 'Cifra'), /<div className="card">\s*<Stat /);
+  assert.match(funcion(t, 'Stat'), /<div className="card-body stat">\s*<div className="s-l">\{rotulo\}<\/div>/);
+  // La tarjeta de abajo, en cifras: las dos filas con el mismo vocabulario (S15-20).
+  assert.match(funcion(t, 'LaCadenaComercial'), /<div className="sl-cifras sl-cinco">[\s\S]*<div className="sl-cifras sl-tres">/);
   assert.match(funcion(t, 'FilaDeMotivo'), /<div className="mini-bar">/);
 });
 
@@ -177,8 +189,8 @@ test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor'
   assert.match(funcion(panel(), 'Celda'), /c\.valor === null \? \(FRASE_DEL_MOTIVO\[c\.motivo\] \?\? undefined\) : undefined/, 'la celda no dice el motivo de su «—»');
   // El color del revenue, sólo con un monto: un «—» va como los demás.
   assert.match(funcion(panel(), 'Celda'), /className=\{rev && c\.valor !== null \? 'num rev' : 'num'\}/, 'el «—» del revenue lleva el color de un monto');
-  // La nota de cada closer, a la vista con su nombre: un `title` no se lee en el teléfono ni con el teclado.
-  assert.match(funcion(panel(), 'Closers'), /<b>\{f\.nombre\}<\/b>: \{f\.aviso\}/, 'la nota de cada fila quedó escondida');
+  // Sin la nota de cada closer, ni a la vista ni en un `title`: la da el agente de Sales (S15-18).
+  assert.doesNotMatch(funcion(panel(), 'Closers'), /aviso/, 'volvió la nota de la tabla o la de una fila');
   // Una cifra sin valor dice «—» y su motivo; la del revenue, con valor, «reportado por el closer».
   assert.match(funcion(panel(), 'Cifra'), /c\.valor === null \? \(FRASE_DEL_MOTIVO\[c\.motivo\] \?\? null\) : esRevenue \? FRASE\.reportado : null/);
 });
@@ -199,8 +211,8 @@ test('no vuelven el plan, «Personalizado», la clave `mes`, las cifras de la ma
     ['ICP alto asignado', 'la asignación por ICP no existe (S15-02)'],
     ['ICP medio', 'la asignación por ICP no existe (S15-02)'],
     ['55,200', 'una cifra de la maqueta'],
-    ['No es quien decide', 'no es un motivo del catálogo (S15-11)'],
-    ['Pidió tiempo', 'no es un motivo de «No le interesa» (S15-11)'],
+    ['Sin necesidad clara', 'no es una categoría del analizador (S15-19)'],
+    ['Pidió tiempo', 'no es una categoría del analizador (S15-19)'],
     ['data-leads', 'abría un cajón con personas inventadas (S15-15)'],
     ['detalle', 'el texto libre de un resultado no se dibuja (S15-15)'],
     ['PISO_DE_UNA_TASA', 'el navegador no calcula tasas: llegan del servidor (S15-13)'],
@@ -257,4 +269,39 @@ test('lo nuevo vive en `app/sales.css`, acotado; ninguna otra hoja alcanza a la 
     if (nombre === 'aios.css' || nombre === 'sales.css') continue;
     assert.doesNotMatch(sinComentarios(leer(`app/${nombre}`)), /#v-sales\b/, `app/${nombre} tiene una regla para #v-sales`);
   }
+});
+
+test('sin párrafos: el panel no dibuja avisos del servidor ni el texto de una ventana (S15-18)', () => {
+  const t = panel();
+  assert.doesNotMatch(t, /\.aviso\b|avisoDelTecho|\.falta\b|\.que\b|ventanas/, 'el panel volvió a dibujar un aviso, un motivo largo o el texto de una ventana');
+  // Debajo de una cifra, una sola línea: la de la lista cerrada o un porcentaje.
+  assert.match(funcion(t, 'Stat'), /\{debajo \? <div className="sl-motivo">\{debajo\}<\/div> : null\}/);
+  assert.equal([...funcion(t, 'Stat').matchAll(/sl-motivo/g)].length, 1, 'una cifra lleva más de una línea debajo');
+});
+
+test('los motivos son las seis categorías del analizador, y los eslabones los cinco del servidor', () => {
+  const c = comun();
+  const claves = (nombre: string): string[] => {
+    const i = c.indexOf(`export const ${nombre} = {`);
+    assert.notEqual(i, -1, `no está ${nombre}`);
+    return [...c.slice(i, c.indexOf('};', i)).matchAll(/(\w+): '[^']+'/g)].map((m) => m[1]!);
+  };
+  const categorias = /CATEGORIAS_DE_OBJECION = \[([^\]]+)\]/.exec(leer('lib/analizadores/categorias.ts'))?.[1] ?? '';
+  assert.deepEqual(claves('MOTIVO_DE_LA_CATEGORIA'), [...categorias.matchAll(/'(\w+)'/g)].map((m) => m[1]!), 'una categoría del analizador no tiene rótulo, o sobra uno');
+  const eslabones = /export const ESLABONES = \[([^\]]+)\]/.exec(leer('lib/negocio/cadenaDeCierre.ts'))?.[1] ?? '';
+  assert.deepEqual(claves('ESLABON'), [...eslabones.matchAll(/'(\w+)'/g)].map((m) => m[1]!), 'un eslabón del servidor no tiene rótulo, o sobra uno');
+  // Tres de las categorías son los motivos del prototipo, con sus palabras.
+  const proto = prototipo();
+  for (const motivo of ['Precio', 'No es quien decide']) assert.ok(proto.includes(`<div class="rn">${motivo}</div>`), `«${motivo}» no está en el prototipo`);
+  assert.match(c, /precio: 'Precio',/);
+  assert.match(c, /decisor: 'No es quien decide',/);
+});
+
+test('la tarjeta de abajo: cada «—» con su línea, y el cobrado con la del mes y no la de la ventana (S15-20)', () => {
+  const c = funcion(panel(), 'LaCadenaComercial');
+  assert.match(c, /debajo=\{c\.cancelacion\.tasa === null \? FRASE\.sinCitas : null\}/, 'la cancelación sin citas no dice por qué');
+  assert.match(c, /debajo=\{c\.ciclo\.p50 === null \? FRASE\.pocosContactos : null\}/, 'la mediana bajo el piso no dice por qué');
+  assert.match(c, /const cobradoFalta = sinClosers \? FRASE\.sinClosers : FRASE\.sinRegistrosDelMes;/, 'el cobrado es del mes, no de la ventana');
+  assert.match(c, /debajo=\{dinero\.cobrado\.valor === null \? cobradoFalta : FRASE\.reportado\}/, 'el cobrado no dice «reportado por el closer»');
+  assert.match(c, /rotulo=\{ESLABON\[e\.clave\]\}\s*valor=\{miles\(e\.contactos\)\}/, 'un eslabón no dibuja su cifra del servidor');
 });

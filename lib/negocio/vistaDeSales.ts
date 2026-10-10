@@ -40,9 +40,9 @@ export interface PantallaDeSales {
    * Qué POBLACIÓN mide cada ventana de esta pantalla.
    *
    * Viaja porque son tres y dos de ellas dicen lo mismo describiendo cosas distintas: «quiénes
-   * entraron» contra «qué reuniones hubo». El panel es `'use client'` y no puede importar el texto,
-   * así que reescribirlo a mano sería el segundo lugar donde la distinción puede perderse. El
-   * `import type` no arrastra nada al paquete del navegador: se borra al compilar.
+   * entraron» contra «qué reuniones hubo». Desde el 2026-10-09 la pantalla no lo dibuja —es un tablero
+   * de cifras (S15-18)—: queda en la respuesta para quien la explique. El `import type` no arrastra
+   * nada al paquete del navegador: se borra al compilar.
    */
   ventanas: typeof VENTANAS;
   /** Cobrado, ventas y acuerdos. **Del mes calendario**, no del período de arriba. */
@@ -57,7 +57,7 @@ export interface PantallaDeSales {
   closers: CierreDeLosClosers;
   /**
    * Lo que el front arma: las cuatro cifras, la tabla, los motivos y lo de la tarjeta de abajo que se calcula, de 0 a
-   * 1. Los eslabones, el dinero y el texto de las ventanas los lee de los bloques de arriba.
+   * 1. Los eslabones y el dinero los lee de los bloques de arriba.
    */
   pantalla: PantallaDeSalesArmada;
 }

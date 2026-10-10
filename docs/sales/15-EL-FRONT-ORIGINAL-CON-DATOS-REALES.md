@@ -69,7 +69,7 @@ organización que tiene datos.
 | Revenue reportado | la suma del `monto` de esas ventas | `negocio.resultados.monto` | **$0** en 30 días |
 | Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:231` | 3 closers, 2 registraron alguna vez |
 | Motivos de no venta | los resultados de «No le interesa» por motivo del catálogo (`lib/negocio/salidas.ts:159-167`), en la ventana | `negocio.resultados.detalle` | 1 en toda la historia, «Otro», del 2026-08-30; ninguno en 30 días |
-| La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `lib/negocio/lecturaDeSales.ts:246` y `lib/negocio/lecturaDeSales.ts:272-274` | — |
+| La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `lib/negocio/lecturaDeSales.ts:258` y `lib/negocio/lecturaDeSales.ts:286-288` | — |
 
 ### Lo que la medición del 2026-10-09 agregó
 
@@ -118,11 +118,13 @@ y `app/sales.css`; `#v-sales` salió de `app/inteligencia-estetica.css`. Lo prue
 | la asistencia, en las cifras y en la tabla | «Nadie marca la asistencia.» |
 | la asistencia sin ninguna cita en la ventana | «Sin citas en esta ventana.» |
 | ventas o revenue sin ningún resultado en la ventana | «Nadie registró en esta ventana.» |
+| el cobrado del mes sin ningún resultado en el mes | «Nadie registró este mes.» |
 | el revenue, debajo de la cifra | «reportado por el closer» |
 | la tasa de cierre bajo el piso de intentos | «Pocos intentos para una tasa.» |
 | el revenue con alguna venta sin monto | «Hay ventas sin monto.» |
-| la tarjeta de motivos sin ningún motivo en la ventana | «Sin motivos registrados.» |
-| los motivos que no casan con el catálogo | «Fuera del catálogo» |
+| la tarjeta de motivos sin ninguna llamada sin cierre en la ventana | «Sin llamadas sin cierre en esta ventana.» |
+| las llamadas sin cierre sin ninguna objeción clasificada | «Sin objeción clasificada» |
+| la mediana de días hasta la cita bajo el piso | «Pocos contactos para una mediana.» |
 | la tabla, y las cifras de lo registrado, sin closers configurados | «Sin closers configurados.» |
 | la cadena con la cohorte vacía | «Sin contactos en este período» |
 | la primera carga | «Cargando…» |
@@ -135,9 +137,8 @@ Lo que el servidor escribe —los avisos de la cadena, de la cancelación, del c
 | en el prototipo | acá | por qué |
 |---|---|---|
 | la subfila «ICP alto asignado» | «{N} contactos asignados» | la asignación por ICP no existe (`docs/sales/04-LA-TABLA-DE-CLOSERS.md`) |
-| «56 llamadas sin cierre» | «{N} sin venta» | se cuentan resultados registrados, no llamadas |
-| los motivos «No es quien decide», «Sin necesidad clara», «Pidió tiempo» | los del catálogo: Precio, No es el momento, Competencia, No califica, Otro | `lib/negocio/salidas.ts:159-167`; «Pidió tiempo» es de otra salida |
-| las barras de los motivos: las dos primeras en el color de alerta y las otras en gris | las del catálogo en el de alerta y la de fuera del catálogo en gris | el color dice de dónde viene el motivo, no su lugar en la lista |
+| los motivos «No es quien decide», «Sin necesidad clara», «Pidió tiempo» | las seis categorías de objeción del analizador, en palabras: Precio, No es el momento, No es quien decide, No confía en el resultado, No es para su negocio, Otra | `lib/analizadores/categorias.ts:6` (S15-19, desde SA-8); hasta SA-7 eran los del catálogo de «No le interesa» |
+| las barras de los motivos: las dos primeras en el color de alerta y las otras en gris | las de una categoría en el de alerta y la de «Sin objeción clasificada» en gris | el color dice qué es la fila, no su lugar en la lista |
 | «Agendadas» | igual, pero son citas del CRM, no resultados | dos ejes distintos (`docs/sales/04-LA-TABLA-DE-CLOSERS.md`) |
 
 **Estado** · Construido el 2026-10-09 (SA-3): la lista vive en la constante `FRASE` de `components/sales/comun.jsx`,
@@ -309,7 +310,7 @@ la ruta en SA-2, que la llama una vez (`app/api/sales/route.ts:95-97`). `huecos`
 
 ### S15-14 · El cerebro lee lo mismo
 
-**Qué es** · Las herramientas de Sales (`lib/agentes/executive/adaptadores/sales.ts:31`) dicen lo mismo que la
+**Qué es** · Las herramientas de Sales (`lib/agentes/executive/adaptadores/sales.ts:29`) dicen lo mismo que la
 pantalla. Las dos que publican lo que la pantalla ARMA leen la mitad del cierre de la lectura,
 `lecturaDelCierre`, que es la que la ruta usa: `cierre_por_closer`, que suma las cuatro `cifras` y el monto de cada
 fila, y la nueva `motivos_de_no_venta`. La mitad del cierre lee los closers, la cancelación, la tabla y los motivos,
@@ -458,7 +459,7 @@ quien explica.
 **Lo que esto revierte** · Las notas de cada fila a la vista, que SA-4 agregó porque un `title` no se lee en el
 teléfono: ahora no van ni a la vista ni en el `title`.
 
-**Estado** · Por construir (SA-8).
+**Estado** · Construido el 2026-10-09 (SA-8).
 
 ### S15-19 · Los motivos de no venta, de las llamadas HT
 
@@ -507,7 +508,8 @@ días, la tarjeta diría «4 llamadas sin cierre» y tres filas, que suman 6 por
 categorías.
 
 **Estado** · El servidor, construido el 2026-10-09 (SA-7): `lib/negocio/motivosDeLasLlamadas.ts`, en `pantalla.motivos`;
-lo que registra el closer viaja como `pantalla.registrados`. La pantalla, por construir (SA-8).
+lo que registra el closer viaja como `pantalla.registrados`. La pantalla, el 2026-10-09 (SA-8): con una sola llamada,
+el `hint` dice «1 llamada sin cierre».
 
 ### S15-20 · La cadena comercial, en cifras
 
@@ -526,18 +528,21 @@ avisos. Siguen en la respuesta y en el cerebro (S15-18).
 
 **Un «—»** · Con su línea: la cadena con la cohorte vacía, «Sin contactos en este período»; la cancelación sin
 citas, «Sin citas en esta ventana.»; la mediana bajo el piso, «Pocos contactos para una mediana.»; el cobrado sin
-registros, «Nadie registró en esta ventana.» o «Sin closers configurados.», como lo dice `dineroDelMes`.
+registros, «Nadie registró este mes.» —es del mes calendario, no de la ventana— o «Sin closers configurados.», los
+dos motivos que separa `dineroDelMes`. Los rótulos de los eslabones son cortos y viven en el front (`ESLABON` de
+`components/sales/comun.jsx`); el del servidor sigue en la respuesta, para el agente.
 
-**Estado** · Por construir (SA-8).
+**Estado** · Construido el 2026-10-09 (SA-8).
 
 ### S15-21 · La lista de frases, después de SA-8
 
 S15-02 cambia así en SA-8, con el código: **entran** «Sin llamadas sin cierre en esta ventana.», «Sin objeción
-clasificada» y «Pocos contactos para una mediana.»; **salen** «Sin motivos registrados.» y «Fuera del catálogo», que
-eran de los motivos de Avanzar. Las demás quedan. La prueba 249 sigue exigiendo que la constante `FRASE` y la tabla
-de S15-02 coincidan en las dos direcciones.
+clasificada», «Pocos contactos para una mediana.» y «Nadie registró este mes.»; **salen** «Sin motivos registrados.» y
+«Fuera del catálogo», que eran de los motivos de Avanzar, y el desvío «{N} sin venta», porque el `hint` vuelve a ser el
+del prototipo. Las demás quedan. La prueba 249 sigue exigiendo que la constante `FRASE` y la tabla de S15-02
+coincidan en las dos direcciones.
 
-**Estado** · Por construir (SA-8).
+**Estado** · Construido el 2026-10-09 (SA-8): S15-02 ya es la lista nueva.
 
 ### S15-22 · El agente de Sales responde lo que la pantalla no dice
 
@@ -553,5 +558,5 @@ motivo del catálogo. Las demás herramientas ya traen los avisos que la pantall
 |---|---|---|
 | SA-6 | Esta sección, la medición de las llamadas HT con el OK del usuario y la nota en `docs/OTROS/futuro/lo-que-sales-no-mide.md` | **hecho el 2026-10-09**, revisado por el usuario |
 | SA-7 | El servidor: los motivos de las llamadas HT en la lectura, la ruta y el cerebro, con sus pruebas | **hecho el 2026-10-09**: 14 mutaciones muertas; se sube con SA-8, porque la pantalla de hoy lee los motivos con la forma vieja |
-| SA-8 | La pantalla: sin párrafos, los motivos de las llamadas y la cadena en cifras; la lista de frases y la prueba 249 | por hacer |
+| SA-8 | La pantalla: sin párrafos, los motivos de las llamadas y la cadena en cifras; la lista de frases y la prueba 249 | **hecho el 2026-10-09** |
 | SA-9 | La revisión, las mutaciones, la suite entera, el navegador, la subida y la foto `docs/OTROS/estado actual/05-SALES.md` | por hacer |
