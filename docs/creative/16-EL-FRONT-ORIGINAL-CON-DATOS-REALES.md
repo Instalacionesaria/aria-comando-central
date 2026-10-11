@@ -74,8 +74,11 @@ Con tres llamadas `GET` a GoHighLevel, también con el OK del usuario, que impri
 (`contactoPorId`, `lib/ghl/cliente.ts:545`). Es la decisión de la tabla de arriba.
 
 **La pasada, medida** (medido el 2026-10-11 a las 22:10 UTC, con una lectura de sólo conteos y el OK del usuario: la pasada llevaba **413 contactos pedidos** en unas ocho corridas —406 devueltos, 7 no—, **159 pendientes**, y **sólo 3 con imagen**, los tres con «Video Url» en `www.facebook.com` y de **una sola pieza**; ninguna de más de 500 caracteres). **El «Video Url» es raro**: GoHighLevel lo devuelve en muy pocos
-contactos, así que casi todas las piezas van a mostrar «Sin miniatura todavía.». Por qué tan pocos —si depende del tipo
-de anuncio, de la campaña o de la fecha— no se midió.
+contactos, así que casi todas las piezas van a mostrar «Sin miniatura todavía.».
+
+**Por qué tan pocas.** Medido el 2026-10-11 sobre los 456 contactos que la pasada ya había pedido (sólo conteos, con el OK del usuario): GoHighLevel adjunta la imagen del anuncio —el «Video Url», con `postId` e `igSid`— **sólo cuando el contacto entra desde un anuncio de Instagram** (3 de 3, de una campaña MOFU). Los que llegan por el formulario de un anuncio de Facebook —198, todos de anuncios de video TOFU— no la traen; tampoco los que sólo traen `mediumId` —unos 255 de formularios externos y del calendario, cuyo `mediumId` es el del formulario, no el de un anuncio— ni los 8 de Instagram sin anuncio. No depende del mes: las tres imágenes son de agosto, septiembre y octubre. Con eso, el mismo día: la pasada pide sólo los contactos con `adId` —sin él no
+llegó ninguna imagen, y cada contacto de formulario costaba un pedido—, y la miniatura de las piezas de Facebook queda
+para Meta directo, **postergado por el usuario** el 2026-10-11.
 
 ---
 
@@ -239,7 +242,7 @@ sale del cajón y Escape dentro del campo del link no cierra.
 **Qué es** · Una pasada que pide `GET /contacts/{id}` a GoHighLevel y guarda en `negocio.miniaturas_del_contacto` las
 claves que `POST /contacts/search` no trae: `videoUrl`, `photoUrl`, `postId` e `igSid`.
 
-**Fórmula** · Sólo contactos con anuncio (`adId` o `mediumId` en la atribución) a los que les falta la clave y que no
+**Fórmula** · Sólo contactos con anuncio (`adId` en la atribución; hasta el 2026-10-11 también `mediumId`, ver § 2) a los que les falta la clave y que no
 se intentaron todavía; **hasta 50 por pasada**, primero los más recientes; cada contacto se guarda una sola vez, y lo
 guardado no se pisa. Un contacto que GoHighLevel no devuelve —un 404, o un rechazo de ese contacto como un 403— se marca
 para no volver a pedirlo en cada pasada. La pasada se corta, y lo que faltó se pide en la siguiente, ante un 429, un

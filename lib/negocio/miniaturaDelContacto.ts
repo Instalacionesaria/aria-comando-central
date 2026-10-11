@@ -15,8 +15,14 @@
 // también cuando no hubo nada que guardar, y cuando el CRM
 // rechazó ESE contacto (un 403 o un 4xx que no sea 429): repetirlo cada diez minutos no lo arregla, y un rechazo fijo
 // en el contacto más reciente frenaba la cola entera. Con el tope de 50 por pasada, los ~215 contactos con `adId` de
-// la medición —más los que sólo traen `mediumId`— se completan en unas cinco pasadas de la tarea `contactos` (cada diez
-// minutos), y después sólo los nuevos.
+// la medición se completan en unas cinco pasadas de la tarea `contactos` (cada diez minutos), y después sólo los nuevos.
+//
+// ── SÓLO CON `adId` ────────────────────────────────────────────────────────────
+//
+// Medido el 2026-10-11 en producción: GoHighLevel adjunta la imagen sólo cuando el contacto entra desde un anuncio de
+// Instagram, y siempre con `adId`. Los que sólo traen `mediumId` —formularios externos y el calendario: su `mediumId`
+// es el del formulario, no el de un anuncio— no trajeron ninguna en 255 pedidos: pedirlos gastaba un pedido por cada
+// contacto nuevo de un formulario (docs/creative/16, § 2). La miniatura de las piezas de Facebook necesita Meta directo.
 //
 // La pasada se corta —y lo que faltó se pide en la siguiente— ante un 429 (insistir sólo gasta el cupo), un 401 (la
 // credencial no sirve para ninguno), un GoHighLevel que no contesta, o el tiempo: corre dentro de la tarea `contactos`,
@@ -66,14 +72,14 @@ export interface ResumenDeMiniaturas {
 export type CorteDeLaPasada = 'cupo' | 'credencial' | 'sin_respuesta' | 'tiempo';
 
 /**
- * Los contactos que llegaron por un anuncio —con `adId` o `mediumId` en su primera atribución— y todavía no se
- * pidieron, de los más recientes a los más viejos. Corre dentro de `conOrganizacion`.
+ * Los contactos que llegaron por un anuncio —con `adId` en su primera atribución— y todavía no se pidieron, de los
+ * más recientes a los más viejos. Corre dentro de `conOrganizacion`.
  */
 export async function contactosPorPedir(tope = TOPE_POR_PASADA): Promise<{ id: string; ghlId: string }[]> {
   const filas = await datos()
     .selectFrom('contactos')
     .select(['id', 'ghl_contact_id'])
-    .where(sql<boolean>`(contactos.atribucion_primera ? 'adId' or contactos.atribucion_primera ? 'mediumId')`)
+    .where(sql<boolean>`contactos.atribucion_primera ? 'adId'`)
     .where(sql<boolean>`not exists (select 1 from negocio.miniaturas_del_contacto m
                                      where m.org_id = contactos.org_id and m.contacto_id = contactos.id)`)
     .orderBy(sql`contactos.alta_en_el_crm desc nulls last`)

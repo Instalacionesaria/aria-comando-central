@@ -164,16 +164,16 @@ cerrarla, no sale del cajón con el tabulador, y Escape dentro del campo del lin
 
 **La miniatura** (CF1-11, CF1-12). La escribe una pasada colgada de la tarea `contactos`, después de sincronizar
 (`lib/negocio/barrido.ts:823-827`), que corre cada diez minutos (`lib/negocio/barrido.ts:203-207`). Pide
-`GET /contacts/{id}` (`lib/ghl/cliente.ts:545`) para los contactos con `adId` o `mediumId` en su primera atribución que
+`GET /contacts/{id}` (`lib/ghl/cliente.ts:545`) para los contactos con `adId` en su primera atribución que
 todavía no se pidieron, de los más recientes a los más viejos, hasta 50 por pasada
-(`lib/negocio/miniaturaDelContacto.ts:72-84`), y guarda una fila por contacto pedido —también sin dato, o rechazado por
+(`lib/negocio/miniaturaDelContacto.ts:78-90`), y guarda una fila por contacto pedido —también sin dato, o rechazado por
 el CRM— en `negocio.miniaturas_del_contacto` (`db/migraciones/077_la_miniatura_del_contacto.sql:18-32`), sin pisar lo
-guardado (`lib/negocio/miniaturaDelContacto.ts:168-175`). Cada pedido espera hasta 15 s y la pasada entera hasta 60
-(`lib/negocio/miniaturaDelContacto.ts:40`, `lib/negocio/miniaturaDelContacto.ts:43`); un 429, un 401 o un GoHighLevel que
-no contesta la cortan (`lib/negocio/miniaturaDelContacto.ts:118-122`), y el sello de la tarea dice por qué
+guardado (`lib/negocio/miniaturaDelContacto.ts:174-181`). Cada pedido espera hasta 15 s y la pasada entera hasta 60
+(`lib/negocio/miniaturaDelContacto.ts:46`, `lib/negocio/miniaturaDelContacto.ts:49`); un 429, un 401 o un GoHighLevel que
+no contesta la cortan (`lib/negocio/miniaturaDelContacto.ts:124-128`), y el sello de la tarea dice por qué
 (`lib/negocio/barrido.ts:900-910`). La miniatura de la pieza es la imagen más frecuente entre sus contactos —el `videoUrl`
 o, si no hay, el `photoUrl`—, en empate la del contacto que entró más tarde al CRM, y sólo si su host es de Facebook,
-Instagram o el CDN de Meta (`lib/negocio/miniaturaDelContacto.ts:183-207`). El navegador la pide sin `referrer` y con
+Instagram o el CDN de Meta (`lib/negocio/miniaturaDelContacto.ts:189-213`). El navegador la pide sin `referrer` y con
 carga perezosa; sin URL dice «Sin miniatura todavía.», y si la imagen no carga queda el fondo del prototipo
 (`components/creative/Miniatura.jsx:11-24`).
 
@@ -354,9 +354,9 @@ sin ruta en GoHighLevel (C14-08). La credencial de Meta existe en Ajustes desde
 `ecfbc26`, y no hay cliente de la API de Meta en el repositorio: buscando `graph.facebook` en `lib/`, `app/` y `scripts/`
 no aparece ninguno (2026-10-11). El plan está en `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.
 
-**6 · La miniatura de los contactos sin anuncio.** Una pieza cuyos contactos no traen `adId` ni `mediumId` no se pide
-(`lib/negocio/miniaturaDelContacto.ts:76`), y un contacto sin nombre de pieza no aporta su imagen a ninguna
-(`lib/negocio/miniaturaDelContacto.ts:191`): para esas, Meta directo o el link manual.
+**6 · La miniatura de los contactos sin anuncio.** Una pieza cuyos contactos no traen `adId` no se pide
+(`lib/negocio/miniaturaDelContacto.ts:82`), y un contacto sin nombre de pieza no aporta su imagen a ninguna
+(`lib/negocio/miniaturaDelContacto.ts:197`): para esas, Meta directo o el link manual.
 
 **7 · Los cierres.** Sin ventas registradas no hay CPA, ROAS ni «qué pieza genera más dinero». Según la foto de Sales,
 siete resultados y ninguno con monto ([05-SALES.md](05-SALES.md)); no re-medido acá.
@@ -414,8 +414,8 @@ cerradas y exactas (`lib/negocio/urlExterna.ts:43-56`); la imagen se pide sin `r
 
 **11 · Cada contacto se pide una sola vez.** Lo pedido queda en la tabla aunque no traiga nada o el CRM rechace ese
 contacto; sólo lo que no se pudo pedir —un 5xx, el cupo, la credencial, un GoHighLevel que no contesta— se vuelve a pedir
-(`lib/negocio/miniaturaDelContacto.ts:110-123`). La tabla tiene un solo escritor
-(`pruebas/base/253-la-miniatura-del-contacto.test.ts:224`).
+(`lib/negocio/miniaturaDelContacto.ts:116-129`). La tabla tiene un solo escritor
+(`pruebas/base/253-la-miniatura-del-contacto.test.ts:227`).
 
 **12 · Lo que Creative NO calcula.** El gasto se consume del módulo de rendimiento, que lo toma de `costoDelAnuncio`; el
 conteo de contactos sale de contactos nuestros y no de `results.lead`; la retención del VSL es de Conversion, y el
@@ -511,9 +511,8 @@ Facebook» abre esa misma imagen y no la publicación (`lib/negocio/lecturaDeCre
 `lib/negocio/lecturaDeCreative.ts:287`).
 
 **14 · La pasada trae muy pocas miniaturas.** **Nuevo.** Corre desde el 2026-10-11 en producción; medido el 2026-10-11 a las 22:10 UTC, con una lectura de sólo conteos y el OK del usuario: la pasada llevaba **413 contactos pedidos** en unas ocho corridas —406 devueltos, 7 no—, **159 pendientes**, y **sólo 3 con imagen**, los tres con «Video Url» en `www.facebook.com` y de **una sola pieza**; ninguna de más de 500 caracteres. Casi
-todas las piezas van a decir «Sin miniatura todavía.», y por qué GoHighLevel trae tan pocos «Video Url» no se midió. Los contactos que sólo traen `mediumId` —la campaña de mensajes— también se piden
-(`lib/negocio/miniaturaDelContacto.ts:76`), y el único de esa campaña que se pidió a mano el 2026-10-11 no traía las
-claves: si es la regla, cada uno cuesta un pedido y queda como «sin dato», una sola vez.
+todas las piezas van a decir «Sin miniatura todavía.». Medido el 2026-10-11 sobre los 456 contactos que la pasada ya había pedido (sólo conteos, con el OK del usuario): GoHighLevel adjunta la imagen del anuncio —el «Video Url», con `postId` e `igSid`— **sólo cuando el contacto entra desde un anuncio de Instagram** (3 de 3, de una campaña MOFU). Los que llegan por el formulario de un anuncio de Facebook —198, todos de anuncios de video TOFU— no la traen; tampoco los que sólo traen `mediumId` —unos 255 de formularios externos y del calendario, cuyo `mediumId` es el del formulario, no el de un anuncio— ni los 8 de Instagram sin anuncio. No depende del mes: las tres imágenes son de agosto, septiembre y octubre. Desde el mismo día la pasada pide sólo los
+contactos con `adId`, y la imagen de las piezas de Facebook queda para Meta directo, postergado por el usuario.
 
 **15 · La pantalla no se vio con los datos de producción.** **Nuevo**: CF-5 la midió con una respuesta sintética; la
 revisión del usuario en producción está pendiente. **El cuello de botella de Creative no es técnico**: la pantalla

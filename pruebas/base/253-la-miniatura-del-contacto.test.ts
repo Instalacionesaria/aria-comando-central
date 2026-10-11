@@ -8,8 +8,9 @@
 // pisa. Ninguna llamada real: GoHighLevel se simula con `fetch`. Cada prueba dice qué mira y la mutación que la pone
 // en rojo:
 //
-//   · qué se pide: sólo con `adId` o `mediumId`, sin pedir dos veces, de los más recientes, con el tope — mutaciones:
-//     pedir todos, volver a pedir, otro orden, sin tope;
+//   · qué se pide: sólo con `adId` —sin él, en producción no llegó ninguna imagen—, sin pedir dos veces, de los más
+//     recientes, con el tope — mutaciones: pedir también los de `mediumId`, pedir todos, volver a pedir, otro orden,
+//     sin tope;
 //   · qué se guarda: las cuatro claves, el 404 como `encontrado = false`, y nada de un fallo — mutaciones: guardar
 //     un fallo, o no guardar el 404;
 //   · un 429, un 401, un GoHighLevel que no contesta o el tiempo cortan la pasada, y el sello dice cuál — mutación:
@@ -93,9 +94,11 @@ const filas = async () =>
 test('se piden sólo los que llegaron por un anuncio, una vez, de los más recientes, con el tope', async () => {
   await limpiar();
   const viejo = await unContacto({ adId: '1' }, 48);
-  const nuevo = await unContacto({ mediumId: '2' }, 1);
+  const nuevo = await unContacto({ adId: '2', mediumId: '2' }, 1);
   const medio = await unContacto({ adId: '3' }, 10);
   await unContacto({ sessionSource: 'CRM UI' }, 2); // sin anuncio: no se pide
+  // Sólo `mediumId`: el de un formulario o del calendario, no el de un anuncio. Es el más nuevo, y no se pide.
+  await unContacto({ mediumId: 'formulario', medium: 'External Form' }, 0);
   const pedidos = (await conOrganizacion(esc.org, () => contactosPorPedir(50))).map((p) => p.ghlId).filter((g) => g.startsWith(CONTACTO));
   assert.deepEqual(pedidos, [nuevo, medio, viejo], 'pidió uno sin anuncio, o en otro orden');
   const dos = (await conOrganizacion(esc.org, () => contactosPorPedir(2))).map((p) => p.ghlId);
