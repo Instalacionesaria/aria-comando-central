@@ -10,6 +10,13 @@
 > **Postergado el 2026-09-30.** CR-0 a CR-3 están construidos y en producción; **CR-4 a CR-9 esperan
 > el token de Meta**, y el usuario los dejó para más adelante. Qué falta, por qué y cómo se hace: `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.
 > Los «Planificado» de abajo son de CR-4 en adelante y siguen valiendo como diseño.
+>
+> **Una fuente más, el 2026-10-11.** «GoHighLevel no alcanza» fue cierto para el ANUNCIO: ninguna lectura del anuncio
+> devuelve su creativo. Pero el CONTACTO sí lo trae: `GET /contacts/{id}` devuelve en `attributionSource` un
+> `videoUrl` (host `www.facebook.com`) en los contactos que llegaron por un anuncio, y además `photoUrl`, `postId` e
+> `igSid`. La sincronización usa `POST /contacts/search`, que no los devuelve, y por eso no están en la base. La
+> miniatura por esa vía es la de `16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (CF1-11 y CF1-12), y se construye antes que
+> Meta directo. Meta directo sigue haciendo falta para el video reproducible, la duración y los cuartiles.
 
 ---
 
