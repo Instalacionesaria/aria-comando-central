@@ -152,7 +152,7 @@ test('el GET de Creative trae sólo sus señales, con la frase de su plan y el n
   assert.deepEqual(r.cuerpo.senales.lista.map((s) => [s.regla, s.nombre]).sort(), [[CRE.concentracion, 'pieza grande'], [CRE.icpPorPieza, 'pieza baja']]);
   assert.equal(
     r.cuerpo.senales.lista.find((s) => s.regla === CRE.icpPorPieza)!.texto,
-    'Su ICP promedio está 17,3 puntos por debajo del promedio de las piezas de su etapa (TOFU): 35 contra 52,3, sobre 20 calificados con puntaje.',
+    'Su ICP promedio está 17,3 puntos por debajo del promedio de las piezas de su etapa (TOFU): 35 contra 52,3, sobre 20 contactos con puntaje.',
   );
   assert.deepEqual(r.cuerpo.senales.reglas.map((x) => x.codigo).sort(), Object.values(CRE).sort());
   assert.equal(r.cuerpo.senales.reglas.find((x) => x.codigo === CRE.frecuenciaAlta)!.unidad, 'veces');

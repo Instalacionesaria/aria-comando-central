@@ -18,7 +18,7 @@
 
 > Requisitos derivados de `lib/aios/creative.js:91-102` y `components/views/CreativeView.jsx:30-49@833fc51`,
 > contra el vocabulario real de `lib/negocio/periodo.ts`. Las mediciones de sesgo de ventana son de
-> `docs/OTROS/estado actual/02-CREATIVE.md:414-423`, del 2026-09-15 y 16 (re-medidas allí el 2026-09-28).
+> `docs/OTROS/estado actual/02-CREATIVE.md:414-423@63b8cd1`, del 2026-09-15 y 16 (re-medidas allí el 2026-09-28).
 
 ---
 
@@ -99,7 +99,7 @@ distintas y 6 sobre el piso**; el 2026-09-28, ninguna y 4. Para las cifras del l
 
 **Qué es** · Una cita agendada dentro de la ventana puede no haber ocurrido todavía. No es que haya
 salido mal: **no pasó**.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:414-418`, medido el 2026-09-15 sobre `negocio.citas`:
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:414-418@63b8cd1`, medido el 2026-09-15 sobre `negocio.citas`:
 
 | ventana | citas alcanzables | congeladas | proporción |
 |---|---:|---:|---:|

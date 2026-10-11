@@ -212,7 +212,7 @@ traen el campo poblado.
 **Población** · Contactos con `alta_en_el_crm` en la ventana y la pieza en `utmContent`, **con el campo
 poblado**. El conteo de los que lo traen viaja siempre al lado.
 **Piso** · `PISO_DE_UNA_TASA`.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:145-161`; medición propia del 2026-09-18.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:145-161@63b8cd1`; medición propia del 2026-09-18.
 **Estado** · **Construible hoy, medido.** Ventana de 30 días:
 
 | pieza | contactos | con puntaje | ICP |
@@ -244,10 +244,10 @@ el equivocado es un defecto silencioso: la columna se llena con números plausib
 **Unidad** · Proporción.
 **Población** · Contactos con `alta_en_el_crm` en la ventana.
 **Piso** · `PISO_DE_UNA_TASA`.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:145-152`; medición del 2026-09-18.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:145-152@63b8cd1`; medición del 2026-09-18.
 **Estado** · **Construible hoy.** Medido: de 31 % a 77 % según la pieza, con cinco piezas sobre el
 piso en 30 días. **Se cuenta con `count(distinct contacto_id)`** — verificado en
-`02-CREATIVE.md:445-448`: un `count(*)` sobre el `left join` inflaba «agendamiento - yaping» de 109 a 112.
+`02-CREATIVE.md:445-448@63b8cd1`: un `count(*)` sobre el `left join` inflaba «agendamiento - yaping» de 109 a 112.
 Y usa **el mismo `exists` con `ghl_calendario_id`** que `lib/negocio/costoDelAnuncio.ts:311-314`, o
 las dos pantallas no sumarían igual.
 

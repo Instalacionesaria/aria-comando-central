@@ -603,7 +603,8 @@ export async function barrerTodo(
          * marcarla como tal haría que el cron la reintentara— pero dejó trabajo sin hacer, y eso
          * tiene que poder leerse desde la pantalla de monitoreo sin abrir un registro.
          *
-         * Hoy lo informan `anuncios`, `anuncios_relleno`, `analizadores` y `senales`. `motivoDeLoIncompleto` devuelve nulo para las demás, así
+         * Hoy lo informan `anuncios`, `anuncios_relleno`, `analizadores`, `senales` y `contactos` —el corte de la
+         * pasada de miniaturas—. `motivoDeLoIncompleto` devuelve nulo para las demás, así
          * que ninguna cambia de comportamiento — y el día que otra tarea empiece a truncarse, el
          * lugar donde decirlo ya existe. */
         await sellar(org.id, tarea, 'corrio', motivoDeLoIncompleto(r.resultado), r.llamadas);

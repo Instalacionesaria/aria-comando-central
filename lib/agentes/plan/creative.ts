@@ -54,7 +54,7 @@ export function textoDeCreative(d: Deteccion): string {
     case CRE.frecuenciaAlta:
       return `El anuncio se mostró ${numero(d.valorActual)} veces por persona en promedio en la semana, sobre ${numero(d.muestra)} impresiones.`;
     case CRE.icpPorPieza:
-      return `Su ICP promedio está ${numero((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del promedio de las piezas de su etapa (${String(ev.etapa ?? '—')}): ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} calificados con puntaje.`;
+      return `Su ICP promedio está ${numero((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del promedio de las piezas de su etapa (${String(ev.etapa ?? '—')}): ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} contactos con puntaje.`;
     default:
       return `${d.metrica}: ${numero(d.valorActual)}.`;
   }

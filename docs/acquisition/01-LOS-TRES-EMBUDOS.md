@@ -426,7 +426,7 @@ el 2026-09-20 se borraron los chips, y Clarity sigue sin estar en el código (`0
 ninguna de las dos respuestas anteriores resuelve, y está medido: **los leads del formulario nativo de Meta casi nunca ven
 la landing.** El 2026-09-15 «agendamiento - yaping» tenía 43 leads de formulario instantáneo de Meta y 21 con landing, de
 109, y «Evoluciona native» 0 de Lead Ads y 31 con landing; el 2026-09-28 son 46 y 22 de 112 contra 0 y 36, y de los 49 de
-Lead Ads que traen URL, 4 muestran la landing (`02-CREATIVE.md:394-402`). El embudo `leadform` es, por definición, el de
+Lead Ads que traen URL, 4 muestran la landing (`02-CREATIVE.md:394-402@63b8cd1`). El embudo `leadform` es, por definición, el de
 los que entran sin pasar por la página — y el prototipo le dibuja una etapa «Clics a landing VSL» en el medio.
 
 Y aunque el dato llegara, seguiría sin alcanzar: Conversion mide la landing **en agregado y por
@@ -448,7 +448,7 @@ septiembre (`03-CONVERSION.md:266@b3ca9ad`). No es una fuente que nunca existió
 
 Eso cambia la pregunta. No es «de dónde sacamos formularios completados» sino **qué se apagó el 31 de agosto**, y hay que mirarlo en GoHighLevel
 y en la landing, no en esta base — es el mismo pendiente que la foto del 2026-09-15 de Creative dejaba abierto para «VSL % máximo visto», que se
-cortó un día antes, el 30; el 2026-09-28 se sabe que el recorrido cambió ese día, y el porqué sigue abierto (`02-CREATIVE.md:354-360`).
+cortó un día antes, el 30; el 2026-09-28 se sabe que el recorrido cambió ese día, y el porqué sigue abierto (`02-CREATIVE.md:354-360@63b8cd1`).
 
 Y queda la distinción de forma: ese campo separa **iniciado** de **completado**, y la cadena de
 Conversion mide el que empieza (`form`, «empiezan a llenarlo», `conversion.js:37`) mientras Acquisition
@@ -538,7 +538,7 @@ al piso de 10 contactos, y un embudo entero puede quedar en cero en una ventana 
   le adjudica «Visitas landing» a Conversion (`executive.js:25`). Los inventarios la plantean como una
   elección abierta de tecnología (Meta Pixel, GA4 o endpoint propio) sin registrar que el sistema ya
   asignó el dueño. Y el dato que lo vuelve estructural: **los leads de Lead Ads casi nunca ven
-  la landing** —4 de los 49 que traen URL, el 2026-09-28— (`02-CREATIVE.md:394-402`), así que
+  la landing** —4 de los 49 que traen URL, el 2026-09-28— (`02-CREATIVE.md:394-402@63b8cd1`), así que
   la etapa casi no tiene población en el embudo `leadform`, y no por falta de instrumentación.
 
 ---

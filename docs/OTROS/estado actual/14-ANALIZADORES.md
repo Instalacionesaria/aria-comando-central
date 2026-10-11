@@ -46,7 +46,7 @@
 >   adentro (`lib/analizadores/pipeline.ts:289-291`, anunciado en
 >   `lib/analizadores/nucleo/tldv.ts:140-143`). La tarea lo pasa como `paginaLlena`
 >   (`lib/analizadores/tarea.ts:105`) y solo entonces el sello lo escribe
->   (`lib/negocio/barrido.ts:879-881`). Las dos caras están probadas
+>   (`lib/negocio/barrido.ts:880-882`). Las dos caras están probadas
 >   (`pruebas/base/173-tarea-del-analizador.test.ts:188-210`); que la del caso real se viera roja
 >   con la mutación que vuelve a contar lo dice el commit, **no re-corrido para esta foto**. El
 >   documento de requisitos lo cuenta en `docs/OTROS/analizadores/ANALIZADORES.md:168-171`. Releído
@@ -304,7 +304,7 @@ en `aria` el último sello es `corrio`, 2026-09-28 17:42 UTC, **4 llamadas a pro
 una transcripción, una clasificación y un análisis, la cuenta de `lib/analizadores/tarea.ts:188-197`—.
 En las otras 10 empresas con sello, `saltada` por falta de la llave de tl;dv. **Que haya corrido cada
 hora no está verificado**: el sello es un `on conflict do update` que guarda solo la última corrida
-(`lib/negocio/barrido.ts:999-1025`); la continuidad se infiere de las 8 reuniones de arriba.
+(`lib/negocio/barrido.ts:1000-1026`); la continuidad se infiere de las 8 reuniones de arriba.
 
 **El reintento de las 5**, `'7 10 * * *'` (`lib/negocio/barrido.ts:299-303`): último sello en `aria`,
 `corrio` 2026-09-28 10:07 UTC con 0 llamadas; en las otras 10, `saltada`. **Trabajó dos veces**, y se
@@ -369,7 +369,7 @@ tokens en su propia fila. Y el historial no se puede recalcular entero: a los 44
 faltan los dos contadores de caché (§ 4).
 
 **2 · La historia de las corridas.** `negocio.tareas_programadas` guarda la última de cada (empresa,
-tarea) (`lib/negocio/barrido.ts:999-1025`), así que no hay forma de contar cuántas corridas hubo, ni
+tarea) (`lib/negocio/barrido.ts:1000-1026`), así que no hay forma de contar cuántas corridas hubo, ni
 cuántas fallaron, ni cuántas quedaron cortas. Hoy se reconstruye a mano con `creado_el` y `tomada_el`.
 
 **3 · El mapa de nombres de reunión → tipo.** Lo tiene el equipo y es la condición para construir la
@@ -426,7 +426,7 @@ ninguna respuesta de la API la devuelve (`lib/analizadores/datos.ts:623`).
 otras tareas en su minuto y con 285 s, no con el presupuesto compartido de 180 s: con ese, la guardia
 rechazaría todo análisis y las pendientes no se drenarían nunca, sin que nada fallara
 (`lib/negocio/barrido.ts:258-275` y `lib/negocio/barrido.ts:351-361`); el reintento recibe el mismo
-fin de reloj (`lib/negocio/barrido.ts:750-758`).
+fin de reloj (`lib/negocio/barrido.ts:751-759`).
 
 **7 · Qué hace cada una de las dos tareas, y qué no.** La de cada hora descubre, drena las PENDING,
 completa las fichas que nunca se generaron y, desde AG11 de los agentes, clasifica las objeciones que no tienen
@@ -463,16 +463,16 @@ del CRM, `negocio.llamadas`, sigue con 0 filas mientras las llamadas juzgadas vi
 informes HT dice `CERRADA`**. No está verificado si es el negocio o la rúbrica.
 
 **El sello se escribe y no lo lee nadie.** `motivoDeLoIncompleto` arma frases como «tl;dv rechazó la
-llave: hay que volver a cargarla» (`lib/negocio/barrido.ts:864-884`), y el bucle dice que eso «tiene
+llave: hay que volver a cargarla» (`lib/negocio/barrido.ts:865-885`), y el bucle dice que eso «tiene
 que poder leerse desde la pantalla de monitoreo sin abrir un registro»
-(`lib/negocio/barrido.ts:599-609`). Pero **ningún archivo de `lib/`, `app/` o `components/` lee
+(`lib/negocio/barrido.ts:599-610`). Pero **ningún archivo de `lib/`, `app/` o `components/` lee
 `ultimo_motivo`** fuera del que lo escribe, y la pestaña no muestra frescura (sección 2). Con la llave de
 tl;dv revocada, la pestaña no avisaría nada hasta que alguien apriete Sincronizar, que sí lo dice
 (`app/api/analizadores/sincronizar/route.ts:38-41`); la tarea de cada hora lo escribiría en un sello
 que solo se ve con la consulta de `docs/OTROS/produccion/DESPLIEGUE.md:346` o con
 `scripts/medir-analizadores.sql:87-89`.
 Tampoco la FAILED de hoy aparece en el sello: una fallida no es un motivo
-(`lib/negocio/barrido.ts:882-884` cuenta las que quedaron sin tiempo, no las que fallaron).
+(`lib/negocio/barrido.ts:883-885` cuenta las que quedaron sin tiempo, no las que fallaron).
 
 **La caché se paga y no se usa.** El sistema del análisis va marcado para cachear
 (`lib/analizadores/nucleo/anthropic.ts:215`), y cada análisis escribe su caché (9 774 tokens en HT,

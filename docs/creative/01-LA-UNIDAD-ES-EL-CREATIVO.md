@@ -50,7 +50,7 @@ piezas distintas** por nombre. **21 de las 32 corren en más de un `meta_anuncio
 **Qué es** · Un creativo se lanza en varios ad sets, y cada combinación es un `adId` distinto con sus
 propias métricas diarias.
 **Población** · Las 21 piezas con más de un anuncio.
-**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:274-275`; medición propia del 2026-09-18.
+**Rastro** · `docs/OTROS/estado actual/02-CREATIVE.md:274-275@63b8cd1`; medición propia del 2026-09-18.
 **Estado** · Medido. Ejemplos reales: `Estancada` en 5 anuncios, `manifiesto horz` en 5,
 `Evoluciona native` en 5, `agendamiento - yaping - 23/07` en 6.
 

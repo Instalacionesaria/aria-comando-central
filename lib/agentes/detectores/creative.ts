@@ -252,7 +252,8 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
   // ── El ICP de una pieza, bajo el promedio de su etapa ──
   // El corte se hace dentro de cada etapa y nunca entre etapas (C3-06): una pieza de captación no compite con
   // una de cierre. El promedio es el de las piezas —«el ICP promedio por pieza es X» (C6-04a)—, no el de los
-  // contactos: así lo dice la pantalla. La fila sin etapa o sin creativo no está en ningún promedio.
+  // contactos: así lo decía la pantalla hasta el 2026-10-11, y así lo da el agente. La fila sin etapa o sin creativo no
+  // está en ningún promedio.
   if (m.calidad.campoDeIcp === null) {
     salida.sinMedicion.push(CRE.icpPorPieza);
   } else {

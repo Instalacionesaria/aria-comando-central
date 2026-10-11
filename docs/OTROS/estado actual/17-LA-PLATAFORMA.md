@@ -132,7 +132,7 @@ horario más frecuente que uno diario hace fallar el despliegue (`lib/negocio/ba
   (`lib/negocio/barrido.ts:336-347`). Los Analizadores, que corren solos, tienen hasta 285 s
   (`lib/negocio/barrido.ts:361`).
 - **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca
-  un `+1` (`lib/negocio/barrido.ts:999-1033`). Los estados son `corrio`, `saltada`, `frenada`,
+  un `+1` (`lib/negocio/barrido.ts:1000-1034`). Los estados son `corrio`, `saltada`, `frenada`,
   `sin_tiempo` y `fallo`; los tres del medio son normales (`lib/negocio/barrido.ts:106-107`,
   `lib/negocio/frescura.ts:158-159`).
 
@@ -526,7 +526,7 @@ minutos del medio.
 - **La protección de rama en `main`** con `verificar` requerido. Es una configuración de GitHub, no
   código, y es la que convierte el rojo en un freno (§ 5.2).
 - **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a
-  propósito (`lib/negocio/barrido.ts:950`, `:460`, `:468`), así que su resultado vive sólo en la
+  propósito (`lib/negocio/barrido.ts:951`, `:460`, `:468`), así que su resultado vive sólo en la
   respuesta del cron. Que corre cada hora **no se puede demostrar desde la base**;
   `negocio.control_aislamiento` tiene sus dos filas de control, creadas el 2026-08-23.
 - **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente en el despliegue
@@ -566,7 +566,7 @@ minutos del medio.
    reescribe, y una corrida perdida se arregla en la siguiente (`lib/negocio/barrido.ts:22-24`,
    `lib/negocio/recolectarAnuncios.ts:11-19`).
 2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`.** Es la diferencia entre «no
-   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:989-1033`).
+   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:990-1034`).
 3. **Un horario desconocido corre todo y lo dice.** Nunca «no hacer nada»
    (`lib/negocio/barrido.ts:429-434`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`

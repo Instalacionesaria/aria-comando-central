@@ -27,7 +27,7 @@
 > `15`); el detector con cuatro reglas, sus señales y su plan (AG10 de los agentes); el comentario de la cabecera
 > (AG15); tres herramientas del cerebro —cuatro desde CF-2, con `creative_en_cifras`—; y el gasto de toda la cuenta
 > (`14` § 7). **El 2026-10-11 la pestaña vuelve al front del prototipo**: `16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`,
-> CF-0 a CF-4 hechas ese día; CF-5, la comparación medida y la foto 02, sigue.
+> CF-0 a CF-5 hechas ese día.
 
 ## Qué es esta carpeta
 

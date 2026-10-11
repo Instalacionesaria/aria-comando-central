@@ -154,7 +154,7 @@ declarada al lado.
 
 **3 · La pregunta que el § 18.1 dice que Acquisition NO puede contestar solo, en su versión honesta.**
 Ordenar anuncios por calidad del lead que traen, usando el ICP que ya está en la base, y decir al lado
-que ése no es el orden del negocio porque falta el revenue. Es lo que `docs/OTROS/estado actual/02-CREATIVE.md:158-161`
+que ése no es el orden del negocio porque falta el revenue. Es lo que `docs/OTROS/estado actual/02-CREATIVE.md:158-161@63b8cd1`
 ya midió para creativos —ICP 29,2 contra 71,0 a treinta días (27,5 contra 74,1 a catorce, el 2026-09-15)— y vale igual por anuncio.
 
 ---

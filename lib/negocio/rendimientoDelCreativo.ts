@@ -156,10 +156,11 @@ export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
     porque: '`groupBy` sólo acepta `day`, `week` y `month`; cualquier otro desglose da 422. Hace falta Meta directo',
   },
   {
-    punto: 'El activo creativo: la imagen, el video, el copy y la miniatura',
+    punto: 'El activo creativo: el video, el copy y la imagen de las piezas cuyos contactos no la traen',
     porque:
       '`/entity?entityType=AD` devuelve sólo `{name, adId, adAccountId, locationId}`, y `/creatives`, ' +
-      '`/videos` y `/posts` dan 404. No hay ruta que los sirva. Hace falta Meta directo',
+      '`/videos` y `/posts` dan 404. La miniatura llega por otra vía —el «Video Url» de la primera atribución, ' +
+      'con `GET /contacts/{id}`— y sólo para las piezas cuyos contactos la traen. Para lo demás hace falta Meta directo',
   },
   {
     punto: 'El formato y la duración de cada pieza',

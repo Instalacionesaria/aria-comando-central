@@ -30,7 +30,7 @@ día de cien impresiones el peso de uno de diez mil.
 | `CRE-CAIDA-DE-CTR` | El CTR de una pieza cae entre la primera y la segunda mitad de su serie, con veredicto de la fatiga | −25 % (la pantalla avisa desde −20 %) | 1.000 impresiones en cada mitad y 8 días de serie: sin eso, la fatiga no da veredicto | media | pieza |
 | `CRE-CONCENTRACION` | Una pieza se lleva una porción grande del gasto | 35 % o más | no es una tasa; 3 o más piezas con gasto | media, **requiere validación ejecutiva** | pieza |
 | `CRE-FRECUENCIA-ALTA` | Un anuncio se muestra demasiadas veces a la misma persona | 3 veces o más, sólo en 7 días | 1.000 impresiones | media | anuncio |
-| `CRE-ICP-POR-PIEZA` | El ICP de una pieza está muy por debajo del promedio de las piezas **de su etapa** (C3-06, C7-10) | 15 puntos | 10 calificados con puntaje | media | pieza |
+| `CRE-ICP-POR-PIEZA` | El ICP de una pieza está muy por debajo del promedio de las piezas **de su etapa** (C3-06, C7-10) | 15 puntos | 10 contactos con puntaje | media | pieza |
 
 - **El ICP se compara dentro de la etapa, nunca entre etapas** (C3-06): una pieza de captación no compite con
   una de cierre. El promedio es el de las piezas —«el ICP promedio por pieza es X» (C6-04a)—, no el de los

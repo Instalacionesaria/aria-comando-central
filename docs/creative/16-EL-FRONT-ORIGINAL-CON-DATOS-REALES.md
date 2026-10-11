@@ -37,7 +37,7 @@ la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volume
 | Encabezado: «Creative», «Qué funciona, qué no, y por qué», «Plan de acción», el segmentado | el título, la bajada, el plan real del detector y los cuatro períodos | `BotonDelPlan`, `lib/negocio/periodo.ts` | real |
 | Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:137`) más el tramo | real |
 | Tira: Agendas | contactos que agendaron | `calidadDelCreativo` | real |
-| Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:321`) | real |
+| Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:322`) | real |
 | Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:146`) | «—» |
 | Tira: Alcance | **impresiones** (desvío) | `rendimientoDelCreativo` | real |
 | Tira: Frecuencia | impresiones sobre alcance, pesada por impresiones | `metricas_de_anuncio`, como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:129`) | real |
@@ -222,7 +222,7 @@ secciones:
 | Qué es | Etapa, Estado, Anuncios, Primer día con entrega, Último día con entrega, Pieza; Formato, Ángulo, Duración y Dolor en «—» |
 | Datos de la pieza | las seis de la tira, más el gasto, el CTR, el link CTR, la landing y el click-to-landing |
 | Retención y guion | «—» con «GoHighLevel no lo entrega.» |
-| Los anuncios | los anuncios de la pieza, por impresiones (`anunciosDeLaPieza`, `lib/negocio/rendimientoDelCreativo.ts:266`) |
+| Los anuncios | los anuncios de la pieza, por impresiones (`anunciosDeLaPieza`, `lib/negocio/rendimientoDelCreativo.ts:267`) |
 
 Conserva lo que la ficha anterior ya resolvía: el portal en `document.body`, el foco y Escape
 (`components/creative/FichaDelCreativo.jsx`). Desde CF-4, además, el foco vuelve a la tarjeta al cerrar, el tabulador no
@@ -319,7 +319,9 @@ cifras de contactos son conteos. Del prototipo no se copia ningún nombre.
 **Qué es** · A 375 px la tira va de a dos, la rejilla de a una tarjeta y la ficha ocupa el ancho. La página no desliza
 a lo ancho.
 
-**Estado** · Las reglas, construidas el 2026-10-11 (CF-3), en `app/creative.css`; la medida en los cuatro anchos, en CF-5.
+**Estado** · Construido el 2026-10-11 (CF-3) y medido el mismo día (CF-5): a 375 px la tira va de a dos, las tarjetas
+de a una y la ficha ocupa el ancho, sin desborde a lo ancho; a 1440, 1180 y 1125 px la tira va de a seis, como el
+prototipo. La foto `docs/OTROS/estado actual/02-CREATIVE.md` § 2 trae la comparación entera.
 
 ### CF1-19 · Los textos que pasan a ser falsos se corrigen en la misma etapa
 
@@ -328,7 +330,7 @@ a lo ancho.
 - `15-LA-MINIATURA-Y-EL-VIDEO.md`, que decía que GoHighLevel no entrega la miniatura: la entrega por otra lectura.
 - La foto `docs/OTROS/estado actual/02-CREATIVE.md`, reescrita en CF-5.
 
-**Estado** · Hecho en CF-0 a CF-4, salvo la foto 02, que se reescribe en CF-5.
+**Estado** · Hecho en CF-0 a CF-5: la foto 02 se reescribió el 2026-10-11.
 
 ---
 
@@ -351,7 +353,7 @@ a lo ancho.
 | CF-2 | La ruta y el cerebro sobre la lectura | **hecho el 2026-10-11**: pruebas 213, 214, 215 y la ventana en la 252 |
 | CF-3 | El front sobre el marcado del prototipo, `app/creative.css`, y `app/inteligencia-estetica.css` borrada | **hecho el 2026-10-11**: prueba 254; 104, 107, 146 y 251 al día |
 | CF-4 | La revisión adversarial, las mutaciones y la suite entera | **hecho el 2026-10-11**: cuatro lentes; ver § 7 |
-| CF-5 | La comparación contra el prototipo, los anchos, la subida y la foto 02 | por hacer |
+| CF-5 | La comparación contra el prototipo, los anchos, la subida y la foto 02 | **hecho el 2026-10-11**: medida en los cuatro anchos; la foto 02 reescrita; queda `CF1-P06` (§ 6) |
 
 ---
 
@@ -366,7 +368,7 @@ Cada una tiene una respuesta tomada por defecto, que es la que se construye si n
 | `CF1-P03` | Una pieza única en su etapa, ¿va a «Funciona» con la línea «Única de su etapa.»? | sí (CF1-08) |
 | `CF1-P04` | ¿«Retención» se queda en la tira, en «—»? | sí: es una cifra del prototipo y su hueco dice por qué |
 | `CF1-P05` | ¿La miniatura es el `videoUrl` más frecuente de la pieza? | sí (CF1-12) |
-| `CF1-P06` | Si la imagen de `facebook.com/ads/image` pide sesión o caduca, ¿se vuelve al fondo del prototipo? | sí, y se mide en CF-5 |
+| `CF1-P06` | Si la imagen de `facebook.com/ads/image` pide sesión o caduca, ¿se vuelve al fondo del prototipo? | sí. **Sin medir**: en CF-5 la base local no tenía ninguna y no se copian URLs de producción; se ve en producción cuando la pasada traiga miniaturas |
 
 ---
 

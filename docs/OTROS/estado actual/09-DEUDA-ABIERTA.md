@@ -455,7 +455,7 @@ Lo detalla [14-ANALIZADORES.md](14-ANALIZADORES.md) § 7, con cifras medidas hoy
 las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 
 - **El sello se escribe y no lo lee nadie.** El comentario dice que el motivo «tiene que poder
-  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:599-609`), y en `lib/`, `app/` y
+  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:599-610`), y en `lib/`, `app/` y
   `components/` `ultimo_motivo` sólo aparece en `lib/negocio/barrido.ts` y en `lib/datos/esquema.ts`;
   fuera de ahí lo lee `scripts/medir-analizadores.sql:88`. Una llave de tl;dv revocada sólo se ve
   con SQL.
@@ -492,7 +492,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 - **Desde la pantalla no se distingue «Meta desconectado» de «no se invirtió».** El colector
   pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:622-627@d17e029`, el
   campo en `lib/negocio/recolectarAnuncios.ts:145`), pero `motivoDeLoIncompleto`
-  (`lib/negocio/barrido.ts:839`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
+  (`lib/negocio/barrido.ts:840`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
   sello diría `corrio` sin motivo.
 - **Sólo se piden las campañas que ya aparecen en nuestra atribución**
   (`lib/negocio/recolectarAnuncios.ts:261-320@d17e029`): hoy son 13 `campaignId` numéricos distintos en el
@@ -547,7 +547,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
 - **«Entregó N días» cuenta días sin impresiones.** `diasConEntrega` es `gasto is not null`
   (`lib/negocio/costoDelAnuncio.ts:297`), y hay **38 filas con gasto 0 y sin impresiones** (22:11
   UTC); la nota se dibujaba en la tabla por anuncio de Acquisition, que salió con AQ-4. Creative lo
-  corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:219-232`) y
+  corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:220-233`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
 - **«Landing con VSL» es circular y no se marca.** La marca exige el 90 %
   (`components/conversion/PanelDeConversion.jsx:347@b2dcdf5`, `lib/negocio/recorridoDelLead.ts:273-275`) y la
@@ -796,10 +796,10 @@ el documento miente o si buscó mal.
   anterior: un párrafo nuevo en 07 antes del § 11 las corre sin aviso. Las otras citas de
   `docs/conversion/` a líneas de 07 no se revisaron acá.
 - **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:169`, `lib/negocio/rendimientoDelCreativo.ts:119`
-  y `lib/negocio/rendimientoDelCreativo.ts:234` mandan el defecto de grano a las líneas 157-164 de
+  y `lib/negocio/rendimientoDelCreativo.ts:235` mandan el defecto de grano a las líneas 157-164 de
   `costoDelAnuncio.ts`, y hoy está hacia `lib/negocio/costoDelAnuncio.ts:200`;
   `lib/negocio/fatigaDelCreativo.ts:7` manda la frecuencia a las líneas 88-95, y está hacia
-  `lib/negocio/costoDelAnuncio.ts:119`; `lib/negocio/rendimientoDelCreativo.ts:224` manda a la 287 lo
+  `lib/negocio/costoDelAnuncio.ts:119`; `lib/negocio/rendimientoDelCreativo.ts:225` manda a la 287 lo
   que está en `lib/negocio/costoDelAnuncio.ts:297`; y `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, CV-1— a la 357 de
   `costoDelAnuncio.ts` y a la 230 de `calidadDelCreativo.ts` lo que está en
   `lib/negocio/costoDelAnuncio.ts:355` y `lib/negocio/calidadDelCreativo.ts:238`.

@@ -79,7 +79,7 @@ CTR es un hallazgo de acá; qué tiene el hook que retiene y el copy que no conv
 el colector, y `formato`, `duración` y `placement` ni siquiera están entre las columnas de la tabla de destino. Del creativo existía
 sólo su **nombre**, en `atribucion_primera->>'utmContent'` (503 de 585 contactos, 30 valores distintos) — y eso permite una cosa que
 este componente NO hace y que Creative ya midió y hoy publica: ordenar creativos por la **calidad del lead** que traen, que es una
-pregunta de negocio y no de subasta (`docs/OTROS/estado actual/02-CREATIVE.md:158-161`). El colector corre desde el 2026-09-16, y
+pregunta de negocio y no de subasta (`docs/OTROS/estado actual/02-CREATIVE.md:158-161@63b8cd1`). El colector corre desde el 2026-09-16, y
 Creative publica además hook rate, link CTR y la caída del CTR (`docs/OTROS/estado actual/01-ACQUISITION.md:161-163`).
 
 ---

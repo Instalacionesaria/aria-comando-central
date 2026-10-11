@@ -144,7 +144,7 @@ tiene un «antes» que fechar. Ver `C11-P01`.
   exactamente lo que el cable trampa existe para forzar. Hoy `lib/autorizacion/secciones.ts` no la
   declara y `app/api/creative/route.ts` existe.
 - **`galon: true`** le pone a Creative el mismo galón `›` que a ICP & Oferta, que sí es real (desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja).
-  `docs/OTROS/estado actual/02-CREATIVE.md:225-227` recoge lo que la foto anterior decía sin rodeos:
+  `docs/OTROS/estado actual/02-CREATIVE.md:225-227@63b8cd1` recoge lo que la foto anterior decía sin rodeos:
   **nada en la interfaz avisaba que lo que se veía era inventado.** Es el argumento más corto para no dejar el prototipo puesto.
 
 ### C12-P01 · Si los tres roles del § 18.15 son tres pantallas o tres alcances

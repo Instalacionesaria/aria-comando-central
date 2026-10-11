@@ -156,7 +156,7 @@ export async function recorridoDelLead(
            cómo darse cuenta de cuál de las dos está mal.
            *
            * Y `exists` y no un `join` con `count(*)`: un contacto con dos citas pesaría doble.
-           Verificado en `docs/OTROS/estado actual/02-CREATIVE.md:445-448`, donde ese defecto infló una pieza
+           Verificado en `docs/OTROS/estado actual/02-CREATIVE.md:445-448@63b8cd1`, donde ese defecto infló una pieza
            de 109 a 112. */
         sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
         // Los que traen dirección: el numerador de la cobertura.

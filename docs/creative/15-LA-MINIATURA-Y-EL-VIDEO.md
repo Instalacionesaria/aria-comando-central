@@ -26,7 +26,7 @@ La unidad de la pantalla es la **pieza**: el nombre del anuncio normalizado
 (`lib/negocio/creativo.ts:44-51`). Hoy hay 79 anuncios y 32 piezas, y 21 piezas corren en más de un
 anuncio, hasta seis (`03-LA-BIBLIOTECA.md`, `C3-09`). La pantalla dice cuánto rindió cada pieza y no
 dice **cuál es**: no hay miniatura, ni video, ni copy, y ese hueco está declarado en pantalla
-(`lib/negocio/rendimientoDelCreativo.ts:158-163`).
+(`lib/negocio/rendimientoDelCreativo.ts:158-164`).
 
 **Decisiones del usuario, 2026-09-29:**
 

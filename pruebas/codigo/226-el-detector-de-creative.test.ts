@@ -184,7 +184,7 @@ test('cada regla a su grupo, con el verbo de la medición y el CTR sin multiplic
   const textos = p.grupos.flatMap((g) => g.renglones.map((x) => x.texto));
   for (const t of [
     'Su CTR bajó 28 % entre la primera y la segunda mitad de sus 20 días con entrega: de 2,76 % a 1,98 %, sobre 7.000 impresiones.',
-    'Su ICP promedio está 17,3 puntos por debajo del promedio de las piezas de su etapa (TOFU): 35 contra 52,3, sobre 20 calificados con puntaje.',
+    'Su ICP promedio está 17,3 puntos por debajo del promedio de las piezas de su etapa (TOFU): 35 contra 52,3, sobre 20 contactos con puntaje.',
     'El anuncio se mostró 3,25 veces por persona en promedio en la semana, sobre 1.500 impresiones.',
     'Se lleva el 60 % del gasto de la ventana, entre 3 piezas con gasto.',
   ]) assert.ok(textos.includes(t), `${t}\n--\n${textos.join('\n')}`);

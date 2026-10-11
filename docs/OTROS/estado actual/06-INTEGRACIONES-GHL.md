@@ -816,7 +816,7 @@ desde el 14» no lo es: después del 17 no hay un cero que leer, hay silencio.
 **El vínculo con Meta se pregunta cada día y la respuesta no queda en ninguna parte.** El colector
 llama a `integracionDeAnuncios` al empezar para distinguir «Meta desconectado» de «no se invirtió»
 (`lib/negocio/recolectarAnuncios.ts:137-148@d17e029` y `lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), pero
-`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:839-941`) no lee `vinculo`,
+`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:840-942`) no lee `vinculo`,
 `negocio.tareas_programadas` no guarda el resumen, y ningún otro archivo lo nombra. Que hoy haya 79 filas por día es compatible con el vínculo
 activo —sin vínculo el proveedor devuelve vacío (`lib/ghl/anuncios.ts:246-248`)—; que esté
 `connected` no se pudo verificar desde la base.
