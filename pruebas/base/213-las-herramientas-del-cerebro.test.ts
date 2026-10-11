@@ -162,6 +162,10 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
     arriba: ['aviso', 'conVeredicto', 'dias', 'nota', 'piezas', 'umbralDeCaida'],
     filas: [['piezas', ['caida', 'creativo', 'ctrTardio', 'ctrTemprano', 'desde', 'dias', 'fatigado', 'hasta', 'motivo', 'porque']]],
   },
+  creative_en_cifras: {
+    arriba: ['cifras', 'criterios', 'loDemas', 'piezas'],
+    filas: [['piezas', ['cifras', 'clave', 'conEnlace', 'conMiniatura', 'estado', 'etapa', 'ficha', 'perdiendoGancho']]],
+  },
   pasos_de_conversion: {
     arriba: ['anterior', 'cifras', 'cobertura', 'pasos', 'sinAlta', 'sinComparacion', 'ventana'],
     filas: [['pasos', ['caida', 'clave', 'estado', 'hastaElCorte', 'metricas', 'tasa', 'valor', 'variacion']]],

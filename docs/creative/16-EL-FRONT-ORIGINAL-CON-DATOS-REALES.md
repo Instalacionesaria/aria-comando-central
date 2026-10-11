@@ -273,14 +273,20 @@ viajando. El navegador multiplica por 100 en un solo lugar.
 lee la entrega de cada pieza —impresiones, clics y acciones de la ventana sobre los anuncio-día con cada clave, la
 frecuencia pesada, la etapa de la campaña con más impresiones y los días con entrega de toda la historia—. Los
 calificados salen de `calidadDelCreativo` (`calificados`). Pruebas `pruebas/codigo/252-lectura-de-creative.test.ts` y
-`pruebas/base/252-lectura-de-creative.test.ts`. La ruta, por construir (CF-2).
+`pruebas/base/252-lectura-de-creative.test.ts`. La ruta, construida el 2026-10-11 (CF-2): `app/api/creative/route.ts` lee
+`lecturaDeCreative(periodo.dias)` y publica `pantalla`; `calidad`, `rendimiento`, `fatiga` y `enlaces` siguen viajando,
+de la misma lectura.
 
 ### CF1-16 · El cerebro lee lo mismo
 
 **Qué es** · Se suma `creative_en_cifras`, que lee la misma lectura y devuelve la `pantalla`. Las herramientas de hoy
 (`calidad_de_piezas`, `rendimiento_de_piezas`, `fatiga_de_piezas`) siguen trayendo los avisos que la pantalla no dibuja.
+Las URLs no viajan: cada pieza lleva `conMiniatura` y `conEnlace` en lugar de la miniatura y el enlace.
 
-**Estado** · Por construir (CF-2).
+**Estado** · Construido el 2026-10-11 (CF-2): `creative_en_cifras` y `pantallaParaElCerebro`, en
+`lib/agentes/executive/adaptadores/creative.ts`. La prueba `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts`
+compara la herramienta con la `pantalla` de la ruta en los cuatro períodos, y con una miniatura y un enlace sembrados
+mira que ninguna URL llegue al cerebro.
 
 ### CF1-17 · Sin datos personales
 
@@ -323,7 +329,7 @@ a lo ancho.
 |---|---|---|
 | CF-0 | Esta carpeta al día, `docs/OTROS/futuro/lo-que-creative-no-mide.md` y la medición de producción con el OK del usuario | **hecho el 2026-10-11** |
 | CF-1 | El servidor: `lecturaDeCreative`, los calificados por pieza, la miniatura y la pasada que completa la atribución | **hecho el 2026-10-11**: pruebas 252 (código y base) y 253; 26 mutaciones muertas; la `077` |
-| CF-2 | La ruta y el cerebro sobre la lectura | por hacer |
+| CF-2 | La ruta y el cerebro sobre la lectura | **hecho el 2026-10-11**: pruebas 213, 214, 215 y la ventana en la 252 |
 | CF-3 | El front sobre el marcado del prototipo, `app/creative.css`, y `app/inteligencia-estetica.css` borrada | por hacer |
 | CF-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
 | CF-5 | La comparación contra el prototipo, los anchos, la subida y la foto 02 | por hacer |

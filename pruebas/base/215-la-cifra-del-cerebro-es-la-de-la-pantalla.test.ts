@@ -43,6 +43,7 @@ import { GET as pipelineDelSetter } from '../../app/api/setter/pipeline/route.ts
 import { GET as miDiaDelCloser } from '../../app/api/closer/mi-dia/route.ts';
 import { GET as agendaDelCloser } from '../../app/api/closer/agenda/route.ts';
 import { GET as pipelineDelCloser } from '../../app/api/closer/pipeline/route.ts';
+import { pantallaParaElCerebro } from '../../lib/agentes/executive/adaptadores/creative.ts';
 
 const PREFIJO = 'agentes-215-';
 let admin: Client;
@@ -108,6 +109,10 @@ for (const { clave } of PERIODOS) {
     assert.deepEqual(pares(rendimiento.piezas.filas, 'creativo', 'gasto', 'impresiones'), pares(p.rendimiento.filas, 'creativo', 'gasto', 'impresiones'));
     const fatiga = await herramienta('fatiga_de_piezas', periodo);
     assert.deepEqual(fatiga.conVeredicto, p.fatiga.conVeredicto);
+    // Lo que el front dibuja, entero y con sus motivos, menos las URLs de cada pieza (CF1-16).
+    const cifras = await herramienta('creative_en_cifras', periodo);
+    assert.deepEqual(cifras, JSON.parse(JSON.stringify(pantallaParaElCerebro(p.pantalla))), 'el cerebro y la pantalla de Creative dieron otras cifras');
+    assert.doesNotMatch(JSON.stringify(cifras), /https?:/, 'una URL viajó al cerebro');
   });
 
   test(`Conversion con «${clave}»: los pasos, el recorrido y el formulario`, async () => {
@@ -289,5 +294,49 @@ test('la economía con ventas: el retorno y el costo por venta, y sin ellos con 
   if (desde !== hasta) {
     assert.equal(incompleto.gastoEntero, false);
     assert.match(String(incompleto.aviso), /no está entero/);
+  }
+});
+
+test('Creative: la pantalla trae la miniatura y el enlace de la pieza; el cerebro, sólo que los hay', async () => {
+  /* Con el sembrado de siempre ninguna pieza tiene miniatura ni enlace, y «ninguna URL viajó» pasaría sin mirar nada.
+     Una pieza con contactos recibe las dos; otra, sólo el enlace manual. */
+  const r = await admin.query<{ pieza: string; contacto: string }>(
+    `select distinct on (lower(btrim(a.nombre))) lower(btrim(a.nombre)) as pieza, c.id::text as contacto
+       from negocio.anuncios a
+       join negocio.contactos c on c.org_id = a.org_id and lower(btrim(c.atribucion_primera->>'utmContent')) = lower(btrim(a.nombre))
+      where a.org_id = $1
+      order by lower(btrim(a.nombre)), c.id
+      limit 1`,
+    [e.conDatos],
+  );
+  assert.equal(r.rows.length, 1, 'el sembrado tiene una pieza con contactos');
+  const { pieza, contacto } = r.rows[0]!;
+  const otra = await admin.query<{ pieza: string }>(
+    `select lower(btrim(nombre)) as pieza from negocio.anuncios where org_id = $1 and lower(btrim(nombre)) <> $2 order by 1 limit 1`,
+    [e.conDatos, pieza],
+  );
+  const soloEnlace = otra.rows[0]!.pieza;
+  await admin.query(
+    `insert into negocio.miniaturas_del_contacto (org_id, contacto_id, encontrado, video_url) values ($1, $2, true, 'https://www.facebook.com/ads/image/?d=prueba')`,
+    [e.conDatos, contacto],
+  );
+  await admin.query(
+    `insert into negocio.enlaces_de_pieza (org_id, pieza, url) values ($1, $2, 'https://www.facebook.com/prueba/videos/1')`,
+    [e.conDatos, soloEnlace],
+  );
+  try {
+    const p = await pantalla(creative, '/api/creative?periodo=completo');
+    const h = await herramienta('creative_en_cifras', { periodo: 'completo' });
+    const enLaPantalla = (k: string) => (p.pantalla.piezas as Cuerpo[]).find((x) => x.clave === k)!;
+    const enElCerebro = (k: string) => (h.piezas as Cuerpo[]).find((x) => x.clave === k)!;
+    assert.match(String(enLaPantalla(pieza).miniatura), /^https:/);
+    assert.match(String(enLaPantalla(soloEnlace).enlace?.url), /^https:/);
+    assert.deepEqual([enElCerebro(pieza).conMiniatura, enElCerebro(pieza).conEnlace], [true, true]);
+    assert.deepEqual([enElCerebro(soloEnlace).conMiniatura, enElCerebro(soloEnlace).conEnlace], [false, true]);
+    assert.doesNotMatch(JSON.stringify(h), /https?:/, 'una URL viajó al cerebro');
+    assert.deepEqual(h, JSON.parse(JSON.stringify(pantallaParaElCerebro(p.pantalla))));
+  } finally {
+    await admin.query('delete from negocio.miniaturas_del_contacto where org_id = $1 and contacto_id = $2', [e.conDatos, contacto]);
+    await admin.query('delete from negocio.enlaces_de_pieza where org_id = $1 and pieza = $2', [e.conDatos, soloEnlace]);
   }
 });

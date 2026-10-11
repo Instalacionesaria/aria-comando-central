@@ -44,10 +44,7 @@ import { exigir } from '../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
-import { calidadDelCreativo } from '../../../lib/negocio/calidadDelCreativo.ts';
-import { rendimientoDelCreativo } from '../../../lib/negocio/rendimientoDelCreativo.ts';
-import { fatigaDelCreativo } from '../../../lib/negocio/fatigaDelCreativo.ts';
-import { enlacesDeLasPiezas } from '../../../lib/negocio/enlaceDeLaPieza.ts';
+import { lecturaDeCreative } from '../../../lib/negocio/lecturaDeCreative.ts';
 import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
 import { textoDeCreative } from '../../../lib/agentes/plan/creative.ts';
 import { comentarioDelDepartamento } from '../../../lib/agentes/cabecera.ts';
@@ -70,15 +67,13 @@ export async function GET(peticion: Request): Promise<Response> {
   /* Las señales son de 7 o de 30 días (AG-28): con «hoy» o «completo» no hay ventana que mostrar, y la
      tarjeta dice sobre cuáles se calculan. */
   const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
-  const [calidad, rendimiento, fatiga, enlaces, senales, comentario] = await conOrganizacion(contexto.orgEfectiva, async () => {
+  const [lectura, senales, comentario] = await conOrganizacion(contexto.orgEfectiva, async () => {
     const lista = ventana === null ? [] : await senalesDeLaPantalla('creative', ventana, textoDeCreative);
     return [
-      await calidadDelCreativo(periodo.dias),
-      await rendimientoDelCreativo(periodo.dias),
-      await fatigaDelCreativo(periodo.dias),
-      /* Los links manuales de las piezas (docs/creative/15, C15-06): el respaldo del video, que el
-         cajón de la pieza ofrece como «Ver en Facebook / Instagram». No dependen de la ventana. */
-      await enlacesDeLasPiezas(),
+      /* La calidad, el rendimiento, la fatiga, los links manuales de las piezas y lo que el front del prototipo
+         dibuja con todo eso (docs/creative/16, CF1-15): una sola lectura, con la ventana del período. Los links
+         (docs/creative/15, C15-06) no dependen de la ventana. */
+      await lecturaDeCreative(periodo.dias),
       {
         ventana,
         lista,
@@ -97,10 +92,13 @@ export async function GET(peticion: Request): Promise<Response> {
     /* La clave viaja de vuelta y no se da por supuesta: la pantalla enciende el botón con LO QUE EL
        SERVIDOR CONTESTÓ, así que el botón encendido siempre describe las cifras de abajo. */
     periodo: periodo.clave,
-    calidad,
-    rendimiento,
-    fatiga,
-    enlaces,
+    /* Lo que dibuja el front del prototipo, armado en el servidor (CF1-15): cada tasa de 0 a 1 y cada «—» con su
+       motivo. Los bloques de abajo siguen viajando: son la respuesta de siempre de esta ruta y los lee el cerebro. */
+    pantalla: lectura.pantalla,
+    calidad: lectura.calidad,
+    rendimiento: lectura.rendimiento,
+    fatiga: lectura.fatiga,
+    enlaces: lectura.enlaces,
     senales,
     /* Lo que esta sesión puede hacer con las señales: las mismas capacidades que piden
        `app/api/creative/senales` y `…/umbrales`, y nada bajo delegación (AG-82). */

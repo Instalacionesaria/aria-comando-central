@@ -97,10 +97,11 @@ consulta (`docs/creative/07-LO-QUE-ENTREGA-Y-RECIBE.md:41-71`).
 
 ## 2 · Qué hay hoy en pantalla
 
-**La ruta.** `app/api/creative/route.ts` declara `PANTALLA = 'creative'` (`app/api/creative/route.ts:54`),
-pasa por el portero con `tablero.ver` (`app/api/creative/route.ts:60`), **rechaza** el período que no
-está en la lista en vez de corregirlo (`app/api/creative/route.ts:66-67`) y corre los tres módulos con la
-misma ventana (`app/api/creative/route.ts:69-77`). La sección ya no declara `sinOperacionesTodavia`
+**La ruta.** `app/api/creative/route.ts` declara `PANTALLA = 'creative'` (`app/api/creative/route.ts:51`),
+pasa por el portero con `tablero.ver` (`app/api/creative/route.ts:57`), **rechaza** el período que no
+está en la lista en vez de corregirlo (`app/api/creative/route.ts:63-64`) y corre los tres módulos con la
+misma ventana, desde el 2026-10-11 dentro de una sola lectura (`app/api/creative/route.ts:76`,
+`lib/negocio/lecturaDeCreative.ts:423-425`). La sección ya no declara `sinOperacionesTodavia`
 (`lib/autorizacion/secciones.ts:261-274`).
 
 **La vista y el panel.** `components/views/CreativeView.jsx` (70 líneas) sólo pone el encabezado

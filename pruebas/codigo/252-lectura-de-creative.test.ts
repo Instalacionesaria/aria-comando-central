@@ -20,6 +20,9 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { RAIZ } from '../apoyo/fuente.ts';
 import type { CalidadDeLosCreativos, FilaDeCreativo } from '../../lib/negocio/calidadDelCreativo.ts';
 import type { FatigaDeLosCreativos } from '../../lib/negocio/fatigaDelCreativo.ts';
 import type { FilaDeRendimiento, RendimientoDeLosCreativos } from '../../lib/negocio/rendimientoDelCreativo.ts';
@@ -189,4 +192,17 @@ test('la fila de abajo: el gasto, el CTR, el link CTR, la landing y las que perd
   assert.deepEqual(d.perdiendoGancho, { con: 1, sobre: 3 });
   const vacia = armarCreative(entrada({ entrega: [], rendimiento: { filas: [], gastoTotal: null } as unknown as RendimientoDeLosCreativos }));
   assert.deepEqual([vacia.loDemas.gasto.motivo, vacia.loDemas.ctr.motivo, vacia.cifras.impresiones.motivo], ['sin_entrega', 'sin_entrega', 'sin_entrega']);
+});
+
+test('la ventana del período llega a la lectura, y la lectura la pasa a todo lo que tiene ventana', () => {
+  /* Con una lectura sin la ventana, esa cifra se queda en la de por omisión mientras las otras cambian con el botón:
+     una tarjeta con dos períodos y nada que lo diga. */
+  const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8');
+  assert.match(leer('app/api/creative/route.ts'), /await lecturaDeCreative\(periodo\.dias\)/);
+  const lectura = leer('lib/negocio/lecturaDeCreative.ts');
+  const cuerpo = lectura.slice(lectura.indexOf('export async function lecturaDeCreative('));
+  for (const fn of ['calidadDelCreativo', 'rendimientoDelCreativo', 'fatigaDelCreativo', 'entregaDeLasPiezas']) {
+    assert.match(cuerpo, new RegExp(`${fn}\\(dias\\)`), `${fn} no recibe la ventana de la lectura`);
+  }
+  assert.match(leer('lib/agentes/executive/adaptadores/creative.ts'), /lecturaDeCreative\(periodoPedido\(argumentos\)!\.dias\)/);
 });

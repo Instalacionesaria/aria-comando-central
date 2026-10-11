@@ -184,7 +184,7 @@ no mide. La tarjeta de señales sigue en el modo Auditoría.
 `cancelacion_de_citas`, que vive con las de Sales (`lib/agentes/executive/adaptadores/sales.ts:144`).
 **`conversation_en_cifras`** (`lib/agentes/executive/adaptadores/conversation.ts:127-154`) lee la misma lectura con el
 «audita» que resolvió la ruta del cerebro y devuelve su `pantalla` entera, con el motivo de cada «—»; la compara con
-la de la ruta, en los cuatro períodos, `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:140`. Las
+la de la ruta, en los cuatro períodos, `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:145`. Las
 demás traen los avisos que la pantalla no dibuja. La frescura de las cinco tareas de las que vive la pantalla la da
 `frescura` (`lib/agentes/executive/adaptadores/plataforma.ts:37`).
 
