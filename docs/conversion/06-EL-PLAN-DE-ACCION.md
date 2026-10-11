@@ -175,7 +175,7 @@ esquema de una alerta con catorce campos para Acquisition, y **Conversion no tie
 Sin persistencia, «detectada hace 3 h» no se puede calcular y el estado `visto` no existe.
 
 Es el mismo hueco que Creative dejó abierto con «Solicitudes de nuevas variantes»
-(`docs/creative/12-QUIEN-VE-QUE.md:70`).
+(`docs/creative/12-QUIEN-VE-QUE.md:71`).
 
 ---
 

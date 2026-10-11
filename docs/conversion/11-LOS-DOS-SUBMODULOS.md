@@ -128,7 +128,7 @@ De los dos submódulos que el organigrama le da, uno tiene datos parciales y el 
 no lo invalida —`Landing Intelligence` solo ya publica cosas que ninguna otra pantalla publica— pero
 tiene que estar dicho, porque el organigrama promete dos.
 
-Es el mismo caso que Creative documentó en `docs/creative/12-QUIEN-VE-QUE.md:72-82`: de las cuatro
+Es el mismo caso que Creative documentó en `docs/creative/12-QUIEN-VE-QUE.md:73-83`: de las cuatro
 cosas que el documento le pedía al responsable creativo, dos eran construibles. La diferencia es que
 allá el hueco era una métrica; acá es **un submódulo entero**.
 

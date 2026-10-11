@@ -195,7 +195,7 @@ comportamiento es muy distinto.»*
 Y aunque se ejecutara, los 90 días cruzarían el corte del 2026-08-31 dos veces. **La forma es el
 requisito** —comparar cada cifra contra su propio histórico es una buena idea— pero el umbral hay que
 calibrarlo y declarar que no lo está, como hizo Creative con `PISO_DE_IMPRESIONES`
-(`lib/negocio/rendimientoDelCreativo.ts:51-66`).
+(`lib/negocio/rendimientoDelCreativo.ts:51-69`).
 
 ### CV2-09 · «Calificadas» tiene DOS fuentes en la misma pantalla, y dan números distintos
 

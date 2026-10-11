@@ -44,7 +44,7 @@
 «Landing page views» entre las inexistentes. **Dejó de ser cierto el 2026-09-19** (lo registra
 `docs/OTROS/estado actual/03-CONVERSION.md:79-93@b3ca9ad`): el desglose de acciones de Meta trae `landingPageView`
 por anuncio y por día, se guarda en `negocio.metricas_de_anuncio.acciones` (migración `053`) y ya se
-publica en `lib/negocio/rendimientoDelCreativo.ts:96` como «Vistas de la landing».
+publica en `lib/negocio/rendimientoDelCreativo.ts:99` como «Vistas de la landing».
 
 **Con dos límites que hay que decir al usarlo:**
 

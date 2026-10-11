@@ -63,7 +63,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:120-127`) | sólo con 7 y 30 días |
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
-| Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:96`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
+| Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:99`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
 | Panel 1 · Dan play al VSL | hueco | 79 escrituras, las 79 en cero (`lib/negocio/embudoDelFormulario.ts:124-134`) | — |
 | Panel 2 · Empiezan el form | contactos con el campo `Form Landing VSL` | `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`), que murió el 2026-08-31 | **0**: «Sin dato desde el 31 ago.» |
 | Panel 2 · Agendan | contactos con alguna cita alcanzable, sobre la cohorte | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`) | **63** de 105, 60 % |
