@@ -246,7 +246,7 @@ export type EstadoDelFormulario = (typeof ESTADOS_DEL_FORMULARIO)[number];
  *
  * El corte es el 2026-08-31, y escribir esa fecha en el código sería una cifra medida que envejece
  * sin que nada avise — el defecto que Creative pagó tres veces y que
- * `components/creative/PanelDeCreative.jsx:32-37` documenta.
+ * `components/creative/PanelDeCreative.jsx:32-37@1971ab2` documenta.
  *
  * Sale del dato: el último día con el campo escrito. Si la landing vuelve y el campo se repuebla, el
  * corte se mueve solo; si nunca vuelve, se queda donde está y la pantalla lo sigue diciendo.

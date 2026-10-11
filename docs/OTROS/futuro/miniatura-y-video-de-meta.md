@@ -32,9 +32,11 @@ un botón que abre el post en Facebook o Instagram (`C15-01` a `C15-03`).
    el token de la Página de Facebook que le dio Meta. Usarlo fuera de GoHighLevel es dudoso frente a
    los términos de Meta y el usuario lo descartó el 2026-09-29: **no se usa**, ni para medir.
 
-**Mientras tanto la pantalla no miente:** el cajón de la pieza dice que la miniatura y el video
-todavía no se pueden mostrar y por qué (`components/creative/FichaDelCreativo.jsx:87-91`), y ofrece
-el link manual como respaldo.
+**Mientras tanto la pantalla no mentía:** hasta el 2026-10-11 el cajón de la pieza decía que la miniatura y el
+video todavía no se podían mostrar y por qué (`components/creative/FichaDelCreativo.jsx:87-91@1971ab2`), y ofrecía
+el link manual como respaldo. **Desde ese día la miniatura llega sin Meta directo**: el «Video Url» de la primera
+atribución de GoHighLevel, completado con `GET /contacts/{id}` (`docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`,
+CF1-11 y CF1-12). Lo que este plan sigue sumando es el video y la miniatura de las piezas cuyos contactos no la traen.
 
 ## 3 · Lo que ya está construido y se reusa
 
@@ -179,8 +181,8 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
   `MEDIDO_EL`: aparece sólo en la empresa sin fuente (`C15-10`). La prueba
   `pruebas/base/158-rendimiento-del-creativo.test.ts` sigue pidiendo al menos 4 huecos, y se suma
   que el hueco desaparece cuando hay activos.
-- El texto fijo del cajón (`components/creative/FichaDelCreativo.jsx:87-91`) pasa a depender de lo
-  mismo.
+- El texto fijo del cajón (`components/creative/FichaDelCreativo.jsx:87-91@1971ab2`) pasaba a depender de lo
+  mismo. Ya no existe: desde el 2026-10-11 la ficha dice «Sin miniatura todavía.» sólo cuando la pieza no tiene una.
 - Documentos: el 15 pasa a «hecho»; `docs/OTROS/estado actual/02-CREATIVE.md` § 5 deja de decir que
   no hay cliente de Meta; `16-AJUSTES-Y-PERMISOS.md` y `06-INTEGRACIONES-GHL.md` nombran la
   credencial nueva; y este archivo se borra o se marca como hecho.

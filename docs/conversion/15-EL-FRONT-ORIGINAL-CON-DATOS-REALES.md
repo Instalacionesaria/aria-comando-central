@@ -455,7 +455,7 @@ la «Lectura»** en prosa: no hay ningún texto que el servidor escriba con fuen
 
 **El componente** · `components/conversion/CajonDelPaso.jsx`, con `createPortal`, `scrim` y `drawer on`, el
 id `cvCajon` y la raíz `.cv-cajon`. Es el molde de la ficha de Creative
-(`components/creative/FichaDelCreativo.jsx:58-61`), no el `#drawer` del prototipo.
+(`components/creative/FichaDelCreativo.jsx:58-61@1971ab2`), no el `#drawer` del prototipo.
 
 **Landing** · Meta: «GoHighLevel · {cohorte} contactos · {rango}».
 

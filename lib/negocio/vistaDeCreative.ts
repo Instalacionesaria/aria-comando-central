@@ -19,6 +19,7 @@ import type { CalidadDeLosCreativos } from './calidadDelCreativo.ts';
 import type { RendimientoDeLosCreativos } from './rendimientoDelCreativo.ts';
 import type { FatigaDeLosCreativos } from './fatigaDelCreativo.ts';
 import type { EnlaceDePieza } from './enlaceDeLaPieza.ts';
+import type { PantallaDeCreativeArmada } from './lecturaDeCreative.ts';
 import type { PlanDeCreative } from '../agentes/plan/creative.ts';
 import type { PuedeConSenales, SenalesDelDepartamento } from './vistaDeSenales.ts';
 
@@ -26,6 +27,8 @@ const RUTA = '/api/creative';
 
 export interface PantallaDeCreative {
   periodo: ClaveDePeriodo;
+  /** Lo que dibuja el front del prototipo, armado en el servidor: cada tasa de 0 a 1 y cada «—» con su motivo (CF1-15). */
+  pantalla: PantallaDeCreativeArmada;
   /** Lo que dice el lead que llegó por cada pieza: ICP y agenda. No necesita nada de Meta. */
   calidad: CalidadDeLosCreativos;
   /** Lo que dice la subasta: hook rate, link CTR, vistas de la landing. */

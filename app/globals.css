@@ -65,10 +65,8 @@
 /* El Panel de Monitoreo: la tabla de consumo de todas las empresas. Misma capa y mismo motivo
    que las de arriba — esta pantalla no existe en el prototipo, así que `aios.css` no tiene nada
    que decir sobre ella y no se toca. */
-/* Los cinco tableros de Inteligencia, con el mismo alcance. Hoja aparte y no una sección más de
-   la de operación porque son un bloque coherente —el port congelado del maquetado, con su propio
-   vocabulario— y aquélla ya tiene 1400 líneas. */
-@import "./inteligencia-estetica.css" layer(components);
+/* Acá iba `inteligencia-estetica.css`, la estética de operación de los cinco tableros de Inteligencia. Se borró
+   el 2026-10-11, cuando Creative —la última que la usaba— volvió al front del prototipo (docs/creative/16, CF1-01). */
 
 @import "./monitoreo.css" layer(components);
 @import "./incidentes.css" layer(components);

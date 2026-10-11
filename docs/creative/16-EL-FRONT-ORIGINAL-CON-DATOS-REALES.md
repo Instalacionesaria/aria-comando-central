@@ -88,9 +88,10 @@ en `document.body`. **Las reglas del prototipo que faltan se restituyen ahí**: 
 `.qb`, `.dw-verdict` y `.tr-line` se retiraron de `app/aios.css` el 2026-09-19, cuando nadie las dibujaba. Salen del CSS
 en línea del prototipo (`aios-command-center_1.html:558-985`), con los colores pasados a tokens y sin sombras.
 
-**Rastro** · El prototipo: `aios-command-center_1.html:2746-2804`. La pantalla de hoy: `components/views/CreativeView.jsx:47`.
+**Rastro** · El prototipo: `aios-command-center_1.html:2746-2804`. La pantalla anterior: `components/views/CreativeView.jsx:47@1971ab2`.
 
-**Estado** · Por construir (CF-3).
+**Estado** · Construido el 2026-10-11 (CF-3): `components/creative/PanelDeCreative.jsx`, `components/creative/FichaDelCreativo.jsx`, `components/creative/Miniatura.jsx` y `app/creative.css`;
+`components/views/CreativeView.jsx` sin `estetica-op`, y `app/inteligencia-estetica.css` borrada con su import. Prueba `pruebas/codigo/254-la-pantalla-de-creative.test.ts`.
 
 ### CF1-02 · Frases cortas, de una lista cerrada
 
@@ -109,6 +110,7 @@ en línea del prototipo (`aios-command-center_1.html:558-985`), con los colores 
 | la fatiga sin veredicto | «Sin días suficientes para medir el gancho.» |
 | la cohorte vacía | «Sin contactos en este período» |
 | un grupo sin piezas | «Sin piezas en este grupo.» |
+| una pieza que es la única de su etapa con valor: va a «Funciona» sin contra quién compararse | «Única de su etapa.» |
 | la primera carga | «Cargando…» |
 | la lectura falló | «No se pudo leer. Reintenta.» |
 
@@ -123,17 +125,18 @@ en línea del prototipo (`aios-command-center_1.html:558-985`), con los colores 
 | «sobre el promedio de {valor} {unidad}» | «sobre el promedio de su etapa» | cada pieza se compara con su etapa |
 | «Publicado» | «Primer día con entrega» | no se sabe cuándo se publicó; se sabe cuándo empezó a entregar |
 | «Datos del video» | «Datos de la pieza» | la pieza puede no ser un video |
+| «Retención del video» y «Guión del video» | «Retención y guion», en «—» | GoHighLevel no entrega ninguna de las dos |
 | «Recomendaciones y conclusiones» | «Plan de acción» | es el plan real del detector, con sus grupos |
 
-**Estado** · Por construir (CF-3): la lista vivirá en `FRASE` de `components/creative/comun.jsx`, y una prueba nueva
-exigirá que las dos coincidan en las dos direcciones.
+**Estado** · Construido el 2026-10-11 (CF-3): la lista vive en `FRASE` de `components/creative/comun.jsx`, y la
+prueba `pruebas/codigo/254-la-pantalla-de-creative.test.ts` exige que las dos coincidan en las dos direcciones y que cada motivo del servidor tenga la suya.
 
 ### CF1-03 · El encabezado
 
 **Qué es** · «Creative» y «Qué funciona, qué no, y por qué». En `.ch-r`, el «Plan de acción» real (CF1-14) y el
 segmentado con los cuatro períodos del sistema, sin «Personalizado» ni la clave `mes`.
 
-**Estado** · Por construir (CF-3).
+**Estado** · Construido el 2026-10-11 (CF-3), en `components/creative/PanelDeCreative.jsx`.
 
 ### CF1-04 · Los períodos y el piso
 
@@ -150,7 +153,8 @@ nombre↔anuncio, los avisos, las ventanas de cada fuente ni la lista de lo que 
 respuesta y en las herramientas del cerebro: el agente de Creative es quien explica. Lo que haría falta para medir
 cada «—» está en `docs/OTROS/futuro/lo-que-creative-no-mide.md`.
 
-**Estado** · Por construir (CF-3).
+**Estado** · Construido el 2026-10-11 (CF-3): el panel no lee `calidad`, `rendimiento` ni `fatiga`, sólo la `pantalla`
+armada. La prueba `pruebas/codigo/254-la-pantalla-de-creative.test.ts` lo vigila.
 
 ### CF1-06 · La tira de cifras
 
@@ -163,7 +167,7 @@ de los promedios; Retención, «—». La celda del criterio de orden elegido ll
 suma de `videoView` sobre la suma de impresiones de los anuncio-días con la clave. Frecuencia: impresiones sobre
 alcance, pesada por impresiones como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:129-150`).
 
-**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
 
 ### CF1-07 · Ordenar por
 
@@ -173,7 +177,7 @@ Retención no ordena: no tiene dato. Al lado, «{N} piezas · {período}».
 **Fórmula** · El servidor arma, para cada criterio, los dos grupos y su orden; el navegador elige cuál dibujar y **no
 ordena nada**.
 
-**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
 
 ### CF1-08 · «Funciona» y «No funciona», contra la etapa
 
@@ -183,7 +187,7 @@ mayor a menor.
 
 **Fórmula** · El promedio de cada etapa es el pesado (la suma de los numeradores sobre la suma de los denominadores)
 para las tasas, y el simple para los conteos. Una etapa con una sola pieza no tiene contra quién compararse: la pieza va
-a «Funciona» con la línea «Única de su etapa.» —frase que entra a CF1-02 si se confirma la pregunta `CF1-P03`—.
+a «Funciona» con la línea «Única de su etapa.» —frase de CF1-02, la respuesta por defecto de `CF1-P03`—.
 
 **Estado** · Construido el 2026-10-11 (CF-1): `agrupar`, en `lib/negocio/lecturaDeCreative.ts`, arma los dos grupos de cada criterio con su promedio por etapa y las piezas únicas de su etapa.
 
@@ -194,9 +198,11 @@ nombre de la pieza; la etiqueta de la etapa; las seis métricas de la tira, por 
 cuando la fatiga tiene veredicto y la pieza está fatigada. Al tocarla se abre la ficha.
 
 **Fórmula** · «Entregando»: la pieza tuvo impresiones en alguno de los últimos 3 días. La fatiga sale de
-`fatigaDelCreativo` (`lib/negocio/fatigaDelCreativo.ts:131`): `fatigado === true`.
+`fatigaDelCreativo` (`lib/negocio/fatigaDelCreativo.ts:131`): `fatigado === true`. En la tarjeta, una cifra en «—» lleva su
+frase en el `title` y no debajo: la celda mide 50 px, como en el prototipo, y la línea no entra; la ficha la dibuja
+debajo.
 
-**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
 
 ### CF1-10 · La ficha de la pieza
 
@@ -206,7 +212,7 @@ secciones:
 | sección | qué lleva |
 |---|---|
 | La pieza | la miniatura grande, «Ver en Facebook/Instagram» si hay `videoUrl` o enlace manual, y el editor del enlace manual de hoy |
-| Qué es | Etapa, Estado, Anuncios, Primer día con entrega, Pieza; Formato, Ángulo, Duración y Dolor en «—» |
+| Qué es | Etapa, Estado, Anuncios, Primer día con entrega, Último día con entrega, Pieza; Formato, Ángulo, Duración y Dolor en «—» |
 | Datos de la pieza | las seis de la tira, más el gasto, el CTR, el link CTR, la landing y el click-to-landing |
 | Retención y guion | «—» con «GoHighLevel no lo entrega.» |
 | Los anuncios | los anuncios de la pieza, por impresiones (`anunciosDeLaPieza`, `lib/negocio/rendimientoDelCreativo.ts:263`) |
@@ -214,7 +220,7 @@ secciones:
 Conserva lo que la ficha de hoy ya resuelve: el portal en `document.body`, el foco y Escape
 (`components/creative/FichaDelCreativo.jsx`).
 
-**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/FichaDelCreativo.jsx`.
 
 ### CF1-11 · Completar la atribución
 
@@ -244,14 +250,14 @@ navegador, `<img>` con `referrerPolicy="no-referrer"` y `loading="lazy"`; si la 
 prototipo, sin romper la tarjeta.
 
 **Estado** · La elección, construida el 2026-10-11 (CF-1): `miniaturasDeLasPiezas`, en `lib/negocio/miniaturaDelContacto.ts`. El
-dibujo, por construir (CF-3).
+dibujo, el mismo día (CF-3): `components/creative/Miniatura.jsx`, en la tarjeta y en la ficha.
 
 ### CF1-13 · Lo demás, en cifras
 
 **Qué es** · Lo que la pantalla de hoy mide y el prototipo no tenía, en una fila de cifras debajo de los grupos: el
 gasto total, el CTR, el link CTR, la landing y las piezas perdiendo gancho sobre las que tienen veredicto.
 
-**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
 
 ### CF1-14 · El plan de acción y las señales
 
@@ -259,7 +265,7 @@ gasto total, el CTR, el link CTR, la landing y las piezas perdiendo gancho sobre
 `components/senales/SenalesDelDepartamento.jsx`), con «Hoy» y «Completo» como hoy. La tarjeta de señales queda al
 final de la pestaña, como en Conversion.
 
-**Estado** · Por construir (CF-3).
+**Estado** · Construido el 2026-10-11 (CF-3), en `components/creative/PanelDeCreative.jsx`.
 
 ### CF1-15 · El servidor calcula; el navegador dibuja
 
@@ -293,14 +299,14 @@ mira que ninguna URL llegue al cerebro.
 **Qué es** · La pantalla no dibuja nada de una persona: los nombres son de piezas, que son nombres de anuncios. Las
 cifras de contactos son conteos. Del prototipo no se copia ningún nombre.
 
-**Estado** · Por construir (CF-3).
+**Estado** · Construido el 2026-10-11 (CF-3). La prueba `pruebas/codigo/254-la-pantalla-de-creative.test.ts` lee del prototipo los nombres, formatos, ángulos y dolores de la maqueta y exige que ninguno vuelva.
 
 ### CF1-18 · El teléfono
 
 **Qué es** · A 375 px la tira va de a dos, la rejilla de a una tarjeta y la ficha ocupa el ancho. La página no desliza
 a lo ancho.
 
-**Estado** · Por construir (CF-3, CF-5).
+**Estado** · Las reglas, construidas el 2026-10-11 (CF-3), en `app/creative.css`; la medida en los cuatro anchos, en CF-5.
 
 ### CF1-19 · Los textos que pasan a ser falsos se corrigen en la misma etapa
 
@@ -330,7 +336,7 @@ a lo ancho.
 | CF-0 | Esta carpeta al día, `docs/OTROS/futuro/lo-que-creative-no-mide.md` y la medición de producción con el OK del usuario | **hecho el 2026-10-11** |
 | CF-1 | El servidor: `lecturaDeCreative`, los calificados por pieza, la miniatura y la pasada que completa la atribución | **hecho el 2026-10-11**: pruebas 252 (código y base) y 253; 26 mutaciones muertas; la `077` |
 | CF-2 | La ruta y el cerebro sobre la lectura | **hecho el 2026-10-11**: pruebas 213, 214, 215 y la ventana en la 252 |
-| CF-3 | El front sobre el marcado del prototipo, `app/creative.css`, y `app/inteligencia-estetica.css` borrada | por hacer |
+| CF-3 | El front sobre el marcado del prototipo, `app/creative.css`, y `app/inteligencia-estetica.css` borrada | **hecho el 2026-10-11**: prueba 254; 104, 107, 146 y 251 al día |
 | CF-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
 | CF-5 | La comparación contra el prototipo, los anchos, la subida y la foto 02 | por hacer |
 

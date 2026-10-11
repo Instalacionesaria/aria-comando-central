@@ -1,47 +1,43 @@
 'use client';
 
-/* El cajón de una pieza de Creative: sus anuncios, y su video (docs/creative/15, C15-02).
+/* La ficha de una pieza de Creative: el `aside.drawer` del prototipo, con los datos reales (docs/creative/16, CF1-10).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * ES EL `C4-01` DE LA MAQUETA, QUE NUNCA SE CONSTRUYÓ
+ * EL CAJÓN DEL PROTOTIPO, SIN LO QUE NO TIENE FUENTE
  *
- * La maqueta abría cada pieza en `#drawer` con una curva de retención y un guion inventados. Éste es
- * el cajón de verdad: lista los anuncios en los que corre la pieza, con lo que cada uno entregó en la
- * ventana, y el link manual del video cuando lo hay. La miniatura y el video de cada anuncio llegan
- * cuando se conecte Meta directo; hasta entonces el cajón lo dice, en vez de dejar el hueco callado.
+ * El prototipo abría cada pieza en `#drawer` (`aios-command-center_1.html:3764-3810`) con su veredicto y cuatro
+ * secciones —«Qué es», «Datos del video», «Retención del video» y «Guión del video»— sobre datos inventados. Acá van
+ * las mismas, en su orden, más la miniatura arriba y los anuncios de la pieza abajo. Lo que GoHighLevel no entrega
+ * —el formato, el ángulo, la duración, el dolor, la retención y el guion— queda en «—» con su frase: no se inventa
+ * una curva ni se marca una línea de un guion que no está guardado.
  *
  * ── UN CAJÓN PROPIO, NO `#drawer` ──────────────────────────────────────────
  *
- * Mismo molde que `components/leads-portal/FichaDelLead.jsx`: `#drawer` lo escribía la maqueta del
- * Executive con `innerHTML`, y compartirlo hacía que dos pantallas pisaran el mismo nodo. Éste tiene su `id`, usa
- * las clases globales del cajón —se ve igual— y se monta en `document.body`.
+ * Mismo molde que `components/leads-portal/FichaDelLead.jsx`: `#drawer` lo escribía la maqueta con `innerHTML`, y
+ * compartirlo hacía que dos pantallas pisaran el mismo nodo. Éste usa las clases globales del cajón —se ve igual— y se
+ * monta en `document.body`, así que sus reglas propias cuelgan de `.cr-ficha` y no de `#v-creative`.
  *
  * ── EL LINK MANUAL ES UN ENLACE, Y SÓLO LO CARGA QUIEN ADMINISTRA ───────────
  *
- * Se abre en una pestaña nueva con `noopener noreferrer`, y nada más: no se reproduce ni se embebe
- * (C15-06). El formulario para cargarlo se dibuja SÓLO si el servidor dijo que esta sesión puede
- * (`puedeEditar`): ofrecer un control que va a dar 403 es el `07` § 4. El servidor valida igual.
+ * Se abre en una pestaña nueva con `noopener noreferrer`, y nada más: no se reproduce ni se embebe (C15-06). El
+ * formulario para cargarlo se dibuja SÓLO si el servidor dijo que esta sesión puede (`puedeEditar`): ofrecer un
+ * control que va a dar 403 es el `07` § 4. El servidor valida igual.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { borrarEnlaceDeLaPieza, guardarEnlaceDeLaPieza } from '@/lib/negocio/vistaDeCreative';
+import Miniatura from './Miniatura.jsx';
+import { CRITERIO, ESTADO, ETAPA, FORMATO_DEL_CRITERIO, FRASE, VER_EN, corto, fechaCorta, miles, motivo, o, pf, plata, veces } from './comun.jsx';
 
-const miles = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString('es-PE'));
-const plata = (v) =>
-  v === null || v === undefined ? '—' : `$${Number(v).toLocaleString('es-PE', { maximumFractionDigits: 2 })}`;
-const fecha = (iso) =>
-  iso ? new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : '—';
+/** El día en que se cargó el link manual: es un instante, y se lee en la zona de quien mira. */
+const elDia = (iso) => new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
 
-/** El rótulo del enlace según la red. La red la decide el servidor por el host, no el texto del link. */
-const VER_EN = { facebook: 'Ver en Facebook', instagram: 'Ver en Instagram' };
-
-export default function FichaDelCreativo({ fila, enlace, puedeEditar, alCambiarEnlaces, alCerrar }) {
+export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual, manualDelServidor, puedeEditar, alCambiarEnlaces, alCerrar }) {
   const cerrarRef = useRef(null);
 
-  /* El foco entra UNA vez al abrirse y Escape cierra; la función vive en una referencia para que el
-     reloj del panel, que vuelve a dibujar todo, no le robe el foco al lector. Mismo motivo que en
-     `FichaDelLead`. */
+  /* El foco entra UNA vez al abrirse y Escape cierra; la función vive en una referencia para que el reloj del
+     panel, que vuelve a dibujar todo, no le robe el foco al lector. Mismo motivo que en `FichaDelLead`. */
   const alCerrarRef = useRef(alCerrar);
   alCerrarRef.current = alCerrar;
   useEffect(() => {
@@ -53,20 +49,28 @@ export default function FichaDelCreativo({ fila, enlace, puedeEditar, alCambiarE
     return () => document.removeEventListener('keydown', alTeclear);
   }, []);
 
-  const anuncios = fila.anunciosDeLaPieza ?? [];
+  const c = pieza.cifras;
+  const f = pieza.ficha;
+  /* Adónde lleva «Ver en…»: el link manual que hay AHORA, que el editor cambia sin esperar a la lectura; si no hay,
+     el que mandó el servidor, salvo que ése fuera el manual que se acaba de sacar —la recarga trae el de la
+     miniatura—. */
+  const enlace = manual ? { url: manual.url, red: manual.red } : manualDelServidor ? null : pieza.enlace;
+  const valor = c[criterio];
 
   return createPortal(
     <>
       <div className="scrim on" onClick={alCerrar} aria-hidden="true" />
-      <aside className="drawer on cr-ficha" id="crFicha" role="dialog" aria-modal="true" aria-label={`Pieza ${fila.creativo}`}>
+      <aside className="drawer on cr-ficha" role="dialog" aria-modal="true" aria-label={`Pieza ${pieza.clave}`}>
         <div className="dw-head">
-          <div>
-            <h3 className="cr-titulo">{fila.creativo}</h3>
-            <div className="m">
-              {fila.diasConEntrega === 0
-                ? `Corre en ${fila.anuncios} anuncio(s), y no entregó ningún día de esta ventana.`
-                : `Corre en ${fila.anuncios} anuncio(s) y entregó ${fila.diasConEntrega} día(s) de esta ventana.`}
-            </div>
+          <div className="cr-cabeza">
+            <h3 className="cr-titulo">{pieza.clave}</h3>
+            <div className="m">{`${ESTADO[pieza.estado]} · ${ETAPA[pieza.etapa]}`}</div>
+            {/* El veredicto del prototipo, contra la etapa (CF1-08): «Funciona» con su cifra, o «Bajo en…». */}
+            {gana ? (
+              <span className="dw-verdict good">{`✓ Funciona · ${unica ? FRASE.unica : `${o(valor.valor, FORMATO_DEL_CRITERIO[criterio])} ${CRITERIO[criterio].unidad}`}`}</span>
+            ) : (
+              <span className="dw-verdict bad">{`✕ Bajo en ${CRITERIO[criterio].rotulo.toLowerCase()} · ${o(valor.valor, FORMATO_DEL_CRITERIO[criterio])}`}</span>
+            )}
           </div>
           <button type="button" className="dw-x" ref={cerrarRef} onClick={alCerrar} aria-label="Cerrar">
             ✕
@@ -74,42 +78,75 @@ export default function FichaDelCreativo({ fila, enlace, puedeEditar, alCambiarE
         </div>
         <div className="dw-body">
           <div>
-            <div className="dw-sec-t">El video</div>
+            <div className="dw-sec-t">La pieza</div>
             <div className="dw-block">
+              <Miniatura url={pieza.miniatura} clase="dw-video" />
               {enlace ? (
                 <p className="cr-enlace">
                   <a className="ld-btn" href={enlace.url} target="_blank" rel="noopener noreferrer">
-                    {VER_EN[enlace.red] ?? 'Ver la publicación'} ↗
+                    {VER_EN[enlace.red]} ↗
                   </a>
-                  <span className="cr-dato">Link cargado a mano el {fecha(enlace.actualizadoEl)}.</span>
+                  {manual ? <span className="cr-dato">{`Link cargado a mano el ${elDia(manual.actualizadoEl)}.`}</span> : null}
                 </p>
               ) : null}
-              <p className="cr-hueco">
-                La miniatura y el video de cada anuncio todavía no se pueden mostrar: GoHighLevel no los
-                entrega, y la conexión directa con Meta no está cargada.
-                {enlace ? null : ' Mientras tanto, se puede cargar el link del post o del reel de la pieza.'}
-              </p>
-              {puedeEditar ? (
-                <EditorDelEnlace pieza={fila.creativo} enlace={enlace} alCambiarEnlaces={alCambiarEnlaces} />
-              ) : null}
+              {puedeEditar ? <EditorDelEnlace pieza={pieza.clave} enlace={manual} alCambiarEnlaces={alCambiarEnlaces} /> : null}
             </div>
           </div>
+
+          <div className="qe">
+            <div className="dw-sec-t">Qué es</div>
+            <div className="qe-grid">
+              <Caja rotulo="Etapa" valor={ETAPA[pieza.etapa]} />
+              <Caja rotulo="Estado" valor={ESTADO[pieza.estado]} />
+              <Caja rotulo="Anuncios" valor={miles(f.anuncios)} />
+              <Caja rotulo="Formato" valor={FRASE.guion} porque={FRASE.sinFuente} />
+              <Caja rotulo="Ángulo" valor={FRASE.guion} porque={FRASE.sinFuente} />
+              <Caja rotulo="Duración" valor={FRASE.guion} porque={FRASE.sinFuente} />
+              <Caja rotulo="Primer día con entrega" valor={fechaCorta(f.primerDia) ?? FRASE.guion} ancha />
+              <Caja rotulo="Último día con entrega" valor={fechaCorta(f.ultimoDia) ?? FRASE.guion} ancha />
+              <Caja rotulo="Pieza" valor={pieza.clave} ancha />
+              <Caja rotulo="Dolor que ataca" valor={FRASE.guion} porque={FRASE.sinFuente} ancha />
+            </div>
+          </div>
+
+          <div>
+            <div className="dw-sec-t">Datos de la pieza</div>
+            <div className="dw-block out-grid cr-datos">
+              <Dato rotulo="Calificados" c={c.calificados} formato={miles} hi />
+              <Dato rotulo="Agendas" c={c.agendas} formato={miles} hi />
+              <Dato rotulo="Hook rate" c={c.hookRate} formato={pf} />
+              <Dato rotulo="Retención" c={c.retencion} formato={pf} />
+              <Dato rotulo="Impresiones" c={c.impresiones} formato={corto} />
+              <Dato rotulo="Frecuencia" c={c.frecuencia} formato={veces} />
+              <Dato rotulo="Gasto" c={f.gasto} formato={plata} />
+              <Dato rotulo="CTR" c={f.ctr} formato={pf} />
+              <Dato rotulo="Link CTR" c={f.linkCtr} formato={pf} />
+              <Dato rotulo="Landing" c={f.landing} formato={pf} />
+              <Dato rotulo="Click-to-landing" c={f.clickToLanding} formato={pf} />
+            </div>
+          </div>
+
+          <div>
+            <div className="dw-sec-t">Retención y guion</div>
+            <div className="dw-block">
+              <div className="dw-empty">{FRASE.sinFuente}</div>
+            </div>
+          </div>
+
           <div>
             <div className="dw-sec-t">Los anuncios de la pieza</div>
-            {anuncios.length === 0 ? (
-              <p className="cr-hueco">Ningún anuncio de esta pieza tiene datos en esta ventana.</p>
+            {f.anunciosDeLaPieza.length === 0 ? (
+              <div className="dw-block">
+                <div className="dw-empty">{FRASE.sinEntrega}</div>
+              </div>
             ) : (
               <div className="kv-box">
-                {anuncios.map((a, i) => (
+                {f.anunciosDeLaPieza.map((a, i) => (
                   <div className="kv cr-anuncio" key={a.anuncioId}>
-                    {/* El número de orden y los últimos dígitos: dieciocho dígitos no se leen, y el id
-                        completo queda en el `title` para quien lo tenga que buscar en Meta. */}
-                    <span title={a.anuncioId}>
-                      Anuncio {i + 1} · …{a.anuncioId.slice(-6)}
-                    </span>
-                    <span className="cr-dato">
-                      {miles(a.impresiones)} impresiones · {plata(a.gasto)}
-                    </span>
+                    {/* El número de orden y los últimos dígitos: dieciocho dígitos no se leen, y el id completo queda
+                        en el `title` para quien lo tenga que buscar en Meta. */}
+                    <span title={a.anuncioId}>{`Anuncio ${i + 1} · …${a.anuncioId.slice(-6)}`}</span>
+                    <span className="cr-dato">{`${o(a.impresiones, miles)} impresiones · ${o(a.gasto, plata)}`}</span>
                   </div>
                 ))}
               </div>
@@ -119,6 +156,31 @@ export default function FichaDelCreativo({ fila, enlace, puedeEditar, alCambiarE
       </aside>
     </>,
     document.body,
+  );
+}
+
+/**
+ * Una caja de «Qué es», la `qb` del prototipo. Un «—» lleva su frase en el `title`: la caja es de un renglón. Los
+ * rótulos largos —los dos días, la pieza, el dolor— van a todo el ancho: en un tercio, el rótulo deja 30 px al valor.
+ */
+function Caja({ rotulo, valor, porque = null, ancha = false }) {
+  return (
+    <div className={ancha ? 'qb wide' : 'qb'}>
+      <i>{rotulo}</i>
+      <b title={porque ?? (typeof valor === 'string' ? valor : undefined)}>{valor}</b>
+    </div>
+  );
+}
+
+/** Una cifra de «Datos de la pieza», la `out` del prototipo, con la línea de su «—» debajo. */
+function Dato({ rotulo, c, formato, hi = false }) {
+  const porque = motivo(c);
+  return (
+    <div className={`out${hi ? ' hi' : ''}${porque ? ' cr-con-motivo' : ''}`}>
+      <div className="k">{rotulo}</div>
+      <div className="v">{o(c.valor, formato)}</div>
+      {porque ? <div className="cr-motivo">{porque}</div> : null}
+    </div>
   );
 }
 

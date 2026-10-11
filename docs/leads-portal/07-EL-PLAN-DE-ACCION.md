@@ -19,7 +19,7 @@ cuatro frases en el modal compartido `#recoModal` y lo abre.
 
 Y es **el último plan de acción cableado de la aplicación**. Acquisition, Creative, Conversion y
 Sales ya borraron el suyo, cada uno con su motivo escrito en la cabecera de la vista nueva
-(`components/views/AcquisitionView.jsx` (en `4365cc9`, línea 21), `components/views/CreativeView.jsx:19`,
+(`components/views/AcquisitionView.jsx` (en `4365cc9`, línea 21), `components/views/CreativeView.jsx:19@1971ab2`,
 `components/views/ConversionView.jsx:39@b2dcdf5`, `components/views/SalesView.jsx:31@a39a732`). Con LP-6 no queda
 ninguno.
 
@@ -159,7 +159,7 @@ no se sostiene, porque el destino no publica la respuesta**:
 - el panel de Acquisition publica el costo por anuncio y el monitor de atribución, y nada más
   (`docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:16-18`); no tiene una columna de ICP;
 - la única pantalla que hoy cruza el puntaje con el origen es **Creative**, que publica el ICP
-  promedio por creativo y etapa (`components/creative/PanelDeCreative.jsx:390`), y con una regla de
+  promedio por creativo y etapa (`components/creative/PanelDeCreative.jsx:390@1971ab2`), y con una regla de
   ceros distinta de la de esta pestaña (`LP08-08`).
 
 **Y forma un circuito con el plan de Acquisition.** El ítem 9 del plan que Acquisition borró decía

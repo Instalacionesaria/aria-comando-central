@@ -5,7 +5,8 @@
    `ghead`, `journey` con sus cinco `jstep`, la alarma— y lo visten las reglas del prototipo, que siguen en
    `app/aios.css` y no se tocan: esa hoja tiene que seguir siendo comparable contra el HTML
    (docs/conversion/15, CV15-01). La sección no lleva `estetica-op`, que es la capa que había cambiado el look,
-   y `#v-conversion` salió de los `:is()` de `app/inteligencia-estetica.css`.
+   y `#v-conversion` salió de los `:is()` de `app/inteligencia-estetica.css`, que se borró el 2026-10-11, cuando
+   Creative salió por el mismo camino.
 
    Lo de abajo es lo que el prototipo no tenía —el `.ch-l` a la vista con la cabecera del departamento, la nota de
    cobertura, el punto apagado del chip, las tarjetas que no abren cajón, el anillo de foco, la línea de un fallo

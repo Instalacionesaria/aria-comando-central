@@ -927,8 +927,11 @@ dinámicos.
 Falta porque **no hay token**: lo genera otra persona del equipo con la guía del § 4 de
 `docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, y dos decisiones de diseño —si se reproduce en la app
 y cada cuánto se refresca la miniatura— sólo se pueden medir con él. El usuario lo postergó el
-2026-09-30 por otras prioridades. Mientras tanto la pantalla lo dice: el cajón explica que la
-miniatura y el video todavía no se pueden mostrar (`components/creative/FichaDelCreativo.jsx:87-91`).
+2026-09-30 por otras prioridades. Hasta el 2026-10-11 el cajón explicaba que la miniatura y el video todavía no se
+podían mostrar (`components/creative/FichaDelCreativo.jsx:87-91@1971ab2`). Desde ese día **la miniatura llega por
+otro camino**: el «Video Url» de la primera atribución, que la pasada de `lib/negocio/miniaturaDelContacto.ts` completa
+con `GET /contacts/{id}`, y la tarjeta y la ficha la dibujan (`docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`,
+CF1-11 y CF1-12). El video sigue sin fuente.
 El plan, etapa por etapa, está en `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.
 
 ---

@@ -1039,7 +1039,7 @@ El rediseño de Conversation dejó cuatro defectos y **tres aparecieron mirando*
 | Qué estaba mal | Dónde quedó escrito | Cómo apareció |
 | --- | --- | --- |
 | El vocabulario de períodos metía el cliente de PostgreSQL en el paquete del navegador | `lib/negocio/periodo.ts:25-34` | Lo rechazó `next build` |
-| La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:310-313` | Mirándola |
+| La columna del nombre medía **397 px** a 1280 y el rótulo quedaba a 400 px de su número | `app/inteligencia-estetica.css:310-313@1971ab2` | Mirándola |
 | A 400 px el panel seguía en dos columnas: la especificidad le ganaba al orden | `app/inteligencia-estetica.css:588-592@a39a732` | Mirándola a 400 px |
 | El precall decía el mismo número dos veces | `components/conversation/PanelDeConversation.jsx:774-776@6f3bdb5` | Mirándola |
 

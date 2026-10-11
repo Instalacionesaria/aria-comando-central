@@ -10,7 +10,7 @@
 //
 // Y una de las omitidas no era cosmética: `.csr-b{display:block;width:100%}` existe porque esa barra
 // es un `span`, así que **la barra de cobertura de Creative no se dibujaba**. El defecto está escrito
-// en el encabezado de `app/inteligencia-estetica.css` y se corrigió a mano.
+// en el encabezado de `app/inteligencia-estetica.css` —borrada el 2026-10-11— y se corrigió a mano.
 //
 // El 2026-09-21 volvió a estar a punto de pasar por quinta vez: al darle su panel a Sales, **65
 // reglas del vocabulario de tablero y 106 de las tablas no alcanzaban a `#v-sales`**. Esta prueba es

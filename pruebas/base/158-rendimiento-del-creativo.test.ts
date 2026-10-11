@@ -261,8 +261,8 @@ test('el desglose tiene su PROPIA fecha de inicio, y viaja como campo para que l
    * La columna `acciones` nació con la `053`, así que hay gasto de días que no tienen desglose. Una
    * pantalla que diga «30 días» mientras el hook rate habla de dos afirma algo falso.
    *
-   * Antes esto exigía que **el aviso** trajera la fecha. Y la pantalla ya la trae: el bloque de
-   * cobertura de `PanelDeCreative.jsx` arma la frase de las tres ventanas con `fechaCorta`. O sea
+   * Antes esto exigía que **el aviso** trajera la fecha. Y la pantalla ya la traía: el bloque de
+   * cobertura de `PanelDeCreative.jsx` —hasta el 2026-10-11— armaba la frase de las tres ventanas con `fechaCorta`. O sea
    * que el mismo hecho se dibujaba dos veces en la misma pantalla, una en `21 ago` y otra en
    * `2026-08-21` — dos formas del mismo dato se leen como dos datos. La prueba vieja **exigía el
    * defecto**, que es el modo de fallo más caro de una prueba.

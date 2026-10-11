@@ -5,7 +5,7 @@
    de `stat`, la tarjeta «Closers» con `col-head` y `row-i`, la de «Motivos de no venta» con `mini-bar`— y lo
    visten las reglas del prototipo, que siguen en `app/aios.css` y no se tocan: esa hoja tiene que seguir siendo
    comparable contra el HTML (docs/sales/15, S15-01). La sección no lleva `estetica-op`, y `#v-sales` salió de los
-   `:is()` de `app/inteligencia-estetica.css`.
+   `:is()` de `app/inteligencia-estetica.css`, que se borró el 2026-10-11, cuando Creative salió por el mismo camino.
 
    Lo de abajo es lo que el prototipo no tenía, o tenía en línea: las rejillas de las filas y el color del revenue
    (el prototipo los escribía en `style=`), la línea debajo de una cifra, la de un fallo y la de la primera carga,

@@ -122,12 +122,12 @@ apuntando a la lista real.
 
 ### C9-06 · El botón «Personalizado» y el `#crePill`
 
-`components/views/CreativeView.jsx:42-49`. Andamiaje, por el motivo de
+`components/views/CreativeView.jsx:42-49@1971ab2`. Andamiaje, por el motivo de
 `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26).
 
 ### C9-07 · El botón «Plan de acción»
 
-`components/views/CreativeView.jsx:24-29`. Andamiaje **mientras** once de las doce frases no tengan
+`components/views/CreativeView.jsx:24-29@1971ab2`. Andamiaje **mientras** once de las doce frases no tengan
 fuente. Ver `C6-08`.
 
 ---

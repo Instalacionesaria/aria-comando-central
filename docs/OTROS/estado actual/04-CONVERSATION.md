@@ -134,7 +134,7 @@ responde el agente.
 la confirmación es un campo del CRM. La de texto de Lead Flow publica la respuesta —respondieron sobre escritos—, con
 escritos, respondieron y agendaron debajo; la de Appointment Flow, la confirmación, con citas, confirmaron,
 reprogramaron y cancelaron (`lib/negocio/lecturaDeConversation.ts:265-291`). Las de voz no tienen dato
-(`lib/negocio/lecturaDeConversation.ts:199-205`). Las tarjetas no abren cajón (`app/conversation.css:88-89`).
+(`lib/negocio/lecturaDeConversation.ts:199-205`). Las tarjetas no abren cajón (`app/conversation.css:89-90`).
 
 **«Qué corregir · {N} por resolver»** cuenta patrones abiertos, uno por código como los agrupa Auditoría
 (`lib/negocio/lecturaDeConversation.ts:378-385`), sin ventana, como la pantalla del técnico. Sin auditoría no cuenta:
@@ -193,7 +193,7 @@ guardan la proporción (303 · 303 · 503 px contra 315 · 315 · 523, con 1144 
 las cadenas miden lo mismo (42 y 31 px contra 41 y 30) y los tamaños de letra son iguales. Los paneles miden 13 px
 más alto porque la línea de debajo de una cifra se parte en dos renglones, y el selector es más ancho porque tiene
 cuatro modos y cuatro períodos. A 1440, 1180, 1125 y 375 px, en los cuatro modos, nada desborda a lo ancho y ninguna
-cifra queda cortada; las reglas de los anchos están en `app/conversation.css:102-122`. Las pruebas: `pruebas/codigo/250-lectura-de-conversation.test.ts`,
+cifra queda cortada; las reglas de los anchos están en `app/conversation.css:103-123`. Las pruebas: `pruebas/codigo/250-lectura-de-conversation.test.ts`,
 `pruebas/base/250-lectura-de-conversation.test.ts` y `pruebas/codigo/251-la-pantalla-de-conversation.test.ts`.
 
 **Quién la ve.** Los 3 roles de producción llevaban `auditor.ver` el 2026-09-28; no re-medido. Editar un prompt pide

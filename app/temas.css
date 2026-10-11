@@ -777,7 +777,9 @@
   background: rgb(255 255 255 / 0.4);
 }
 
-/* El piso del contenedor de la media. **Hoy no lo lleva ningún elemento, y hay que decirlo así.**
+/* El piso del contenedor de la media. **Desde el 2026-10-11 lo llevan otra vez la tarjeta y la ficha de Creative**
+   (`components/creative/Miniatura.jsx`), con el degradado del prototipo como imagen encima (`.cr-fondo`,
+   `app/creative.css`). Lo que sigue es la historia de cuando no lo llevaba nadie.
 
    Esta nota decía que las dos pantallas que dibujan estos contenedores les ponen el degradado de la
    pieza en un `style` EN LÍNEA —`lib/aios/creative.js:178` y `lib/aios/conversion.js:433`— y que por
@@ -788,7 +790,7 @@
    `class=`: **`dw-video` y `cc-media` no las emite nadie**. O sea que la regla no está tapada por un
    estilo en línea: no tiene a quién aplicarse.
 
-   Se conserva, y no por inercia. Es una RED: el día que vuelva a dibujarse un contenedor de media
+   Se conservó, y no por inercia. Era una RED: el día que volviera a dibujarse un contenedor de media
    —el cajón de una pieza, una miniatura— sin degradado propio, sin esta línea sería transparente, y
    un contenedor de media transparente deja ver el panel: blanco en tema claro, que es de dónde vino
    todo esto. Lo que garantiza el contraste de los controles no es este piso: son sus velos. */

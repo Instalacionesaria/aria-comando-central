@@ -230,8 +230,8 @@ test('sin ningún veredicto, el aviso NO habla del umbral', async () => {
   assert.match(String(r.aviso), /1 de 1 pieza/, 'no dice cuántas piezas quedaron sin veredicto');
   /* ── Y DICE QUE NO SE LISTAN, PORQUE NO SE LISTAN ──────────────────────────
    *
-   * El aviso decía *«se muestra su conteo de días y no su tendencia»*. `PanelDeCreative` dibuja
-   * sólo las filas con `fatigado !== null`, así que esas piezas no aparecen en ninguna parte:
+   * El aviso decía *«se muestra su conteo de días y no su tendencia»*. `PanelDeCreative` dibujaba
+   * sólo las filas con `fatigado !== null` —y desde el 2026-10-11 no dibuja la tabla—, así que esas piezas no aparecen en ninguna parte:
    * medido el 2026-09-19, eran 21 de 26 que el lector iba a buscar y no iba a encontrar. */
   assert.match(String(r.aviso), /no se listan/, 'promete un listado que la pantalla no dibuja');
   /* Y el MOTIVO es el que corresponde al escenario —tres días contra los ocho que hacen falta—, no

@@ -136,7 +136,7 @@ cuatro ventanas fallan de maneras distintas y están medidas en `CV5-03`.
 
 Un `'2026-08-31'` literal en un módulo es una cifra medida que envejece sin que nada avise — el
 defecto que Creative pagó tres veces y documentó en
-`components/creative/PanelDeCreative.jsx:32-37`.
+`components/creative/PanelDeCreative.jsx:32-37@1971ab2`.
 
 **El requisito**: el corte se deriva del último día con `Form Landing VSL` escrito, y viaja en la
 respuesta:

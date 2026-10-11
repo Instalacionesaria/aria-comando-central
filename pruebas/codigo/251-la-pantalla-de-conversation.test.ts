@@ -349,9 +349,9 @@ test('lo nuevo vive en `app/conversation.css`, acotado; la estética de Intelige
   }
   assert.doesNotMatch(panel(), /style=\{\{ (color|background)/, 'un color en línea: va por una clase de `app/conversation.css`');
 
-  /* La estética de Inteligencia la repintaba: ninguna regla suya la alcanza. La de operación conserva sólo lo que
-     viste al supervisor (`aud-*`), y la de las señales, su tarjeta y su plan. */
-  assert.doesNotMatch(sinComentarios(leer('app/inteligencia-estetica.css')), /#v-conversation\b/, 'app/inteligencia-estetica.css alcanza a #v-conversation');
+  /* La estética de Inteligencia la repintaba, y desde el 2026-10-11 esa hoja no existe: el barrido de abajo vigila que
+     ninguna otra la alcance. La de operación conserva sólo lo que viste al supervisor (`aud-*`), y la de las señales,
+     su tarjeta y su plan. */
   const op = sinComentarios(leer('app/operacion-estetica.css'));
   for (const m of op.matchAll(/#v-conversation ([^{,]+)/g)) {
     assert.match(m[1]!, /^\.aud-/, `app/operacion-estetica.css tiene una regla para #v-conversation que no es del supervisor: ${m[0]}`);
