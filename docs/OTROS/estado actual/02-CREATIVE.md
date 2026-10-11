@@ -19,7 +19,7 @@ la ficha; debajo, «Lo demás, en cifras», con lo que la pantalla anterior med�
 sola lectura del servidor, `lecturaDeCreative`, con un piso en toda tasa, y cada «—» dice por qué en una línea: el resto
 lo explica el agente de Creative. Lo nuevo es la miniatura: GoHighLevel la da sólo pidiendo cada contacto por separado,
 y desde el 2026-10-11 una pasada de hasta 50 contactos corre cada diez minutos. Al medir ese día había **0 de 597**
-contactos con «Video Url»; cuántas miniaturas guardó la pasada después **no se midió**. El último día con impresiones de
+contactos con «Video Url»; esa noche la pasada llevaba 413 pedidos y **sólo 3 traían imagen, de una sola pieza** (riesgo 14). El último día con impresiones de
 Meta es el **2026-10-05**: hubo entrega después del 13 de septiembre que la foto anterior daba como el último, y el
 2026-10-11 ninguna pieza está «Entregando» (deducido: el estado mira los últimos 3 días).
 
@@ -510,8 +510,8 @@ distinta de la que dice «Sin miniatura todavía.», y nada cuenta cuántas fall
 Facebook» abre esa misma imagen y no la publicación (`lib/negocio/lecturaDeCreative.ts:272`,
 `lib/negocio/lecturaDeCreative.ts:287`).
 
-**14 · No se sabe cuánto completó la pasada.** **Nuevo.** Corre desde el 2026-10-11 en producción y nadie contó sus
-filas. Los contactos que sólo traen `mediumId` —la campaña de mensajes— también se piden
+**14 · La pasada trae muy pocas miniaturas.** **Nuevo.** Corre desde el 2026-10-11 en producción; medido el 2026-10-11 a las 22:10 UTC, con una lectura de sólo conteos y el OK del usuario: la pasada llevaba **413 contactos pedidos** en unas ocho corridas —406 devueltos, 7 no—, **159 pendientes**, y **sólo 3 con imagen**, los tres con «Video Url» en `www.facebook.com` y de **una sola pieza**; ninguna de más de 500 caracteres. Casi
+todas las piezas van a decir «Sin miniatura todavía.», y por qué GoHighLevel trae tan pocos «Video Url» no se midió. Los contactos que sólo traen `mediumId` —la campaña de mensajes— también se piden
 (`lib/negocio/miniaturaDelContacto.ts:76`), y el único de esa campaña que se pidió a mano el 2026-10-11 no traía las
 claves: si es la regla, cada uno cuesta un pedido y queda como «sin dato», una sola vez.
 

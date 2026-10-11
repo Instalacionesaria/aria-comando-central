@@ -73,6 +73,10 @@ Con tres llamadas `GET` a GoHighLevel, también con el OK del usuario, que impri
 **Consecuencia:** la miniatura necesita una pasada que complete la atribución con `GET /contacts/{id}`
 (`contactoPorId`, `lib/ghl/cliente.ts:545`). Es la decisión de la tabla de arriba.
 
+**La pasada, medida** (medido el 2026-10-11 a las 22:10 UTC, con una lectura de sólo conteos y el OK del usuario: la pasada llevaba **413 contactos pedidos** en unas ocho corridas —406 devueltos, 7 no—, **159 pendientes**, y **sólo 3 con imagen**, los tres con «Video Url» en `www.facebook.com` y de **una sola pieza**; ninguna de más de 500 caracteres). **El «Video Url» es raro**: GoHighLevel lo devuelve en muy pocos
+contactos, así que casi todas las piezas van a mostrar «Sin miniatura todavía.». Por qué tan pocos —si depende del tipo
+de anuncio, de la campaña o de la fecha— no se midió.
+
 ---
 
 ## 3 · Los requisitos
