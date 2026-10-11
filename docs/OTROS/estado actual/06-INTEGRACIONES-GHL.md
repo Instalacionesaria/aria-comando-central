@@ -330,7 +330,7 @@ contrato; lo que se comprobó es que nada de lo que estas rutas llaman pide la c
   sin red.
 
 El comparador que el proyecto guarda: la plataforma anterior corrió a ~7 peticiones por minuto y por
-pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:171-174`). Estamos un orden de
+pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:172-175`). Estamos un orden de
 magnitud por debajo, también con la tarea nueva.
 
 ---
@@ -481,7 +481,7 @@ están fuera y no hay forma de traerlos sin cambiar `carpetas_del_crm.grupo`. Pa
 negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:307`) resuelve un campo
 por su nombre **saltándose el filtro de carpetas**. El 2026-09-15 la usaban dos módulos; hoy seis:
 `lib/negocio/consumoDelPrecall.ts:159`, `lib/negocio/indicadoresDeCitas.ts:248`,
-`lib/negocio/calidadDelCreativo.ts:135`, `lib/negocio/embudoDelFormulario.ts:178`,
+`lib/negocio/calidadDelCreativo.ts:142`, `lib/negocio/embudoDelFormulario.ts:178`,
 `lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:212-214`. De los campos que se
 leen así, dos viven en carpetas sin grupo: «Confirmación Agendamiento»
 (`lib/negocio/indicadoresDeCitas.ts:208`) y «Form Landing VSL» (`lib/negocio/recorrido.ts:231`). El
@@ -816,7 +816,7 @@ desde el 14» no lo es: después del 17 no hay un cero que leer, hay silencio.
 **El vínculo con Meta se pregunta cada día y la respuesta no queda en ninguna parte.** El colector
 llama a `integracionDeAnuncios` al empezar para distinguir «Meta desconectado» de «no se invirtió»
 (`lib/negocio/recolectarAnuncios.ts:137-148@d17e029` y `lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), pero
-`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:835-925`) no lee `vinculo`,
+`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:840-935`) no lee `vinculo`,
 `negocio.tareas_programadas` no guarda el resumen, y ningún otro archivo lo nombra. Que hoy haya 79 filas por día es compatible con el vínculo
 activo —sin vínculo el proveedor devuelve vacío (`lib/ghl/anuncios.ts:246-248`)—; que esté
 `connected` no se pudo verificar desde la base.

@@ -140,6 +140,9 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
      existe y la lista tiene que traducirlas todas. */
   funnels_de_campana_org_id_fkey: 'tiene campañas asignadas a funnels en Acquisition',
   enlaces_de_pieza_org_id_fkey: 'tiene links cargados en las piezas de Creative',
+  /* Las miniaturas que se pidieron a GoHighLevel contacto por contacto (`077`). Se vuelven a pedir solas: es lo
+     mismo que los anuncios. */
+  miniaturas_del_contacto_org_id_fkey: 'tiene las miniaturas de los anuncios de sus contactos cargadas',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.
 

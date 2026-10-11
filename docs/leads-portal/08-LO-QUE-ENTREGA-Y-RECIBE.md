@@ -46,7 +46,7 @@ proveedor ni escribe en la base.
 ### LP08-02 · La frescura viaja con la cifra, porque la caída del 14 de septiembre es real
 
 **Rastro** · `frescuraDe` (`lib/negocio/frescura.ts:112`) sobre las tareas `'contactos'` y `'citas'`
-(`lib/negocio/barrido.ts:58-62`).
+(`lib/negocio/barrido.ts:59-63`).
 
 **Estado** · Las altas por semana fueron 117, 90, 53, 175 y 89 en las semanas que empiezan del 10 de
 agosto al 7 de septiembre, y **4 y 3 desde la del 14** (censo del 2026-09-26). Es real: se pausaron
@@ -131,11 +131,11 @@ pestaña publica tramos por persona. **Las dos cifras no se reconcilian, y ningu
 
 | | Creative | Leads Portal |
 |---|---|---|
-| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:209`) y entra al `avg` (`:218`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
-| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:62`, `:135`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:305`) |
-| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:228`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
+| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:216`) y entra al `avg` (`:218`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
+| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:63`, `:135`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:305`) |
+| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:238`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
 
-Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:59` y la
+Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:60` y la
 constante de `lib/ghl/contrato.ts:305` nombran el mismo identificador—. **El día que alguien renombre
 «Puntaje | ICP» en el CRM, Creative pierde el ICP y esta pestaña no**, y ninguna de las dos falla.
 

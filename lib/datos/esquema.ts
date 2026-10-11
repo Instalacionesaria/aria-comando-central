@@ -1264,6 +1264,22 @@ export interface TablaEnlacesDePieza {
   actualizado_por: string | null;
 }
 
+/**
+ * Lo que `GET /contacts/{id}` trae del anuncio de un contacto y `POST /contacts/search` no (migración 077). Una fila por
+ * contacto pedido, también sin dato: `encontrado = false` es un 404 del CRM. El único escritor es
+ * `lib/negocio/miniaturaDelContacto.ts`.
+ */
+export interface TablaMiniaturasDelContacto {
+  org_id: ColumnaInquilino;
+  contacto_id: string;
+  encontrado: boolean;
+  video_url: string | null;
+  photo_url: string | null;
+  post_id: string | null;
+  ig_sid: string | null;
+  leido_el: Generated<Date>;
+}
+
 export interface TablaEnlacesRapidos {
   id: Generated<string>;
   org_id: ColumnaInquilino;
@@ -1821,6 +1837,7 @@ export interface BaseDeDatos {
   funnels_de_campana: TablaFunnelsDeCampana;
   metricas_de_anuncio: TablaMetricasDeAnuncio;
   enlaces_de_pieza: TablaEnlacesDePieza;
+  miniaturas_del_contacto: TablaMiniaturasDelContacto;
   analizador_prospectos: TablaAnalizadorProspectos;
   analizador_llamadas: TablaAnalizadorLlamadas;
   analizador_transcripciones: TablaAnalizadorTranscripciones;

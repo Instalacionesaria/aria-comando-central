@@ -38,6 +38,7 @@ import { auditarEmpresa } from '../auditor/analisis.ts';
 import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
 import { sincronizarContactos } from './sincronizar.ts';
+import { completarMiniaturas } from './miniaturaDelContacto.ts';
 import { recolectarAnuncios } from './recolectarAnuncios.ts';
 import { rellenarAnuncios } from './rellenarAnuncios.ts';
 import { barrerCitas } from './citas.ts';
@@ -819,7 +820,11 @@ async function releerContactos(
   );
   // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle pone el texto genérico.
   if (r.tipo === 'fallo') throw new Error(`el CRM respondió ${r.fallo.tipo}`);
-  return { corrio: true, resultado: r.resumen, llamadas: r.resumen.llamadas };
+  /* La miniatura del anuncio de cada contacto, que la búsqueda no trae (CF1-11 de docs/creative/16): hasta 50
+     pedidos por pasada, una sola vez por contacto. Va después de sincronizar para pedir también los que acaban de
+     entrar, y sus llamadas se suman a las de la tarea. */
+  const miniaturas = await completarMiniaturas(orgId, acceso);
+  return { corrio: true, resultado: { ...r.resumen, miniaturas }, llamadas: r.resumen.llamadas + miniaturas.pedidos };
 }
 
 /**
@@ -891,6 +896,11 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
   if (Array.isArray(r.residuos) && r.residuos.length > 0) {
     partes.push(`${r.residuos.length} día(s) con gasto de la cuenta que ninguna campaña listada explica`);
   }
+
+  /* Las miniaturas de los contactos (CF1-11): un 429 o la credencial rechazada cortan la pasada, y lo que faltó se
+     pide en la siguiente. Sin esta línea el sello quedaba limpio sobre una pasada que no terminó. */
+  const mini = (r as { miniaturas?: { cortada?: unknown } }).miniaturas;
+  if (mini?.cortada === true) partes.push('GoHighLevel cortó la pasada de miniaturas: lo que faltó se pide en la siguiente');
 
   if (r.atrasado === true) partes.push('se agotó el presupuesto y quedaron días sin pedir');
   if (Array.isArray(r.huecos) && r.huecos.length > 0) {

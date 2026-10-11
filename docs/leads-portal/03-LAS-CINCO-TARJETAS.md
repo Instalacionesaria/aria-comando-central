@@ -134,8 +134,8 @@ la pantalla nueva no puede heredar sin querer.
   Si deja de valer 0, la pantalla lo avisa. Un cero nuevo querría decir que el CRM volvió a fallar,
   y esa falla se escondería dentro de una tarjeta que ya tiene gente. **Medido: 0.**
 - **La divergencia que hay que declarar:** el ICP promedio de Creative **sí** promedia los ceros. Su
-  filtro de «parece un número» (`lib/negocio/calidadDelCreativo.ts:209`) deja pasar el `0`, y el
-  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:218`). Las dos pantallas pueden
+  filtro de «parece un número» (`lib/negocio/calidadDelCreativo.ts:216`) deja pasar el `0`, y el
+  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:225`). Las dos pantallas pueden
   mostrar a los mismos contactos de forma distinta. Esta carpeta no lo arregla: lo dice en el matiz
   de la tarjeta y lo registra `14-EL-PUNTAJE-DEL-CRM.md`.
 

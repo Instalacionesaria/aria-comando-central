@@ -46,6 +46,7 @@ import { campoPorNombre } from './camposDelCrm.ts';
 import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
+import { UMBRAL_ALTO } from './tramosDelIcp.ts';
 
 /**
  * El nombre del campo del CRM que trae el puntaje de encaje.
@@ -79,6 +80,12 @@ export interface FilaDeCreativo {
   conPuntaje: number;
   /** `null` bajo el piso, o si el campo no está en el catálogo. Nunca cero. */
   icpPromedio: number | null;
+  /**
+   * Cuántos traen un puntaje de ICP alto —75 o más, el tramo «alto» de `tramoDelPuntaje`
+   * (`lib/negocio/tramosDelIcp.ts`)—: los «Calificados» del front del prototipo (docs/creative/16, CF1-06). Un
+   * conteo, sin piso.
+   */
+  calificados: number;
   agendaron: number;
   /** `null` bajo el piso. Nunca cero: sin base no hay tasa. */
   tasaDeAgenda: number | null;
@@ -216,6 +223,9 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
       sql<number>`count(*)`.as('contactos'),
       sql<number>`count(*) filter (where ${numerico})`.as('conPuntaje'),
       sql<number | null>`avg((${puntaje})::numeric) filter (where ${numerico})`.as('icp'),
+      /* El `case` y no un `and` en el `filter`: PostgreSQL no promete evaluar el `~` antes que el `::numeric`, y un
+         texto en el campo lanzaría `22P02` y se llevaría la consulta entera. Ver el comentario de arriba. */
+      sql<number>`count(*) filter (where (case when ${numerico} then (${puntaje})::numeric end) >= ${UMBRAL_ALTO})`.as('calificados'),
       /* El MISMO `exists` con `ghl_calendario_id` que `costoDelAnuncio.ts:350-353` y que
          `atribucionDelLead`. Tiene que ser el mismo, o las filas de este corte no sumarían la cifra
          grande de al lado y nadie tendría cómo saber cuál de las dos está mal.
@@ -245,6 +255,7 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
            sobre los que traen el campo y la tasa se calcula sobre todos los contactos, así que son
            dos denominadores distintos y cada uno responde por el suyo. */
         icpPromedio: conPuntaje >= PISO_DE_UNA_TASA && f.icp !== null ? Number(f.icp) : null,
+        calificados: Number(f.calificados ?? 0),
         agendaron,
         tasaDeAgenda: contactos >= PISO_DE_UNA_TASA ? agendaron / contactos : null,
         anunciosDeMeta: f.creativo === null ? 0 : (anuncios.get(f.creativo) ?? 0),

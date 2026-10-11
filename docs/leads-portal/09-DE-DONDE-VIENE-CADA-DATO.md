@@ -292,7 +292,7 @@ select jsonb_object_agg(t, n) from (
   `enCero` (47). Y viaja `cerosRecientes`, que hoy vale 0: si aparece un cero en los últimos 14 días,
   la pantalla avisa, porque entonces el grupo dejó de ser el lote cerrado de agosto.
 - La divergencia con Creative **se declara**: su ICP promedio por pieza sí promedia los ceros
-  (`lib/negocio/calidadDelCreativo.ts:218`). Las dos cifras están bien por separado y miden cosas
+  (`lib/negocio/calidadDelCreativo.ts:225`). Las dos cifras están bien por separado y miden cosas
   distintas; lo que no puede pasar es que alguien las compare sin saberlo. El detalle, en
   `14-EL-PUNTAJE-DEL-CRM.md`.
 

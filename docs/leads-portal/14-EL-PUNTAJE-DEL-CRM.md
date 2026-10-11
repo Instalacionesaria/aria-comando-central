@@ -78,7 +78,7 @@ Hay dos caminos para leer el puntaje, y hoy dan lo mismo:
 | quién | de dónde | cómo encuentra el campo | qué acepta |
 |---|---|---|---|
 | sincronización → `contactos.score` | la columna | por identificador (`lib/ghl/contrato.ts:305`) | entero 0-100 (`lib/negocio/sincronizar.ts:524-530`) |
-| Creative | el `jsonb` | por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:62`, `:135`) | cualquier número, decimales incluidos (`lib/negocio/calidadDelCreativo.ts:205-209`) |
+| Creative | el `jsonb` | por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:63`, `:135`) | cualquier número, decimales incluidos (`lib/negocio/calidadDelCreativo.ts:212-216`) |
 
 Coinciden porque la columna, que sólo acepta enteros de 0 a 100 (`lib/negocio/sincronizar.ts:524-530`),
 tenía el 2026-09-27 los mismos 471 valores que el `jsonb` tenía el 2026-09-21
@@ -196,7 +196,7 @@ La maqueta rotula las tarjetas «Calificado alto», «Calificado medio» y **«N
 | **60** | el techo del rechazo: el 2026-09-16 la casa no rechazaba por ICP a nadie de 60 o más (0 de 67), y el máximo rechazado era 59 | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:525-541` |
 | **75** | donde saltaba el agendamiento: 75,7 % en el tramo alto contra ~51-53 % en medio y bajo | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:543-555` |
 | **80** | una frase inventada del Plan de acción: «Prioriza el contacto inmediato con ICP sobre 80» | `aios-command-center_1.html:5722` |
-| ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:218` |
+| ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:225` |
 
 El de 80 no es un requisito: es una de las frases del Plan de acción, cuyo censo está en
 `07-EL-PLAN-DE-ACCION.md`. La frase de al lado —«el ICP alto es el 22 % del volumen pero produce el
@@ -296,7 +296,7 @@ Tres lecturas, las tres requisitos:
 ### LP14-12 · Creative promedia el cero; esta pestaña lo aparta
 
 Creative publica un **ICP promedio por pieza** que promedia todos los valores numéricos, **ceros
-incluidos** (`lib/negocio/calidadDelCreativo.ts:217-218`), y dibuja al lado el `n` de los que tienen
+incluidos** (`lib/negocio/calidadDelCreativo.ts:224-225`), y dibuja al lado el `n` de los que tienen
 puntaje, que también los incluye (`components/creative/PanelDeCreative.jsx:390-391`). Esta pestaña no
 promedia: clasifica, y el 0 va a «Sin calificar».
 

@@ -74,7 +74,7 @@ foto anterior, `Downloads\AIOS\AIOS_Arquitectura_Funcional_v0.2.md`, ya no exist
 - **Diez pendientes técnicos (§ 18.19)** (`docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:189-202`).
   Contra el código de hoy: el 1 (confirmar campos) está medido uno por uno en
   `lib/ghl/anuncios.ts:62-74`; el 2 (frecuencia) es una pasada diaria a las 06:17 UTC con relectura
-  de dos días (`lib/negocio/barrido.ts:251-255`, `lib/negocio/recolectarAnuncios.ts:61`); el 3
+  de dos días (`lib/negocio/barrido.ts:252-256`, `lib/negocio/recolectarAnuncios.ts:61`); el 3
   (guardar por día) es `negocio.metricas_de_anuncio`, con llave `(org_id, meta_anuncio_id, fecha)`
   (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:230-232`); el 5 (UTM) lo mide el monitor, con
   el defecto del § 7, riesgo 3; el 6 y el 7 están medidos en la pantalla, salvo las ventas, que no
@@ -252,7 +252,7 @@ valores; el 2026-09-18 estaba en 2 de 79 (`be7ef03`: 77 de 79, vacío) y desde e
 sistema lee esa columna**: `grep` en `lib/`, `app/` y `components/` sólo da su escritura y su tipo.
 
 **El colector.** La tarea `anuncios` selló el 2026-09-28 a las 06:20 UTC `corrio`, **40 llamadas**,
-motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:897`); las otras
+motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:907`); las otras
 diez organizaciones, `saltada · sin_token`. La última lectura de una fila es de las 06:20:13. Que los
 tres pares sean los tres días de `888888`, el valor de prueba que devuelve HTTP 500
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:32-35`), es lo esperable, **no verificado**: el
@@ -481,11 +481,11 @@ líneas 277-280, que son la cohorte vieja: el párrafo del ad set es el que sigu
 contando «cuatro días… 52 llamadas» cuando la relectura bajó a dos días y 39 llamadas
 (`lib/negocio/recolectarAnuncios.ts:61`, `:78-79`);
 `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` pone el cron a las 17:06 UTC y es a las
-06:17 (`lib/negocio/barrido.ts:228`). `lib/negocio/costoDelAnuncio.ts:451-452` justifica el umbral de
+06:17 (`lib/negocio/barrido.ts:229`). `lib/negocio/costoDelAnuncio.ts:451-452` justifica el umbral de
 dos días con que «el colector pide hoy y los tres anteriores», y pide hoy y los dos anteriores.
 
 Seis citas a `costoDelAnuncio.ts` desde otros módulos quedaron corridas (se da la línea que citan
-de ese archivo y dónde está hoy lo citado): `lib/negocio/calidadDelCreativo.ts:162`,
+de ese archivo y dónde está hoy lo citado): `lib/negocio/calidadDelCreativo.ts:169`,
 `lib/negocio/rendimientoDelCreativo.ts:116` y `:231` mandan a la 157-164 por el defecto de grano,
 que está en `costoDelAnuncio.ts:192-201`; `lib/negocio/fatigaDelCreativo.ts:7` manda a la 88-95 por
 el alcance, que está en `costoDelAnuncio.ts:116-126`; `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, en el CV-1 de Conversion: el comentario ya no cita la línea de la ventana— a la 357

@@ -129,14 +129,14 @@ orden (`components/creative/PanelDeCreative.jsx:181-193`):
 
 | módulo | qué publica | grano | piso |
 |---|---|---|---|
-| `lib/negocio/calidadDelCreativo.ts` | ICP promedio y tasa de agenda | contacto, por (pieza, etapa) | 10 sobre cada denominador (`lib/negocio/calidadDelCreativo.ts:244-249`) |
+| `lib/negocio/calidadDelCreativo.ts` | ICP promedio y tasa de agenda | contacto, por (pieza, etapa) | 10 sobre cada denominador (`lib/negocio/calidadDelCreativo.ts:254-260`) |
 | `lib/negocio/rendimientoDelCreativo.ts` | gasto, impresiones y clics consumidos de `costoDelAnuncio` y sumados por pieza, y sobre esas sumas el CTR, recalculado con su propio piso (`lib/negocio/rendimientoDelCreativo.ts:314-354`); hook rate, link CTR, landing page view rate, click-to-landing, interacción | anuncio-día sumado por pieza | 1.000 impresiones (`lib/negocio/rendimientoDelCreativo.ts:66`); 10 clics al enlace para el click-to-landing |
 | `lib/negocio/fatigaDelCreativo.ts` | caída relativa del CTR entre dos mitades de la serie | día de calendario por pieza | 8 días (`lib/negocio/fatigaDelCreativo.ts:53`) y 1.000 impresiones por mitad |
 | `lib/negocio/creativo.ts` | la llave `lower(btrim(nombre))` y la etapa leída del nombre de campaña | — | — |
 
 **Las ventanas.** Los cuatro botones salen de `PERIODOS` (`lib/negocio/periodo.ts:83-96`). Las tres
 consultas anclan la ventana **al día de calendario** y no a 24 horas: los contactos con
-`alta_en_el_crm >= current_date - (días - 1)` (`lib/negocio/calidadDelCreativo.ts:228`) y las
+`alta_en_el_crm >= current_date - (días - 1)` (`lib/negocio/calidadDelCreativo.ts:238`) y las
 métricas con `fecha > current_date - días` (`lib/negocio/costoDelAnuncio.ts:83-85`), por el motivo
 que explica `lib/negocio/costoDelAnuncio.ts:35-66`.
 
@@ -152,7 +152,7 @@ que explica `lib/negocio/costoDelAnuncio.ts:35-66`.
     —      (sin creativo)                     19      15 · 79 %     65,7 (14)        —
 
 Las otras nueve filas tienen de 1 a 8 contactos y salen con conteo y sin tasa, y el aviso lo dice
-(`lib/negocio/calidadDelCreativo.ts:373-381`). Las cuatro con nombre dan **lo mismo que el
+(`lib/negocio/calidadDelCreativo.ts:384-392`). Las cuatro con nombre dan **lo mismo que el
 2026-09-19** (`8a117cb`): no entró nadie nuevo que cambie sus cifras.
 
 **Factor 2,4 entre el ICP más bajo y el más alto** (29,2 contra 71,0). La foto anterior lo midió a
@@ -210,7 +210,7 @@ existe y sus líneas están en el historial de git. Lo que cada cosa fue, y lo q
 |---|---|
 | ocho piezas con nombre, formato, ángulo, dolor y siete métricas | las 32 piezas reales de 79 anuncios, por nombre normalizado |
 | seis cifras de cabecera | el bloque de cobertura: el puente, las dos ventanas y el aviso |
-| cinco criterios de orden elegibles | orden fijo: por volumen la calidad (`lib/negocio/calidadDelCreativo.ts:253-255`), por gasto la subasta (`lib/negocio/rendimientoDelCreativo.ts:360`); el criterio elegible no se construyó |
+| cinco criterios de orden elegibles | orden fijo: por volumen la calidad (`lib/negocio/calidadDelCreativo.ts:264-266`), por gasto la subasta (`lib/negocio/rendimientoDelCreativo.ts:360`); el criterio elegible no se construyó |
 | la partición «Funciona / No funciona» por el promedio | borrada: con etapas mezcladas mandaba a pausar a las TOFU (`components/views/CreativeView.jsx:34-37`); hoy hay una tabla por etapa y ningún corte |
 | la curva de retención y el guion con líneas rojas | **borrados sin reemplazo**, y es el único requisito que se borró en vez de postergarse (`components/views/CreativeView.jsx:27-33`) |
 | el «Plan de acción», doce frases | borrado: diez no tenían fuente (`components/views/CreativeView.jsx:19-23`). Volvió con AG10 de los agentes, con las cuatro frases medidas del detector (`docs/OTROS/agentes/fichas/F06-CREATIVE-INSIGHTS.md`) |
@@ -282,7 +282,7 @@ ventana de 30 días son 134 filas: 91,0 %, 70,9 %, 64,9 % y 91,8 %.
 
 **La pauta está sin entrega desde el 2026-09-14.** Por semana: 60 filas con impresiones la del 7 de
 septiembre, **cero** las del 14, el 21 y el 28, con el colector escribiendo todos los días (última
-pasada el 2026-09-28 06:20 UTC, la tarea diaria de `lib/negocio/barrido.ts:251-255`). Los contactos
+pasada el 2026-09-28 06:20 UTC, la tarea diaria de `lib/negocio/barrido.ts:252-256`). Los contactos
 nuevos caen igual: 89 la semana del 7, 4, 3 y 1 después. Es consistente con que la pauta se apagó y
 no con una ingesta rota —el barrido de contactos también corre—, lo mismo que midió Conversion
 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:178-191`). **No verificado contra la
@@ -290,7 +290,7 @@ cuenta publicitaria**: por qué se apagó no está en esta base.
 
 **3 · El ICP por contacto.** «Puntaje | ICP» es número en **271 de 276** (98,2 %); 22 de esos valen
 exactamente 0. Desde la `055` (2026-09-21) el mismo puntaje se copia a `contactos.score`, que está en
-270 de 276. Creative lee el campo del CRM por su nombre exacto (`lib/negocio/calidadDelCreativo.ts:62`);
+270 de 276. Creative lee el campo del CRM por su nombre exacto (`lib/negocio/calidadDelCreativo.ts:63`);
 Leads Portal lee la columna. El 2026-09-15 la columna estaba en 0 de 233.
 
 **4 · Las agendas por pieza.** Cruce por `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`),
@@ -377,10 +377,10 @@ Agrupar por anuncio haría desaparecer la etapa de mejor ICP (71,0) y mejor agen
 son 32 piezas y 21 corren en más de uno, hasta seis (medido hoy). Un ranking por anuncio partiría la
 pieza en filas con una fracción de su gente cada una. La columna «Anuncios» es además la única
 mitigación de que dos piezas distintas con el mismo nombre se fundan
-(`lib/negocio/calidadDelCreativo.ts:85-93`).
+(`lib/negocio/calidadDelCreativo.ts:92-100`).
 
 **3 · TOFU y BOFU no se comparan, en ninguna cifra de conversión.** En código: se agrupa por (pieza,
-etapa) (`lib/negocio/calidadDelCreativo.ts:231`) y se dibuja una tabla por etapa
+etapa) (`lib/negocio/calidadDelCreativo.ts:241`) y se dibuja una tabla por etapa
 (`components/creative/PanelDeCreative.jsx:307-347`). Re-medido: BOFU 78 % de agenda, TOFU de 31 % a
 43 %; el 2026-09-15 eran 83,9 % contra 36,8-45,7 %. La etapa se lee del segmento del nombre de
 campaña, y lo que no trae segmento es un grupo aparte, no una etapa forzada
@@ -407,7 +407,7 @@ el nombre (el 2026-09-15, 85 contra 220, 2,6 veces).
 
 **7 · El piso y la ventana son los del proyecto — y el sesgo de la ventana es de las CITAS, no de los
 CONTACTOS.** `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`) rige cada denominador
-por separado (`lib/negocio/calidadDelCreativo.ts:244-249`); `DIAS_DE_LA_TASA = 14`
+por separado (`lib/negocio/calidadDelCreativo.ts:254-260`); `DIAS_DE_LA_TASA = 14`
 (`lib/negocio/indicadoresDeCitas.ts:339`) es sólo el valor por omisión de los módulos, porque la ruta
 siempre pasa el período.
 
@@ -422,8 +422,8 @@ siempre pasa el período.
   distintos y 6 sobre el piso. **El 2026-09-28**: 14 días → 8 contactos y ninguna pieza sobre el
   piso; 30 días → 12 nombres y 4 piezas más «sin creativo» sobre el piso.
 - **La condición para una ventana ancha en una cifra de citas** se cumple: las congeladas viajan en
-  la misma pasada (`lib/negocio/calidadDelCreativo.ts:137-142`) y se dicen con el texto de
-  `tasaDeCancelacion` (`lib/negocio/calidadDelCreativo.ts:363-371`,
+  la misma pasada (`lib/negocio/calidadDelCreativo.ts:144-149`) y se dicen con el texto de
+  `tasaDeCancelacion` (`lib/negocio/calidadDelCreativo.ts:374-382`,
   `lib/negocio/indicadoresDeCitas.ts:546-548`).
   El módulo las cuenta sobre la cohorte de contactos, no por fecha de cita: 1 de 156 hoy.
 
@@ -447,7 +447,7 @@ cruzar contactos con `negocio.citas` con un `left join` y contar con `count(*)` 
 «agendamiento - yaping» de 109 a 112 y «Evoluciona native» de 31 a 36, porque hay contactos con más
 de una cita.
 Hoy se cuenta con un `exists` compartido, `tieneCitaAlcanzable`, y no con un `join`
-(`lib/negocio/calidadDelCreativo.ts:225`, `lib/negocio/citasAlcanzables.ts:116-145`).
+(`lib/negocio/calidadDelCreativo.ts:235`, `lib/negocio/citasAlcanzables.ts:116-145`).
 
 ---
 
@@ -464,7 +464,7 @@ desaparece y la cohorte baja a la decena. Es la distinción que Conversion ya pi
 no es «no hay dato» (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:190-191`).
 
 **2 · El mismo ICP se lee distinto en dos pantallas construidas.** Creative promedia los ceros como
-ceros (`lib/negocio/calidadDelCreativo.ts:209`, `lib/negocio/calidadDelCreativo.ts:218`); Leads
+ceros (`lib/negocio/calidadDelCreativo.ts:216`, `lib/negocio/calidadDelCreativo.ts:225`); Leads
 Portal cuenta el 0 como «sin calificar» desde el 2026-09-26 (`lib/negocio/tramosDelIcp.ts:85-86`,
 `lib/negocio/leadsDelPortal.ts:287`). Medido: 22 ceros en la cohorte de 30 días, **18 de ellos en
 «agendamiento - yaping»**, que da ICP 42,7 con ceros y 50,8 sin ellos — y con eso el orden de TOFU
@@ -490,8 +490,8 @@ la aplicación no la verifiqué. Además Leads Portal arma su «30 días» con `
 etiqueta.
 
 **5 · La ventana de la cohorte está escrita cuatro veces en `calidadDelCreativo`.** Las líneas
-`lib/negocio/calidadDelCreativo.ts:228`, `lib/negocio/calidadDelCreativo.ts:266`,
-`lib/negocio/calidadDelCreativo.ts:283` y `lib/negocio/calidadDelCreativo.ts:330` repiten a mano el
+`lib/negocio/calidadDelCreativo.ts:238`, `lib/negocio/calidadDelCreativo.ts:277`,
+`lib/negocio/calidadDelCreativo.ts:294` y `lib/negocio/calidadDelCreativo.ts:341` repiten a mano el
 predicado que `lib/negocio/recorrido.ts:201-203` exporta —su comentario lo llamaba «un solo lugar» (`lib/negocio/recorrido.ts:187@210ac73`), y desde el 2026-10-08 dice que las dos lo copian—, y `costoDelAnuncio`
 suma dos más (`lib/negocio/costoDelAnuncio.ts:355` sus leads, `lib/negocio/costoDelAnuncio.ts:377` su
 cobertura de `adId`). Hoy son idénticas; si una cambia, la misma etiqueta cubrirá dos ventanas distintas.

@@ -35,7 +35,7 @@ la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volume
 | lugar del prototipo | dato | fuente | estado |
 |---|---|---|---|
 | Encabezado: «Creative», «Qué funciona, qué no, y por qué», «Plan de acción», el segmentado | el título, la bajada, el plan real del detector y los cuatro períodos | `BotonDelPlan`, `lib/negocio/periodo.ts` | real |
-| Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:130`) más el tramo | real |
+| Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:137`) más el tramo | real |
 | Tira: Agendas | contactos que agendaron | `calidadDelCreativo` | real |
 | Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:318`) | real |
 | Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:143`) | «—» |
@@ -99,7 +99,8 @@ en línea del prototipo (`aios-command-center_1.html:558-985`), con los colores 
 | situación | texto |
 |---|---|
 | cifra o tasa sin dato | «—» |
-| una tasa sobre contactos con menos de 10 | «Pocos casos para una tasa.» |
+| el click-to-landing con menos de 10 clics al enlace | «Pocos casos para una tasa.» |
+| una acción que GoHighLevel nunca reportó para la pieza (vistas de video en una imagen, la frecuencia sin alcance) | «GoHighLevel no lo reportó.» |
 | una tasa sobre impresiones con menos de 1000 | «Pocas impresiones para una tasa.» |
 | una pieza sin impresiones en la ventana | «Sin entrega en esta ventana.» |
 | lo que GoHighLevel no entrega: la retención, el formato, el ángulo, la duración, el dolor, el guion | «GoHighLevel no lo entrega.» |
@@ -140,7 +141,7 @@ segmentado con los cuatro períodos del sistema, sin «Personalizado» ni la cla
 (`current_date`), como hoy. Toda tasa lleva su piso: 10 contactos (`PISO_DE_UNA_TASA`) o 1000 impresiones
 (`PISO_DE_IMPRESIONES`, `lib/negocio/rendimientoDelCreativo.ts:66`). Bajo el piso, «—» con su frase.
 
-**Estado** · Por construir (CF-1).
+**Estado** · Construido el 2026-10-11 (CF-1): `sobreImpresiones` de `lib/negocio/lecturaDeCreative.ts`.
 
 ### CF1-05 · Sin párrafos en la pantalla
 
@@ -158,11 +159,11 @@ Frecuencia. Las dos primeras son sumas; Hook rate y Frecuencia, el promedio pesa
 de los promedios; Retención, «—». La celda del criterio de orden elegido lleva la marca `.hi` del prototipo.
 
 **Fórmula** · Calificados: los contactos de la pieza con `tramoDelPuntaje` alto, sobre el mismo puntaje que lee
-`calidadDelCreativo` (el campo «Puntaje | ICP», `CAMPO_DE_ICP`, `lib/negocio/calidadDelCreativo.ts:62`). Hook rate: la
+`calidadDelCreativo` (el campo «Puntaje | ICP», `CAMPO_DE_ICP`, `lib/negocio/calidadDelCreativo.ts:63`). Hook rate: la
 suma de `videoView` sobre la suma de impresiones de los anuncio-días con la clave. Frecuencia: impresiones sobre
 alcance, pesada por impresiones como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:129-150`).
 
-**Estado** · Por construir (CF-1, CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
 
 ### CF1-07 · Ordenar por
 
@@ -172,7 +173,7 @@ Retención no ordena: no tiene dato. Al lado, «{N} piezas · {período}».
 **Fórmula** · El servidor arma, para cada criterio, los dos grupos y su orden; el navegador elige cuál dibujar y **no
 ordena nada**.
 
-**Estado** · Por construir (CF-1, CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
 
 ### CF1-08 · «Funciona» y «No funciona», contra la etapa
 
@@ -184,7 +185,7 @@ mayor a menor.
 para las tasas, y el simple para los conteos. Una etapa con una sola pieza no tiene contra quién compararse: la pieza va
 a «Funciona» con la línea «Única de su etapa.» —frase que entra a CF1-02 si se confirma la pregunta `CF1-P03`—.
 
-**Estado** · Por construir (CF-1).
+**Estado** · Construido el 2026-10-11 (CF-1): `agrupar`, en `lib/negocio/lecturaDeCreative.ts`, arma los dos grupos de cada criterio con su promedio por etapa y las piezas únicas de su etapa.
 
 ### CF1-09 · La tarjeta de pieza
 
@@ -195,7 +196,7 @@ cuando la fatiga tiene veredicto y la pieza está fatigada. Al tocarla se abre l
 **Fórmula** · «Entregando»: la pieza tuvo impresiones en alguno de los últimos 3 días. La fatiga sale de
 `fatigaDelCreativo` (`lib/negocio/fatigaDelCreativo.ts:131`): `fatigado === true`.
 
-**Estado** · Por construir (CF-1, CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
 
 ### CF1-10 · La ficha de la pieza
 
@@ -213,7 +214,7 @@ secciones:
 Conserva lo que la ficha de hoy ya resuelve: el portal en `document.body`, el foco y Escape
 (`components/creative/FichaDelCreativo.jsx`).
 
-**Estado** · Por construir (CF-1, CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
 
 ### CF1-11 · Completar la atribución
 
@@ -225,7 +226,12 @@ se intentaron todavía; **hasta 50 por pasada**, primero los más recientes; sin
 contacto que GoHighLevel no devuelve se marca para no volver a pedirlo en cada pasada. Ninguna llamada real en la suite:
 la prueba simula el cliente.
 
-**Estado** · Por construir (CF-1). Se activa al subir, con el OK del usuario.
+**Estado** · Construido el 2026-10-11 (CF-1): `lib/negocio/miniaturaDelContacto.ts` (`completarMiniaturas`), colgado de la
+tarea `contactos` del barrido (`lib/negocio/barrido.ts`), que corre cada diez minutos. Lo que vuelve se guarda en
+`negocio.miniaturas_del_contacto` —migración `077`— y no en `atribucion_primera`, porque la sincronización la pisa en cada
+pasada. Un 429 o una credencial rechazada cortan la pasada, y el sello de la tarea lo dice. Prueba
+`pruebas/base/253-la-miniatura-del-contacto.test.ts`, con GoHighLevel simulado. **Se activa al subir, con el OK del
+usuario, y la `077` va a producción antes del push.**
 
 ### CF1-12 · La miniatura
 
@@ -237,14 +243,15 @@ lista de hosts de `lib/negocio/urlExterna.ts` (`enlaceDePublicacion`, `:82`); un
 navegador, `<img>` con `referrerPolicy="no-referrer"` y `loading="lazy"`; si la imagen no carga, el fondo del
 prototipo, sin romper la tarjeta.
 
-**Estado** · Por construir (CF-1, CF-3). Depende de CF1-11.
+**Estado** · La elección, construida el 2026-10-11 (CF-1): `miniaturasDeLasPiezas`, en `lib/negocio/miniaturaDelContacto.ts`. El
+dibujo, por construir (CF-3).
 
 ### CF1-13 · Lo demás, en cifras
 
 **Qué es** · Lo que la pantalla de hoy mide y el prototipo no tenía, en una fila de cifras debajo de los grupos: el
 gasto total, el CTR, el link CTR, la landing y las piezas perdiendo gancho sobre las que tienen veredicto.
 
-**Estado** · Por construir (CF-1, CF-3).
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, por construir (CF-3).
 
 ### CF1-14 · El plan de acción y las señales
 
@@ -262,7 +269,11 @@ arma, **de 0 a 1**, con el motivo de cada «—». Tiene una mitad pura, probada
 `lib/negocio/lecturaDeConversation.ts`. La ruta `app/api/creative/route.ts` suma `pantalla`; los bloques de hoy siguen
 viajando. El navegador multiplica por 100 en un solo lugar.
 
-**Estado** · Por construir (CF-1, CF-2).
+**Estado** · La lectura, construida el 2026-10-11 (CF-1): `lib/negocio/lecturaDeCreative.ts`, con `armarCreative` pura y `entregaDeLasPiezas`, que
+lee la entrega de cada pieza —impresiones, clics y acciones de la ventana sobre los anuncio-día con cada clave, la
+frecuencia pesada, la etapa de la campaña con más impresiones y los días con entrega de toda la historia—. Los
+calificados salen de `calidadDelCreativo` (`calificados`). Pruebas `pruebas/codigo/252-lectura-de-creative.test.ts` y
+`pruebas/base/252-lectura-de-creative.test.ts`. La ruta, por construir (CF-2).
 
 ### CF1-16 · El cerebro lee lo mismo
 
@@ -311,7 +322,7 @@ a lo ancho.
 | etapa | qué | estado |
 |---|---|---|
 | CF-0 | Esta carpeta al día, `docs/OTROS/futuro/lo-que-creative-no-mide.md` y la medición de producción con el OK del usuario | **hecho el 2026-10-11** |
-| CF-1 | El servidor: `lecturaDeCreative`, los calificados por pieza, la miniatura y la pasada que completa la atribución | por hacer |
+| CF-1 | El servidor: `lecturaDeCreative`, los calificados por pieza, la miniatura y la pasada que completa la atribución | **hecho el 2026-10-11**: pruebas 252 (código y base) y 253; 26 mutaciones muertas; la `077` |
 | CF-2 | La ruta y el cerebro sobre la lectura | por hacer |
 | CF-3 | El front sobre el marcado del prototipo, `app/creative.css`, y `app/inteligencia-estetica.css` borrada | por hacer |
 | CF-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
