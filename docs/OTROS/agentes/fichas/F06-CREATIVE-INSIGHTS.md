@@ -14,7 +14,7 @@
 
 ## Qué lee
 
-Lo mismo que su pantalla, con los mismos argumentos (`lib/negocio/lecturaDeCreative.ts:423-425`, la lectura de la ruta): la calidad, el
+Lo mismo que su pantalla, con los mismos argumentos (`lib/negocio/lecturaDeCreative.ts:439-441`, la lectura de la ruta): la calidad, el
 rendimiento y la fatiga de cada pieza, sobre los mismos días que la pantalla. Esas ventanas llegan hasta hoy
 —`ventanaDeMetricas` y la cohorte de contactos— y no son de días cerrados como las de Acquisition: una señal
 calculada sobre otra ventana diría otra cifra que la que se ve.

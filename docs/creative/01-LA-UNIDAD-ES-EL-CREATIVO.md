@@ -11,9 +11,10 @@
 > 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
 > cosa**, que es peor: una línea corrida no falla.
 >
-> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> Hasta el 2026-10-11 `components/creative/PanelDeCreative.jsx` dibujaba tres bloques medidos: el ICP y la
 > agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
-> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`). Desde ese día la pestaña es el front del
+> prototipo con los datos de `lib/negocio/lecturaDeCreative.ts` (`16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 
 > Requisitos derivados del prototipo (`lib/aios/creative.js`) y de las diez reglas propias (once desde el corte
 > del 2026-09-28) de `docs/OTROS/estado actual/02-CREATIVE.md` § 6, con las mediciones nuevas del 2026-09-18

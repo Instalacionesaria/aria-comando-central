@@ -73,11 +73,12 @@
    la media (`--velo-medio`) que garantiza el contraste sobre cualquier imagen, en los dos temas. Una regla con
    `#v-creative` le ganaría por especificidad —están en la misma capa— y volvería el 1,01:1 que ese velo arregló. */
 #v-creative .cc-status { position: absolute; top: 9px; right: 9px; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 6px; }
-/* «Perdiendo gancho», donde el prototipo ponía el puntaje: arriba a la izquierda, con el mismo velo que el estado y un
-   borde en el color de lo que avisa — el texto en ese color, sobre una imagen, no tiene contraste garantizado. */
+/* «Perdiendo gancho», donde el prototipo ponía el puntaje: arriba a la izquierda, con el mismo velo que el estado y el
+   ámbar fijo de lo que va sobre la media (`--warn-medio`, `temas.css`): el `--warn` del tema claro es un ámbar oscuro,
+   y sobre el velo negro no se veía. */
 #v-creative .cr-gancho {
-  position: absolute; top: 9px; left: 9px; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 6px;
-  background: var(--velo-medio); color: var(--sobre-medio); border: 1px solid rgb(var(--c-warn) / .7);
+  position: absolute; top: 9px; left: 9px; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
+  background: var(--velo-medio); color: var(--warn-medio);
 }
 #v-creative .cc-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
 #v-creative .cc-name {
@@ -140,14 +141,14 @@
   background: transparent; border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px;
 }
 .cr-ficha .cr-input:focus-visible { outline: 2px solid rgb(var(--c-acento) / .55); outline-offset: 1px; }
-.cr-ficha .cr-error { font-size: 11.5px; color: var(--warn); }
+.cr-ficha .cr-error { font-size: 11.5px; color: var(--crit); }
+/* La línea de un «—» del veredicto, debajo de la píldora. */
+.cr-ficha .cr-cabeza > .cr-motivo { margin-top: 4px; font-size: 10.5px; color: var(--txt-faint); }
 
 /* ── LOS ANCHOS (CF1-18) ─────────────────────────────────────────────────── */
 
-@media (max-width: 1180px) {
-  #v-creative .cre-stats,
-  #v-creative .cre-stats.cr-cinco { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
+/* Sin el paso a tres columnas en 1180 px: en el prototipo la tira lleva `.even`, que le gana a su propio `@media`, y
+   sigue de a seis hasta el teléfono. */
 @media (max-width: 760px) {
   #v-creative .cre-head .ch-r { width: 100%; flex-wrap: wrap; }
   #v-creative .db-seg { flex-wrap: wrap; }

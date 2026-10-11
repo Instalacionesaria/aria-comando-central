@@ -492,7 +492,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 - **Desde la pantalla no se distingue «Meta desconectado» de «no se invirtió».** El colector
   pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:622-627@d17e029`, el
   campo en `lib/negocio/recolectarAnuncios.ts:145`), pero `motivoDeLoIncompleto`
-  (`lib/negocio/barrido.ts:840`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
+  (`lib/negocio/barrido.ts:839`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
   sello diría `corrio` sin motivo.
 - **Sólo se piden las campañas que ya aparecen en nuestra atribución**
   (`lib/negocio/recolectarAnuncios.ts:261-320@d17e029`): hoy son 13 `campaignId` numéricos distintos en el
@@ -547,7 +547,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
 - **«Entregó N días» cuenta días sin impresiones.** `diasConEntrega` es `gasto is not null`
   (`lib/negocio/costoDelAnuncio.ts:297`), y hay **38 filas con gasto 0 y sin impresiones** (22:11
   UTC); la nota se dibujaba en la tabla por anuncio de Acquisition, que salió con AQ-4. Creative lo
-  corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:216-229`) y
+  corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:219-232`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
 - **«Landing con VSL» es circular y no se marca.** La marca exige el 90 %
   (`components/conversion/PanelDeConversion.jsx:347@b2dcdf5`, `lib/negocio/recorridoDelLead.ts:273-275`) y la
@@ -588,7 +588,7 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
   `lib/ghl/contrato.ts:341` que las siete etiquetas cortas son de esa carpeta; 06 midió hoy 7 campos y
   dos de las etiquetas en otra carpeta (no re-medido).
 - `lib/ghl/cliente.ts:1` dice «Solo lectura de contactos»; el archivo pone y quita etiquetas
-  (`lib/ghl/cliente.ts:590`, `lib/ghl/cliente.ts:636`).
+  (`lib/ghl/cliente.ts:592`, `lib/ghl/cliente.ts:638`).
 - **Cerrado el 2026-09-30 (AQ-1 de Acquisition).** La copia huérfana del bloque de
   `lib/negocio/recolectarAnuncios.ts:494-507` se borró: en su lugar quedó el escritor de campañas.
 - `comoDia` (`lib/negocio/costoDelAnuncio.ts:409-412@d17e029`) usa `toISOString()` sobre un `date`, que es
@@ -727,9 +727,9 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   `docs/sales/02-METRICAS.md:210`) y el resumen del mismo archivo dice **85 %**
   (`docs/sales/02-METRICAS.md:266`).
 - **Creative, referencias cruzadas rotas.** `C2-05` manda la fatiga por frecuencia a `C2-24`
-  (`docs/creative/02-METRICAS.md:86`), que es la fatiga por caída de CTR
-  (`docs/creative/02-METRICAS.md:306`); la de frecuencia es `C2-25`
-  (`docs/creative/02-METRICAS.md:325`). `C14-P02` se cita como abierta
+  (`docs/creative/02-METRICAS.md:87`), que es la fatiga por caída de CTR
+  (`docs/creative/02-METRICAS.md:307`); la de frecuencia es `C2-25`
+  (`docs/creative/02-METRICAS.md:326`). `C14-P02` se cita como abierta
   (`docs/creative/08-DE-DONDE-VIENE-CADA-DATO.md:83`, `docs/creative/08-DE-DONDE-VIENE-CADA-DATO.md:222`,
   `docs/creative/11-EL-ANALIZADOR-Y-EL-DETECTOR.md:91`, `docs/creative/13-EL-CONTRASTE.md:184`) y se
   contestó el 2026-09-19 (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:283`). Y
@@ -795,11 +795,11 @@ el documento miente o si buscó mal.
   La de `docs/sales/` ya la audita la prueba; las otras cuatro están en el mismo caso que el punto
   anterior: un párrafo nuevo en 07 antes del § 11 las corre sin aviso. Las otras citas de
   `docs/conversion/` a líneas de 07 no se revisaron acá.
-- **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:169`, `lib/negocio/rendimientoDelCreativo.ts:116`
-  y `lib/negocio/rendimientoDelCreativo.ts:231` mandan el defecto de grano a las líneas 157-164 de
+- **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:169`, `lib/negocio/rendimientoDelCreativo.ts:119`
+  y `lib/negocio/rendimientoDelCreativo.ts:234` mandan el defecto de grano a las líneas 157-164 de
   `costoDelAnuncio.ts`, y hoy está hacia `lib/negocio/costoDelAnuncio.ts:200`;
   `lib/negocio/fatigaDelCreativo.ts:7` manda la frecuencia a las líneas 88-95, y está hacia
-  `lib/negocio/costoDelAnuncio.ts:119`; `lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287 lo
+  `lib/negocio/costoDelAnuncio.ts:119`; `lib/negocio/rendimientoDelCreativo.ts:224` manda a la 287 lo
   que está en `lib/negocio/costoDelAnuncio.ts:297`; y `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, CV-1— a la 357 de
   `costoDelAnuncio.ts` y a la 230 de `calidadDelCreativo.ts` lo que está en
   `lib/negocio/costoDelAnuncio.ts:355` y `lib/negocio/calidadDelCreativo.ts:238`.
@@ -928,7 +928,7 @@ Falta porque **no hay token**: lo genera otra persona del equipo con la guía de
 `docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, y dos decisiones de diseño —si se reproduce en la app
 y cada cuánto se refresca la miniatura— sólo se pueden medir con él. El usuario lo postergó el
 2026-09-30 por otras prioridades. Hasta el 2026-10-11 el cajón explicaba que la miniatura y el video todavía no se
-podían mostrar (`components/creative/FichaDelCreativo.jsx:87-91@1971ab2`). Desde ese día **la miniatura llega por
+podían mostrar (`components/creative/FichaDelCreativo.jsx:87-91@1971ab2`). Desde ese día —con la `077` en producción y CF-1 subido— **la miniatura llega por
 otro camino**: el «Video Url» de la primera atribución, que la pasada de `lib/negocio/miniaturaDelContacto.ts` completa
 con `GET /contacts/{id}`, y la tarjeta y la ficha la dibujan (`docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`,
 CF1-11 y CF1-12). El video sigue sin fuente.

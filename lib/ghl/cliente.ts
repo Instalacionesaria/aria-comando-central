@@ -545,10 +545,12 @@ export async function usuariosDelCrm(acceso: {
 export async function contactoPorId(
   acceso: { token: string; locationId: string },
   ghlContactId: string,
+  // Cuánto esperar. La ficha usa el de por omisión; la pasada de miniaturas, uno corto (`miniaturaDelContacto.ts`).
+  espera?: number,
 ): Promise<ResultadoDeGhl<ContactoDeGhl | null>> {
   const r = await pedirExterno<{ contact?: unknown }>(
     `${BASE}/contacts/${encodeURIComponent(ghlContactId)}`,
-    { cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS) },
+    { cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS), ...(espera === undefined ? {} : { espera }) },
   );
 
   if (r.tipo !== 'datos') {

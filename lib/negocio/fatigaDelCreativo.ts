@@ -256,8 +256,9 @@ function avisoDe(filas: FatigaDeUnCreativo[], conVeredicto: number): string | nu
    * Decía: *«N de M pieza(s) no tienen serie suficiente para un veredicto: **se muestra su conteo
    * de días** y no su tendencia»*.
    *
-   *   · **«se muestra su conteo de días»** — no se muestra. `PanelDeCreative.jsx` dibuja sólo las
-   *     filas con `fatigado !== null`; las otras no aparecen en ninguna parte de la pantalla. El
+   *   · **«se muestra su conteo de días»** — no se muestra. `PanelDeCreative.jsx` dibujaba sólo las
+   *     filas con `fatigado !== null` —y desde el 2026-10-11 no dibuja la tabla: la fatiga es una marca
+   *     en la tarjeta—; las otras no aparecen en ninguna parte de la pantalla. El
    *     aviso prometía un listado que no existe, y medido el 2026-09-19 eran 21 de 26 piezas las
    *     que el lector iba a buscar y no iba a encontrar.
    *   · **«no tienen serie suficiente»** — el conteo es de las que tienen VEREDICTO, y para no

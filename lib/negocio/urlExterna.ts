@@ -58,9 +58,16 @@ const SUFIJOS_DE_MEDIOS: readonly string[] = ['.fbcdn.net', '.cdninstagram.com']
 /** El mismo tope que el `check` de la migración 063. */
 export const LARGO_MAXIMO_DE_URL = 500;
 
+/**
+ * El tope de la miniatura de un anuncio: el `check` de la migración 077. Las URLs de imagen de Facebook
+ * (`ads/image/?d=…`) llevan un token que puede pasar de los 500 del link manual; con ese tope, una miniatura guardada
+ * no se dibujaba nunca.
+ */
+export const LARGO_MAXIMO_DE_MINIATURA = 2000;
+
 /** La URL parseada si cumple lo común a las dos listas, o `null`. */
-function parsear(url: unknown): URL | null {
-  if (typeof url !== 'string' || url.length === 0 || url.length > LARGO_MAXIMO_DE_URL) return null;
+function parsear(url: unknown, largoMaximo: number): URL | null {
+  if (typeof url !== 'string' || url.length === 0 || url.length > largoMaximo) return null;
   let u: URL;
   try {
     u = new URL(url);
@@ -79,16 +86,16 @@ function parsear(url: unknown): URL | null {
  * Devuelve la forma normalizada (`href`) y no la que llegó, para que lo que se guarda y lo que se
  * dibuja sean lo mismo que el navegador va a abrir.
  */
-export function enlaceDePublicacion(url: unknown): { url: string; red: Red } | null {
-  const u = parsear(url);
+export function enlaceDePublicacion(url: unknown, largoMaximo = LARGO_MAXIMO_DE_URL): { url: string; red: Red } | null {
+  const u = parsear(url, largoMaximo);
   if (u === null) return null;
   const red = HOSTS_DE_PUBLICACION[u.hostname];
   return red === undefined ? null : { url: u.href, red };
 }
 
 /** Si la URL es un medio del CDN de Meta: una miniatura o el archivo de un video. */
-export function medioPermitido(url: unknown): boolean {
-  const u = parsear(url);
+export function medioPermitido(url: unknown, largoMaximo = LARGO_MAXIMO_DE_URL): boolean {
+  const u = parsear(url, largoMaximo);
   if (u === null) return false;
   return SUFIJOS_DE_MEDIOS.some((s) => u.hostname.endsWith(s) && u.hostname.length > s.length);
 }

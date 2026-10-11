@@ -19,12 +19,12 @@
 | «Calificados» | los contactos de **ICP alto**: puntaje de 75 o más, el tramo «alto» de `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85`) |
 | La miniatura | el **«Video Url» de la primera atribución** del contacto, medido y usado: la imagen en la tarjeta y en la ficha; el clic abre Facebook o Instagram |
 | Completar la atribución | **una pasada con tope**: hasta 50 contactos por pasada, primero los más recientes, con `GET /contacts/{id}`; se activa al subir |
-| Los bloques de la pantalla de hoy | **como Sales**: abajo «Lo demás, en cifras»; la fatiga además como marca en la tarjeta; el detalle por pieza en la ficha |
+| Los bloques de la pantalla anterior | **como Sales**: abajo «Lo demás, en cifras»; la fatiga además como marca en la tarjeta; el detalle por pieza en la ficha |
 
 **Por qué contra la etapa.** Con un solo promedio, la pieza BOFU —la que habla con quien ya conoce la oferta— levanta
 la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volumen en la medición de septiembre
-(`docs/OTROS/estado actual/02-CREATIVE.md`). La etapa sale del nombre de la campaña (`etapaDelNombre`,
-`lib/negocio/creativo.ts:70`), como ya hace la pantalla de hoy y el detector (`CRE-ICP-POR-PIEZA`).
+(`03-LA-BIBLIOTECA.md`, `C3-05`). La etapa sale del nombre de la campaña (`etapaDelNombre`,
+`lib/negocio/creativo.ts:70`), como ya hacían la pantalla anterior y el detector (`CRE-ICP-POR-PIEZA`).
 
 ---
 
@@ -37,13 +37,13 @@ la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volume
 | Encabezado: «Creative», «Qué funciona, qué no, y por qué», «Plan de acción», el segmentado | el título, la bajada, el plan real del detector y los cuatro períodos | `BotonDelPlan`, `lib/negocio/periodo.ts` | real |
 | Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:137`) más el tramo | real |
 | Tira: Agendas | contactos que agendaron | `calidadDelCreativo` | real |
-| Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:318`) | real |
-| Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:143`) | «—» |
+| Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:321`) | real |
+| Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:146`) | «—» |
 | Tira: Alcance | **impresiones** (desvío) | `rendimientoDelCreativo` | real |
 | Tira: Frecuencia | impresiones sobre alcance, pesada por impresiones | `metricas_de_anuncio`, como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:129`) | real |
 | Barra «Ordenar por» | Calificados, Agendas, Hook rate, Impresiones | el servidor | real |
 | Grupos «Funciona» / «No funciona» | contra el promedio de la etapa | el servidor | real |
-| Tarjeta: miniatura | `videoUrl` de la primera atribución | `atribucion_primera`, completada con `GET /contacts/{id}` | por construir |
+| Tarjeta: miniatura | `videoUrl` de la primera atribución | `negocio.miniaturas_del_contacto`, completada con `GET /contacts/{id}` | real desde CF-1 |
 | Tarjeta: «Activo / Pausado» | **«Entregando» / «Sin entrega»** (desvío) | impresiones en los últimos 3 días | real |
 | Tarjeta: formato y ángulo | **la etapa** (desvío) | `etapaDelNombre` | real |
 | Ficha | la pieza abierta | todo lo de arriba, más el gasto, el CTR, el link CTR, la landing y los anuncios | real o «—» |
@@ -85,7 +85,8 @@ y `#v-creative` sale de `app/inteligencia-estetica.css`, que con eso queda sin n
 
 **Fórmula** · Lo nuevo va en `app/creative.css`, acotado a `#v-creative` y a `.cr-ficha` para la ficha, que se monta
 en `document.body`. **Las reglas del prototipo que faltan se restituyen ahí**: `.cre-stat`, `.cg`, `.cc*`, `.cc-mx`,
-`.qb`, `.dw-verdict` y `.tr-line` se retiraron de `app/aios.css` el 2026-09-19, cuando nadie las dibujaba. Salen del CSS
+`.qb` y `.dw-verdict` se retiraron de `app/aios.css` el 2026-09-19, cuando nadie las dibujaba (también `.tr-line`, que no
+vuelve: no hay guion que dibujar). Salen del CSS
 en línea del prototipo (`aios-command-center_1.html:558-985`), con los colores pasados a tokens y sin sombras.
 
 **Rastro** · El prototipo: `aios-command-center_1.html:2746-2804`. La pantalla anterior: `components/views/CreativeView.jsx:47@1971ab2`.
@@ -108,7 +109,7 @@ en línea del prototipo (`aios-command-center_1.html:558-985`), con los colores 
 | el CRM sin el campo del ICP | «El CRM no tiene el puntaje.» |
 | una pieza sin «Video Url» guardado | «Sin miniatura todavía.» |
 | la fatiga sin veredicto | «Sin días suficientes para medir el gancho.» |
-| la cohorte vacía | «Sin contactos en este período» |
+| sin contactos en la ventana: la cohorte, o una pieza que no trajo ninguno | «Sin contactos en este período» |
 | un grupo sin piezas | «Sin piezas en este grupo.» |
 | una pieza que es la única de su etapa con valor: va a «Funciona» sin contra quién compararse | «Única de su etapa.» |
 | la primera carga | «Cargando…» |
@@ -126,6 +127,11 @@ en línea del prototipo (`aios-command-center_1.html:558-985`), con los colores 
 | «Publicado» | «Primer día con entrega» | no se sabe cuándo se publicó; se sabe cuándo empezó a entregar |
 | «Datos del video» | «Datos de la pieza» | la pieza puede no ser un video |
 | «Retención del video» y «Guión del video» | «Retención y guion», en «—» | GoHighLevel no entrega ninguna de las dos |
+| «venta directa», al lado de «Datos del video» | nada | es el modelo de negocio de la maqueta, no un dato |
+| el ▶ / ◧ de la miniatura | nada | no se sabe si la pieza es un video o una imagen |
+| «últimos 7 días», «último mes», «histórico» al lado de «{N} piezas» | «hoy», «últimos 7 días», «últimos 30 días», «histórico» | los cuatro períodos del sistema |
+| la tira de a tres columnas desde 1180 px | de a seis hasta 760 px | es lo que dibujaba el prototipo: su `.even` le gana a su propio `@media` |
+| Formato, Ángulo, Duración y Dolor de «Qué es», con su valor | «—», con la frase en el `title` | la caja es de un renglón; «Retención y guion» la dice entera |
 | «Recomendaciones y conclusiones» | «Plan de acción» | es el plan real del detector, con sus grupos |
 
 **Estado** · Construido el 2026-10-11 (CF-3): la lista vive en `FRASE` de `components/creative/comun.jsx`, y la
@@ -140,9 +146,10 @@ segmentado con los cuatro períodos del sistema, sin «Personalizado» ni la cla
 
 ### CF1-04 · Los períodos y el piso
 
-**Qué es** · Hoy · 7 días · 30 días · Completo, con 30 días por omisión. Creative cuenta **días cerrados**
-(`current_date`), como hoy. Toda tasa lleva su piso: 10 contactos (`PISO_DE_UNA_TASA`) o 1000 impresiones
-(`PISO_DE_IMPRESIONES`, `lib/negocio/rendimientoDelCreativo.ts:66`). Bajo el piso, «—» con su frase.
+**Qué es** · Hoy · 7 días · 30 días · Completo, con 30 días por omisión. Creative cuenta días del calendario anclados a
+`current_date`, **con hoy incluido** (`ventanaDeMetricas`): no son días cerrados como los de Acquisition. Toda tasa lleva su
+piso: 10 clics al enlace para el click-to-landing (`PISO_DE_UNA_TASA`) o 1000 impresiones
+(`PISO_DE_IMPRESIONES`, `lib/negocio/rendimientoDelCreativo.ts:69`). Bajo el piso, «—» con su frase.
 
 **Estado** · Construido el 2026-10-11 (CF-1): `sobreImpresiones` de `lib/negocio/lecturaDeCreative.ts`.
 
@@ -186,7 +193,7 @@ valor; si no llega, o no tiene valor, «no funciona». Las piezas «Sin etapa» 
 mayor a menor.
 
 **Fórmula** · El promedio de cada etapa es el pesado (la suma de los numeradores sobre la suma de los denominadores)
-para las tasas, y el simple para los conteos. Una etapa con una sola pieza no tiene contra quién compararse: la pieza va
+para las tasas, y el simple para los conteos. Una etapa con una sola pieza con valor no tiene contra quién compararse: la pieza va
 a «Funciona» con la línea «Única de su etapa.» —frase de CF1-02, la respuesta por defecto de `CF1-P03`—.
 
 **Estado** · Construido el 2026-10-11 (CF-1): `agrupar`, en `lib/negocio/lecturaDeCreative.ts`, arma los dos grupos de cada criterio con su promedio por etapa y las piezas únicas de su etapa.
@@ -215,21 +222,25 @@ secciones:
 | Qué es | Etapa, Estado, Anuncios, Primer día con entrega, Último día con entrega, Pieza; Formato, Ángulo, Duración y Dolor en «—» |
 | Datos de la pieza | las seis de la tira, más el gasto, el CTR, el link CTR, la landing y el click-to-landing |
 | Retención y guion | «—» con «GoHighLevel no lo entrega.» |
-| Los anuncios | los anuncios de la pieza, por impresiones (`anunciosDeLaPieza`, `lib/negocio/rendimientoDelCreativo.ts:263`) |
+| Los anuncios | los anuncios de la pieza, por impresiones (`anunciosDeLaPieza`, `lib/negocio/rendimientoDelCreativo.ts:266`) |
 
-Conserva lo que la ficha de hoy ya resuelve: el portal en `document.body`, el foco y Escape
-(`components/creative/FichaDelCreativo.jsx`).
+Conserva lo que la ficha anterior ya resolvía: el portal en `document.body`, el foco y Escape
+(`components/creative/FichaDelCreativo.jsx`). Desde CF-4, además, el foco vuelve a la tarjeta al cerrar, el tabulador no
+sale del cajón y Escape dentro del campo del link no cierra.
 
 **Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/FichaDelCreativo.jsx`.
 
 ### CF1-11 · Completar la atribución
 
-**Qué es** · Una pasada que pide `GET /contacts/{id}` a GoHighLevel y suma a `atribucion_primera` las claves que
-`POST /contacts/search` no trae: `videoUrl`, `photoUrl`, `postId` e `igSid`.
+**Qué es** · Una pasada que pide `GET /contacts/{id}` a GoHighLevel y guarda en `negocio.miniaturas_del_contacto` las
+claves que `POST /contacts/search` no trae: `videoUrl`, `photoUrl`, `postId` e `igSid`.
 
 **Fórmula** · Sólo contactos con anuncio (`adId` o `mediumId` en la atribución) a los que les falta la clave y que no
-se intentaron todavía; **hasta 50 por pasada**, primero los más recientes; sin pisar las claves que ya hay; un
-contacto que GoHighLevel no devuelve se marca para no volver a pedirlo en cada pasada. Ninguna llamada real en la suite:
+se intentaron todavía; **hasta 50 por pasada**, primero los más recientes; cada contacto se guarda una sola vez, y lo
+guardado no se pisa. Un contacto que GoHighLevel no devuelve —un 404, o un rechazo de ese contacto como un 403— se marca
+para no volver a pedirlo en cada pasada. La pasada se corta, y lo que faltó se pide en la siguiente, ante un 429, un
+401, un GoHighLevel que no contesta o el tiempo: cada pedido espera hasta 15 segundos y la pasada entera hasta 60, para
+no comerse el tiempo de `mensajes` y `auditoria`, que van después en la misma corrida (CF-4). Ninguna llamada real en la suite:
 la prueba simula el cliente.
 
 **Estado** · Construido el 2026-10-11 (CF-1): `lib/negocio/miniaturaDelContacto.ts` (`completarMiniaturas`), colgado de la
@@ -244,8 +255,10 @@ usuario, y la `077` va a producción antes del push.**
 **Qué es** · La imagen de la pieza en la tarjeta y en la ficha. Al tocar «Ver en Facebook/Instagram», el link se abre
 en una pestaña nueva. Sin `videoUrl`, el fondo del prototipo con «Sin miniatura todavía.».
 
-**Fórmula** · De los contactos de la pieza, el `videoUrl` más frecuente; empate, el más reciente. Se valida con la
-lista de hosts de `lib/negocio/urlExterna.ts` (`enlaceDePublicacion`, `:82`); un host fuera de la lista no viaja. En el
+**Fórmula** · De los contactos de la pieza, la imagen más frecuente —el `videoUrl`, o el `photoUrl` si no hay—; empate,
+la del contacto que entró más tarde al CRM. Se valida con las dos listas de hosts de `lib/negocio/urlExterna.ts` —la de
+publicaciones (`enlaceDePublicacion`) y la del CDN de Meta (`medioPermitido`)—, con el tope de largo de la tabla (2000);
+un host fuera de las listas no viaja. En el
 navegador, `<img>` con `referrerPolicy="no-referrer"` y `loading="lazy"`; si la imagen no carga, el fondo del
 prototipo, sin romper la tarjeta.
 
@@ -254,7 +267,7 @@ dibujo, el mismo día (CF-3): `components/creative/Miniatura.jsx`, en la tarjeta
 
 ### CF1-13 · Lo demás, en cifras
 
-**Qué es** · Lo que la pantalla de hoy mide y el prototipo no tenía, en una fila de cifras debajo de los grupos: el
+**Qué es** · Lo que la pantalla anterior medía y el prototipo no tenía, en una fila de cifras debajo de los grupos: el
 gasto total, el CTR, el link CTR, la landing y las piezas perdiendo gancho sobre las que tienen veredicto.
 
 **Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
@@ -262,8 +275,8 @@ gasto total, el CTR, el link CTR, la landing y las piezas perdiendo gancho sobre
 ### CF1-14 · El plan de acción y las señales
 
 **Qué es** · «Plan de acción» abre el plan real de la pasada de la mañana (`BotonDelPlan`,
-`components/senales/SenalesDelDepartamento.jsx`), con «Hoy» y «Completo» como hoy. La tarjeta de señales queda al
-final de la pestaña, como en Conversion.
+`components/senales/SenalesDelDepartamento.jsx`): el de 7 días con «7 días» y el de 30 con «30 días»; con «Hoy» y
+«Completo» no hay plan, y el botón lo dice. La tarjeta de señales queda al final de la pestaña, como en Conversion.
 
 **Estado** · Construido el 2026-10-11 (CF-3), en `components/creative/PanelDeCreative.jsx`.
 
@@ -272,7 +285,7 @@ final de la pestaña, como en Conversion.
 **Qué es** · Una sola lectura nueva, `lecturaDeCreative`, compone `calidadDelCreativo`, `rendimientoDelCreativo`,
 `fatigaDelCreativo` y `enlacesDeLasPiezas`, más los calificados por pieza y la miniatura, y entrega lo que la pantalla
 arma, **de 0 a 1**, con el motivo de cada «—». Tiene una mitad pura, probada sin base, y otra que lee, como
-`lib/negocio/lecturaDeConversation.ts`. La ruta `app/api/creative/route.ts` suma `pantalla`; los bloques de hoy siguen
+`lib/negocio/lecturaDeConversation.ts`. La ruta `app/api/creative/route.ts` suma `pantalla`; los bloques de antes siguen
 viajando. El navegador multiplica por 100 en un solo lugar.
 
 **Estado** · La lectura, construida el 2026-10-11 (CF-1): `lib/negocio/lecturaDeCreative.ts`, con `armarCreative` pura y `entregaDeLasPiezas`, que
@@ -285,7 +298,7 @@ de la misma lectura.
 
 ### CF1-16 · El cerebro lee lo mismo
 
-**Qué es** · Se suma `creative_en_cifras`, que lee la misma lectura y devuelve la `pantalla`. Las herramientas de hoy
+**Qué es** · Se suma `creative_en_cifras`, que lee la misma lectura y devuelve la `pantalla`. Las herramientas de antes
 (`calidad_de_piezas`, `rendimiento_de_piezas`, `fatiga_de_piezas`) siguen trayendo los avisos que la pantalla no dibuja.
 Las URLs no viajan: cada pieza lleva `conMiniatura` y `conEnlace` en lugar de la miniatura y el enlace.
 
@@ -315,7 +328,7 @@ a lo ancho.
 - `15-LA-MINIATURA-Y-EL-VIDEO.md`, que decía que GoHighLevel no entrega la miniatura: la entrega por otra lectura.
 - La foto `docs/OTROS/estado actual/02-CREATIVE.md`, reescrita en CF-5.
 
-**Estado** · Por construir (CF-0 a CF-5).
+**Estado** · Hecho en CF-0 a CF-4, salvo la foto 02, que se reescribe en CF-5.
 
 ---
 
@@ -337,7 +350,7 @@ a lo ancho.
 | CF-1 | El servidor: `lecturaDeCreative`, los calificados por pieza, la miniatura y la pasada que completa la atribución | **hecho el 2026-10-11**: pruebas 252 (código y base) y 253; 26 mutaciones muertas; la `077` |
 | CF-2 | La ruta y el cerebro sobre la lectura | **hecho el 2026-10-11**: pruebas 213, 214, 215 y la ventana en la 252 |
 | CF-3 | El front sobre el marcado del prototipo, `app/creative.css`, y `app/inteligencia-estetica.css` borrada | **hecho el 2026-10-11**: prueba 254; 104, 107, 146 y 251 al día |
-| CF-4 | La revisión adversarial, las mutaciones y la suite entera | por hacer |
+| CF-4 | La revisión adversarial, las mutaciones y la suite entera | **hecho el 2026-10-11**: cuatro lentes; ver § 7 |
 | CF-5 | La comparación contra el prototipo, los anchos, la subida y la foto 02 | por hacer |
 
 ---
@@ -354,3 +367,30 @@ Cada una tiene una respuesta tomada por defecto, que es la que se construye si n
 | `CF1-P04` | ¿«Retención» se queda en la tira, en «—»? | sí: es una cifra del prototipo y su hueco dice por qué |
 | `CF1-P05` | ¿La miniatura es el `videoUrl` más frecuente de la pieza? | sí (CF1-12) |
 | `CF1-P06` | Si la imagen de `facebook.com/ads/image` pide sesión o caduca, ¿se vuelve al fondo del prototipo? | sí, y se mide en CF-5 |
+
+---
+
+## 7 · Lo que encontró la revisión adversarial (CF-4)
+
+Cuatro lentes independientes —el servidor, el front, los textos y las pruebas— sobre CF-1 a CF-3, cada hallazgo
+verificado contra el código antes de corregirlo. Lo que cambió de lo construido:
+
+| lente | lo que estaba mal | cómo quedó |
+|---|---|---|
+| servidor | la pantalla listaba todas las piezas de la historia en cualquier período: la entrega no tiene ventana en el `where` | entra la pieza que trajo contactos, tuvo impresiones o gastó EN LA VENTANA |
+| servidor | «Perdiendo gancho» se contaba sobre todas las piezas (`conVeredicto.sobre`), no sobre las que tienen veredicto | sobre `conVeredicto.con`; sin veredictos, la frase de la fatiga |
+| servidor | la pasada de miniaturas podía comerse el tiempo de la corrida: 50 pedidos de hasta 4 minutos, sin corte si GoHighLevel no contestaba | 15 s por pedido, 60 s por pasada, y corte ante un GoHighLevel que no contesta |
+| servidor | un 403 de UN contacto cortaba la pasada, y un 4xx fijo se volvía a pedir cada diez minutos para siempre | el rechazo de un contacto se guarda como no devuelto; sólo el 401 corta |
+| servidor | una miniatura de más de 500 caracteres se guardaba y no se dibujaba nunca | el tope de la miniatura es el de la tabla (2000) |
+| servidor | la frecuencia de la tira pesaba cada pieza con todas sus impresiones, no con las de sus días con frecuencia | `impresionesConFrecuencia` en la entrega |
+| servidor | la miniatura desempataba por cuándo se pidió, no por el contacto más nuevo; la etapa de respaldo, por el orden de las filas | por `alta_en_el_crm`; y la etapa que va antes en el embudo |
+| servidor | «Entregando» miraba 4 días del calendario | 3, hoy incluido, como `ventanaDeMetricas` |
+| servidor | los anuncios sin nombre tenían gasto pero no entrega; el gasto nulo con impresiones decía «Sin entrega» | la misma pieza rotulada en las dos lecturas; `sin_reporte` |
+| servidor | `creative_en_cifras` pasaba todo menos las URLs (lista negra) | lista blanca campo por campo (AG-45) |
+| front | las tasas chicas se redondeaban a entero: una landing de 0,2 % se leía «0 %» | un decimal debajo del 10 % |
+| front | el menú «Ordenar por» cerrado seguía en el orden del tabulador; la ficha no devolvía el foco ni lo retenía | los ítems se dibujan sólo abiertos; el foco vuelve y no sale del cajón |
+| front | una recarga atrasada podía devolver el período anterior; una ficha cerrada por una recarga se reabría sola | el período vigente en una referencia; la ficha se olvida |
+| front | una respuesta sin `pantalla` tumbaba el panel | «No se pudo leer. Reintenta.» |
+| textos | comentarios y documentos que describían la pantalla anterior en presente, citas a la maqueta fijadas en el commit equivocado | corregidos; las citas de la maqueta, en `833fc51` |
+| pruebas | 43 de 45 mutaciones nuevas sobrevivían: la ficha, los respaldos, la fila de abajo, el editor del link, la barra de períodos | pruebas 252, 253 y 254 ampliadas; ver la etapa CF-4 |
+

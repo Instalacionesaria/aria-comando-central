@@ -296,7 +296,7 @@ Contactos con puntaje: **472** (471). Ceros en los últimos 14 días: **0** (0),
 sigue apagado. Hecha la cuenta, la agenda a 30 días es **78,0 % en ICP alto, 48,1 % en medio y
 41,0 % en bajo**, los tres sobre el piso; **la pantalla no la publica**: es `LP02-P01`, abierta
 (`docs/leads-portal/02-METRICAS.md:399-406`), y es lo único que hoy diría si el corte separa algo
-(`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:360-366`).
+(`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:361-367`).
 
 **Asistencia, plantón y venta.** Citas: **333** (327 el 2026-09-21,
 `lib/negocio/citasAlcanzables.ts:92`), 232 alcanzables; `cancelled` 166 · `confirmed` 152 · `noshow`
@@ -313,7 +313,7 @@ contactos con alguna etiqueta de descarte (121). Con `icp_rechazado`, 69 (68): a
 bajo **46** (45) · sin calificar 1. **El techo de 59 sigue en pie**: el puntaje más alto entre los
 rechazados es 59, ninguno de los 202 contactos con 60 o más está rechazado, y 68 de los 223 con 1
 a 59 sí. Contesta con fecha lo que `LP14-P02` dejaba abierto
-(`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:347-352`).
+(`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:348-353`).
 
 **La ficha**, sobre los 594, con la cifra del 2026-09-27 entre paréntesis
 (`docs/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md:709-712`, `:656-661`;

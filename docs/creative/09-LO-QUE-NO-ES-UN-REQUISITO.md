@@ -11,9 +11,10 @@
 > 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
 > cosa**, que es peor: una línea corrida no falla.
 >
-> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> Hasta el 2026-10-11 `components/creative/PanelDeCreative.jsx` dibujaba tres bloques medidos: el ICP y la
 > agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
-> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`). Desde ese día la pestaña es el front del
+> prototipo con los datos de `lib/negocio/lecturaDeCreative.ts` (`16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 
 > Inventario del andamiaje de `lib/aios/creative.js` (450 líneas) y
 > `components/views/CreativeView.jsx` (99 líneas), con la lista de borrado y **lo que hay que hacer
@@ -122,12 +123,12 @@ apuntando a la lista real.
 
 ### C9-06 · El botón «Personalizado» y el `#crePill`
 
-`components/views/CreativeView.jsx:42-49@1971ab2`. Andamiaje, por el motivo de
+`components/views/CreativeView.jsx:42-49@833fc51`. Andamiaje, por el motivo de
 `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26).
 
 ### C9-07 · El botón «Plan de acción»
 
-`components/views/CreativeView.jsx:24-29@1971ab2`. Andamiaje **mientras** once de las doce frases no tengan
+`components/views/CreativeView.jsx:24-29@833fc51`. Andamiaje **mientras** once de las doce frases no tengan
 fuente. Ver `C6-08`.
 
 ---
@@ -169,9 +170,9 @@ las emite; mueren con él, así que se borran **en el mismo cambio** y no antes.
 
 ### C9-10 · Los ocho degradados van en línea y le ganan al tema
 
-`lib/aios/creative.js:178` aplica el degradado como estilo en línea. `app/temas.css:757` y `:774` ya lo
+`lib/aios/creative.js:178` aplica el degradado como estilo en línea. `app/temas.css:760` y `:777` ya lo
 anotan: **un estilo en línea le gana al tema**, así que las miniaturas inventadas no responden al
-cambio de tema. Andamiaje, y su ausencia no deja hueco: la miniatura real no existe (`C14-07`).
+cambio de tema. Andamiaje, y su ausencia no deja hueco: la miniatura real no existe (`C14-07`) —corrección del 2026-10-11: la miniatura llega por `GET /contacts/{id}` (`16`, CF1-11 y CF1-12); Meta directo sigue haciendo falta para el video—.
 
 ---
 

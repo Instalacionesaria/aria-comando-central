@@ -149,7 +149,7 @@ de texto lanza `22P02` y **se lleva puesta la consulta entera, no una fila**. El
 | `C8-19` | Cuartiles 25/50/75/100 | `fields` es enum cerrado de 11 valores; `video_p25_watched_actions` y 30 candidatos más dan **422** (`C14-05`) |
 | `C8-20` | Tiempo medio visto, retención de 6 s, thruplay | ídem |
 | `C8-21` | Placement, edad, género, dispositivo, plataforma, país | `groupBy` sólo acepta `day\|week\|month`; todo lo demás **422** (`C14-06`) |
-| `C8-22` | El activo creativo: imagen, video, copy, título, miniatura, `meta_creative_id` | `/entity?entityType=AD` devuelve **cuatro campos**; `/creatives`, `/videos`, `/posts` dan **404**; `listType=creatives` da **422** (`C14-07`, `C14-08`); re-medido el 2026-09-29 (`C14-16` a `C14-22`). **La miniatura, el video y el link al post: planificados con Meta directo** (`C15`); el copy y el título quedan fuera |
+| `C8-22` | El activo creativo: imagen, video, copy, título, miniatura, `meta_creative_id` | `/entity?entityType=AD` devuelve **cuatro campos**; `/creatives`, `/videos`, `/posts` dan **404**; `listType=creatives` da **422** (`C14-07`, `C14-08`); re-medido el 2026-09-29 (`C14-16` a `C14-22`). **La miniatura, el video y el link al post: planificados con Meta directo** (`C15`); el copy y el título quedan fuera. *Corrección del 2026-10-11: la miniatura llega por `GET /contacts/{id}` (`16`, CF1-11 y CF1-12); Meta directo sigue haciendo falta para el video* |
 | `C8-23` | Formato y duración | no vienen en ninguna respuesta. Sólo están **codificados en el nombre** |
 | `C8-24` | El estado de entrega del anuncio | `/entity` no lo da a nivel de anuncio. Por eso `negocio.anuncios` **no tiene la columna**, a propósito (`050:60-63`) |
 

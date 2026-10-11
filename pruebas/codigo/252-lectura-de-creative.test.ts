@@ -15,7 +15,12 @@
 //   · «Funciona» es contra el promedio de SU etapa, pesado en las tasas —mutación: contra el promedio de todas—;
 //   · la única de su etapa va a «Funciona» y se marca —mutación: mandarla a «No funciona»—;
 //   · la tarjeta: estado, miniatura, enlace manual primero, fatiga —mutación: preferir la miniatura al enlace—;
-//   · la fila de abajo —mutación: el CTR sobre otra base—.
+//   · la fila de abajo —mutación: el CTR sobre otra base, o las piezas perdiendo gancho sobre todas—;
+//   · sólo entran las piezas que hicieron algo en la ventana —mutación: listar todas las de la historia— (CF-4);
+//   · la ficha de la pieza, cifra por cifra —mutación: cruzar dos—.
+//
+// La revisión de CF-4 encontró que casi todas las cifras de la ficha y los respaldos podían cambiar sin que nada se
+// pusiera en rojo: las pruebas de abajo del todo los fijan.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -23,6 +28,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ } from '../apoyo/fuente.ts';
+import { pantallaParaElCerebro } from '../../lib/agentes/executive/adaptadores/creative.ts';
 import type { CalidadDeLosCreativos, FilaDeCreativo } from '../../lib/negocio/calidadDelCreativo.ts';
 import type { FatigaDeLosCreativos } from '../../lib/negocio/fatigaDelCreativo.ts';
 import type { FilaDeRendimiento, RendimientoDeLosCreativos } from '../../lib/negocio/rendimientoDelCreativo.ts';
@@ -30,6 +36,7 @@ import type { EnlaceDePieza } from '../../lib/negocio/enlaceDeLaPieza.ts';
 import { armarCreative, type EntregaDeLaPieza, type EntradaDeCreative } from '../../lib/negocio/lecturaDeCreative.ts';
 
 const TOFU = 'TOFU' as const;
+const MOFU = 'MOFU' as const;
 const BOFU = 'BOFU' as const;
 
 const calidad = (f: Partial<FilaDeCreativo> & { creativo: string | null }): FilaDeCreativo => ({
@@ -48,9 +55,12 @@ const rend = (f: Partial<FilaDeRendimiento> & { creativo: string }): FilaDeRendi
     ...f,
   }) as FilaDeRendimiento;
 
+/** Sin decirlo, las impresiones con frecuencia son todas las de la pieza si trae frecuencia, y ninguna si no. */
 const entrega = (f: Partial<EntregaDeLaPieza> & { pieza: string }): EntregaDeLaPieza => ({
   impresiones: 0, clics: 0, vistas: null, clicsAlEnlace: null, landing: null, frecuencia: null, etapa: null,
-  primerDia: '2026-09-01', ultimoDia: '2026-10-05', entregando: false, ...f,
+  primerDia: '2026-09-01', ultimoDia: '2026-10-05', entregando: false,
+  impresionesConFrecuencia: f.frecuencia === null || f.frecuencia === undefined ? 0 : (f.impresiones ?? 0),
+  ...f,
 });
 
 /**
@@ -92,7 +102,8 @@ function entrada(o: Partial<EntradaDeCreative> & { campoDeIcp?: string | null } 
       ],
     } as unknown as FatigaDeLosCreativos,
     entrega: [
-      entrega({ pieza: 'a', impresiones: 4000, clics: 80, vistas: { cantidad: 800, impresiones: 4000 }, clicsAlEnlace: { cantidad: 40, impresiones: 4000 }, frecuencia: 1.5, etapa: TOFU, entregando: true }),
+      // «a» trae frecuencia sólo en 1000 de sus 4000 impresiones: ése es su peso en la frecuencia de la tira.
+      entrega({ pieza: 'a', impresiones: 4000, clics: 80, vistas: { cantidad: 800, impresiones: 4000 }, clicsAlEnlace: { cantidad: 40, impresiones: 4000 }, frecuencia: 1.5, impresionesConFrecuencia: 1000, etapa: TOFU, entregando: true }),
       entrega({ pieza: 'b', impresiones: 2000, clics: 10, vistas: { cantidad: 200, impresiones: 2000 }, frecuencia: null, etapa: TOFU }),
       entrega({ pieza: 'c', impresiones: 10000, clics: 300, vistas: { cantidad: 3000, impresiones: 10000 }, clicsAlEnlace: { cantidad: 100, impresiones: 9000 }, landing: { cantidad: 60, impresiones: 9000 }, frecuencia: 2, etapa: BOFU, entregando: true }),
     ],
@@ -115,8 +126,8 @@ test('la tira suma las piezas y pesa las tasas', () => {
   assert.deepEqual(p.cifras.agendas, { valor: 19, motivo: null });
   assert.deepEqual(p.cifras.impresiones, { valor: 16000, motivo: null });
   assert.deepEqual(p.cifras.hookRate, { valor: 4000 / 16000, motivo: null }, 'el hook rate es pesado: no el promedio de 20, 10 y 30');
-  // La frecuencia pesada sobre las impresiones de las piezas que la reportan: «b» no la trae.
-  assert.deepEqual(p.cifras.frecuencia, { valor: (1.5 * 4000 + 2 * 10000) / 14000, motivo: null });
+  // La frecuencia pesada sobre las impresiones de los días que la reportan: «b» no la trae, y «a» sólo en 1000.
+  assert.deepEqual(p.cifras.frecuencia, { valor: (1.5 * 1000 + 2 * 10000) / 11000, motivo: null });
   assert.deepEqual(pieza(p, 'b').cifras.frecuencia, { valor: null, motivo: 'sin_reporte' }, 'con impresiones, no es «sin entrega»');
   assert.deepEqual(p.cifras.retencion, { valor: null, motivo: 'sin_fuente' });
 });
@@ -189,7 +200,12 @@ test('la fila de abajo: el gasto, el CTR, el link CTR, la landing y las que perd
   assert.deepEqual(d.ctr, { valor: 390 / 16000, motivo: null });
   assert.deepEqual(d.linkCtr, { valor: 140 / 13000, motivo: null }, 'sobre las impresiones de los días con linkClick');
   assert.deepEqual(d.landing, { valor: 60 / 9000, motivo: null });
-  assert.deepEqual(d.perdiendoGancho, { con: 1, sobre: 3 });
+  // Sobre las que TIENEN veredicto: «b» no tiene, así que son 2 y no 3.
+  assert.deepEqual(d.perdiendoGancho, { con: 1, sobre: 2 });
+  const sinVeredicto = armarCreative(entrada({
+    fatiga: { dias: 30, aviso: null, conVeredicto: { con: 0, sobre: 2 }, filas: [{ creativo: 'a', fatigado: null }, { creativo: 'c', fatigado: null }] } as unknown as FatigaDeLosCreativos,
+  }));
+  assert.deepEqual(sinVeredicto.loDemas.perdiendoGancho, { con: 0, sobre: 0 }, 'sin veredictos, «0 de 2» en lugar de la frase de la fatiga');
   const vacia = armarCreative(entrada({ entrega: [], rendimiento: { filas: [], gastoTotal: null } as unknown as RendimientoDeLosCreativos }));
   assert.deepEqual([vacia.loDemas.gasto.motivo, vacia.loDemas.ctr.motivo, vacia.cifras.impresiones.motivo], ['sin_entrega', 'sin_entrega', 'sin_entrega']);
 });
@@ -197,7 +213,8 @@ test('la fila de abajo: el gasto, el CTR, el link CTR, la landing y las que perd
 test('la ventana del período llega a la lectura, y la lectura la pasa a todo lo que tiene ventana', () => {
   /* Con una lectura sin la ventana, esa cifra se queda en la de por omisión mientras las otras cambian con el botón:
      una tarjeta con dos períodos y nada que lo diga. */
-  const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8');
+  // Sin comentarios: una llamada comentada no cuenta.
+  const leer = (r: string) => readFileSync(join(RAIZ, r), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
   assert.match(leer('app/api/creative/route.ts'), /await lecturaDeCreative\(periodo\.dias\)/);
   const lectura = leer('lib/negocio/lecturaDeCreative.ts');
   const cuerpo = lectura.slice(lectura.indexOf('export async function lecturaDeCreative('));
@@ -205,4 +222,106 @@ test('la ventana del período llega a la lectura, y la lectura la pasa a todo lo
     assert.match(cuerpo, new RegExp(`${fn}\\(dias\\)`), `${fn} no recibe la ventana de la lectura`);
   }
   assert.match(leer('lib/agentes/executive/adaptadores/creative.ts'), /lecturaDeCreative\(periodoPedido\(argumentos\)!\.dias\)/);
+});
+
+test('sólo entran las piezas que hicieron algo en la ventana', () => {
+  /* La entrega trae todas las piezas de la historia: sin el filtro, «7 días» listaba las de siempre, la mayoría en «No
+     funciona» con todo en «—». Entra la que trajo contactos, tuvo impresiones o gastó. */
+  const p = armarCreative(entrada({
+    entrega: [
+      ...entrada().entrega,
+      entrega({ pieza: 'vieja', impresiones: 0, etapa: TOFU }),
+      entrega({ pieza: 'solo-gasto', impresiones: 0, etapa: TOFU }),
+    ],
+    rendimiento: {
+      ...entrada().rendimiento,
+      filas: [...entrada().rendimiento.filas, rend({ creativo: 'solo-gasto', gasto: 12 }), rend({ creativo: 'sin-gasto', gasto: 0 })],
+    } as RendimientoDeLosCreativos,
+  }));
+  const claves = p.piezas.map((x) => x.clave);
+  assert.ok(!claves.includes('vieja'), 'entró una pieza sin nada en la ventana');
+  assert.ok(!claves.includes('sin-gasto'), 'entró una pieza del rendimiento que no gastó ni entregó');
+  assert.ok(claves.includes('solo-gasto'), 'quedó afuera una pieza que gastó');
+  assert.ok(claves.includes('d'), 'quedó afuera una pieza que sólo trajo contactos');
+  for (const g of Object.values(p.criterios)) assert.ok(![...g.funciona, ...g.noFunciona].includes('vieja'));
+  // Una pieza sin contactos dice por qué, en la tarjeta y en la tira.
+  assert.deepEqual(pieza(p, 'solo-gasto').cifras.calificados, { valor: null, motivo: 'sin_contactos' });
+  assert.deepEqual(pieza(p, 'solo-gasto').cifras.agendas, { valor: null, motivo: 'sin_contactos' });
+  const sinCalidad = armarCreative(entrada({ calidad: { ...entrada().calidad, filas: [] } as CalidadDeLosCreativos }));
+  assert.deepEqual([sinCalidad.cifras.calificados, sinCalidad.cifras.agendas], [{ valor: null, motivo: 'sin_contactos' }, { valor: null, motivo: 'sin_contactos' }]);
+});
+
+test('la ficha, cifra por cifra', () => {
+  const p = armarCreative(entrada());
+  const a = pieza(p, 'a').ficha;
+  assert.deepEqual([a.primerDia, a.ultimoDia], ['2026-09-01', '2026-10-05']);
+  assert.deepEqual(a.ctr, { valor: 80 / 4000, motivo: null }, 'el CTR de la pieza es clics sobre impresiones, de 0 a 1');
+  assert.deepEqual(a.anunciosDeLaPieza, [{ anuncioId: '111', impresiones: 10, gasto: 1 }]);
+  assert.deepEqual(pieza(p, 'c').ficha.landing, { valor: 60 / 9000, motivo: null }, 'la landing es la suya, no la del link CTR');
+  assert.deepEqual(pieza(p, 'c').cifras.frecuencia, { valor: 2, motivo: null });
+  // Sin gasto pero con impresiones, GoHighLevel no reportó lo que costó: no es «sin entrega».
+  const sinGasto = armarCreative(entrada({
+    rendimiento: { ...entrada().rendimiento, filas: [rend({ creativo: 'a', gasto: null as unknown as number })] } as RendimientoDeLosCreativos,
+  }));
+  assert.deepEqual(pieza(sinGasto, 'a').ficha.gasto, { valor: null, motivo: 'sin_reporte' });
+  assert.deepEqual(pieza(sinGasto, 'd').ficha.gasto, { valor: null, motivo: 'sin_entrega' });
+  // El click-to-landing: sin la clave en ningún anuncio-día, «no lo reportó»; con la pieza sin entrega, «sin entrega».
+  const sinClave = armarCreative(entrada({
+    rendimiento: { ...entrada().rendimiento, filas: [rend({ creativo: 'a', clickToLanding: { cantidad: null, tasa: null, anuncioDiasConLaClave: 0, anuncioDiasConEntrega: 2 } })] } as unknown as RendimientoDeLosCreativos,
+  }));
+  assert.deepEqual(pieza(sinClave, 'a').ficha.clickToLanding, { valor: null, motivo: 'sin_reporte' });
+  const sinEntrega = armarCreative(entrada({ entrega: entrada().entrega.filter((x) => x.pieza !== 'a') }));
+  assert.deepEqual(pieza(sinEntrega, 'a').ficha.clickToLanding, { valor: null, motivo: 'sin_entrega' }, 'con fila de rendimiento pero sin impresiones');
+});
+
+test('el piso es «menos de 1000»: con 1000 justas hay tasa; sin frecuencia en ninguna pieza, la tira lo dice', () => {
+  const p = armarCreative(entrada({ entrega: [entrega({ pieza: 'a', impresiones: 1000, clics: 10, vistas: { cantidad: 100, impresiones: 1000 }, etapa: TOFU })] }));
+  assert.deepEqual(pieza(p, 'a').cifras.hookRate, { valor: 0.1, motivo: null });
+  assert.deepEqual(pieza(p, 'a').ficha.ctr, { valor: 0.01, motivo: null });
+  assert.deepEqual(p.loDemas.ctr, { valor: 0.01, motivo: null });
+  assert.deepEqual(p.cifras.frecuencia, { valor: null, motivo: 'sin_reporte' }, 'hay entrega y ninguna pieza trae frecuencia');
+});
+
+test('la etapa de respaldo: la de más contactos; empate, la que va antes en el embudo; y la única de un conteo', () => {
+  const p = armarCreative(entrada({
+    calidad: {
+      ...entrada().calidad,
+      filas: [
+        // «e»: MOFU primero y TOFU después, con los mismos contactos: gana TOFU, que va antes.
+        calidad({ creativo: 'e', etapa: MOFU, contactos: 4, calificados: 1 }),
+        calidad({ creativo: 'e', etapa: TOFU, contactos: 4, calificados: 1 }),
+        // «f»: la de más contactos viene segunda.
+        calidad({ creativo: 'f', etapa: TOFU, contactos: 2, calificados: 0 }),
+        calidad({ creativo: 'f', etapa: MOFU, contactos: 5, calificados: 3 }),
+      ],
+    } as CalidadDeLosCreativos,
+    entrega: [],
+    rendimiento: { ...entrada().rendimiento, filas: [] } as RendimientoDeLosCreativos,
+  }));
+  assert.equal(pieza(p, 'e').etapa, 'TOFU', 'el empate depende del orden de las filas');
+  assert.equal(pieza(p, 'f').etapa, 'MOFU', 'ganó la primera fila y no la de más contactos');
+  // «f» es la única MOFU con calificados: va a «Funciona» como única, también en un criterio de conteo.
+  assert.deepEqual(p.criterios.calificados.unicas, ['e', 'f']);
+});
+
+test('el cerebro recibe la pantalla sin URLs, campo por campo', () => {
+  const p = armarCreative(entrada());
+  const c = pantallaParaElCerebro(p);
+  const de = (k: string) => c.piezas.find((x) => x.clave === k)!;
+  assert.deepEqual([de('a').conMiniatura, de('a').conEnlace], [true, true]);
+  assert.deepEqual([de('b').conMiniatura, de('b').conEnlace], [false, false], 'una pieza sin miniatura ni enlace dice que no los tiene');
+  assert.deepEqual([de('c').conMiniatura, de('c').conEnlace], [true, true]);
+  assert.doesNotMatch(JSON.stringify(c), /https?:/);
+  assert.deepEqual(Object.keys(de('a')).sort(), ['cifras', 'clave', 'conEnlace', 'conMiniatura', 'estado', 'etapa', 'ficha', 'perdiendoGancho']);
+  assert.deepEqual(Object.keys(de('a').ficha).sort(), ['anuncios', 'anunciosDeLaPieza', 'clickToLanding', 'ctr', 'gasto', 'landing', 'linkCtr', 'primerDia', 'ultimoDia']);
+  assert.deepEqual(Object.keys(c).sort(), ['cifras', 'criterios', 'loDemas', 'piezas']);
+});
+
+test('la tarea `contactos` pide las miniaturas después de sincronizar, y suma sus llamadas y su corte', () => {
+  const barrido = readFileSync(join(RAIZ, 'lib/negocio/barrido.ts'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const i = barrido.indexOf('async function releerContactos(');
+  const cuerpo = barrido.slice(i, barrido.indexOf('\n}\n', i));
+  assert.ok(cuerpo.indexOf('sincronizarContactos(') < cuerpo.indexOf('await completarMiniaturas(orgId, acceso)'), 'las miniaturas no van después de sincronizar');
+  assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas \}/, 'el sello no lleva el resumen de las miniaturas');
+  assert.match(cuerpo, /llamadas: r\.resumen\.llamadas \+ miniaturas\.pedidos/, 'las llamadas de las miniaturas no se cuentan');
 });

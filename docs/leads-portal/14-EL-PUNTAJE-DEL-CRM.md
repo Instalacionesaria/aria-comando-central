@@ -78,7 +78,7 @@ Hay dos caminos para leer el puntaje, y hoy dan lo mismo:
 | quién | de dónde | cómo encuentra el campo | qué acepta |
 |---|---|---|---|
 | sincronización → `contactos.score` | la columna | por identificador (`lib/ghl/contrato.ts:305`) | entero 0-100 (`lib/negocio/sincronizar.ts:524-530`) |
-| Creative | el `jsonb` | por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:63`, `:135`) | cualquier número, decimales incluidos (`lib/negocio/calidadDelCreativo.ts:212-216`) |
+| Creative | el `jsonb` | por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:63`, `:142`) | cualquier número, decimales incluidos (`lib/negocio/calidadDelCreativo.ts:212-216`) |
 
 Coinciden porque la columna, que sólo acepta enteros de 0 a 100 (`lib/negocio/sincronizar.ts:524-530`),
 tenía el 2026-09-27 los mismos 471 valores que el `jsonb` tenía el 2026-09-21
@@ -296,8 +296,9 @@ Tres lecturas, las tres requisitos:
 ### LP14-12 · Creative promedia el cero; esta pestaña lo aparta
 
 Creative publica un **ICP promedio por pieza** que promedia todos los valores numéricos, **ceros
-incluidos** (`lib/negocio/calidadDelCreativo.ts:224-225`), y dibuja al lado el `n` de los que tienen
-puntaje, que también los incluye (`components/creative/PanelDeCreative.jsx:390-391@1971ab2`). Esta pestaña no
+incluidos** (`lib/negocio/calidadDelCreativo.ts:224-225`), y hasta el 2026-10-11 dibujaba al lado el `n` de los que
+tienen puntaje, que también los incluye (`components/creative/PanelDeCreative.jsx:390-391@1971ab2`); desde ese día ese
+promedio no se dibuja, y lo da el agente. Esta pestaña no
 promedia: clasifica, y el 0 va a «Sin calificar».
 
 El efecto se midió el 2026-09-16: 18 de los 20 ceros de esa ventana caían en un solo anuncio, que

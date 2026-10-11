@@ -11,8 +11,13 @@
 //   · la etapa: la de la campaña con más impresiones — mutación: la primera que aparezca;
 //   · el hook rate de la entrega es el de `rendimientoDelCreativo` — mutación: otro denominador;
 //   · los calificados: ICP de 75 o más, sin contar el cero ni un texto — mutación: otro umbral, o romper con un texto;
-//   · la miniatura de la pieza: la más frecuente entre sus contactos, sólo de los hosts permitidos — mutación: la
-//     primera, o cualquier host.
+//   · la miniatura de la pieza: la más frecuente entre sus contactos; empate, la del contacto más nuevo; sólo de los
+//     hosts permitidos, con el tope de la tabla; la foto si no hay video — mutación: la primera, cualquier host, el tope
+//     del link manual, sólo el video;
+//   · los anuncios sin nombre, en su pieza rotulada, y el borde de los 3 días — mutación: descartarlos, o 4 días.
+//
+// Los datos de la CF-4 están puestos para que el orden de inserción, el id y el orden alfabético NO coincidan con la
+// respuesta correcta: así cada `orderBy` decide algo.
 //
 // Las piezas llevan una marca en el nombre: la organización la comparten otras pruebas.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -33,6 +38,8 @@ let esc: Escenario;
 const MARCA = '25200';
 const PIEZA = 'pieza-cf1-uno';
 const OTRA = 'pieza-cf1-dos';
+const TERCERA = 'pieza-cf1-tres';
+const CUARTA = 'pieza-cf1-cuatro';
 const CONTACTO = 'lectura-creative-';
 const CAMPO = 'campo-icp-cf1';
 const CARPETA = 'carpeta-icp-cf1';
@@ -80,16 +87,16 @@ async function unDia(id: string, hace: number, m: { impresiones: number; clics?:
   );
 }
 
-async function unLead(o: { pieza: string; icp?: string | null; video?: string | null }): Promise<void> {
+async function unLead(o: { pieza: string; icp?: string | null; video?: string | null; foto?: string; haceDias?: number }): Promise<void> {
   const r = await esc.admin.query<{ id: string }>(
     `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, campos_del_crm)
-     values ($1, $2, 'Lead de prueba', 'setter', now() - interval '1 day', $3::jsonb, $4::jsonb) returning id`,
-    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, JSON.stringify({ utmContent: o.pieza, adId: '1' }), JSON.stringify(o.icp == null ? {} : { [CAMPO]: o.icp })],
+     values ($1, $2, 'Lead de prueba', 'setter', now() - make_interval(days => $5), $3::jsonb, $4::jsonb) returning id`,
+    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, JSON.stringify({ utmContent: o.pieza, adId: '1' }), JSON.stringify(o.icp == null ? {} : { [CAMPO]: o.icp }), o.haceDias ?? 1],
   );
-  if (o.video !== undefined) {
+  if (o.video !== undefined || o.foto !== undefined) {
     await esc.admin.query(
-      `insert into negocio.miniaturas_del_contacto (org_id, contacto_id, encontrado, video_url) values ($1, $2, true, $3)`,
-      [esc.org, r.rows[0]!.id, o.video],
+      `insert into negocio.miniaturas_del_contacto (org_id, contacto_id, encontrado, video_url, photo_url) values ($1, $2, true, $3, $4)`,
+      [esc.org, r.rows[0]!.id, o.video ?? null, o.foto ?? null],
     );
   }
 }
@@ -98,10 +105,11 @@ const enAlfa = <T>(f: () => Promise<T>) => conOrganizacion(esc.org, f);
 
 test('la entrega de una pieza: la ventana, las claves, la frecuencia pesada, los días y la etapa', async () => {
   await limpiar();
-  await unaCampana(`${MARCA}01`, 'NUEVA ERA | TOFU | LEADS');
-  await unaCampana(`${MARCA}02`, 'NUEVA ERA | BOFU | AGENDAS');
-  await unAnuncio(`${MARCA}11`, PIEZA, `${MARCA}01`);
-  await unAnuncio(`${MARCA}12`, ' Pieza-CF1-Uno ', `${MARCA}02`);
+  // La campaña BOFU lleva el id MENOR: si el orden por impresiones no decidiera, ganaría ella por el desempate.
+  await unaCampana(`${MARCA}02`, 'NUEVA ERA | TOFU | LEADS');
+  await unaCampana(`${MARCA}01`, 'NUEVA ERA | BOFU | AGENDAS');
+  await unAnuncio(`${MARCA}11`, PIEZA, `${MARCA}02`);
+  await unAnuncio(`${MARCA}12`, ' Pieza-CF1-Uno ', `${MARCA}01`);
   // En la ventana de 30: tres días del anuncio TOFU (uno sin videoView) y uno del BOFU.
   await unDia(`${MARCA}11`, 1, { impresiones: 1000, clics: 20, frecuencia: 1 }, { videoView: 300 });
   await unDia(`${MARCA}11`, 2, { impresiones: 3000, clics: 30, frecuencia: 2 }, { videoView: 600, linkClick: 50 });
@@ -118,22 +126,40 @@ test('la entrega de una pieza: la ventana, las claves, la frecuencia pesada, los
   assert.deepEqual(e.clicsAlEnlace, { cantidad: 60, impresiones: 5000 });
   assert.equal(e.landing, null, 'sin landingPageView no hay par');
   assert.equal(e.frecuencia, (1 * 1000 + 2 * 3000 + 4 * 500) / 4500, 'la frecuencia no está pesada por impresiones');
+  assert.equal(e.impresionesConFrecuencia, 4500, 'el peso de la frecuencia incluye días sin frecuencia, o fuera de la ventana');
   assert.equal(e.etapa, 'TOFU', 'la etapa no es la de la campaña con más impresiones');
   assert.equal(e.entregando, true);
-  assert.equal(e.primerDia, (await esc.admin.query<{ d: string }>(`select (current_date - 40)::text as d`)).rows[0]!.d, 'el primer día no mira toda la historia');
+  const dia = async (hace: number) => (await esc.admin.query<{ d: string }>(`select (current_date - $1::int)::text as d`, [hace])).rows[0]!.d;
+  assert.equal(e.primerDia, await dia(40), 'el primer día no mira toda la historia');
+  assert.equal(e.ultimoDia, await dia(1));
 
   // El mismo hook rate que el módulo, en porcentaje allá y de 0 a 1 acá.
   const r = (await enAlfa(() => rendimientoDelCreativo(30))).filas.find((f) => f.creativo === PIEZA);
   assert.ok(r);
   assert.ok(Math.abs(r.hookRate.tasa! / 100 - e.vistas!.cantidad / e.vistas!.impresiones) < 0.0001, 'la entrega y el rendimiento no dan el mismo hook rate');
 
-  // Sin impresiones en los últimos 3 días, no está entregando.
+  /* «Entregando»: impresiones en los últimos 3 días del calendario, hoy incluido —hoy, ayer y anteayer—. OTRA entregó
+     hace 3 días y hoy tuvo un día en cero: no está entregando, y su último día es el de hace 3. TERCERA entregó
+     anteayer: sí. */
   await unaCampana(`${MARCA}03`, 'IG-DM');
   await unAnuncio(`${MARCA}13`, OTRA, `${MARCA}03`);
-  await unDia(`${MARCA}13`, 5, { impresiones: 1500 }, null);
-  const otra = (await enAlfa(() => entregaDeLasPiezas(30))).find((x) => x.pieza === OTRA);
+  await unAnuncio(`${MARCA}14`, TERCERA, `${MARCA}03`);
+  await unDia(`${MARCA}13`, 3, { impresiones: 1500 }, null);
+  await unDia(`${MARCA}13`, 0, { impresiones: 0 }, null);
+  await unDia(`${MARCA}14`, 2, { impresiones: 700 }, null);
+  // Un anuncio sin nombre va a la pieza rotulada, como en el rendimiento: su entrega es real.
+  await unAnuncio(`${MARCA}15`, '', `${MARCA}03`);
+  await unDia(`${MARCA}15`, 1, { impresiones: 777 }, null);
+  const todas = await enAlfa(() => entregaDeLasPiezas(30));
+  const otra = todas.find((x) => x.pieza === OTRA);
+  const tercera = todas.find((x) => x.pieza === TERCERA);
+  const sinNombre = todas.find((x) => x.pieza === '(anuncio sin nombre)');
+  const haceTres = await dia(3);
   await limpiar();
-  assert.deepEqual([otra?.entregando, otra?.etapa, otra?.vistas], [false, null, null]);
+  assert.deepEqual([otra?.entregando, otra?.etapa, otra?.vistas, otra?.ultimoDia], [false, null, null, haceTres], 'el borde de los 3 días, o un día en cero cuenta como entrega');
+  assert.equal(tercera?.entregando, true);
+  assert.ok(sinNombre && sinNombre.impresiones >= 777, 'el anuncio sin nombre se descartó');
+  assert.ok(!todas.some((x) => x.pieza === ''), 'quedó una pieza con nombre vacío');
 });
 
 test('los calificados: ICP de 75 o más, sin el cero ni un texto', async () => {
@@ -150,21 +176,34 @@ test('los calificados: ICP de 75 o más, sin el cero ni un texto', async () => {
   assert.equal(f.reduce((s, x) => s + x.contactos, 0), 6);
 });
 
-test('la miniatura de la pieza: la más frecuente entre sus contactos, sólo de los hosts permitidos', async () => {
+test('la miniatura de la pieza: la más frecuente; empate, la del contacto más nuevo; sólo hosts permitidos', async () => {
   await limpiar();
-  const UNA = 'https://www.facebook.com/ads/image/?d=una';
-  const DOS = 'https://www.facebook.com/ads/image/?d=dos';
-  await unLead({ pieza: PIEZA, video: UNA });
-  await unLead({ pieza: PIEZA, video: DOS });
-  await unLead({ pieza: PIEZA, video: DOS });
+  const ALFA = 'https://www.facebook.com/ads/image/?d=alfa';
+  const ZETA = 'https://www.facebook.com/ads/image/?d=zeta';
+  // La más frecuente entra PRIMERO y es la mayor alfabéticamente: sólo la frecuencia la hace ganar.
+  await unLead({ pieza: PIEZA, video: ZETA });
+  await unLead({ pieza: PIEZA, video: ZETA });
+  await unLead({ pieza: PIEZA, video: ALFA });
   await unLead({ pieza: PIEZA, video: null });
   await unLead({ pieza: OTRA, video: 'https://evil.example.com/x.jpg' });
   await unLead({ pieza: OTRA, video: 'https://evil.example.com/x.jpg' });
-  await unLead({ pieza: OTRA, video: UNA });
+  await unLead({ pieza: OTRA, video: ALFA });
+  // Empate: la del contacto que entró al CRM más tarde, aunque se haya guardado antes y vaya después en el abecedario.
+  await unLead({ pieza: TERCERA, video: ZETA, haceDias: 2 });
+  await unLead({ pieza: TERCERA, video: ALFA, haceDias: 20 });
+  // Sin video, la foto; y una URL larga, dentro del tope de la tabla, se dibuja igual.
+  const LARGA = `https://www.facebook.com/ads/image/?d=${'x'.repeat(900)}`;
+  await unLead({ pieza: CUARTA, foto: 'https://scontent.xx.fbcdn.net/foto.jpg' });
   const m = await enAlfa(() => miniaturasDeLasPiezas());
+  await unLead({ pieza: CUARTA, video: LARGA });
+  await unLead({ pieza: CUARTA, video: LARGA });
+  const m2 = await enAlfa(() => miniaturasDeLasPiezas());
   await limpiar();
-  assert.equal(m.get(PIEZA), DOS, 'no eligió la más frecuente');
-  assert.equal(m.get(OTRA), UNA, 'eligió una URL de un host que no está permitido');
+  assert.equal(m.get(PIEZA), ZETA, 'no eligió la más frecuente');
+  assert.equal(m.get(OTRA), ALFA, 'eligió una URL de un host que no está permitido');
+  assert.equal(m.get(TERCERA), ZETA, 'el empate no fue para el contacto más nuevo');
+  assert.equal(m.get(CUARTA), 'https://scontent.xx.fbcdn.net/foto.jpg', 'sin video no tomó la foto');
+  assert.equal(m2.get(CUARTA), LARGA, 'una miniatura de más de 500 caracteres no se dibuja');
 });
 
 test('la lectura entera arma la pantalla con lo leído', async () => {

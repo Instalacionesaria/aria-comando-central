@@ -97,17 +97,17 @@ consulta (`docs/creative/07-LO-QUE-ENTREGA-Y-RECIBE.md:41-71`).
 
 ## 2 · Qué hay hoy en pantalla
 
-**La ruta.** `app/api/creative/route.ts` declara `PANTALLA = 'creative'` (`app/api/creative/route.ts:51`),
-pasa por el portero con `tablero.ver` (`app/api/creative/route.ts:57`), **rechaza** el período que no
-está en la lista en vez de corregirlo (`app/api/creative/route.ts:63-64`) y corre los tres módulos con la
-misma ventana, desde el 2026-10-11 dentro de una sola lectura (`app/api/creative/route.ts:76`,
-`lib/negocio/lecturaDeCreative.ts:423-425`). La sección ya no declara `sinOperacionesTodavia`
+**La ruta.** `app/api/creative/route.ts` declara `PANTALLA = 'creative'` (`app/api/creative/route.ts:49`),
+pasa por el portero con `tablero.ver` (`app/api/creative/route.ts:55`), **rechaza** el período que no
+está en la lista en vez de corregirlo (`app/api/creative/route.ts:61-62`) y corre los tres módulos con la
+misma ventana, desde el 2026-10-11 dentro de una sola lectura (`app/api/creative/route.ts:74`,
+`lib/negocio/lecturaDeCreative.ts:439-441`). La sección ya no declara `sinOperacionesTodavia`
 (`lib/autorizacion/secciones.ts:261-274`).
 
 **La vista y el panel.** `components/views/CreativeView.jsx` (70 líneas) sólo pone el encabezado
 —«Qué pieza trae mejor gente, y sobre cuántos datos» (`components/views/CreativeView.jsx:60@1971ab2`)— y monta
 el panel. `components/creative/PanelDeCreative.jsx` (611 líneas) pide por `leerCreative`
-(`lib/negocio/vistaDeCreative.ts:47-59`), recarga cada 60 s mientras la pestaña está a la vista
+(`lib/negocio/vistaDeCreative.ts:48-63`), recarga cada 60 s mientras la pestaña está a la vista
 (`components/creative/PanelDeCreative.jsx:88-90@1971ab2`, `lib/cadencia.ts:91`) y dibuja cinco bloques en este
 orden (`components/creative/PanelDeCreative.jsx:181-193@1971ab2`):
 
@@ -126,12 +126,12 @@ orden (`components/creative/PanelDeCreative.jsx:181-193@1971ab2`):
 5. **Lo que esta pantalla no puede medir** (`components/creative/PanelDeCreative.jsx:212-239@1971ab2`): los
    cuatro huecos, «medido contra la API de GoHighLevel el 18 de septiembre de 2026».
 
-**Los módulos que deciden** (el panel no calcula nada, `lib/negocio/vistaDeCreative.ts:3-14`):
+**Los módulos que deciden** (el panel no calcula nada, `lib/negocio/vistaDeCreative.ts:3-15`):
 
 | módulo | qué publica | grano | piso |
 |---|---|---|---|
 | `lib/negocio/calidadDelCreativo.ts` | ICP promedio y tasa de agenda | contacto, por (pieza, etapa) | 10 sobre cada denominador (`lib/negocio/calidadDelCreativo.ts:254-260`) |
-| `lib/negocio/rendimientoDelCreativo.ts` | gasto, impresiones y clics consumidos de `costoDelAnuncio` y sumados por pieza, y sobre esas sumas el CTR, recalculado con su propio piso (`lib/negocio/rendimientoDelCreativo.ts:314-354`); hook rate, link CTR, landing page view rate, click-to-landing, interacción | anuncio-día sumado por pieza | 1.000 impresiones (`lib/negocio/rendimientoDelCreativo.ts:66`); 10 clics al enlace para el click-to-landing |
+| `lib/negocio/rendimientoDelCreativo.ts` | gasto, impresiones y clics consumidos de `costoDelAnuncio` y sumados por pieza, y sobre esas sumas el CTR, recalculado con su propio piso (`lib/negocio/rendimientoDelCreativo.ts:317-357`); hook rate, link CTR, landing page view rate, click-to-landing, interacción | anuncio-día sumado por pieza | 1.000 impresiones (`lib/negocio/rendimientoDelCreativo.ts:69`); 10 clics al enlace para el click-to-landing |
 | `lib/negocio/fatigaDelCreativo.ts` | caída relativa del CTR entre dos mitades de la serie | día de calendario por pieza | 8 días (`lib/negocio/fatigaDelCreativo.ts:53`) y 1.000 impresiones por mitad |
 | `lib/negocio/creativo.ts` | la llave `lower(btrim(nombre))` y la etapa leída del nombre de campaña | — | — |
 
@@ -211,7 +211,7 @@ existe y sus líneas están en el historial de git. Lo que cada cosa fue, y lo q
 |---|---|
 | ocho piezas con nombre, formato, ángulo, dolor y siete métricas | las 32 piezas reales de 79 anuncios, por nombre normalizado |
 | seis cifras de cabecera | el bloque de cobertura: el puente, las dos ventanas y el aviso |
-| cinco criterios de orden elegibles | orden fijo: por volumen la calidad (`lib/negocio/calidadDelCreativo.ts:264-266`), por gasto la subasta (`lib/negocio/rendimientoDelCreativo.ts:360`); el criterio elegible no se construyó |
+| cinco criterios de orden elegibles | orden fijo: por volumen la calidad (`lib/negocio/calidadDelCreativo.ts:264-266`), por gasto la subasta (`lib/negocio/rendimientoDelCreativo.ts:363`); el criterio elegible no se construyó |
 | la partición «Funciona / No funciona» por el promedio | borrada: con etapas mezcladas mandaba a pausar a las TOFU (`components/views/CreativeView.jsx:34-37@1971ab2`); hoy hay una tabla por etapa y ningún corte |
 | la curva de retención y el guion con líneas rojas | **borrados sin reemplazo**, y es el único requisito que se borró en vez de postergarse (`components/views/CreativeView.jsx:27-33@1971ab2`) |
 | el «Plan de acción», doce frases | borrado: diez no tenían fuente (`components/views/CreativeView.jsx:19-23@1971ab2`). Volvió con AG10 de los agentes, con las cuatro frases medidas del detector (`docs/OTROS/agentes/fichas/F06-CREATIVE-INSIGHTS.md`) |
@@ -308,7 +308,7 @@ filas: ya no hace falta, porque la `050` dio tablas propias y la `053`, la colum
 ## 5 · Datos que faltan, y de dónde tendrían que venir
 
 **Los huecos que el código declara y la pantalla dibuja**, medidos contra la API el 2026-09-18
-(`lib/negocio/rendimientoDelCreativo.ts:140-168`):
+(`lib/negocio/rendimientoDelCreativo.ts:143-171`):
 
 - **La curva de retención y los cuartiles**: `fields` es un enum cerrado de once valores y
   `video_p25_watched_actions` y el resto dan 422 (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:133-170`).
@@ -329,10 +329,10 @@ repositorio: buscando `graph.facebook` en `lib/`, `app/` y `scripts/` no aparece
   veces a la misma persona (`lib/negocio/costoDelAnuncio.ts:116-126`,
   `lib/negocio/fatigaDelCreativo.ts:6-19`).
 - **`results.lead`** es de Meta y suma dos mecanismos de conteo que ocurren en los mismos anuncios;
-  dividirlo por impresiones publicaría el doble (`lib/negocio/rendimientoDelCreativo.ts:100-123`,
+  dividirlo por impresiones publicaría el doble (`lib/negocio/rendimientoDelCreativo.ts:103-126`,
   `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:313-339`).
 - **Qué cuenta `videoView`** no está documentado; la pantalla lo dice en su aviso
-  (`lib/negocio/rendimientoDelCreativo.ts:599-604`,
+  (`lib/negocio/rendimientoDelCreativo.ts:602-607`,
   `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:271-279`).
 
 **Los umbrales, sin calibrar.** El piso de 1.000 impresiones, los ocho días de serie y el 20 % de
@@ -479,7 +479,7 @@ tres tasas justamente por esto (`components/creative/PanelDeCreative.jsx:519-571
 32 piezas no tienen CTR: 18 porque no entregaron y 8 porque no llegan a mil impresiones, y se ven
 igual. Las impresiones, los clics, el CPM y el CPC viajan en la respuesta y no se dibujan, aunque el
 módulo dice que viajan para que se vea sobre qué base se calló
-(`lib/negocio/rendimientoDelCreativo.ts:349-350`).
+(`lib/negocio/rendimientoDelCreativo.ts:352-353`).
 
 **4 · «Hoy» dice 24 horas y calcula el día.** El botón lleva de título el matiz de `PERIODOS`, *«Las
 últimas 24 horas, no el día del calendario»* (`lib/negocio/periodo.ts:84`,

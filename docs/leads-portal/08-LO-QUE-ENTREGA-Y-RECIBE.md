@@ -131,8 +131,8 @@ pestaña publica tramos por persona. **Las dos cifras no se reconcilian, y ningu
 
 | | Creative | Leads Portal |
 |---|---|---|
-| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:216`) y entra al `avg` (`:218`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
-| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:63`, `:135`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:305`) |
+| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:216`) y entra al `avg` (`:225`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
+| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:63`, `:142`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:305`) |
 | la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:238`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
 
 Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:60` y la

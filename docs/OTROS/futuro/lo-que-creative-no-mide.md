@@ -9,7 +9,7 @@
 
 ## 1 · La retención y la curva
 
-**Dónde se dibujaría** · La cifra «Retención» de la tira y de cada tarjeta, y la sección «Retención del video» de la ficha.
+**Dónde se dibujaría** · La cifra «Retención» de la tira y de cada tarjeta, y la sección «Retención y guion» de la ficha («Retención del video» en el prototipo).
 
 **Por qué no hay dato** · GoHighLevel entrega por anuncio y por día una lista cerrada de once valores y un desglose de
 acciones; los cuartiles de video, el tiempo medio visto y el thruplay no están (`C14-04` y `C14-05`). Lo que el
@@ -31,7 +31,7 @@ campaña—, o un formulario por pieza en la pantalla. La duración, además, la
 
 ## 3 · El guion y dónde se cae la atención
 
-**Dónde se dibujaría** · La sección «Guión del video» de la ficha, con las líneas marcadas «↓ retención».
+**Dónde se dibujaría** · La sección «Retención y guion» de la ficha («Guión del video» en el prototipo), con las líneas marcadas «↓ retención».
 
 **Por qué no hay dato** · No hay transcripción de los videos, y aunque la hubiera, la retención llega en cuartiles: no
 señala un segundo del guion (`docs/creative/00-MAPA.md`, el caso difícil).

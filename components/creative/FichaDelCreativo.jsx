@@ -7,7 +7,8 @@
  *
  * El prototipo abría cada pieza en `#drawer` (`aios-command-center_1.html:3764-3810`) con su veredicto y cuatro
  * secciones —«Qué es», «Datos del video», «Retención del video» y «Guión del video»— sobre datos inventados. Acá van
- * las mismas, en su orden, más la miniatura arriba y los anuncios de la pieza abajo. Lo que GoHighLevel no entrega
+ * las mismas, en su orden y con los desvíos de CF1-02 —«Datos de la pieza», y retención y guion en una sola—, más la
+ * miniatura arriba y los anuncios de la pieza abajo. Lo que GoHighLevel no entrega
  * —el formato, el ángulo, la duración, el dolor, la retención y el guion— queda en «—» con su frase: no se inventa
  * una curva ni se marca una línea de un guion que no está guardado.
  *
@@ -35,18 +36,39 @@ const elDia = (iso) => new Intl.DateTimeFormat('es', { day: 'numeric', month: 's
 
 export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual, manualDelServidor, puedeEditar, alCambiarEnlaces, alCerrar }) {
   const cerrarRef = useRef(null);
+  const cajon = useRef(null);
 
   /* El foco entra UNA vez al abrirse y Escape cierra; la función vive en una referencia para que el reloj del
-     panel, que vuelve a dibujar todo, no le robe el foco al lector. Mismo motivo que en `FichaDelLead`. */
+     panel, que vuelve a dibujar todo, no le robe el foco al lector. Mismo motivo que en `FichaDelLead`.
+
+     Al cerrarse, el foco vuelve a donde estaba —la tarjeta—: si no, cae en `body` y quien usa el teclado pierde su
+     lugar en la rejilla. Mientras está abierta, el tabulador no sale del cajón: es un diálogo modal. Y Escape dentro
+     del campo del link no cierra: se perdería lo que se escribió. */
   const alCerrarRef = useRef(alCerrar);
   alCerrarRef.current = alCerrar;
   useEffect(() => {
+    const origen = document.activeElement;
     cerrarRef.current?.focus();
     const alTeclear = (e) => {
-      if (e.key === 'Escape') alCerrarRef.current();
+      if (e.key === 'Escape' && e.target?.tagName !== 'INPUT') alCerrarRef.current();
+      if (e.key !== 'Tab' || !cajon.current) return;
+      const enfocables = [...cajon.current.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')];
+      if (enfocables.length === 0) return;
+      const primero = enfocables[0];
+      const ultimo = enfocables[enfocables.length - 1];
+      if (e.shiftKey && (document.activeElement === primero || !cajon.current.contains(document.activeElement))) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && (document.activeElement === ultimo || !cajon.current.contains(document.activeElement))) {
+        e.preventDefault();
+        primero.focus();
+      }
     };
     document.addEventListener('keydown', alTeclear);
-    return () => document.removeEventListener('keydown', alTeclear);
+    return () => {
+      document.removeEventListener('keydown', alTeclear);
+      if (origen instanceof HTMLElement && origen.isConnected) origen.focus();
+    };
   }, []);
 
   const c = pieza.cifras;
@@ -60,7 +82,7 @@ export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual,
   return createPortal(
     <>
       <div className="scrim on" onClick={alCerrar} aria-hidden="true" />
-      <aside className="drawer on cr-ficha" role="dialog" aria-modal="true" aria-label={`Pieza ${pieza.clave}`}>
+      <aside className="drawer on cr-ficha" ref={cajon} role="dialog" aria-modal="true" aria-label={`Pieza ${pieza.clave}`}>
         <div className="dw-head">
           <div className="cr-cabeza">
             <h3 className="cr-titulo">{pieza.clave}</h3>
@@ -71,6 +93,8 @@ export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual,
             ) : (
               <span className="dw-verdict bad">{`✕ Bajo en ${CRITERIO[criterio].rotulo.toLowerCase()} · ${o(valor.valor, FORMATO_DEL_CRITERIO[criterio])}`}</span>
             )}
+            {/* Un «—» en el veredicto dice por qué, debajo. */}
+            {motivo(valor) ? <div className="cr-motivo">{motivo(valor)}</div> : null}
           </div>
           <button type="button" className="dw-x" ref={cerrarRef} onClick={alCerrar} aria-label="Cerrar">
             ✕
@@ -102,8 +126,8 @@ export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual,
               <Caja rotulo="Formato" valor={FRASE.guion} porque={FRASE.sinFuente} />
               <Caja rotulo="Ángulo" valor={FRASE.guion} porque={FRASE.sinFuente} />
               <Caja rotulo="Duración" valor={FRASE.guion} porque={FRASE.sinFuente} />
-              <Caja rotulo="Primer día con entrega" valor={fechaCorta(f.primerDia) ?? FRASE.guion} ancha />
-              <Caja rotulo="Último día con entrega" valor={fechaCorta(f.ultimoDia) ?? FRASE.guion} ancha />
+              <Caja rotulo="Primer día con entrega" valor={fechaCorta(f.primerDia) ?? FRASE.guion} porque={f.primerDia ? null : FRASE.sinEntrega} ancha />
+              <Caja rotulo="Último día con entrega" valor={fechaCorta(f.ultimoDia) ?? FRASE.guion} porque={f.ultimoDia ? null : FRASE.sinEntrega} ancha />
               <Caja rotulo="Pieza" valor={pieza.clave} ancha />
               <Caja rotulo="Dolor que ataca" valor={FRASE.guion} porque={FRASE.sinFuente} ancha />
             </div>

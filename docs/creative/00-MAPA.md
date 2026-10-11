@@ -18,14 +18,16 @@
 > 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
 > cosa**, que es peor: una línea corrida no falla.
 >
-> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> Hasta el 2026-10-11 `components/creative/PanelDeCreative.jsx` dibujaba tres bloques medidos: el ICP y la
 > agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
-> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`). Desde ese día la pestaña es el front del
+> prototipo con los datos de `lib/negocio/lecturaDeCreative.ts` (`16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 >
 > **Al 2026-10-11 hay además**: el enlace manual por pieza, el cajón de la pieza y la credencial de Meta (CR-1 a CR-3,
 > `15`); el detector con cuatro reglas, sus señales y su plan (AG10 de los agentes); el comentario de la cabecera
-> (AG15); tres herramientas del cerebro; y el gasto de toda la cuenta (`14` § 7). **El 2026-10-11 empieza la vuelta al
-> front del prototipo**: `16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, etapas CF-0 a CF-5.
+> (AG15); tres herramientas del cerebro —cuatro desde CF-2, con `creative_en_cifras`—; y el gasto de toda la cuenta
+> (`14` § 7). **El 2026-10-11 la pestaña vuelve al front del prototipo**: `16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`,
+> CF-0 a CF-4 hechas ese día; CF-5, la comparación medida y la foto 02, sigue.
 
 ## Qué es esta carpeta
 

@@ -11,9 +11,10 @@
 > 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
 > cosa**, que es peor: una línea corrida no falla.
 >
-> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> Hasta el 2026-10-11 `components/creative/PanelDeCreative.jsx` dibujaba tres bloques medidos: el ICP y la
 > agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
-> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`). Desde ese día la pestaña es el front del
+> prototipo con los datos de `lib/negocio/lecturaDeCreative.ts` (`16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 
 > Requisitos derivados de `lib/aios/creative.js:208-330` y de `components/Overlays.jsx:120-136`.
 >
@@ -127,7 +128,7 @@ unirlas con una línea vuelve a afirmar lo que pasa en el medio, que es de nuevo
 **Rastro** · `lib/aios/creative.js:62-68` (`TRANSCRIPT`): 30 frases en primera persona con su marca de
 tiempo, escritas a mano, para cinco de las ocho piezas.
 **Estado** · **No existe.** Ninguna tabla de `negocio` guarda guion ni copy, y GoHighLevel no los da
-(`C14-07`, `C14-08`). El video y la miniatura sí van a tener fuente, con Meta directo (`C15`).
+(`C14-07`, `C14-08`). El video y la miniatura sí van a tener fuente, con Meta directo (`C15`). *Corrección del 2026-10-11: la miniatura llega por `GET /contacts/{id}` (`16`, CF1-11 y CF1-12); Meta directo sigue haciendo falta para el video.*
 **El vacío que dibuja el prototipo cuando falta** ya está bien resuelto y se conserva: «Formato
 **Estático** — sin guión (no es video).»
 

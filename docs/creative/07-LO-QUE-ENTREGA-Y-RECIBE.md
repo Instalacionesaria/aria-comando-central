@@ -165,7 +165,8 @@ con mejor encaje», que es un eslabón real de esa cadena y el único que hoy ti
 **Qué es** · La mitad interpretativa que el § 18.12 le reserva en exclusiva: hook, body, CTA, guion,
 variantes nuevas.
 **Estado** · **Exige leer la pieza, y la pieza no está guardada en ninguna de las tablas de
-`negocio`.** Ni video, ni copy, ni miniatura, ni guion. El `Creative Profile` del § 5.1 no existe como
+`negocio`.** Ni video, ni copy, ni miniatura, ni guion. *(Corrección del 2026-10-11: la miniatura sí, en
+`negocio.miniaturas_del_contacto` —`16`, CF1-11—.)* El `Creative Profile` del § 5.1 no existe como
 tabla, y la API de GoHighLevel no lo da (`C14-07`, `C14-08`).
 
 Así que **la independencia departamental que el corte por fuente quería defender no se puede

@@ -59,17 +59,34 @@ export const ESTADO = {
   sin_entrega: 'Sin entrega',
 };
 
+/** Cómo dice el período el «{N} piezas · …» de la barra, como el `periodLabel` del prototipo. */
+export const PERIODO_EN_LA_BARRA = {
+  hoy: 'hoy',
+  '7d': 'últimos 7 días',
+  '30d': 'últimos 30 días',
+  completo: 'histórico',
+};
+
 /** El rótulo del enlace según la red. La red la decide el servidor por el host, no el texto del link. */
 export const VER_EN = { facebook: 'Ver en Facebook', instagram: 'Ver en Instagram' };
 
 // ─── Los formatos. El guion es «no se sabe» o «bajo el piso», NUNCA un cero. ──
 
 /** Lo único que multiplica por 100: todo viaja de 0 a 1 (CF1-15). */
-export const cien = (v) => Math.round(v * 100);
+export const cien = (v) => v * 100;
 
 /** Un conteo entero, como lo escribe el prototipo: «1,240». */
 export const miles = (n) => n.toLocaleString('es-PE');
-export const pf = (v) => `${cien(v)}%`;
+
+/**
+ * Una tasa, en porcentaje: entera desde el 10 %, con un decimal debajo. El CTR, el link CTR y la landing viven entre
+ * 0,1 % y 3 %: enteros, 2,4 % y 2,1 % se leían iguales y una landing de 0,2 % se leía «0 %», que es un cero que nadie
+ * midió.
+ */
+export const pf = (v) => {
+  const p = cien(v);
+  return `${p >= 10 || p === 0 ? Math.round(p) : (Math.round(p * 10) / 10).toLocaleString('es-PE')}%`;
+};
 export const o = (v, formato) => (v === null || v === undefined ? FRASE.guion : formato(v));
 
 /** Un conteo corto, como el `fmtN` del prototipo: «41.2K» desde mil. En la tarjeta, seis cifras entran en 238 px. */

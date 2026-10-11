@@ -8,9 +8,10 @@
 // atención» y las doce frases del plan de acción, todo sobre 201 literales inventados. Nada venía
 // del servidor porque no había servidor.
 //
-// Acá el cliente pide y dibuja. Cada cifra llega con su piso aplicado, su nulo donde no se puede
-// decir y su aviso escrito — `calidadDelCreativo`, `rendimientoDelCreativo` y `fatigaDelCreativo`
-// son los que deciden, y son los que tienen pruebas verificadas por mutación contra la base.
+// Acá el cliente pide y dibuja. Cada cifra llega con su piso aplicado y, donde no se puede decir, con
+// su motivo — `calidadDelCreativo`, `rendimientoDelCreativo` y `fatigaDelCreativo` miden, y
+// `lecturaDeCreative` arma con eso lo que se dibuja (`armarCreative`), todo con pruebas verificadas
+// por mutación.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { pedir } from '../http/cliente.ts';
@@ -52,6 +53,9 @@ export async function leerCreative(periodo: ClaveDePeriodo): Promise<ResultadoDe
      opcional, una llamada que se olvide de pasarlo compila, pide treinta días y enciende el botón
      que diga el estado local. Los dos se ven bien y no coinciden. */
   const r = await pedir<PantallaDeCreative>(`${RUTA}?periodo=${encodeURIComponent(periodo)}`);
+  /* Una respuesta sin la pantalla armada —un servidor de antes de CF-2 que todavía responde, una versión cruzada— es un
+     fallo con su aviso, y no un panel que se cae al leer `criterios`. */
+  if (r.tipo === 'datos' && !r.datos?.pantalla?.criterios) return { tipo: 'fallo', mensaje: 'La respuesta no trae la pantalla de Creative.' };
   if (r.tipo === 'datos') return { tipo: 'datos', pantalla: r.datos };
   /* Los dos fallos se distinguen: «el servidor dijo que no» y «no se pudo llegar al servidor»
      mandan a mirar dos cosas distintas. */

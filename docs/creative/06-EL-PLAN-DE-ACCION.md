@@ -11,9 +11,10 @@
 > 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
 > cosa**, que es peor: una línea corrida no falla.
 >
-> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> Hasta el 2026-10-11 `components/creative/PanelDeCreative.jsx` dibujaba tres bloques medidos: el ICP y la
 > agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
-> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`). Desde ese día la pestaña es el front del
+> prototipo con los datos de `lib/negocio/lecturaDeCreative.ts` (`16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 
 > Requisitos derivados de `lib/aios/creative.js:338-415` (`renderReco`) y del modal de
 > `components/Overlays.jsx:99-119`.
@@ -99,7 +100,7 @@ cuatro campos que `14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` midió como inexistentes.
 
 ### C6-08 · El botón «Plan de acción» se borra, y el bloque se conserva como forma
 
-**Qué es** · `components/views/CreativeView.jsx:24-29@1971ab2` dibuja `«◈ Plan de acción»`.
+**Qué es** · `components/views/CreativeView.jsx:24-29@833fc51` dibuja `«◈ Plan de acción»`.
 **Estado** · **Se borra**, por el mismo motivo escrito en `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26):
 *«Un botón que abre recomendaciones con umbrales inventados es peor que no tenerlo.»* Con una sola
 frase sostenible de doce, lo que abriría es un modal casi vacío que promete un plan.

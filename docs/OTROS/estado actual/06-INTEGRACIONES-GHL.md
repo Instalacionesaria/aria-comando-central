@@ -163,11 +163,11 @@ decía «tres cabeceras distintas»; con tres familias y dos valores, nunca lo f
 |---|---|---|---|---|
 | 1 | `POST /contacts/search` | cron `contactos`; botón «Sincronizar» | cada 10 min; 1 por página de 100, por etiqueta | `lib/ghl/cliente.ts:293` |
 | 2 | `GET /contacts/{id}` | abrir una ficha; el webhook, **sólo si el contacto no está en nuestra base** | ≈ 65 de los 320 avisos procesados del 2026-08-29 al 2026-09-27 (estimado, § 7); 4 desde el 2026-09-15 | `lib/ghl/cliente.ts:545` |
-| 3 | `POST /contacts/{id}/tags` | Avanzar; marcar una intervención del auditor (`lib/auditor/intervencion.ts:128`) | 7 resultados en total, ninguno desde el 2026-09-09 | `lib/ghl/cliente.ts:590` |
-| 4 | `DELETE /contacts/{id}/tags` | resolver una intervención del auditor | ninguna: **0 de 24** hallazgos resueltos (eran 0 de 20) | `lib/ghl/cliente.ts:636` |
+| 3 | `POST /contacts/{id}/tags` | Avanzar; marcar una intervención del auditor (`lib/auditor/intervencion.ts:128`) | 7 resultados en total, ninguno desde el 2026-09-09 | `lib/ghl/cliente.ts:592` |
+| 4 | `DELETE /contacts/{id}/tags` | resolver una intervención del auditor | ninguna: **0 de 24** hallazgos resueltos (eran 0 de 20) | `lib/ghl/cliente.ts:638` |
 | 5 | `GET /locations/{loc}/tags` | **sólo si la búsqueda trajo cero contactos** | nunca en régimen | `lib/ghl/cliente.ts:450` |
-| 6 | `GET /locations/{loc}/customFields` | catálogo de campos | 1 por día (`FRESCURA_MS`, `lib/negocio/camposDelCrm.ts:66`) | `lib/ghl/cliente.ts:710` |
-| 7 | `GET /locations/{loc}/customFields/{carpetaId}` | nombre de UNA carpeta | **1 por día para siempre** (ver abajo) | `lib/ghl/cliente.ts:752` |
+| 6 | `GET /locations/{loc}/customFields` | catálogo de campos | 1 por día (`FRESCURA_MS`, `lib/negocio/camposDelCrm.ts:66`) | `lib/ghl/cliente.ts:712` |
+| 7 | `GET /locations/{loc}/customFields/{carpetaId}` | nombre de UNA carpeta | **1 por día para siempre** (ver abajo) | `lib/ghl/cliente.ts:754` |
 | 8 | `GET /users/?locationId=` | desplegable de vincular closer | por acción de una persona | `lib/ghl/cliente.ts:493` |
 | 9 | `GET /calendars/?locationId=` | cron `citas`; botón «Traer del calendario» | cada hora | `lib/ghl/calendarios.ts:143` |
 | 10 | `GET /calendars/events` | ídem, **1 por calendario** | 9 por corrida | `lib/ghl/calendarios.ts:230` |
@@ -724,7 +724,7 @@ de Avanzar tampoco lo trajo: ningún resultado registrado desde el 2026-09-09.
 | **Transcripción / resumen de llamada** | No existe. Lo único aprovechable es `attachments[0]`, la grabación. Convertirla en resumen es un subsistema, no una columna. |
 | **Última actividad entrante/saliente por contacto** | GoHighLevel no documenta una fecha por dirección (`lib/negocio/sincronizar.ts:18-21`). La calcula un disparador nuestro sobre `negocio.mensajes`: `ultimo_entrante_el` en 305 de 594 (eran 299 de 584), `ultimo_saliente_el` en 485 (eran 476). |
 | **Etapa del funnel como campo del sistema** | No lo expone: la mueve un workflow. `negocio.contactos.etapa` está en **6 de 594** y la llena nuestro pipeline. (El puntaje salió de esta fila: § 6.) |
-| **Listar las carpetas de campos personalizados** | Cuatro formas probadas el 2026-09-07, las cuatro fallan (`lib/ghl/cliente.ts:664-681`). Sólo una por una, por su id. |
+| **Listar las carpetas de campos personalizados** | Cuatro formas probadas el 2026-09-07, las cuatro fallan (`lib/ghl/cliente.ts:666-683`). Sólo una por una, por su id. |
 | **Filtrar conversaciones por etiqueta** | `GET /conversations/search` **ignora el filtro** y devuelve las 15.808 de la cuenta (`lib/ghl/conversaciones.ts:6-9`). De ahí sale el diseño por marca de agua. |
 | **Paginar citas** | `calendarId` es obligatorio y **no acepta `limit`**: todo parámetro desconocido da 422 nombrándolo (`lib/ghl/calendarios.ts:25-45`). El barrido cuesta 1 + N calendarios. |
 | ~~**Gasto, impresiones, alcance, CPM, CTR**~~ | **CORREGIDO el 2026-09-16: sí llegan.** La foto anterior buscó campos personalizados con esos nombres, no los encontró y concluyó que no había vía. Es el error de método de la advertencia 3: el Ad Manager de GoHighLevel los devuelve y el token del CRM lo alcanza (`lib/ghl/anuncios.ts:11-25`). Lo que ya está guardado, en la § 9. |
@@ -816,7 +816,7 @@ desde el 14» no lo es: después del 17 no hay un cero que leer, hay silencio.
 **El vínculo con Meta se pregunta cada día y la respuesta no queda en ninguna parte.** El colector
 llama a `integracionDeAnuncios` al empezar para distinguir «Meta desconectado» de «no se invirtió»
 (`lib/negocio/recolectarAnuncios.ts:137-148@d17e029` y `lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), pero
-`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:840-935`) no lee `vinculo`,
+`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:839-941`) no lee `vinculo`,
 `negocio.tareas_programadas` no guarda el resumen, y ningún otro archivo lo nombra. Que hoy haya 79 filas por día es compatible con el vínculo
 activo —sin vínculo el proveedor devuelve vacío (`lib/ghl/anuncios.ts:246-248`)—; que esté
 `connected` no se pudo verificar desde la base.

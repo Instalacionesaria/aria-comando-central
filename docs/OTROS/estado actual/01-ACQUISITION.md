@@ -161,7 +161,7 @@ leads por anuncio (la misma columna), citas atribuidas por anuncio (la columna A
 contactos que agendaron, no citas) y porcentaje de contactos con `meta_ad_id`—. El CPC se calcula y
 no se dibuja; las impresiones se suman y no se dibujan. Creative publica con la misma tabla link CTR,
 landing page view rate, click-to-landing, la caída del CTR (`fatigaDelCreativo.ts:1`) y un hook rate
-que no se sabe si es el de tres segundos (`lib/negocio/rendimientoDelCreativo.ts:243-248`, `:599-602`).
+que no se sabe si es el de tres segundos (`lib/negocio/rendimientoDelCreativo.ts:246-251`, `:599-602`).
 
 **Pruebas.** `pruebas/base/99-costo-del-anuncio.test.ts` (13 casos, con base),
 `pruebas/base/99-anuncios.test.ts` (10), `pruebas/codigo/99-anuncios.test.ts` (22),
@@ -252,7 +252,7 @@ valores; el 2026-09-18 estaba en 2 de 79 (`be7ef03`: 77 de 79, vacío) y desde e
 sistema lee esa columna**: `grep` en `lib/`, `app/` y `components/` sólo da su escritura y su tipo.
 
 **El colector.** La tarea `anuncios` selló el 2026-09-28 a las 06:20 UTC `corrio`, **40 llamadas**,
-motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:907`); las otras
+motivo «3 par(es) (campaña, día) sin datos» (el texto sale de `lib/negocio/barrido.ts:913`); las otras
 diez organizaciones, `saltada · sin_token`. La última lectura de una fila es de las 06:20:13. Que los
 tres pares sean los tres días de `888888`, el valor de prueba que devuelve HTTP 500
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:32-35`), es lo esperable, **no verificado**: el
@@ -440,7 +440,7 @@ grave de hoy manda a revisar enlaces que, según la URL de aterrizaje que midió
 (`PanelDeAcquisition.jsx` (en `4365cc9`, líneas 380-386)). Medido a 30 días: el anuncio de mayor gasto dice 16 y tuvo
 impresiones en 12; 14 de los 79 anuncios dan cifras distintas por las dos vías; dos anuncios
 figuran con gasto cero y «Entregó» uno o dos días sin una sola impresión. Creative lo corrigió de su
-lado contando impresiones (`lib/negocio/rendimientoDelCreativo.ts:216-229`); acá no, y la prueba
+lado contando impresiones (`lib/negocio/rendimientoDelCreativo.ts:219-232`); acá no, y la prueba
 sólo siembra días todo nulos o todo llenos, así que el caso «gasto 0,00 sin impresiones» no está
 cubierto (`pruebas/base/99-costo-del-anuncio.test.ts:207-220`).
 
@@ -486,11 +486,11 @@ dos días con que «el colector pide hoy y los tres anteriores», y pide hoy y l
 
 Seis citas a `costoDelAnuncio.ts` desde otros módulos quedaron corridas (se da la línea que citan
 de ese archivo y dónde está hoy lo citado): `lib/negocio/calidadDelCreativo.ts:169`,
-`lib/negocio/rendimientoDelCreativo.ts:116` y `:231` mandan a la 157-164 por el defecto de grano,
+`lib/negocio/rendimientoDelCreativo.ts:119` y `:231` mandan a la 157-164 por el defecto de grano,
 que está en `costoDelAnuncio.ts:192-201`; `lib/negocio/fatigaDelCreativo.ts:7` manda a la 88-95 por
 el alcance, que está en `costoDelAnuncio.ts:116-126`; `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, en el CV-1 de Conversion: el comentario ya no cita la línea de la ventana— a la 357
 por la ventana de la cohorte, que está en `costoDelAnuncio.ts:355`; y
-`lib/negocio/rendimientoDelCreativo.ts:221` manda a la 287, que está en `costoDelAnuncio.ts:297`.
+`lib/negocio/rendimientoDelCreativo.ts:224` manda a la 287, que está en `costoDelAnuncio.ts:297`.
 
 Y `comoDia` (`costoDelAnuncio.ts:409-412@d17e029`) formatea con `toISOString()` un `date` que el
 controlador entrega a medianoche local —el defecto exacto que `recolectarAnuncios.ts:329-333@d17e029`

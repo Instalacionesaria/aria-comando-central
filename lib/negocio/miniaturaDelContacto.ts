@@ -11,10 +11,17 @@
 //
 // ── EL COSTO, CONTADO ──────────────────────────────────────────────────────────
 //
-// Una llamada por contacto, una sola vez: la fila queda también cuando no hubo nada que guardar. Con el tope de 50 por
-// pasada, los ~215 contactos con anuncio de la medición se completan en unas cinco pasadas de la tarea `contactos`
-// (cada diez minutos), y después sólo los nuevos. Un 429 o una credencial rechazada cortan la pasada: insistir sólo
-// gasta el cupo.
+// Una llamada por contacto, una sola vez salvo un fallo pasajero (un 5xx, que se vuelve a pedir): la fila queda
+// también cuando no hubo nada que guardar, y cuando el CRM
+// rechazó ESE contacto (un 403 o un 4xx que no sea 429): repetirlo cada diez minutos no lo arregla, y un rechazo fijo
+// en el contacto más reciente frenaba la cola entera. Con el tope de 50 por pasada, los ~215 contactos con `adId` de
+// la medición —más los que sólo traen `mediumId`— se completan en unas cinco pasadas de la tarea `contactos` (cada diez
+// minutos), y después sólo los nuevos.
+//
+// La pasada se corta —y lo que faltó se pide en la siguiente— ante un 429 (insistir sólo gasta el cupo), un 401 (la
+// credencial no sirve para ninguno), un GoHighLevel que no contesta, o el tiempo: corre dentro de la tarea `contactos`,
+// antes de `mensajes` y `auditoria` de la misma empresa, y no puede comerse los 300 segundos de la función. Cada pedido
+// espera como mucho `ESPERA_POR_PEDIDO_MS`, y la pasada entera `TIEMPO_DE_LA_PASADA_MS`.
 //
 // Es el único escritor de la tabla (la prueba 253).
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -24,18 +31,21 @@ import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
 import { atribucionDelContacto, contactoPorId } from '../ghl/cliente.ts';
 import { llaveDelCreativo } from './creativo.ts';
-import { enlaceDePublicacion, medioPermitido } from './urlExterna.ts';
+import { LARGO_MAXIMO_DE_MINIATURA, enlaceDePublicacion, medioPermitido } from './urlExterna.ts';
 
 /** Cuántos contactos se piden, como mucho, en cada pasada. */
 export const TOPE_POR_PASADA = 50;
 
-/** El largo máximo que guarda la tabla: el `check` de la `077`. */
-const LARGO_MAXIMO = 2000;
+/** Lo más que espera cada pedido: el de por omisión de `pedirExterno` son cuatro minutos. */
+export const ESPERA_POR_PEDIDO_MS = 15_000;
+
+/** Lo más que dura la pasada entera: deja a `mensajes` y `auditoria` el resto del presupuesto del barrido. */
+export const TIEMPO_DE_LA_PASADA_MS = 60_000;
 
 /** Un texto que la tabla acepta como URL, o `null`. */
 function url(valor: string | undefined): string | null {
   if (valor === undefined) return null;
-  return valor.startsWith('https://') && valor.length <= LARGO_MAXIMO ? valor : null;
+  return valor.startsWith('https://') && valor.length <= LARGO_MAXIMO_DE_MINIATURA ? valor : null;
 }
 
 /** Lo que dejó una pasada. Viaja al resumen de la tarea `contactos`. */
@@ -43,13 +53,17 @@ export interface ResumenDeMiniaturas {
   pedidos: number;
   conImagen: number;
   sinDato: number;
-  /** El CRM contestó 404: el contacto ya no está. */
+  /** El CRM no devolvió el contacto —un 404, una respuesta sin contacto, un 403 u otro rechazo de ese contacto—: no
+   *  se vuelve a pedir. */
   noEncontrados: number;
   /** Fallos que no se guardan: el contacto se vuelve a pedir en la pasada siguiente. */
   fallos: number;
-  /** `true` si un 429 o una credencial rechazada cortaron la pasada antes del tope. */
-  cortada: boolean;
+  /** Por qué se cortó la pasada antes del tope, o `null`: lo que faltó se pide en la siguiente. */
+  corte: CorteDeLaPasada | null;
 }
+
+/** `cupo`: un 429. `credencial`: un 401. `sin_respuesta`: GoHighLevel no contestó. `tiempo`: se acabó la pasada. */
+export type CorteDeLaPasada = 'cupo' | 'credencial' | 'sin_respuesta' | 'tiempo';
 
 /**
  * Los contactos que llegaron por un anuncio —con `adId` o `mediumId` en su primera atribución— y todavía no se
@@ -79,18 +93,33 @@ type FilaNueva = { contacto_id: string; encontrado: boolean; video_url: string |
 export async function pedirMiniaturas(
   acceso: { token: string; locationId: string },
   pendientes: readonly { id: string; ghlId: string }[],
+  hasta = Date.now() + TIEMPO_DE_LA_PASADA_MS,
+  ahora: () => number = Date.now,
 ): Promise<{ filas: FilaNueva[]; resumen: ResumenDeMiniaturas }> {
   const filas: FilaNueva[] = [];
-  const resumen: ResumenDeMiniaturas = { pedidos: 0, conImagen: 0, sinDato: 0, noEncontrados: 0, fallos: 0, cortada: false };
+  const resumen: ResumenDeMiniaturas = { pedidos: 0, conImagen: 0, sinDato: 0, noEncontrados: 0, fallos: 0, corte: null };
   for (const p of pendientes) {
+    if (ahora() >= hasta) {
+      resumen.corte = 'tiempo';
+      break;
+    }
     resumen.pedidos += 1;
-    const r = await contactoPorId(acceso, p.ghlId);
+    const r = await contactoPorId(acceso, p.ghlId, ESPERA_POR_PEDIDO_MS);
     if (r.tipo === 'fallo') {
-      resumen.fallos += 1;
-      if (r.fallo.tipo === 'demasiadas_peticiones' || r.fallo.tipo === 'no_autorizado') {
-        resumen.cortada = true;
-        break;
+      const f = r.fallo;
+      /* El rechazo de ESE contacto —un 403, o un 4xx que no sea el cupo— no cambia con la próxima pasada: se guarda
+         como no devuelto. Un 401 es la credencial, y vale para todos. Un 5xx puede ser pasajero: se vuelve a pedir. */
+      const deEseContacto = (f.tipo === 'no_autorizado' && f.estado === 403) || (f.tipo === 'rechazado' && f.estado < 500);
+      if (deEseContacto) {
+        resumen.noEncontrados += 1;
+        filas.push({ contacto_id: p.id, encontrado: false, video_url: null, photo_url: null, post_id: null, ig_sid: null });
+        continue;
       }
+      resumen.fallos += 1;
+      if (f.tipo === 'demasiadas_peticiones') resumen.corte = 'cupo';
+      else if (f.tipo === 'no_autorizado') resumen.corte = 'credencial';
+      else if (f.tipo === 'sin_respuesta') resumen.corte = 'sin_respuesta';
+      if (resumen.corte !== null) break;
       continue;
     }
     if (r.datos === null) {
@@ -123,37 +152,33 @@ export async function completarMiniaturas(
   orgId: string,
   acceso: { token: string; locationId: string },
   tope = TOPE_POR_PASADA,
+  ahora: () => number = Date.now,
 ): Promise<ResumenDeMiniaturas> {
+  const hasta = ahora() + TIEMPO_DE_LA_PASADA_MS;
   const pendientes = await conOrganizacion(orgId, () => contactosPorPedir(tope));
-  const { filas, resumen } = await pedirMiniaturas(acceso, pendientes);
+  const { filas, resumen } = await pedirMiniaturas(acceso, pendientes, hasta, ahora);
   await conOrganizacion(orgId, () => guardarMiniaturas(filas));
   return resumen;
 }
 
-/** Guarda lo pedido. Corre dentro de `conOrganizacion`. */
+/**
+ * Guarda lo pedido. Corre dentro de `conOrganizacion`. Lo ya guardado no se pisa: si dos pasadas pidieron el mismo
+ * contacto a la vez, queda la primera, y cada contacto se guarda una sola vez.
+ */
 export async function guardarMiniaturas(filas: readonly FilaNueva[]): Promise<void> {
   if (filas.length === 0) return;
   await datos()
     .insertInto('miniaturas_del_contacto')
     .values(filas.map((f) => ({ ...f })) as never)
-    .onConflict((oc) =>
-      oc.columns(['org_id', 'contacto_id']).doUpdateSet((eb) => ({
-        encontrado: eb.ref('excluded.encontrado'),
-        video_url: eb.ref('excluded.video_url'),
-        photo_url: eb.ref('excluded.photo_url'),
-        post_id: eb.ref('excluded.post_id'),
-        ig_sid: eb.ref('excluded.ig_sid'),
-        leido_el: sql`now()`,
-      })),
-    )
+    .onConflict((oc) => oc.columns(['org_id', 'contacto_id']).doNothing())
     .execute();
 }
 
 /**
  * La miniatura de cada pieza: de los contactos de la pieza, la imagen más frecuente —el `videoUrl`, o el `photoUrl`
- * si no hay—; empate, la leída más tarde. Sólo viaja una URL de los hosts de Facebook e Instagram
- * (`lib/negocio/urlExterna.ts`). Sin ventana: la imagen de la pieza no depende del período. Corre dentro de
- * `conOrganizacion`.
+ * si no hay—; empate, la del contacto que entró más tarde al CRM. Sólo viaja una URL de los hosts de Facebook e
+ * Instagram (`lib/negocio/urlExterna.ts`), con el tope de largo de la tabla. Sin ventana: la imagen de la pieza no
+ * depende del período. Corre dentro de `conOrganizacion`.
  */
 export async function miniaturasDeLasPiezas(): Promise<Map<string, string>> {
   const pieza = llaveDelCreativo("c.atribucion_primera ->> 'utmContent'");
@@ -169,13 +194,13 @@ export async function miniaturasDeLasPiezas(): Promise<Map<string, string>> {
        primero. */
     .orderBy(pieza)
     .orderBy(sql`count(*) desc`)
-    .orderBy(sql`max(m.leido_el) desc`)
+    .orderBy(sql`max(c.alta_en_el_crm) desc nulls last`)
     .orderBy(imagen)
     .execute();
   const elegidas = new Map<string, string>();
   for (const f of filas) {
     if (elegidas.has(f.pieza)) continue;
-    if (enlaceDePublicacion(f.imagen) === null && !medioPermitido(f.imagen)) continue;
+    if (enlaceDePublicacion(f.imagen, LARGO_MAXIMO_DE_MINIATURA) === null && !medioPermitido(f.imagen, LARGO_MAXIMO_DE_MINIATURA)) continue;
     elegidas.set(f.pieza, f.imagen);
   }
   return elegidas;

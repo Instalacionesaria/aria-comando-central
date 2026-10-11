@@ -11,11 +11,12 @@
 > 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
 > cosa**, que es peor: una línea corrida no falla.
 >
-> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> Hasta el 2026-10-11 `components/creative/PanelDeCreative.jsx` dibujaba tres bloques medidos: el ICP y la
 > agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
-> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`). Desde ese día la pestaña es el front del
+> prototipo con los datos de `lib/negocio/lecturaDeCreative.ts` (`16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 
-> Requisitos derivados de `lib/aios/creative.js:91-102` y `components/views/CreativeView.jsx:30-49@1971ab2`,
+> Requisitos derivados de `lib/aios/creative.js:91-102` y `components/views/CreativeView.jsx:30-49@833fc51`,
 > contra el vocabulario real de `lib/negocio/periodo.ts`. Las mediciones de sesgo de ventana son de
 > `docs/OTROS/estado actual/02-CREATIVE.md:414-423`, del 2026-09-15 y 16 (re-medidas allí el 2026-09-28).
 
@@ -25,7 +26,7 @@
 
 ### C5-01 · La vista y el módulo no están de acuerdo sobre qué período está activo
 
-**Qué es** · `components/views/CreativeView.jsx:35@1971ab2` marca **«7 días»** con `className="on"`, pero
+**Qué es** · `components/views/CreativeView.jsx:35@833fc51` marca **«7 días»** con `className="on"`, pero
 `lib/aios/creative.js:91` arranca con `period = {preset:'hist'}`.
 **Estado** · **Al abrir, el botón dice «7 días», la biblioteca muestra las ocho piezas —incluida una
 de hace 140 días— y la barra de abajo dice «histórico».** Tres afirmaciones y dos se contradicen.
@@ -53,7 +54,7 @@ del prototipo, y es la corrección que Acquisition ya hizo.
 
 ### C5-04 · El selector de rango personalizado se borra
 
-**Qué es** · `components/views/CreativeView.jsx:42-49@1971ab2` dibuja un botón «Personalizado» con
+**Qué es** · `components/views/CreativeView.jsx:42-49@833fc51` dibuja un botón «Personalizado» con
 `data-datepick="cre"`.
 **Estado** · **Andamiaje.** El mismo motivo que escribió `components/views/AcquisitionView.jsx` (en `4365cc9`, líneas 21-26):
 el vocabulario cerrado de `periodo.ts` es el del sistema, y un rango libre obliga a que cada cifra con

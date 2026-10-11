@@ -160,7 +160,8 @@ un panel de Inteligencia dibuja tenga al menos una regla que alcance a SU vista.
   quedaba. Hoy lo dibujan Acquisition (AQ-4) y Conversion (CV-4), que volvieron al encabezado del prototipo.
 
 **`app/aios.css` no se toca.** Es el port literal del maquetado, y su propia cabecera lo dice. Lo que
-se limpia es `app/inteligencia-estetica.css`, y **con la medición hecha, no con una suposición**: en
+se limpiaba era `app/inteligencia-estetica.css` —borrada entera el 2026-10-11, cuando Creative salió de ella—, y **con la
+medición hecha, no con una suposición**: en
 Conversion resultó que ocho clases se creían muertas y una estaba viva en SalesView.
 
 ---

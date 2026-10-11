@@ -63,6 +63,9 @@ import { llaveDelCreativo } from './creativo.ts';
  * Medido el 2026-09-19 sobre los 28 días con desglose: con mil, catorce piezas publican hook rate; el
  * resto conserva su conteo y pierde la tasa.
  */
+/** La pieza de los anuncios sin nombre: su gasto es real, y la pantalla la rotula aparte. */
+export const PIEZA_SIN_NOMBRE = '(anuncio sin nombre)';
+
 export const PISO_DE_IMPRESIONES = 1000;
 
 /**
@@ -335,7 +338,7 @@ export async function rendimientoDelCreativo(
 
        Un anuncio sin nombre no se descarta en silencio: cae en su propia fila, rotulada, porque su
        gasto es real y tiene que seguir sumando el total de la pantalla. */
-    const creativo = f.creativo === '' ? '(anuncio sin nombre)' : f.creativo;
+    const creativo = f.creativo === '' ? PIEZA_SIN_NOMBRE : f.creativo;
 
     const acc = porPieza.get(creativo) ?? nuevaFila(creativo);
     acc.anuncios += 1;
@@ -610,9 +613,11 @@ function avisoDe(
 
   /* ── LAS DOS VENTANAS SE DICEN UNA SOLA VEZ, Y NO ES ACÁ ────────────────────
    *
-   * Acá había dos ramas que armaban la frase de las dos ventanas. **Y la pantalla ya la dice**, en
+   * Acá había dos ramas que armaban la frase de las dos ventanas. **Y la pantalla ya la decía**, en
    * el bloque de cobertura (`PanelDeCreative.jsx`, «Las DOS ventanas, dichas»), con las tres
-   * fechas en formato corto y con su propia rama para el caso sin desglose.
+   * fechas en formato corto y con su propia rama para el caso sin desglose. Desde el 2026-10-11 la
+   * pantalla no la dibuja (CF1-05): las fechas —`desdeElDesglose`, `desde`— viajan en
+   * `rendimiento_de_piezas`, y la ventana la dice el agente.
    *
    * O sea que el mismo hecho se dibujaba dos veces en la misma pantalla: una en `21 ago` y otra en
    * `2026-08-21`. Dos formas del mismo dato se leen como dos datos, y quien las compare va a buscar

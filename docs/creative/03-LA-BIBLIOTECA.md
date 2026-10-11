@@ -11,9 +11,10 @@
 > 70 fallan al resolverse, y se ven. Las que apuntan más acá **siguen resolviendo y muestran otra
 > cosa**, que es peor: una línea corrida no falla.
 >
-> Lo que hay hoy es `components/creative/PanelDeCreative.jsx` con tres bloques medidos: el ICP y la
+> Hasta el 2026-10-11 `components/creative/PanelDeCreative.jsx` dibujaba tres bloques medidos: el ICP y la
 > agenda por pieza (`lib/negocio/calidadDelCreativo.ts`), el hook rate y las tasas de enlace
-> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`).
+> (`rendimientoDelCreativo.ts`) y la caída del CTR (`fatigaDelCreativo.ts`). Desde ese día la pestaña es el front del
+> prototipo con los datos de `lib/negocio/lecturaDeCreative.ts` (`16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 
 > Requisitos derivados de `lib/aios/creative.js:103-204` y de `components/views/CreativeView.jsx:55-92`,
 > tal como estaban antes del borrado. Las citas describen lo que la maqueta dibujaba.
@@ -132,7 +133,7 @@ el promedio de su etapa»— y no dar la orden. Es la misma corrección que hizo
 
 | parte | estado |
 |---|---|
-| Miniatura con degradado | **andamiaje**: son 16 colores hex escritos a mano (`:8-22`), aplicados **en línea** (`:178`), lo que además le gana al tema (`app/temas.css:786`). La miniatura real no existe por GoHighLevel (`C14-07`, re-medido en `C14-16` a `C14-22`); **planificada con Meta directo** (`C15-01`) |
+| Miniatura con degradado | **andamiaje**: son 16 colores hex escritos a mano (`:8-22`), aplicados **en línea** (`:178`), lo que además le gana al tema (`app/temas.css:789`). La miniatura real no existe por GoHighLevel (`C14-07`, re-medido en `C14-16` a `C14-22`); **planificada con Meta directo** (`C15-01`). *Corrección del 2026-10-11: la miniatura llega por `GET /contacts/{id}` (`16`, CF1-11 y CF1-12); Meta directo sigue haciendo falta para el video* |
 | `▶` / `◧` según sea video | **no hay fuente**: el formato no llega (`C14-07`). Se puede **inferir** que es video si la pieza tiene `videoView`; con Meta directo el tipo llega en `object_type` y el `video_id` (`C15-03`) |
 | Insignia «Activo / Pausado» | **no hay fuente**: `/entity?entityType=AD` no devuelve estado, y `negocio.anuncios` no tiene la columna a propósito (`050:60-63`). Lo que sí se puede decir es **«entregó N de M días de la ventana»**, que es un hecho medido |
 | Duración `m:ss` | no hay fuente (`C14-07`); Meta directo la da con el video (`length`), a medir en CR-4 de `C15` |

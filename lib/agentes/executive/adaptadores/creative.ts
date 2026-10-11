@@ -13,11 +13,25 @@ import { CAIDA_QUE_PREOCUPA, fatigaDelCreativo } from '../../../negocio/fatigaDe
 import { lecturaDeCreative, type PantallaDeCreativeArmada } from '../../../negocio/lecturaDeCreative.ts';
 import { ARGUMENTO_PERIODO, type DefinicionDeHerramienta, periodoPedido, primeras, tomar } from './comun.ts';
 
-/** La pantalla sin las URLs de cada pieza: el cerebro sabe si hay miniatura o enlace, no cuál es. */
+/**
+ * La pantalla sin las URLs de cada pieza: el cerebro sabe si hay miniatura o enlace, no cuál es. Campo por campo, por
+ * lista blanca (AG-45): un campo nuevo de la pieza o de su ficha no viaja hasta que alguien lo agregue acá.
+ */
 export function pantallaParaElCerebro(p: PantallaDeCreativeArmada) {
   return {
-    ...p,
-    piezas: p.piezas.map(({ miniatura, enlace, ...resto }) => ({ ...resto, conMiniatura: miniatura !== null, conEnlace: enlace !== null })),
+    cifras: p.cifras,
+    criterios: p.criterios,
+    loDemas: p.loDemas,
+    piezas: p.piezas.map((x) => ({
+      clave: x.clave,
+      etapa: x.etapa,
+      estado: x.estado,
+      cifras: x.cifras,
+      perdiendoGancho: x.perdiendoGancho,
+      conMiniatura: x.miniatura !== null,
+      conEnlace: x.enlace !== null,
+      ficha: tomar(x.ficha, ['anuncios', 'primerDia', 'ultimoDia', 'gasto', 'ctr', 'linkCtr', 'landing', 'clickToLanding', 'anunciosDeLaPieza'] as const),
+    })),
   };
 }
 
@@ -101,16 +115,18 @@ export const HERRAMIENTAS_DE_CREATIVE: readonly DefinicionDeHerramienta[] = [
     nombre: 'creative_en_cifras',
     descripcion:
       'Creative: las cifras que la pantalla dibuja, como las dibuja. `cifras`: Calificados (contactos de ICP alto, 75 o ' +
-      'más), Agendas, Hook rate (vistas de video sobre impresiones de los días que las reportan), Retención (sin fuente), ' +
+      'más), Agendas, Hook rate (vistas de video sobre impresiones de los anuncio-día que las reportan), Retención (sin fuente), ' +
       'Impresiones y Frecuencia, de toda la ventana. `piezas`: cada pieza con su etapa (la de la campaña con más ' +
-      'impresiones), si entregó en los últimos 3 días, las mismas seis cifras, si perdió gancho (fatiga), si tiene ' +
+      'impresiones; si esa campaña no la dice, la de sus contactos; si no, sin etapa), si entregó en los últimos 3 días, las mismas seis cifras, si perdió gancho (fatiga), si tiene ' +
       'miniatura o enlace, y su ficha: anuncios, primer y último día con entrega, gasto, CTR, link CTR, landing y ' +
       'click-to-landing. `criterios`: para Calificados, Agendas, Hook rate e Impresiones, qué piezas «funcionan» —llegan ' +
       'al promedio de SU etapa— y cuáles no, el promedio de cada etapa y las piezas únicas de su etapa. `loDemas`: gasto, ' +
       'CTR, link CTR, landing y piezas perdiendo gancho. Las tasas son fracciones de 0 a 1. Una cifra sin valor trae su ' +
       'motivo: `sin_contactos`, `sin_puntaje` (el CRM no tiene el campo del ICP), `sin_entrega` (sin impresiones en la ' +
       'ventana), `bajo_el_piso` (menos de 10 clics al enlace), `pocas_impresiones` (menos de 1000), `sin_reporte` ' +
-      '(GoHighLevel nunca reportó esa acción para la pieza) o `sin_fuente` (la retención, que GoHighLevel no entrega).',
+      '(GoHighLevel no reportó esa acción para la pieza en ningún día de la ventana, o el gasto de días con impresiones) o ' +
+      '`sin_fuente` (la retención, que GoHighLevel no entrega). Entran sólo las piezas que en la ventana trajeron contactos, ' +
+      'tuvieron impresiones o gastaron; «si entregó» son los últimos 3 días del calendario, hoy incluido.',
     secciones: ['creative'],
     esquema: ARGUMENTO_PERIODO,
     async ejecutar(argumentos) {

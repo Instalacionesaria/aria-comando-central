@@ -23,13 +23,19 @@
 //   · la carga: la última lectura gana, la recarga no pisa a la primera y la primera se apaga;
 //   · se multiplica por 100 en un solo lugar, y el panel no divide ni ordena;
 //   · sin párrafos: el panel no dibuja la cobertura, los avisos ni lo que falta para medir;
-//   · lo nuevo vive en `app/creative.css`, acotado, y la estética de Inteligencia ya no existe.
+//   · lo nuevo vive en `app/creative.css`, acotado, y la estética de Inteligencia ya no existe;
+//   · los formatos, ejecutados: un cero es un cero, una tasa chica lleva su decimal, el mes es el que es (CF-4);
+//   · el teclado: el menú cerrado no se alcanza, el foco vuelve, la ficha lo retiene (CF-4).
+//
+// La revisión de CF-4 encontró 43 mutaciones vivas en el panel, la ficha y los formatos: las pruebas de abajo del todo
+// las cierran, y varias de arriba se apretaron (los períodos, el grupo, la fila de abajo, los oyentes del menú).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { RAIZ } from '../apoyo/fuente.ts';
 
 const leer = (r: string): string => readFileSync(join(RAIZ, r), 'utf8');
@@ -97,7 +103,11 @@ test('el encabezado es el del prototipo: el título, la bajada, el plan y el seg
   const derecha = cabeza.slice(cabeza.indexOf('<div className="ch-r">'), cabeza.indexOf('{error ?'));
   assert.match(derecha, /<BotonDelPlan departamento="creative" senales=\{pantalla\.senales\} \/>/, 'el plan no es el real del detector (CF1-14)');
   assert.match(derecha, /<div className="ch-period">[\s\S]*<Periodos valor=\{pantalla\?\.periodo \?\? periodo\} alElegir=\{setPeriodo\} \/>/, 'el segmentado enciende lo pedido y no lo contestado');
-  assert.match(funcion(panel(), 'Periodos'), /PERIODOS\.map[\s\S]*title=\{p\.matiz \?\? undefined\}/);
+  assert.match(
+    funcion(panel(), 'Periodos'),
+    /PERIODOS\.map[\s\S]*className=\{valor === p\.clave \? 'on' : undefined\}\s*aria-pressed=\{valor === p\.clave\}\s*title=\{p\.matiz \?\? undefined\}\s*onClick=\{\(\) => alElegir\(p\.clave\)\}/,
+    'el segmentado no enciende el período, o no lo elige',
+  );
   // El encabezado va siempre, antes de la carga y del error.
   assert.ok(cabeza.indexOf('className="cre-head"') < cabeza.indexOf('{error ?'), 'el encabezado se dibuja después del error');
 });
@@ -139,9 +149,16 @@ test('«Ordenar por» ofrece los criterios del servidor, y elegir uno no reorden
   assert.match(orden, /<span className="pk">Ordenar por<\/span>\s*<span className="pv">\{CRITERIO\[valor\]\.rotulo\}<\/span>/);
   assert.match(orden, /<div className="pm-list">/);
   // Se cierra al elegir, al tocar afuera y con Escape.
-  assert.match(orden, /alElegir\(clave\);\s*setAbierto\(false\);/);
+  assert.match(orden, /alElegir\(clave\);\s*cerrar\(\);/);
   assert.match(orden, /e\.key === 'Escape'/);
   assert.match(orden, /!caja\.current\.contains\(e\.target\)/);
+  for (const [evento, oyente] of [['click', 'afuera'], ['keydown', 'tecla']]) {
+    assert.match(orden, new RegExp(`document\\.addEventListener\\('${evento}', ${oyente}\\);`), `el menú no escucha ${evento}`);
+    assert.match(orden, new RegExp(`document\\.removeEventListener\\('${evento}', ${oyente}\\);`), `el menú deja suelto el oyente de ${evento}`);
+  }
+  assert.match(orden, /\{abierto \? \(\s*<div className="pm-list">/, 'el menú cerrado sigue en el orden del tabulador');
+  assert.match(orden, /const cerrar = \(\) => \{\s*setAbierto\(false\);\s*pildora\.current\?\.focus\(\);/, 'al cerrar, el foco no vuelve a la píldora');
+  assert.match(orden, /if \(e\.key === 'Escape'\) cerrar\(\);/);
   assert.match(funcion(panel(), 'PanelDeCreative'), /const CRITERIO_POR_OMISION = 'agendas';|useState\(CRITERIO_POR_OMISION\)/);
   assert.match(panel(), /const CRITERIO_POR_OMISION = 'agendas';/, 'la pantalla no abre en el criterio del prototipo');
 });
@@ -156,7 +173,7 @@ test('los dos grupos son los del servidor para el criterio elegido, con los rót
   assert.match(t, /const grupos = criterios\[criterio\];/, 'los grupos no son los del criterio elegido');
   assert.match(
     t,
-    /<div className="ghead good">\s*<span className="gdot" \/>\s*<span className="gt">Funciona<\/span>\s*<span className="gsub">sobre el promedio de su etapa<\/span>\s*<span className="gn">\{`\$\{miles\(grupos\.funciona\.length\)\} piezas`\}<\/span>\s*<\/div>\s*<Grupo claves=\{grupos\.funciona\} gana /,
+    /<div className="ghead good">\s*<span className="gdot" \/>\s*<span className="gt">Funciona<\/span>\s*<span className="gsub">\{sinPromedio \? 'sin datos en este periodo' : 'sobre el promedio de su etapa'\}<\/span>\s*<span className="gn">\{`\$\{miles\(grupos\.funciona\.length\)\} piezas`\}<\/span>\s*<\/div>\s*<Grupo claves=\{grupos\.funciona\} gana /,
     '«Funciona» no es el del prototipo con el desvío declarado, o lee otro grupo (CF1-08)',
   );
   assert.match(
@@ -164,11 +181,16 @@ test('los dos grupos son los del servidor para el criterio elegido, con los rót
     new RegExp(`<div className="ghead bad">\\s*<span className="gdot" />\\s*<span className="gt">No funciona</span>\\s*<span className="gsub">${bajoElPromedio}</span>\\s*<span className="gn">\\{\`\\$\\{miles\\(grupos\\.noFunciona\\.length\\)\\} piezas\`\\}</span>\\s*</div>\\s*<Grupo claves=\\{grupos\\.noFunciona\\} gana=\\{false\\} `),
     '«No funciona» no es el del prototipo, o lee otro grupo',
   );
-  assert.match(t, /<span className="db-info">\s*<b>\{miles\(piezas\.length\)\}<\/b> piezas · \{etiquetaDelPeriodo\}/);
+  assert.match(t, /<span className="db-info">\s*<b>\{miles\(piezas\.length\)\}<\/b> piezas · \{PERIODO_EN_LA_BARRA\[p\.periodo\]\}/);
+  assert.match(comun(), /hoy: 'hoy',\s*'7d': 'últimos 7 días',\s*'30d': 'últimos 30 días',\s*completo: 'histórico',/);
   // Vacío, la frase del prototipo; con piezas, en el orden del servidor.
   const g = funcion(panel(), 'Grupo');
   assert.match(g, /<div className="dw-empty cr-vacio">\{FRASE\.grupoVacio\}<\/div>/);
-  assert.match(g, /claves\.map\(\(clave\) => <Tarjeta key=\{clave\} pieza=\{porClave\.get\(clave\)\}/);
+  assert.match(g, /claves\.map\(\(clave\) => <Tarjeta key=\{clave\} pieza=\{porClave\.get\(clave\)\} gana=\{gana\} unica=\{unicas\.has\(clave\)\} alAbrir=\{alAbrir\} \/>\)/);
+  assert.match(t, /const unicas = new Set\(grupos\.unicas\);/);
+  // Sin promedio en ninguna etapa, el subtítulo del prototipo (`goodSub`).
+  assert.match(t, /const sinPromedio = Object\.values\(grupos\.promedioPorEtapa\)\.every\(\(v\) => v === null\);/);
+  assert.match(t, /\{sinPromedio \? 'sin datos en este periodo' : 'sobre el promedio de su etapa'\}/);
   // La ficha recibe el veredicto del mismo grupo.
   assert.match(t, /gana=\{grupos\.funciona\.includes\(pieza\.clave\)\}/);
   assert.match(t, /unica=\{unicas\.has\(pieza\.clave\)\}/);
@@ -196,7 +218,8 @@ test('la tarjeta es la `cc` del prototipo: el estado, el nombre, la etapa y las 
   assert.match(tarjeta, /<span className=\{pieza\.estado === 'entregando' \? 'cc-status act' : 'cc-status pau'\}>\{ESTADO\[pieza\.estado\]\}<\/span>/);
   assert.match(tarjeta, /\{pieza\.perdiendoGancho === true \? <span className="cr-gancho">Perdiendo gancho<\/span> : null\}/, 'la fatiga no es la marca de la tarjeta (CF1-09)');
   assert.match(tarjeta, /<div className="cc-name" title=\{pieza\.clave\}>\s*\{pieza\.clave\}/);
-  assert.match(tarjeta, /<div className="cc-qual">\s*<span className="tag fmt">\{ETAPA\[pieza\.etapa\]\}<\/span>/, 'la etiqueta no es la etapa (CF1-02)');
+  assert.match(tarjeta, /<div className="cc-qual">\s*<span className="tag fmt">\{ETAPA\[pieza\.etapa\]\}<\/span>\s*\{unica \? <span className="tag ang">\{FRASE\.unica\}<\/span> : null\}/, 'la etiqueta no es la etapa (CF1-02), o la única no se marca');
+  assert.match(tarjeta, /\{o\(cifra\.valor, formato\)\}/, 'la celda no dibuja con el formato de su cifra');
   assert.match(tarjeta, /<div className=\{i < 2 \? 'pm' : undefined\}/, 'las dos de resultado no van resaltadas, como en el prototipo');
   assert.match(tarjeta, /title=\{motivo\(cifra\) \?\? undefined\}/, 'una cifra en «—» de la tarjeta no dice por qué');
 });
@@ -232,6 +255,9 @@ test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor'
     sin_fuente: 'GoHighLevel no lo entrega.',
   });
   assert.match(c, /export const motivo = \(c\) => \(c\.valor === null \? \(FRASE_DEL_MOTIVO\[c\.motivo\] \?\? null\) : null\);/);
+  const demas = [...funcion(panel(), 'LoDemas').matchAll(/\['([^']+)', o\(c\.(\w+)\.valor, (\w+)\), motivo\(c\.(\w+)\)\]/g)].map((m) => [m[1], m[2], m[3], m[4]]);
+  assert.deepEqual(demas, [['Gasto', 'gasto', 'plata', 'gasto'], ['CTR', 'ctr', 'pf', 'ctr'], ['Link CTR', 'linkCtr', 'pf', 'linkCtr'], ['Landing', 'landing', 'pf', 'landing']], 'la fila de abajo lee otra cifra, o con otro formato (CF1-13)');
+  assert.match(comun(), /export const FORMATO_DEL_CRITERIO = \{\s*calificados: miles,\s*agendas: miles,\s*hookRate: pf,\s*impresiones: corto,\s*\};/);
   // La fatiga sin veredicto dice la suya, y no un cero.
   assert.match(funcion(panel(), 'LoDemas'), /gancho\.sobre === 0 \? FRASE\.guion : `\$\{miles\(gancho\.con\)\} de \$\{miles\(gancho\.sobre\)\}`, gancho\.sobre === 0 \? FRASE\.sinGancho : null/);
 });
@@ -252,6 +278,7 @@ test('la miniatura no manda el `referrer`, carga perezosa y, si no carga, cae al
   const m = sinComentarios(leer(MINIATURA));
   assert.match(m, /<img className="cr-imagen" src=\{url\} alt="" loading="lazy" referrerPolicy="no-referrer" onError=\{\(\) => setFallo\(true\)\} \/>/);
   assert.match(m, /\{url && !fallo \? \(/, 'una imagen que falló se sigue dibujando');
+  assert.match(m, /\) : url \? null : \(\s*<span className="cr-sin-imagen">/, 'una imagen caída dice «Sin miniatura todavía.», y sí la hay');
   assert.match(m, /<span className="cr-sin-imagen">\{FRASE\.sinMiniatura\}<\/span>/, 'sin miniatura no dice por qué (CF1-12)');
   assert.match(m, /useEffect\(\(\) => setFallo\(false\), \[url\]\);/, 'una miniatura nueva hereda el fallo de la anterior');
   assert.match(m, /<div className=\{`\$\{clase\} cr-fondo`\}>/);
@@ -261,19 +288,26 @@ test('la miniatura no manda el `referrer`, carga perezosa y, si no carga, cae al
 test('la ficha es el cajón del prototipo: en un portal, con sus secciones en orden y el veredicto contra la etapa', () => {
   const f = funcion(ficha(), 'FichaDelCreativo');
   assert.match(f, /createPortal\([\s\S]*document\.body,\s*\);/, 'la ficha no se monta en `document.body`');
-  assert.match(f, /<aside className="drawer on cr-ficha" role="dialog" aria-modal="true"/);
-  assert.match(f, /if \(e\.key === 'Escape'\) alCerrarRef\.current\(\);/, 'Escape no cierra la ficha');
+  assert.match(f, /<aside className="drawer on cr-ficha" ref=\{cajon\} role="dialog" aria-modal="true"/);
+  assert.match(f, /if \(e\.key === 'Escape' && e\.target\?\.tagName !== 'INPUT'\) alCerrarRef\.current\(\);/, 'Escape no cierra la ficha, o la cierra escribiendo el link');
+  assert.match(f, /document\.addEventListener\('keydown', alTeclear\);/, 'la ficha no escucha el teclado');
+  assert.match(f, /const origen = document\.activeElement;[\s\S]*if \(origen instanceof HTMLElement && origen\.isConnected\) origen\.focus\(\);/, 'al cerrar, el foco no vuelve a la tarjeta');
+  assert.match(f, /e\.preventDefault\(\);\s*ultimo\.focus\(\);[\s\S]*e\.preventDefault\(\);\s*primero\.focus\(\);/, 'el tabulador sale del cajón');
+  // «Ver en…»: el manual de ahora; si se sacó el del servidor, nada hasta la recarga.
+  assert.match(f, /const enlace = manual \? \{ url: manual\.url, red: manual\.red \} : manualDelServidor \? null : pieza\.enlace;/);
   const secciones = [...f.matchAll(/<div className="dw-sec-t">([^<]+)<\/div>/g)].map((m) => m[1]);
   assert.deepEqual(secciones, ['La pieza', 'Qué es', 'Datos de la pieza', 'Retención y guion', 'Los anuncios de la pieza'], 'las secciones no son las de CF1-10, o cambiaron de orden');
   assert.match(f, /<span className="dw-verdict good">/);
   assert.match(f, /<span className="dw-verdict bad">\{`✕ Bajo en \$\{CRITERIO\[criterio\]\.rotulo\.toLowerCase\(\)\}/);
   assert.match(f, /unica \? FRASE\.unica :/, 'la única de su etapa no lo dice (CF1-08)');
+  assert.match(f, /\{motivo\(valor\) \? <div className="cr-motivo">\{motivo\(valor\)\}<\/div> : null\}/, 'un «—» del veredicto no dice por qué');
   // Lo que GoHighLevel no entrega queda en «—» con su frase, y no se inventa una curva ni un guion.
   for (const rotulo of ['Formato', 'Ángulo', 'Duración', 'Dolor que ataca']) {
     assert.match(f, new RegExp(`<Caja rotulo="${rotulo}" valor=\\{FRASE\\.guion\\} porque=\\{FRASE\\.sinFuente\\}`), `«${rotulo}» no está en «—» con su frase`);
   }
   assert.match(f, /<div className="dw-empty">\{FRASE\.sinFuente\}<\/div>/);
-  assert.match(f, /<Caja rotulo="Primer día con entrega" valor=\{fechaCorta\(f\.primerDia\) \?\? FRASE\.guion\} ancha \/>/, '«Publicado» es «Primer día con entrega» (CF1-02)');
+  assert.match(f, /<Caja rotulo="Primer día con entrega" valor=\{fechaCorta\(f\.primerDia\) \?\? FRASE\.guion\} porque=\{f\.primerDia \? null : FRASE\.sinEntrega\} ancha \/>/, '«Publicado» es «Primer día con entrega» (CF1-02)');
+  assert.match(f, /<Caja rotulo="Último día con entrega" valor=\{fechaCorta\(f\.ultimoDia\) \?\? FRASE\.guion\} porque=\{f\.ultimoDia \? null : FRASE\.sinEntrega\} ancha \/>/);
   // Los datos de la pieza: las seis de la tira y las cinco de la subasta.
   const datos = [...f.matchAll(/<Dato rotulo="([^"]+)" c=\{(\w)\.(\w+)\} formato=\{(\w+)\}/g)].map((m) => `${m[1]}=${m[2]}.${m[3]}:${m[4]}`);
   assert.deepEqual(datos, [
@@ -284,7 +318,12 @@ test('la ficha es el cajón del prototipo: en un portal, con sus secciones en or
   assert.match(funcion(ficha(), 'Dato'), /\{porque \? <div className="cr-motivo">\{porque\}<\/div> : null\}/, 'un «—» de la ficha no lleva su línea');
   // El link se abre afuera, sin `referrer`, y el editor sólo para quien puede.
   assert.match(f, /target="_blank" rel="noopener noreferrer"/);
-  assert.match(f, /\{puedeEditar \? <EditorDelEnlace /);
+  assert.match(f, /\{puedeEditar \? <EditorDelEnlace pieza=\{pieza\.clave\} enlace=\{manual\} alCambiarEnlaces=\{alCambiarEnlaces\} \/> : null\}/);
+  const editor = funcion(ficha(), 'EditorDelEnlace');
+  assert.match(editor, /accion === 'sacar' \? await borrarEnlaceDeLaPieza\(pieza\) : await guardarEnlaceDeLaPieza\(pieza, url\.trim\(\)\)/, 'el editor cruza guardar y sacar');
+  assert.match(editor, /if \(r\.tipo === 'datos'\) \{\s*alCambiarEnlaces\(r\.enlaces\);/, 'el editor no avisa al panel de la lista nueva');
+  // Y el panel, al recibirla, también recarga: la pieza puede cambiar de enlace.
+  assert.match(funcion(panel(), 'Tablero'), /alCambiarEnlaces=\{\(lista\) => \{\s*setEnlaces\(lista\);\s*alCambiar\(\);/);
 });
 
 test('no vuelven «Personalizado», la clave `mes`, la curva, el guion ni los nombres de la maqueta', () => {
@@ -315,16 +354,22 @@ test('no vuelven «Personalizado», la clave `mes`, la curva, el guion ni los no
 test('la carga: la última lectura gana, la recarga no pisa a la primera, y la primera se apaga', () => {
   const p = funcion(panel(), 'PanelDeCreative');
   assert.match(p, /if \(esRecarga && primeraEnVuelo\.current\) return;/, 'una recarga del reloj deja sin efecto a la carga primera');
-  assert.match(p, /const esta = \+\+ultima\.current;[\s\S]*const r = await leerCreative\(periodo\);\s*if \(esta !== ultima\.current\) return;/, 'una respuesta tardía pisa a la nueva');
+  assert.match(p, /const esta = \+\+ultima\.current;[\s\S]*const r = await leerCreative\(periodoVigente\.current\);\s*if \(esta !== ultima\.current\) return;/, 'una respuesta tardía pisa a la nueva');
   assert.match(p, /if \(!esRecarga\) primeraEnVuelo\.current = false;/, 'la primera carga nunca se apaga: el reloj deja de recargar');
   assert.match(p, /<Tablero key=\{pantalla\.periodo\} /, 'la ficha abierta sobrevive al cambio de ventana');
+  assert.match(p, /const r = await leerCreative\(periodoVigente\.current\);/, 'una recarga atrasada pide el período de cuando se creó');
+  assert.match(p, /periodoVigente\.current = periodo;/);
+  assert.match(p, /setError\(r\.mensaje\);\s*if \(!esRecarga\) setPantalla\(null\);/, 'un fallo al cambiar de ventana deja las cifras de la anterior');
+  assert.match(funcion(panel(), 'Tablero'), /if \(abierta !== null && !piezas\.some\(\(x\) => x\.clave === abierta\)\) setAbierta\(null\);/, 'una ficha cerrada por una recarga se reabriría sola');
+  // Una respuesta sin la pantalla armada es un fallo con su aviso, no un panel que se cae.
+  assert.match(leer('lib/negocio/vistaDeCreative.ts'), /if \(r\.tipo === 'datos' && !r\.datos\?\.pantalla\?\.criterios\) return \{ tipo: 'fallo'/);
   assert.match(p, /usarReloj\(aLaVista \? 'creative:tic' : null, recargar, CADENCIA\.inteligencia\);/);
 });
 
 test('el navegador no calcula: se multiplica por 100 en un solo lugar, y el panel no divide ni ordena', () => {
   const todo = panel() + ficha() + comun();
   assert.equal([...todo.matchAll(/\*\s*100\b/g)].length, 1, 'hay otra multiplicación por 100: todo viaja de 0 a 1 y se convierte una vez (CF1-15)');
-  assert.match(comun(), /export const cien = \(v\) => Math\.round\(v \* 100\);/);
+  assert.match(comun(), /export const cien = \(v\) => v \* 100;/);
   for (const [nombre, fuente] of [['panel', panel()], ['ficha', ficha()]] as const) {
     const sinImports = fuente.replace(/^import .*$/gm, '').replace(/'[^'\n]*'|`[^`\n]*`|"[^"\n]*"/g, "''");
     assert.doesNotMatch(sinImports, /[\w)\]]\s*\/\s*[\w(]/, `el ${nombre} divide: una tasa se calculó en el navegador`);
@@ -335,7 +380,7 @@ test('el navegador no calcula: se multiplica por 100 en un solo lugar, y el pane
 test('sin párrafos: el panel no dibuja la cobertura, los avisos ni lo que falta para medir (CF1-05)', () => {
   const t = panel() + ficha();
   assert.doesNotMatch(t, /\.aviso\b|fueraDeAlcance|\.puente\b|desdeElDesglose|\.titulos\b|<details|cs-fuera|cs-grave/, 'el panel volvió a dibujar un aviso, la cobertura o lo que falta');
-  // Ningún dato de una persona: el panel no lee los contactos de la calidad.
+  // El panel lee sólo la pantalla armada, no los bloques de antes: lo que dibuja lo decide el servidor (CF1-05, CF1-15).
   assert.doesNotMatch(t, /p\.calidad|p\.rendimiento|p\.fatiga/, 'el panel lee los bloques de antes y no la pantalla armada');
 });
 
@@ -374,6 +419,8 @@ test('lo nuevo vive en `app/creative.css`, acotado; la estética de Inteligencia
      cualquier imagen. Una regla de acá le gana por especificidad —misma capa— y vuelve el 1,01:1. */
   assert.doesNotMatch(propia, /\.cc-status\.(act|pau)\b/, '`app/creative.css` pisa el velo de la píldora de estado que pone `temas.css`');
   assert.doesNotMatch(propia, /\.cr-fondo \{ background:/, 'el fondo de la miniatura pisa el piso de la media de `temas.css`: va sólo `background-image`');
+  assert.match(propia, /#v-creative \.cr-gancho \{[^}]*background: var\(--velo-medio\); color: var\(--warn-medio\);/, '«Perdiendo gancho» sin el velo, o en un color que el tema claro oscurece');
+  assert.match(leer('app/temas.css'), /--warn-medio: {2}#e0c073;/);
 
   /* La estética de Inteligencia repintaba la pestaña, y se quedó sin nadie que la usara: se borró, con su import. */
   assert.equal(existsSync(join(RAIZ, 'app/inteligencia-estetica.css')), false, 'volvió `app/inteligencia-estetica.css`');
@@ -383,3 +430,46 @@ test('lo nuevo vive en `app/creative.css`, acotado; la estética de Inteligencia
     assert.doesNotMatch(sinComentarios(leer(`app/${nombre}`)), /#v-creative\b/, `app/${nombre} tiene una regla para #v-creative`);
   }
 });
+
+/** Los formatos de `comun.jsx`, ejecutados: el archivo es JavaScript plano. */
+function formatos() {
+  const fuente = leer(COMUN).replace(/^export /gm, '');
+  return runInNewContext(`${fuente}\n;({ o, pf, miles, corto, veces, plata, fechaCorta, FORMATO_DEL_CRITERIO, motivo })`, { Intl, Date, Math, Number, String }) as {
+    o: (v: unknown, f: (x: number) => string) => string;
+    pf: (v: number) => string;
+    miles: (n: number) => string;
+    corto: (n: number) => string;
+    veces: (n: number) => string;
+    plata: (n: number) => string;
+    fechaCorta: (iso: string | null) => string | null;
+    FORMATO_DEL_CRITERIO: Record<string, (x: number) => string>;
+    motivo: (c: { valor: number | null; motivo: string | null }) => string | null;
+  };
+}
+
+test('los formatos, ejecutados: un cero es un cero, una tasa chica lleva su decimal, el mes es el que es', () => {
+  const f = formatos();
+  assert.equal(f.o(0, f.miles), '0', 'un cero medido se dibujó como «—»');
+  assert.equal(f.o(null, f.miles), '—');
+  assert.equal(f.o(undefined, f.pf), '—');
+  // Las tasas: enteras desde el 10 %, con un decimal debajo, y el cero es cero.
+  assert.equal(f.pf(0.64), '64%');
+  assert.equal(f.pf(0.0237), '2.4%');
+  assert.equal(f.pf(0.0211), '2.1%', 'dos CTR distintos se leen iguales');
+  assert.equal(f.pf(0.0019), '0.2%', 'una landing chica se leyó «0 %»');
+  assert.equal(f.pf(0), '0%');
+  assert.equal(f.corto(41200), '41.2K');
+  assert.equal(f.corto(950), '950');
+  assert.equal(f.corto(123600), '124K');
+  assert.equal(f.veces(2), '2.0');
+  assert.equal(f.plata(2412.5), '$2,413');
+  // El mes, el que es; y el año sólo cuando no es el de hoy.
+  const esteAno = new Date().getFullYear();
+  assert.equal(f.fechaCorta(`${esteAno}-10-05`), '5 oct');
+  assert.equal(f.fechaCorta(`${esteAno - 1}-01-31`), `31 ene ${esteAno - 1}`);
+  assert.equal(f.fechaCorta(null), null);
+  assert.equal(f.FORMATO_DEL_CRITERIO.hookRate!(0.2), '20%', 'el veredicto del hook rate no sale en porcentaje');
+  assert.equal(f.motivo({ valor: null, motivo: 'sin_entrega' }), 'Sin entrega en esta ventana.');
+  assert.equal(f.motivo({ valor: 0, motivo: null }), null);
+});
+

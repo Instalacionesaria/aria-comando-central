@@ -798,10 +798,9 @@ async function mejorar(
  * `ingerirMensajes` y `barrerCitas` lo usan porque las dispara **el reloj del navegador cada diez
  * segundos**, y sin candado N pestañas son N veces el tráfico contra el proveedor.
  *
- * Esta tarea no tiene reloj: la disparan el cron —una vez por día— y un botón de la pestaña Setter,
- * que es una acción explícita de una persona. Meterla en el candado le pondría un antirrebote de diez
- * segundos a ese botón sin que haya un tráfico que acotar, y el síntoma sería un botón que «no hace
- * nada» cuando alguien lo aprieta dos veces.
+ * Esta tarea no tiene reloj del navegador: la dispara el cron, cada diez minutos (`HORARIOS`). El botón
+ * de la pestaña Setter no pasa por acá —llama a `sincronizarContactos` desde su ruta— y meter esta tarea
+ * en el candado no acotaría ningún tráfico.
  *
  * El día que esta tarea gane un reloj, el candado es lo primero que hay que ponerle.
  *
@@ -897,10 +896,17 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     partes.push(`${r.residuos.length} día(s) con gasto de la cuenta que ninguna campaña listada explica`);
   }
 
-  /* Las miniaturas de los contactos (CF1-11): un 429 o la credencial rechazada cortan la pasada, y lo que faltó se
+  /* Las miniaturas de los contactos (CF1-11): el cupo, la credencial, un GoHighLevel que no contesta o el tiempo cortan
+     la pasada, y lo que faltó se
      pide en la siguiente. Sin esta línea el sello quedaba limpio sobre una pasada que no terminó. */
-  const mini = (r as { miniaturas?: { cortada?: unknown } }).miniaturas;
-  if (mini?.cortada === true) partes.push('GoHighLevel cortó la pasada de miniaturas: lo que faltó se pide en la siguiente');
+  const mini = (r as { miniaturas?: { corte?: unknown } }).miniaturas;
+  const CORTE: Record<string, string> = {
+    cupo: 'GoHighLevel cortó la pasada de miniaturas por el cupo',
+    credencial: 'GoHighLevel rechazó la credencial en la pasada de miniaturas',
+    sin_respuesta: 'GoHighLevel no contestó en la pasada de miniaturas',
+    tiempo: 'la pasada de miniaturas llegó a su tiempo',
+  };
+  if (typeof mini?.corte === 'string' && CORTE[mini.corte]) partes.push(`${CORTE[mini.corte]}: lo que faltó se pide en la siguiente`);
 
   if (r.atrasado === true) partes.push('se agotó el presupuesto y quedaron días sin pedir');
   if (Array.isArray(r.huecos) && r.huecos.length > 0) {

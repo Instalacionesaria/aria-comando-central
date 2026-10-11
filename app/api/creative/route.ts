@@ -1,7 +1,7 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// La pantalla de Creative: qué pieza funciona, y sobre cuántos datos se está diciendo.
+// La pantalla de Creative: qué pieza funciona, contra su etapa (docs/creative/16).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // ES LA PRIMERA OPERACIÓN DE SERVIDOR DE ESTA PANTALLA, Y ESO BAJA UN CABLE TRAMPA
@@ -27,10 +27,8 @@
 // **Las tres cifras NO se escriben acá.** Decían «94,5 %», «56-90 %» y «5 de 26», y al 2026-09-19
 // las tres estaban vencidas: la primera de un denominador que ya no se usa, la tercera daba 11 y no
 // 5. Un comentario con una cifra medida envejece con cada día que entra el colector, y nada avisa.
-// Las tres las calcula y las publica cada módulo, y la pantalla las dibuja arriba de todo.
-//
-// Dibujar una antes que las otras muestra, durante esos segundos, un ranking sin la cobertura que lo
-// califica — que es exactamente lo que el § 18.5 prohíbe. Y las tres reciben LA MISMA ventana: con
+// Las tres las calcula y las publica cada módulo. Desde el 2026-10-11 la pantalla no las dibuja —es un tablero, y
+// la cobertura la da el agente de Creative (CF1-05)—, pero siguen viajando. Y las tres reciben LA MISMA ventana: con
 // ventanas distintas, el ICP hablaría de treinta días y el hook rate de tres, sin decirlo.
 //
 // ── Y LAS SEÑALES, QUE NO SE CALCULAN ACÁ ─────────────────────────────────
@@ -93,7 +91,8 @@ export async function GET(peticion: Request): Promise<Response> {
        SERVIDOR CONTESTÓ, así que el botón encendido siempre describe las cifras de abajo. */
     periodo: periodo.clave,
     /* Lo que dibuja el front del prototipo, armado en el servidor (CF1-15): cada tasa de 0 a 1 y cada «—» con su
-       motivo. Los bloques de abajo siguen viajando: son la respuesta de siempre de esta ruta y los lee el cerebro. */
+       motivo. Los bloques de abajo siguen viajando: son la respuesta de siempre de esta ruta, y la prueba 215 compara
+       contra ellos las herramientas del cerebro, que los piden por su cuenta a las mismas funciones. */
     pantalla: lectura.pantalla,
     calidad: lectura.calidad,
     rendimiento: lectura.rendimiento,

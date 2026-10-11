@@ -699,7 +699,10 @@
      sobre una superficie del tema. `--ok` no sirve acá porque en claro es un verde oscuro, y sobre
      el velo negro un verde oscuro desaparece. */
   --ok-medio:    #94c6a0;
-  /* Y EL PISO DEBAJO DE LA MEDIA, que era la pieza que faltaba. `.dw-video` no tiene fondo propio:
+  /* Y el ámbar de «Perdiendo gancho» en la tarjeta de Creative, por lo mismo: va sobre el velo de la miniatura. */
+  --warn-medio:  #e0c073;
+  /* Y EL PISO DEBAJO DE LA MEDIA, que era la pieza que faltaba. `.dw-video` no tenía fondo propio —desde el
+     2026-10-11 lleva el degradado de `.cr-fondo` como imagen, y este piso debajo—:
      es un contenedor para un video, y hasta que el video esté ahí lo que se ve detrás de sus
      controles es el panel — blanco en el tema claro.
 
@@ -754,7 +757,7 @@
 /* Y ACÁ EL VELO NO ERA OPCIONAL, aunque el color ya no se dé vuelta.
 
    El reloj quedó blanco, pero sin velo se apoya directo en el degradado de la pieza. Esos degradados
-   están escritos a mano en `lib/aios/creative.js` —ocho pares, `#4c3f9e→#2b2560` y compañía— y son
+   estaban escritos a mano en `lib/aios/creative.js` —borrado el 2026-09-19; ocho pares, `#4c3f9e→#2b2560` y compañía— y eran
    literales, así que no cambian con el tema: eso es lo que salvó al reloj. Pero el más CLARO de los
    ocho es `#8f7a1f→#4a3f10`, un mostaza, y blanco sobre ese mostaza da **4,23:1** con 10,5 px:
    abajo del 4,5:1, por poco.

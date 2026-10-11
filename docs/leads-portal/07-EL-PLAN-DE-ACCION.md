@@ -279,8 +279,8 @@ apuntando **dentro del rango y a otra cosa**, que es la clase de cita rota que n
 | `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md:538` | líneas 58-59 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
 | `docs/acquisition/02-METRICAS.md:871` | línea 56 | la frase 4 | `aios-command-center_1.html:5726` |
 | `git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`, líneas 73, 151 y 326: la foto del 2026-09-15 (el corte del 2026-09-28 ya cita la 5726, `docs/OTROS/estado actual/01-ACQUISITION.md:216-220`) | línea 56, las tres | la frase 4 | `aios-command-center_1.html:5726` |
-| `docs/creative/04-LA-FICHA-DEL-CREATIVO.md:163` | línea 58 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
-| `docs/creative/09-LO-QUE-NO-ES-UN-REQUISITO.md:187` | línea 58 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
+| `docs/creative/04-LA-FICHA-DEL-CREATIVO.md:164` | línea 58 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
+| `docs/creative/09-LO-QUE-NO-ES-UN-REQUISITO.md:188` | línea 58 | el encendido del modal | `aios-command-center_1.html:5728-5729` |
 
 **Dos que nacieron desplazadas.** No son deriva: cuando se escribieron ya apuntaban a otra línea.
 

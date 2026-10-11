@@ -217,7 +217,7 @@ contactos (`lib/aios/executive.js:16@c4cf2a8`) y en las últimas 24 horas entró
   guardados (`lib/negocio/embudoDelFormulario.ts:136-143`). Lo que sí publica es cuántos contactos
   entraron por cada camino, en conteos y no en tasas (`lib/negocio/recorridoDelLead.ts:5-46`). Lo
   más parecido a una visita son las «vistas de la landing» que Meta reporta por pieza y Creative
-  publica como tasa (`lib/negocio/rendimientoDelCreativo.ts:246-248`): 1.330 en la ventana de 30
+  publica como tasa (`lib/negocio/rendimientoDelCreativo.ts:249-251`): 1.330 en la ventana de 30
   días al 2026-09-28, todas entre el 2026-08-30 y el 2026-09-13, en 88 filas de anuncio y día. Son
   cargas atribuidas a un anuncio, no visitantes.
 - **Agendamientos** — lo calculan Sales (`con_cita`) y Conversation (`agendaron`), **con dos
@@ -396,7 +396,7 @@ costo a 7 días hoy es «sin entrega», no «$0», y así tiene que decirse.
 
 **4 · La visita, la sesión, el VSL y el dispositivo.** Declarados por Conversion
 (`lib/negocio/embudoDelFormulario.ts:123-164`, escrito el 2026-09-20), Creative
-(`lib/negocio/rendimientoDelCreativo.ts:143-168`, del 2026-09-18) y Leads Portal
+(`lib/negocio/rendimientoDelCreativo.ts:146-171`, del 2026-09-18) y Leads Portal
 (`lib/negocio/huecosDelLeadsPortal.ts:37-77`, del 2026-09-27). Las «visitas landing», el «26 % de
 visita a cita» y el «78 % en móvil» de Executive cuelgan de ellos. Vienen de instrumentar la landing
 o de Meta directo, no del CRM.

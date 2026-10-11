@@ -18,7 +18,8 @@
 create table if not exists negocio.miniaturas_del_contacto (
   org_id uuid not null references identidad.organizaciones(id),
   contacto_id uuid not null,
-  -- `false` = GoHighLevel contestó 404: el contacto ya no está en el CRM. No se vuelve a pedir.
+  -- `false` = GoHighLevel no devolvió el contacto: un 404, una respuesta sin contacto, o un rechazo de ese contacto
+  -- (un 403 o un 4xx que no sea el cupo; desde CF-4, `lib/negocio/miniaturaDelContacto.ts`). No se vuelve a pedir.
   encontrado boolean not null,
   -- Las cuatro claves, tal como llegan. NULL = la respuesta no la traía.
   video_url text,

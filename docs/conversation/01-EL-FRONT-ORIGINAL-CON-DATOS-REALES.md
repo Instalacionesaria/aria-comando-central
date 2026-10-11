@@ -428,4 +428,4 @@ Cada hallazgo se verificó contra el código antes de tocar nada.
 | «Reintentar» y «Guardar» entraban como recarga | van como carga primera |
 | comentarios y textos que quedaron viejos (la ruta, la sección, el panel de Auditoría, la vista, CN1-05, CN1-09, CN1-13, CN1-15, el doc 00) | corregidos |
 | quince mutaciones vivas —la carga, el sentimiento cruzado, los rótulos cruzados, los filtros del ICP y de la asistencia, el «audita» que no llegaba— | las pruebas 250 y 251 las ven; sus mutaciones están muertas |
-| las reglas muertas de `app/inteligencia-estetica.css` | se quedan, declaradas, hasta que Creative vuelva al prototipo |
+| las reglas muertas de `app/inteligencia-estetica.css` | se quedaron, declaradas, hasta que Creative volvió al prototipo: la hoja se borró el 2026-10-11 (docs/creative/16, CF-3) |

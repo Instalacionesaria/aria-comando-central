@@ -16,8 +16,8 @@
  *
  * ── UN CAJÓN PROPIO, NO `#drawer` ──────────────────────────────────────────
  *
- * Mismo molde que `components/creative/FichaDelCreativo.jsx`: tiene su `id`, usa las clases globales del
- * cajón —se ve igual— y se monta en `document.body`. Por eso sus reglas propias cuelgan de `.cv-cajon` y no de
+ * Mismo molde que `components/creative/FichaDelCreativo.jsx`: usa las clases globales del cajón —se ve igual— y
+ * se monta en `document.body`. Por eso sus reglas propias cuelgan de `.cv-cajon` y no de
  * `#v-conversion`, que no lo alcanzaría.
  *
  * ── SIN DATOS DE UNA PERSONA (CV15-24) ─────────────────────────────────────

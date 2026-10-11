@@ -104,7 +104,7 @@ Del mapa `HORARIOS` (`lib/negocio/barrido.ts:203-319`), indexado por la cadena l
 
 Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:295-296`). Los minutos 3, 17, 41 y 7 no son
 adorno: dos horarios en el mismo minuto se frenan por el candado y uno queda `frenada` sin trabajar
-(`lib/negocio/barrido.ts:209-212`, `:258-259`). Cuatro pruebas atan el mapa a la configuración:
+(`lib/negocio/barrido.ts:209-212`, `:259-260`). Cuatro pruebas atan el mapa a la configuración:
 
 - cada horario de `vercel.json` tiene entrada en `HORARIOS` y cada entrada está en `vercel.json`
   (`pruebas/codigo/99-cron.test.ts:80`, `:92`);
@@ -125,14 +125,14 @@ horario más frecuente que uno diario hace fallar el despliegue (`lib/negocio/ba
 - **La sonda va primero**, en su propio `try/catch`: es la única señal de seguridad y cuesta cero
   llamadas (`lib/negocio/barrido.ts:466-484`).
 - **Las empresas van por sello más viejo**, y las que nunca corrieron o quedaron `sin_tiempo`, antes
-  que todas (`lib/negocio/barrido.ts:486-499`, `:844`). Sin la segunda regla, la que se queda sin
+  que todas (`lib/negocio/barrido.ts:486-499`, `:848`). Sin la segunda regla, la que se queda sin
   tiempo se sellaría última y volvería al fondo de la fila para siempre.
 - **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:349`). Es un
   guardia parcial: una sola llamada colgada puede esperar 240 s y Vercel corta la función a los 300
   (`lib/negocio/barrido.ts:336-347`). Los Analizadores, que corren solos, tienen hasta 285 s
   (`lib/negocio/barrido.ts:361`).
 - **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca
-  un `+1` (`lib/negocio/barrido.ts:993-1027`). Los estados son `corrio`, `saltada`, `frenada`,
+  un `+1` (`lib/negocio/barrido.ts:999-1033`). Los estados son `corrio`, `saltada`, `frenada`,
   `sin_tiempo` y `fallo`; los tres del medio son normales (`lib/negocio/barrido.ts:106-107`,
   `lib/negocio/frescura.ts:158-159`).
 
@@ -526,7 +526,7 @@ minutos del medio.
 - **La protección de rama en `main`** con `verificar` requerido. Es una configuración de GitHub, no
   código, y es la que convierte el rojo en un freno (§ 5.2).
 - **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a
-  propósito (`lib/negocio/barrido.ts:944`, `:459`, `:467`), así que su resultado vive sólo en la
+  propósito (`lib/negocio/barrido.ts:950`, `:460`, `:468`), así que su resultado vive sólo en la
   respuesta del cron. Que corre cada hora **no se puede demostrar desde la base**;
   `negocio.control_aislamiento` tiene sus dos filas de control, creadas el 2026-08-23.
 - **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente en el despliegue
@@ -566,13 +566,13 @@ minutos del medio.
    reescribe, y una corrida perdida se arregla en la siguiente (`lib/negocio/barrido.ts:22-24`,
    `lib/negocio/recolectarAnuncios.ts:11-19`).
 2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`.** Es la diferencia entre «no
-   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:983-1027`).
+   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:989-1033`).
 3. **Un horario desconocido corre todo y lo dice.** Nunca «no hacer nada»
    (`lib/negocio/barrido.ts:429-434`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`
    (`lib/negocio/barrido.ts:114-129`).
 5. **`contactos` antes de `mensajes`, `auditoria` después**, en el mismo horario
-   (`lib/negocio/barrido.ts:155-163`, `:172-181`).
+   (`lib/negocio/barrido.ts:155-163`, `:173-182`).
 6. **Dos horarios no comparten minuto**, o uno queda `frenada` sin trabajar.
 7. **La migración va antes del push**, y se pregunta qué **toca** la columna nueva, no sólo qué la
    lee: ver [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md). Hoy la comprobación es comparar
@@ -626,7 +626,7 @@ minutos del medio.
      2026-09-15.
    - `app/api/sonda/route.ts:3` dice que a esa ruta «lo llama una tarea programada»; ninguna entrada
      de `vercel.json` la llama (§ 2.6).
-   - `lib/negocio/barrido.ts:73` y `:78` hablan de «las cinco» tareas; `TAREAS` tiene nueve
+   - `lib/negocio/barrido.ts:73` y `:79` hablan de «las cinco» tareas; `TAREAS` tiene nueve
      (`lib/negocio/barrido.ts:89-104`).
    - `lib/negocio/barrido.ts:243-245@d17e029` cuenta los anuncios como «cuatro días (hoy más los tres que se
      releen)» y **52 llamadas por día**; se releen dos (`lib/negocio/recolectarAnuncios.ts:61`) y el

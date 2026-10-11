@@ -31,8 +31,8 @@ import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo } from './creativo
 import { enlacesDeLasPiezas, type EnlaceDePieza } from './enlaceDeLaPieza.ts';
 import { fatigaDelCreativo, type FatigaDeLosCreativos } from './fatigaDelCreativo.ts';
 import { miniaturasDeLasPiezas } from './miniaturaDelContacto.ts';
-import { PISO_DE_IMPRESIONES, rendimientoDelCreativo, type RendimientoDeLosCreativos } from './rendimientoDelCreativo.ts';
-import { enlaceDePublicacion, type Red } from './urlExterna.ts';
+import { PIEZA_SIN_NOMBRE, PISO_DE_IMPRESIONES, rendimientoDelCreativo, type RendimientoDeLosCreativos } from './rendimientoDelCreativo.ts';
+import { LARGO_MAXIMO_DE_MINIATURA, enlaceDePublicacion, type Red } from './urlExterna.ts';
 
 // ─── Los tipos ──────────────────────────────────────────────────────────────
 
@@ -40,8 +40,8 @@ import { enlaceDePublicacion, type Red } from './urlExterna.ts';
  * Por qué una cifra no tiene valor: `sin_contactos` —la pieza no trajo contactos en la ventana—, `sin_puntaje` —el CRM
  * no tiene el campo del ICP—, `sin_entrega` —la pieza no tuvo impresiones en la ventana—, `bajo_el_piso` —menos de 10
  * clics al enlace para el click-to-landing—, `pocas_impresiones` —menos de 1000 impresiones para una tasa—, `sin_reporte` —
- * GoHighLevel nunca reportó esa acción para la pieza, por ejemplo vistas de video en una imagen— o `sin_fuente` — lo
- * que GoHighLevel no entrega: la retención—.
+ * GoHighLevel no reportó esa acción para la pieza en ningún anuncio-día de la ventana, por ejemplo vistas de video en
+ * una imagen, o el gasto de días con impresiones— o `sin_fuente` — lo que GoHighLevel no entrega: la retención—.
  */
 export type MotivoDeLaCifra =
   | 'sin_contactos'
@@ -79,7 +79,7 @@ export interface PiezaDeCreative {
   /** El nombre de la pieza, normalizado. Es la llave y lo que se dibuja. */
   clave: string;
   etapa: ClaveDeEtapa;
-  /** Impresiones en alguno de los últimos 3 días (CF1-09). */
+  /** Impresiones en alguno de los últimos 3 días del calendario, hoy incluido (CF1-09). */
   estado: 'entregando' | 'sin_entrega';
   cifras: CifrasDeLaPieza;
   /** `true`: la fatiga tiene veredicto y la pieza perdió gancho; `null`: no hay veredicto. */
@@ -135,6 +135,8 @@ export interface EntregaDeLaPieza {
   landing: { cantidad: number; impresiones: number } | null;
   /** Impresiones sobre alcance, pesada por impresiones; `null` sin alcance en la ventana. */
   frecuencia: number | null;
+  /** Las impresiones de los días que traían frecuencia: el peso de esta pieza en la frecuencia de la tira. */
+  impresionesConFrecuencia: number;
   /** La etapa de la campaña de la que más impresiones tuvo la pieza. */
   etapa: Etapa | null;
   primerDia: string | null;
@@ -235,7 +237,9 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
   const enlaces = new Map(e.enlaces.map((x) => [x.pieza, x]));
 
   /* La calidad viene por (pieza, etapa del contacto): se suma por pieza, y la etapa con más contactos es la de
-     respaldo cuando la pieza no tiene anuncios con campaña. */
+     respaldo cuando la campaña de la pieza no dice su etapa —no tiene anuncios, o su campaña con más impresiones no
+     trae TOFU, MOFU ni BOFU en el nombre—. Empate de contactos: la etapa que va antes en el embudo, para que la pieza no
+     cambie de grupo según el orden en que la base devuelva las filas. */
   const calidad = new Map<string, { contactos: number; calificados: number; agendaron: number; etapa: Etapa | null; deLaEtapa: number }>();
   for (const f of e.calidad.filas) {
     if (f.creativo === null) continue;
@@ -243,14 +247,20 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
     ya.contactos += f.contactos;
     ya.calificados += f.calificados;
     ya.agendaron += f.agendaron;
-    if (f.contactos > ya.deLaEtapa) {
+    const antes = f.etapa !== null && (ya.etapa === null || ETAPAS.indexOf(f.etapa) < ETAPAS.indexOf(ya.etapa));
+    if (f.contactos > ya.deLaEtapa || (f.contactos === ya.deLaEtapa && antes)) {
       ya.etapa = f.etapa;
       ya.deLaEtapa = f.contactos;
     }
     calidad.set(f.creativo, ya);
   }
 
-  const claves = [...new Set([...calidad.keys(), ...rendimiento.keys(), ...entrega.keys()])].sort((a, b) => a.localeCompare(b));
+  /* Una pieza entra si hizo algo EN LA VENTANA: trajo contactos, tuvo impresiones o gastó. La entrega trae todas las
+     piezas de la historia —sus días con entrega son de toda la historia—, y sin este filtro «7 días» listaba las 32
+     piezas de siempre, 23 de ellas en «No funciona» con todo en «—». */
+  const activa = (clave: string) =>
+    calidad.has(clave) || (entrega.get(clave)?.impresiones ?? 0) > 0 || (rendimiento.get(clave)?.gasto ?? 0) > 0;
+  const claves = [...new Set([...calidad.keys(), ...rendimiento.keys(), ...entrega.keys()])].filter(activa).sort((a, b) => a.localeCompare(b));
   const piezas: PiezaDeCreative[] = claves.map((clave) => {
     const q = calidad.get(clave);
     const r = rendimiento.get(clave);
@@ -259,7 +269,7 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
     const hayEntrega = (x?.impresiones ?? 0) > 0;
     const miniatura = e.miniaturas.get(clave) ?? null;
     const manual = enlaces.get(clave);
-    const deLaMiniatura = miniatura === null ? null : enlaceDePublicacion(miniatura);
+    const deLaMiniatura = miniatura === null ? null : enlaceDePublicacion(miniatura, LARGO_MAXIMO_DE_MINIATURA);
     return {
       clave,
       etapa: x?.etapa ?? q?.etapa ?? 'sin_etapa',
@@ -279,7 +289,8 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
         anuncios: r?.anuncios ?? 0,
         primerDia: x?.primerDia ?? null,
         ultimoDia: x?.ultimoDia ?? null,
-        gasto: r && r.gasto !== null ? conValor(r.gasto) : sinValor('sin_entrega'),
+        /* Sin gasto pero con impresiones no es «sin entrega»: GoHighLevel no reportó lo que costó. */
+        gasto: r && r.gasto !== null ? conValor(r.gasto) : sinValor(hayEntrega ? 'sin_reporte' : 'sin_entrega'),
         ctr: !hayEntrega ? sinValor('sin_entrega') : x!.impresiones < PISO_DE_IMPRESIONES ? sinValor('pocas_impresiones') : conValor(x!.clics / x!.impresiones),
         linkCtr: sobreImpresiones(x?.clicsAlEnlace ?? null, hayEntrega),
         landing: sobreImpresiones(x?.landing ?? null, hayEntrega),
@@ -299,8 +310,10 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
   const entregas = [...entrega.values()];
   const impresiones = entregas.reduce((s, x) => s + x.impresiones, 0);
   const clics = entregas.reduce((s, x) => s + x.clics, 0);
-  const conFrecuencia = entregas.filter((x) => x.frecuencia !== null && x.impresiones > 0);
-  const impresionesConFrecuencia = conFrecuencia.reduce((s, x) => s + x.impresiones, 0);
+  /* La frecuencia de cada pieza ya viene pesada por las impresiones de SUS días con frecuencia; la de la tira se pesa
+     con esas mismas impresiones, no con todas las de la pieza —que darían más peso a la que reporta menos—. */
+  const conFrecuencia = entregas.filter((x) => x.frecuencia !== null && x.impresionesConFrecuencia > 0);
+  const impresionesConFrecuencia = conFrecuencia.reduce((s, x) => s + x.impresionesConFrecuencia, 0);
   const hay = impresiones > 0;
   const cifras: CifrasDeLaPieza = {
     calificados: conCalidad.length === 0 ? sinValor('sin_contactos') : sinPuntaje ? sinValor('sin_puntaje') : conValor(conCalidad.reduce((s, q) => s + q.calificados, 0)),
@@ -311,7 +324,7 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
     frecuencia: !hay
       ? sinValor('sin_entrega')
       : impresionesConFrecuencia > 0
-        ? conValor(conFrecuencia.reduce((s, x) => s + x.frecuencia! * x.impresiones, 0) / impresionesConFrecuencia)
+        ? conValor(conFrecuencia.reduce((s, x) => s + x.frecuencia! * x.impresionesConFrecuencia, 0) / impresionesConFrecuencia)
         : sinValor('sin_reporte'),
   };
 
@@ -326,7 +339,8 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
       ctr: !hay ? sinValor('sin_entrega') : impresiones < PISO_DE_IMPRESIONES ? sinValor('pocas_impresiones') : conValor(clics / impresiones),
       linkCtr: sobreImpresiones(sumarPares(entregas.map((x) => x.clicsAlEnlace)), hay),
       landing: sobreImpresiones(sumarPares(entregas.map((x) => x.landing)), hay),
-      perdiendoGancho: { con: e.fatiga.filas.filter((f) => f.fatigado === true).length, sobre: e.fatiga.conVeredicto.sobre },
+      /* Sobre las que TIENEN veredicto (`conVeredicto.con`): `conVeredicto.sobre` son todas las piezas de la fatiga. */
+      perdiendoGancho: { con: e.fatiga.filas.filter((f) => f.fatigado === true).length, sobre: e.fatiga.conVeredicto.con },
     },
   };
 }
@@ -336,8 +350,8 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
 /**
  * La entrega de cada pieza: las impresiones, los clics y las tres acciones de la ventana —sobre los anuncio-día que
  * traían cada clave, como `rendimientoDelCreativo`—, la frecuencia pesada por impresiones —como `frecuenciaPorAnuncio`
- * del detector—, la etapa de la campaña con más impresiones y los días con entrega de toda la historia. Corre dentro
- * de `conOrganizacion`.
+ * del detector—, la etapa de la campaña con más impresiones y los días con entrega de toda la historia. Los anuncios
+ * sin nombre van en su pieza rotulada, como en `rendimientoDelCreativo`. Corre dentro de `conOrganizacion`.
  */
 export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza[]> {
   const enVentana = ventanaDeMetricas('m', dias);
@@ -358,11 +372,12 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
       ...acciones('landingPageView'),
       sql<string | null>`sum(m.frecuencia * m.impresiones) filter (where ${enVentana} and m.frecuencia is not null)
         / nullif(sum(m.impresiones) filter (where ${enVentana} and m.frecuencia is not null), 0)`.as('frecuencia'),
+      sql<string | null>`sum(m.impresiones) filter (where ${enVentana} and m.frecuencia is not null)`.as('impresionesConFrecuencia'),
       sql<string | null>`min(m.fecha) filter (where m.impresiones > 0)::text`.as('primerDia'),
       sql<string | null>`max(m.fecha) filter (where m.impresiones > 0)::text`.as('ultimoDia'),
-      sql<boolean>`coalesce(max(m.fecha) filter (where m.impresiones > 0) >= current_date - 3, false)`.as('entregando'),
+      /* Los últimos 3 días del calendario, hoy incluido: la convención de `ventanaDeMetricas`. */
+      sql<boolean>`coalesce(max(m.fecha) filter (where m.impresiones > 0) > current_date - 3, false)`.as('entregando'),
     ])
-    .where(sql<boolean>`${pieza} <> ''`)
     .groupBy(pieza)
     .execute();
 
@@ -379,7 +394,6 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
       etapaDelNombre('cp.nombre').as('etapa'),
       sql<string | null>`sum(m.impresiones)`.as('impresiones'),
     ])
-    .where(sql<boolean>`${pieza} <> ''`)
     .groupBy([pieza, 'a.meta_campana_id', 'cp.nombre'])
     /* El orden decide cuál gana: la primera de cada pieza. Sin él, la que gana es la que la base devuelva primero. */
     .orderBy(pieza)
@@ -394,14 +408,16 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
       ? null
       : { cantidad: Number(f[`c_${clave}`] ?? 0), impresiones: Number(f[`i_${clave}`]) };
 
+  const nombre = (pieza: string) => (pieza === '' ? PIEZA_SIN_NOMBRE : pieza);
   return filas.map((f) => ({
-    pieza: f.pieza,
+    pieza: nombre(f.pieza),
     impresiones: Number(f.impresiones ?? 0),
     clics: Number(f.clics ?? 0),
     vistas: parDe(f as Record<string, unknown>, 'videoView'),
     clicsAlEnlace: parDe(f as Record<string, unknown>, 'linkClick'),
     landing: parDe(f as Record<string, unknown>, 'landingPageView'),
     frecuencia: f.frecuencia === null ? null : Number(f.frecuencia),
+    impresionesConFrecuencia: Number(f.impresionesConFrecuencia ?? 0),
     etapa: etapas.get(f.pieza) ?? null,
     primerDia: f.primerDia,
     ultimoDia: f.ultimoDia,

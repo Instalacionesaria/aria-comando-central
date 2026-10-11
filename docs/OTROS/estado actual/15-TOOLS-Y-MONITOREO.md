@@ -450,7 +450,7 @@ en [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md): `lib/tools/scrapers.ts:16-19` sigue
 organización sin vínculo con el hub no puede scrapear; y, sin señalar hasta hoy, `:7-9` del mismo
 archivo, que el monedero vive en `usuarios_scraper`, de la base ajena donde estaba antes de la
 006 (`app/api/tools/scrape/route.ts:19-21`); hoy es `public.aria_cc_scraper_monedero`
-(`lib/datos/esquema.ts:1441`, `:1508`). Y
+(`lib/datos/esquema.ts:1441`, `:1524`). Y
 `components/monitoreo/PanelDeMonitoreo.jsx:11-12` dice que `app/monitoreo.css` son
 ochenta líneas: hoy son 201.
 

@@ -43,7 +43,7 @@ import FichaDelCreativo from './FichaDelCreativo';
 import Miniatura from './Miniatura.jsx';
 import { BotonDelPlan, TarjetaDeSenales } from '../senales/SenalesDelDepartamento.jsx';
 import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
-import { CRITERIO, ESTADO, ETAPA, FRASE, corto, miles, motivo, o, pf, plata, veces } from './comun.jsx';
+import { CRITERIO, ESTADO, ETAPA, FRASE, PERIODO_EN_LA_BARRA, corto, miles, motivo, o, pf, plata, veces } from './comun.jsx';
 
 /** El criterio con el que abre la pantalla: el del prototipo (`let criterion = 'agendas'`). */
 const CRITERIO_POR_OMISION = 'agendas';
@@ -67,6 +67,11 @@ export default function PanelDeCreative() {
      se descarta por vieja— y quedaban «Cargando…» y el fallo a la vez, o las cifras de la ventana anterior. La
      recarga se salta: la primera ya trae lo nuevo. */
   const primeraEnVuelo = useRef(false);
+  /* El período vigente, leído al pedir y no al crear la función: un «Guardar» del link o una señal resuelta llaman a la
+     recarga que tenían a mano, y si en el medio se eligió otro período, pedirían el viejo —y ganarían, por ser la
+     última—. */
+  const periodoVigente = useRef(periodo);
+  periodoVigente.current = periodo;
 
   /**
    * Trae la pantalla. Teniendo datos, una recarga del reloj no la vacía nunca —ni las cifras ni la ficha abierta— y
@@ -81,7 +86,7 @@ export default function PanelDeCreative() {
         primeraEnVuelo.current = true;
         setCargando(true);
       }
-      const r = await leerCreative(periodo);
+      const r = await leerCreative(periodoVigente.current);
       if (esta !== ultima.current) return;
       if (!esRecarga) primeraEnVuelo.current = false;
       if (r.tipo === 'datos') {
@@ -115,8 +120,8 @@ export default function PanelDeCreative() {
           <span className="cre-desc">Qué funciona, qué no, y por qué</span>
         </div>
         <div className="ch-r">
-          {/* El plan de la pasada de la mañana (CF1-14): el de 7 días con «7 días», y el de 30 con los otros tres —la
-              ruta elige la ventana—. */}
+          {/* El plan de la pasada de la mañana (CF1-14): el de 7 días con «7 días» y el de 30 con «30 días». Con «Hoy» y
+              «Completo» la ruta no trae plan, y el botón lo dice. */}
           {pantalla ? <BotonDelPlan departamento="creative" senales={pantalla.senales} /> : null}
           <div className="ch-period">
             {/* El botón encendido es el que el SERVIDOR contestó, no el que se pidió. Mientras no hay datos manda el
@@ -177,7 +182,13 @@ function Tablero({ p, criterio, alOrdenar, alCambiar }) {
   useEffect(() => setEnlaces(p.enlaces), [p.enlaces]);
   const [abierta, setAbierta] = useState(null);
   const pieza = abierta === null ? null : (porClave.get(abierta) ?? null);
-  const etiquetaDelPeriodo = PERIODOS.find((x) => x.clave === p.periodo)?.etiqueta ?? '';
+  /* Si una recarga ya no trae la pieza abierta, la ficha se cierra Y se olvida: sin esto, una recarga posterior que la
+     volviera a traer la reabriría sola, robándole el foco a quien está leyendo otra cosa. */
+  useEffect(() => {
+    if (abierta !== null && !piezas.some((x) => x.clave === abierta)) setAbierta(null);
+  }, [abierta, piezas]);
+  /* Sin ninguna pieza con valor en ninguna etapa no hay promedio contra el que estar «sobre»: lo dice como el prototipo. */
+  const sinPromedio = Object.values(grupos.promedioPorEtapa).every((v) => v === null);
 
   return (
     <>
@@ -185,14 +196,14 @@ function Tablero({ p, criterio, alOrdenar, alCambiar }) {
       <div className="filterbar">
         <Orden valor={criterio} alElegir={alOrdenar} />
         <span className="db-info">
-          <b>{miles(piezas.length)}</b> piezas · {etiquetaDelPeriodo}
+          <b>{miles(piezas.length)}</b> piezas · {PERIODO_EN_LA_BARRA[p.periodo]}
         </span>
       </div>
 
       <div className="ghead good">
         <span className="gdot" />
         <span className="gt">Funciona</span>
-        <span className="gsub">sobre el promedio de su etapa</span>
+        <span className="gsub">{sinPromedio ? 'sin datos en este periodo' : 'sobre el promedio de su etapa'}</span>
         <span className="gn">{`${miles(grupos.funciona.length)} piezas`}</span>
       </div>
       <Grupo claves={grupos.funciona} gana porClave={porClave} unicas={unicas} alAbrir={setAbierta} />
@@ -263,13 +274,19 @@ function Tira({ c, criterio }) {
 function Orden({ valor, alElegir }) {
   const [abierto, setAbierto] = useState(false);
   const caja = useRef(null);
+  const pildora = useRef(null);
+  /* Cerrar con Escape o al elegir devuelve el foco a la píldora: si no, queda en un ítem que ya no se dibuja. */
+  const cerrar = () => {
+    setAbierto(false);
+    pildora.current?.focus();
+  };
   useEffect(() => {
     if (!abierto) return undefined;
     const afuera = (e) => {
       if (caja.current && !caja.current.contains(e.target)) setAbierto(false);
     };
     const tecla = (e) => {
-      if (e.key === 'Escape') setAbierto(false);
+      if (e.key === 'Escape') cerrar();
     };
     document.addEventListener('click', afuera);
     document.addEventListener('keydown', tecla);
@@ -280,29 +297,33 @@ function Orden({ valor, alElegir }) {
   }, [abierto]);
   return (
     <div className={abierto ? 'pill-wrap open' : 'pill-wrap'} ref={caja}>
-      <button type="button" className="pill" aria-haspopup="true" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
+      <button type="button" className="pill" ref={pildora} aria-haspopup="true" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
         <span className="pk">Ordenar por</span>
         <span className="pv">{CRITERIO[valor].rotulo}</span>
         <span className="pc">⌄</span>
       </button>
+      {/* Los ítems se dibujan sólo con el menú abierto: el prototipo lo esconde con opacidad, y así sus botones seguían
+          en el orden del tabulador y en lo que lee un lector de pantalla. */}
       <div className="pill-menu cr-orden" role="menu">
-        <div className="pm-list">
-          {Object.entries(CRITERIO).map(([clave, c]) => (
-            <button
-              key={clave}
-              type="button"
-              role="menuitemradio"
-              aria-checked={clave === valor}
-              className={clave === valor ? 'on' : undefined}
-              onClick={() => {
-                alElegir(clave);
-                setAbierto(false);
-              }}
-            >
-              {c.rotulo}
-            </button>
-          ))}
-        </div>
+        {abierto ? (
+          <div className="pm-list">
+            {Object.entries(CRITERIO).map(([clave, c]) => (
+              <button
+                key={clave}
+                type="button"
+                role="menuitemradio"
+                aria-checked={clave === valor}
+                className={clave === valor ? 'on' : undefined}
+                onClick={() => {
+                  alElegir(clave);
+                  cerrar();
+                }}
+              >
+                {c.rotulo}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

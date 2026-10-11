@@ -177,7 +177,7 @@ Una tarea nueva del cron único (`T-12`):
   (`diaEnZona`, `:61`). **«Ya corrió» se decide por departamento**: si Creative falló, se reintenta la hora
   siguiente aunque Acquisition haya terminado.
 - **A las demás no se las sella.** `sellar` guarda una sola fila por empresa y tarea
-  (`lib/negocio/barrido.ts:993`) y la frescura mide su fecha: un sello de «no me tocaba» cada hora haría
+  (`lib/negocio/barrido.ts:999`) y la frescura mide su fecha: un sello de «no me tocaba» cada hora haría
   parecer al día una tarea diaria que no corrió. Umbral de frescura de 2.940 minutos —el de una tarea
   diaria, aunque el disparo sea horario—. La única excepción es la primera pasada del día de una empresa sin
   departamentos pendientes, que se sella una vez para que la frescura diga que pasó.

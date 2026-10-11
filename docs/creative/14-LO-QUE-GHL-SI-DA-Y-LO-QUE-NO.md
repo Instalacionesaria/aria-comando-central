@@ -509,7 +509,7 @@ vista previa muestra barras grises y un ícono de imagen genérico, y sólo el n
 Página son reales. **Es una plantilla que se completa con lo que se va escribiendo**, no una lectura
 de Meta ni de un link. No hay nada que traer de ahí para los anuncios del Business Manager.
 
-**Consecuencia:** la fuente de la miniatura y el video es Meta directo, con un token propio del
+*(Corrección del 2026-10-11: la miniatura llega por `GET /contacts/{id}` (`16`, CF1-11 y CF1-12); Meta directo sigue haciendo falta para el video.)* **Consecuencia:** la fuente de la miniatura y el video es Meta directo, con un token propio del
 Business Manager. Está en `15-LA-MINIATURA-Y-EL-VIDEO.md`.
 
 ## 7 · La medición del 2026-10-07: el gasto de TODA la cuenta

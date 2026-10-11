@@ -12,7 +12,10 @@
 //     pedir todos, volver a pedir, otro orden, sin tope;
 //   · qué se guarda: las cuatro claves, el 404 como `encontrado = false`, y nada de un fallo — mutaciones: guardar
 //     un fallo, o no guardar el 404;
-//   · un 429 corta la pasada y el sello lo dice — mutación: seguir pidiendo;
+//   · un 429, un 401, un GoHighLevel que no contesta o el tiempo cortan la pasada, y el sello dice cuál — mutación:
+//     seguir pidiendo;
+//   · el rechazo de UN contacto (un 403, un 400) se guarda y no frena la cola — mutación: cortar la pasada;
+//   · lo ya guardado no se pisa;
 //   · la tabla tiene un solo escritor.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -26,7 +29,7 @@ import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { archivosFuente, RAIZ } from '../apoyo/fuente.ts';
-import { completarMiniaturas, contactosPorPedir } from '../../lib/negocio/miniaturaDelContacto.ts';
+import { completarMiniaturas, contactosPorPedir, guardarMiniaturas, pedirMiniaturas } from '../../lib/negocio/miniaturaDelContacto.ts';
 import { motivoDeLoIncompleto } from '../../lib/negocio/barrido.ts';
 
 let esc: Escenario;
@@ -61,7 +64,7 @@ async function unContacto(atribucion: Record<string, string>, haceHoras = 1): Pr
   return ghl;
 }
 
-/** `fetch` simulado: cada id de GoHighLevel contesta lo que diga el mapa; cuenta los pedidos. */
+/** `fetch` simulado: cada id de GoHighLevel contesta lo que diga el mapa; cuenta los pedidos. Estado 0: no contesta. */
 function simular(respuestas: Record<string, { estado: number; atribucion?: Record<string, string | null> }>) {
   const pedidos: string[] = [];
   const original = globalThis.fetch;
@@ -70,6 +73,7 @@ function simular(respuestas: Record<string, { estado: number; atribucion?: Recor
     const id = decodeURIComponent(/\/contacts\/([^/?]+)/.exec(url)?.[1] ?? '');
     pedidos.push(id);
     const r = respuestas[id] ?? { estado: 404 };
+    if (r.estado === 0) throw new TypeError('fetch failed');
     const cuerpo = r.estado === 200 ? { contact: { id, attributionSource: r.atribucion ?? {} } } : { message: 'no' };
     return new Response(JSON.stringify(cuerpo), { status: r.estado, headers: { 'content-type': 'application/json' } });
   }) as typeof fetch;
@@ -133,26 +137,88 @@ test('se guardan las cuatro claves y el 404; un fallo no se guarda y se vuelve a
   assert.deepEqual(de(borrado), { ghl: borrado, encontrado: false, video_url: null, photo_url: null, post_id: null, ig_sid: null });
   assert.equal(de(caido), undefined, 'un 500 quedó guardado: no se volvería a pedir');
   assert.equal(de(raro)?.video_url, null, 'guardó una URL que no es https');
-  assert.deepEqual(resumen, { pedidos: 4, conImagen: 1, sinDato: 1, noEncontrados: 1, fallos: 1, cortada: false });
+  assert.deepEqual(resumen, { pedidos: 4, conImagen: 1, sinDato: 1, noEncontrados: 1, fallos: 1, corte: null });
 });
 
-test('un 429 corta la pasada, y el sello lo dice', async () => {
+for (const [estado, corte, frase] of [
+  [429, 'cupo', /cortó la pasada de miniaturas por el cupo/],
+  [401, 'credencial', /rechazó la credencial en la pasada de miniaturas/],
+  [0, 'sin_respuesta', /no contestó en la pasada de miniaturas/],
+] as const) {
+  test(`un ${estado === 0 ? 'GoHighLevel que no contesta' : estado} corta la pasada, y el sello dice por qué`, async () => {
+    await limpiar();
+    const primero = await unContacto({ adId: '1' }, 1);
+    await unContacto({ adId: '2' }, 2);
+    await unContacto({ adId: '3' }, 3);
+    const sim = simular({ [primero]: { estado } });
+    let resumen;
+    try {
+      resumen = await completarMiniaturas(esc.org, ACCESO);
+    } finally {
+      sim.restaurar();
+    }
+    const f = await filas();
+    await limpiar();
+    assert.equal(sim.pedidos.length, 1, `siguió pidiendo después de un ${estado}`);
+    assert.equal(resumen.corte, corte);
+    assert.deepEqual(f, [], 'guardó el contacto del corte: no se volvería a pedir');
+    assert.match(String(motivoDeLoIncompleto({ miniaturas: resumen })), frase);
+    assert.match(String(motivoDeLoIncompleto({ miniaturas: resumen })), /lo que faltó se pide en la siguiente/);
+    assert.equal(motivoDeLoIncompleto({ miniaturas: { ...resumen, corte: null } }), null);
+  });
+}
+
+test('el rechazo de UN contacto —un 403, un 400— se guarda y la pasada sigue', async () => {
+  /* Antes un 403 cortaba la pasada: un contacto que siempre lo devolviera frenaba la cola entera, cada diez minutos. */
   await limpiar();
-  const primero = await unContacto({ adId: '1' }, 1);
-  await unContacto({ adId: '2' }, 2);
-  await unContacto({ adId: '3' }, 3);
-  const sim = simular({ [primero]: { estado: 429 } });
+  const prohibido = await unContacto({ adId: '1' }, 1);
+  const invalido = await unContacto({ adId: '2' }, 2);
+  const bueno = await unContacto({ adId: '3' }, 3);
+  const sim = simular({ [prohibido]: { estado: 403 }, [invalido]: { estado: 400 }, [bueno]: { estado: 200, atribucion: {} } });
   let resumen;
   try {
     resumen = await completarMiniaturas(esc.org, ACCESO);
   } finally {
     sim.restaurar();
   }
+  const f = await filas();
   await limpiar();
-  assert.equal(sim.pedidos.length, 1, 'siguió pidiendo después de un 429');
-  assert.equal(resumen.cortada, true);
-  assert.match(String(motivoDeLoIncompleto({ miniaturas: resumen })), /cortó la pasada de miniaturas/);
-  assert.equal(motivoDeLoIncompleto({ miniaturas: { ...resumen, cortada: false } }), null);
+  assert.equal(resumen.corte, null, 'el rechazo de un contacto cortó la pasada');
+  assert.equal(resumen.noEncontrados, 2);
+  assert.deepEqual(f.map((x) => [x.ghl, x.encontrado]).sort(), [[bueno, true], [invalido, false], [prohibido, false]].sort(), 'el rechazo no quedó guardado: se volvería a pedir siempre');
+});
+
+test('el tiempo corta la pasada antes del pedido siguiente', async () => {
+  const sim = simular({ uno: { estado: 200, atribucion: {} }, dos: { estado: 200, atribucion: {} } });
+  let reloj = 0;
+  let r;
+  try {
+    // Cada lectura del reloj avanza 40 segundos: el primero entra, el segundo ya no.
+    r = await pedirMiniaturas(ACCESO, [{ id: 'a', ghlId: 'uno' }, { id: 'b', ghlId: 'dos' }], 50_000, () => (reloj += 40_000));
+  } finally {
+    sim.restaurar();
+  }
+  assert.deepEqual([sim.pedidos, r.resumen.corte, r.filas.length], [['uno'], 'tiempo', 1]);
+  assert.match(String(motivoDeLoIncompleto({ miniaturas: r.resumen })), /llegó a su tiempo/);
+});
+
+test('una URL más larga que la tabla no se guarda, y lo ya guardado no se pisa', async () => {
+  await limpiar();
+  const ghl = await unContacto({ adId: '1' }, 1);
+  const sim = simular({ [ghl]: { estado: 200, atribucion: { videoUrl: `https://www.facebook.com/ads/image/?d=${'x'.repeat(2001)}`, photoUrl: 'https://scontent.xx.fbcdn.net/f.jpg' } } });
+  try {
+    await completarMiniaturas(esc.org, ACCESO);
+  } finally {
+    sim.restaurar();
+  }
+  const antes = await filas();
+  // Una segunda escritura del mismo contacto —otra pasada a la vez— no pisa la primera.
+  const id = (await esc.admin.query<{ id: string }>('select id from negocio.contactos where ghl_contact_id = $1', [ghl])).rows[0]!.id;
+  await conOrganizacion(esc.org, () => guardarMiniaturas([{ contacto_id: id, encontrado: false, video_url: null, photo_url: null, post_id: null, ig_sid: null }]));
+  const despues = await filas();
+  await limpiar();
+  assert.deepEqual([antes[0]?.video_url, antes[0]?.photo_url], [null, 'https://scontent.xx.fbcdn.net/f.jpg'], 'guardó una URL que la tabla rechaza, o perdió la foto');
+  assert.deepEqual(despues, antes, 'la segunda escritura pisó la primera');
 });
 
 test('la tabla tiene un solo escritor', () => {
