@@ -15,7 +15,9 @@
 //   · que vaya dentro de `.main` —les taparía el pie a las pantallas de operación—, antes del cuerpo o en
 //     el teléfono (`NE-18`, AG-58), o que se dibuje en el Inicio, que tiene la suya;
 //   · que CONVERSACIONES le pida algo al servidor (la barra no pide nada: `193`), la vea quien no ve el
-//     Inicio, o abra otra cosa que el Inicio con ese hilo.
+//     Inicio, o abra otra cosa que el Inicio con ese hilo;
+//   · que el botón de borrar de CONVERSACIONES (2026-10-12) borre sin preguntar, o que borre otro que el
+//     Inicio: la barra pide, el Inicio borra.
 //
 // El componente y la barra se leen del fuente: no hay un renderizador de React en las pruebas. Que cada
 // ruta de `lib/agentes/pantalla.ts` exista y sea de su sección se mira contra los archivos de ruta.
@@ -25,7 +27,8 @@
 // que deja de anunciarlo; una ruta del mapa que no existe o es de otra sección; el nombre de una entrada
 // escrito a mano; dibujarla sin entrada abierta; montarla dentro de `.main` o antes; sin su área; visible
 // en el teléfono; y CONVERSACIONES con un `pedir(`, fuera de `{inicio ? `, o que abra el hilo sin pedírselo
-// al Inicio.
+// al Inicio; el botón de la fila que pide borrar sin pasar por la pregunta, «Cancelar» sin el foco, Escape
+// que no cancela, y un Inicio que no atiende el pedido.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -175,4 +178,26 @@ test('CONVERSACIONES lista los hilos que publica el Inicio, sin pedirle nada al 
   assert.match(inicio, /useEffect\(\(\) => alCambiarLosHilos\(\(\) => void recargar\(\)\), \[recargar\]\);/, 'lo que se pregunta al pie no llega a CONVERSACIONES');
   // «Nueva conversación» de la barra empieza una de verdad, aunque el Inicio tenga un hilo abierto.
   assert.match(nav, /pedirHiloDelInicio\(null\);\s*irALaVista\(inicio\.seccion\);/, '«Nueva conversación» vuelve al hilo que estaba abierto');
+});
+
+test('borrar desde CONVERSACIONES pregunta antes, y quien borra es el Inicio', () => {
+  const lista = sinComentarios(fuente('components/cerebro/ConversacionesDeLaBarra.jsx'));
+  // El botón chico de cada fila no borra: abre la pregunta.
+  assert.match(
+    lista,
+    /className="nb-borrar" aria-label=\{`Borrar «\$\{h\.titulo\}»`\} title="Borrar" onClick=\{\(\) => setConfirmando\(true\)\}/,
+    'el botón de la fila borra sin preguntar, o no dice qué conversación borra',
+  );
+  // El pedido se hace una sola vez, y sólo desde el «Borrar» de la pregunta.
+  assert.equal((lista.match(/pedirBorrarHiloDelInicio\(/g) ?? []).length, 1, 'se pide borrar desde más de un lugar');
+  const si = lista.indexOf('className="nb-si"');
+  const pedido = lista.indexOf('pedirBorrarHiloDelInicio(h.id)');
+  assert.ok(si > 0 && pedido > si && pedido < lista.indexOf('className="nb-no"'), 'el pedido de borrar no está en el «Borrar» de la pregunta');
+  assert.ok(lista.indexOf('if (confirmando)') < si, 'la pregunta no depende de haber tocado el botón');
+  // «Cancelar» enfocado —un Enter de más no borra— y Escape cancela.
+  assert.match(lista, /className="nb-no" autoFocus onClick=\{\(\) => setConfirmando\(false\)\}/, '«Cancelar» no recibe el foco');
+  assert.match(lista, /if \(e\.key === 'Escape'\) setConfirmando\(false\);/, 'Escape no cancela');
+  // El Inicio atiende el pedido con su propio `borrar`, el mismo de su botón.
+  const inicio = sinComentarios(fuente('components/views/ExecutiveView.jsx'));
+  assert.match(inicio, /const \{ borrar \} = cerebro;\s*useEffect\(\(\) => alPedirBorrarHiloDelInicio\(\(hilo\) => void borrar\(hilo\)\), \[borrar\]\);/, 'el Inicio no atiende el pedido de borrar de la barra');
 });

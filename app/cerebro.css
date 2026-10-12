@@ -493,6 +493,101 @@
 .nb-hilos li {
   min-width: 0;
 }
+/* La fila: el título se corta y el botón de borrar queda a su derecha, sin empujarlo. */
+.nb-fila {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.nb-fila .nb-hilo {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 30px;
+}
+/* El botón de borrar: un ícono de 14 px en una caja de 22, dentro de la fila. Se ve al pasar el cursor por la fila
+   o al llegar con el teclado; en una pantalla táctil, que no tiene «pasar», se ve siempre. */
+.nb-borrar {
+  position: absolute;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--txt-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .12s ease, color .12s ease, background-color .12s ease;
+}
+.nb-borrar svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.nb-fila:hover .nb-borrar,
+.nb-borrar:focus-visible {
+  opacity: 1;
+}
+.nb-borrar:hover {
+  color: var(--crit);
+  background: var(--bg-float);
+}
+.nb-borrar:focus-visible {
+  outline: 2px solid rgb(var(--c-acento) / .55);
+  outline-offset: 1px;
+}
+@media (hover: none) {
+  .nb-borrar { opacity: 1; }
+}
+/* La pregunta, en el lugar de la fila: el texto arriba y las dos respuestas debajo, como píldoras chicas. */
+.nb-confirmar {
+  display: grid;
+  gap: 6px;
+  padding: 7px 10px 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-float);
+}
+.nb-pregunta {
+  font-size: 12px;
+  color: var(--txt);
+}
+.nb-respuestas {
+  display: flex;
+  gap: 6px;
+}
+.nb-si,
+.nb-no {
+  padding: 3px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--txt-dim);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.nb-si {
+  border-color: rgb(var(--c-crit) / .45);
+  color: var(--crit);
+}
+.nb-si:hover {
+  background: rgb(var(--c-crit) / .12);
+}
+.nb-no:hover {
+  color: var(--txt);
+}
+.nb-si:focus-visible,
+.nb-no:focus-visible {
+  outline: 2px solid rgb(var(--c-acento) / .55);
+  outline-offset: 1px;
+}
 .nb-hilo {
   width: 100%;
   padding: 6px 12px;

@@ -17,7 +17,8 @@
 - **AG-F19-2 · El título es la primera pregunta**, recortada.
 - **AG-F19-3 · Tocar un hilo lo reabre** en el Inicio, con su evidencia guardada (los nombres se resuelven al
   mostrar).
-- **AG-F19-4 · El autor borra**; no vencen.
+- **AG-F19-4 · El autor borra**; no vencen. Desde el 2026-10-12 también desde la barra: un botón chico al lado
+  de cada hilo y una pregunta antes de borrar; quien borra es el Inicio, por el traspaso.
 - **AG-F19-5 · «Nueva conversación»**, la fila que ya existe en la barra, abre un hilo nuevo en el Inicio.
 - **AG-F19-6 · Quien no ve el Inicio** no ve este bloque (como hoy) y gestiona sus hilos desde el panel de la
   caja del pie de cada sección.
@@ -25,4 +26,5 @@
 
 ## Pruebas
 
-La 197 cambia (la lista viene del servidor y sólo aparece con el Inicio); la 208 cubre el autor y el borrado.
+La 197 cambia (la lista viene del servidor y sólo aparece con el Inicio); la 208 cubre el autor y el borrado. El borrado desde la barra: la 197 (la pregunta antes del pedido, el Inicio
+que lo atiende) y la 217 (el pedido viaja por el evento y llega al oyente).

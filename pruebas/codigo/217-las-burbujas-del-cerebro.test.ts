@@ -14,7 +14,8 @@
 //   · los turnos de un hilo guardado salen de lo que guardó el servidor, y una pregunta fallida lo dice;
 //   · cada estado del cerebro dice lo de la tabla de AG-52, y un rechazo del modelo no le muestra a la
 //     persona lo técnico;
-//   · el traspaso se toma una sola vez, y el período anunciado es el último de esa pantalla.
+//   · el traspaso se toma una sola vez, y el período anunciado es el último de esa pantalla;
+//   · el pedido de borrar desde la barra llega al Inicio con su hilo, y no queda guardado para después.
 //
 // Los componentes se leen del fuente: no hay un renderizador de React en las pruebas. Las funciones puras
 // se ejecutan.
@@ -170,6 +171,38 @@ test('el traspaso al Inicio se toma una sola vez', async () => {
     baja();
     pedirHiloDelInicio('h-2');
     assert.equal(avisos, 2, 'la baja no da de baja');
+  } finally {
+    g.window = antes.window;
+    g.sessionStorage = antes.sessionStorage;
+  }
+});
+
+test('el pedido de borrar desde la barra llega al Inicio con su hilo, y no queda guardado para después', async () => {
+  const guardado = new Map<string, string>();
+  const g = globalThis as Record<string, unknown>;
+  const antes = { window: g.window, sessionStorage: g.sessionStorage };
+  g.window = new EventTarget();
+  g.sessionStorage = {
+    getItem: (k: string) => guardado.get(k) ?? null,
+    setItem: (k: string, v: string) => void guardado.set(k, v),
+    removeItem: (k: string) => void guardado.delete(k),
+  };
+  try {
+    const { alPedirBorrarHiloDelInicio, alPedirHiloDelInicio, pedirBorrarHiloDelInicio, tomarHiloDelInicio } = await import('../../lib/agentes/traspaso.ts');
+    const borrados: string[] = [];
+    let abiertos = 0;
+    const baja = alPedirBorrarHiloDelInicio((hilo) => borrados.push(hilo));
+    const bajaDeAbrir = alPedirHiloDelInicio(() => (abiertos += 1));
+    pedirBorrarHiloDelInicio('h-1');
+    assert.deepEqual(borrados, ['h-1'], 'el Inicio montado no se entera, o recibe otro hilo');
+    // Borrar no es abrir: ni avisa al oyente de abrir ni deja un pedido que el Inicio tome al montarse.
+    assert.equal(abiertos, 0, 'pedir borrar abre el hilo');
+    assert.equal(tomarHiloDelInicio(), null, 'el pedido de borrar queda guardado y lo toma el Inicio que se monta');
+    assert.equal(guardado.size, 0, 'el pedido de borrar se guarda para después');
+    baja();
+    bajaDeAbrir();
+    pedirBorrarHiloDelInicio('h-2');
+    assert.deepEqual(borrados, ['h-1'], 'la baja no da de baja');
   } finally {
     g.window = antes.window;
     g.sessionStorage = antes.sessionStorage;

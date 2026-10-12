@@ -16,6 +16,8 @@ export interface PedidoDeHilo {
   hilo: string | null;
 }
 
+const EVENTO_DE_BORRAR = 'aria:borrar-hilo-en-el-inicio';
+
 /** Pide al chat del Inicio que abra ese hilo (o uno nuevo, con `null`). No navega: eso lo hace quien llama. */
 export function pedirHiloDelInicio(hilo: string | null): void {
   const pedido: PedidoDeHilo = { hilo };
@@ -49,4 +51,24 @@ export function alPedirHiloDelInicio(oyente: (pedido: PedidoDeHilo) => void): ()
   const manejar = (e: Event) => oyente((e as CustomEvent<PedidoDeHilo>).detail);
   window.addEventListener(EVENTO, manejar);
   return () => window.removeEventListener(EVENTO, manejar);
+}
+
+/**
+ * Pide al chat del Inicio que borre ese hilo: la barra no le pide nada al servidor (`pruebas/codigo/193-*`), y
+ * el Inicio es quien borra —con su `borrar`, que avisa a las cajas y vuelve a publicar la lista—. Sólo por el
+ * evento, sin `sessionStorage`: la barra lista hilos únicamente después de que el Inicio los publicó, o sea con el
+ * Inicio montado (`NE-35`), y un borrado guardado para después podría ejecutarse sin que nadie lo vea.
+ */
+export function pedirBorrarHiloDelInicio(hilo: string): void {
+  window.dispatchEvent(new CustomEvent(EVENTO_DE_BORRAR, { detail: { hilo } }));
+}
+
+/** Escucha pedidos de borrar mientras el Inicio está montado. Devuelve la baja. */
+export function alPedirBorrarHiloDelInicio(oyente: (hilo: string) => void): () => void {
+  const manejar = (e: Event) => {
+    const hilo = (e as CustomEvent<{ hilo?: unknown }>).detail?.hilo;
+    if (typeof hilo === 'string') oyente(hilo);
+  };
+  window.addEventListener(EVENTO_DE_BORRAR, manejar);
+  return () => window.removeEventListener(EVENTO_DE_BORRAR, manejar);
 }

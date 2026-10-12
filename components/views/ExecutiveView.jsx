@@ -42,7 +42,7 @@ import { saludo } from '../../lib/saludo.ts';
 import { puedeIrAAjustes, RUTA_DEL_INICIO, textoDelEstado } from '../../lib/agentes/pantalla.ts';
 import { usarCerebro } from '../../lib/agentes/usarCerebro.ts';
 import { alCambiarLosHilos, usarPublicarHilos, usarPublicarTemasDeHoy } from '../../lib/agentes/hilos-de-la-barra.ts';
-import { alPedirHiloDelInicio, tomarHiloDelInicio } from '../../lib/agentes/traspaso.ts';
+import { alPedirBorrarHiloDelInicio, alPedirHiloDelInicio, tomarHiloDelInicio } from '../../lib/agentes/traspaso.ts';
 import Mascota from '../marca/Mascota.jsx';
 import Conversacion from '../cerebro/Conversacion.jsx';
 import ReunionDeHoy from '../cerebro/ReunionDeHoy.jsx';
@@ -89,6 +89,11 @@ export default function ExecutiveView({ activa }) {
     atender();
     return alPedirHiloDelInicio(atender);
   }, [abrir, nueva]);
+
+  /* Borrar desde CONVERSACIONES: la barra confirma y pide; el Inicio borra con lo mismo que su botón, y la lista
+     se vuelve a publicar. Si el hilo borrado es el abierto, el Inicio empieza una conversación nueva. */
+  const { borrar } = cerebro;
+  useEffect(() => alPedirBorrarHiloDelInicio((hilo) => void borrar(hilo)), [borrar]);
 
   // Lo que se pregunta o se borra en la caja del pie de una sección, también aparece en CONVERSACIONES.
   useEffect(() => alCambiarLosHilos(() => void recargar()), [recargar]);

@@ -250,6 +250,10 @@ Las de cada entrada están en su ficha.
 - Cada hilo guarda su **origen** (`inicio`, `pie`, `reunion`) y su contexto.
 - **Quien no ve el Inicio** también guarda sus hilos de la caja del pie, y el panel que sube le muestra la
   lista de sus hilos de esa sección, con borrar.
+- **CONVERSACIONES, en la barra, también borra** (2026-10-12, pedido por el usuario): un botón chico al lado de
+  cada hilo, que no borra sino que cambia la fila por «¿Borrar esta conversación?» con «Cancelar» enfocado. La
+  barra no le pide nada al servidor: le pide al Inicio que borre (`pedirBorrarHiloDelInicio`,
+  `lib/agentes/traspaso.ts`), y el Inicio borra con lo mismo que su botón y vuelve a publicar la lista.
 - Sin «＋» para adjuntar y sin URL para compartir.
 
 Tablas `negocio.conversaciones_del_executive` y `negocio.mensajes_del_executive`, migración `071`. Cada
