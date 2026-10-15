@@ -15,6 +15,7 @@
 //   · «Funciona» es contra el promedio de SU etapa, pesado en las tasas —mutación: contra el promedio de todas—;
 //   · la única de su etapa va a «Funciona» y se marca —mutación: mandarla a «No funciona»—;
 //   · la tarjeta: estado, miniatura, enlace manual primero, fatiga —mutación: preferir la miniatura al enlace—;
+//   · la miniatura y el post de Meta antes que los de los contactos (M-3 del 2026-10-15) —mutación: al revés—;
 //   · la fila de abajo —mutación: el CTR sobre otra base, o las piezas perdiendo gancho sobre todas—;
 //   · sólo entran las piezas que hicieron algo en la ventana —mutación: listar todas las de la historia— (CF-4);
 //   · la ficha de la pieza, cifra por cifra —mutación: cruzar dos—.
@@ -108,6 +109,7 @@ function entrada(o: Partial<EntradaDeCreative> & { campoDeIcp?: string | null } 
       entrega({ pieza: 'c', impresiones: 10000, clics: 300, vistas: { cantidad: 3000, impresiones: 10000 }, clicsAlEnlace: { cantidad: 100, impresiones: 9000 }, landing: { cantidad: 60, impresiones: 9000 }, frecuencia: 2, etapa: BOFU, entregando: true }),
     ],
     miniaturas: new Map([['a', 'https://www.facebook.com/ads/image/?d=uno'], ['c', 'https://www.facebook.com/ads/image/?d=dos']]),
+    activos: new Map(),
     enlaces: [{ pieza: 'c', url: 'https://www.instagram.com/p/xyz/', red: 'instagram', actualizadoEl: '2026-10-01' } as unknown as EnlaceDePieza],
     ...o,
   };
@@ -192,6 +194,26 @@ test('la tarjeta: el estado, la miniatura, el enlace manual primero y la fatiga'
   assert.deepEqual([pieza(p, 'a').perdiendoGancho, pieza(p, 'c').perdiendoGancho, pieza(p, 'b').perdiendoGancho], [true, false, null]);
   assert.deepEqual(pieza(p, 'c').ficha.anuncios, 3);
   assert.deepEqual(pieza(p, 'a').ficha.gasto, { valor: 400, motivo: null });
+});
+
+test('la miniatura y el post de Meta van antes que los de los contactos; el enlace manual, antes que todo', () => {
+  /* La miniatura de los contactos llega con 3 de 526 contactos; Meta tiene la de todo anuncio. Mutaciones: preferir la de
+     los contactos, tomar el post de Meta antes que el enlace manual, perder el enlace de los contactos cuando Meta da
+     una imagen y no un post. */
+  const CDN = 'https://scontent.xx.fbcdn.net/v/t45/a.jpg';
+  const p = armarCreative(entrada({
+    activos: new Map([
+      ['a', { miniatura: CDN, publicacion: null }],
+      ['b', { miniatura: null, publicacion: 'https://www.facebook.com/111/posts/222' }],
+      ['c', { miniatura: CDN, publicacion: 'https://www.facebook.com/111/posts/333' }],
+    ]),
+  }));
+  assert.equal(pieza(p, 'a').miniatura, CDN, 'la miniatura de los contactos ganó a la de Meta');
+  // Meta dio la imagen y no el post: el enlace sigue siendo el de la miniatura de los contactos.
+  assert.deepEqual(pieza(p, 'a').enlace, { url: 'https://www.facebook.com/ads/image/?d=uno', red: 'facebook' });
+  assert.equal(pieza(p, 'b').miniatura, null);
+  assert.deepEqual(pieza(p, 'b').enlace, { url: 'https://www.facebook.com/111/posts/222', red: 'facebook' });
+  assert.deepEqual(pieza(p, 'c').enlace, { url: 'https://www.instagram.com/p/xyz/', red: 'instagram' }, 'el post de Meta ganó al enlace manual');
 });
 
 test('la fila de abajo: el gasto, el CTR, el link CTR, la landing y las que perdieron gancho', () => {

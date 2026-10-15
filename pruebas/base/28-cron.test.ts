@@ -235,6 +235,9 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
          tienen llave de IA — otra falta, con su propio texto. */
       /* `analizadores` sale SALTADA por lo mismo que el auditor: no le habla al CRM y le falta su
          llave —la de tl;dv—, así que ni llega a tocar la base de la empresa rota. */
+      /* `activos` sale SALTADA por lo mismo: le habla a Meta y no al CRM, y esta empresa no trae token de Meta
+         (la ruta sólo lo resuelve en el horario de los activos). Ni llega a leer la base. */
+      ['activos', 'saltada'],
       ['analizadores', 'saltada'],
       /* Y `anuncios` sale FALLO por otro camino que las tres del CRM: desde la `076` su primer paso es
          preguntar por el vínculo con Meta —sin vínculo no escribe nada, para que un vacío no se guarde

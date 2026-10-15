@@ -96,7 +96,7 @@ del 2026-09-15 ya citaba así; los «§» enteros, de la 1 a la 10, son seccione
 | Contactos | `count(*) from negocio.contactos` | 584 | 594 |
 
 **Un sello no es una organización barrida**, y la foto anterior los confundió al rotular la fila
-«que el cron barre». El cron toma sólo las activas (`app/api/cron/route.ts:151`, desde `f17a464`,
+«que el cron barre». El cron toma sólo las activas (`app/api/cron/route.ts:154`, desde `f17a464`,
 2026-08-26), y un sello desaparece cuando se borra la organización (`on delete cascade`,
 `db/migraciones/014_tareas_programadas.sql:46`), no cuando se desactiva. Con 12 activas el
 2026-09-15 (medido ese día a las 17:24 UTC por la foto anterior de Conversation), el 13 sólo cierra
@@ -318,8 +318,8 @@ contrato; lo que se comprobó es que nada de lo que estas rutas llaman pide la c
 
 ### Los techos duros, y quién los cubre con reintentos
 
-- `pedirExterno` hace **un solo `fetch`** (`lib/http/cliente.ts:344-349`) y espera hasta 240 s
-  (`lib/http/cliente.ts:239`) contra un `maxDuration` de 300; Vercel no reintenta el cron
+- `pedirExterno` hace **un solo `fetch`** (`lib/http/cliente.ts:353-358`) y espera hasta 240 s
+  (`lib/http/cliente.ts:248`) contra un `maxDuration` de 300; Vercel no reintenta el cron
   (`lib/negocio/barrido.ts:17`).
 - El código exacto del proveedor al pasarse del límite **sigue sin confirmar**
   (`lib/ghl/cliente.ts:264-266`). **Lo que cambió desde el 2026-09-15:** la familia de anuncios es la
@@ -330,7 +330,7 @@ contrato; lo que se comprobó es que nada de lo que estas rutas llaman pide la c
   sin red.
 
 El comparador que el proyecto guarda: la plataforma anterior corrió a ~7 peticiones por minuto y por
-pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:172-175`). Estamos un orden de
+pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:176-179`). Estamos un orden de
 magnitud por debajo, también con la tarea nueva.
 
 ---
@@ -816,7 +816,7 @@ desde el 14» no lo es: después del 17 no hay un cero que leer, hay silencio.
 **El vínculo con Meta se pregunta cada día y la respuesta no queda en ninguna parte.** El colector
 llama a `integracionDeAnuncios` al empezar para distinguir «Meta desconectado» de «no se invirtió»
 (`lib/negocio/recolectarAnuncios.ts:137-148@d17e029` y `lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), pero
-`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:840-942`) no lee `vinculo`,
+`motivoDeLoIncompleto` (`lib/negocio/barrido.ts:873-992`) no lee `vinculo`,
 `negocio.tareas_programadas` no guarda el resumen, y ningún otro archivo lo nombra. Que hoy haya 79 filas por día es compatible con el vínculo
 activo —sin vínculo el proveedor devuelve vacío (`lib/ghl/anuncios.ts:246-248`)—; que esté
 `connected` no se pudo verificar desde la base.

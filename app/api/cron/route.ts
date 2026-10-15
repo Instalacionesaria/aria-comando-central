@@ -67,6 +67,7 @@ import { listarOrganizaciones } from '../../../lib/administracion/organizaciones
 import {
   resolverAccesoAGhl,
   resolverAccesoAlAnalizador,
+  resolverAccesoAMeta,
   resolverAccesoAlAuditor,
   resolverLlaveDeIa,
 } from '../../../lib/credenciales/resolver.ts';
@@ -139,8 +140,10 @@ export async function GET(peticion: Request): Promise<Response> {
    * de una empresa a otra sin ningún error.
    */
   /* La llave de IA para redactar el Plan de acción se descifra SÓLO en la corrida que trae la pasada de los
-     detectores (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35): en las otras cinco no hace falta. */
+     detectores (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35): en las demás no hace falta. */
   const conLaPasada = tareasDelHorario(horario).tareas.includes('senales');
+  // El token de Meta, igual: sólo en la corrida de los activos (`078`).
+  const conLosActivos = tareasDelHorario(horario).tareas.includes('activos');
   const empresas: EmpresaParaBarrer[] = await conIdentidad(async (db) => {
     const todas = await listarOrganizaciones(db);
     // ── EL FILTRO POR `activa`, QUE LA CONSULTA NO TRAE ─────────────────────
@@ -163,6 +166,8 @@ export async function GET(peticion: Request): Promise<Response> {
         analizador: await resolverAccesoAlAnalizador(db, org.id),
         // Y la de redactar el plan, sólo con la pasada. Sin llave, el plan queda con plantillas.
         llaveDeIa: conLaPasada ? llaveLista(await resolverLlaveDeIa(db, org.id)) : null,
+        // Y el de Meta, sólo con los activos, en la misma transacción por el mismo motivo (`ADR-0809`).
+        ...(conLosActivos ? { meta: await resolverAccesoAMeta(db, org.id) } : {}),
       })),
     );
   });

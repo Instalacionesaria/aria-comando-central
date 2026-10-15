@@ -61,7 +61,7 @@ const AUDITADAS = [
   // El plan de las ventanas en el día de la empresa (2026-10-07): diagnosticado y dejado para después.
   'docs/OTROS/futuro/el-dia-de-la-empresa.md',
   'docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
-  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', 'docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-conversion-no-mide.md', 'docs/OTROS/futuro/lo-que-sales-no-mide.md', 'docs/conversation', 'docs/OTROS/futuro/lo-que-conversation-no-mide.md', 'docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-creative-no-mide.md', // ver «LA NUEVA ESTRUCTURA», «LOS AGENTES», «EL FRONT DE CONVERSION», «EL FRONT DE SALES», «EL FRONT DE CONVERSATION» y «EL FRONT DE CREATIVE», al final
+  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', 'docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-conversion-no-mide.md', 'docs/OTROS/futuro/lo-que-sales-no-mide.md', 'docs/conversation', 'docs/OTROS/futuro/lo-que-conversation-no-mide.md', 'docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-creative-no-mide.md', 'docs/creative/17-CONECTAR-META-PASO-A-PASO.md', // ver «LA NUEVA ESTRUCTURA», «LOS AGENTES», «EL FRONT DE CONVERSION», «EL FRONT DE SALES», «EL FRONT DE CONVERSATION» y «EL FRONT DE CREATIVE», al final
 ];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
 const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
@@ -258,4 +258,5 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
 /* ── EL FRONT DE CREATIVE ───────────────────────────────────────────────────
    El `16` de `docs/creative/` nace el 2026-10-11 con el plan del front del prototipo, y entra el día que nace, con
    `docs/OTROS/futuro/lo-que-creative-no-mide.md`. El resto de la carpeta no entra: sus citas son de la maqueta borrada
-   y su `00-MAPA.md` explica por qué valen como historia. */
+   y su `00-MAPA.md` explica por qué valen como historia. El `17`, la guía para conectar Meta, también entra el día que
+   nace (2026-10-15). */

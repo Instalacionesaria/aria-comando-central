@@ -1280,6 +1280,19 @@ export interface TablaMiniaturasDelContacto {
   leido_el: Generated<Date>;
 }
 
+/** La miniatura y el post de cada anuncio, leídos de Meta (`078`). La escribe sólo `recolectarActivos.ts`. */
+export interface TablaActivosDeAnuncio {
+  org_id: ColumnaInquilino;
+  meta_anuncio_id: string;
+  meta_creativo_id: string | null;
+  tipo_de_objeto: string | null;
+  miniatura_url: string | null;
+  miniatura_caduca_el: Date | null;
+  publicacion_url: string | null;
+  motivo: 'sin_creativo' | 'cuenta_ajena' | 'no_existe' | 'sin_miniatura' | null;
+  leido_el: Generated<Date>;
+}
+
 export interface TablaEnlacesRapidos {
   id: Generated<string>;
   org_id: ColumnaInquilino;
@@ -1838,6 +1851,7 @@ export interface BaseDeDatos {
   metricas_de_anuncio: TablaMetricasDeAnuncio;
   enlaces_de_pieza: TablaEnlacesDePieza;
   miniaturas_del_contacto: TablaMiniaturasDelContacto;
+  activos_de_anuncio: TablaActivosDeAnuncio;
   analizador_prospectos: TablaAnalizadorProspectos;
   analizador_llamadas: TablaAnalizadorLlamadas;
   analizador_transcripciones: TablaAnalizadorTranscripciones;

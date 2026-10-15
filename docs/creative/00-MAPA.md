@@ -120,13 +120,14 @@ prohibición al lado. Es la diferencia entre postergar un requisito y borrarlo.
 
 | Archivo | Prefijo | Título |
 |---|---|---|
-| `15-LA-MINIATURA-Y-EL-VIDEO.md` | `C15-` | La miniatura y el video de cada anuncio: la decisión de la fuente (Meta directo), los requisitos, las etapas y la guía para generar el token. CR-4 a CR-9, postergados el 2026-09-30: `docs/OTROS/futuro/miniatura-y-video-de-meta.md`. El 2026-10-11 apareció una fuente más cercana: el «Video Url» de la atribución del contacto (`16`, § 2) |
+| `15-LA-MINIATURA-Y-EL-VIDEO.md` | `C15-` | La miniatura y el video de cada anuncio: la decisión de la fuente (Meta directo), los requisitos, las etapas y la guía para generar el token. CR-4 a CR-9, postergados el 2026-09-30: `docs/OTROS/futuro/miniatura-y-video-de-meta.md`. El 2026-10-11 apareció una fuente más cercana: el «Video Url» de la atribución del contacto (`16`, § 2). El 2026-10-15 la miniatura desde Meta quedó construida y esperando el token (M-1 a M-3) |
 
 ### El front del prototipo, el 2026-10-11
 
 | Archivo | Prefijo | Título |
 |---|---|---|
 | `16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` | `CF1-` | La pestaña vuelve al marcado del prototipo con los datos reales: las decisiones, el mapa, la medición, los requisitos y las etapas CF-0 a CF-5. Lo que no tiene fuente: `docs/OTROS/futuro/lo-que-creative-no-mide.md` |
+| `17-CONECTAR-META-PASO-A-PASO.md` | — | La guía para la persona del equipo que conecta Meta: la app, el usuario del sistema, el token de sólo lectura, la carga en Ajustes, «Probar conexión» y qué hacer con cada falla. Escrita el 2026-10-15 para mandarse tal cual |
 
 **Si se va a leer uno solo, que sea el `14`.** No porque sea el más importante para el producto, sino
 porque es el que cambia lo que ya estaba escrito: `lib/ghl/anuncios.ts:41-46` y

@@ -100,6 +100,8 @@ const NOMBRE: Record<Tarea, string> = {
   reintentos: 'el reintento diario de los análisis que fallaron',
   // La décima, también.
   senales: 'la pasada diaria de los detectores de señales',
+  // La duodécima (`078`): la miniatura de cada anuncio, leída de Meta.
+  activos: 'la lectura de las miniaturas de los anuncios en Meta',
 };
 
 /**

@@ -23,6 +23,12 @@ contactos con «Video Url»; esa noche la pasada llevaba 413 pedidos y **sólo 3
 Meta es el **2026-10-05**: hubo entrega después del 13 de septiembre que la foto anterior daba como el último, y el
 2026-10-11 ninguna pieza está «Entregando» (deducido: el estado mira los últimos 3 días).
 
+> **Después del corte · 2026-10-15** — Meta directo, listo y dormido: «Probar conexión» en Ajustes (`cce2d56`), la
+> tabla `negocio.activos_de_anuncio` (`078`) con la tarea horaria `activos`, y la miniatura y el post de Meta antes que
+> los de los contactos en la tarjeta (`lib/negocio/lecturaDeCreative.ts:277`). Mientras la empresa no cargue su token,
+> la pantalla es la de este corte. Lo construido y lo que falta: `docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md` § 3; la
+> guía para conectarlo: `docs/creative/17-CONECTAR-META-PASO-A-PASO.md`. Esta foto no se rehízo: el riesgo 16 lo dice.
+
 > **Desde el corte del 2026-09-28**
 >
 > - **2026-09-29 · `1159c43`, `8fd0afd`** — CR-1 y CR-2: el link manual de cada pieza (`negocio.enlaces_de_pieza`,
@@ -101,9 +107,9 @@ sola transacción, lee `lecturaDeCreative`, las señales con su plan y el coment
 Antes de CF-2 la ruta llamaba a cada módulo por separado (`app/api/creative/route.ts:76-81@90439cf`).
 
 **La lectura.** `lib/negocio/lecturaDeCreative.ts` tiene una mitad pura, `armarCreative`
-(`lib/negocio/lecturaDeCreative.ts:232-346`), y otra que lee: compone `calidadDelCreativo`, `rendimientoDelCreativo`,
+(`lib/negocio/lecturaDeCreative.ts:237-358`), y otra que lee: compone `calidadDelCreativo`, `rendimientoDelCreativo`,
 `fatigaDelCreativo` y los links manuales con dos lecturas nuevas, la entrega de cada pieza y su miniatura
-(`lib/negocio/lecturaDeCreative.ts:438-452`). Todo lo de `pantalla` viaja de 0 a 1; el navegador multiplica por 100 en
+(`lib/negocio/lecturaDeCreative.ts:450-465`). Todo lo de `pantalla` viaja de 0 a 1; el navegador multiplica por 100 en
 un solo lugar (`components/creative/comun.jsx:76`). La pieza es el nombre del anuncio normalizado, la misma llave de los
 tres módulos (`lib/negocio/creativo.ts:44-46`).
 
@@ -124,27 +130,27 @@ tres módulos (`lib/negocio/creativo.ts:44-46`).
 de ICP de 75 o más (`lib/negocio/calidadDelCreativo.ts:228`, `lib/negocio/tramosDelIcp.ts:38`) y los que tienen una
 cita alcanzable. Hook rate y Frecuencia de la tira son pesados, no el promedio de los promedios: las vistas sobre las
 impresiones de los anuncio-día que traían la clave, y la frecuencia de cada pieza pesada con las impresiones de sus días
-con frecuencia (`lib/negocio/lecturaDeCreative.ts:308-329`). Retención es siempre «—» con `sin_fuente`
-(`lib/negocio/lecturaDeCreative.ts:281`). «Entregando» es haber tenido impresiones en alguno de los últimos 3 días del
-calendario, hoy incluido (`lib/negocio/lecturaDeCreative.ts:378-379`). La etapa de la pieza es la de la campaña de la que
+con frecuencia (`lib/negocio/lecturaDeCreative.ts:320-341`). Retención es siempre «—» con `sin_fuente`
+(`lib/negocio/lecturaDeCreative.ts:293`). «Entregando» es haber tenido impresiones en alguno de los últimos 3 días del
+calendario, hoy incluido (`lib/negocio/lecturaDeCreative.ts:390-391`). La etapa de la pieza es la de la campaña de la que
 más impresiones tuvo; si esa campaña no la dice, la de sus contactos —la de más contactos, y en empate la que va antes
-en el embudo— y si no, «Sin etapa» (`lib/negocio/lecturaDeCreative.ts:239-256`, `lib/negocio/lecturaDeCreative.ts:384-404`).
+en el embudo— y si no, «Sin etapa» (`lib/negocio/lecturaDeCreative.ts:244-261`, `lib/negocio/lecturaDeCreative.ts:396-416`).
 Una pieza entra a la pantalla si EN LA VENTANA trajo contactos, tuvo impresiones o gastó
-(`lib/negocio/lecturaDeCreative.ts:258-263`). En la tarjeta, un «—» lleva su frase en el `title`, porque la celda mide
+(`lib/negocio/lecturaDeCreative.ts:263-268`). En la tarjeta, un «—» lleva su frase en el `title`, porque la celda mide
 50 px (`components/creative/PanelDeCreative.jsx:391`, `app/creative.css:92`).
 
 **«Funciona» es contra la etapa** (CF1-08). Para el criterio elegido, el servidor calcula el promedio de cada etapa
 —pesado en el hook rate, simple en los conteos— y manda las dos listas ya ordenadas, de mayor a menor
-(`lib/negocio/lecturaDeCreative.ts:184-229`); el navegador elige cuál dibujar y no ordena nada. Una pieza sin valor, o
-de una etapa sin promedio, va a «No funciona» (`lib/negocio/lecturaDeCreative.ts:207-209`; ver riesgo 9). La que es la
+(`lib/negocio/lecturaDeCreative.ts:189-234`); el navegador elige cuál dibujar y no ordena nada. Una pieza sin valor, o
+de una etapa sin promedio, va a «No funciona» (`lib/negocio/lecturaDeCreative.ts:212-214`; ver riesgo 9). La que es la
 única de su etapa con valor va a «Funciona» con la etiqueta «Única de su etapa.»
-(`lib/negocio/lecturaDeCreative.ts:211`, `components/creative/PanelDeCreative.jsx:385`). Sin ningún promedio en ninguna
+(`lib/negocio/lecturaDeCreative.ts:216`, `components/creative/PanelDeCreative.jsx:385`). Sin ningún promedio en ninguna
 etapa, el subtítulo de «Funciona» dice el del prototipo, «sin datos en este periodo»
 (`components/creative/PanelDeCreative.jsx:191`, `components/creative/PanelDeCreative.jsx:206`).
 
 **«Lo demás, en cifras»** (CF1-13): el gasto total del módulo de rendimiento, y el CTR, el link CTR y la landing de la
 ventana entera, con el piso de 1000 impresiones; «Perdiendo gancho» cuenta las piezas fatigadas sobre las que **tienen
-veredicto**, y sin ninguna dice «Sin días suficientes para medir el gancho.» (`lib/negocio/lecturaDeCreative.ts:337-344`,
+veredicto**, y sin ninguna dice «Sin días suficientes para medir el gancho.» (`lib/negocio/lecturaDeCreative.ts:349-356`,
 `components/creative/PanelDeCreative.jsx:413`).
 
 **La ficha** (CF1-10, `components/creative/FichaDelCreativo.jsx:82-183`): el cajón del prototipo, en un portal sobre
@@ -163,7 +169,7 @@ cerrarla, no sale del cajón con el tabulador, y Escape dentro del campo del lin
 (`app/api/auth/sesion/route.ts:141`), lo mismo que pide el servidor (`app/api/creative/enlace/route.ts:60`).
 
 **La miniatura** (CF1-11, CF1-12). La escribe una pasada colgada de la tarea `contactos`, después de sincronizar
-(`lib/negocio/barrido.ts:823-827`), que corre cada diez minutos (`lib/negocio/barrido.ts:203-207`). Pide
+(`lib/negocio/barrido.ts:856-860`), que corre cada diez minutos (`lib/negocio/barrido.ts:207-211`). Pide
 `GET /contacts/{id}` (`lib/ghl/cliente.ts:545`) para los contactos con `adId` en su primera atribución que
 todavía no se pidieron, de los más recientes a los más viejos, hasta 50 por pasada
 (`lib/negocio/miniaturaDelContacto.ts:78-90`), y guarda una fila por contacto pedido —también sin dato, o rechazado por
@@ -171,7 +177,7 @@ el CRM— en `negocio.miniaturas_del_contacto` (`db/migraciones/077_la_miniatura
 guardado (`lib/negocio/miniaturaDelContacto.ts:174-181`). Cada pedido espera hasta 15 s y la pasada entera hasta 60
 (`lib/negocio/miniaturaDelContacto.ts:46`, `lib/negocio/miniaturaDelContacto.ts:49`); un 429, un 401 o un GoHighLevel que
 no contesta la cortan (`lib/negocio/miniaturaDelContacto.ts:124-128`), y el sello de la tarea dice por qué
-(`lib/negocio/barrido.ts:900-910`). La miniatura de la pieza es la imagen más frecuente entre sus contactos —el `videoUrl`
+(`lib/negocio/barrido.ts:933-943`). La miniatura de la pieza es la imagen más frecuente entre sus contactos —el `videoUrl`
 o, si no hay, el `photoUrl`—, en empate la del contacto que entró más tarde al CRM, y sólo si su host es de Facebook,
 Instagram o el CDN de Meta (`lib/negocio/miniaturaDelContacto.ts:195-224`). La pieza de un contacto sale de su
 anuncio (el `adId` cruzado con `negocio.anuncios`) y sólo sin anuncio de su `utmContent`: los contactos de un anuncio de
@@ -180,7 +186,7 @@ carga perezosa; sin URL dice «Sin miniatura todavía.», y si la imagen no carg
 (`components/creative/Miniatura.jsx:11-24`).
 
 **Cada «—» dice por qué, con una frase de una lista cerrada.** Siete motivos
-(`lib/negocio/lecturaDeCreative.ts:46-53`), cada uno con su frase (`components/creative/comun.jsx:26-34`), más el «—»
+(`lib/negocio/lecturaDeCreative.ts:48-55`), cada uno con su frase (`components/creative/comun.jsx:26-34`), más el «—»
 mismo, la miniatura, la fatiga, el grupo vacío, la única de su etapa, la primera carga y el fallo: catorce frases en
 `FRASE` (`components/creative/comun.jsx:8-23`), las mismas de la tabla de CF1-02, y
 `pruebas/codigo/254-la-pantalla-de-creative.test.ts:227` exige que coincidan en las dos direcciones. Un cero es un cero
@@ -201,8 +207,8 @@ ventana anterior. Dos poblaciones, con la misma cantidad de días: la COHORTE de
 Calificados y Agendas (`lib/negocio/calidadDelCreativo.ts:238`) y los ANUNCIO-DÍA por fecha para todo lo de Meta
 (`lib/negocio/costoDelAnuncio.ts:83-85`). Las dos cuentan días del calendario con hoy incluido, no días cerrados como
 Acquisition. Toda tasa sobre impresiones lleva el piso de 1000 (`lib/negocio/rendimientoDelCreativo.ts:69`,
-`lib/negocio/lecturaDeCreative.ts:161-167`); el click-to-landing, el de 10 clics al enlace de su módulo
-(`lib/negocio/lecturaDeCreative.ts:297-302`). La tira y la tarjeta no dibujan tasas sobre contactos.
+`lib/negocio/lecturaDeCreative.ts:166-172`); el click-to-landing, el de 10 clics al enlace de su módulo
+(`lib/negocio/lecturaDeCreative.ts:309-314`). La tira y la tarjeta no dibujan tasas sobre contactos.
 
 **El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:120`) con las señales
 que trae la ruta (`components/creative/PanelDeCreative.jsx:125`): el plan de 7 días con «7 días» y el de 30 con «30 días»;
@@ -220,8 +226,9 @@ con el motivo de cada «—», **sin las URLs**: cada pieza lleva `conMiniatura`
 blanca (`lib/agentes/executive/adaptadores/creative.ts:20-36`). La compara con la de la ruta, en los cuatro períodos,
 `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:102`, y con una miniatura y un enlace sembrados
 mira que ninguna URL llegue al cerebro (`pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:300`). Las
-otras tres traen los avisos que la pantalla no dibuja. La frescura de las tres tareas de las que vive la pantalla la da
-`frescura` (`lib/agentes/executive/adaptadores/plataforma.ts:40`).
+otras tres traen los avisos que la pantalla no dibuja. La frescura de las tareas de las que vive la pantalla la da
+`frescura` (`lib/agentes/executive/adaptadores/plataforma.ts:41`): al corte eran tres; el 2026-10-15 se sumó
+`activos`, la de Meta.
 
 **Lo que se midió en el navegador (CF-5, 2026-10-11).** Estilos computados del prototipo servido en local contra la
 app en el preview, con una respuesta sintética, a 1440, 1180, 1125 y 375 px. **Iguales al prototipo**: el `h2` de 19 px y
@@ -327,7 +334,7 @@ Portal lee la copia en `contactos.score`. **Las agendas por pieza** salen de `ti
 promedio, la tasa de agenda, las congeladas y la cobertura del puente, todo en `calidad` y `rendimiento`; y del
 detector, la frecuencia por anuncio de 7 días (`lib/agentes/detectores/creative.ts:129`). El link manual de cada pieza
 (`negocio.enlaces_de_pieza`, `db/migraciones/063_el_enlace_de_la_pieza.sql:29`) sí se usa: manda sobre la miniatura en
-«Ver en…» (`lib/negocio/lecturaDeCreative.ts:287`). Cuántos hay cargados no se midió.
+«Ver en…» (`lib/negocio/lecturaDeCreative.ts:299`). Cuántos hay cargados no se midió.
 
 **El Espía de Anuncios**, en Tools (`components/tools/EspiaDeAnuncios.jsx`, `app/api/tools/espia/route.ts`), pide a la
 IA hooks, ángulos y estructuras de copy de anuncios de la competencia (`lib/tools/espia.ts:84-92`). Sigue siendo lo único
@@ -389,14 +396,14 @@ y los lista; es la única mitigación de que dos piezas distintas con el mismo n
 (`lib/negocio/calidadDelCreativo.ts:92-100`).
 
 **3 · «Funciona» es contra la etapa, y una etapa no se compara con otra** (CF1-08). El promedio es por etapa
-(`lib/negocio/lecturaDeCreative.ts:188-200`), y la etapa se lee del nombre de la campaña por segmento exacto
+(`lib/negocio/lecturaDeCreative.ts:193-205`), y la etapa se lee del nombre de la campaña por segmento exacto
 (`lib/negocio/creativo.ts:53-66`); lo que no la trae es «Sin etapa», un grupo y no una etapa forzada.
 
-**4 · Un «—» dice por qué, y un cero es un cero medido.** Siete motivos (`lib/negocio/lecturaDeCreative.ts:46-53`),
+**4 · Un «—» dice por qué, y un cero es un cero medido.** Siete motivos (`lib/negocio/lecturaDeCreative.ts:48-55`),
 cada uno con su frase de una lista cerrada (CF1-02, `components/creative/comun.jsx:26-34`).
 
 **5 · Toda tasa lleva su piso**, en la lectura: 1000 impresiones para las tasas sobre impresiones, 10 clics al enlace
-para el click-to-landing (`lib/negocio/lecturaDeCreative.ts:161-167`).
+para el click-to-landing (`lib/negocio/lecturaDeCreative.ts:166-172`).
 
 **6 · El servidor calcula; el navegador dibuja.** Todo viaja de 0 a 1 y se multiplica por 100 en un solo lugar
 (`components/creative/comun.jsx:76`); los grupos y su orden llegan hechos. Lo que el cerebro dice de una cifra es lo
@@ -404,7 +411,7 @@ que se dibuja (CF1-16).
 
 **7 · Es un tablero: cifras con su rótulo, y la explicación es del agente** (CF1-05).
 
-**8 · La tira suma y pesa; no promedia promedios** (`lib/negocio/lecturaDeCreative.ts:308-329`).
+**8 · La tira suma y pesa; no promedia promedios** (`lib/negocio/lecturaDeCreative.ts:320-341`).
 
 **9 · Ningún dato de una persona en la pantalla, y ninguna URL en el cerebro** (CF1-17, CF1-16). Los nombres son de
 piezas; las cifras de contactos son conteos; el cerebro sabe si hay miniatura, no cuál
@@ -436,7 +443,7 @@ revenue y el CAC, de Business.
 Los 8 de la foto anterior, con su estado al 2026-10-11, y siete nuevos.
 
 **1 · La pantalla describía un período que terminó, y no lo decía.** **Cambió.** Cada tarjeta dice «Entregando» o «Sin
-entrega» (`lib/negocio/lecturaDeCreative.ts:276`), la ficha dice el último día con entrega
+entrega» (`lib/negocio/lecturaDeCreative.ts:288`), la ficha dice el último día con entrega
 (`components/creative/FichaDelCreativo.jsx:130`), y la cabecera avisa si la lectura de los anuncios está vieja o si el
 gasto no cuadra con el de la cuenta (`lib/agentes/cabecera.ts:122-130`). Lo que sigue sin decirse es la fecha de las
 cifras de la tira: el 2026-10-11 dibuja las impresiones de 30 días con todas las piezas «Sin entrega» (deducido). Si la pauta no
@@ -457,14 +464,14 @@ línea, debajo en la tira y en la ficha (`components/creative/PanelDeCreative.js
 **4 · «Hoy» dice 24 horas y calcula el día.** **Abierto.** El botón lleva de título el matiz de `PERIODOS`
 (`lib/negocio/periodo.ts:84`, `components/creative/PanelDeCreative.jsx:160`), y las dos ventanas son días del calendario
 (`lib/negocio/calidadDelCreativo.ts:238`, `lib/negocio/costoDelAnuncio.ts:83-85`). «Entregando» también depende de
-`current_date` (`lib/negocio/lecturaDeCreative.ts:379`), y la zona de la sesión de la base no se verificó.
+`current_date` (`lib/negocio/lecturaDeCreative.ts:391`), y la zona de la sesión de la base no se verificó.
 
 **5 · La misma ventana, escrita muchas veces.** **Abierto, y suma una.** `calidadDelCreativo` repite a mano el predicado
 de la cohorte en cuatro lugares (`lib/negocio/calidadDelCreativo.ts:238`, `lib/negocio/calidadDelCreativo.ts:277`,
 `lib/negocio/calidadDelCreativo.ts:294`, `lib/negocio/calidadDelCreativo.ts:341`) en vez de usar el que exporta
 `lib/negocio/recorrido.ts:201-203`. Y desde CF-1 las impresiones y los clics de cada pieza se suman dos veces sobre las
 mismas filas: en el módulo de rendimiento, por `costoDelAnuncio` (`lib/negocio/costoDelAnuncio.ts:295-296`), y en
-`entregaDeLasPiezas` (`lib/negocio/lecturaDeCreative.ts:368-369`). Hoy dan lo mismo —las dos con `ventanaDeMetricas`—;
+`entregaDeLasPiezas` (`lib/negocio/lecturaDeCreative.ts:380-381`). Hoy dan lo mismo —las dos con `ventanaDeMetricas`—;
 si una cambia su filtro, la ficha y `rendimiento_de_piezas` dirán dos impresiones para la misma pieza.
 
 **6 · Un `results` con otra forma se tiraría en silencio.** **Abierto**, sin cambios: un arreglo devuelve
@@ -483,14 +490,14 @@ un caso**: cuatro comentarios de código, una prueba y ocho documentos citan est
 **8 · Executive publicaba un Creative sano y activo.** **Cerrado** el 2026-10-01 (`4e9a242`).
 
 **9 · «No funciona» junta lo que está bajo el promedio con lo que no tiene dato.** **Nuevo.** Una pieza sin valor para
-el criterio va a «No funciona» (`lib/negocio/lecturaDeCreative.ts:207-209`), bajo el rótulo «bajo el promedio — pausar
+el criterio va a «No funciona» (`lib/negocio/lecturaDeCreative.ts:212-214`), bajo el rótulo «bajo el promedio — pausar
 o iterar» (`components/creative/PanelDeCreative.jsx:214`). Lo heredó del prototipo, que hacía lo mismo
 (`lib/aios/creative.js:195@833fc51`), y CF1-08 lo declara. Con hook rate o impresiones, una pieza que sólo trajo
 contactos en la ventana se lee como una pieza que hay que pausar.
 
 **10 · La tira no cuenta a los contactos sin pieza.** **Nuevo.** La calidad sin nombre de pieza se salta
-(`lib/negocio/lecturaDeCreative.ts:245`), así que Calificados y Agendas suman sólo a los contactos que trajo alguna pieza
-(`lib/negocio/lecturaDeCreative.ts:319-320`). El 2026-09-28 eran 19 de 276 sin nombre de pieza, 15 con cita. La
+(`lib/negocio/lecturaDeCreative.ts:250`), así que Calificados y Agendas suman sólo a los contactos que trajo alguna pieza
+(`lib/negocio/lecturaDeCreative.ts:331-332`). El 2026-09-28 eran 19 de 276 sin nombre de pieza, 15 con cita. La
 pantalla anterior los dibujaba como una fila; hoy las Agendas de la tira pueden no coincidir con las de Sales o
 Conversation, y nada lo dice.
 
@@ -503,20 +510,27 @@ puntaje» para los que traen el puntaje, cualquiera sea (`lib/agentes/detectores
 miniatura no tenía ruta, y viajaba así al cerebro en `rendimiento_de_piezas`
 (`lib/agentes/executive/adaptadores/creative.ts:76`); ahora dice que llega por el «Video Url» y sólo para las piezas
 cuyos contactos la traen (`lib/negocio/rendimientoDelCreativo.ts:159-163`). El comentario del barrido que lista qué
-tareas informan un motivo nombra `contactos` (`lib/negocio/barrido.ts:606-607`), y el detector ya no dice que su
+tareas informan un motivo nombra `contactos` (`lib/negocio/barrido.ts:639-640`), y el detector ya no dice que su
 promedio de ICP lo muestra la pantalla (`lib/agentes/detectores/creative.ts:253-256`).
 
 **13 · La miniatura no se vio cargar.** **Nuevo** (`CF1-P06`). No se sabe si la imagen de `facebook.com/ads/image` carga
 sin sesión ni cuánto dura. Si no carga, la tarjeta queda con el fondo y sin frase (`components/creative/Miniatura.jsx:16-20`),
 distinta de la que dice «Sin miniatura todavía.», y nada cuenta cuántas fallan. Además, sin link manual, «Ver en
-Facebook» abre esa misma imagen y no la publicación (`lib/negocio/lecturaDeCreative.ts:272`,
-`lib/negocio/lecturaDeCreative.ts:287`).
+Facebook» abre esa misma imagen y no la publicación (`lib/negocio/lecturaDeCreative.ts:282-284`,
+`lib/negocio/lecturaDeCreative.ts:299`). Desde el 2026-10-15, con el token de Meta cargado, abre el post que da Meta.
 
 **14 · La pasada trae muy pocas miniaturas.** **Nuevo.** Corre desde el 2026-10-11 en producción; medido el 2026-10-11 a las 22:10 UTC, con una lectura de sólo conteos y el OK del usuario: la pasada llevaba **413 contactos pedidos** en unas ocho corridas —406 devueltos, 7 no—, **159 pendientes**, y **sólo 3 con imagen**, los tres con «Video Url» en `www.facebook.com` y de **una sola pieza**; ninguna de más de 500 caracteres. Casi
 todas las piezas van a decir «Sin miniatura todavía.». Medido el 2026-10-11 sobre los 456 contactos que la pasada ya había pedido (sólo conteos, con el OK del usuario): GoHighLevel adjunta la imagen del anuncio —el «Video Url», con `postId` e `igSid`— **sólo cuando el contacto entra desde un anuncio de Instagram** (3 de 3, de una campaña MOFU). Los que llegan por el formulario de un anuncio de Facebook —198, todos de anuncios de video TOFU— no la traen; tampoco los que sólo traen `mediumId` —unos 255 de formularios externos y del calendario, cuyo `mediumId` es el del formulario, no el de un anuncio— ni los 8 de Instagram sin anuncio. No depende del mes: las tres imágenes son de agosto, septiembre y octubre. Desde el mismo día la pasada pide sólo los
 contactos con `adId`, y la imagen de las piezas de Facebook queda para Meta directo, postergado por el usuario.
+**Al día el 2026-10-15**: Meta directo está construido y espera el token (riesgo 16).
 
 **15 · La pantalla no se vio con los datos de producción.** **Nuevo**: CF-5 la midió con una respuesta sintética; la
 revisión del usuario en producción está pendiente. **El cuello de botella de Creative no es técnico**: la pantalla
 está, con todo lo que el sistema mide, y la mitad que el § 18.12 le reserva —leer la pieza— sigue sin fuente más allá
 de su imagen.
+
+**16 · Meta está listo y nadie lo conectó.** **Nuevo, 2026-10-15.** La tarea `activos` corre cada hora en el minuto 37
+(`lib/negocio/barrido.ts:318`) y, sin token, se sella `saltada` en toda empresa (`lib/negocio/barrido.ts:575`): es lo
+esperado, y hasta que alguien siga `docs/creative/17-CONECTAR-META-PASO-A-PASO.md` la pantalla no cambia. Nada se midió
+con un token real: cuánto dura la firma de una miniatura (`C15-P02`), si `thumbnail_width` agranda la imagen y cuántas
+llamadas cuesta la pasada. El primer «Probar conexión» y la primera hora de la tarea lo dicen.

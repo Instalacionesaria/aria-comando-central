@@ -84,9 +84,9 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | herramienta | función | sección (capacidad) | como la ruta | qué viaja además |
 |---|---|---|---|---|
 | `embudos_de_acquisition` | `embudosDeAcquisition(periodo, zona)` | acquisition (`tablero.ver`) | `app/api/acquisition/route.ts:67` | `sinCostos`, `sinComparacion`, cobertura; tasas `null` bajo el piso |
-| `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `lib/negocio/lecturaDeCreative.ts:439` | el aviso si falta el campo del ICP |
-| `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `lib/negocio/lecturaDeCreative.ts:440` | sus huecos |
-| `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `lib/negocio/lecturaDeCreative.ts:441` | el umbral «no calibrado» |
+| `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `lib/negocio/lecturaDeCreative.ts:451` | el aviso si falta el campo del ICP |
+| `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `lib/negocio/lecturaDeCreative.ts:452` | sus huecos |
+| `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `lib/negocio/lecturaDeCreative.ts:453` | el umbral «no calibrado» |
 | `creative_en_cifras` | `lecturaDeCreative(periodo.dias).pantalla`, desde el 2026-10-11 | creative | `app/api/creative/route.ts:74` | lo que dibuja la pantalla, de 0 a 1 y con el motivo de cada «—»; de la miniatura y del enlace de cada pieza, sólo si los hay: **sin las URLs** |
 | `pasos_de_conversion` | `lecturaDeConversion(periodo, zona).pasos`, desde el 2026-10-08 | conversion (`tablero.ver`) | `app/api/conversion/route.ts:79` | la tira y los cinco pasos, en días cerrados |
 | `recorrido_de_los_leads` | `lecturaDeConversion(periodo, zona).recorrido`; hasta el 2026-10-08, `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:79` | conteos, no tasas |
@@ -118,7 +118,7 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | `llamadas_de_venta` | nueva, `lib/negocio/llamadasDeVenta.ts` (AG11) | analizadores (`analizadores.ver`) | — | objeciones por categoría con su cobertura y si «crece» (con piso), puntaje por closer (con piso, por su nombre), llamadas con y sin vínculo; las frases citables (`D-20`) |
 | `llamadas_de_onboarding` | nueva, `lib/negocio/llamadasDeOnboarding.ts` (AG11) | analizadores | — | clientes por estado, riesgos y la meta de cada uno, sin contarla; el cliente por su empresa |
 | `senales_abiertas` | `lib/agentes/senales/lectura.ts` | la de cada departamento con detector | — | gravedad, ventana, «umbral provisional» |
-| `frescura` | `frescuraDe(tarea)` (`lib/negocio/frescura.ts:112`) | sólo las tareas que alimentan secciones visibles: el mapa `TAREAS_POR_SECCION` de `lib/agentes/executive/adaptadores/plataforma.ts` (`contactos` en todas las que cuentan contactos; Tools e ICP no tienen, y la sonda no viaja) | — | una fuente parada se dice como tal |
+| `frescura` | `frescuraDe(tarea)` (`lib/negocio/frescura.ts:114`) | sólo las tareas que alimentan secciones visibles: el mapa `TAREAS_POR_SECCION` de `lib/agentes/executive/adaptadores/plataforma.ts` (`contactos` en todas las que cuentan contactos; Tools e ICP no tienen, y la sonda no viaja) | — | una fuente parada se dice como tal |
 | `estado_de_integraciones` | los estados de `resolverCredenciales`, sin valores | **sólo con `credenciales.ver`** | — | lo resuelve la ruta en identidad y lo pasa como dato: `cargado` y `estado` de CRM, IA, pagos, tl;dv y Meta, sin la vista previa ni los identificadores de las cuentas |
 
 Sin herramienta en la v1, y sin sugerencias en esas pestañas: **Conversation › Prompts** (el texto de los

@@ -17,6 +17,14 @@
 > `igSid`. La sincronización usa `POST /contacts/search`, que no los devuelve, y por eso no están en la base. La
 > miniatura por esa vía es la de `16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (CF1-11 y CF1-12), y se construye antes que
 > Meta directo. Meta directo sigue haciendo falta para el video reproducible, la duración y los cuartiles.
+>
+> **La miniatura desde Meta, lista y dormida, el 2026-10-15.** Por la vía de los contactos llegaron 3 imágenes de 526
+> contactos, de una sola pieza: GoHighLevel la adjunta sólo a los leads de un anuncio de Instagram que abre un DM. El
+> usuario pidió dejar Meta listo para que la persona del equipo lo conecte, y se construyó en tres etapas, `M-1` a `M-3`
+> (§ 3): «Probar conexión» en Ajustes, la tabla `negocio.activos_de_anuncio` con la tarea horaria `activos`, y la
+> miniatura y el post de Meta en Creative, antes que los de los contactos. **Sin token no hace nada**: la tarea queda
+> `saltada` con su texto. El video (CR-8) sigue esperando medir con el token real. La guía para conectar, en un archivo
+> aparte: `17-CONECTAR-META-PASO-A-PASO.md`.
 
 ---
 
@@ -55,11 +63,13 @@ app sólo maneja su propia cuenta, el acceso estándar a `ads_read` alcanza, **s
 ### C15-01 · Cada pieza muestra una miniatura, y la regla que la elige está escrita
 
 **Qué es** · Una imagen chica al lado del nombre de la pieza, en la tabla de la subasta y en el cajón.
-**Fórmula** · De los anuncios de la pieza, **el de más impresiones en la ventana**. Si ninguno entregó
-en la ventana —las campañas que se recolectaban no entregaban desde el 2026-09-14; la de mensajes sí, y
-entró con la `076`—, el de más impresiones en toda la historia
-guardada. Empate: el `meta_anuncio_id` menor. Una función pura, probada por separado.
-**Estado** · Planificado (CR-7). **Por qué una regla y no «la primera»**: con seis anuncios por
+**Fórmula** · De los anuncios de la pieza, **el de más impresiones en toda la historia guardada** que tenga una
+miniatura vigente. Empate: el `meta_anuncio_id` menor. El post se elige igual y por separado: el anuncio más visto
+puede no tener post y otro sí. Si Meta no tiene miniatura vigente para la pieza, la de sus contactos (CF1-12).
+**Estado** · **Construido el 2026-10-15** (M-3), en `activosDeLasPiezas` (`lib/negocio/recolectarActivos.ts:149`) y
+en la tarjeta (`lib/negocio/lecturaDeCreative.ts:277`). **Desvío**: sin ventana. La pantalla nueva no tiene «la
+tabla de la subasta» y la miniatura de los contactos tampoco depende del período (CF1-12); con ventana, la imagen de
+una pieza cambiaría al cambiar de «7 días» a «30 días» sin que la pieza cambie. Diseñado el 2026-09-29 como «Planificado (CR-7)». **Por qué una regla y no «la primera»**: con seis anuncios por
 pieza, «la primera» es la que la base devuelve primero, y eso cambia sin que nadie lo decida.
 
 ### C15-02 · La pieza se abre en un cajón que lista sus anuncios
@@ -97,8 +107,10 @@ video a un almacenamiento propio obligaría, según los términos de Meta, a una
 **Qué es** · A diferencia del video, la miniatura se lee una vez por pasada y se guarda con
 `leido_el` y `miniatura_caduca_el` (lo que dice la firma `oe=` de la URL, si la trae). Una miniatura
 vencida **no se dibuja rota**: no viaja, y la pantalla muestra el hueco.
-**Estado** · Planificado (CR-5 a CR-7). Cuánto dura una URL del CDN no está documentado (`C15-P02`):
-la cadencia del refresco sale de medirlo (CR-4).
+**Estado** · **Construido el 2026-10-15** (M-2): el vencimiento sale del `oe` (`lib/negocio/recolectarActivos.ts:50`)
+y, sin `oe`, vale un día. Cuánto dura una URL sigue sin medirse (`C15-P02`), y por eso no se adivinó: la tarea corre
+**cada hora** y vuelve a pedir la miniatura que vence en las próximas seis, así que cualquier duración mayor a unas
+siete horas se cubre sola. CR-4 dirá cuántas llamadas cuesta.
 
 ### C15-06 · El link manual por pieza es el respaldo, y no se embebe
 
@@ -152,7 +164,8 @@ pidiendo al menos cuatro huecos.
 **Qué es** · El token puede ver más de una cuenta publicitaria. Cada anuncio que devuelve Meta se
 compara contra la cuenta guardada en Ajustes (`meta_cuenta_id`), y si no coincide se descarta con el
 motivo `cuenta_ajena`. Es el mismo razonamiento que el del token del CRM sin Location ID.
-**Estado** · Planificado (CR-6).
+**Estado** · **Construido el 2026-10-15** (M-2), en `filaDelActivo` (`lib/negocio/recolectarActivos.ts:76`). Si Meta
+omite el `account_id`, el anuncio se acepta: vino de la cuenta cargada.
 
 ### C15-12 · Una sola tabla nueva, con su propio escritor
 
@@ -160,7 +173,12 @@ motivo `cuenta_ajena`. Es el mismo razonamiento que el del token del CRM sin Loc
 columnas de `negocio.anuncios`: esa tabla ya tiene un escritor (`lib/negocio/recolectarAnuncios.ts`), y
 las URLs de Meta se refrescan con otra cadencia. Esto corrige lo que `08-DE-DONDE-VIENE-CADA-DATO.md`
 decía sobre «columnas que se agregan».
-**Estado** · Planificado (CR-5).
+**Estado** · **Construido el 2026-10-15** (M-2): migración `078`, escritor único
+`lib/negocio/recolectarActivos.ts` (lo mira `pruebas/codigo/256-los-activos-de-meta.test.ts`). **Desvío del diseño
+de CR-5**: sin `fuente`, `meta_video_id` ni `instagram_url`. `fuente` era para un Ad Manager de GoHighLevel que
+no se usa (`C15-P05`); el video va con CR-8, después de medir; y el post de Instagram y el de Facebook son uno solo,
+`publicacion_url`, porque la pantalla abre uno. La miniatura admite 2000 caracteres y no 500: las del CDN de Meta
+llevan la firma en la URL.
 
 ---
 
@@ -174,16 +192,19 @@ producción antes del push. Las etapas postergadas están detalladas, paso por p
 | CR-1 | El link manual por pieza: tabla `negocio.enlaces_de_pieza`, validador de URL, ruta `PUT`/`DELETE` con `credenciales.editar` y auditoría | nada | hecho, 2026-09-29 |
 | CR-2 | El cajón de la pieza con sus anuncios | nada | hecho, 2026-09-29 |
 | CR-3 | La credencial de Meta en Ajustes: `meta_token_cifrado` y `meta_cuenta_id`, con el molde de `db/migraciones/057_llave_de_tldv.sql:1-29` y `resolverAccesoAlAnalizador`; quedó en `resolverAccesoAMeta` (`lib/credenciales/resolver.ts:607`), migración 064 | nada | hecho, 2026-09-29 |
-| CR-4 | Medir contra Meta con el token ya cargado: qué campos llegan, si `source` se entrega, cuánto dura una URL | **el token, cargado por la persona del equipo** | postergado el 2026-09-30 |
-| CR-5 | La tabla `negocio.activos_de_anuncio` y la tarea `activos` del cron | CR-4 | postergado el 2026-09-30 |
-| CR-6 | El cliente de Meta y el escritor único `lib/negocio/recolectarActivos.ts` | CR-4 | postergado el 2026-09-30 |
-| CR-7 | La miniatura en la tabla y en el cajón (molde: `components/tools/anuncios.jsx:67-112`, `<img>` crudo con `onError`) | CR-6 | postergado el 2026-09-30 |
+| M-1 | «Probar conexión» en Ajustes: el cliente de lectura `pedirAMeta` (`lib/meta/graph.ts:82`) y la prueba de tres pasos `probarConexionConMeta` (`lib/meta/conexion.ts:37`), por `POST /api/admin/credenciales/meta` con `credenciales.editar` | CR-3 | hecho, 2026-10-15 (`cce2d56`) |
+| CR-4 | Medir contra Meta con el token ya cargado: qué campos llegan, si `source` se entrega, cuánto dura una URL | **el token, cargado por la persona del equipo** | esperando el token; «Probar conexión» ya mide si sirve |
+| CR-5 + CR-6 = M-2 | La tabla `negocio.activos_de_anuncio` (`078`), la lectura por lotes `leerCreativos` (`lib/meta/anuncios.ts:101`), el escritor único `recolectarActivos` (`lib/negocio/recolectarActivos.ts:183`) y la tarea horaria `activos` (`lib/negocio/barrido.ts:318`), `saltada` sin token (`lib/negocio/barrido.ts:575`) | CR-3 | hecho, 2026-10-15, sin medir: se diseñó para no depender de lo que CR-4 conteste |
+| CR-7 = M-3 | La miniatura y el post de Meta en la tarjeta y la ficha de Creative, antes que los de los contactos. Falta la miniatura de cada anuncio dentro del cajón y «N activos distintos» (`C15-09`) | M-2 | hecho en parte, 2026-10-15 |
 | CR-8 | La ruta del click, `app/api/creative/anuncios/[id]/route.ts`, y el reproductor | CR-6 | postergado el 2026-09-30 |
 | CR-9 | Los huecos dinámicos y los documentos al día | todo | postergado el 2026-09-30 |
 
 ---
 
 ## 4 · Guía para la persona que genera el token
+
+> **Desde el 2026-10-15 la guía completa, con la prueba de la conexión y qué hacer con cada falla, está en
+> `17-CONECTAR-META-PASO-A-PASO.md`**, pensada para mandársela tal cual a quien conecta. Lo de abajo es el resumen.
 
 **Esto lo hace una persona con acceso de administrador al Business Manager dueño de la cuenta
 publicitaria.** El token no se manda por chat ni por correo: se pega directamente en Comando Central,

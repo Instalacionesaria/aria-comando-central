@@ -7,6 +7,14 @@
 > este archivo no los repite: dice **qué falta, por qué falta y cómo se hace**, para que quien lo
 > retome no tenga que reconstruir el plan.
 > Sin identificadores propios: las etapas son `CR-<n>`, las mismas del § 3 del 15.
+>
+> **Al día el 2026-10-15: la miniatura ya no depende de este plan.** Con el pedido del usuario de dejar Meta listo
+> para que la persona del equipo lo conecte, se construyeron CR-5, CR-6 y la mitad de CR-7 **sin esperar a CR-4**,
+> como `M-1` a `M-3` del § 3 del 15: la tabla, la tarea horaria, «Probar conexión» y la miniatura en Creative. Se
+> diseñaron para no depender de las dos respuestas que sólo da el token (§ 2, punto 2): la tarea corre cada hora y
+> renueva lo que vence, así que la duración del `oe` no hace falta saberla; y el video no se tocó. **Lo que sigue
+> esperando el token es CR-4 (medir), CR-8 (el video) y CR-9 (los huecos)**; lo de CR-5 a CR-7 de abajo queda como el
+> diseño original, y donde lo construido se apartó, el 15 lo dice en cada requisito.
 
 ---
 
@@ -69,7 +77,7 @@ Antes de tocar código, leer `node_modules/next/dist/docs/` (lo pide `AGENTS.md`
 empresa. Después, un script nuevo, `scripts/medir-activos-en-meta.mjs`, con el molde de
 `scripts/medir-activos-en-ghl.mjs`:
 
-- **Sólo `GET`**, por `pedirExterno` (`lib/http/cliente.ts:329`), con el token en la cabecera
+- **Sólo `GET`**, por `pedirExterno` (`lib/http/cliente.ts:338`), con el token en la cabecera
   `Authorization` y **nunca en la URL**; se agrega a `ARCHIVOS_AUTORIZADOS`
   (`pruebas/apoyo/autorizados.ts`) si usa `conIdentidad(`.
 - **Imprime** estado, claves, hosts y códigos de error. **Nunca** el valor de una URL firmada, del
@@ -111,11 +119,11 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
     `db/migraciones/062_reintentos_de_los_analizadores.sql:19-23`: se hace `drop` y se vuelve a
     crear con la lista completa más `activos`.
 - **`lib/negocio/barrido.ts`**: `activos` en el tipo `Tarea`, en `TAREAS` después de `anuncios`
-  (`lib/negocio/barrido.ts:93-106`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:252-256`),
+  (`lib/negocio/barrido.ts:95-110`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:256-260`),
   o en uno de cada hora si la compuerta B lo pide —el plan de Vercel es Pro, así que un horario de
   cada hora se acepta; si es uno nuevo, va también a `vercel.json`—. Sin credencial, la tarea queda `saltada` con el
   texto de `TEXTO_DE_FALTA_META`, igual que los Analizadores sin tl;dv
-  (`lib/negocio/barrido.ts:550-554`); y se suma al despacho (`lib/negocio/barrido.ts:572-573`).
+  (`lib/negocio/barrido.ts:581-585`); y se suma al despacho (`lib/negocio/barrido.ts:603-604`).
 - **Las traducciones de las claves foráneas nuevas** en `QUE_LO_IMPIDE`
   (`lib/administracion/borrado.ts:40`): sin eso, la suite falla en la prueba que las exige.
 - **Prueba**: `pruebas/codigo/99-cron.test.ts` ya exige que toda tarea de `HORARIOS` esté en `TAREAS`
@@ -191,10 +199,11 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
 
 ## 5 · Para retomarlo
 
-1. Pedirle a la persona del equipo que siga el § 4 del 15: la app de tipo Empresa, el usuario del
-   sistema, los activos con sólo lectura, el token con `ads_read`, `pages_read_engagement` y
-   `pages_show_list`, y la carga en Ajustes con la cuenta `act_…`.
-2. Comprobar en Ajustes que la credencial se ve como cargada, sin ver su valor.
+1. Mandarle a la persona del equipo `docs/creative/17-CONECTAR-META-PASO-A-PASO.md`: la app de tipo Empresa, el
+   usuario del sistema, los activos con sólo lectura, el token con `ads_read`, `pages_read_engagement` y
+   `pages_show_list`, la carga en Ajustes con la cuenta `act_…` y «Probar conexión».
+2. Comprobar en Ajustes que la credencial se ve como cargada, sin ver su valor, y que «Probar conexión» dice
+   «Conectado». Una hora después, que Creative muestre miniaturas.
 3. Correr CR-4 y escribir lo medido **antes** de escribir código: la compuerta B cambia CR-5, CR-6 y
    CR-8.
 4. Seguir en orden, un commit por etapa.

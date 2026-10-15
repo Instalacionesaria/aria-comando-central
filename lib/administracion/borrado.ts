@@ -143,6 +143,8 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   /* Las miniaturas que se pidieron a GoHighLevel contacto por contacto (`077`). Se vuelven a pedir solas: es lo
      mismo que los anuncios. */
   miniaturas_del_contacto_org_id_fkey: 'tiene las miniaturas de los anuncios de sus contactos cargadas',
+  /* Las miniaturas y los posts que se leyeron de Meta (`078`). Se vuelven a pedir solos, como los anuncios. */
+  activos_de_anuncio_org_id_fkey: 'tiene las miniaturas de sus anuncios leídas de Meta',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.
 

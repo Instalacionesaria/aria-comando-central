@@ -251,8 +251,8 @@ quien no trae la cookie de sesión; no decide ningún permiso.
 bajo `app/api/`, 53 declaran `PANTALLA` y 29 están en `SIN_PANTALLA`
 (`lib/autorizacion/secciones.ts:489-618`): son exactamente, archivo por archivo, los que no la
 declaran. No llaman a `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**:
-`salud` y `login`, que son las públicas (`pruebas/apoyo/autorizados.ts:698-706`), y la sonda, el
-cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.ts:848-891`).
+`salud` y `login`, que son las públicas (`pruebas/apoyo/autorizados.ts:701-709`), y la sonda, el
+cron y el aviso del CRM, que van con secreto propio (`pruebas/apoyo/autorizados.ts:851-894`).
 
 **Rechazos registrados.** Desde el 2026-09-15, **0** `permiso_denegado` y **0** `seccion_denegada` en
 `identidad.auditoria_accesos`; en toda la historia, 3 y 0 (consulta del 2026-09-28 agrupada por
@@ -293,7 +293,7 @@ sección, dársela sería dársela a todos los administradores (`db/arranque/001
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:700-705`). El freno por cuenta corta a los 5 intentos y bloquea 15
+(`pruebas/apoyo/autorizados.ts:703-708`). El freno por cuenta corta a los 5 intentos y bloquea 15
 minutos; el de origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con
 N=16384, r=8, p=1 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login
 exitoso (`lib/autenticacion/freno.ts:85-96`).
@@ -390,7 +390,7 @@ altas, el 17 y el 24, las dos empresas cliente activas (una con dos personas y f
 credenciales, otra con una persona y sin fila).
 
 **El cron barre las activas, y los sellos lo confirman.** Toma la lista entera y se queda con las
-activas (`app/api/cron/route.ts:151`, desde `f17a464`, 2026-08-26); los sellos de
+activas (`app/api/cron/route.ts:154`, desde `f17a464`, 2026-08-26); los sellos de
 `negocio.tareas_programadas` sólo se van con su organización (`on delete cascade`,
 `db/migraciones/014_tareas_programadas.sql:46`; ningún `delete` sobre esa tabla en `lib/`, `app/`,
 `scripts/` ni `db/`). Medido el 2026-09-28 a las 23:56 UTC: **11** organizaciones con sello, las
@@ -460,7 +460,7 @@ se leyó lo que afirman.
 | Segundo factor | La invariante del rol de plataforma, retirada; el alta voluntaria por la API | `pruebas/base/41-catalogo-de-autenticacion.test.ts:69`, `pruebas/base/43-segundo-factor.test.ts:214` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` está vacía desde el 2026-09-21: no hay ninguna excepción
-viva (`pruebas/apoyo/autorizados.ts:808-814`).
+viva (`pruebas/apoyo/autorizados.ts:811-817`).
 
 **Un cruce que el código anuncia y no encontré.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en
@@ -492,7 +492,7 @@ coinciden en producción.
   «Las dos de administración. Sin `menu`» (`lib/autorizacion/secciones.ts:183-184`) encabezan tres
   secciones, y `credenciales` tiene `menu` en `:208`. `components/ajustes/Credenciales.jsx:3` habla
   de «las tres claves y los tres identificadores»: en pantalla son cuatro claves —desde la de
-  tl;dv— y cinco identificadores (`components/ajustes/Credenciales.jsx:39-131`).
+  tl;dv— y cinco identificadores (`components/ajustes/Credenciales.jsx:40-132`).
 - **«Sólo alcanzable desde `debe_configurar_2fo`».** `app/api/auth/2fo/configurar/route.ts:6-8` y
   `:36-39`. Una sesión `activa` sí llega, porque `ESTADOS.activa` es `null` y habilita toda ruta
   (`lib/autorizacion/estados.ts:71`), y es lo que la 010 promete para el alta voluntaria.

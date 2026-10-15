@@ -6,7 +6,8 @@
 // La pestaña vuelve al front del prototipo: la tira de seis cifras, la biblioteca partida en «Funciona» y «No
 // funciona» para el criterio elegido, la tarjeta de cada pieza con su miniatura, la ficha y, debajo, una fila de
 // cifras. Este módulo compone lo que ya se mide —`calidadDelCreativo`, `rendimientoDelCreativo`, `fatigaDelCreativo`,
-// el enlace manual— más dos lecturas nuevas: la entrega de cada pieza y su miniatura (`miniaturaDelContacto.ts`).
+// el enlace manual— más dos lecturas nuevas: la entrega de cada pieza y su miniatura, que viene de Meta
+// (`recolectarActivos.ts`, la `078`) y, si Meta no la tiene, de los contactos (`miniaturaDelContacto.ts`).
 //
 // Tiene dos mitades, como `lib/negocio/lecturaDeConversation.ts`: `armarCreative`, pura y probada sin base, y
 // `lecturaDeCreative`, que lee. La ruta y el cerebro leen la misma lectura (CF1-16).
@@ -31,6 +32,7 @@ import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo } from './creativo
 import { enlacesDeLasPiezas, type EnlaceDePieza } from './enlaceDeLaPieza.ts';
 import { fatigaDelCreativo, type FatigaDeLosCreativos } from './fatigaDelCreativo.ts';
 import { miniaturasDeLasPiezas } from './miniaturaDelContacto.ts';
+import { activosDeLasPiezas, type ActivoDeLaPieza } from './recolectarActivos.ts';
 import { PIEZA_SIN_NOMBRE, PISO_DE_IMPRESIONES, rendimientoDelCreativo, type RendimientoDeLosCreativos } from './rendimientoDelCreativo.ts';
 import { LARGO_MAXIMO_DE_MINIATURA, enlaceDePublicacion, type Red } from './urlExterna.ts';
 
@@ -84,9 +86,10 @@ export interface PiezaDeCreative {
   cifras: CifrasDeLaPieza;
   /** `true`: la fatiga tiene veredicto y la pieza perdió gancho; `null`: no hay veredicto. */
   perdiendoGancho: boolean | null;
-  /** La imagen del anuncio (CF1-12), o `null`. */
+  /** La imagen del anuncio: la de Meta si está vigente, si no la de los contactos (CF1-12), o `null`. */
   miniatura: string | null;
-  /** Adónde lleva «Ver en Facebook/Instagram»: el enlace manual si lo hay, si no la miniatura. */
+  /** Adónde lleva «Ver en Facebook/Instagram»: el enlace manual, si no el post que dio Meta, si no el de la
+   *  miniatura de los contactos. */
   enlace: { url: string; red: Red } | null;
   ficha: {
     anuncios: number;
@@ -150,6 +153,8 @@ export interface EntradaDeCreative {
   fatiga: FatigaDeLosCreativos;
   entrega: readonly EntregaDeLaPieza[];
   miniaturas: ReadonlyMap<string, string>;
+  /** Lo leído de Meta por pieza (`078`). Vacío mientras la empresa no cargue su token. */
+  activos: ReadonlyMap<string, ActivoDeLaPieza>;
   enlaces: readonly EnlaceDePieza[];
 }
 
@@ -267,9 +272,16 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
     const x = entrega.get(clave);
     const f = fatiga.get(clave);
     const hayEntrega = (x?.impresiones ?? 0) > 0;
-    const miniatura = e.miniaturas.get(clave) ?? null;
+    /* Meta primero: tiene la imagen de todo anuncio, y la de los contactos llega sólo con los leads de un anuncio de
+       Instagram que abre un DM (3 contactos de 526, medido el 2026-10-15). */
+    const deMeta = e.activos.get(clave);
+    const deLosContactos = e.miniaturas.get(clave) ?? null;
+    const miniatura = deMeta?.miniatura ?? deLosContactos;
     const manual = enlaces.get(clave);
-    const deLaMiniatura = miniatura === null ? null : enlaceDePublicacion(miniatura, LARGO_MAXIMO_DE_MINIATURA);
+    // La miniatura de los contactos es un enlace de Facebook (`/ads/image/`); la del CDN de Meta no lleva a ningún post.
+    const otro =
+      (deMeta?.publicacion ? enlaceDePublicacion(deMeta.publicacion) : null) ??
+      (deLosContactos === null ? null : enlaceDePublicacion(deLosContactos, LARGO_MAXIMO_DE_MINIATURA));
     return {
       clave,
       etapa: x?.etapa ?? q?.etapa ?? 'sin_etapa',
@@ -284,7 +296,7 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
       },
       perdiendoGancho: f?.fatigado ?? null,
       miniatura,
-      enlace: manual ? { url: manual.url, red: manual.red } : deLaMiniatura ? { url: deLaMiniatura.url, red: deLaMiniatura.red } : null,
+      enlace: manual ? { url: manual.url, red: manual.red } : otro ? { url: otro.url, red: otro.red } : null,
       ficha: {
         anuncios: r?.anuncios ?? 0,
         primerDia: x?.primerDia ?? null,
@@ -442,11 +454,12 @@ export async function lecturaDeCreative(dias: number): Promise<LecturaDeCreative
   const enlaces = await enlacesDeLasPiezas();
   const entrega = await entregaDeLasPiezas(dias);
   const miniaturas = await miniaturasDeLasPiezas();
+  const activos = await activosDeLasPiezas();
   return {
     calidad,
     rendimiento,
     fatiga,
     enlaces,
-    pantalla: armarCreative({ calidad, rendimiento, fatiga, entrega, miniaturas, enlaces }),
+    pantalla: armarCreative({ calidad, rendimiento, fatiga, entrega, miniaturas, activos, enlaces }),
   };
 }

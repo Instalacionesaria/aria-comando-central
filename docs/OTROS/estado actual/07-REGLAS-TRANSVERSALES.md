@@ -517,8 +517,8 @@ sin estar**: el 2026-09-28 `gh api` da `protected: false` ([17-LA-PLATAFORMA.md]
 
 **La corrección que dejó la tercera.** No alcanza con preguntar qué LEE el arranque: hay que preguntar
 **qué TOCA la columna nueva, en cualquier sentido** —un `insert` que la nombra rompe igual que un
-`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:131`; el barrido de
-citas va a la hora y tres, `lib/negocio/barrido.ts:215`).
+`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:135`; el barrido de
+citas va a la hora y tres, `lib/negocio/barrido.ts:219`).
 
 **La comprobación de treinta segundos, antes de cada `git push`:**
 
@@ -817,7 +817,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:324-326`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:808`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:811`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:

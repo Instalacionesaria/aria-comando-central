@@ -368,7 +368,7 @@ test('`frescura` habla sólo de las fuentes de las secciones que se ven', async 
   };
   assert.deepEqual(await deLas(['acquisition']), ['anuncios', 'anuncios_relleno', 'contactos']);
   assert.deepEqual(await deLas(['conversion']), ['anuncios', 'anuncios_relleno', 'citas', 'contactos']);
-  assert.deepEqual(await deLas(['closer', 'creative']), ['anuncios', 'anuncios_relleno', 'citas', 'contactos', 'mensajes']);
+  assert.deepEqual(await deLas(['closer', 'creative']), ['activos', 'anuncios', 'anuncios_relleno', 'citas', 'contactos', 'mensajes']);
   assert.deepEqual(await deLas(['analizadores']), ['analizadores', 'reintentos']);
   // La sonda es de la plataforma: no viaja a nadie.
   assert.ok(!(await deLas(SECCIONES_DE_TODO)).includes('sonda'));

@@ -59,7 +59,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 
 | lugar del prototipo | dato | fuente | medido |
 |---|---|---|---|
-| Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:112`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:110`) | — |
+| Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:114`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:110`) | — |
 | Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:120-127`) | sólo con 7 y 30 días |
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
@@ -605,7 +605,7 @@ también `pasos` y `senales.porPaso`.
   empresa. Se agrega `pasos_de_conversion`, con las cifras de la tira y de las tarjetas. Ya promete días
   cerrados para 7 y 30 días (`lib/agentes/executive/adaptadores/comun.ts:65`), y deja de ser falso para
   Conversion. `TAREAS_POR_SECCION.conversion`
-  (`lib/agentes/executive/adaptadores/plataforma.ts:32-42`) suma las citas y los anuncios.
+  (`lib/agentes/executive/adaptadores/plataforma.ts:33-43`) suma las citas y los anuncios.
 - **El detector.** `medirConversion` (`lib/agentes/detectores/conversion.ts:116-130`) consume la misma
   lectura, como el de Acquisition. Así cumple AG-28, que pide 7 y 30 días cerrados
   (`lib/agentes/senales/tipos.ts:10-11`). La ventana anterior sale de la lectura y no del doble de días menos

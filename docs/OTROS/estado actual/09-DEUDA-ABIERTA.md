@@ -455,7 +455,7 @@ Lo detalla [14-ANALIZADORES.md](14-ANALIZADORES.md) § 7, con cifras medidas hoy
 las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 
 - **El sello se escribe y no lo lee nadie.** El comentario dice que el motivo «tiene que poder
-  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:599-610`), y en `lib/`, `app/` y
+  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:632-643`), y en `lib/`, `app/` y
   `components/` `ultimo_motivo` sólo aparece en `lib/negocio/barrido.ts` y en `lib/datos/esquema.ts`;
   fuera de ahí lo lee `scripts/medir-analizadores.sql:88`. Una llave de tl;dv revocada sólo se ve
   con SQL.
@@ -467,7 +467,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
   de los agentes (2026-10-04)**: cada llamada de los Analizadores, la clasificación incluida, deja su fila
   en `negocio.uso_de_ia` (`lib/analizadores/pipeline.ts`, `anotarLaLlamada`).
 - **El contador de reintentos sólo sube** (`lib/analizadores/datos.ts:878-886`), y **el reintento
-  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:547-555`): una transcripción
+  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:570-586`): una transcripción
   pegada a mano que falle en una empresa con sólo llave de IA no se reintenta nunca sola.
 - **`scripts/medir-analizadores.sql` no mide el reintento**: el sello que lee es sólo el de
   `analizadores` (`scripts/medir-analizadores.sql:87-89`) y `reintentos_automaticos` no aparece.
@@ -492,7 +492,7 @@ las 18:23 UTC que acá no se re-midieron. Lo verificado acá contra el código:
 - **Desde la pantalla no se distingue «Meta desconectado» de «no se invirtió».** El colector
   pregunta el vínculo cada día justamente para eso (`lib/negocio/recolectarAnuncios.ts:622-627@d17e029`, el
   campo en `lib/negocio/recolectarAnuncios.ts:145`), pero `motivoDeLoIncompleto`
-  (`lib/negocio/barrido.ts:840`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
+  (`lib/negocio/barrido.ts:873`) no lo lee y ninguna pantalla lo muestra. Si el vínculo se cayera, el
   sello diría `corrio` sin motivo.
 - **Sólo se piden las campañas que ya aparecen en nuestra atribución**
   (`lib/negocio/recolectarAnuncios.ts:261-320@d17e029`): hoy son 13 `campaignId` numéricos distintos en el
@@ -579,7 +579,7 @@ sistema. Todos verificados el 2026-09-28 leyendo las dos puntas.
   (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:61`), o sea 39, y
   [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) midió 40.
 - `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` pone la tarea `anuncios` en «el cron de
-  las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:229`).
+  las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:233`).
 - `lib/negocio/sincronizar.ts:23-28` dice que `ultimo_entrante_el` y los suyos «quedan nulos» y que
   `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:319-320` pone `score` y `responsable_id` entre
   lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:421` y `lib/negocio/sincronizar.ts:481`,

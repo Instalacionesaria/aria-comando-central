@@ -15,6 +15,7 @@
 //   · `auditoria` y `mejora`, el auditor, en Conversation;
 //   · `anuncios` y `anuncios_relleno`, el gasto de Meta, en Acquisition, Creative y Conversion (sus vistas de
 //     landing);
+//   · `activos`, la miniatura de cada anuncio leída de Meta (`078`), en Creative;
 //   · `analizadores` y `reintentos`, en Analizadores.
 // La `sonda` es de la plataforma y no alimenta ninguna pantalla de negocio: no viaja.
 //
@@ -37,7 +38,7 @@ export const TAREAS_POR_SECCION: Readonly<Record<string, readonly Tarea[]>> = {
   conversation: ['contactos', 'citas', 'mensajes', 'auditoria', 'mejora'],
   conversion: ['contactos', 'citas', 'anuncios', 'anuncios_relleno'],
   acquisition: ['contactos', 'anuncios', 'anuncios_relleno'],
-  creative: ['contactos', 'anuncios', 'anuncios_relleno'],
+  creative: ['contactos', 'anuncios', 'anuncios_relleno', 'activos'],
   analizadores: ['analizadores', 'reintentos'],
 };
 

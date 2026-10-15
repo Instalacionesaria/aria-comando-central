@@ -103,7 +103,7 @@ aristas de hoy y de los cortes anteriores están en la fila «Nodos dios» de la
 | `conIdentidad()` | `lib/datos/capa.ts:125` | El otro contexto: identidad va por su propio camino. Era el único de la lista que había **bajado** desde el 2026-09-17, y ya se sabe por qué: la pasada de la mañana del 2026-09-28 le había perdido llamadas desde otros archivos, y el AST completo se las devolvió (fila «Llamadas entre archivos de código») |
 | `cerrarClientes()` | `lib/datos/capa.ts:155` | Cierra los agrupadores de la base (`lib/datos/capa.ts:149`); lo nombran 75 archivos de `pruebas/` |
 | `cerrarTodo()` | `pruebas/apoyo/conexiones.ts:65` | Lo mismo del lado del apoyo de pruebas; 81 archivos de `pruebas/` lo nombran |
-| `pedir()` | `lib/http/cliente.ts:137` | El cliente del API: toda pantalla lee por acá, y ningún archivo de `components/` ni de `app/` fuera de `app/api/` llama a `fetch`. Su comentario dice ser *«La única función del proyecto que hace una petición HTTP»* (`lib/http/cliente.ts:122`), y ya no lo es: `pedirExterno()` (`lib/http/cliente.ts:329`) y `avisar()` (`lib/deteccion/aviso.ts:94`) también llaman a `fetch` |
+| `pedir()` | `lib/http/cliente.ts:146` | El cliente del API: toda pantalla lee por acá, y ningún archivo de `components/` ni de `app/` fuera de `app/api/` llama a `fetch`. Su comentario dice ser *«La única función del proyecto que hace una petición HTTP»* (`lib/http/cliente.ts:131`), y ya no lo es: `pedirExterno()` (`lib/http/cliente.ts:338`) y `avisar()` (`lib/deteccion/aviso.ts:94`) también llaman a `fetch` |
 
 El informe pone en el séptimo y el noveno lugar dos nodos que no son funciones, y los dos son
 documentos de esta carpeta, extraídos el 2026-09-29: el de las reglas transversales

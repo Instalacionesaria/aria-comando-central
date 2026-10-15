@@ -135,7 +135,7 @@ que llama desde la propia ruta a la función de la base que copia el formulario
 
 Las cuatro que gastan resuelven la llave con `resolverAccesoAFundaciones`
 (`lib/credenciales/resolver.ts:362-369`) y están en `ARCHIVOS_AUTORIZADOS` sólo por eso
-(`pruebas/apoyo/autorizados.ts:204-210`); las demás abren `conOrganizacion(` como cualquier ruta.
+(`pruebas/apoyo/autorizados.ts:207-213`); las demás abren `conOrganizacion(` como cualquier ruta.
 
 ### 2.3 · El Research y sus techos de tiempo
 
@@ -158,13 +158,13 @@ misma organización cliente, cuyo paso 1 no salía:
    timeout`. El corte era nuestro: 240 s contra Anthropic dentro de una función de 300. Pasó a 280.
 4. **`d6b1f90`** (2026-09-23): los tres números subieron juntos. La función de generar va de 300 a
    600 s (`app/api/fundaciones/generar/route.ts:22-27`), el corte contra Anthropic de 280 a 580
-   (`lib/http/cliente.ts:277`) y la espera del navegador de 300 a 600 (`lib/http/cliente.ts:115-119`).
+   (`lib/http/cliente.ts:286`) y la espera del navegador de 300 a 600 (`lib/http/cliente.ts:124-128`).
    Los 20 s entre 580 y 600 son para guardar la versión antes de responder
-   (`lib/http/cliente.ts:264-270`), y una prueba compara los números
+   (`lib/http/cliente.ts:273-279`), y una prueba compara los números
    (`pruebas/codigo/90-fundaciones.test.ts:947`).
 
 Sólo `generar` subió. `conversar` y `rellenar` siguen en 300 s con la espera externa por omisión de
-240 (`lib/http/cliente.ts:239`), que cabe. **`mercado/preparar` no cabe**: también declara 300 s
+240 (`lib/http/cliente.ts:248`), que cabe. **`mercado/preparar` no cabe**: también declara 300 s
 (`app/api/fundaciones/mercado/preparar/route.ts:24`), pero su inferencia —el rubro del paso 1, 100
 tokens— sale por `generar()` (`lib/fundaciones/operaciones.ts:757-760`), que espera siempre 580 s
 (`lib/fundaciones/generacion.ts:200`). Si Anthropic no contesta, corta la plataforma a los 300 y no
@@ -246,7 +246,7 @@ Eso fue cierto del 2026-08-23 al 2026-09-07. El commit `b0a983b` lo cortó:
 Lo que queda del hub, y **nada de esto corre en ejecución**:
 
 - **El proyecto de Supabase.** `public` se comparte con otras plataformas, entre ellas ARIA-brain, y
-  el prefijo `aria_cc_` es lo que dice de quién es cada tabla (`lib/datos/esquema.ts:1482-1488`).
+  el prefijo `aria_cc_` es lo que dice de quién es cada tabla (`lib/datos/esquema.ts:1495-1501`).
 - **Los nombres, como contrato.** Los identificadores de herramienta son los del hub
   (`lib/fundaciones/herramientas.ts:11-16`), los campos del JSON siguen en inglés
   (`lib/fundaciones/estado.ts:11-17`) y las metodologías nacieron como copias, de las que seis ya
@@ -425,7 +425,7 @@ del almacén (`lib/fundaciones/operaciones.ts:361-364`, `lib/fundaciones/operaci
 los números del mercado se cuentan en el servidor (`lib/fundaciones/mercado.ts:15-21`).
 
 **5 · Quien espera espera menos que quien ejecuta.** 580 s de corte contra Anthropic dentro de 600 s
-de función, con la versión guardada antes de responder (`lib/http/cliente.ts:264-274`). Si uno sube,
+de función, con la versión guardada antes de responder (`lib/http/cliente.ts:273-283`). Si uno sube,
 sube primero el `maxDuration`. Hoy la incumple `mercado/preparar`, y ninguna prueba lo ve (§ 2.3).
 
 **6 · Los inputs se guardan antes de generar**, salga como salga la generación
@@ -496,7 +496,7 @@ es mayor que la función (300 s), así que un Anthropic lento termina en un cort
 Research sigue y la mirada se omite como «no se pudo preparar la búsqueda».
 
 **Gasto sin techo, y un techo que no es de esta pantalla.** No hay tope por organización (§ 5).
-Según `lib/http/cliente.ts:254-257` la cuenta de Vercel tiene un presupuesto de 200 dólares que corta
+Según `lib/http/cliente.ts:263-266` la cuenta de Vercel tiene un presupuesto de 200 dólares que corta
 al llegar; si es así, corta la aplicación entera y no sólo esta pantalla. No verificado en este corte.
 
 **Un histórico que ya nació con ruido.** 21 de sus 29 conversaciones son saludos sueltos de la siembra,

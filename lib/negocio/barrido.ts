@@ -31,8 +31,8 @@
 
 import { datos, conOrganizacion } from '../datos/contexto.ts';
 import type { OrganizacionListada } from '../administracion/organizaciones.ts';
-import type { AccesoAGhl, AccesoAlAnalizador, AccesoAlAuditor } from '../credenciales/resolver.ts';
-import { TEXTO_DE_FALTA_ANALIZADOR, TEXTO_DE_FALTA_AUDITOR } from '../credenciales/resolver.ts';
+import type { AccesoAGhl, AccesoAlAnalizador, AccesoAlAuditor, AccesoAMeta } from '../credenciales/resolver.ts';
+import { TEXTO_DE_FALTA_ANALIZADOR, TEXTO_DE_FALTA_AUDITOR, TEXTO_DE_FALTA_META } from '../credenciales/resolver.ts';
 import { correrAnalizadores, llamadasDeLaTarea, reintentarAnalizadores } from '../analizadores/tarea.ts';
 import { auditarEmpresa } from '../auditor/analisis.ts';
 import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
@@ -41,6 +41,7 @@ import { sincronizarContactos } from './sincronizar.ts';
 import { completarMiniaturas } from './miniaturaDelContacto.ts';
 import { recolectarAnuncios } from './recolectarAnuncios.ts';
 import { rellenarAnuncios } from './rellenarAnuncios.ts';
+import { recolectarActivos } from './recolectarActivos.ts';
 import { barrerCitas } from './citas.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 import { correrLaPasada } from '../agentes/detectores/correr.ts';
@@ -65,6 +66,7 @@ export type Tarea =
   | 'mejora'
   | 'anuncios'
   | 'anuncios_relleno'
+  | 'activos'
   | 'analizadores'
   | 'reintentos'
   | 'senales';
@@ -96,6 +98,8 @@ export const TAREAS = [
   'anuncios',
   // Después de `anuncios`: rellena lo que la pasada diaria dejó sin cuadrar. Sola en su horario.
   'anuncios_relleno',
+  // La miniatura de cada anuncio, de Meta y no del CRM. Sola en su horario.
+  'activos',
   // Últimas, y no importa: no comparten una sola fila con las otras. Ver sus horarios.
   'analizadores',
   'reintentos',
@@ -302,6 +306,21 @@ export const HORARIOS = {
     umbralMinutos: 2940,
   },
 
+  /* ── LOS ACTIVOS DE META, CADA HORA (`078`, `lib/negocio/recolectarActivos.ts`) ─────────────
+
+     La miniatura de cada anuncio, leída de Meta con el token de la empresa. Cada hora y no una vez por día porque la
+     URL de la miniatura va firmada y vence (el `oe` del CDN de Meta): la pasada vuelve a pedir la que vence en las
+     próximas seis horas, y así la pantalla nunca dibuja una imagen rota. Cuando todo está al día no llama a Meta.
+     Sin token de Meta queda `saltada` con su texto, sin llamar a nadie: es lo normal de una empresa que no lo cargó.
+
+     El minuto 37 porque no lo usa nadie (el 3, el 7, el 17, el 23, el 41, el 53 y los múltiplos de diez ya están), y
+     dos corridas en el mismo minuto se frenan por el candado. El umbral respeta la regla: 2 × 60 + 60 = 180. */
+  '37 * * * *': {
+    tareas: ['activos'],
+    cadenciaMinutos: 60,
+    umbralMinutos: 180,
+  },
+
   /* ── LOS DETECTORES, CADA HORA PARA QUE A CADA EMPRESA LE LLEGUE SU MAÑANA ─
 
      `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35. El cron dispara cada hora en UTC y la pasada
@@ -418,6 +437,8 @@ export interface EmpresaParaBarrer {
   auditor: AccesoAlAuditor;
   /** Las llaves de tl;dv y de IA de los Analizadores. Sin tl;dv es el caso normal: no descubre. */
   analizador: AccesoAlAnalizador;
+  /** El token y la cuenta de Meta de la tarea `activos`. Se resuelve sólo en el horario que la trae; sin él, `saltada`. */
+  meta?: AccesoAMeta;
   /**
    * La llave de IA, para redactar el Plan de acción. La resuelve la ruta SÓLO en el horario de `senales`
    * (AG-35): en las demás corridas no hace falta descifrarla. Ausente o `null`, el plan queda con plantillas.
@@ -498,7 +519,7 @@ export async function barrerTodo(
     return a.sello - b.sello;
   });
 
-  for (const { org, acceso, auditor, analizador, llaveDeIa } of conSello) {
+  for (const { org, acceso, auditor, analizador, llaveDeIa, meta } of conSello) {
     // El guardia del presupuesto, antes de empezar la empresa. Ver `PRESUPUESTO_MS`.
     if (ahora() - arranque > PRESUPUESTO_MS) {
       for (const tarea of tareas) {
@@ -531,6 +552,8 @@ export async function barrerTodo(
         tarea !== 'analizadores' &&
         tarea !== 'reintentos' &&
         tarea !== 'senales' &&
+        // Ni `activos`: le habla a Meta, con su propio token.
+        tarea !== 'activos' &&
         acceso.tipo !== 'listo'
       ) {
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
@@ -547,6 +570,14 @@ export async function barrerTodo(
       /* Los Analizadores tampoco le hablan al CRM: piden la llave de tl;dv y la de IA. Sin tl;dv es
          lo normal —casi ninguna empresa lo usa— y se sella como saltada con su texto, igual que el
          auditor sin llave. El reintento pide lo mismo: solo corre donde corren los Analizadores. */
+      /* Los activos piden el token de Meta. Sin él es lo normal —casi ninguna empresa lo cargó todavía— y se sella como
+         saltada con su texto: la pantalla de monitoreo dice qué falta y dónde se carga. */
+      if (tarea === 'activos' && meta?.tipo !== 'listo') {
+        const que = TEXTO_DE_FALTA_META[meta?.tipo === 'falta' ? meta.que : 'sin_token_de_meta'];
+        renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
+        await sellar(org.id, tarea, 'saltada', que, 0);
+        continue;
+      }
       if ((tarea === 'analizadores' || tarea === 'reintentos') && analizador.tipo !== 'listo') {
         const que = TEXTO_DE_FALTA_ANALIZADOR[analizador.que];
         renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
@@ -573,6 +604,8 @@ export async function barrerTodo(
                     ? await recolectarAnuncios(org.id, conToken(acceso))
                     : tarea === 'anuncios_relleno'
                       ? await rellenarAnuncios(org.id, conToken(acceso), arranque, ahora)
+                      : tarea === 'activos' && meta?.tipo === 'listo'
+                        ? await recolectarActivos(org.id, meta, ahora)
                       : tarea === 'analizadores'
                         ? await analizar(org, analizador, arranque, ahora)
                         : tarea === 'reintentos'
@@ -603,8 +636,8 @@ export async function barrerTodo(
          * marcarla como tal haría que el cron la reintentara— pero dejó trabajo sin hacer, y eso
          * tiene que poder leerse desde la pantalla de monitoreo sin abrir un registro.
          *
-         * Hoy lo informan `anuncios`, `anuncios_relleno`, `analizadores`, `senales` y `contactos` —el corte de la
-         * pasada de miniaturas—. `motivoDeLoIncompleto` devuelve nulo para las demás, así
+         * Hoy lo informan `anuncios`, `anuncios_relleno`, `analizadores`, `senales`, `activos` y `contactos` —el corte
+         * de la pasada de miniaturas—. `motivoDeLoIncompleto` devuelve nulo para las demás, así
          * que ninguna cambia de comportamiento — y el día que otra tarea empiece a truncarse, el
          * lugar donde decirlo ya existe. */
         await sellar(org.id, tarea, 'corrio', motivoDeLoIncompleto(r.resultado), r.llamadas);
@@ -908,6 +941,23 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     tiempo: 'la pasada de miniaturas llegó a su tiempo',
   };
   if (typeof mini?.corte === 'string' && CORTE[mini.corte]) partes.push(`${CORTE[mini.corte]}: lo que faltó se pide en la siguiente`);
+
+  /* Los activos de Meta (`078`): un token o un permiso rechazado es lo único de esta tarea que alguien tiene que ir a
+     arreglar; el cupo y el tiempo se arreglan solos en la hora siguiente. */
+  const activos = r as { corte?: unknown; conMiniatura?: unknown };
+  if (typeof activos.conMiniatura === 'number') {
+    const CORTE_DE_META: Record<string, string> = {
+      token: 'Meta rechazó el token: hay que generarlo de nuevo y cargarlo en Ajustes',
+      permiso: 'al token de Meta le falta un permiso o la cuenta asignada: revisar el usuario del sistema',
+      no_existe: 'Meta no encuentra la cuenta publicitaria: revisar el act_… en Ajustes',
+      cupo: 'Meta limitó las llamadas: lo que faltó se pide en la hora siguiente',
+      sin_respuesta: 'Meta no contestó: lo que faltó se pide en la hora siguiente',
+      otro: 'Meta rechazó el pedido: lo que faltó se pide en la hora siguiente',
+      tiempo: 'la pasada de activos llegó a su tiempo: lo que faltó se pide en la hora siguiente',
+    };
+    const texto = typeof activos.corte === 'string' ? CORTE_DE_META[activos.corte] : undefined;
+    if (texto) partes.push(texto);
+  }
 
   if (r.atrasado === true) partes.push('se agotó el presupuesto y quedaron días sin pedir');
   if (Array.isArray(r.huecos) && r.huecos.length > 0) {

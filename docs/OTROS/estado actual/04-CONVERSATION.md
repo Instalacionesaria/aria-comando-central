@@ -186,7 +186,7 @@ no mide. La tarjeta de señales sigue en el modo Auditoría.
 «audita» que resolvió la ruta del cerebro y devuelve su `pantalla` entera, con el motivo de cada «—»; la compara con
 la de la ruta, en los cuatro períodos, `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:145`. Las
 demás traen los avisos que la pantalla no dibuja. La frescura de las cinco tareas de las que vive la pantalla la da
-`frescura` (`lib/agentes/executive/adaptadores/plataforma.ts:37`).
+`frescura` (`lib/agentes/executive/adaptadores/plataforma.ts:38`).
 
 **Lo que se midió en el navegador (CN-5, 2026-10-10).** Contra el prototipo servido en local, a 1440 px: los paneles
 guardan la proporción (303 · 303 · 503 px contra 315 · 315 · 523, con 1144 px de ancho útil contra 1188), las filas de
@@ -440,7 +440,7 @@ agentes sumaba dos en «{N} por resolver» mientras Auditoría dibujaba uno; se 
 
 **22 · La pantalla no avisa si su dato está viejo.** **Cambió** (`CN1-P08`): la pantalla sigue sin decirlo, y el
 comentario de la cabecera no mira la frescura para Conversation (`lib/agentes/cabecera.ts:124`). Lo dice el cerebro
-con `frescura`, que cubre las cinco tareas de esta pantalla (`lib/agentes/executive/adaptadores/plataforma.ts:37`), y el
+con `frescura`, que cubre las cinco tareas de esta pantalla (`lib/agentes/executive/adaptadores/plataforma.ts:38`), y el
 detector pasa a «sin medición» si el auditor no está al día (`lib/agentes/detectores/conversation.ts:27-28`). Con el
 barrido caído, «Hoy» y «7 días» se vaciarían igual que un embudo sin entrada, y sólo lo distingue quien le pregunte
 al agente.
