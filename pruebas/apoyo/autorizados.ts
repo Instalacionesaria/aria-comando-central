@@ -167,6 +167,9 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // tiene NINGÚN acceso a esa tabla —ni `select`—: es la tabla que guarda los secretos de todas las
   // organizaciones. El filtro por organización lo pone la consulta con `contexto.orgEfectiva`.
   'app/api/admin/credenciales/route.ts',
+  // «Probar conexión» con Meta (Ajustes). Lee el token de Meta de la misma tabla de secretos, con el mismo filtro
+  // `contexto.orgEfectiva`, y lo usa para tres lecturas a Meta: no escribe nada (`lib/meta/conexion.ts`).
+  'app/api/admin/credenciales/meta/route.ts',
   // ── Etapa 8 ──────────────────────────────────────────────────────────────────
   // El portero, para emitir `permiso_denegado`. La auditoría es una tabla de identidad, y en el
   // paso 5 el portero ya resolvió la sesión — así que sabe de qué organización se trata y filtra

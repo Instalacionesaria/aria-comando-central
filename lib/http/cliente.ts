@@ -69,6 +69,15 @@ export type Respuesta<T> =
        * obligaría a cada consumidor a distinguir "no hay detalle" de "el detalle es vacío".
        */
       readonly detalle?: string;
+      /**
+       * El código NUMÉRICO del error, si el servicio lo manda en `error.code` (sólo `pedirExterno`).
+       *
+       * Lo manda Meta, y es lo único que distingue sus errores: todos llegan como `OAuthException` y casi
+       * siempre con 400, pero `190` es un token vencido o revocado, `10` y `200` un permiso que falta, y `4`,
+       * `17` y `613` el cupo de llamadas. Son tres acciones distintas para quien carga el token. Opcional:
+       * Anthropic y GoHighLevel no lo mandan, y para ellos la respuesta queda igual que antes.
+       */
+      readonly numero?: number;
     }
   | { readonly tipo: 'sin_respuesta'; readonly causa: string };
 
@@ -447,14 +456,16 @@ export async function pedirExterno<T>(
      * acá no aplica: los errores de un CRM pueden nombrar un contacto, y eso son datos de una persona en una
      * pantalla que quizá no le corresponde. Los de Anthropic hablan de la PETICIÓN —campos, límites,
      * saldo—, nunca de datos de terceros. */
-    const error = (cuerpoLeido as { error?: { type?: unknown } } | null)?.error;
+    const error = (cuerpoLeido as { error?: { type?: unknown; code?: unknown } } | null)?.error;
     const codigo = typeof error === 'object' && error !== null ? error.type : undefined;
+    const numero = typeof error === 'object' && error !== null ? error.code : undefined;
     const motivo = motivoDelServicio(cuerpoLeido);
     return {
       tipo: 'rechazado',
       estado: respuesta.status,
       codigo: typeof codigo === 'string' ? codigo : 'sin_codigo',
       ...(motivo === null ? {} : { detalle: motivo }),
+      ...(typeof numero === 'number' && Number.isInteger(numero) ? { numero } : {}),
     };
   }
 

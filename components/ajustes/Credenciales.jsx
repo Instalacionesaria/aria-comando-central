@@ -30,6 +30,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import AvisoDelCrm from './AvisoDelCrm.jsx';
+import ConexionConMeta from './ConexionConMeta.jsx';
 
 /* Los campos, en el orden en que se muestran: primero lo que hace falta para que las pestañas
  * Closer y Setter traigan datos, después lo de Fundaciones, y al final lo opcional.
@@ -410,6 +411,9 @@ export default function Credenciales() {
           configurado={datos?.avisoSecretoConfigurado === true}
           alGenerar={() => void cargar()}
         />
+
+        {/* Probar el token de Meta: cargarlo no dice si sirve (`ConexionConMeta`). */}
+        <ConexionConMeta cargado={Boolean(datos?.meta?.cargado)} />
       </>
     );
   }
