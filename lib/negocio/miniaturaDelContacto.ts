@@ -185,16 +185,27 @@ export async function guardarMiniaturas(filas: readonly FilaNueva[]): Promise<vo
  * si no hay—; empate, la del contacto que entró más tarde al CRM. Sólo viaja una URL de los hosts de Facebook e
  * Instagram (`lib/negocio/urlExterna.ts`), con el tope de largo de la tabla. Sin ventana: la imagen de la pieza no
  * depende del período. Corre dentro de `conOrganizacion`.
+ *
+ * DE QUÉ PIEZA ES UN CONTACTO: primero por su ANUNCIO —el `adId` de la atribución, cruzado con `negocio.anuncios`—, y
+ * sólo sin anuncio por su `utmContent`. Es la misma llave con la que la pantalla nombra las piezas (el nombre del
+ * anuncio, `entregaDeLasPiezas` y el rendimiento). Los contactos que traen la imagen son justo los que entran por un
+ * anuncio de Instagram (DM), y ésos llegan SIN UTMs: con el `utmContent` solo, 2 de las 3 imágenes de producción no
+ * tenían pieza y la pantalla no mostraba ninguna (medido el 2026-10-15).
  */
 export async function miniaturasDeLasPiezas(): Promise<Map<string, string>> {
-  const pieza = llaveDelCreativo("c.atribucion_primera ->> 'utmContent'");
+  const pieza = sql<string>`coalesce(
+    nullif(${llaveDelCreativo('a.nombre')}, ''),
+    nullif(${llaveDelCreativo("c.atribucion_primera ->> 'utmContent'")}, ''))`;
   const imagen = sql<string>`coalesce(m.video_url, m.photo_url)`;
   const filas = await datos()
     .selectFrom('miniaturas_del_contacto as m')
     .innerJoin('contactos as c', (j) => j.onRef('c.org_id', '=', 'm.org_id').onRef('c.id', '=', 'm.contacto_id'))
+    .leftJoin('anuncios as a', (j) =>
+      j.onRef('a.org_id', '=', 'c.org_id').on(sql<boolean>`a.meta_anuncio_id = c.atribucion_primera ->> 'adId'`),
+    )
     .select([pieza.as('pieza'), imagen.as('imagen')])
     .where(sql<boolean>`coalesce(m.video_url, m.photo_url) is not null`)
-    .where(sql<boolean>`nullif(btrim(c.atribucion_primera ->> 'utmContent'), '') is not null`)
+    .where(sql<boolean>`${pieza} is not null`)
     .groupBy([pieza, imagen])
     /* El orden decide cuál gana: la primera permitida de cada pieza. Sin él, la que gana es la que la base devuelva
        primero. */

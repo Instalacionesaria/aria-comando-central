@@ -173,7 +173,9 @@ guardado (`lib/negocio/miniaturaDelContacto.ts:174-181`). Cada pedido espera has
 no contesta la cortan (`lib/negocio/miniaturaDelContacto.ts:124-128`), y el sello de la tarea dice por qué
 (`lib/negocio/barrido.ts:900-910`). La miniatura de la pieza es la imagen más frecuente entre sus contactos —el `videoUrl`
 o, si no hay, el `photoUrl`—, en empate la del contacto que entró más tarde al CRM, y sólo si su host es de Facebook,
-Instagram o el CDN de Meta (`lib/negocio/miniaturaDelContacto.ts:189-213`). El navegador la pide sin `referrer` y con
+Instagram o el CDN de Meta (`lib/negocio/miniaturaDelContacto.ts:195-224`). La pieza de un contacto sale de su
+anuncio (el `adId` cruzado con `negocio.anuncios`) y sólo sin anuncio de su `utmContent`: los contactos de un anuncio de
+Instagram, que son los que traen la imagen, llegan sin UTMs (corregido el 2026-10-15). El navegador la pide sin `referrer` y con
 carga perezosa; sin URL dice «Sin miniatura todavía.», y si la imagen no carga queda el fondo del prototipo
 (`components/creative/Miniatura.jsx:11-24`).
 
@@ -355,8 +357,8 @@ sin ruta en GoHighLevel (C14-08). La credencial de Meta existe en Ajustes desde
 no aparece ninguno (2026-10-11). El plan está en `docs/OTROS/futuro/miniatura-y-video-de-meta.md`.
 
 **6 · La miniatura de los contactos sin anuncio.** Una pieza cuyos contactos no traen `adId` no se pide
-(`lib/negocio/miniaturaDelContacto.ts:82`), y un contacto sin nombre de pieza no aporta su imagen a ninguna
-(`lib/negocio/miniaturaDelContacto.ts:197`): para esas, Meta directo o el link manual.
+(`lib/negocio/miniaturaDelContacto.ts:82`), y un contacto sin anuncio conocido ni `utmContent` no aporta su imagen a ninguna
+(`lib/negocio/miniaturaDelContacto.ts:208`): para esas, Meta directo o el link manual.
 
 **7 · Los cierres.** Sin ventas registradas no hay CPA, ROAS ni «qué pieza genera más dinero». Según la foto de Sales,
 siete resultados y ninguno con monto ([05-SALES.md](05-SALES.md)); no re-medido acá.

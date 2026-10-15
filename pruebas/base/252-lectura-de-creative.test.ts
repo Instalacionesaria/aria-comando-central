@@ -87,11 +87,13 @@ async function unDia(id: string, hace: number, m: { impresiones: number; clics?:
   );
 }
 
-async function unLead(o: { pieza: string; icp?: string | null; video?: string | null; foto?: string; haceDias?: number }): Promise<void> {
+async function unLead(o: { pieza: string | null; adId?: string; icp?: string | null; video?: string | null; foto?: string; haceDias?: number }): Promise<void> {
+  // `pieza: null` = un lead sin `utmContent`, como los que entran por un anuncio de Instagram (DM).
+  const atribucion = o.pieza === null ? { adId: o.adId ?? '1' } : { utmContent: o.pieza, adId: o.adId ?? '1' };
   const r = await esc.admin.query<{ id: string }>(
     `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, campos_del_crm)
      values ($1, $2, 'Lead de prueba', 'setter', now() - make_interval(days => $5), $3::jsonb, $4::jsonb) returning id`,
-    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, JSON.stringify({ utmContent: o.pieza, adId: '1' }), JSON.stringify(o.icp == null ? {} : { [CAMPO]: o.icp }), o.haceDias ?? 1],
+    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, JSON.stringify(atribucion), JSON.stringify(o.icp == null ? {} : { [CAMPO]: o.icp }), o.haceDias ?? 1],
   );
   if (o.video !== undefined || o.foto !== undefined) {
     await esc.admin.query(
@@ -204,6 +206,28 @@ test('la miniatura de la pieza: la más frecuente; empate, la del contacto más 
   assert.equal(m.get(TERCERA), ZETA, 'el empate no fue para el contacto más nuevo');
   assert.equal(m.get(CUARTA), 'https://scontent.xx.fbcdn.net/foto.jpg', 'sin video no tomó la foto');
   assert.equal(m2.get(CUARTA), LARGA, 'una miniatura de más de 500 caracteres no se dibuja');
+});
+
+test('la miniatura va a la pieza de su ANUNCIO, aunque el contacto no traiga utmContent', async () => {
+  /* Los contactos que traen imagen son los de un anuncio de Instagram (DM), y llegan sin UTMs: en producción, 2 de las
+     3 imágenes no tenían pieza por eso, y la pantalla no mostraba ninguna (2026-10-15). La pieza sale del anuncio. */
+  await limpiar();
+  await unaCampana(`${MARCA}01`, 'NUEVA ERA | TOFU | LEADS');
+  await unAnuncio(`${MARCA}21`, ' Pieza-CF1-Uno ', `${MARCA}01`);
+  await unAnuncio(`${MARCA}22`, OTRA, `${MARCA}01`);
+  const DEL_DM = 'https://www.facebook.com/ads/image/?d=dm';
+  const RENOMBRADO = 'https://www.facebook.com/ads/image/?d=renombrado';
+  await unLead({ pieza: null, adId: `${MARCA}21`, video: DEL_DM });
+  // Un utmContent viejo (el anuncio se renombró): gana el nombre ACTUAL del anuncio, que es el de la pantalla.
+  await unLead({ pieza: 'nombre-viejo-del-anuncio', adId: `${MARCA}22`, video: RENOMBRADO });
+  // Sin anuncio conocido y sin utmContent: no hay pieza a la que darle la imagen.
+  await unLead({ pieza: null, adId: `${MARCA}99`, video: 'https://www.facebook.com/ads/image/?d=huerfana' });
+  const m = await enAlfa(() => miniaturasDeLasPiezas());
+  await limpiar();
+  assert.equal(m.get(PIEZA), DEL_DM, 'la imagen de un contacto sin utmContent no llegó a la pieza de su anuncio');
+  assert.equal(m.get(OTRA), RENOMBRADO, 'ganó el utmContent viejo y no el nombre actual del anuncio');
+  assert.ok(!m.has('nombre-viejo-del-anuncio'), 'quedó una pieza con el nombre viejo');
+  assert.equal([...m.values()].filter((u) => u.endsWith('huerfana')).length, 0, 'una imagen sin pieza se asignó a algo');
 });
 
 test('la lectura entera arma la pantalla con lo leído', async () => {
