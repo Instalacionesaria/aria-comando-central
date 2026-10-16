@@ -167,6 +167,9 @@ test('EL CANDADO: con la fila tomada por otra transacción, el ciclo se va en ve
   try {
     await otro.query('begin');
     await otro.query(`select set_config('app.org_id', $1, true)`, [alfa]);
+    // Y las cuentas, como `conOrganizacion`: con la política por cuenta del modelo multiempresa, sin ellas esta
+    // conexión no ve la fila, no la bloquea, y la prueba pasaría sin probar el candado (falla cerrada).
+    await otro.query(`select set_config('app.cuentas', '*', true)`);
     await otro.query(
       `select 1 from negocio.ingesta_pulso where clave = 'mensajes' for update`,
     );

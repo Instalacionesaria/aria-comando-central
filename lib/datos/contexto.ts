@@ -44,6 +44,22 @@ function enReposo(v: string | null | undefined): boolean {
 }
 
 /**
+ * Las subcuentas que ve la transacción: `'*'` = todas las de la organización.
+ *
+ * ── LA SEGUNDA LLAVE DEL MODELO MULTIEMPRESA (Fase 0, 2026-10-16) ─────────────
+ *
+ * El modelo de datos suma `cuenta_id` —la subcuenta de GoHighLevel dentro de su agencia— a las tablas de `negocio`,
+ * con una política que exige `app.cuentas`: `'*'` ve todas las cuentas de la organización, una lista `uuid,uuid` ve
+ * sólo ésas, y SIN la variable no se ve nada (falla cerrada). Hoy cada organización tiene una sola cuenta y nadie
+ * está limitado a una parte, así que siempre es `'*'`; la lista llega con los usuarios de un cliente final.
+ *
+ * Se pone ANTES de que exista la política, a propósito: mientras la base no la pida, la variable no hace nada, y el
+ * día que llegue la migración el código ya la está poniendo. Al revés, la migración dejaría a la aplicación sin ver
+ * una sola fila hasta el siguiente despliegue.
+ */
+const TODAS_LAS_CUENTAS = '*';
+
+/**
  * Abre el contexto de una organización y corre el trabajo dentro.
  *
  * `conOrganizacion(` es la cadena que van a buscar las pruebas que leen el código
@@ -104,8 +120,8 @@ export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T
     // de otro" en un error ruidoso. Al empezar una transacción el valor de reposo es
     // nulo (nunca se puso en esta conexión) o cadena vacía (ya se usó): cualquier otra
     // cosa significa que la conexión trae estado.
-    const reposo = await sql<{ v: string | null }>`
-      select current_setting('app.org_id', true) as v
+    const reposo = await sql<{ v: string | null; cuentas: string | null }>`
+      select current_setting('app.org_id', true) as v, current_setting('app.cuentas', true) as cuentas
     `.execute(trx);
 
     if (!enReposo(reposo.rows[0]?.v)) {
@@ -115,12 +131,20 @@ export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T
           'transacción, o hay un agrupador externo que no respeta el alcance de transacción.',
       );
     }
+    // Lo mismo con las cuentas: una conexión que trae `app.cuentas` de otra transacción trae su alcance.
+    if (!enReposo(reposo.rows[0]?.cuentas)) {
+      throw new Error(
+        'conOrganizacion: la conexión vino del agrupador con las cuentas ya puestas. Alguien devolvió una ' +
+          'conexión sin cerrar su transacción, o hay un agrupador externo que no respeta el alcance de transacción.',
+      );
+    }
 
     // `SET` no acepta parámetros, así que tiene que ser `set_config`. Escrito a mano
     // obligaría a interpolar en el texto de la consulta un identificador que viene de
     // una sesión, que es exactamente lo que no se quiere hacer (08 § 1).
-    const puesto = await sql<{ v: string | null }>`
-      select set_config('app.org_id', ${orgId}, true) as v
+    const puesto = await sql<{ v: string | null; cuentas: string | null }>`
+      select set_config('app.org_id', ${orgId}, true) as v,
+             set_config('app.cuentas', ${TODAS_LAS_CUENTAS}, true) as cuentas
     `.execute(trx);
 
     // LA VERIFICACIÓN PROPIA, y no es paranoia: `set_config(…, true)` FUERA de una
@@ -133,7 +157,7 @@ export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T
     // transacción abierta (09 § 6). Esta lectura de vuelta es la única defensa que no
     // cuesta infraestructura, y falla ruidosamente si algún día alguien pone un agrupador
     // mal configurado delante.
-    if (puesto.rows[0]?.v !== orgId) {
+    if (puesto.rows[0]?.v !== orgId || puesto.rows[0]?.cuentas !== TODAS_LAS_CUENTAS) {
       throw new Error(
         'conOrganizacion: la variable de transacción no quedó puesta. ' +
           'Suele ser un agrupador de conexiones en modo sentencia, que rompe el alcance ' +

@@ -440,6 +440,18 @@ test('ADR-0201 · un solo archivo pone `app.org_id`', () => {
   ]);
 });
 
+test('ADR-0201 · y un solo archivo pone `app.cuentas`, la segunda llave', () => {
+  // La misma regla para la variable de las subcuentas del modelo multiempresa (Fase 0, 2026-10-16): la política por
+  // cuenta la exige, y poner otra lista a mano sobre la transacción cruda de `datos()` dejaría leyendo cuentas que la
+  // sesión no tiene. Las dos mitades, como la de arriba.
+  assert.deepEqual(
+    archivosQueContienen(/set_config\s*\(\s*['"]app\.cuentas['"]/).filter((r) => r !== 'lib/datos/contexto.ts'),
+    [],
+    'la variable de las cuentas se pone en `conOrganizacion()` y en ningún otro lado',
+  );
+  assert.deepEqual(archivosQueContienen(/set_config\s*\(\s*['"]app\.cuentas['"]/), ['lib/datos/contexto.ts']);
+});
+
 // ─── Que el código esté DENTRO del repositorio ──────────────────────────────
 
 test('ningún archivo de código está ignorado por git', async () => {
