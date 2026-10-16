@@ -639,6 +639,10 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
        join pg_namespace n on n.oid = c.relnamespace
       where n.nspname in ('identidad', 'negocio')
         and c.relkind in ('r', 'p')
+        -- Las particiones (los eventos, desde la 084) no llevan política propia a propósito: se leen a través de su
+        -- madre, que es la que la tiene. Lo que se les exige —nacer sin permisos para la aplicación y con la RLS
+        -- forzada— lo mide la prueba 257.
+        and not c.relispartition
       order by n.nspname, c.relname`,
   );
 

@@ -168,9 +168,18 @@ export function revisarMigraciones(): Rechazo[] {
       // 5 · Toda tabla de NEGOCIO lleva la columna del inquilino, o está en la
       //     lista de tablas compartidas — que es el CONJUNTO VACÍO, porque no hay
       //     esquema `comun` ni tablas sin dueño (EJECUCION § 2).
-      if (nombre.startsWith('negocio.')) {
-        const cuerpo = limpio.slice(m.index ?? 0);
-        const fin = cuerpo.indexOf(';');
+      const cuerpoDeLaTabla = limpio.slice(m.index ?? 0);
+      const finDeLaTabla = cuerpoDeLaTabla.indexOf(';');
+      // Una PARTICIÓN (`create table … partition of …`, desde la `084`) no es una tabla nueva para estas dos reglas:
+      // hereda las columnas de su madre —org_id incluida— y se lee a través de ella, que es la que lleva la política.
+      // Lo que se le exige es otra cosa, que nazca cerrada (sin permisos para la aplicación y con la RLS forzada), y
+      // eso lo mide la prueba 257 sobre la base, no un patrón de texto.
+      const esParticion = /\bpartition\s+of\b/i.test(
+        finDeLaTabla === -1 ? cuerpoDeLaTabla : cuerpoDeLaTabla.slice(0, finDeLaTabla),
+      );
+      if (nombre.startsWith('negocio.') && !esParticion) {
+        const cuerpo = cuerpoDeLaTabla;
+        const fin = finDeLaTabla;
         const declaracion = fin === -1 ? cuerpo : cuerpo.slice(0, fin);
         if (!/\borg_id\b/.test(declaracion)) {
           rechazos.push({ archivo, motivo: `\`${nombre}\` es de negocio y no declara org_id` });
@@ -191,9 +200,12 @@ export function revisarMigraciones(): Rechazo[] {
         // El calificador de esquema es opcional en las dos puntas: la convención del
         // proyecto es calificar (`select negocio.aplicar_aislamiento('negocio.x')`),
         // pero el documento la escribe sin calificar y las dos formas tienen que pasar.
+        //
+        // Desde la `084` también vale `aplicar_aislamiento_de_cuenta('negocio.x', …)`: llama a la otra y suma la
+        // cuenta (modelo multiempresa), así que aísla igual o más. Sigue siendo una llamada por tabla, nombrada.
         const corta = nombre.replace(/^negocio\./i, '');
         const nombrada = new RegExp(
-          String.raw`\bselect\s+(?:[\w"]+\.)?aplicar_aislamiento\s*\(\s*'(?:negocio\.)?` +
+          String.raw`\bselect\s+(?:[\w"]+\.)?aplicar_aislamiento(?:_de_cuenta)?\s*\(\s*'(?:negocio\.)?` +
             `${corta}'`,
           'i',
         );

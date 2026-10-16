@@ -242,12 +242,18 @@ test('toda tabla de negocio es accesible para el inquilino, con las cuatro opera
   const tablas = await filas<{ relname: string }>(
     mig,
     `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
-      where n.nspname = 'negocio' and c.relkind in ('r', 'p') order by c.relname`,
+      where n.nspname = 'negocio' and c.relkind in ('r', 'p') and not c.relispartition order by c.relname`,
   );
   assert.ok(tablas.length > 0, 'no hay ninguna tabla de negocio: el bucle pasaría en vacío');
 
+  /* ── LA EXCEPCIÓN, DELIBERADA: LO DE SÓLO AGREGAR (`084`) ───────────────────
+     Un evento no se edita ni se borra: un hecho que cambia es un evento nuevo. El inquilino lo agrega y lo lee; el
+     borrado en cascada al borrar a la persona lo hace la base. La 257 mide las cinco operaciones de los eventos. Las
+     particiones se excluyen arriba: se leen a través de su madre. */
+  const SOLO_AGREGAR: Readonly<Record<string, readonly string[]>> = { eventos: ['SELECT', 'INSERT'] };
+
   for (const { relname } of tablas) {
-    for (const priv of TODOS) {
+    for (const priv of SOLO_AGREGAR[relname] ?? TODOS) {
       const f = await unaFila<{ tiene: boolean }>(
         mig,
         'select has_table_privilege($1, $2, $3) as tiene',

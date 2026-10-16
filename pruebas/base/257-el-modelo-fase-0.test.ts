@@ -36,7 +36,11 @@
 //   · la 083: la columna de cada tabla es la de su régimen (obligatoria, nulable o ninguna) y la política de las 39
 //     pide la cuenta — mutación: dejar una nulable, o una política de sólo organización;
 //   · sin `app.cuentas` el inquilino no ve ningún contacto, con `'*'` los ve — mutación: la política de hoy;
-//   · una cita no puede quedar en otra cuenta que su contacto — mutación: quitar la clave «misma cuenta».
+//   · una cita no puede quedar en otra cuenta que su contacto — mutación: quitar la clave «misma cuenta»;
+//   · los eventos (Paso 6, `084`): el inquilino agrega y no edita ni borra — mutación: no revocar update/delete;
+//   · toda partición nace cerrada, sin permisos para la aplicación y con la RLS forzada — mutación: la
+//     `crear_particiones` de la `081`, que sólo revocaba a public;
+//   · un evento necesita un tipo del catálogo, y la partición del mes existe — mutación: no crear las del mes.
 //
 // Corre como `migrador`: es una comprobación de catálogo, y el migrador ve la estructura aunque no vea las filas.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -53,6 +57,7 @@ import {
   DE_LA_ORGANIZACION,
   DE_UNA_CUENTA,
   DE_UNA_CUENTA_O_DE_LA_ORGANIZACION,
+  NACIERON_CON_CUENTA,
 } from '../apoyo/regimenes-de-negocio.ts';
 
 let mig: Client;
@@ -397,7 +402,8 @@ test('las listas de tablas de los SQL de la cuenta son las de los regímenes', (
   const ordenar = (xs: readonly string[]) => [...xs].sort();
   for (const archivo of ['db/migraciones/082_la_cuenta_en_negocio_expandir.sql', 'db/arranque/005_la_cuenta_en_negocio.sql']) {
     const sql = readFileSync(join(RAIZ, archivo), 'utf8');
-    assert.deepEqual(ordenar(listaDelSql(sql, 'v_obligatorias')), ordenar(DE_UNA_CUENTA), `${archivo}: las obligatorias`);
+    const rellenadas = DE_UNA_CUENTA.filter((t) => !(NACIERON_CON_CUENTA as readonly string[]).includes(t));
+    assert.deepEqual(ordenar(listaDelSql(sql, 'v_obligatorias')), ordenar(rellenadas), `${archivo}: las obligatorias`);
     assert.deepEqual(ordenar(listaDelSql(sql, 'v_opcionales')), ordenar(DE_UNA_CUENTA_O_DE_LA_ORGANIZACION), `${archivo}: las opcionales`);
   }
 });
@@ -568,4 +574,72 @@ test('una cita no puede quedar en otra cuenta que su contacto', async () => {
   } finally {
     await admin.query('rollback');
   }
+});
+
+// ─── Paso 6 · Los eventos ───────────────────────────────────────────────────────
+
+test('el inquilino agrega eventos y no los edita ni los borra; el tipo tiene que existir en el catálogo', async () => {
+  const org = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = 'alfa'`);
+  assert.ok(org);
+  const f = await unaFila<Record<string, boolean>>(
+    admin,
+    `select has_table_privilege('app_inquilino', 'negocio.eventos', 'insert') as inserta,
+            has_table_privilege('app_inquilino', 'negocio.eventos', 'select') as lee,
+            has_table_privilege('app_inquilino', 'negocio.eventos', 'update') as edita,
+            has_table_privilege('app_inquilino', 'negocio.eventos', 'delete') as borra,
+            has_table_privilege('app_inquilino', 'negocio.eventos', 'truncate') as vacia`,
+  );
+  assert.deepEqual(f, { inserta: true, lee: true, edita: false, borra: false, vacia: false });
+
+  const inq = await conectar('inquilino');
+  try {
+    await inq.query('begin');
+    await inq.query(`select set_config('app.org_id', $1, true), set_config('app.cuentas', '*', true)`, [org.id]);
+    const tipo = await unaFila<{ clave: string }>(inq, `select clave from catalogo.tipos_de_evento order by clave limit 1`);
+    assert.ok(tipo);
+    // El puente le pone la cuenta.
+    const ev = await unaFila<{ cuenta_id: string | null }>(
+      inq,
+      `insert into negocio.eventos (org_id, ocurrio_el, tipo, actor_tipo, fuente, id_externo)
+         values ($1, now(), $2, 'sistema', 'comando_central', 'evento-257') returning cuenta_id`,
+      [org.id, tipo.clave],
+    );
+    assert.ok(ev?.cuenta_id, 'el evento nació sin cuenta');
+    await inq.query('savepoint s');
+    await assert.rejects(
+      inq.query(`insert into negocio.eventos (org_id, ocurrio_el, tipo, actor_tipo, fuente, id_externo)
+                   values ($1, now(), 'no_existe_257', 'sistema', 'comando_central', 'evento-257-b')`, [org.id]),
+      (e: { code?: string }) => e.code === '23503',
+      'entró un evento de un tipo que no está en el catálogo',
+    );
+    await inq.query('rollback to savepoint s');
+    await assert.rejects(inq.query(`update negocio.eventos set actor_id = 'x' where id_externo = 'evento-257'`), /permis|permission/i);
+    await inq.query('rollback');
+  } finally {
+    await inq.end();
+  }
+});
+
+test('toda partición nace cerrada: sin permisos para la aplicación, con la RLS forzada; y la del mes existe', async () => {
+  const particiones = await filas<{ tabla: string; forzada: boolean; algun_permiso: boolean }>(
+    admin,
+    `select n.nspname || '.' || c.relname as tabla, c.relforcerowsecurity as forzada,
+            exists (select 1 from unnest(array['app_inquilino', 'app_identidad', 'app_ingesta', 'app_analista']) r
+                     where has_table_privilege(r, c.oid, 'select') or has_table_privilege(r, c.oid, 'insert')) as algun_permiso
+       from pg_inherits i join pg_class c on c.oid = i.inhrelid join pg_namespace n on n.oid = c.relnamespace
+      where i.inhparent in ('ingesta.recibidos'::regclass, 'negocio.eventos'::regclass) order by 1`,
+  );
+  assert.ok(particiones.length >= 14, `se esperaban al menos 14 particiones; hay ${particiones.length}`);
+  assert.deepEqual(
+    particiones.filter((p) => !p.forzada || p.algun_permiso).map((p) => p.tabla),
+    [],
+    'una partición se puede leer directo: no hereda la política de su madre',
+  );
+  const f = await unaFila<{ del_mes: boolean; en_el_resto: number }>(
+    admin,
+    `select exists (select 1 from pg_class where relnamespace = 'negocio'::regnamespace
+                     and relname = 'eventos_' || to_char(now() at time zone 'UTC', 'YYYY_MM')) as del_mes,
+            (select count(*)::int from negocio.eventos_resto) as en_el_resto`,
+  );
+  assert.deepEqual(f, { del_mes: true, en_el_resto: 0 });
 });

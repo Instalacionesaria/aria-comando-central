@@ -154,6 +154,12 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   /* La bandeja de lo crudo (`081`): lo recibido de afuera se guarda 90 días y después se borra por partición. Mientras
      tanto la empresa no se puede borrar: sería perder el rastro de lo que mandó el proveedor. */
   recibidos_org_id_fkey: 'tiene avisos del CRM o de otros proveedores recibidos en los últimos 90 días',
+  /* Los eventos y los mapeos al idioma común (`084`). Los eventos son la historia del lead, de sólo agregar: una
+     empresa con historia no se borra de un clic. */
+  eventos_org_id_fkey: 'tiene la historia de sus leads (los eventos)',
+  mapeos_de_cuenta_org_id_fkey: 'tiene mapeos propios al idioma común',
+  valores_sin_mapear_org_id_fkey: 'tiene valores de su CRM esperando traducción al idioma común',
+  mapeos_de_cuenta_org_id_creado_por_fkey: 'creó un mapeo al idioma común',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.
 

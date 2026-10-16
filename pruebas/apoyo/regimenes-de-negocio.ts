@@ -27,7 +27,15 @@ export const DE_UNA_CUENTA = [
   'campos_del_crm', 'carpetas_del_crm', 'avisos_del_crm', 'ingesta_pulso',
   'campanas', 'anuncios', 'metricas_de_anuncio', 'gasto_de_la_cuenta', 'lecturas_de_gasto',
   'funnels_de_campana', 'enlaces_de_pieza', 'activos_de_anuncio',
+  // Las que nacen con el modelo (`084`), ya con su cuenta: no necesitan relleno.
+  'eventos', 'mapeos_de_cuenta', 'valores_sin_mapear',
 ] as const;
+
+/**
+ * Las de una cuenta que NACIERON con cuenta_id (`084` en adelante). No están en las listas de la `082` ni de la fase
+ * `cuenta-en-negocio`, que son las de las 39 tablas que existían antes del modelo y hubo que rellenar.
+ */
+export const NACIERON_CON_CUENTA = ['eventos', 'mapeos_de_cuenta', 'valores_sin_mapear'] as const;
 
 /** De una subcuenta o de la organización entera: `cuenta_id` nulable. */
 export const DE_UNA_CUENTA_O_DE_LA_ORGANIZACION = [
