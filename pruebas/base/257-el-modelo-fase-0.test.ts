@@ -32,7 +32,11 @@
 //   · el puente pone la cuenta del contacto, exige decirla con dos cuentas activas y no deja mudarla — mutación:
 //     quitar el disparador, o su rama de update;
 //   · la fase rellena una fila vieja sin cuenta, y no toca otra organización (eso lo garantiza la política de hoy,
-//     porque corre como el inquilino con su organización puesta) — mutación: sacarle una tabla a la fase.
+//     porque corre como el inquilino con su organización puesta) — mutación: sacarle una tabla a la fase;
+//   · la 083: la columna de cada tabla es la de su régimen (obligatoria, nulable o ninguna) y la política de las 39
+//     pide la cuenta — mutación: dejar una nulable, o una política de sólo organización;
+//   · sin `app.cuentas` el inquilino no ve ningún contacto, con `'*'` los ve — mutación: la política de hoy;
+//   · una cita no puede quedar en otra cuenta que su contacto — mutación: quitar la clave «misma cuenta».
 //
 // Corre como `migrador`: es una comprobación de catálogo, y el migrador ve la estructura aunque no vea las filas.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -457,11 +461,13 @@ test('la fase `cuenta-en-negocio` rellena una fila vieja sin cuenta, y no toca o
   const beta = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = 'beta'`);
   assert.ok(alfa && beta, 'falta el sembrado');
   // Dos filas «de antes de la 082», sin cuenta: se insertan sin disparadores de usuario (session_replication_role), que
-  // es como las deja la 082 sobre los datos de hoy.
+  // es como las deja la 082 sobre los datos de hoy. En una tabla donde la cuenta es OPCIONAL (el uso de la IA): desde
+  // la 083 una obligatoria ya no admite una fila sin cuenta, que es justo lo que la 083 cierra.
   await admin.query(`set session_replication_role = replica`);
   try {
     await admin.query(
-      `insert into negocio.contactos (org_id, ghl_contact_id, nombre, cuenta_id) values ($1, 'viejo-257-alfa', 'Viejo', null), ($2, 'viejo-257-beta', 'Viejo', null)`,
+      `insert into negocio.uso_de_ia (org_id, agente, modelo, duracion_ms, resultado, cuenta_id)
+         values ($1, 'plan', 'viejo-257-alfa', 1, 'ok', null), ($2, 'plan', 'viejo-257-beta', 1, 'ok', null)`,
       [alfa.id, beta.id],
     );
   } finally {
@@ -473,16 +479,93 @@ test('la fase `cuenta-en-negocio` rellena una fila vieja sin cuenta, y no toca o
     await inq.query(`select set_config('app.org_id', $1, true), set_config('app.cuentas', '*', true)`, [alfa.id]);
     await inq.query(readFileSync(join(RAIZ, 'db/arranque/005_la_cuenta_en_negocio.sql'), 'utf8'));
     await inq.query('commit');
-    const filas_ = await filas<{ ghl_contact_id: string; cuenta_id: string | null }>(
+    const filas_ = await filas<{ modelo: string; cuenta_id: string | null }>(
       admin,
-      `select ghl_contact_id, cuenta_id from negocio.contactos where ghl_contact_id like 'viejo-257-%' order by 1`,
+      `select modelo, cuenta_id from negocio.uso_de_ia where modelo like 'viejo-257-%' order by 1`,
     );
     assert.deepEqual(filas_, [
-      { ghl_contact_id: 'viejo-257-alfa', cuenta_id: alfa.cuenta },
-      { ghl_contact_id: 'viejo-257-beta', cuenta_id: null },
+      { modelo: 'viejo-257-alfa', cuenta_id: alfa.cuenta },
+      { modelo: 'viejo-257-beta', cuenta_id: null },
     ], 'la fase no rellenó la fila de su organización, o tocó la de otra');
   } finally {
     await inq.end();
-    await admin.query(`delete from negocio.contactos where ghl_contact_id like 'viejo-257-%'`);
+    await admin.query(`delete from negocio.uso_de_ia where modelo like 'viejo-257-%'`);
+  }
+});
+
+test('la columna de cada tabla es la de su régimen, y la política de las 39 pide la cuenta', async () => {
+  const columnas = await filas<{ tabla: string; obligatoria: boolean | null; politica: string | null }>(
+    admin,
+    `select c.relname as tabla,
+            (select a.attnotnull from pg_attribute a where a.attrelid = c.oid and a.attname = 'cuenta_id' and not a.attisdropped) as obligatoria,
+            (select pg_get_expr(p.polqual, p.polrelid) from pg_policy p where p.polrelid = c.oid and p.polname = 'aislamiento') as politica
+       from pg_class c where c.relnamespace = 'negocio'::regnamespace and c.relkind in ('r', 'p') and not c.relispartition`,
+  );
+  const de = new Map(columnas.map((x) => [x.tabla, x]));
+  const malas: string[] = [];
+  for (const t of DE_UNA_CUENTA) {
+    if (de.get(t)?.obligatoria !== true) malas.push(`${t}: cuenta_id tendría que ser obligatoria`);
+  }
+  for (const t of DE_UNA_CUENTA_O_DE_LA_ORGANIZACION) {
+    if (de.get(t)?.obligatoria !== false) malas.push(`${t}: cuenta_id tendría que existir y ser nulable`);
+  }
+  for (const t of DE_LA_ORGANIZACION) {
+    if (de.get(t)?.obligatoria != null) malas.push(`${t}: es de la organización y tiene cuenta_id`);
+  }
+  for (const t of [...DE_UNA_CUENTA, ...DE_UNA_CUENTA_O_DE_LA_ORGANIZACION]) {
+    if (!/app\.cuentas/.test(de.get(t)?.politica ?? '')) malas.push(`${t}: la política no pide la cuenta`);
+  }
+  for (const t of DE_LA_ORGANIZACION) {
+    if (/app\.cuentas/.test(de.get(t)?.politica ?? '')) malas.push(`${t}: es de la organización y su política pide la cuenta`);
+  }
+  assert.deepEqual(malas, []);
+});
+
+test('sin `app.cuentas` el inquilino no ve ningún contacto; con `*` ve los de su organización', async () => {
+  const org = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = 'alfa'`);
+  assert.ok(org);
+  await admin.query(`insert into negocio.contactos (org_id, ghl_contact_id, nombre) values ($1, 'visible-257', 'Visible')`, [org.id]);
+  const inq = await conectar('inquilino');
+  try {
+    await inq.query('begin');
+    await inq.query(`select set_config('app.org_id', $1, true)`, [org.id]);
+    const sin = await unaFila<{ n: number }>(inq, `select count(*)::int as n from negocio.contactos where ghl_contact_id = 'visible-257'`);
+    assert.equal(sin?.n, 0, 'sin app.cuentas se vio un contacto: la política no falla cerrada');
+    await inq.query(`select set_config('app.cuentas', '*', true)`);
+    const con = await unaFila<{ n: number }>(inq, `select count(*)::int as n from negocio.contactos where ghl_contact_id = 'visible-257'`);
+    assert.equal(con?.n, 1);
+    await inq.query('rollback');
+  } finally {
+    await inq.end();
+    await admin.query(`delete from negocio.contactos where ghl_contact_id = 'visible-257'`);
+  }
+});
+
+test('una cita no puede quedar en otra cuenta que su contacto', async () => {
+  const org = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = 'alfa'`);
+  assert.ok(org);
+  await admin.query('begin');
+  try {
+    const contacto = await unaFila<{ id: string }>(
+      admin,
+      `insert into negocio.contactos (org_id, ghl_contact_id, nombre) values ($1, 'madre-257', 'Madre') returning id`,
+      [org.id],
+    );
+    const otra = await unaFila<{ id: string }>(
+      admin,
+      `insert into identidad.cuentas (org_id, nombre, slug) values ($1, 'Otra 257', 'otra-257') returning id`,
+      [org.id],
+    );
+    await assert.rejects(
+      admin.query(`insert into negocio.notas (org_id, cuenta_id, contacto_id, cuerpo) values ($1, $2, $3, 'nota en otra cuenta')`, [
+        org.id,
+        otra!.id,
+        contacto!.id,
+      ]),
+      (e: { code?: string }) => e.code === '23503',
+      'una nota quedó en otra cuenta que su contacto',
+    );
+  } finally {
+    await admin.query('rollback');
   }
 });

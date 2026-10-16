@@ -446,7 +446,12 @@ test('desde la 024, una migración con `add constraint` es REAPLICABLE', async (
     for (const m of a.limpio.matchAll(/add\s+constraint\s+([a-z0-9_]+)/gi)) {
       const nombre = m[1] as string;
       const suelta = new RegExp(`drop\\s+constraint\\s+(if\\s+exists\\s+)?${nombre}\\b`, 'i');
-      if (!suelta.test(a.limpio)) sinSoltar.push(`${a.ruta} → ${nombre}`);
+      /* La otra forma reaplicable (la `083`): agregarla sólo si FALTA, preguntando por su nombre. Hace falta cuando
+         de la restricción ya dependen claves foráneas —las únicas `(org_id, cuenta_id, id)` del modelo
+         multiempresa—: ahí un `drop … if exists` al reaplicar fallaría, porque no se puede soltar lo que otra
+         restricción usa. */
+      const protegida = new RegExp(`not\\s+exists\\s*\\([^)]*conname\\s*=\\s*'${nombre}'`, 'i');
+      if (!suelta.test(a.limpio) && !protegida.test(a.limpio)) sinSoltar.push(`${a.ruta} → ${nombre}`);
     }
   }
 
