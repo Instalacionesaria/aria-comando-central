@@ -145,6 +145,12 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   miniaturas_del_contacto_org_id_fkey: 'tiene las miniaturas de los anuncios de sus contactos cargadas',
   /* Las miniaturas y los posts que se leyeron de Meta (`078`). Se vuelven a pedir solos, como los anuncios. */
   activos_de_anuncio_org_id_fkey: 'tiene las miniaturas de sus anuncios leídas de Meta',
+  /* Las cuentas del modelo multiempresa (`080`): lo que una persona firmó, concedió o confirmó queda con su nombre, y
+     borrarla se llevaría quién lo hizo. Por eso bloquean, como la auditoría. */
+  cuentas_org_id_nicho_confirmado_por_fkey: 'confirmó el nicho de una cuenta',
+  cuentas_credenciales_org_id_actualizado_por_fkey: 'cargó credenciales de una cuenta',
+  usuarios_cuentas_org_id_concedida_por_fkey: 'le dio acceso a una cuenta a otra persona',
+  acuerdos_org_id_aceptado_por_fkey: 'aceptó un acuerdo en nombre de la empresa',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.
 

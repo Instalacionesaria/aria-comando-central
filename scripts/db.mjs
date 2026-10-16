@@ -3,13 +3,14 @@
 //
 // La base, desde cero, con un comando.
 //
-//   node scripts/db.mjs reset       bajar + levantar + arranque + migrar + sembrar + verificar
+//   node scripts/db.mjs reset       bajar + levantar + arranque + migrar + catalogo + sembrar + cuentas + verificar
 //   node scripts/db.mjs levantar    el contenedor, y esperar a que esté sano
 //   node scripts/db.mjs bajar       el contenedor y su volumen
 //   node scripts/db.mjs arranque    los seis roles y sus rutas de búsqueda (superusuario)
 //   node scripts/db.mjs catalogo    capacidades, roles y reparto (superusuario, tras migrar)
 //   node scripts/db.mjs permisos-del-catalogo   privilegios del rol del catálogo (`migrador`)
 //   node scripts/db.mjs retiro      retira los roles que salieron del catálogo (`app_identidad`)
+//   node scripts/db.mjs cuentas     una cuenta para cada organización que no la tiene (`app_identidad`)
 //   node scripts/db.mjs migrar      las migraciones, como `migrador`
 //   node scripts/db.mjs sembrar     tres organizaciones, por `conIdentidad()`
 //   node scripts/db.mjs verificar   cuenta filas CONTRA LA BASE
@@ -459,6 +460,39 @@ async function verificar() {
 // `retiro` está en la lista pero NO en `RESET`: `catalogo` ya la llama, y correrla dos veces
 // seguidas no rompe nada —es idempotente— pero repetir un paso en la secuencia hace creer que
 // hace falta dos veces. Se invoca sola contra Supabase, donde `catalogo` no puede correr.
+/**
+ * Una cuenta para cada organización que todavía no tiene, con sus credenciales copiadas. **Corre como
+ * `app_identidad`.**
+ *
+ * El modelo multiempresa (Fase 0, `080`) crea `identidad.cuentas` y un puente que hace nacer la cuenta con cada
+ * organización nueva; las que ya existen la reciben acá. No va en la migración porque el migrador no tiene política
+ * en `identidad` y la RLS está forzada: su `insert … select` leería cero organizaciones y terminaría «bien». El
+ * motivo completo, en el encabezado de `db/arranque/004_las_cuentas_iniciales.sql`.
+ *
+ * En local, `reset` la corre después de `sembrar` (donde el puente ya hizo todo, y la fase lo comprueba). En
+ * producción va sola, después de la `080`:
+ *
+ *     node --env-file=.env.supabase scripts/db.mjs cuentas
+ */
+async function cuentas() {
+  if (!process.env.DATABASE_URL_IDENTIDAD) throw new Error('DATABASE_URL_IDENTIDAD no está definida.');
+  const identidad = new pg.Client({ connectionString: process.env.DATABASE_URL_IDENTIDAD });
+  await identidad.connect();
+  try {
+    const sql = readFileSync(
+      new URL('../db/arranque/004_las_cuentas_iniciales.sql', import.meta.url),
+      'utf8',
+    ).replace(/\r\n/g, '\n');
+    const marcas = sql.match(/@[A-Z_]+@/g);
+    if (marcas) throw new Error(`004_las_cuentas_iniciales.sql tiene marcas sin sustituir: ${[...new Set(marcas)].join(', ')}`);
+    // El `raise notice` dice cuántas cuentas creó: sin él, una fase que no hizo nada se ve igual que una que hizo todo.
+    identidad.on('notice', (n) => console.log(`  ${n.message}`));
+    await identidad.query(sql);
+  } finally {
+    await identidad.end();
+  }
+}
+
 const FASES = {
   bajar,
   levantar,
@@ -468,12 +502,14 @@ const FASES = {
   'permisos-del-catalogo': permisosDelCatalogo,
   retiro,
   sembrar,
+  cuentas,
   verificar,
   'sembrar-agentes': sembrarAgentes,
   'quitar-agentes': quitarAgentes,
 };
 // `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
-const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'verificar'];
+// `cuentas` va DESPUÉS de `sembrar`: comprueba que toda organización sembrada nació con su cuenta.
+const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'cuentas', 'verificar'];
 
 const comando = process.argv[2];
 const completadas = [];

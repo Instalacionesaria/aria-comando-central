@@ -627,8 +627,16 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
   // La constante se llamaba `DIEZ_TABLAS_DE_IDENTIDAD`. Un nombre con el número adentro es lo que
   // hace que agregar una tabla **obligue** a leer esta prueba en vez de sumar un renglón y seguir —
   // que es exactamente para lo que está escrita así. La número once es `usuarios_secciones`.
-  const ONCE_TABLAS_DE_IDENTIDAD = [
+  //
+  // ── Y QUINCE, CON LA `080` (modelo multiempresa, Fase 0) ──────────────────
+  //
+  // Las cuatro nuevas son la cuenta (el nivel 2, la subcuenta del CRM), sus credenciales, qué cuentas ve cada
+  // usuario y los acuerdos firmados. Las cuatro con la RLS forzada y su política, como las once.
+  const QUINCE_TABLAS_DE_IDENTIDAD = [
+    'acuerdos',
     'auditoria_accesos',
+    'cuentas',
+    'cuentas_credenciales',
     'organizaciones',
     'organizaciones_credenciales',
     'permisos',
@@ -636,14 +644,15 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
     'roles_permisos',
     'sesiones',
     'usuarios',
+    'usuarios_cuentas',
     'usuarios_roles',
     'usuarios_secciones',
     'usuarios_segundo_factor',
   ];
   assert.deepEqual(
     r.filter((t) => t.nspname === 'identidad').map((t) => t.relname).sort(),
-    ONCE_TABLAS_DE_IDENTIDAD,
-    'el conjunto de tablas de identidad cambió: son once y se otorgan a mano, una por una',
+    QUINCE_TABLAS_DE_IDENTIDAD,
+    'el conjunto de tablas de identidad cambió: son quince y se otorgan a mano, una por una',
   );
 
   for (const t of r) {

@@ -213,7 +213,9 @@ test('toda tabla de identidad es ACCESIBLE por al menos un rol', async () => {
     `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'identidad' and c.relkind in ('r', 'p') order by c.relname`,
   );
-  assert.equal(tablas.length, 11, 'son once tablas de identidad');
+  // Quince desde la `080`: las once de siempre más las cuentas, sus credenciales, qué cuentas ve cada usuario y los
+  // acuerdos (modelo multiempresa, Fase 0).
+  assert.equal(tablas.length, 15, 'son quince tablas de identidad');
 
   for (const { relname } of tablas) {
     const f = await unaFila<{ alcanzable: boolean }>(
@@ -272,7 +274,7 @@ test('toda tabla de negocio es accesible para el inquilino, con las cuatro opera
   }
 });
 
-test('la única vista del proyecto corre con los permisos de QUIEN LA INVOCA', async () => {
+test('toda vista de identidad corre con los permisos de QUIEN LA INVOCA', async () => {
   // 09 § 2, "lo que ninguna política cubre", punto 2: "una vista se ejecuta con los
   // permisos de su dueño, no de quien la consulta. Una vista sobre tablas de inquilino,
   // creada por el rol que migra, EVADE las políticas del inquilino y devuelve todo."
@@ -284,9 +286,11 @@ test('la única vista del proyecto corre con los permisos de QUIEN LA INVOCA', a
     `select c.relname, c.reloptions from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'identidad' and c.relkind = 'v' order by c.relname`,
   );
+  // La segunda llega con la `080`: si cada organización participa hoy en los benchmarks. Con los permisos de su dueño
+  // (el migrador, sin política sobre los acuerdos) devolvería cero filas sin error, y nadie participaría nunca.
   assert.deepEqual(
     vistas.map((v) => v.relname),
-    ['usuarios_permisos'],
+    ['participacion_en_benchmarks', 'usuarios_permisos'],
     'apareció una vista nueva: tiene que declarar security_invoker',
   );
   for (const v of vistas) {
