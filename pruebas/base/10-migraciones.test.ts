@@ -90,6 +90,25 @@ test('los tres roles existen, sin superusuario y sin omisión de RLS', async () 
   }
 });
 
+test('los tres roles del modelo multiempresa existen SIN login, sin superusuario y sin omisión de RLS', async () => {
+  // `ingestor`, `app_ingesta` y `app_analista` (arranque, 1b): en la Fase 0 ningún servicio se conecta con ellos, así
+  // que nacen sin login y sin contraseña. Una credencial que nadie usa se puede filtrar sin que nadie lo note. El
+  // login llega con el servicio que los use, y esta prueba cambia ese día, a la vista.
+  const r = await filas<{ rolname: string; rolsuper: boolean; rolbypassrls: boolean; rolcanlogin: boolean }>(
+    mig,
+    `select rolname, rolsuper, rolbypassrls, rolcanlogin
+       from pg_roles
+      where rolname in ('ingestor', 'app_ingesta', 'app_analista')
+      order by rolname`,
+  );
+  assert.deepEqual(r.map((x) => x.rolname), ['app_analista', 'app_ingesta', 'ingestor']);
+  for (const rol of r) {
+    assert.equal(rol.rolsuper, false, `${rol.rolname} es superusuario`);
+    assert.equal(rol.rolbypassrls, false, `${rol.rolname} tiene bypassrls`);
+    assert.equal(rol.rolcanlogin, false, `${rol.rolname} puede iniciar sesión y ningún servicio lo usa todavía`);
+  }
+});
+
 test('ningún rol es miembro de otro', async () => {
   // "Es una línea de SQL que revierte el diseño entero" (09 § 2). Una política
   // dirigida a un rol se aplica a todo rol que herede sus privilegios, y como las
@@ -107,6 +126,19 @@ test('ningún rol es miembro de otro', async () => {
   for (const [nombre, valor] of Object.entries(f)) {
     assert.equal(valor, false, `herencia detectada: ${nombre}`);
   }
+
+  // Los tres del modelo, contra los tres de siempre y entre ellos: `app_analista` es el único que va a cruzar
+  // organizaciones, y heredar de `app_inquilino` le daría las filas con datos personales.
+  const ROLES = ['migrador', 'app_inquilino', 'app_identidad', 'ingestor', 'app_ingesta', 'app_analista'];
+  const herencias = await filas<{ de: string; a: string }>(
+    mig,
+    `select a.rolname as de, b.rolname as a
+       from pg_roles a cross join pg_roles b
+      where a.rolname = any ($1) and b.rolname = any ($1) and a.rolname <> b.rolname
+        and pg_has_role(a.rolname, b.rolname, 'USAGE')`,
+    [ROLES],
+  );
+  assert.deepEqual(herencias, [], 'un rol hereda los privilegios de otro');
 });
 
 // ─── Los esquemas ───────────────────────────────────────────────────────────
@@ -136,7 +168,8 @@ test('los esquemas DE MIGRADOR son exactamente los nuestros — `comun` NO exist
       order by n.nspname`,
   );
   const nombres = r.map((x) => x.nspname);
-  assert.deepEqual(nombres, [ESQUEMA_CONTABILIDAD, 'identidad', 'negocio'].sort());
+  // `catalogo` nace con la `079` (modelo multiempresa, Fase 0); cada esquema del modelo se suma acá en su paso.
+  assert.deepEqual(nombres, [ESQUEMA_CONTABILIDAD, 'catalogo', 'identidad', 'negocio'].sort());
 
   // `comun` se comprueba sobre TODO el clúster y no solo sobre lo de `migrador`: la
   // prohibición de EJECUCION § 2 y § 3 es sobre el nombre, sin importar quién lo cree.
@@ -318,10 +351,18 @@ test('la regla de permisos por omisión existe para `negocio` y nombra a `migrad
   // nada, y con el universo acotado por dueño eso es ahora posible de verdad — basta
   // que la consulta de arriba se equivoque en el nombre del rol.
   assert.deepEqual(
-    esquemas.map((e) => e.nspname),
-    ['negocio'],
-    'se esperaba exactamente un esquema de negocio de `migrador` que necesite la regla',
+    esquemas.map((e) => e.nspname).sort(),
+    ['catalogo', 'negocio'],
+    'se esperaban exactamente `catalogo` y `negocio` como esquemas de `migrador` que necesitan la regla',
   );
+
+  // `catalogo` es el idioma común: todos lo leen y nadie más que el migrador lo escribe. Su regla da SÓLO `select`
+  // (`=r/`); con `arwd`, cualquier rol podría cambiar qué significa «agendado» para todas las agencias.
+  const delCatalogo = r.find((x) => x.nspname === 'catalogo' && x.tipo === 'r');
+  assert.ok(delCatalogo, 'falta la regla por omisión de TABLAS en `catalogo`');
+  for (const rol of ['app_inquilino', 'app_identidad', 'app_ingesta', 'app_analista']) {
+    assert.match(delCatalogo.acl, new RegExp(`${rol}=r/`), `${rol} tiene que poder leer el catálogo, y sólo leerlo`);
+  }
   for (const e of esquemas) {
     assert.ok(
       r.some((x) => x.nspname === e.nspname && x.tipo === 'r'),

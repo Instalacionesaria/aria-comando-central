@@ -61,8 +61,12 @@ export const TABLA_CANDADO = 'migraciones_candado';
  * las crea Kysely, no un archivo de `db/migraciones/`, así que en la práctica ningún
  * `create table` nuestro lo nombra. Está en la lista para que el día que alguien
  * necesite tocar la contabilidad desde una migración, el rechazo no lo confunda.
+ *
+ * `catalogo` entra con la `079` (modelo multiempresa, Fase 0): el idioma común, tablas de referencia compartidas
+ * por todas las empresas. Cada esquema del modelo se suma acá en la migración que lo crea, no antes: una entrada
+ * sin esquema detrás sería un permiso para crear tablas donde todavía no hay reglas.
  */
-export const ESQUEMAS_NUESTROS: readonly string[] = ['identidad', 'negocio', ESQUEMA_CONTABILIDAD];
+export const ESQUEMAS_NUESTROS: readonly string[] = ['identidad', 'negocio', 'catalogo', ESQUEMA_CONTABILIDAD];
 
 /** Los `.sql` de db/migraciones/, en orden alfabético. El nombre ordena. */
 export function archivosDeMigracion(): string[] {

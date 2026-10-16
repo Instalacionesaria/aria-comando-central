@@ -6,7 +6,7 @@
 //   node scripts/db.mjs reset       bajar + levantar + arranque + migrar + sembrar + verificar
 //   node scripts/db.mjs levantar    el contenedor, y esperar a que esté sano
 //   node scripts/db.mjs bajar       el contenedor y su volumen
-//   node scripts/db.mjs arranque    los tres roles y sus rutas de búsqueda (superusuario)
+//   node scripts/db.mjs arranque    los seis roles y sus rutas de búsqueda (superusuario)
 //   node scripts/db.mjs catalogo    capacidades, roles y reparto (superusuario, tras migrar)
 //   node scripts/db.mjs permisos-del-catalogo   privilegios del rol del catálogo (`migrador`)
 //   node scripts/db.mjs retiro      retira los roles que salieron del catálogo (`app_identidad`)
@@ -161,7 +161,7 @@ async function arranque() {
     if (restantes) throw new Error(`marcas sin reemplazar: ${[...new Set(restantes)].join(', ')}`);
 
     await cliente.query(sql);
-    console.log('  tres roles, rutas de búsqueda, pgcrypto y permisos de esquema');
+    console.log('  seis roles (tres sin login todavía), rutas de búsqueda y permisos de esquema');
   } finally {
     await cliente.end();
   }
