@@ -64,9 +64,10 @@ export const TABLA_CANDADO = 'migraciones_candado';
  *
  * `catalogo` entra con la `079` (modelo multiempresa, Fase 0): el idioma común, tablas de referencia compartidas
  * por todas las empresas. Cada esquema del modelo se suma acá en la migración que lo crea, no antes: una entrada
- * sin esquema detrás sería un permiso para crear tablas donde todavía no hay reglas.
+ * sin esquema detrás sería un permiso para crear tablas donde todavía no hay reglas. `sistema` (las particiones) e
+ * `ingesta` (la bandeja de lo crudo) entran con la `081`.
  */
-export const ESQUEMAS_NUESTROS: readonly string[] = ['identidad', 'negocio', 'catalogo', ESQUEMA_CONTABILIDAD];
+export const ESQUEMAS_NUESTROS: readonly string[] = ['identidad', 'negocio', 'catalogo', 'sistema', 'ingesta', ESQUEMA_CONTABILIDAD];
 
 /** Los `.sql` de db/migraciones/, en orden alfabético. El nombre ordena. */
 export function archivosDeMigracion(): string[] {

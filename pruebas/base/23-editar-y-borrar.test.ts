@@ -605,9 +605,10 @@ test('las claves de `QUE_LO_IMPIDE` son nombres de restricciones que EXISTEN', a
   const claves = Object.keys(QUE_LO_IMPIDE);
   assert.ok(claves.length > 0, 'el diccionario está vacío: la traducción no existe');
 
+  // `ingesta` desde la `081`: lo recibido de afuera apunta a la organización, y bloquea su borrado.
   const reales = await admin.query<{ conname: string }>(
     `select conname from pg_constraint where contype = 'f'
-       and connamespace in ('identidad'::regnamespace, 'negocio'::regnamespace)`,
+       and connamespace in ('identidad'::regnamespace, 'negocio'::regnamespace, 'ingesta'::regnamespace)`,
   );
   const existentes = new Set(reales.rows.map((f) => f.conname));
 

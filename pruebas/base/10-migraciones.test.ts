@@ -168,8 +168,9 @@ test('los esquemas DE MIGRADOR son exactamente los nuestros — `comun` NO exist
       order by n.nspname`,
   );
   const nombres = r.map((x) => x.nspname);
-  // `catalogo` nace con la `079` (modelo multiempresa, Fase 0); cada esquema del modelo se suma acá en su paso.
-  assert.deepEqual(nombres, [ESQUEMA_CONTABILIDAD, 'catalogo', 'identidad', 'negocio'].sort());
+  // `catalogo` nace con la `079` y `sistema` e `ingesta` con la `081` (modelo multiempresa, Fase 0); cada esquema del
+  // modelo se suma acá en su paso.
+  assert.deepEqual(nombres, [ESQUEMA_CONTABILIDAD, 'catalogo', 'identidad', 'ingesta', 'negocio', 'sistema'].sort());
 
   // `comun` se comprueba sobre TODO el clúster y no solo sobre lo de `migrador`: la
   // prohibición de EJECUCION § 2 y § 3 es sobre el nombre, sin importar quién lo cree.
@@ -257,6 +258,10 @@ test('NINGUNA tabla nuestra vive en `public`, y ninguna tabla nuestra tiene org_
       where a.attname = 'org_id' and a.attnum > 0 and not a.attisdropped
         and c.relkind in ('r', 'p') and p.rolname = 'migrador'
         and n.nspname not in ('negocio', 'identidad')
+        -- La bandeja de lo crudo (081): un aviso llega con la organización que el normalizador le resuelve, y su
+        -- régimen es otro —RLS forzada, sólo el normalizador lee, la puerta sólo inserta—. Lo afirma la 257. Las
+        -- particiones heredan la columna de su madre.
+        and not (n.nspname = 'ingesta' and (c.relname = 'recibidos' or c.relname ~ '^recibidos_'))
       order by 1, 2`,
   );
   assert.deepEqual(
@@ -350,8 +355,17 @@ test('la regla de permisos por omisión existe para `negocio` y nombra a `migrad
   // La guarda contra el falso verde: un bucle sobre cero esquemas pasa sin afirmar
   // nada, y con el universo acotado por dueño eso es ahora posible de verdad — basta
   // que la consulta de arriba se equivoque en el nombre del rol.
+  // `sistema` e `ingesta` (`081`) van como `identidad`: cada permiso a mano, y una tabla nueva nace sin acceso para
+  // nadie. En la bandeja es lo que hace que la credencial de n8n no pueda leer nada.
+  for (const sinRegla of ['sistema', 'ingesta']) {
+    assert.deepEqual(
+      r.filter((x) => x.nspname === sinRegla),
+      [],
+      `no puede haber regla por omisión sobre \`${sinRegla}\`: sus permisos se otorgan a mano`,
+    );
+  }
   assert.deepEqual(
-    esquemas.map((e) => e.nspname).sort(),
+    esquemas.map((e) => e.nspname).filter((e) => e !== 'sistema' && e !== 'ingesta').sort(),
     ['catalogo', 'negocio'],
     'se esperaban exactamente `catalogo` y `negocio` como esquemas de `migrador` que necesitan la regla',
   );
@@ -363,7 +377,7 @@ test('la regla de permisos por omisión existe para `negocio` y nombra a `migrad
   for (const rol of ['app_inquilino', 'app_identidad', 'app_ingesta', 'app_analista']) {
     assert.match(delCatalogo.acl, new RegExp(`${rol}=r/`), `${rol} tiene que poder leer el catálogo, y sólo leerlo`);
   }
-  for (const e of esquemas) {
+  for (const e of esquemas.filter((x) => x.nspname !== 'sistema' && x.nspname !== 'ingesta')) {
     assert.ok(
       r.some((x) => x.nspname === e.nspname && x.tipo === 'r'),
       `el esquema \`${e.nspname}\` no tiene regla de permisos por omisión para migrador`,
@@ -513,7 +527,22 @@ test('ninguna migración lleva `owner to` ni fija la ruta de búsqueda', () => {
   // es la razón por la que el código de la aplicación puede escribir sin
   // calificar—. Escrita sobre todo `db/`, esta afirmación fallaría sobre código
   // correcto, y una prueba que falla sobre lo correcto se termina ignorando.
-  assert.deepEqual(archivosQueContienen(/\bset\s+(local\s+)?search_path\b/i, ['db/migraciones']), []);
+  //
+  // ── LA SENTENCIA, NO EL ATRIBUTO DE UNA FUNCIÓN (`081`, 2026-10-16) ───────────
+  //
+  // Lo prohibido es CAMBIAR la ruta: `set search_path` como sentencia (la de la sesión, que una migración dejaría
+  // puesta para lo que siga) y `alter role|database … set search_path`, que es del arranque. Lo que NO es eso es la
+  // ruta FIJA de una función, `security definer set search_path = pg_catalog`: no toca la de nadie, y es la defensa que
+  // recomienda Postgres para toda función elevada, sin la cual se la puede secuestrar con un objeto del mismo nombre.
+  // Por convención va en la misma línea que `security definer`, y así la sentencia —que empieza la línea— se distingue.
+  assert.deepEqual(archivosQueContienen(/^\s*set\s+(local\s+)?search_path\b/im, ['db/migraciones']), []);
+  assert.deepEqual(archivosQueContienen(/\balter\s+(role|database)\b[^;]*\bset\s+search_path\b/i, ['db/migraciones']), []);
+  // Y la ruta fija sólo junto a `security definer`: en otra función no hace falta, y escrita suelta sería otra cosa.
+  assert.deepEqual(
+    archivosQueContienen(/(?<!security\s+definer\s)\bset\s+search_path\s*=/i, ['db/migraciones']),
+    [],
+    'una ruta de búsqueda fuera de una función `security definer`',
+  );
 });
 
 test('ningún archivo del proyecto contiene `set role`, salvo el que lo prohíbe', () => {

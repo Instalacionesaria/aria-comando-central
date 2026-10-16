@@ -151,6 +151,9 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   cuentas_credenciales_org_id_actualizado_por_fkey: 'cargó credenciales de una cuenta',
   usuarios_cuentas_org_id_concedida_por_fkey: 'le dio acceso a una cuenta a otra persona',
   acuerdos_org_id_aceptado_por_fkey: 'aceptó un acuerdo en nombre de la empresa',
+  /* La bandeja de lo crudo (`081`): lo recibido de afuera se guarda 90 días y después se borra por partición. Mientras
+     tanto la empresa no se puede borrar: sería perder el rastro de lo que mandó el proveedor. */
+  recibidos_org_id_fkey: 'tiene avisos del CRM o de otros proveedores recibidos en los últimos 90 días',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.
 

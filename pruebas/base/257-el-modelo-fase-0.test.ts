@@ -19,7 +19,14 @@
 //   · la fase `cuentas` crea la que falta, con la location del CRM, y no duplica — mutación: sacarle el `not exists`;
 //   · `tipo` sale de `es_principal` y no se puede escribir — mutación: volverla una columna común;
 //   · el inquilino ve las cuentas de su organización sólo con `app.cuentas`, y ninguna credencial — mutación: una
-//     política sin `app.cuentas`, o un `grant select` sobre las credenciales.
+//     política sin `app.cuentas`, o un `grant select` sobre las credenciales;
+//   · la bandeja (Paso 4, `081`): el mismo aviso dos veces se guarda una sola, con la location tal cual — mutación:
+//     sacar la tabla de claves de la puerta;
+//   · sólo el ingestor ejecuta la puerta, y no lee nada; el normalizador lee y no inserta — mutación: un `grant
+//     select` al ingestor, o un `grant execute` a public;
+//   · la partición del mes existe y la de por omisión está vacía — mutación: no crear las del mes;
+//   · ninguna política de identidad ni de negocio nombra al migrador, y ninguna función elevada es de public —
+//     mutación: la política de lectura de cuentas que el diseño daba a la puerta.
 //
 // Corre como `migrador`: es una comprobación de catálogo, y el migrador ve la estructura aunque no vea las filas.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -265,4 +272,104 @@ test('el inquilino ve las cuentas de su organización sólo con `app.cuentas`, y
     `select has_table_privilege('app_inquilino', 'identidad.cuentas_credenciales', 'select') as ve`,
   );
   assert.equal(credenciales?.ve, false, 'el inquilino alcanza las credenciales de las cuentas');
+});
+
+// ─── Paso 4 · La bandeja de entrada ─────────────────────────────────────────────
+
+test('el mismo aviso dos veces se guarda una sola, con la location tal cual y sin traducir', async () => {
+  await admin.query('begin');
+  try {
+    const recibir = `select recibido_id, ya_estaba from ingesta.recibir('ghl', 'ContactCreate', 'aviso-257', $1::jsonb, 'loc-257')`;
+    const primera = await unaFila<{ recibido_id: string; ya_estaba: boolean }>(admin, recibir, ['{"contacto":"x"}']);
+    const segunda = await unaFila<{ recibido_id: string; ya_estaba: boolean }>(admin, recibir, ['{"contacto":"x","otra":1}']);
+    assert.equal(primera?.ya_estaba, false);
+    assert.equal(segunda?.ya_estaba, true, 'el reintento se guardó como un aviso nuevo');
+    assert.equal(segunda?.recibido_id, primera?.recibido_id, 'el reintento no devolvió el id del primero');
+    const filas_ = await filas<{ crm_cuenta_id: string; org_id: string | null; cuenta_id: string | null; estado: string; huella: string }>(
+      admin,
+      `select crm_cuenta_id, org_id, cuenta_id, estado, huella from ingesta.recibidos where id_externo = 'aviso-257'`,
+    );
+    assert.equal(filas_.length, 1);
+    // La puerta no traduce la location: corre como el migrador, que no ve identidad. La resuelve el normalizador.
+    assert.deepEqual(
+      { ...filas_[0], huella: /^[0-9a-f]{64}$/.test(filas_[0]!.huella) },
+      { crm_cuenta_id: 'loc-257', org_id: null, cuenta_id: null, estado: 'pendiente', huella: true },
+    );
+  } finally {
+    await admin.query('rollback');
+  }
+});
+
+test('sólo el ingestor ejecuta la puerta, y no lee nada; el normalizador lee y no inserta', async () => {
+  const FIRMA = 'ingesta.recibir(text, text, text, jsonb, text)';
+  const f = await unaFila<Record<string, boolean>>(
+    admin,
+    `select has_function_privilege('ingestor', $1, 'execute') as ingestor_ejecuta,
+            has_function_privilege('app_inquilino', $1, 'execute') as inquilino_ejecuta,
+            has_function_privilege('app_identidad', $1, 'execute') as identidad_ejecuta,
+            has_table_privilege('ingestor', 'ingesta.recibidos', 'select') as ingestor_lee,
+            has_table_privilege('ingestor', 'ingesta.claves', 'select') as ingestor_lee_claves,
+            has_table_privilege('ingestor', 'ingesta.recibidos', 'insert') as ingestor_inserta,
+            has_table_privilege('app_ingesta', 'ingesta.recibidos', 'select') as normalizador_lee,
+            has_table_privilege('app_ingesta', 'ingesta.recibidos', 'insert') as normalizador_inserta,
+            has_table_privilege('app_ingesta', 'ingesta.recibidos', 'delete') as normalizador_borra,
+            has_table_privilege('app_inquilino', 'ingesta.recibidos', 'select') as inquilino_lee,
+            exists (select 1 from pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+                     where p.oid = $1::regprocedure and a.grantee = 0) as public_ejecuta`,
+    [FIRMA],
+  );
+  assert.deepEqual(f, {
+    ingestor_ejecuta: true,
+    inquilino_ejecuta: false,
+    identidad_ejecuta: false,
+    ingestor_lee: false,
+    ingestor_lee_claves: false,
+    ingestor_inserta: false,
+    normalizador_lee: true,
+    normalizador_inserta: false,
+    normalizador_borra: false,
+    inquilino_lee: false,
+    public_ejecuta: false,
+  });
+  const rls = await filas<{ tabla: string; forzada: boolean; politicas: number }>(
+    admin,
+    `select c.relname as tabla, c.relforcerowsecurity as forzada,
+            (select count(*)::int from pg_policy p where p.polrelid = c.oid) as politicas
+       from pg_class c where c.oid in ('ingesta.recibidos'::regclass, 'ingesta.claves'::regclass) order by 1`,
+  );
+  assert.deepEqual(rls.map((x) => [x.tabla, x.forzada, x.politicas > 0]), [['claves', true, true], ['recibidos', true, true]]);
+});
+
+test('la partición del mes existe, y la de por omisión está vacía', async () => {
+  const f = await unaFila<{ del_mes: boolean; en_el_resto: number }>(
+    admin,
+    `select exists (select 1 from pg_class where relnamespace = 'ingesta'::regnamespace
+                     and relname = 'recibidos_' || to_char(now() at time zone 'UTC', 'YYYY_MM')) as del_mes,
+            (select count(*)::int from ingesta.recibidos_resto) as en_el_resto`,
+  );
+  assert.equal(f?.del_mes, true, 'falta la partición del mes en curso: lo que llegue hoy cae en la de por omisión');
+  assert.equal(f?.en_el_resto, 0, 'la partición por omisión tiene filas: faltó crear la de su mes');
+});
+
+test('ninguna política de identidad ni de negocio nombra al migrador, y ninguna función elevada es de public', async () => {
+  // El migrador cambia la estructura y NO ve filas: sin política, con la RLS forzada. La puerta de la bandeja corre
+  // como él y necesita las suyas, pero sólo sobre ingesta.
+  const politicas = await filas<{ tabla: string; politica: string }>(
+    admin,
+    `select n.nspname || '.' || c.relname as tabla, p.polname as politica
+       from pg_policy p join pg_class c on c.oid = p.polrelid join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname in ('identidad', 'negocio') and 'migrador'::regrole = any (p.polroles)`,
+  );
+  assert.deepEqual(politicas, [], 'una política le deja ver filas de identidad o de negocio al migrador');
+
+  // Toda función `security definer` de nuestros esquemas se otorga a un rol con nombre, nunca a public (de quien
+  // heredan anon y authenticated en Supabase).
+  const elevadas = await filas<{ funcion: string }>(
+    admin,
+    `select p.oid::regprocedure::text as funcion
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where p.prosecdef and n.nspname in ('identidad', 'negocio', 'catalogo', 'sistema', 'ingesta')
+        and exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.grantee = 0)`,
+  );
+  assert.deepEqual(elevadas, [], 'una función security definer se puede ejecutar desde public');
 });
