@@ -11,6 +11,7 @@
 //   node scripts/db.mjs permisos-del-catalogo   privilegios del rol del catálogo (`migrador`)
 //   node scripts/db.mjs retiro      retira los roles que salieron del catálogo (`app_identidad`)
 //   node scripts/db.mjs cuentas     una cuenta para cada organización que no la tiene (`app_identidad`)
+//   node scripts/db.mjs cuenta-en-negocio   la cuenta en las filas de negocio de hoy (`app_inquilino`)
 //   node scripts/db.mjs migrar      las migraciones, como `migrador`
 //   node scripts/db.mjs sembrar     tres organizaciones, por `conIdentidad()`
 //   node scripts/db.mjs verificar   cuenta filas CONTRA LA BASE
@@ -493,6 +494,54 @@ async function cuentas() {
   }
 }
 
+/**
+ * La cuenta en las filas de negocio que ya existen. **Corre como `app_inquilino`, una transacción por organización.**
+ *
+ * La `082` agrega `cuenta_id` nula a las 39 tablas de una cuenta, con el puente que la completa en toda fila nueva; las
+ * que ya existen la reciben acá, y la `083` la vuelve obligatoria. No va en una migración porque el migrador no ve filas
+ * y quitarle el forzado a 39 tablas es lo que el revisor prohíbe. El motivo completo, en el encabezado de
+ * `db/arranque/005_la_cuenta_en_negocio.sql`.
+ *
+ * Las organizaciones las lista `conIdentidad` (el inquilino sólo ve la suya). Por cada una, el archivo corre dentro de
+ * `conOrganizacion` —el ÚNICO lugar que pone `app.org_id` y `app.cuentas` (ADR-0201)—, así que la política de hoy hace
+ * que no toque nada de otra. Cada organización confirma sola: si una falla, las anteriores quedan rellenas y la fase se
+ * puede volver a correr, porque toca sólo lo que sigue nulo.
+ *
+ * En producción, después de la `082` y ANTES de subir la `083`:
+ *
+ *     node --env-file=.env.supabase scripts/db.mjs cuenta-en-negocio
+ */
+async function cuentaEnNegocio() {
+  if (!process.env.DATABASE_URL_IDENTIDAD) throw new Error('DATABASE_URL_IDENTIDAD no está definida.');
+  if (!process.env.DATABASE_URL_INQUILINO) throw new Error('DATABASE_URL_INQUILINO no está definida.');
+  const sql = readFileSync(new URL('../db/arranque/005_la_cuenta_en_negocio.sql', import.meta.url), 'utf8')
+    .replace(/\r\n/g, '\n');
+  const marcas = sql.match(/@[A-Z_]+@/g);
+  if (marcas) throw new Error(`005_la_cuenta_en_negocio.sql tiene marcas sin sustituir: ${[...new Set(marcas)].join(', ')}`);
+
+  const { conIdentidad, cerrarClientes } = await import('../lib/datos/capa.ts');
+  const { conOrganizacion, datos } = await import('../lib/datos/contexto.ts');
+  const { sql: crudo } = await import('kysely');
+  let orgs;
+  try {
+    orgs = await conIdentidad(async (db) =>
+      (await crudo`select id from identidad.organizaciones order by creada_el, id`.execute(db)).rows.map((f) => f.id),
+    );
+    // Sin organizaciones no hay nada que comprobar, y una fase que no comprueba nada no dice «hecho».
+    if (orgs.length === 0) throw new Error('app_identidad no ve ninguna organización: la fase no puede comprobar nada');
+
+    for (const org of orgs) {
+      // `sql.raw`: el archivo es nuestro y no lleva parámetros. Si algo queda sin cuenta, el archivo lanza y la
+      // transacción de esta organización se deshace.
+      await conOrganizacion(org, () => crudo.raw(sql).execute(datos()));
+      console.log(`  organización ${org}: con la cuenta en negocio`);
+    }
+  } finally {
+    await cerrarClientes();
+  }
+  console.log(`  ${orgs.length} organización(es) con la cuenta en negocio`);
+}
+
 const FASES = {
   bajar,
   levantar,
@@ -503,13 +552,15 @@ const FASES = {
   retiro,
   sembrar,
   cuentas,
+  'cuenta-en-negocio': cuentaEnNegocio,
   verificar,
   'sembrar-agentes': sembrarAgentes,
   'quitar-agentes': quitarAgentes,
 };
 // `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
-// `cuentas` va DESPUÉS de `sembrar`: comprueba que toda organización sembrada nació con su cuenta.
-const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'cuentas', 'verificar'];
+// `cuentas` y `cuenta-en-negocio` van DESPUÉS de `sembrar`: comprueban que toda organización sembrada nació con su
+// cuenta, y que ninguna fila de negocio quedó sin ella.
+const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'cuentas', 'cuenta-en-negocio', 'verificar'];
 
 const comando = process.argv[2];
 const completadas = [];

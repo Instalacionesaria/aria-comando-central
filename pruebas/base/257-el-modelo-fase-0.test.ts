@@ -26,7 +26,13 @@
 //     select` al ingestor, o un `grant execute` a public;
 //   · la partición del mes existe y la de por omisión está vacía — mutación: no crear las del mes;
 //   · ninguna política de identidad ni de negocio nombra al migrador, y ninguna función elevada es de public —
-//     mutación: la política de lectura de cuentas que el diseño daba a la puerta.
+//     mutación: la política de lectura de cuentas que el diseño daba a la puerta;
+//   · la cuenta en negocio (Paso 5, `082` y la fase `cuenta-en-negocio`): las listas de tablas de los SQL son las de
+//     los regímenes — mutación: olvidar una tabla en un archivo;
+//   · el puente pone la cuenta del contacto, exige decirla con dos cuentas activas y no deja mudarla — mutación:
+//     quitar el disparador, o su rama de update;
+//   · la fase rellena una fila vieja sin cuenta, y no toca otra organización (eso lo garantiza la política de hoy,
+//     porque corre como el inquilino con su organización puesta) — mutación: sacarle una tabla a la fase.
 //
 // Corre como `migrador`: es una comprobación de catálogo, y el migrador ve la estructura aunque no vea las filas.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -372,4 +378,111 @@ test('ninguna política de identidad ni de negocio nombra al migrador, y ninguna
         and exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.grantee = 0)`,
   );
   assert.deepEqual(elevadas, [], 'una función security definer se puede ejecutar desde public');
+});
+
+// ─── Paso 5 · La cuenta en negocio ──────────────────────────────────────────────
+
+/** Las tablas de un `array[...]` de un archivo SQL, en el orden en que aparecen. */
+function listaDelSql(texto: string, variable: string): string[] {
+  const m = new RegExp(`${variable}\\s+text\\[\\]\\s*:=\\s*array\\[([^\\]]*)\\]`).exec(texto);
+  assert.ok(m, `no encontré ${variable} en el archivo`);
+  return [...m[1]!.matchAll(/'([a-z_]+)'/g)].map((x) => x[1]!);
+}
+
+test('las listas de tablas de los SQL de la cuenta son las de los regímenes', () => {
+  const ordenar = (xs: readonly string[]) => [...xs].sort();
+  for (const archivo of ['db/migraciones/082_la_cuenta_en_negocio_expandir.sql', 'db/arranque/005_la_cuenta_en_negocio.sql']) {
+    const sql = readFileSync(join(RAIZ, archivo), 'utf8');
+    assert.deepEqual(ordenar(listaDelSql(sql, 'v_obligatorias')), ordenar(DE_UNA_CUENTA), `${archivo}: las obligatorias`);
+    assert.deepEqual(ordenar(listaDelSql(sql, 'v_opcionales')), ordenar(DE_UNA_CUENTA_O_DE_LA_ORGANIZACION), `${archivo}: las opcionales`);
+  }
+});
+
+test('el puente pone la cuenta del contacto, exige decirla con dos cuentas activas y no deja mudarla', async () => {
+  const org = await unaFila<{ id: string; cuenta: string }>(
+    admin,
+    `select o.id, c.id as cuenta from identidad.organizaciones o join identidad.cuentas c on c.org_id = o.id where o.slug = 'alfa'`,
+  );
+  assert.ok(org, 'falta el sembrado');
+  await admin.query('begin');
+  try {
+    // Sin cuenta_id: el puente pone la única cuenta activa de la organización.
+    const contacto = await unaFila<{ id: string; cuenta_id: string }>(
+      admin,
+      `insert into negocio.contactos (org_id, ghl_contact_id, nombre) values ($1, 'puente-257', 'Puente') returning id, cuenta_id`,
+      [org.id],
+    );
+    assert.equal(contacto?.cuenta_id, org.cuenta);
+    // La nota de ese contacto toma la cuenta del CONTACTO.
+    const nota = await unaFila<{ cuenta_id: string }>(
+      admin,
+      `insert into negocio.notas (org_id, contacto_id, cuerpo) values ($1, $2, 'nota 257') returning cuenta_id`,
+      [org.id, contacto!.id],
+    );
+    assert.equal(nota?.cuenta_id, org.cuenta);
+
+    // Una fila no se muda de cuenta.
+    await admin.query('savepoint s');
+    const otra = await unaFila<{ id: string }>(
+      admin,
+      `insert into identidad.cuentas (org_id, nombre, slug) values ($1, 'Segunda 257', 'segunda-257') returning id`,
+      [org.id],
+    );
+    await assert.rejects(
+      admin.query(`update negocio.contactos set cuenta_id = $1 where id = $2`, [otra!.id, contacto!.id]),
+      /no se puede cambiar/,
+      'una fila se mudó de cuenta',
+    );
+    await admin.query('rollback to savepoint s');
+
+    // Con dos cuentas activas, quien inserta tiene que decir de cuál es.
+    await admin.query(`insert into identidad.cuentas (org_id, nombre, slug) values ($1, 'Segunda 257', 'segunda-257')`, [org.id]);
+    await admin.query('savepoint t');
+    await assert.rejects(
+      admin.query(`insert into negocio.contactos (org_id, ghl_contact_id, nombre) values ($1, 'puente-257-b', 'Puente')`, [org.id]),
+      /tiene 2 cuentas activas/,
+      'con dos cuentas activas el puente eligió una',
+    );
+    await admin.query('rollback to savepoint t');
+  } finally {
+    await admin.query('rollback');
+  }
+});
+
+test('la fase `cuenta-en-negocio` rellena una fila vieja sin cuenta, y no toca otra organización', async () => {
+  const alfa = await unaFila<{ id: string; cuenta: string }>(
+    admin,
+    `select o.id, c.id as cuenta from identidad.organizaciones o join identidad.cuentas c on c.org_id = o.id where o.slug = 'alfa'`,
+  );
+  const beta = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = 'beta'`);
+  assert.ok(alfa && beta, 'falta el sembrado');
+  // Dos filas «de antes de la 082», sin cuenta: se insertan sin disparadores de usuario (session_replication_role), que
+  // es como las deja la 082 sobre los datos de hoy.
+  await admin.query(`set session_replication_role = replica`);
+  try {
+    await admin.query(
+      `insert into negocio.contactos (org_id, ghl_contact_id, nombre, cuenta_id) values ($1, 'viejo-257-alfa', 'Viejo', null), ($2, 'viejo-257-beta', 'Viejo', null)`,
+      [alfa.id, beta.id],
+    );
+  } finally {
+    await admin.query(`set session_replication_role = origin`);
+  }
+  const inq = await conectar('inquilino');
+  try {
+    await inq.query('begin');
+    await inq.query(`select set_config('app.org_id', $1, true), set_config('app.cuentas', '*', true)`, [alfa.id]);
+    await inq.query(readFileSync(join(RAIZ, 'db/arranque/005_la_cuenta_en_negocio.sql'), 'utf8'));
+    await inq.query('commit');
+    const filas_ = await filas<{ ghl_contact_id: string; cuenta_id: string | null }>(
+      admin,
+      `select ghl_contact_id, cuenta_id from negocio.contactos where ghl_contact_id like 'viejo-257-%' order by 1`,
+    );
+    assert.deepEqual(filas_, [
+      { ghl_contact_id: 'viejo-257-alfa', cuenta_id: alfa.cuenta },
+      { ghl_contact_id: 'viejo-257-beta', cuenta_id: null },
+    ], 'la fase no rellenó la fila de su organización, o tocó la de otra');
+  } finally {
+    await inq.end();
+    await admin.query(`delete from negocio.contactos where ghl_contact_id like 'viejo-257-%'`);
+  }
 });

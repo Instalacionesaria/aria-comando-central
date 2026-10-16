@@ -277,7 +277,9 @@ test('la forma: estas columnas y ninguna con texto del modelo, y el juego de age
   );
   assert.deepEqual(
     columnas.rows.map((c) => c.column_name),
-    ['org_id', 'id', 'creado_el', 'agente', 'modelo', 'tokens_entrada', 'tokens_salida', 'tokens_escritura_cache', 'tokens_lectura_cache', 'duracion_ms', 'resultado', 'usuario_id', 'ref'],
+    // `cuenta_id` desde la `082` (modelo multiempresa): la subcuenta del uso, o nula si es de la organización. Un uuid,
+    // no un texto: la regla AG-94 sigue en pie.
+    ['org_id', 'id', 'creado_el', 'agente', 'modelo', 'tokens_entrada', 'tokens_salida', 'tokens_escritura_cache', 'tokens_lectura_cache', 'duracion_ms', 'resultado', 'usuario_id', 'ref', 'cuenta_id'],
     'una columna nueva en esta tabla es una decisión: «ningún texto» (AG-94)',
   );
 
