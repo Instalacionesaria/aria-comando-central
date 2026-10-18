@@ -33,7 +33,7 @@ export default function ConexionConMeta({ cargado }) {
     const r = await pedir('/api/admin/credenciales/meta', { metodo: 'POST', espera: ESPERA_DE_LA_PRUEBA_MS });
     setProbando(false);
     if (r.tipo === 'sin_respuesta') {
-      setResultado({ mal: true, texto: 'No se pudo contactar al servidor. Probá de nuevo.' });
+      setResultado({ mal: true, texto: 'No se pudo contactar al servidor. Prueba de nuevo.' });
       return;
     }
     if (r.tipo === 'rechazado') {

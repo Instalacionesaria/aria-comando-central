@@ -15,7 +15,7 @@
 // operaciones y sus dos capacidades propias (`fundaciones.ver`, `fundaciones.editar`), así que hoy
 // hay una pantalla de producto que se decide por capacidad y `ADR-0303` verifica algo real. Las
 // otras nueve quedaron en `SIN_OPERACIONES_TODAVIA`, con el mismo cable trampa esperándolas, y fueron
-// saliendo de a una; la última, `executive`, el 2026-10-04 con el cerebro. Hoy la lista está vacía.
+// saliendo de a una; la última, `executive`, el 2026-10-04. Hoy queda sólo `clientos`, que es externa.
 //
 // Se conserva el párrafo de arriba en vez de borrarlo porque explica QUÉ estaba esperando la lista,
 // y la próxima pantalla que reciba una operación va a necesitar leerlo.
@@ -227,7 +227,7 @@ export const SECCIONES: readonly Seccion[] = [
     clave: 'executive',
     nombre: 'Inicio',
     capacidadRequerida: 'tablero.ver',
-    // Bandera bajada el 2026-10-04 con `app/api/executive/route.ts`, el cerebro (AG5). No queda ninguna.
+    // Bandera bajada el 2026-10-04 con `app/api/executive/route.ts`, el cerebro (AG5). Queda sólo en `clientos`.
     menu: { grupo: 'AIOS', icono: '#i-exec' },
   },
   {
@@ -426,7 +426,7 @@ export const SECCIONES: readonly Seccion[] = [
     // de este sistema; acá lee las tablas del scraper que la migración `006_aria_cc_scraper.sql`
     // trajo a esta base, y el eje pasó de `cliente_id` a `org_id`.
     //
-    // **Es la única sección con `soloDesdeLaPrincipal`, y es la TERCERA mitad de su permiso.**
+    // **Fue la primera sección con `soloDesdeLaPrincipal` (hoy son tres), y es la TERCERA mitad de su permiso.**
     //
     // Las otras dos son la capacidad `monitoreo.ver` —que `usuario` recibe por derivación— y la
     // fila de alcance con esta pestaña, que hace falta porque `usuario` es el único rol que
@@ -455,7 +455,7 @@ export const SECCIONES: readonly Seccion[] = [
   },
   {
     // El Panel de Incidentes (2026-10-01): los fallos del modelo de IA de todas las empresas. La
-    // misma forma que Monitoreo —no viene del prototipo, va en «Operación», solo desde la
+    // misma forma que Monitoreo —no viene del prototipo, va en «Administración», solo desde la
     // principal— con una capacidad que en el catálogo tiene solo el superadministrador.
     clave: 'incidentes',
     nombre: 'Incidentes',

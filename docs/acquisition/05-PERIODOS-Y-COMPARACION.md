@@ -35,7 +35,7 @@ por una, la pantalla no falla, y lo que cambió no es el negocio sino cuánto de
 guardado. Este proyecto ya pagó esa cuenta dos veces —la tasa de cancelación que «subía hacia el
 presente» y el booking rate que «se degradaba» al mirar más atrás— y las dos veces el culpable fue
 el mismo: **la cobertura del dato no es constante en el tiempo, y el control no lo decía**
-(`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:998-1003`).
+(`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:998-1003@972972e`).
 
 El prototipo de Acquisition trae la maquinaria de período casi entera y bien pensada: dos ventanas
 por consulta, una regla de comparación central, un umbral de planicie, un eje para las métricas
@@ -46,7 +46,7 @@ que no hay que portar y un requisito que le falta. Este documento separa una cos
 población con otra cobertura**. Medido el 2026-09-15, `adId` —la clave sin la cual no hay tabla por anuncio— estaba
 en **176 de 233 contactos (75,5 %)** dentro de la ventana de 14 días (foto del 2026-09-15, línea 175) y en **213 de
 584 (36,5 %)** sobre el total histórico; el 2026-09-28, en 199 de 277 (71,8 %) a 30 días y en 213 de 594 (35,9 %)
-sobre la base entera (`01-ACQUISITION.md:455-456`, `07-REGLAS-TRANSVERSALES.md:948-950`). Apretar «histórico»
+sobre la base entera (`01-ACQUISITION.md:455-456@972972e`, `07-REGLAS-TRANSVERSALES.md:948-950@972972e`). Apretar «histórico»
 duplica el volumen y parte al medio la atribución. Ningún control del prototipo dice eso.
 
 ---
@@ -124,7 +124,7 @@ servidor acepta una que ningún botón produce». `pmes` es la segunda mitad de 
 
 **Estado:** resuelto para Conversation, y desde el 2026-09-16 también en Acquisition. El 2026-09-15 `lib/autorizacion/secciones.ts`
 declaraba la sección con `sinOperacionesTodavia: true` y `ls app/api/` no devolvía ninguna carpeta `acquisition` (foto del
-2026-09-15, línea 60); hoy la ruta valida el período contra la lista cerrada y rechaza lo que no está (`01-ACQUISITION.md:88-93`).
+2026-09-15, línea 60); hoy la ruta valida el período contra la lista cerrada y rechaza lo que no está (`01-ACQUISITION.md:88-93@972972e`).
 
 ### A5-04 · El botón encendido describe la ventana que se calculó, no la que se pidió
 
@@ -193,7 +193,7 @@ rango. Los dos son comprobables a mano:
 Un día de diferencia en el error de tipeo cambia la ventana de uno a veintiún días, y la pantalla
 dibuja las dos con la misma cara. **El `|| 21` colapsa dos hechos distintos —«no hay fechas» y
 «las fechas están al revés»— en el mismo número**, que es la regla de los dos ceros
-(`07-REGLAS-TRANSVERSALES.md:211-215`) aplicada a una duración.
+(`07-REGLAS-TRANSVERSALES.md:211-215@972972e`) aplicada a una duración.
 
 **El sistema ya tiene la conducta correcta escrita al lado:** el otro control de rango del mismo
 producto rechaza el rango invertido y no hace nada (`lib/aios/period-controls.js:19-20`):
@@ -225,7 +225,7 @@ que este módulo: la foto del 2026-09-15 de las reglas transversales verificaba 
 **cero `Date.now()` y cero `new Date()`** y quince usos de `now()` de PostgreSQL
 (`git show 1c55149:"docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md"`, líneas 305-309), «la única forma de que el *ahora* sea
 el mismo reloj que escribió las filas»; el corte del 2026-09-28 lo repite con una excepción declarada, el gasto por día de
-calendario (`07-REGLAS-TRANSVERSALES.md:456-460`). Y `lib/negocio/periodo.ts:70-76` explica por qué «Hoy» son las últimas 24 horas
+calendario (`07-REGLAS-TRANSVERSALES.md:456-460@972972e`). Y `lib/negocio/periodo.ts:70-76` explica por qué «Hoy» son las últimas 24 horas
 y no el día del calendario: «elegirla mal es un defecto que este proyecto ya conoce: la suite corre en `America/Lima`, `UTC` y
 `Asia/Tokyo` justamente porque una cifra que cambia según dónde esté el servidor es indistinguible de una cifra correcta».
 
@@ -282,7 +282,7 @@ casos donde después se decide no mostrar el delta (`hist` y `p1`, ver A5-15). L
 `build()` no sabe de dónde vino su ventana.
 
 **Estado:** la mitad es reproducible hoy y la otra mitad no tiene contra qué. La cohorte se arma con
-`alta_en_el_crm` entre dos fechas (`01-ACQUISITION.md:376-378`, regla 6 del § 6) y eso funciona; lo que
+`alta_en_el_crm` entre dos fechas (`01-ACQUISITION.md:376-378@972972e`, regla 6 del § 6) y eso funciona; lo que
 no hay es historia anterior. Medido el 2026-09-15 con `group by date_trunc('month', alta_en_el_crm)`:
 **531 de 559 contactos (95,0 %) caían en los últimos 45 días**, con 28 en total antes de agosto de 2026
 y ningún contacto entre septiembre y noviembre de 2025 (foto del 2026-09-15, línea 99).
@@ -320,7 +320,7 @@ dispararse nunca: `db` se copia de `da` en la misma línea.
 
 **Estado:** la regla es correcta y el 2026-09-15 la base no la soportaba: las fechas por omisión de la vista traían **3 contactos**
 en el período y **0** en la comparación (foto del 2026-09-15, línea 135). Desde el 2026-09-16 la vista abre en 30 días y sin
-comparación (`01-ACQUISITION.md:185`, `01-ACQUISITION.md:191`). La conducta de la pantalla en ese hueco es la pregunta abierta P-04.
+comparación (`01-ACQUISITION.md:185@972972e`, `01-ACQUISITION.md:191@972972e`). La conducta de la pantalla en ese hueco es la pregunta abierta P-04.
 
 ### A5-14 · La comparación es una decisión del usuario, no una constante
 
@@ -455,7 +455,7 @@ exactamente el caso para el que se escribió.
 **Y una de las ocho es un error de lectura que hay que resolver antes de portar.** La Inversión
 (`:146`) pasa `invert:false`, así que **gastar más se dibuja en verde**. Gastar más no es bueno por
 sí mismo: es neutro. Y el §18.10 del documento funcional prohíbe explícitamente recomendar escalar presupuesto
-en solitario (foto del 2026-09-15, línea 32, y regla 10 de su § 6, línea 298; hoy, `01-ACQUISITION.md:57-60`).
+en solitario (foto del 2026-09-15, línea 32, y regla 10 de su § 6, línea 298; hoy, `01-ACQUISITION.md:57-60@972972e`).
 
 ### A5-20 · Comparar dos ventanas de distinta duración lleva advertencia, en la misma línea
 
@@ -522,9 +522,9 @@ Es el **único** de los ocho puntos de llamada que llena el hueco. Los otros sie
 `:188`) dejan el espacio en blanco, y un espacio en blanco donde a veces hay una flecha se lee como
 «no hay cambio» cuando significa «no hay con qué comparar».
 
-Es la regla de los dos ceros (`07-REGLAS-TRANSVERSALES.md:211-215`) aplicada a la comparación: «no
+Es la regla de los dos ceros (`07-REGLAS-TRANSVERSALES.md:211-215@972972e`) aplicada a la comparación: «no
 hay dato» y «el dato dice cero» mandan a hacer cosas distintas. Y es la regla del silencio con su
-matiz (`07-REGLAS-TRANSVERSALES.md:82-107`): el silencio vale cuando es el caso normal; acá el vacío
+matiz (`07-REGLAS-TRANSVERSALES.md:82-107@972972e`): el silencio vale cuando es el caso normal; acá el vacío
 es el caso normal durante las primeras semanas —comparación contra 0 contactos el 2026-09-15 (foto
 del 2026-09-15, línea 135)— así que callarse ocho veces por pantalla no informa, entrena a no mirar.
 
@@ -537,20 +537,20 @@ en una celda de tabla.**
 
 ### A5-23 · Cada período declara la cobertura del dato en ESE período
 
-**Rastro del requisito:** no está en el prototipo. Sale de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:990-1003`
+**Rastro del requisito:** no está en el prototipo. Sale de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:990-1003@972972e`
 («D · Concluir una tendencia de un sesgo») y de `lib/negocio/periodo.ts:147` y `:158`
 (`COLA_DESPROPORCIONADA` y `avisoDeLaCola`).
 
 **El precedente, medido y ya pagado dos veces en Conversation.** La primera: la tasa de cancelación subía hacia el presente
 —61,9 % a siete días, 60,1 % a catorce, 52,9 % a treinta, 50,6 % en total— «y eso se parece a una tendencia. No lo era»:
-era la proporción creciente de **citas congeladas** en las ventanas más largas (`07-REGLAS-TRANSVERSALES.md:992-995`). La
+era la proporción creciente de **citas congeladas** en las ventanas más largas (`07-REGLAS-TRANSVERSALES.md:992-995@972972e`). La
 segunda, con el mismo mecanismo y peor: el booking rate de Lead Flow caía **50,0 % → 44,8 % → 34,1 %** al ensanchar la
-ventana, y la caída entera era el filtro de citas congeladas (`07-REGLAS-TRANSVERSALES.md:998-1001`); sin él la serie era
+ventana, y la caída entera era el filtro de citas congeladas (`07-REGLAS-TRANSVERSALES.md:998-1001@972972e`); sin él la serie era
 **50,0 → 50,4 → 48,2**, casi plana (`git show 1c55149:"docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md"`, líneas
-204-214). El filtro salió del booking rate el 2026-09-16 (`07-REGLAS-TRANSVERSALES.md:311-317`).
+204-214). El filtro salió del booking rate el 2026-09-16 (`07-REGLAS-TRANSVERSALES.md:311-317@972972e`).
 
 La diferencia entre las dos, y es la que convierte esto en requisito del control de período
-(`git show 1c55149:"docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md"`, línea 593; hoy resumida en `07-REGLAS-TRANSVERSALES.md:998-1003`):
+(`git show 1c55149:"docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md"`, línea 593; hoy resumida en `07-REGLAS-TRANSVERSALES.md:998-1003@972972e`):
 
 > «entonces había que escribir una consulta para producir el sesgo, y acá **había cuatro botones que
 > lo producían en un clic**, sobre la cifra que titula la pestaña. […] un control que ofrece ventanas
@@ -559,7 +559,7 @@ La diferencia entre las dos, y es la que convierte esto en requisito del control
 
 La cifra que lo resumía en la foto del 2026-09-15: entre «30 días» y «completo», **205 contra 205** citas alcanzables y **127 contra 127**
 publicables; el cuarto botón sólo sumaba 24 que el sistema dejó de mirar (`git show 1c55149:"docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md"`,
-líneas 267-274). El 2026-09-28, 191 contra 231 y 103 contra 143 (`07-REGLAS-TRANSVERSALES.md:391-397`).
+líneas 267-274). El 2026-09-28, 191 contra 231 y 103 contra 143 (`07-REGLAS-TRANSVERSALES.md:391-397@972972e`).
 
 **Y en Acquisition el caso propio ya está medido, no hay que inventarlo.** La dimensión de la que
 cuelga la pantalla entera —`adId`, sin la cual no hay tabla por anuncio— tiene esta cobertura:
@@ -567,12 +567,12 @@ cuelga la pantalla entera —`adId`, sin la cual no hay tabla por anuncio— tie
 | Ventana | Contactos | Con `adId` | Cobertura |
 | --- | --- | --- | --- |
 | 14 días, 2026-09-15 (foto del 2026-09-15, línea 175) | 233 | 176 | **75,5 %** |
-| Todo lo guardado, 2026-09-15 (`07-REGLAS-TRANSVERSALES.md:948-950`) | 584 | 213 | **36,5 %** |
+| Todo lo guardado, 2026-09-15 (`07-REGLAS-TRANSVERSALES.md:948-950@972972e`) | 584 | 213 | **36,5 %** |
 
 **Ensanchar la ventana duplica el volumen y parte al medio la atribución**, y el 2026-09-28 sigue igual: 71,8 % a 30 días
-(199 de 277) contra 35,9 % sobre la base entera (213 de 594) (`01-ACQUISITION.md:455-456`). El motivo está escrito y no es un
+(199 de 277) contra 35,9 % sobre la base entera (213 de 594) (`01-ACQUISITION.md:455-456@972972e`). El motivo está escrito y no es un
 misterio: la migración 048 no rellena hacia atrás, así que el 2026-09-15 40 de los 584 contactos tenían `atribucion_primera`
-en `{}` y eran los que el barrido no volvió a tocar (foto del 2026-09-15, línea 217; `07-REGLAS-TRANSVERSALES.md:488-492`).
+en `{}` y eran los que el barrido no volvió a tocar (foto del 2026-09-15, línea 217; `07-REGLAS-TRANSVERSALES.md:488-492@972972e`).
 Cuanto más atrás mira la ventana, mayor es la proporción de contactos que entraron antes de que existiera la columna.
 
 La consecuencia en pantalla es directa y cara: una tabla por anuncio a 365 días muestra una fila
@@ -599,7 +599,7 @@ Tres propiedades de esa función son parte del requisito:
    mismo reloj que escribió las filas» (`periodo.ts:155-156`).
 2. **`null` es el caso normal.** Un matiz que aparece en los cuatro períodos se aprende a ignorar, y
    entonces el que importa tampoco se lee (`periodo.ts:152-153`). Es la regla del silencio
-   (`07-REGLAS-TRANSVERSALES.md:82-107`).
+   (`07-REGLAS-TRANSVERSALES.md:82-107@972972e`).
 3. **La mediana y no el promedio**, por lo mismo que las latencias: una sola fila vieja corre el
    promedio y no puede correr la mediana (`periodo.ts:144-146`).
 
@@ -610,15 +610,15 @@ trae anuncio no es la misma tabla que una donde falta un cuarto, aunque las dos 
 
 ### A5-24 · La ventana declara desde cuándo mide, y no con `ahora − días`
 
-**Rastro del requisito:** la regla 6 del § 6 de la foto del 2026-09-15 (línea 290) y `07-REGLAS-TRANSVERSALES.md:443-449`.
+**Rastro del requisito:** la regla 6 del § 6 de la foto del 2026-09-15 (línea 290) y `07-REGLAS-TRANSVERSALES.md:443-449@972972e`.
 
 La fecha que se publica es **la fila más vieja que la ventana alcanzó**, no `now() − dias`. Sin eso,
 el período largo invita a leer veintidós días de citas como un año: en la foto del 2026-09-15, en Appointment Flow
 «completo» arrancaba **exactamente en el mismo minuto** que «30 días» —2026-08-24 13:00— y los dos botones coincidían
-en todo lo que se ve; el 2026-09-28 «30 días» arranca el 2026-08-29 23:00 (`07-REGLAS-TRANSVERSALES.md:443-449`).
+en todo lo que se ve; el 2026-09-28 «30 días» arranca el 2026-08-29 23:00 (`07-REGLAS-TRANSVERSALES.md:443-449@972972e`).
 
-**Estado en Acquisition:** obligatorio, y escrito desde el 2026-09-16 —«Del X al Y, que es lo que hay guardado» (`01-ACQUISITION.md:107-109`)—, aunque
-no avisa que no hay gasto desde el 13 (`01-ACQUISITION.md:411-416`). La regla 6 de la foto del 2026-09-15 lo decía sin vueltas: «ninguna cohorte armada
+**Estado en Acquisition:** obligatorio, y escrito desde el 2026-09-16 —«Del X al Y, que es lo que hay guardado» (`01-ACQUISITION.md:107-109@972972e`)—, aunque
+no avisa que no hay gasto desde el 13 (`01-ACQUISITION.md:411-416@972972e`). La regla 6 de la foto del 2026-09-15 lo decía sin vueltas: «ninguna cohorte armada
 con `alta_en_el_crm` tiene historia antes del despliegue, y toda pantalla que la use tiene que decir desde cuándo mide». El lugar es la nota de A5-21.
 
 **Y `desde` solo no alcanza**, que es el defecto que `COLA_DESPROPORCIONADA` cerró: en Lead Flow la
@@ -633,7 +633,7 @@ repartidos en los doce meses anteriores (foto del 2026-09-15, línea 99).
 **Rastro:** `lib/aios/acquisition.js:38` (`hist:{d:365}`) y `:60-63`.
 
 El período histórico del prototipo son **365 días**. `alta_en_el_crm` llega hasta el **2025-08-08**, o sea
-trece meses (foto del 2026-09-15, línea 99; `07-REGLAS-TRANSVERSALES.md:443-447`): el botón «Histórico» recorta
+trece meses (foto del 2026-09-15, línea 99; `07-REGLAS-TRANSVERSALES.md:443-447@972972e`): el botón «Histórico» recorta
 el propio histórico y no lo dice. El vocabulario real del sistema resolvió esto con `DIAS_DE_TODO = 3650`
 (`lib/negocio/periodo.ts:52`) y el motivo escrito de por qué un número grande y no un centinela.
 
@@ -684,12 +684,12 @@ calendario escribe en los campos de fecha. Y hay un tercer manejador sobre un bo
 
 **P-03 · En qué zona horaria se cortan los días.** `shift` parsea en UTC, opera en hora local y serializa en UTC
 (`acquisition.js:53-57`). El resto del sistema calcula la ventana en la base
-(`07-REGLAS-TRANSVERSALES.md:456-460`) y formatea en la zona de la **organización** (`lib/negocio/tiempo.ts:1-24`,
+(`07-REGLAS-TRANSVERSALES.md:456-460@972972e`) y formatea en la zona de la **organización** (`lib/negocio/tiempo.ts:1-24`,
 regla 24). Falta decir cuál de las dos manda para el corte de la ventana de Acquisition.
 
 **P-04 · Qué muestra la pantalla mientras no haya período anterior.** La regla de A5-13 es correcta y el 2026-09-15 la base no
 la soportaba: 95,0 % de los contactos caían en los últimos 45 días (foto del 2026-09-15, línea 99) y el rango de comparación
-por omisión traía **0** (línea 135); desde el 2026-09-16 la pantalla no compara (`01-ACQUISITION.md:349`). ¿La pantalla se
+por omisión traía **0** (línea 135); desde el 2026-09-16 la pantalla no compara (`01-ACQUISITION.md:349@972972e`). ¿La pantalla se
 comporta como en «Hoy» e «Histórico» —sin ningún delta y diciéndolo— o dibuja deltas contra una
 ventana casi vacía?
 
@@ -708,22 +708,22 @@ el de comparación son el mismo número y `delta` cae en el «=» plano de `:130
 flecha en todo el prototipo es que las dos ventanas duren distinto — o sea, **exactamente cuando la advertencia de A5-20 está
 encendida**. Medirla de verdad exige la serie diaria de gasto, que el 2026-09-15 no existía (`public.closer_meta_metricas`
 tenía la forma pedida y **0 filas**, y es de la plataforma anterior: foto del 2026-09-15, líneas 252-256) y desde el
-2026-09-16 está en `negocio.metricas_de_anuncio`, una fila por anuncio y por día (`01-ACQUISITION.md:230-232`).
+2026-09-16 está en `negocio.metricas_de_anuncio`, una fila por anuncio y por día (`01-ACQUISITION.md:230-232@972972e`).
 
 **P-08 · Cuál es la ventana canónica de este departamento y qué pasa con el piso.** El resto del
 sistema usa 14 días como ventana de cálculo (`indicadoresDeCitas.ts:339`) y piso de 10
 (`:320`); la pantalla ofrece 1, 7, 30 y libre. Con el piso de 10, el 2026-09-15 **sólo 3 de los 7 anuncios de
 la ventana de 14 días llegaban** (109, 44 y 17 contactos) y los otros cuatro tenían 1 o 2 (foto del 2026-09-15,
-línea 288); el 2026-09-28, a 30 días, llegan 4 de 79 (`01-ACQUISITION.md:145`). Con «Hoy» no llega ninguno. ¿El
+línea 288); el 2026-09-28, a 30 días, llegan 4 de 79 (`01-ACQUISITION.md:145@972972e`). Con «Hoy» no llega ninguno. ¿El
 piso apaga la tasa y deja el conteo —como hace `atribucionDelLead.ts:179-183`— o apaga la fila? Y el piso se
-evalúa **en cada ventana**, porque cada ventana es un denominador nuevo (`07-REGLAS-TRANSVERSALES.md:462-464`).
+evalúa **en cada ventana**, porque cada ventana es un denominador nuevo (`07-REGLAS-TRANSVERSALES.md:462-464@972972e`).
 
 **P-09 · Cómo se declara la cobertura, y dónde.** A5-23 fija que hay que declararla; no fija la forma. Conversation
 lo resolvió con una frase única que aparece sólo cuando la proporción cruza `COLA_DESPROPORCIONADA`
 (`periodo.ts:147-177`). Acquisition tiene **dos** coberturas que se mueven con la ventana —la cola de la cohorte y el
 porcentaje de contactos con `adId`— y hace falta decidir si van en la misma frase, si el aviso de atribución es
 permanente (el §18.14 pide publicar ese porcentaje como KPI: foto del 2026-09-15, línea 40; desde el 2026-09-16 el
-monitor lo publica siempre, antes de la tabla: `01-ACQUISITION.md:110-113`) o si se enciende por umbral como el otro.
+monitor lo publica siempre, antes de la tabla: `01-ACQUISITION.md:110-113@972972e`) o si se enciende por umbral como el otro.
 
 **P-10 · Si el Plan de acción respeta el período.** El subtítulo dice «Acquisition · tres funnels ·
 **periodo seleccionado**» (`lib/aios/acquisition-plan.js:6`) y el cuerpo son nueve frases fijas

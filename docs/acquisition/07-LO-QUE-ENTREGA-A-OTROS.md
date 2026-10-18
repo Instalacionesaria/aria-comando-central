@@ -59,8 +59,8 @@ títulos fijos. El contenido de esos tres renglones es lo que Acquisition tiene 
   (`tip.dataset.k`, `:220`), así que la ficha es **un objeto por departamento**, no un fragmento de
   HTML que se recalcule por cada movimiento del mouse.
 - **Estado:** el número existe, el resto no. La ventana de 14 días tenía **233 contactos** el 2026-09-15 (foto del 2026-09-15, § 4), no los
-  312 escritos; el 2026-09-28, a 7 días, son 3 (`01-ACQUISITION.md:199-201`). `find` nombra una campaña que no existe y una inversión que
-  entonces no estaba guardada en ninguna tabla (§ 3.10 de esa foto); hoy la hay, y a 7 días es «sin dato» (`01-ACQUISITION.md:202-205`).
+  312 escritos; el 2026-09-28, a 7 días, son 3 (`01-ACQUISITION.md:199-201@972972e`). `find` nombra una campaña que no existe y una inversión que
+  entonces no estaba guardada en ninguna tabla (§ 3.10 de esa foto); hoy la hay, y a 7 días es «sin dato» (`01-ACQUISITION.md:202-205@972972e`).
 
 ### A7-02 · «Su número» es un conteo de contactos del período, con su variación y el nombre del período de comparación en la misma frase
 
@@ -85,9 +85,9 @@ títulos fijos. El contenido de esos tres renglones es lo que Acquisition tiene 
   usa Conversion en `loss` (`lib/aios/conversion.js:64`). Un hallazgo sin pérdida cuantificada no se
   puede ordenar contra los de las otras áreas.
 - **Estado:** de las cuatro piezas, hoy son calculables tres. La entidad, con la clave correcta (`adId`, regla 1 del § 6:
-  `01-ACQUISITION.md:355-357`); el ICP por anuncio, con el puntaje continuo poblado en **229 de 233** contactos el 2026-09-15 (foto del
+  `01-ACQUISITION.md:355-357@972972e`); el ICP por anuncio, con el puntaje continuo poblado en **229 de 233** contactos el 2026-09-15 (foto del
   2026-09-15, § 3.5); la inversión, que entonces no existía (§ 3.2 de esa foto) y desde el 2026-09-16 se guarda por anuncio y por día
-  (`01-ACQUISITION.md:238-245`). Los «contactos útiles» dependen de una definición de calificado que no está tomada (`01-ACQUISITION.md:346-347`).
+  (`01-ACQUISITION.md:238-245@972972e`). Los «contactos útiles» dependen de una definición de calificado que no está tomada (`01-ACQUISITION.md:346-347@972972e`).
 
 ### A7-04 · «Con otras áreas» nombra al otro departamento y declara la dirección de la dependencia
 
@@ -101,7 +101,7 @@ títulos fijos. El contenido de esos tres renglones es lo que Acquisition tiene 
 - **Estado:** el par Acquisition↔Leads Portal es **el único cumplible hoy**: el puntaje ICP por
   anuncio está medido y el 2026-09-15 iba de 27,5 («economia us latino», 19 contactos) a 73,9 («Evoluciona native», 31)
   (foto del 2026-09-15, § 3.5). Le falta la mitad que lo convierte en decisión: «el ICP que cierra» necesita ventas, y
-  `negocio.resultados` tiene 7 filas y ninguna es una venta, también el 2026-09-28 (`01-ACQUISITION.md:275`).
+  `negocio.resultados` tiene 7 filas y ninguna es una venta, también el 2026-09-28 (`01-ACQUISITION.md:275@972972e`).
 
 ### A7-05 · El estado del departamento es un color de tres valores, y va acompañado de un conteo de asuntos abiertos
 
@@ -113,7 +113,7 @@ títulos fijos. El contenido de esos tres renglones es lo que Acquisition tiene 
   pestaña**.
 - **Estado:** no existe. No hay tabla donde guardar una alerta de Acquisition: `negocio.hallazgos`
   está atada al contacto —el 2026-09-15 sus 20 filas tenían `contacto_id` poblada— y no tiene el par `entity_type`/`entity_id` que hace
-  falta para apuntar a una campaña (foto del 2026-09-15, § 3.7; sigue sin tenerlo: `01-ACQUISITION.md:315-317`). Sin alertas guardadas
+  falta para apuntar a una campaña (foto del 2026-09-15, § 3.7; sigue sin tenerlo: `01-ACQUISITION.md:315-317@972972e`). Sin alertas guardadas
   no hay ni color ni conteo, y hoy los dos están escritos a mano.
 
 ---
@@ -129,7 +129,7 @@ títulos fijos. El contenido de esos tres renglones es lo que Acquisition tiene 
   `100%`), **costo unitario** y el nombre del área dueña. La propiedad es un campo del modelo
   (`own`), no una nota: el rótulo del cuello de botella la lee para decir quién lo trabaja.
 - **Estado:** el volumen sí (233 contactos con `alta_en_el_crm` el 2026-09-15: foto del 2026-09-15, § 4); el costo unitario
-  no existía, porque su numerador es el gasto, y desde el 2026-09-16 hay CPL por anuncio (`01-ACQUISITION.md:158-161`).
+  no existía, porque su numerador es el gasto, y desde el 2026-09-16 hay CPL por anuncio (`01-ACQUISITION.md:158-161@972972e`).
 
 ### A7-07 · El número de esa fila y el KPI «Contactos» de la pantalla son el mismo número
 
@@ -138,7 +138,7 @@ títulos fijos. El contenido de esos tres renglones es lo que Acquisition tiene 
 - Hoy son dos constantes distintas que nadie cruza: Executive dice 312 y Acquisition deriva el suyo de
   `entD × días × mod`. **Es el requisito de integración más barato de cumplir y el más caro de incumplir**: dos
   pantallas del mismo sistema afirmando dos volúmenes distintos del mismo mes es lo que el § 7 de la foto del
-  2026-09-15 llamaba un sistema que se contradice en la cara del usuario (hoy, riesgo 7: `01-ACQUISITION.md:451-453`).
+  2026-09-15 llamaba un sistema que se contradice en la cara del usuario (hoy, riesgo 7: `01-ACQUISITION.md:451-453@972972e`).
 - **Estado:** medible hoy, y con la advertencia de la regla 6 del § 6 de la foto del 2026-09-15: la
   cohorte se arma con `alta_en_el_crm` y no con `creado_el` —233 contra 256 en la misma ventana aquel
   día— así que las dos pantallas tienen que usar la misma columna o van a diferir sin que nada falle.
@@ -159,7 +159,7 @@ títulos fijos. El contenido de esos tres renglones es lo que Acquisition tiene 
   `spend|gasto|invers|budget|presupuest|impres|reach|frecuen|cpm|cpc|ctr|cpl` sobre `negocio`, `public` e `identidad` devolvía tres
   coincidencias y **ninguna era gasto de Meta poblado** (foto del 2026-09-15, § 3.2). `public.closer_meta_metricas` tiene la forma
   exacta que hace falta —`nivel`, `objeto_id`, `padre_id`, `fecha`, `gasto`— y **0 filas**, y es de la plataforma anterior (§ 5 punto 2
-  de esa foto). Desde el 2026-09-16 el gasto por anuncio y por día está en `negocio.metricas_de_anuncio` (`01-ACQUISITION.md:230-232`).
+  de esa foto). Desde el 2026-09-16 el gasto por anuncio y por día está en `negocio.metricas_de_anuncio` (`01-ACQUISITION.md:230-232@972972e`).
 
 ### A7-09 · El cuello de botella del funnel nombra al departamento dueño de la etapa
 
@@ -226,7 +226,7 @@ contrario**, sin que ninguno de los dos se equivoque.
   `campaignId` para el nivel de arriba—, nunca el nombre: en la ventana del 2026-09-15, «El app» tenía DOS
   `adId` distintos (`120249633901550467` con 44 contactos y `120249792217700467` con 2) y «economia us
   latino» otros dos (regla 1 del § 6 de la foto del 2026-09-15; el 2026-09-28, 79 anuncios con 32 nombres:
-  `01-ACQUISITION.md:355-357`). Agrupado por nombre, el conflicto se declara sobre una entidad que no existe.
+  `01-ACQUISITION.md:355-357@972972e`). Agrupado por nombre, el conflicto se declara sobre una entidad que no existe.
 - **Misma ventana.** La contradicción es «el contacto más barato **del mes**» contra una tasa de
   conversión que Conversion calcula sobre su propio período (`FACTOR`, `lib/aios/conversion.js:13`).
   Dos ventanas distintas producen contradicciones espurias y ocultan las reales. La ventana del resto
@@ -239,7 +239,7 @@ contrario**, sin que ninguno de los dos se equivoque.
   bajas— convertido en consulta.
 - **Estado:** de las tres condiciones, la clave existe (`adId` en 176 de 233 el 2026-09-15, 80,4 % sobre los contactos de pauta:
   foto del 2026-09-15, § 4), la ventana existe (14 días con `alta_en_el_crm`) y **el costo por contacto**, que entonces no
-  existía porque no había gasto, existe desde el 2026-09-16 como CPL por anuncio (`01-ACQUISITION.md:158-161`). Con lo que había
+  existía porque no había gasto, existe desde el 2026-09-16 como CPL por anuncio (`01-ACQUISITION.md:158-161@972972e`). Con lo que había
   se podía detectar media contradicción: el volumen y la tasa de agendamiento por anuncio eran medibles; el lado del dinero no.
 
 ### A7-13 · Un conflicto necesita que las dos cifras sigan publicadas con su definición al lado, porque la salida no es que una gane
@@ -292,7 +292,7 @@ contrario**, sin que ninguno de los dos se equivoque.
   lectura.
 - **Estado:** no hay dónde guardarlo. `negocio.hallazgos` es la tabla de Conversation: el 2026-09-15,
   20 filas, todas con `contacto_id` poblada, columnas `analisis_id`, `agente`, `patron`, `criterio`,
-  `fragmento_prompt` (foto del 2026-09-15, § 3.7); el 2026-09-28, 24 (`01-ACQUISITION.md:315-317`).
+  `fragmento_prompt` (foto del 2026-09-15, § 3.7); el 2026-09-28, 24 (`01-ACQUISITION.md:315-317@972972e`).
   Falta el par `entity_type`/`entity_id` del §18.13 y falta el destinatario.
 
 ### A7-16 · El hallazgo entrante viaja con su acción concreta, escrita aparte
@@ -358,9 +358,9 @@ contrario**, sin que ninguno de los dos se equivoque.
   que el §18.10 prohíbe tomar en solitario**: «¿qué campaña escalo?» sólo se puede contestar
   entregando las cifras y la comparación, no con un nombre.
 - **Estado, una por una.** La segunda tiene la mitad: el ICP por anuncio, de 27,5 a 73,9 el 2026-09-15 (foto del 2026-09-15, § 3.5), y le falta el
-  cierre —cero ventas, también el 2026-09-28 (`01-ACQUISITION.md:275`)—. La primera necesitaba gasto, y hoy lo hay (`01-ACQUISITION.md:238-245`).
+  cierre —cero ventas, también el 2026-09-28 (`01-ACQUISITION.md:275@972972e`)—. La primera necesitaba gasto, y hoy lo hay (`01-ACQUISITION.md:238-245@972972e`).
   **La tercera era la más lejana**: la fatiga es frecuencia contra CTR en el tiempo, y el 2026-09-15 no existía ninguno de los tres (§ 3.12 de esa
-  foto); hoy la serie diaria los trae y Creative publica la caída del CTR (`01-ACQUISITION.md:230-234`, `01-ACQUISITION.md:315-316`).
+  foto); hoy la serie diaria los trae y Creative publica la caída del CTR (`01-ACQUISITION.md:230-234@972972e`, `01-ACQUISITION.md:315-316@972972e`).
 
 ### A7-21 · Sin sugerencias propias no se muestra ninguna, y el motivo está escrito en el código
 
@@ -422,7 +422,7 @@ contrario**, sin que ninguno de los dos se equivoque.
 - **Estado:** de los volúmenes que hoy abren lista, **contactos y agendados son reproducibles**
   (el 2026-09-15, 233 contactos con `alta_en_el_crm` y 163 citas alcanzables con `ghl_calendario_id is not null` sobre
   149 contactos: foto del 2026-09-15, § 4), **clics no existía en ninguna tabla** (§ 5 punto 3 de esa foto; hoy llegan
-  los de Meta por anuncio y por día, no por contacto: `01-ACQUISITION.md:230-234`) y **calificados no está definido**.
+  los de Meta por anuncio y por día, no por contacto: `01-ACQUISITION.md:230-234@972972e`) y **calificados no está definido**.
 
 ### A7-26 · La inversión es el único KPI que no abre lista, y está bien
 
@@ -445,7 +445,7 @@ contrario**, sin que ninguno de los dos se equivoque.
   barra de tres tramos no describe a los calificados— o son dos cosas distintas y el filtro está mal.
   El prototipo no lo decide.
 - **Estado:** aplicable hoy. «Puntaje | ICP» estaba poblado en **229 de 233** contactos de la ventana el 2026-09-15 (foto del 2026-09-15, § 3.5; no re-medido
-  en el corte del 2026-09-28: `01-ACQUISITION.md:290-292`), así que el corte 75/50 se puede aplicar sin inventar nada. Lo que falta es la definición de
+  en el corte del 2026-09-28: `01-ACQUISITION.md:290-292@972972e`), así que el corte 75/50 se puede aplicar sin inventar nada. Lo que falta es la definición de
   calificado, no el puntaje.
 
 ### A7-28 · El contrato manda un conteo, no una cohorte, y ése es el requisito que falta
@@ -477,7 +477,7 @@ contrario**, sin que ninguno de los dos se equivoque.
   cada persona.
 - **Estado:** el puntaje sí (229 de 233); el nombre de campaña sí (219 de 233) y el del anuncio
   también (`utmContent`, 220 de 233); **el creativo no existe** —`meta_creative_id` no está en
-  ninguna tabla (`01-ACQUISITION.md:300-305`)— así que la segunda mitad del «origen» hay que llenarla con el anuncio o
+  ninguna tabla (`01-ACQUISITION.md:300-305@972972e`)— así que la segunda mitad del «origen» hay que llenarla con el anuncio o
   dejarla fuera. La forma completa de la ficha publicitaria por persona está en
   `aios-command-center_1.html:4846-4853`: once campos de publicidad y cuatro UTM.
 
@@ -510,7 +510,7 @@ contrario**, sin que ninguno de los dos se equivoque.
   `capacidadRequerida: 'tablero.ver'`, `sinOperacionesTodavia: true`, grupo de menú «Inteligencia».
 - La bandera era literal y comprobable: el 2026-09-15 `ls app/api/` devolvía 17 carpetas y **ninguna era `acquisition`**
   (foto del 2026-09-15, § 2). El 2026-09-16 la pantalla empezó a leer datos: la bandera se fue y la ruta llama al portero
-  con `tablero.ver` (`01-ACQUISITION.md:88-92`). Con eso llega la pregunta de alcance: **qué campañas puede ver quién**.
+  con `tablero.ver` (`01-ACQUISITION.md:88-92@972972e`). Con eso llega la pregunta de alcance: **qué campañas puede ver quién**.
 
 ### A7-34 · Los dos paneles que Acquisition abre quedan marcados como ocultos para lectores de pantalla
 
@@ -544,7 +544,7 @@ Conversion, por clave y por ventana. No hay tabla, ni endpoint, ni job donde eso
 **Dónde se guarda una alerta de Acquisition y quién la cierra.** El §18.13 pide `entity_type` /
 `entity_id`, `baseline`, `current_value`, `change_percentage`, `period_start`, `period_end`,
 `severity`, `confidence`, `possible_causes`. `negocio.hallazgos` no tiene ninguno de esos y está
-atada al contacto (foto del 2026-09-15, § 3.7; igual el 2026-09-28, `01-ACQUISITION.md:315-317`). Y falta el ciclo: quién marca «visto», como ya trae el hallazgo que
+atada al contacto (foto del 2026-09-15, § 3.7; igual el 2026-09-28, `01-ACQUISITION.md:315-317@972972e`). Y falta el ciclo: quién marca «visto», como ya trae el hallazgo que
 Conversion manda (`conversion.js:64`).
 
 **Dónde ve Acquisition los hallazgos que recibe.** El campo `to` existe y se dibuja en la pantalla
@@ -574,7 +574,7 @@ su `data-sub`?
 el §18.17 la pone en el reporte a Executive («91 % de leads con meta_ad_id válido»). El prototipo no
 la dibuja en ninguna parte: no hay KPI ni renglón. Medido el 2026-09-15, eran **176 de 233 (75,5 %)** sobre la cohorte y **80,4 %** sobre los contactos
 de pauta, y **82 de 163 citas (50,3 %)** (foto del 2026-09-15, § 4); el 2026-09-28 la pantalla de Acquisition lo dibuja, 71,8 % y 82 de 210 citas
-(`01-ACQUISITION.md:140-141`), y la ficha de Executive no. Sin ese renglón, toda la ficha de Acquisition en Executive se lee como si cubriera el 100 %.
+(`01-ACQUISITION.md:140-141@972972e`), y la ficha de Executive no. Sin ese renglón, toda la ficha de Acquisition en Executive se lee como si cubriera el 100 %.
 
 **Si el número de campañas activas es un dato que Acquisition entrega.** Executive guarda un `camp`
 por período (`executive.js:16-20`: 3, 3, 4, 6, 9) y **no lo dibuja en ninguna parte** — un grep de

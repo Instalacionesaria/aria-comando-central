@@ -96,8 +96,8 @@ export function descartado(alias = 'citas'): RawBuilder<boolean> {
  *     cancelled  163  ·  confirmed  149  ·  noshow  15
  *
  * **Quince citas que el calendario marcó como plantón**, las quince alcanzables. O sea que la
- * asistencia no está completamente a oscuras: el lado negativo se observa y el positivo no
- * —`showed` no aparece ni una vez—, que es una asimetría que hay que decir y no promediar.
+ * asistencia no está completamente a oscuras: el lado negativo se observa y el positivo no —`showed` no
+ * aparecía ni una vez; desde octubre sí, 3 el 2026-10-18, y nada lo lee—: una asimetría que no se promedia.
  *
  * `ESTADO_NO_APARECIO` estaba declarada desde la `038` y **nadie la leía**: una constante con el
  * nombre correcto al lado de una tabla que ya traía el dato.

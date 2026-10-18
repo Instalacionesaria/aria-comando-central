@@ -154,7 +154,7 @@ de 28 px. Prioridad:
 4. **Lo que falta en Fundaciones**: en Research, el paso del método que falta; en Marketing, los datos que
    harán salir «[COMPLETAR]» en un guion.
 5. **Nada.** Sin una de las anteriores, no se dibuja nada: es la regla del silencio
-   (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:82-152`). La frase descriptiva de Client Success de
+   (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:82-152@972972e`). La frase descriptiva de Client Success de
    la Simulación no sale: no dice nada medido.
 
 ## AG-78 · Quién lo sirve

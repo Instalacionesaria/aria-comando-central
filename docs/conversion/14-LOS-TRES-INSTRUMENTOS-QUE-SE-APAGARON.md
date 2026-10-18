@@ -130,7 +130,7 @@ Setenta y nueve escrituras. Setenta y nueve ceros. **Ninguna excepción.** Esto 
 vacío, porque un campo vacío se nota y un cero se publica. Publicar *«0 % de visionado promedio del
 VSL»* sería técnicamente cierto y completamente engañoso.
 
-El diagnóstico está en `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:566-567`: el tracking individual del
+El diagnóstico está en `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:566-567@972972e`: el tracking individual del
 VSL *«está cableado y no reporta nada»*, y es problema del medidor —vTurb o su integración—, no de
 GoHighLevel.
 
@@ -162,7 +162,7 @@ publicándolos — igual que `lib/negocio/consumoDelPrecall.ts` hace con `-20%` 
 | `Agendado` en **121** contactos | **119** tienen alguna cita · **47** tienen una cita **alcanzable** · **2** no tienen ninguna |
 
 Los 72 de diferencia entre 119 y 47 son **citas congeladas**: el CRM ya no devuelve sus eventos, y el
-repositorio ya conoce ese caso (regla 4 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:267-273`).
+repositorio ya conoce ese caso (regla 4 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:267-273@972972e`).
 
 **Consecuencia de diseño:** el agendamiento de Conversion sale del mismo `exists` con
 `ghl_calendario_id is not null` que usan `costoDelAnuncio.ts:350-353`, `calidadDelCreativo.ts:223-226`,

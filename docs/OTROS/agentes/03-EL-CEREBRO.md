@@ -17,7 +17,7 @@
   (`components/views/ExecutiveView.jsx`), la del pie (`components/ConsultaAlCerebro.jsx`) y el rótulo de
   CONVERSACIONES en `components/Nav.jsx`.
 - Las reglas propias de Executive: consume y no recalcula, el dinero es del mes y es venta reportada,
-  correlación no es causa (`docs/OTROS/estado actual/11-EXECUTIVE.md:443-476`).
+  correlación no es causa (`docs/OTROS/estado actual/11-EXECUTIVE.md:443-476@972972e`).
 
 ---
 
@@ -56,7 +56,7 @@ entra en `MUTACIONES_CON_CAPACIDAD_DE_LECTURA`.
 La ruta del Inicio **baja la bandera** `sinOperacionesTodavia` de `executive`
 (hecho en AG5: `lib/autorizacion/secciones.ts:230` es ahora el comentario de una línea, NE-33), el conteo
 literal de `pruebas/codigo/90-fundaciones.test.ts` pasó de 1 a 0 en el mismo commit, y nació la prueba de base
-de la ruta, la 206, como manda la regla 31 (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:799-810`).
+de la ruta, la 206, como manda la regla 31 (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:799-810@972972e`).
 
 ## AG-41 · Sólo se ofrece lo de las pestañas que la persona ve
 

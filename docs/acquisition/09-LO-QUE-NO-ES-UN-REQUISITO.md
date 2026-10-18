@@ -196,7 +196,7 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   cero real es información** —una campaña apagada, un anuncio sin entrega, un embudo sin tráfico— y
   la pantalla tiene que poder mostrarlo. Medido el 2026-09-15: cuatro de los siete anuncios de
   la ventana tenían 1 o 2 contactos (foto del 2026-09-15, § 6, regla 5), y con el piso de 10
-  sólo tres podían publicar tasa; el 2026-09-28, a 30 días, 4 de 79 (`01-ACQUISITION.md:145`).
+  sólo tres podían publicar tasa; el 2026-09-28, a 30 días, 4 de 79 (`01-ACQUISITION.md:145@972972e`).
 - **Lo que revela —y es lo que hay que diseñar antes de portar—:** el piso de 1 garantiza que
   `base` nunca sea 0, y por eso **la pantalla nunca se probó con un embudo vacío**. Con `base = 0`
   el comportamiento del código ya es el correcto —todas las barras de proporción quedan en 0 %
@@ -222,7 +222,7 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   contraste: **la clave de la campaña es un identificador, nunca el nombre.** `CAMPS` identifica por
   `n`, un texto, y la regla 1 del § 6 de la foto del 2026-09-15 está medida en contra: «El app» tenía DOS `adId`
   distintos (44 contactos y 2) y «economia us latino» otros dos (17 y 2); el 2026-09-28 son 79 anuncios con 32
-  nombres (`01-ACQUISITION.md:355-357`). Agrupar por nombre fusiona anuncios de campañas distintas y **borra el
+  nombres (`01-ACQUISITION.md:355-357@972972e`). Agrupar por nombre fusiona anuncios de campañas distintas y **borra el
   arranque de la campaña nueva del 12 de septiembre**, que es justo lo que un media buyer necesita ver.
 
 ### A9-08 · `invD × w.days`: la inversión extrapolada, y la flecha muerta del primer KPI
@@ -237,7 +237,7 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   el §18.4 exige guardar las métricas por fecha. `public.closer_meta_metricas` ya tiene esa forma
   exacta (`nivel`, `objeto_id`, `padre_id`, `fecha`, `gasto`, `impresiones`, `clics`, `cpl`…) y
   **0 filas**, y un grep de esa tabla sobre el código del repositorio daba cero coincidencias (foto del 2026-09-15,
-  § 5.2); el 2026-09-28 sigue vacía (`01-ACQUISITION.md:235-236`) y el gasto está en `negocio.metricas_de_anuncio`.
+  § 5.2); el 2026-09-28 sigue vacía (`01-ACQUISITION.md:235-236@972972e`) y el gasto está en `negocio.metricas_de_anuncio`.
 - **Y hay un defecto que el andamio produce y que hay que nombrar antes de portar.** Como `inv` se
   calcula **sin** `w.mod`, con cualquier período fijo las dos ventanas duran lo mismo, la inversión
   actual y la anterior son idénticas y el KPI de Inversión nunca dibuja una variación: **la única
@@ -261,7 +261,7 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   sistema real cuenta contactos enteros por día**, y la ventana se arma sumándolos.
 - **Lo que revela:** la forma sí queda, y ya es reproducible. La cohorte se arma con `alta_en_el_crm` y no
   con `creado_el` —233 contra 256 en la ventana de 14 días del 2026-09-15, 23 de diferencia que son latencia
-  de ingesta (migración 048 §1; regla 6 del § 6 de la foto del 2026-09-15, hoy `01-ACQUISITION.md:376-378`)—
+  de ingesta (migración 048 §1; regla 6 del § 6 de la foto del 2026-09-15, hoy `01-ACQUISITION.md:376-378@972972e`)—
   y el reparto por anuncio se midió entonces: 109 / 57 sin `adId` / 44 / 17 / 2 / 2 / 1 / 1.
 
 ### A9-10 · La dirección del cálculo: la tasa es el dato y el volumen se deriva
@@ -498,7 +498,7 @@ antes de portar, no después.
   es un requisito enunciado y no implementado: **toda señal tiene que poder mostrar en qué se
   basa.** Estado: no hay dónde guardarla. `negocio.hallazgos` es la tabla de Conversation —el 2026-09-15 sus 20
   filas tenían `contacto_id` poblada (foto del 2026-09-15, § 3.7)— y no existe el par `entity_type`/`entity_id`
-  que el §18.13 pide para apuntar a una campaña, un ad set o un anuncio (`01-ACQUISITION.md:315-317`).
+  que el §18.13 pide para apuntar a una campaña, un ad set o un anuncio (`01-ACQUISITION.md:315-317@972972e`).
 
 ### A9-24 · Las nueve frases del «Plan de acción» y sus dos umbrales
 
@@ -628,7 +628,7 @@ sistema que se contradice consigo mismo en la cara del usuario».
 **Lo que revela:** los nombres inventados no son decoración del prototipo, son **la forma en que el
 prototipo se propagó**. La limpieza no es del archivo, es del grafo de archivos que lo citan. Y el
 requisito que queda en pie es el de A9-07 y la regla 1 del § 6 de `01-ACQUISITION.md`
-(`01-ACQUISITION.md:355-357`): la fila se identifica por `adId`/`campaignId` y se **muestra** con el
+(`01-ACQUISITION.md:355-357@972972e`): la fila se identifica por `adId`/`campaignId` y se **muestra** con el
 nombre que vino de la base, normalizando la caja para agrupar y mostrando una variante tal cual vino
 (`lib/negocio/atribucionDelLead.ts:124-127`), descartando las etiquetas `{{campaign.name}}` sin
 renderizar que dos contactos de la ventana traían de verdad (regla 4 de la foto del 2026-09-15).

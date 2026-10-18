@@ -43,7 +43,7 @@ export async function probarConexionConMeta(token: string, cuentaId: string): Pr
   });
   if (cuenta.tipo !== 'datos') {
     const motivo = fallaDeMeta(cuenta);
-    // Un token válido que «no encuentra» la cuenta es, casi siempre, la cuenta sin asignar: se dice como permiso.
+    // Un token válido que «no encuentra» la cuenta es la cuenta mal escrita o sin asignar: se dice `no_existe`.
     return falla('cuenta', motivo === 'otro' ? 'no_existe' : motivo);
   }
 

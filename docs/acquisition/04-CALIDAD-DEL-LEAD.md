@@ -116,7 +116,7 @@ calificados— y **la tasa es el cociente**. El día que se porte, esta línea s
 - **Fórmula:** `% calif. = calificados / agendados`
 - **Estado:** calculable el día que exista la marca de calificación; **el denominador ya existe**.
   La foto del 2026-09-15 midió 163 citas alcanzables en su ventana (su § 4), y el corte del
-  2026-09-28, 210 a 30 días (`01-ACQUISITION.md:273-275`). Lo que falta es el numerador.
+  2026-09-28, 210 a 30 días (`01-ACQUISITION.md:273-275@972972e`). Lo que falta es el numerador.
 
 La misma proporción aparece dos veces con dos redacciones: en la tabla como columna `% calif.` y en
 la tarjeta como **«{X}% de {etiqueta de la etapa}»**, que nombra su base en la misma frase. Esa
@@ -131,7 +131,7 @@ declarada se lee contra la base equivocada.
   `:236` (campaña)
 - **Fórmula:** `costo por calificado = inversión de la ventana / calificados de la ventana`
 - **Estado:** **incalculable hoy.** El 2026-09-15 no había una sola columna de gasto poblada (foto del 2026-09-15, § 3.2); desde el
-  2026-09-16 el gasto existe (`01-ACQUISITION.md:238-245`), y lo que falta es la marca de calificado (`01-ACQUISITION.md:346-347`).
+  2026-09-16 el gasto existe (`01-ACQUISITION.md:238-245@972972e`), y lo que falta es la marca de calificado (`01-ACQUISITION.md:346-347@972972e`).
 
 Cuatro lugares, un solo criterio. El global **no es el promedio de los tres embudos**: es el
 cociente de los dos totales (`g.cq = g.calificados ? g.inv / g.calificados : 0`), que es lo único
@@ -361,7 +361,7 @@ al CRM desde el 2026-09-13 05:13 UTC**, mientras el barrido siguió corriendo �
 es 2026-09-16 15:40 UTC—. O sea que la ventana avanzó sobre una cola vacía de tres días. Para una
 pantalla que promedia calidad sobre una ventana móvil, eso no baja la afinidad, pero sí **diluye
 cualquier tasa cuyo denominador sea la ventana**, y la pantalla tiene que poder decir hasta qué fecha hay datos y no sólo
-desde cuándo mide (regla 6 del § 6 de la foto del 2026-09-15); el 2026-09-28 sigue sin decirlo (`01-ACQUISITION.md:411-416`).
+desde cuándo mide (regla 6 del § 6 de la foto del 2026-09-15); el 2026-09-28 sigue sin decirlo (`01-ACQUISITION.md:411-416@972972e`).
 
 **Y hay una trampa de nombres que conviene decir antes de que confunda a alguien:** en este
 repositorio «ICP» significa dos cosas distintas. La pantalla `icp` de Fundaciones es **ICP & Oferta**
@@ -448,7 +448,7 @@ solo anuncio**: sin ellos, «agendamiento - yaping» pasa de 41,5 a **53,0** y s
 orden de la tabla.**
 
 **La regla 7 del § 6 de la foto del 2026-09-15 vale también para la calidad, y hay que decirlo acá porque esa foto la escribió para
-las tasas de agendamiento** (hoy es también la regla 7: `01-ACQUISITION.md:380-383`). La fila sin anuncio no sólo agenda más: tiene
+las tasas de agendamiento** (hoy es también la regla 7: `01-ACQUISITION.md:380-383@972972e`). La fila sin anuncio no sólo agenda más: tiene
 **el mejor ICP de la tabla, treinta puntos por encima del anuncio de mayor volumen** (71,6 contra
 41,5), y se lleva **23 de los 37 contactos de tramo alto de toda la ventana**. Dibujada como una fila
 más de la columna «Afinidad ICP», esa fila dice que el mejor anuncio es ninguno.

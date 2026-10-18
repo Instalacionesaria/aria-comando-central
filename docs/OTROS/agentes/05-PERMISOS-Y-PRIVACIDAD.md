@@ -54,7 +54,7 @@ el servidor**, no sólo en la pantalla:
 |---|---|
 | Preguntar al cerebro, borrar un hilo | rechazado: el cerebro se apaga y lo dice |
 | Generar o regenerar el Brief del closer | rechazado: gastaría la llave del cliente. El Brief ya guardado se lee |
-| Marcar «vista», resolver, descartar o validar una señal | rechazado: un autor de la principal dentro de un cliente da `23503` (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:871-906`) |
+| Marcar «vista», resolver, descartar o validar una señal | rechazado: un autor de la principal dentro de un cliente da `23503` (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:871-906@972972e`) |
 | Firmar un umbral | rechazado: la firma es del Admin **de la empresa** (`D-11`) |
 | Ajustar los topes | permitido, con autor nulo: es configuración, y la casa ya lo resuelve así con `autorDelCambio` (`lib/autorizacion/sesion.ts:384-385`) |
 | Leer señales, plan, Reunión, comentario de la cabecera | permitido: sólo leen |

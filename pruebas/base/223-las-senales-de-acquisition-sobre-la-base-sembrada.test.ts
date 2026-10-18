@@ -68,18 +68,18 @@ test('la pasada de Acquisition escribe exactamente las señales esperadas, y sus
   assert.deepEqual(
     senales.map((s) => [s.ventana, s.regla, s.entidad_tipo, s.entidad_id, s.gravedad, Number(s.valor_actual), s.muestra, s.requiere_validacion_ejecutiva, s.estado]),
     [
-      // 30 días: 99 de 119 contactos con anuncio y con campaña; ninguna sesión con las cinco UTM; Webinar se
-      // lleva 2.730 de 4.060; Remarketing, 0 de 19 agendados; la pauta, 15 días parada.
+      // 30 días: 99 de 119 contactos con anuncio y con campaña; Webinar se lleva 2.730 de 4.060; Remarketing, 0 de
+      // 19 agendados; la pauta, 15 días parada. Las UTM NO avisan: las 99 sesiones traen las cinco, con la de campaña
+      // como `campaign`, que es como la manda GoHighLevel. Hasta el 2026-10-18 se contaba sólo `utmCampaign` y la
+      // señal ACQ-ATRIBUCION-UTM salía en las dos ventanas culpando a una UTM que sí llegaba.
       ['30d', 'ACQ-ATRIBUCION-CONTACTOS', 'empresa', 'empresa', 'media', 0.8319, 119, false, 'abierta'],
       ['30d', 'ACQ-ATRIBUCION-SIN-CAMPANA', 'empresa', 'empresa', 'media', 0.8319, 119, false, 'abierta'],
-      ['30d', 'ACQ-ATRIBUCION-UTM', 'empresa', 'empresa', 'media', 0, 99, false, 'abierta'],
       ['30d', 'ACQ-CONCENTRACION', 'campana', id('Webinar - agenda'), 'media', 0.6724, null, true, 'abierta'],
       ['30d', 'ACQ-FUGA-ENTRE-ETAPAS', 'par_de_etapas', 'profile:contactos>agendados', 'media', 0, 19, false, 'abierta'],
       ['30d', 'ACQ-SIN-ENTREGA', 'empresa', 'empresa', 'critica', 15, null, false, 'abierta'],
       // 7 días: «sin entrega» y el monitor. Sin gasto en la ventana, nada que compare costos.
       ['7d', 'ACQ-ATRIBUCION-CONTACTOS', 'empresa', 'empresa', 'media', 0.5, 26, false, 'abierta'],
       ['7d', 'ACQ-ATRIBUCION-SIN-CAMPANA', 'empresa', 'empresa', 'media', 0.5, 26, false, 'abierta'],
-      ['7d', 'ACQ-ATRIBUCION-UTM', 'empresa', 'empresa', 'media', 0, 13, false, 'abierta'],
       ['7d', 'ACQ-SIN-ENTREGA', 'empresa', 'empresa', 'critica', 15, null, false, 'abierta'],
     ],
   );
@@ -93,11 +93,11 @@ test('la pasada de Acquisition escribe exactamente las señales esperadas, y sus
     Object.fromEntries(p.grupos.filter((g) => g.renglones.length > 0).map((g) => [g.clave, g.renglones.map((x) => x.regla)]));
   // Primero lo que pierde gente (la fuga, 11); después, sin pérdida calculable, lo más grave.
   assert.deepEqual(reglasPorGrupo(planes.find((p) => p.ventana === '30d')!.plan), {
-    data: ['ACQ-FUGA-ENTRE-ETAPAS', 'ACQ-SIN-ENTREGA', 'ACQ-ATRIBUCION-CONTACTOS', 'ACQ-ATRIBUCION-UTM', 'ACQ-ATRIBUCION-SIN-CAMPANA'],
+    data: ['ACQ-FUGA-ENTRE-ETAPAS', 'ACQ-SIN-ENTREGA', 'ACQ-ATRIBUCION-CONTACTOS', 'ACQ-ATRIBUCION-SIN-CAMPANA'],
     validacion: ['ACQ-CONCENTRACION'],
   });
   const de7 = planes.find((p) => p.ventana === '7d')!.plan;
-  assert.deepEqual(reglasPorGrupo(de7), { data: ['ACQ-SIN-ENTREGA', 'ACQ-ATRIBUCION-CONTACTOS', 'ACQ-ATRIBUCION-UTM', 'ACQ-ATRIBUCION-SIN-CAMPANA'] });
+  assert.deepEqual(reglasPorGrupo(de7), { data: ['ACQ-SIN-ENTREGA', 'ACQ-ATRIBUCION-CONTACTOS', 'ACQ-ATRIBUCION-SIN-CAMPANA'] });
   // Lo que no se pudo medir se dice en vez de callarlo: en 7 días, el costo por calificado (sin gasto), las
   // citas (ninguna) y las ventas (ninguna reportada).
   assert.equal(de7.sinMedicion.length, 3);
@@ -154,15 +154,22 @@ test('con llave, la pasada redacta el plan y guarda lo que pasó la validación,
     globalThis.fetch = original;
   }
   assert.equal(llamadas, 2, 'una llamada por ventana');
-  const planes = await filas<{ ventana: string; redaccion: { renglones: Record<string, string>; quitadas: { superlativo: number } } }>(
+  const planes = await filas<{
+    ventana: string;
+    redaccion: { renglones: Record<string, string>; quitadas: { superlativo: number } };
+    plan: { grupos: { renglones: unknown[] }[] };
+  }>(
     admin,
-    'select ventana, redaccion from negocio.planes_de_accion where org_id = $1 order by ventana',
+    'select ventana, redaccion, plan from negocio.planes_de_accion where org_id = $1 order by ventana',
     [e.conDatos],
   );
   for (const p of planes) {
     assert.equal(p.redaccion.quitadas.superlativo, 1, `${p.ventana}: el superlativo pasó`);
     assert.ok(!('data:0' in p.redaccion.renglones), `${p.ventana}: la frase con el superlativo se guardó`);
-    assert.ok(Object.keys(p.redaccion.renglones).length >= 3, `${p.ventana}: no se guardó lo que pasó`);
+    // Todo lo que el modelo devolvió bien se guarda: cada renglón del plan, menos el del superlativo. Antes decía «al
+    // menos 3», un número que dependía de cuántas señales salían (bajó con la UTM corregida, el 2026-10-18).
+    const renglones = p.plan.grupos.reduce((n, g) => n + g.renglones.length, 0);
+    assert.equal(Object.keys(p.redaccion.renglones).length, renglones - 1, `${p.ventana}: no se guardó lo que pasó`);
   }
   const uso = await filas<{ n: string }>(admin, `select count(*)::text as n from negocio.uso_de_ia where org_id = $1 and agente = 'plan'`, [e.conDatos]);
   assert.equal(uso[0]!.n, '2');

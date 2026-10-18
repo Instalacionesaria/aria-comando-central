@@ -90,7 +90,7 @@ la columna se apaga y **lo dice**, como hace `calidadDelCreativo.ts:358-363`.
 
 ### CV8-14 · Ciento cuarenta y nueve campos están fuera de pantalla, y 81 tienen datos
 
-**Rastro** · `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:43-46` (el 2026-09-28, 174 fuera y 93 con datos).
+**Rastro** · `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:43-46@972972e` (el 2026-09-28, 174 fuera y 93 con datos).
 **Estado** · Medido el 2026-09-15: de los 170 campos del catálogo, 149 no se ven porque su carpeta no tiene `grupo`
 —`camposQueSeMuestran()` filtra por `cp.grupo is not null` (`camposDelCrm.ts:256`)— y 81 de ésos sí
 tienen valores: **4.939 valores guardados que ninguna pantalla lee**. Ahí adentro está la carpeta

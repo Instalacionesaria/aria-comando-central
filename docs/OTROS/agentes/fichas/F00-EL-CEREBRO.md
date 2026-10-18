@@ -41,7 +41,7 @@ de quien preguntó.
 
 No hay un SOP del cual partir. Las reglas que hereda son las de la plataforma: el piso de 10, los dos ceros
 (`null` es que nadie lo cargó, `0` es un hecho medido), la cohorte por un hecho de entrada, mediana y
-percentiles en vez de promedio, y las propias de Executive (`docs/OTROS/estado actual/11-EXECUTIVE.md:443-476`).
+percentiles en vez de promedio, y las propias de Executive (`docs/OTROS/estado actual/11-EXECUTIVE.md:443-476@972972e`).
 
 ## Sugerencias en el Inicio
 

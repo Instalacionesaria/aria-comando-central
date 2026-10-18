@@ -14,7 +14,7 @@
 //   · Resolver y descartar, siempre con motivo; el autor y la fecha los pone el servidor.
 //   · «Vista» es un POST explícito, el de «Ver evidencia»: un GET nunca escribe (AG-24).
 //   · Bajo delegación no se escribe nada: un autor de la principal dentro de un cliente da `23503`
-//     (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:871-906`), y decidir por la empresa no es de ARIA.
+//     (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:871-906@972972e`), y decidir por la empresa no es de ARIA.
 //   · Sólo señales de Conversation: el escritor filtra por departamento, así que el id de una de otro da 404
 //     aunque exista. La pantalla vive en `app/api/auditoria` y su `PANTALLA` es `conversation`.
 // ═══════════════════════════════════════════════════════════════════════════════

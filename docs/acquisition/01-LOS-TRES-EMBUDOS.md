@@ -33,7 +33,7 @@ tres**, así que ninguna implementación con columnas fijas `contactos/clics/age
 representarlo.
 
 `clics` aparece en los tres embudos. El 2026-09-15 ningún clic quedaba registrado en esta base (foto del 2026-09-15, línea 262); hoy
-llegan los de Meta por anuncio y por día (`01-ACQUISITION.md:230-234`), sin sesiones ni visitas propias (`01-ACQUISITION.md:310-313`).
+llegan los de Meta por anuncio y por día (`01-ACQUISITION.md:230-234@972972e`), sin sesiones ni visitas propias (`01-ACQUISITION.md:310-313@972972e`).
 
 ---
 
@@ -75,7 +75,7 @@ que no son tres embudos: `facebook`, `calendar` y `External Form` (foto del 2026
 eran dos caminos de pauta y una cola orgánica: `facebook`+`Paid Social`, que casi siempre traía `adId`; `calendar`+`Paid Social`,
 que traía `campaignId` y **0 `adId`**; y una cola sin pauta (líneas 187-189 de esa foto). El 2026-09-28, sobre toda la base, las
 puertas con campaña son tres y el anuncio llega por una sola: `facebook`/`instagram` 213 de 213 con `adId`, `External Form` 0 de
-98 y `calendar` 0 de 47 (`01-ACQUISITION.md:269-271`). Ninguna se llama como los del prototipo.
+98 y `calendar` 0 de 47 (`01-ACQUISITION.md:269-271@972972e`). Ninguna se llama como los del prototipo.
 
 ---
 
@@ -132,7 +132,7 @@ porque no hay etapa anterior de la cual salir. Es también la base contra la que
 demás en modo acumulado y el denominador del ancho de todas las barras (`:163`).
 
 **Estado:** existe. La cohorte se arma con `alta_en_el_crm` —cuándo entró el lead al CRM— y
-no con `creado_el` (`01-ACQUISITION.md:376-378`): la cohorte queda más chica, y la diferencia
+no con `creado_el` (`01-ACQUISITION.md:376-378@972972e`): la cohorte queda más chica, y la diferencia
 es latencia de ingesta (foto del 2026-09-15, línea 162). Con esa columna llega la obligación
 que esa foto escribía como regla 6 de su § 6 (línea 290): ninguna cohorte armada así tiene
 historia antes del despliegue, y la pantalla **tiene que decir desde cuándo mide**.
@@ -154,7 +154,7 @@ cita, la tabla deja de mostrarla sin que nadie lo decida.
 **Estado:** existe. El 2026-09-15 había 163 citas alcanzables con `inicio_el` en la ventana de 14 días, sobre 149
 contactos, con `ghl_calendario_id is not null` —el mismo filtro de cita alcanzable que ya usa
 `lib/negocio/atribucionDelLead.ts:132-135`—: 82 con `adId` (50,3 %) y 133 con `campaignId` (81,6 %) (foto del
-2026-09-15, línea 213). El 2026-09-28, a 30 días móviles, son 210 y 82 con anuncio (`01-ACQUISITION.md:273-275`).
+2026-09-15, línea 213). El 2026-09-28, a 30 días móviles, son 210 y 82 con anuncio (`01-ACQUISITION.md:273-275@972972e`).
 
 ### A1-06 · La clave de la etapa es interna y estable; la etiqueta es un atributo del recorrido
 
@@ -194,7 +194,7 @@ etiqueta.
 `identidad` devolvía tres coincidencias y **ninguna era gasto de Meta poblado**: una meta de ventas, un `ht_budget` de otra
 plataforma, y las columnas de `public.closer_meta_metricas`, que tenía **0 filas** (foto del 2026-09-15, línea 93). El
 numerador llegó el 2026-09-16, por anuncio **y por día**, desde el Ad Manager de GoHighLevel y sin conectar Meta
-(`01-ACQUISITION.md:27-31`); de los siete, la pantalla de hoy publica uno, el CPL por anuncio (`01-ACQUISITION.md:158-161`).
+(`01-ACQUISITION.md:27-31@972972e`); de los siete, la pantalla de hoy publica uno, el CPL por anuncio (`01-ACQUISITION.md:158-161@972972e`).
 
 ---
 
@@ -214,7 +214,7 @@ separadas.
 
 **Estado:** el inventario existe, y desde el 2026-09-16 la economía por anuncio también. El 2026-09-15 había **1 solo id de ad
 set** en la ventana (foto del 2026-09-15, línea 195); el 2026-09-28 la dimensión guarda 79 anuncios de 12 campañas, y el ad set
-en 59 (`01-ACQUISITION.md:247-251`). `invD` lo reemplaza el gasto por anuncio y por día (`01-ACQUISITION.md:238-245`; A1-08).
+en 59 (`01-ACQUISITION.md:247-251@972972e`). `invD` lo reemplaza el gasto por anuncio y por día (`01-ACQUISITION.md:238-245@972972e`; A1-08).
 
 ### A1-10 · La campaña se identifica por clave, no por nombre
 
@@ -224,7 +224,7 @@ En el prototipo la campaña no tiene identificador: `n` es un texto y es lo úni
 y es andamiaje que esconde un error de diseño medido en contra. El 2026-09-15 **«El app» tenía dos `adId` distintos**
 —`120249633901550467` con 44 contactos y `120249792217700467` con 2— (foto del 2026-09-15, línea 280): los mismos
 creativos relanzados en la campaña nueva del 12 de septiembre. El 2026-09-28 son 79 anuncios con 32 nombres, hasta
-seis con el mismo (`01-ACQUISITION.md:247-248`). Agrupar por nombre los fusiona y **borra el arranque de la campaña
+seis con el mismo (`01-ACQUISITION.md:247-248@972972e`). Agrupar por nombre los fusiona y **borra el arranque de la campaña
 nueva**, que es justo lo que un media buyer necesita mirar. El §18.5 ya lo fija: la relación es por `meta_ad_id`.
 
 Dos reglas del § 6 de la foto del 2026-09-15 se aplican encima, y las dos son sobre el nombre, no
@@ -259,7 +259,7 @@ hay un camino de render distinto para el agregado.
 
 **Estado relevante:** con la regla 5 del § 6 de la foto del 2026-09-15 —ventana de 14 días y piso de 10 contactos para publicar una
 tasa— **sólo 3 anuncios de la ventana llegaban al piso** (109, 44 y 17 contactos) (línea 288 de esa foto). El 2026-09-28 la
-pantalla abre en 30 días con el mismo piso (`01-ACQUISITION.md:119-124`) y publica tasa en 4 de 79 filas (`01-ACQUISITION.md:145`).
+pantalla abre en 30 días con el mismo piso (`01-ACQUISITION.md:119-124@972972e`) y publica tasa en 4 de 79 filas (`01-ACQUISITION.md:145@972972e`).
 La tabla desplegada real tiene pocas filas con tasa, y el total de arriba es la cifra que la mayoría va a leer.
 
 ### A1-13 · El encabezado del recorrido dice por dónde se entra y cuántas campañas lo alimentan
@@ -404,9 +404,9 @@ forma del recorrido es una cosa; la lectura de la tasa es otra.
 ### P-01 · De dónde sale «Clics a landing VSL» — y si le pertenece a Acquisition
 
 Es la etapa que el prototipo pone en **los tres** recorridos (`:8`, `:12`, `:16`) y la que menos existe: ninguna tabla de
-tráfico, sesiones ni eventos de landing en `negocio.*` —21 tablas el 2026-09-15, 29 el 2026-09-28 (`01-ACQUISITION.md:310-313`)—,
+tráfico, sesiones ni eventos de landing en `negocio.*` —21 tablas el 2026-09-15, 29 el 2026-09-28 (`01-ACQUISITION.md:310-313@972972e`)—,
 y el 2026-09-15 ningún clic quedaba registrado en esta base (foto del 2026-09-15, líneas 258-262); hoy llegan los clics y las
-vistas de landing que cuenta Meta, por anuncio y por día, no por contacto (`01-ACQUISITION.md:230-234`). Pero la pregunta no es
+vistas de landing que cuenta Meta, por anuncio y por día, no por contacto (`01-ACQUISITION.md:230-234@972972e`). Pero la pregunta no es
 sólo de dónde sale el dato. Son tres preguntas, y el prototipo ya contestó dos de ellas **en otra pantalla**:
 
 **(a) Quién es el dueño.** `lib/aios/conversion.js:35-39` declara la cadena de Conversion:
@@ -487,14 +487,14 @@ respuesta depende cuántas filas tenga la tabla — y con el piso de 10 contacto
 que el corte por ad set sólo se podía hacer **por nombre**, que viene en la clave `utmMedium`, cuyo nombre dice
 «medio» y cuyo contenido es «Advantage+ ON / America Hispano / 25-65» (regla 2 de su § 6, línea 282). Ya no es
 así: el id llega como `utmTerm`, en 274 de 594 contactos con 10 valores, y la dimensión guarda el ad set de 59
-de los 79 anuncios (`01-ACQUISITION.md:37-39`, `01-ACQUISITION.md:247-251`, `01-ACQUISITION.md:281-284`).
+de los 79 anuncios (`01-ACQUISITION.md:37-39@972972e`, `01-ACQUISITION.md:247-251@972972e`, `01-ACQUISITION.md:281-284@972972e`).
 
 ### P-06 · Dónde va la fila «sin anuncio», que el modelo de recorridos no admite
 
 En el prototipo toda fila pertenece a una campaña y las siete campañas cubren el 100 % de los contactos. En la base, **una parte de
 los contactos no trae `adId`** y el 2026-09-15 ese segmento tenía la tasa de agenda más alta de la tabla, en su mayoría los contactos
 de la campaña BOFU que entra por el widget de calendario, donde la campaña sobrevive y el anuncio se pierde (foto del 2026-09-15,
-línea 188, y regla 7 de su § 6, línea 292); el 2026-09-28 el calendario sigue en 0 de 47 con `adId` (`01-ACQUISITION.md:269-271`).
+línea 188, y regla 7 de su § 6, línea 292); el 2026-09-28 el calendario sigue en 0 de 47 con `adId` (`01-ACQUISITION.md:269-271@972972e`).
 
 El criterio ya está decidido en `lib/negocio/atribucionDelLead.ts:179-183` —el conteo va, para que las
 filas sumen la cohorte; la tasa no va, porque junta categorías distintas— pero **el modelo de esta

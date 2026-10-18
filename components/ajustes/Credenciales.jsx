@@ -1,6 +1,6 @@
 'use client';
 
-/* Credenciales — las tres claves y los tres identificadores de la empresa.
+/* Credenciales — las cinco claves y los seis identificadores de la empresa.
  *
  * Era `components/views/AjustesView.jsx` entero. Se separó en la Etapa 11 cuando Ajustes pasó a
  * tener tres pestañas: acá quedó SOLO esta, y el armazón de pestañas quedó en la vista.

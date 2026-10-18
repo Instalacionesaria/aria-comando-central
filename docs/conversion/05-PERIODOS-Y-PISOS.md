@@ -131,7 +131,7 @@ desglose de ese cohorte cae por debajo inmediatamente… O se publica sin desglo
 
 ### CV5-07 · Apartar no es esconder
 
-**Rastro** · Regla 2 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:205-207`.
+**Rastro** · Regla 2 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md:205-207@972972e`.
 **Estado** · Las familias que no llegan al piso **siguen contando en la cohorte** y aparecen con su
 conteo; lo que no se publica es su **tasa**. Las filas tienen que sumar la cohorte exacta, o la
 cobertura de arriba deja de cuadrar con la tabla de abajo.
@@ -144,7 +144,7 @@ cobertura de arriba deja de cuadrar con la tabla de abajo.
 
 **Estado** · Ver `CV14-09`: de 121 `Agendado`, **119 tienen alguna cita y sólo 47 la tienen
 alcanzable**. Los 72 de diferencia son congeladas, y el repositorio ya las conoce: regla 4 de
-`07-REGLAS-TRANSVERSALES.md:269-273` — el estado se cuenta sólo con `ghl_calendario_id is not null`;
+`07-REGLAS-TRANSVERSALES.md:269-273@972972e` — el estado se cuenta sólo con `ghl_calendario_id is not null`;
 la existencia, sobre todas.
 
 **Requisito**: el agendamiento usa el predicado de **estado** —`ghl_calendario_id is not null`— y la
@@ -163,8 +163,8 @@ Ninguna de las cuatro sirve hoy: dos sin volumen, dos que cruzan el corte. Una v
 corte» —del 2026-09-01 a hoy— tendría 241 contactos y una sola ruta. Pero sería **una ventana que se
 define por un accidente del negocio**, y el día que la ruta cambie otra vez habría que redefinirla.
 La alternativa es dejar las cuatro y que el `corteDeEpoca` haga el trabajo. **No está decidido**, y
-la lista de ventanas es cerrada por la regla 6 de `07-REGLAS-TRANSVERSALES.md:379`: agregar una toca
-a las seis pantallas que hoy la comparten (`07-REGLAS-TRANSVERSALES.md:415-419`).
+la lista de ventanas es cerrada por la regla 6 de `07-REGLAS-TRANSVERSALES.md:379@972972e`: agregar una toca
+a las seis pantallas que hoy la comparten (`07-REGLAS-TRANSVERSALES.md:415-419@972972e`).
 
 ---
 

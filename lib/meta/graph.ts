@@ -65,14 +65,14 @@ export function fallaDeMeta(r: Exclude<Respuesta<unknown>, { tipo: 'datos' }>): 
 export const TEXTO_DE_FALLA_DE_META: Readonly<Record<FallaDeMeta, string>> = {
   token: 'Meta rechazó el token: venció, se revocó o no está completo. Hay que generarlo de nuevo y volver a cargarlo.',
   permiso:
-    'El token no tiene permiso para esto. Revisá en el Business Manager que el usuario del sistema tenga asignada la ' +
+    'El token no tiene permiso para esto. Revisa en el Business Manager que el usuario del sistema tenga asignada la ' +
     'cuenta publicitaria (y la Página) y que el token tenga ads_read, pages_read_engagement y pages_show_list.',
   no_existe:
-    'Meta no encuentra la cuenta publicitaria con ese token. Revisá el número act_… (el del Administrador de anuncios) ' +
+    'Meta no encuentra la cuenta publicitaria con ese token. Revisa el número act_… (el del Administrador de anuncios) ' +
     'y que la cuenta esté asignada al usuario del sistema.',
   cupo: 'Meta limitó las llamadas por un rato. No hay que hacer nada: se reintenta solo.',
-  sin_respuesta: 'Meta no contestó a tiempo. Probá de nuevo en unos minutos.',
-  otro: 'Meta rechazó el pedido por un motivo que no es el token ni los permisos. Probá de nuevo; si sigue, avisá a desarrollo.',
+  sin_respuesta: 'Meta no contestó a tiempo. Prueba de nuevo en unos minutos.',
+  otro: 'Meta rechazó el pedido por un motivo que no es el token ni los permisos. Prueba de nuevo; si sigue, avisa a desarrollo.',
 };
 
 /**

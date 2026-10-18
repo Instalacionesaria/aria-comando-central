@@ -345,7 +345,7 @@ test('ADR-0303 · las pantallas del prototipo siguen sin operaciones', () => {
     'una pantalla del prototipo recibió su primera operación: entra al modelo de permisos ' +
       '(SECCIONES) o se justifica por qué no',
   );
-  // Desde el cerebro (AG5) la lista está vacía y lo de arriba ya no mira nada: la última que salió,
+  // Desde el cerebro (AG5) sólo queda `clientos`, que es externa y no tiene ruta; la última que salió,
   // `executive`, tiene que tener su ruta. Si alguien le vuelve a poner la bandera, falla lo de arriba;
   // si se borra su ruta, esto.
   assert.ok(conOperacion.includes('executive'), 'el Inicio perdió su ruta: `app/api/executive/route.ts`');

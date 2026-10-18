@@ -89,6 +89,27 @@ export const COBERTURA_SUFICIENTE = 0.9;
 export const LAS_CINCO_UTM = ['utmSource', 'utmMedium', 'utmCampaign', 'utmContent', 'utmTerm'] as const;
 
 /**
+ * Con qué claves llega cada UTM en la atribución de GoHighLevel.
+ *
+ * La de campaña NO llega como `utmCampaign`: llega como `campaign`. Medido en producción el 2026-10-18, sólo conteos:
+ * de 519 contactos con alguna UTM, `utmCampaign` en 0 y `campaign` en 273, 272 de ellos junto con `utmSource` y
+ * ninguno sin otra UTM. Contando sólo `utmCampaign`, ningún contacto tenía las cinco y la señal `ACQ-ATRIBUCION-UTM`
+ * salía cada mañana culpando a una UTM que sí llega. Con las dos claves, las cinco completas son 56 de 519, y la que
+ * menos llega es `utmTerm`: el aviso sigue, por la causa real.
+ */
+const CLAVES_DE_LA_UTM: Readonly<Record<(typeof LAS_CINCO_UTM)[number], readonly string[]>> = {
+  utmSource: ['utmSource'],
+  utmMedium: ['utmMedium'],
+  utmCampaign: ['utmCampaign', 'campaign'],
+  utmContent: ['utmContent'],
+  utmTerm: ['utmTerm'],
+};
+
+/** La atribución trae esa UTM, con cualquiera de sus claves. */
+const traeLaUtm = (k: (typeof LAS_CINCO_UTM)[number]) =>
+  sql<boolean>`(c.atribucion_primera ?| ${[...CLAVES_DE_LA_UTM[k]]}::text[])`;
+
+/**
  * @param ventana Días de calendario `[desde, hasta]`, los dos incluidos, en vez de los últimos `dias` desde
  *   ahora. Es la ventana del detector de Acquisition (`lib/agentes/detectores/acquisition.ts`): los mismos días
  *   cerrados que `embudosDeAcquisition`, para que ninguna pantalla mezcle dos «7 días» (F03, A11-06). La
@@ -114,19 +135,14 @@ export async function calidadDeLaAtribucion(
          un contacto sin ninguna no tiene UTM rotas, tiene otra procedencia — y contarlo acá diría
          que el enlace está mal armado cuando el lead entró por otro lado. */
       sql<number>`count(*) filter (
-        where (c.atribucion_primera ?| array['utmSource','utmMedium','utmCampaign','utmContent','utmTerm'])
-          and not (c.atribucion_primera ?& array['utmSource','utmMedium','utmCampaign','utmContent','utmTerm']))`.as(
-        'utm_parciales',
-      ),
-      sql<number>`count(*) filter (
-        where c.atribucion_primera ?| array['utmSource','utmMedium','utmCampaign','utmContent','utmTerm'])`.as(
-        'con_alguna_utm',
-      ),
+        where (${sql.join(LAS_CINCO_UTM.map(traeLaUtm), sql` or `)})
+          and not (${sql.join(LAS_CINCO_UTM.map(traeLaUtm), sql` and `)}))`.as('utm_parciales'),
+      sql<number>`count(*) filter (where ${sql.join(LAS_CINCO_UTM.map(traeLaUtm), sql` or `)})`.as('con_alguna_utm'),
       /* Una columna por UTM. Es lo que convierte «360 de 360 incompletas» —que alarma y no dice qué
          hacer— en «utmCampaign no llega en ninguna», que sí. Medido el 2026-09-16 sobre 384
-         contactos: source 359, medium 358, campaign **0**, content 356, term 140. El cero es la
-         razón de que NINGUNA sesión tenga las cinco, y sin este desglose no se puede ver. */
-      ...LAS_CINCO_UTM.map((k) => sql<number>`count(*) filter (where c.atribucion_primera ? ${k})`.as(k)),
+         contactos: source 359, medium 358, campaign **0**, content 356, term 140. Ese cero era de
+         buscar la clave equivocada: la campaña llega como `campaign` (`CLAVES_DE_LA_UTM`). */
+      ...LAS_CINCO_UTM.map((k) => sql<number>`count(*) filter (where ${traeLaUtm(k)})`.as(k)),
     ])
     .where(en('c.alta_en_el_crm'))
     .executeTakeFirst();

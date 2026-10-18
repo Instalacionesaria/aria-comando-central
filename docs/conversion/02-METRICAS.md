@@ -277,7 +277,7 @@ campo ausente (`:151-159`). El prototipo lo dibuja en el paso «Gracias» como �
 `Canceladas` es `6%` literal; `Franja preferida` es la cadena `9-11h`. Las tres son de **citas**, o
 sea de `lib/negocio/indicadoresDeCitas.ts`, que ya publica la confirmación con
 `CAMPO_DE_CONFIRMACION` (`:208`) y la cancelación partida en dos poblaciones (regla 9 de
-`07-REGLAS-TRANSVERSALES.md:543`).
+`07-REGLAS-TRANSVERSALES.md:543@972972e`).
 
 ---
 

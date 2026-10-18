@@ -72,7 +72,7 @@ export type Tarea =
   | 'senales';
 
 /**
- * Las cinco, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
+ * Las doce, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
  *
  * ── POR QUÉ EXISTE, Y QUÉ DEJÓ DE ESTAR ESCRITO TRES VECES ────────────────
  *

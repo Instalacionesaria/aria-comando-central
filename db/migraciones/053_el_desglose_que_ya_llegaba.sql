@@ -32,7 +32,7 @@
 -- día.
 --
 -- **No cuesta ninguna llamada nueva.** El colector ya pide ese endpoint una vez por campaña y por
--- día, en la tarea `anuncios` del cron de las 17:06 UTC. El desglose viene en esa misma respuesta.
+-- día, en la tarea `anuncios` del cron de las 06:17 UTC. El desglose viene en esa misma respuesta.
 --
 -- Lo que la `050` dijo bien y sigue en pie, remedido uno por uno: los cuartiles, el tiempo medio
 -- visto y la retención de seis segundos NO se pueden pedir —`fields` es un enum cerrado de once

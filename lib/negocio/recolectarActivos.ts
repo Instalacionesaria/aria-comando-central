@@ -23,7 +23,7 @@ import { enlaceDePublicacion, LARGO_MAXIMO_DE_MINIATURA, LARGO_MAXIMO_DE_URL, me
 /** Cuántos anuncios por pasada: con lotes de 50, son ocho pedidos a Meta en el caso normal. */
 export const TOPE_DE_ANUNCIOS_POR_PASADA = 200;
 
-/** Cuánto tiempo puede tomar la pasada de una empresa. El presupuesto de la corrida entera es de 240 s. */
+/** Cuánto tiempo puede tomar la pasada de una empresa. El de la corrida entera es de 180 s (`PRESUPUESTO_MS`). */
 export const PRESUPUESTO_DE_ACTIVOS_MS = 90_000;
 
 /** Con cuánta anticipación se vuelve a pedir una miniatura que va a vencer. */

@@ -90,7 +90,7 @@ Es la regla 1 del departamento en su forma más pura (`docs/OTROS/estado actual/
 *«mientras el censo de un campo numérico tenga un solo valor distinto, ese campo no es una medición:
 es un indicador de que algo se instaló y no funcionó»*, y se reporta **como alarma, no como cifra**.
 
-El diagnóstico está en `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:566-567`: el tracking individual del
+El diagnóstico está en `docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:566-567@972972e`: el tracking individual del
 VSL *«está cableado y no reporta nada»*, y es problema del medidor —vTurb o su integración—, **no de
 GoHighLevel**.
 

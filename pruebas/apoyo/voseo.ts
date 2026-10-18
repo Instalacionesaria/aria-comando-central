@@ -6,4 +6,4 @@
 // llevar su copia.
 
 export const VOSEO =
-  /(?<!\p{L})(contame|cont[aá]melos|decime|dec[ií]melo|decile|pedile|pasale|mandale|preguntame|preguntale|fijate|segu[ií]|sos|vos|ten[eé]s|pod[eé]s|quer[eé]s|hablás|escribís|escribí|llená|llenás|apretá|apretás|probá|volvé|volvés|recargá|intentá|esperá|acortá|reformulá|completá|completás|cambiá|regenerá|revisás|hacé|bajá|pedí|anotá|preguntá|mirá|tomá|usá|respondé|resumilo|citá|proponé|deducí|dejalos|proponelos|usalos|citalos|espiá|detectá|extraé|marcá|generá|generás|scrapeá|hablá|evitá|elegí|buscá|buscás)(?!\p{L})/iu;
+  /(?<!\p{L})(contame|cont[aá]melos|decime|dec[ií]melo|decile|pedile|pasale|mandale|preguntame|preguntale|fijate|segu[ií]|sos|vos|ten[eé]s|pod[eé]s|quer[eé]s|hablás|escribís|escribí|llená|llenás|apretá|apretás|probá|volvé|volvés|recargá|intentá|esperá|acortá|reformulá|completá|completás|cambiá|regenerá|revisás|revisá|avisá|hacé|bajá|pedí|anotá|preguntá|mirá|tomá|usá|respondé|resumilo|citá|proponé|deducí|dejalos|proponelos|usalos|citalos|espiá|detectá|extraé|marcá|generá|generás|scrapeá|hablá|evitá|elegí|buscá|buscás)(?!\p{L})/iu;

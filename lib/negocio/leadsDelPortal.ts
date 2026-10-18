@@ -525,7 +525,7 @@ function avisoDe(r: LeadsDelPortal, tope: number): string | null {
      empresa, no de la ventana, y tienen que decirse igual. */
   if (r.cohorte.total === 0) {
     partes.push(
-      'No entró ni un contacto en esta ventana. No es que falte el dato: no hubo gente. Probá una ' +
+      'No entró ni un contacto en esta ventana. No es que falte el dato: no hubo gente. Prueba una ' +
         'ventana más larga.',
     );
   }

@@ -101,7 +101,7 @@ proyecto ya pagó dos veces.
 ### CV7-06 · El trigger link es de Lead Flow y su rastro vive en la columna de Conversion
 
 **Rastro** · `§ 9.5:529-549` define los seis estados del trigger link. Medido en
-`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:187-188`: `Trigger Link` vale **31 de 594** en
+`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:187-188@972972e`: `Trigger Link` vale **31 de 594** en
 `atribucion_ultima` y **0 de 594** en `atribucion_primera` el 2026-09-28 (29 y 0 de 584 el 2026-09-15).
 
 **Estado** · El trigger link es el instrumento de **Lead Flow** —él lo envía— pero su huella queda en

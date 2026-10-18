@@ -448,7 +448,7 @@ function avisoDe(
      cobertura del 52 % describe mal una tabla que igual se puede leer, y una ventana cortada a
      mitad de camino hace que la tabla esté ORDENADA AL REVÉS. Lo que invalida más, primero.
 
-     El umbral es dos días y no cero: el colector pide hoy y los tres anteriores en la pasada
+     El umbral es dos días y no cero: el colector pide hoy y los dos anteriores en la pasada
      diaria, así que un día de retraso es el funcionamiento normal y avisarlo sería avisar siempre. */
   if (ultimo !== null) {
     /* ── SE CUENTAN DÍAS DE CALENDARIO, NO MILISEGUNDOS ────────────────────

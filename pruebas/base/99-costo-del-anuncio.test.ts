@@ -414,6 +414,31 @@ test('la consecuencia NOMBRA la UTM que falta, no dice sólo que falta alguna', 
   );
 });
 
+test('la UTM de campaña cuenta también cuando llega como `campaign`, que es como la manda GoHighLevel', async () => {
+  /* El cero de `utmCampaign` del 2026-09-16 era de buscar la clave equivocada: medido el 2026-10-18, de 519
+     contactos con alguna UTM, `utmCampaign` en 0 y `campaign` en 273. La señal ACQ-ATRIBUCION-UTM salía cada mañana
+     culpando a una UTM que sí llega. Acá, sesiones con las cinco —la de campaña como `campaign`— no pueden contar
+     como incompletas, y la que nombra la consecuencia tiene que ser la que de verdad falta. Mutación: contar sólo
+     `utmCampaign`. */
+  const antes = await conOrganizacion(esc.org, () => calidadDeLaAtribucion(30));
+  const incompletasAntes = antes.puntos.find((p) => p.clave === 'utm_incompletas');
+  for (let i = 0; i < 12; i += 1) {
+    await esc.admin.query(
+      `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera)
+         values ($1, $2, 'Lead con campaign', 'setter', now() - interval '1 day', $3::jsonb)`,
+      [
+        esc.org,
+        `${CONTACTO}${randomUUID().slice(0, 8)}`,
+        JSON.stringify({ utmSource: 'fb', utmMedium: 'cpc', campaign: 'x', utmContent: 'creativo-1', utmTerm: 't' }),
+      ],
+    );
+  }
+  const despues = await conOrganizacion(esc.org, () => calidadDeLaAtribucion(30));
+  const incompletas = despues.puntos.find((p) => p.clave === 'utm_incompletas');
+  assert.equal(incompletas?.cuantos, incompletasAntes?.cuantos ?? 0, 'una sesión con las cinco contó como incompleta');
+  assert.equal((incompletas?.sobre ?? 0) - (incompletasAntes?.sobre ?? 0), 12, 'las sesiones con `campaign` no se contaron');
+});
+
 test('los dos puntos que NO se pueden medir viajan con su motivo', async () => {
   // Es lo que impide que alguien los vuelva a investigar dentro de seis meses. Los dos tienen un
   // motivo concreto y medido, no un «pendiente».
