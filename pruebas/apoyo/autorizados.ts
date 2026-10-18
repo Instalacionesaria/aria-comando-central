@@ -445,6 +445,13 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // empresas y para los NOMBRES de quienes vieron cada incidente; los incidentes salen por
   // `conOrganizacion(`, con la RLS de cada empresa.
   'app/api/incidentes/route.ts',
+  // ── El nivel 3 · vincular un cliente con su subcuenta del CRM ──────────────────
+  //
+  // Escribe `crm_cuenta_id` y `es_prueba` de una cuenta, que el inquilino no puede escribir a propósito (`086`): una
+  // empresa que pudiera elegir su location podría ocupar la de otra. Lo acota la capacidad `cuentas.vincular`, que
+  // sólo tiene la plataforma, más `esDeLaPrincipal` una línea después del portero; y el `update` nombra la
+  // organización además del id.
+  'app/api/admin/cuentas/[id]/vinculo/route.ts',
 ];
 
 /**

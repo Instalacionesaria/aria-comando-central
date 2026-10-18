@@ -74,7 +74,7 @@ filtra `menuVisible()` —AIOS, Inteligencia, Operación, Administración y el p
 (`4742d74`, 2026-10-01) la barra lateral dibuja el reparto de `lib/autorizacion/departamentos.ts:50-56`: el Inicio,
 Research, Systems, Marketing, Sales y Client Success, con Credenciales, Monitoreo e Incidentes en el engranaje (`:125-128`).
 Ninguna sección de trabajo sigue sin operaciones: el Inicio (`executive`) bajó la bandera con el cerebro el 2026-10-04
-(`lib/autorizacion/secciones.ts:230`) y la única que la lleva es Client OS (`:474`). Estas reglas nacieron casi todas en
+(`lib/autorizacion/secciones.ts:239`) y la única que la lleva es Client OS (`:474`). Estas reglas nacieron casi todas en
 Operación, se ejercieron primero en Conversation y desde el 16 de septiembre las comparten todas las pantallas.
 
 ---
@@ -804,9 +804,9 @@ o una sin la bandera que no tiene ninguna ruta con su `PANTALLA` (`:458-461`)—
 vigila que ninguna de las marcadas reciba una operación sin entrar al modelo de permisos; y la lista literal de
 `pruebas/codigo/90-fundaciones.test.ts:1266` (hoy `['clientos']`) obliga a decidir en vez de derivar. Sales movió la
 cuenta de 3 a 2 en `c109ebd`, Leads Portal de 2 a 1 en `3c361a1` (`app/api/leads-portal/route.ts:3-8`) y el Inicio
-de 1 a 0 con el cerebro (`ce8ff6e`, 2026-10-04, `lib/autorizacion/secciones.ts:230`), con pruebas de base que lo exigen
+de 1 a 0 con el cerebro (`ce8ff6e`, 2026-10-04, `lib/autorizacion/secciones.ts:239`), con pruebas de base que lo exigen
 (`pruebas/base/166-la-ruta-de-sales.test.ts:87`, `pruebas/base/177-la-ruta-del-leads-portal.test.ts:115`). El
-2026-10-08 entró Client OS con la bandera (`lib/autorizacion/secciones.ts:474`): es una herramienta externa en un
+2026-10-08 entró Client OS con la bandera (`lib/autorizacion/secciones.ts:483`): es una herramienta externa en un
 `iframe`, sin operaciones nuestras. El comentario de `pruebas/codigo/30-portero.test.ts:348-350` decía que la lista está vacía; dice `clientos` desde `65669f4`.
 
 **32 · El GET de una pantalla pide exactamente la capacidad que declara su sección.**
@@ -814,10 +814,10 @@ de 1 a 0 con el cerebro (`ce8ff6e`, 2026-10-04, `lib/autorizacion/secciones.ts:2
 comparaba las capacidades de las rutas de una pantalla **entre sí** y nunca contra la sección, así que
 cambiar la de Sales a `closer.ver` dejaba la suite entera en verde — y el resultado sería una entrada de
 menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Conversation. Se resolvió en
-`8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:324-326`),
+`8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:825`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:832`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -1237,7 +1237,7 @@ cada «—» viaja con su motivo, y la pantalla es un tablero sin párrafos: los
 (`components/conversation/PanelDeConversation.jsx:30-31`). Es la regla 40 llevada a todas las pantallas.
 
 **52 · Toda ruta declara su `PANTALLA`, o dice por qué no.** Una operación nueva nace cerrada: cada manejador exporta
-`PANTALLA` o está en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:502`), y `pruebas/codigo/30-portero.test.ts:363-373`
+`PANTALLA` o está en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:511`), y `pruebas/codigo/30-portero.test.ts:363-373`
 lo exige (`433ca86`, 2026-08-21). Es lo que ata una ruta a la capacidad de su sección (reglas 31 y 32). Contado el
 2026-10-18: 111 archivos `route.ts` bajo `app/api/`, 82 con `PANTALLA` y 29 en la lista.
 

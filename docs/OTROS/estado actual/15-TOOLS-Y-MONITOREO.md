@@ -53,7 +53,7 @@ sin revisar.
 (`components/views/ToolsView.jsx:99-101`): lo que se hace *después* del método, no una pieza de él
 (`lib/fundaciones/herramientas.ts:663-665`). Tiene capacidades propias, `tools.ver` y `tools.editar`
 (`db/arranque/001_catalogo.sql:98-99`), y no reusa `fundaciones.*` a propósito: darle Tools a alguien le daría también ICP
-& Oferta (`lib/autorizacion/secciones.ts:401-404`).
+& Oferta (`lib/autorizacion/secciones.ts:410-413`).
 
 **Desde la nueva estructura, Tools ya no es una pantalla con una barra: son seis entradas en tres departamentos.** La
 sección y sus permisos no cambiaron; lo que cambió es por dónde se entra (`lib/autorizacion/departamentos.ts:86-116`):
@@ -70,17 +70,17 @@ que el servidor le cierra (`lib/autorizacion/departamentos.ts:58-73`; commit `09
 Ajustes › Usuarios, la casilla «Tools» dice lo que abre: seis entradas en tres departamentos (commit `1b1799e`).
 
 **El Panel de Monitoreo** es «la pantalla con la que ARIA mira a sus clientes: cuántos scrapeos hizo cada empresa y con qué
-scraper» (`lib/autorizacion/secciones.ts:424-426`). Una sola capacidad, `monitoreo.ver`, de lectura
+scraper» (`lib/autorizacion/secciones.ts:433-435`). Una sola capacidad, `monitoreo.ver`, de lectura
 (`db/arranque/001_catalogo.sql:103-104`, `:125`), y la bandera `soloDesdeLaPrincipal`
-(`lib/autorizacion/secciones.ts:453`). **El Panel de Incidentes** (2026-10-01) muestra los fallos del modelo de IA de
-todas las empresas, con `incidentes.ver` y la misma bandera (`lib/autorizacion/secciones.ts:458-465`). Los dos van en el
-grupo «Administración» del menú (`lib/autorizacion/secciones.ts:454`, `:464`) y, en la barra nueva, en el engranaje del pie
+(`lib/autorizacion/secciones.ts:462`). **El Panel de Incidentes** (2026-10-01) muestra los fallos del modelo de IA de
+todas las empresas, con `incidentes.ver` y la misma bandera (`lib/autorizacion/secciones.ts:467-474`). Los dos van en el
+grupo «Administración» del menú (`lib/autorizacion/secciones.ts:463`, `:464`) y, en la barra nueva, en el engranaje del pie
 junto a Ajustes (`lib/autorizacion/departamentos.ts:125-128`), con la ceja «MENÚ DE LA CUENTA»
 (`lib/autorizacion/departamentos.ts:140-143`).
 
 **Ya no es la única sección con `soloDesdeLaPrincipal`.** Desde el 2026-10-01 la lleva Incidentes y desde el 2026-10-08
-Client OS (`lib/autorizacion/secciones.ts:463`, `:475`). El comentario de Monitoreo decía al corte «la única»
-(`lib/autorizacion/secciones.ts:429`); desde el 2026-10-18 (`65669f4`) dice que fue la primera y que hoy son tres.
+Client OS (`lib/autorizacion/secciones.ts:472`, `:475`). El comentario de Monitoreo decía al corte «la única»
+(`lib/autorizacion/secciones.ts:438`); desde el 2026-10-18 (`65669f4`) dice que fue la primera y que hoy son tres.
 
 **Ninguna de las tres pantallas está en el prototipo** (`aios-command-center_1.html`): Tools es la primera pantalla
 creada de cero en el proyecto (`components/views/ToolsView.jsx:3-5`); el Panel de Monitoreo viene del «Panel de Control»
@@ -236,7 +236,7 @@ con 3. **Una prueba de base ya ejercita tablas del scraper con filas:** `pruebas
 (6 casos) crea `aria_cc_scraper_leads`, `aria_cc_scraper_trabajos` y `aria_cc_foundations` en la base local sólo para la
 prueba, con el aislamiento de `negocio`, y las quita al terminar (`pruebas/apoyo/tablas-de-public.ts:1-15`, `:52-66`). Lo
 que ejercita son las herramientas del cerebro, no las rutas de Tools ni las del panel. La autorización del panel sigue
-probada contra la base local (`pruebas/base/22-los-tres-roles.test.ts:299`, `pruebas/base/31-alcance.test.ts:464`).
+probada contra la base local (`pruebas/base/22-los-tres-roles.test.ts:304`, `pruebas/base/31-alcance.test.ts:464`).
 
 ---
 
@@ -364,11 +364,11 @@ Si guardar el análisis del Espía falla, se entrega igual: ya se pagó (commit 
 
 **8 · El Panel de Monitoreo tiene tres mitades.** La capacidad `monitoreo.ver`, que `usuario` recibe por derivación; la
 pestaña concedida, porque `usuario` restringe por sección; y ser de la organización principal
-(`lib/autorizacion/secciones.ts:429-439`, `db/arranque/001_catalogo.sql:382-402`). La tercera se mide sobre la organización
+(`lib/autorizacion/secciones.ts:438-448`, `db/arranque/001_catalogo.sql:392-412`). La tercera se mide sobre la organización
 **propia**, no la que se está mirando (`lib/autorizacion/secciones.ts:112-119`). El formulario de Usuarios no ofrece la casilla
 fuera de la principal (`components/ajustes/Usuarios.jsx:144`). `administrador` no tiene la capacidad
-(`db/arranque/001_catalogo.sql:467-491`), y el catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
-(`db/arranque/001_catalogo.sql:750-785`). **El de Incidentes es más simple:** la capacidad es sólo del superadministrador
+(`db/arranque/001_catalogo.sql:479-503`), y el catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
+(`db/arranque/001_catalogo.sql:766-801`). **El de Incidentes es más simple:** la capacidad es sólo del superadministrador
 (`db/arranque/001_catalogo.sql:130-135`), así que conceder la pestaña a un `usuario` no le da el panel.
 
 **9 · Los paneles cruzan empresas con un bucle, no con una consulta.** Un `group by org_id` bajo RLS devuelve una fila
@@ -427,8 +427,8 @@ No es nuevo (la línea es la misma del 2026-09-28): lo nuevo es que el 1.000 est
 `:162-164`) y el nombre de la prueba de `:345`, mientras su cuerpo afirma que `usuario` sí la tiene (`:376-381`). En la misma
 familia: `lib/tools/scrapers.ts:16-19` y `:7-9` describen el hub y `usuarios_scraper`; `components/monitoreo/PanelDeMonitoreo.jsx:11-12`
 dice que `app/monitoreo.css` son ochenta líneas, y son 201. **Nuevos desde el corte, cerrados el 2026-10-18 (`65669f4`):**
-`lib/autorizacion/secciones.ts:429` decía que Monitoreo es «la única sección con `soloDesdeLaPrincipal`» y ya son tres; el
-comentario de Incidentes decía que va en «Operación» (`lib/autorizacion/secciones.ts:458-461`) y va en «Administración»
+`lib/autorizacion/secciones.ts:438` decía que Monitoreo es «la única sección con `soloDesdeLaPrincipal`» y ya son tres; el
+comentario de Incidentes decía que va en «Operación» (`lib/autorizacion/secciones.ts:467-470`) y va en «Administración»
 (`:464`). Hoy los dos dicen lo que hace el código. Los del rol `monitoreo` de arriba no se tocaron y siguen abiertos.
 
 **«Leads guardados» cuenta 1.377 filas sin forma de contactar a nadie.** De los 2.343, 1.000 son anunciantes de un único

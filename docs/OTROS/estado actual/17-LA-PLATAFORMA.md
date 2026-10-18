@@ -210,7 +210,7 @@ dentro de `/api/cron`, al minuto 3, y su encabezado todavía dice que «lo llama
 
 **`GET /api/control`**, de la Etapa 3, pide `NINGUNA` capacidad y `SIN_SECCION` (`app/api/control/route.ts:25-26`,
 `:35`), lee `control_aislamiento` con `conOrganizacion` (`app/api/control/route.ts:40-46`) y figura entre las rutas sin
-pantalla (`lib/autorizacion/secciones.ts:513`). Nada del repositorio llama al manejador (búsqueda del 2026-09-28, no
+pantalla (`lib/autorizacion/secciones.ts:522`). Nada del repositorio llama al manejador (búsqueda del 2026-09-28, no
 repetida); las pruebas arman peticiones con ese camino y se las pasan al portero (`pruebas/base/40-portero.test.ts:293`).
 Su encabezado dice ser «la sonda que la Etapa 8 necesita» (`app/api/control/route.ts:22-23`), y la sonda programada no
 pasa por ella (`lib/deteccion/sonda.ts:119-121`).
@@ -277,7 +277,7 @@ de `public` a `respaldo_aria_brain`. Medido el 2026-10-18: en `public` hay **0**
 base**: la misma revisión del 2026-10-12 dejó permisos de producción por corregir, revisados ese día, con su plan fuera
 del repositorio a propósito.
 
-**Las `aria_cc_*`.** `lib/datos/esquema.ts:2148-2153` tipa seis; en producción hay seis, y no son las mismas:
+**Las `aria_cc_*`.** `lib/datos/esquema.ts:2150-2155` tipa seis; en producción hay seis, y no son las mismas:
 `aria_cc_scraper_mediciones` **sigue sin existir** (`to_regclass` nulo, 2026-10-18) aunque el código la escribe
 (`lib/tools/medicion.ts:65`, `:94`, dentro de un `catch`, `lib/tools/medicion.ts:71-76`), y `aria_cc_icp_oferta`
 existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`). El detalle es de

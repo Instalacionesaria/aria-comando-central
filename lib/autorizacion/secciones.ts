@@ -204,6 +204,15 @@ export const SECCIONES: readonly Seccion[] = [
     capacidadRequerida: 'organizaciones.listar',
   },
   {
+    // ── El nivel 3 · los clientes de una empresa (2026-10-18) ───────────────────
+    //
+    // Una pestaña de Ajustes, sin `menu`, como `empresas`: la empresa da de alta y edita a sus clientes (las cuentas,
+    // una subcuenta del CRM cada una). La tiene el administrador de cada empresa y la plataforma; el `usuario`, no.
+    clave: 'clientes',
+    nombre: 'Clientes',
+    capacidadRequerida: 'cuentas.ver',
+  },
+  {
     // ── Etapa 11 · Ajustes gana pantalla ──
     //
     // Esta sección existía desde la Etapa 6 con sus dos operaciones y su capacidad, y **sin

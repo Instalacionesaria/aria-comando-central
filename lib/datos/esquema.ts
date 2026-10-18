@@ -1903,6 +1903,8 @@ export interface TablaCuentas {
   nicho: string | null;
   nicho_confirmado_el: Date | null;
   nicho_confirmado_por: string | null;
+  /** Quién confirmó el nicho (086): la empresa, con la persona en `nicho_confirmado_por`, o ARIA, sin persona. */
+  nicho_confirmado_desde: 'organizacion' | 'plataforma' | null;
   modelo_de_negocio: string | null;
   pais: string | null;
   moneda: string | null;

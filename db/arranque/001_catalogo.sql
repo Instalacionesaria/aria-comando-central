@@ -134,6 +134,16 @@ insert into identidad.permisos (clave, descripcion) values
   ('incidentes.ver',     'Ver el Panel de Incidentes: los fallos del modelo de IA de todas las empresas'),
   ('incidentes.revisar', 'Marcar un incidente como revisado en el Panel de Incidentes'),
 
+  -- ── El nivel 3 · los clientes de una empresa (2026-10-18) ───────────────────
+  --
+  -- Ver, crear y editar son del administrador de la empresa; `usuario` no las tiene (`cuentas.%`, abajo). Vincular
+  -- un cliente con su subcuenta del CRM, o marcarlo de prueba, es sólo de la plataforma: se le niega a mano también al
+  -- administrador.
+  ('cuentas.ver',      'Ver los clientes de la empresa (el nivel 3) en Ajustes › Clientes'),
+  ('cuentas.crear',    'Dar de alta un cliente de la empresa'),
+  ('cuentas.editar',   'Editar un cliente de la empresa: nombre, nicho, país, zona, estado'),
+  ('cuentas.vincular', 'Vincular un cliente con su subcuenta del CRM, o marcarlo de prueba: sólo la plataforma'),
+
   -- ── Etapa 11 · Closer y Setter ─────────────────────────────────────────────
   --
   -- UNA capacidad de lectura POR PESTAÑA, y acá está la decisión que hubo que tomar.
@@ -406,6 +416,8 @@ begin
                       and clave not like 'roles.%'
                       and clave not like 'credenciales.%'
                       and clave not like 'incidentes.%'
+                      -- Los clientes de la empresa (el nivel 3) los administra el administrador, no el usuario.
+                      and clave not like 'cuentas.%'
                       -- La validación ejecutiva y la firma de los umbrales son del Admin (`D-11`, AG-80): un
                       -- `usuario` de Acquisition no puede saltarse la validación que pide la arquitectura.
                       and clave <> 'senales.validar'
@@ -489,7 +501,9 @@ begin
                             and clave not like 'monitoreo.%'
                             and clave not like 'incidentes.%'
                             and clave <> 'usuarios.borrar'
-                            and clave <> 'roles.administrar'))
+                            and clave <> 'roles.administrar'
+                            -- La subcuenta del CRM y la marca de prueba de un cliente: sólo la plataforma.
+                            and clave <> 'cuentas.vincular'))
 
       -- Acá había una cuarta fila, `('monitoreo', array['monitoreo.ver'])`, y era la única
       -- enumerada en vez de derivada. Se fue con su rol: el motivo está arriba, en el `insert`.
@@ -694,7 +708,7 @@ begin
     from identidad.roles a
     join identidad.roles_permisos rp on rp.rol_id = a.id
    where a.clave = 'administrador' and a.org_id is null
-     and rp.permiso in ('usuarios.borrar', 'roles.administrar');
+     and rp.permiso in ('usuarios.borrar', 'roles.administrar', 'cuentas.vincular');
 
   if v_sobran is not null then
     raise exception
@@ -719,6 +733,8 @@ begin
      -- ejecutiva y firmar los umbrales. Se le niegan al `usuario` en su reparto, de arriba.
      and rp.permiso <> 'senales.validar'
      and rp.permiso not like 'umbrales.%'
+     -- Y las tres de los clientes de la empresa (el nivel 3): el administrador las tiene, el usuario no.
+     and rp.permiso not in ('cuentas.ver', 'cuentas.crear', 'cuentas.editar')
      and not exists (
        select 1 from identidad.roles u
          join identidad.roles_permisos ru on ru.rol_id = u.id

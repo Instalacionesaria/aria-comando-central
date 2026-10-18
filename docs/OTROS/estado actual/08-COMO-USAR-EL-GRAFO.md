@@ -120,7 +120,7 @@ dice la vieja (para `datos()`, `L159`).
 | `datos()` | `lib/datos/contexto.ts:257` | La capa de datos del inquilino: las lecturas y escrituras de negocio dentro de una organización pasan por el mismo constructor de consultas, que lanza si no hay organización activa (`lib/datos/contexto.ts:299`) |
 | `conOrganizacion()` | `lib/datos/contexto.ts:156` | **Toda operación abre el contexto de su organización.** Es la regla `ADR-0202` (`docs/OTROS/especificacion/TRAZABILIDAD.md:55`), y el grafo la confirma: es el segundo nodo más conectado, contando también los nodos-archivo |
 | `exigir()` | `lib/autorizacion/portero.ts:168` | El portero: lo nombran 108 de los 111 `route.ts` de `app/api/` (`grep`, 2026-10-16; eran 79 de 82 el 2026-09-29); los tres que no son el login, el aviso del CRM y la salud |
-| `ok()` / `rechazo()` | `lib/autorizacion/respuesta.ts:325` y `lib/autorizacion/respuesta.ts:336` | La respuesta de éxito y la de rechazo |
+| `ok()` / `rechazo()` | `lib/autorizacion/respuesta.ts:327` y `lib/autorizacion/respuesta.ts:338` | La respuesta de éxito y la de rechazo |
 | `conIdentidad()` | `lib/datos/capa.ts:125` | El otro contexto: identidad va por su propio camino. Hasta el 2026-09-29 era el que más llamadas había perdido entre pasadas por lote; con la corrida completa la llaman 126 funciones (fila «Llamadas entre archivos de código») |
 | `cerrarClientes()` | `lib/datos/capa.ts:155` | Cierra los agrupadores de la base (`lib/datos/capa.ts:149`); lo nombran 111 archivos de `pruebas/` (`grep`, 2026-10-16) |
 | `cerrarTodo()` | `pruebas/apoyo/conexiones.ts:65` | Lo mismo del lado del apoyo de pruebas; 117 archivos de `pruebas/` lo nombran (`grep`, 2026-10-16) |

@@ -81,7 +81,7 @@ Lo que pidió el usuario el 2026-10-11 —la forma del prototipo con el dato, y 
 
 ## 2 · Qué hay hoy en pantalla
 
-**La sección.** `lib/autorizacion/secciones.ts:265-277`: clave `creative`, nombre «Creative Insights», grupo
+**La sección.** `lib/autorizacion/secciones.ts:274-286`: clave `creative`, nombre «Creative Insights», grupo
 «Inteligencia», capacidad `tablero.ver`. La vista es `components/views/CreativeView.jsx:18-26`, el envoltorio del
 prototipo `view-scroll cre-scroll`, **sin `estetica-op`** (CF1-01). El panel recarga cada 60 s sólo con la pestaña a la
 vista (`components/creative/PanelDeCreative.jsx:110-112`, `lib/cadencia.ts:91`).
@@ -309,9 +309,9 @@ piezas y no de personas; esta foto no los copia.
 (`4e9a242`), y con ella las «8 piezas activas» con punto verde, el «hook nuevo» que costaba ventas y la caída del VSL
 que Creative «asumía» (la foto del 2026-09-28 los listaba en su § 3, con sus citas fijadas en `c4cf2a8`).
 
-**El galón `›` del menú.** La sección sigue declarando `galon: true` (`lib/autorizacion/secciones.ts:276`), y su
+**El galón `›` del menú.** La sección sigue declarando `galon: true` (`lib/autorizacion/secciones.ts:285`), y su
 comentario lo defiende citando una línea de la foto del 2026-09-28, ya fijada a su commit
-(`lib/autorizacion/secciones.ts:272-275`); desde la barra nueva de la etapa E10 (`40f699a`, 2026-10-02) ninguna línea de
+(`lib/autorizacion/secciones.ts:281-284`); desde la barra nueva de la etapa E10 (`40f699a`, 2026-10-02) ninguna línea de
 `components/`, `app/` ni `lib/` lee `menu.galon` (grep del 2026-10-18).
 
 ---
@@ -525,7 +525,7 @@ reportó.» sin ningún contador.
 de `costoDelAnuncio` por «el defecto de grano», y `lib/negocio/costoDelAnuncio.ts:158-165` habla de `desde` y `hasta`;
 `lib/negocio/rendimientoDelCreativo.ts:225` manda a la 296 por el `gasto is not null`, que está en
 `lib/negocio/costoDelAnuncio.ts:297`. **Cerrado** lo de las citas a esta foto: los comentarios que la citaban por línea
-quedaron fijados a un commit —`lib/negocio/calidadDelCreativo.ts:233` y `lib/autorizacion/secciones.ts:272`, a
+quedaron fijados a un commit —`lib/negocio/calidadDelCreativo.ts:233` y `lib/autorizacion/secciones.ts:281`, a
 `@63b8cd1`—, y un `git grep` del 2026-10-16 no encontró ninguna cita sin fijar a una línea de esta foto ni de la de
 Conversion.
 

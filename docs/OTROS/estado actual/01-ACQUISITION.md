@@ -101,7 +101,7 @@ sólo va lo que la foto necesita:
 ## 2 · Qué hay hoy en pantalla
 
 **La sección.** `acquisition`, capacidad `tablero.ver`, sin `sinOperacionesTodavia`
-(`lib/autorizacion/secciones.ts:255-263`). En la barra nueva vive en el departamento Systems, junto a Conversion y
+(`lib/autorizacion/secciones.ts:264-272`). En la barra nueva vive en el departamento Systems, junto a Conversion y
 Conversation (`lib/autorizacion/departamentos.ts:90-92`).
 
 **La vista.** `components/views/AcquisitionView.jsx` monta el panel sin la capa `estetica-op`, para que manden las

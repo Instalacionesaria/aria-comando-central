@@ -178,6 +178,11 @@ test('la diferencia entre `usuario` y `administrador` es las credenciales Y LAS 
     [
       'credenciales.editar',
       'credenciales.ver',
+      /* La cuarta, del nivel 3 (2026-10-18): los clientes de la empresa (las cuentas) los administra el Admin. Un
+         `usuario` no da de alta clientes; vincularlos con su subcuenta del CRM no lo hace ninguno de los dos. */
+      'cuentas.crear',
+      'cuentas.editar',
+      'cuentas.ver',
       'roles.asignar',
       /* La tercera diferencia, de AG9 de los agentes (`D-11`, AG-80): validar lo que requiere validación
          ejecutiva y firmar un umbral son del Admin. Un `usuario` resuelve y descarta las locales. */

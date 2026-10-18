@@ -145,6 +145,10 @@ export type Accion =
   // Propia, y no `seccion_denegada`: la persona no está restringida por pestañas sino por cuentas, y lo que se
   // arregla es otra cosa. Lleva la ruta, porque muchas de las que no son suyas no tienen pantalla.
   | 'fuera_de_su_cuenta'
+  // ── El nivel 3 · los clientes de una empresa ──
+  | 'cuenta_creada'
+  | 'cuenta_editada'
+  | 'cuenta_vinculada'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -291,6 +295,10 @@ export async function auditarAdministracion(
       | 'funnel_de_campana_quitado'
       // La firma de un umbral. Mismo objetivo: la empresa, cuya configuración cambia.
       | 'umbral_firmado'
+      // El nivel 3 · los clientes de una empresa. El objetivo es el cliente (la cuenta), y `orgId` su empresa.
+      | 'cuenta_creada'
+      | 'cuenta_editada'
+      | 'cuenta_vinculada'
     >;
     actor: string;
     objetivo: string;

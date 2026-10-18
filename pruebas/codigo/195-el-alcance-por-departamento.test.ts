@@ -67,7 +67,8 @@ test('el orden es el de la barra: el Inicio, los departamentos, el engranaje y l
       ['Marketing', ['creative']],
       ['Sales', ['sales', 'contacts', 'setter', 'closer', 'analizadores']],
       ['Menú de la cuenta', ['credenciales', 'monitoreo', 'incidentes']],
-      ['Ajustes', ['usuarios', 'empresas']],
+      // Ajustes › Clientes (el nivel 3): la empresa administra a sus clientes, y la pestaña se puede conceder.
+      ['Ajustes', ['usuarios', 'empresas', 'clientes']],
     ],
   );
 });

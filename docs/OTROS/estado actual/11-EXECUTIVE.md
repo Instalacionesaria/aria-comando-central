@@ -12,7 +12,7 @@
 > `git show fefffa1:"docs/OTROS/estado actual/11-EXECUTIVE.md"`.
 
 **La maqueta se fue el 2026-10-01; desde el 2026-10-05 hay un cerebro de verdad, y casi nadie le habla.** La sección
-conserva su clave `executive` y se llama «Inicio» (`lib/autorizacion/secciones.ts:227-232`): la mascota, el saludo,
+conserva su clave `executive` y se llama «Inicio» (`lib/autorizacion/secciones.ts:236-241`): la mascota, el saludo,
 una caja para preguntarle al cerebro y, debajo, la Reunión de hoy (`components/views/ExecutiveView.jsx:116-222`). El
 cerebro es un modelo con herramientas de sólo lectura que llaman a las mismas funciones que las pantallas, y el
 servidor quita toda cifra que no esté en lo que leyó (`lib/agentes/executive/respuesta.ts:1-22`). Medido el
@@ -41,7 +41,7 @@ Inicio lo dice.
 >   `D-33`.
 > - **2026-10-04 · `ce8ff6e`** — AG5: el servidor del cerebro (`app/api/executive/route.ts`), la migración `071` y la
 >   capacidad `cerebro.usar`. La bandera `sinOperacionesTodavia` de `executive` baja con esa ruta
->   (`lib/autorizacion/secciones.ts:230`).
+>   (`lib/autorizacion/secciones.ts:239`).
 > - **2026-10-05 · `13723a0`** — AG6: las herramientas de las demás secciones y una ruta de caja por sección
 >   (`app/api/<carpeta>/cerebro/route.ts`), con lo común en `lib/agentes/executive/caja.ts`.
 > - **2026-10-05 · `5f15c01`, `b6eed36`, `854a3da`** — AG7: el cerebro en pantalla (el chat del Inicio, la caja del
@@ -105,14 +105,14 @@ manda hoy es la tabla común de señales (§ 4).
 
 ### 2.1 · La sección
 
-`executive`, nombre «Inicio», capacidad `tablero.ver`, sin la bandera (`lib/autorizacion/secciones.ts:227-232`). No
+`executive`, nombre «Inicio», capacidad `tablero.ver`, sin la bandera (`lib/autorizacion/secciones.ts:236-241`). No
 es de ningún departamento: la barra la abre con «Nueva conversación» (`lib/autorizacion/departamentos.ts:118-128`).
 Los 15 usuarios activos de producción tienen `tablero.ver` y `cerebro.usar` por su rol (medido el 2026-10-18); quién
 ve la pestaña entre los de rol restringido no se volvió a medir.
 
 **El comentario de cabecera de `secciones.ts` mintió del 2026-10-08 al 2026-10-18.** Decía que la lista
 `SIN_OPERACIONES_TODAVIA` está vacía desde que `executive` bajó la bandera (`lib/autorizacion/secciones.ts:17-18`),
-pero Client OS entró ese día con la bandera puesta (`lib/autorizacion/secciones.ts:466-478`), y la prueba que la mira
+pero Client OS entró ese día con la bandera puesta (`lib/autorizacion/secciones.ts:475-487`), y la prueba que la mira
 espera exactamente `['clientos']` (`pruebas/codigo/90-fundaciones.test.ts:1266`). **Cerrado el 2026-10-18
 (`65669f4`)**: hoy dice que queda sólo `clientos`, que es externa, y lo mismo el de `executive` (`:230`).
 

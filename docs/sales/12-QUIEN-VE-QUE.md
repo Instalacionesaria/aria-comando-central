@@ -52,7 +52,7 @@ comparación no es una tabla.
 
 ## S12-03 · Lo que el código dice hoy
 
-`lib/autorizacion/secciones.ts:310-316`:
+`lib/autorizacion/secciones.ts:319-325`:
 
 ```ts
 {

@@ -14,7 +14,7 @@
 
 ### LP12-01 · `tablero.ver`, y la sección `contacts` cuando el rol es restringido
 
-La sección ya está declarada así (`lib/autorizacion/secciones.ts:233-241`):
+La sección ya está declarada así (`lib/autorizacion/secciones.ts:242-250`):
 
 ```ts
 {
@@ -35,10 +35,10 @@ decide en dos pasos, y cada uno tiene su código de rechazo:
 | 5 | ¿el rol tiene `tablero.ver`? | `sin_permiso`, 403, y queda auditado | `lib/autorizacion/portero.ts:248-275` |
 | 6 | ¿la sección `contacts` está en el alcance de la persona? | `seccion_no_concedida`, 403 | `lib/autorizacion/portero.ts:305-324`, `lib/autorizacion/respuesta.ts:51` |
 
-El paso 6 se comprueba **además** del 5, nunca en su lugar (`lib/autorizacion/secciones.ts:716-718`).
+El paso 6 se comprueba **además** del 5, nunca en su lugar (`lib/autorizacion/secciones.ts:725-727`).
 
 **No se crea una capacidad nueva.** Siete secciones comparten `tablero.ver` y ninguna combinación de
-capacidades puede separarlas (`lib/autorizacion/secciones.ts:710-714`); lo que separa a las
+capacidades puede separarlas (`lib/autorizacion/secciones.ts:719-723`); lo que separa a las
 personas es el alcance. Es lo mismo que decidieron Acquisition, Creative, Conversion y Sales
 (`docs/sales/12-QUIEN-VE-QUE.md:53-75`).
 
@@ -46,18 +46,18 @@ personas es el alcance. Es lo mismo que decidieron Acquisition, Creative, Conver
 
 | rol | ¿trae `tablero.ver`? | ¿restringido por sección? | ve la pestaña | rastro |
 |---|---|---|---|---|
-| superadministrador | sí: todas las capacidades | no | **siempre** | `db/arranque/001_catalogo.sql:351` |
-| administrador | sí | no | **siempre**, en su empresa | `db/arranque/001_catalogo.sql:476-480` |
-| usuario | sí | **sí** | **sólo con `contacts` concedida** | `db/arranque/001_catalogo.sql:393-397`, `:241-243`, `:291-293` |
+| superadministrador | sí: todas las capacidades | no | **siempre** | `db/arranque/001_catalogo.sql:361` |
+| administrador | sí | no | **siempre**, en su empresa | `db/arranque/001_catalogo.sql:488-492` |
+| usuario | sí | **sí** | **sólo con `contacts` concedida** | `db/arranque/001_catalogo.sql:403-407`, `:241-243`, `:291-293` |
 
 «Restringido» es la bandera `secciones_restringidas` del rol
 (`db/migraciones/017_alcance_de_secciones.sql:54`): con ella puesta, la persona ve sólo las
 secciones que tiene en `identidad.usuarios_secciones` (`db/migraciones/017_alcance_de_secciones.sql:64`),
-y cero filas son cero pestañas (`lib/autorizacion/secciones.ts:728-732`).
+y cero filas son cero pestañas (`lib/autorizacion/secciones.ts:737-741`).
 
 **Y ya no hay un rol de closer.** Los roles `closer` y `setter` salieron del catálogo
 (`db/arranque/003_retiro_de_roles.sql:13-14`): quien cierra hoy es un `usuario` con la pestaña Closer
-concedida, y `usuario` **trae `tablero.ver`** (`db/arranque/001_catalogo.sql:146-149`, `:352-355`).
+concedida, y `usuario` **trae `tablero.ver`** (`db/arranque/001_catalogo.sql:156-159`, `:352-355`).
 O sea que lo que deja a un closer fuera del Leads Portal es **sólo la concesión de la sección**, no
 la capacidad.
 
@@ -74,7 +74,7 @@ las descubra en producción:
   pasa nada: ARIA no tiene administradores activos (`LP12-03`) y las demás empresas no tienen
   contactos (`09-DE-DONDE-VIENE-CADA-DATO.md`, `LP09-13`).
 - **Un superadministrador puede mirar la pestaña de otra empresa**, porque es el único que puede
-  conmutar la organización que mira (`lib/autorizacion/secciones.ts:774-776`). Es la misma regla que
+  conmutar la organización que mira (`lib/autorizacion/secciones.ts:783-785`). Es la misma regla que
   en Closer.
 
 ---
@@ -130,7 +130,7 @@ select (select count(*) from identidad.usuarios u where u.org_id = (select id fr
 
 Y no es una casualidad de estas cuatro personas: de los tres roles que existen, **ninguno trae
 `tablero.ver` sin `contactos.ver`**. Los tres repartos se derivan del catálogo entero y ninguno
-excluye `contactos.%` (`db/arranque/001_catalogo.sql:351`, `:383-387`, `:462-466`).
+excluye `contactos.%` (`db/arranque/001_catalogo.sql:361`, `:383-387`, `:462-466`).
 
 **Conclusión, verificada:** el portal **no le abre un dato personal a nadie que no pudiera leerlo
 ya**.
@@ -254,7 +254,7 @@ muestra: no es una exposición nueva.
 
 ### LP12-09 · Nada de esto queda guardado en un caché
 
-`ok()` responde con `cache-control: no-store` (`lib/autorizacion/respuesta.ts:319-321`), y el lector
+`ok()` responde con `cache-control: no-store` (`lib/autorizacion/respuesta.ts:321-323`), y el lector
 del navegador pide también sin caché (`lib/http/cliente.ts:156-158`). **Requisito:** la pantalla no
 guarda la lista ni la ficha en el almacenamiento del navegador. Una lista de 593 nombres que
 sobrevive al cierre de sesión en una computadora compartida es la fuga más barata de todas.
@@ -266,9 +266,9 @@ sobrevive al cierre de sesión en una computadora compartida es la fuga más bar
 ### LP12-10 · `sinOperacionesTodavia` bajó en LP-4, en el mismo commit que la primera ruta
 
 `contacts` era una de las dos secciones que conservaban la bandera, junto con `executive`
-(`lib/autorizacion/secciones.ts:227`). El comentario de Sales lo anticipaba cuando decía *«las dos que
-quedan no están empezadas»*; desde LP-7 dice que `contacts` salió (`lib/autorizacion/secciones.ts:336-337`). En LP-4 la línea de la bandera pasó
-a ser su comentario (`lib/autorizacion/secciones.ts:236`), y queda sólo `executive`.
+(`lib/autorizacion/secciones.ts:236`). El comentario de Sales lo anticipaba cuando decía *«las dos que
+quedan no están empezadas»*; desde LP-7 dice que `contacts` salió (`lib/autorizacion/secciones.ts:345-346`). En LP-4 la línea de la bandera pasó
+a ser su comentario (`lib/autorizacion/secciones.ts:245`), y queda sólo `executive`.
 
 No es documentación: es un cable trampa que dispara en tres lugares.
 
@@ -301,9 +301,9 @@ no se mueve: no se crea ningún rol.
 
 ### LP12-12 · Lo que el cambio no toca
 
-- **El galón se queda** (`lib/autorizacion/secciones.ts:237`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja), por el precedente de Creative: el
+- **El galón se queda** (`lib/autorizacion/secciones.ts:246`; desde la barra nueva de la etapa E10, el 2026-10-02, no se dibuja), por el precedente de Creative: el
   adorno es del prototipo, y lo que estaba mal no era él sino que detrás no hubiera nada
-  (`lib/autorizacion/secciones.ts:269-272`).
+  (`lib/autorizacion/secciones.ts:278-281`).
 - **No se pierde cobertura en `91-closer-y-setter`.** Su recorrido de los tableros itera
   `SIN_OPERACIONES_TODAVIA` (hasta AG5 de los agentes, que la dejó vacía; hoy recorre una lista escrita,
   `pruebas/codigo/91-closer-y-setter.test.ts:280-283`), así que cuando

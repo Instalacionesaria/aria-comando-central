@@ -96,10 +96,10 @@ base de ningún porcentaje (§ 6, regla 14).
 
 ## 2 · Qué hay hoy en pantalla
 
-**La sección.** `conversion` se registra en `lib/autorizacion/secciones.ts:279` con
+**La sección.** `conversion` se registra en `lib/autorizacion/secciones.ts:288` con
 `capacidadRequerida: 'tablero.ver'` y **sin** `sinOperacionesTodavia`: la bandera bajó con la ruta el
-2026-09-20, porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/secciones.ts:282-284`).
-El galón del menú se quedó (`lib/autorizacion/secciones.ts:288`), por el precedente de Creative; desde la barra
+2026-09-20, porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/secciones.ts:291-293`).
+El galón del menú se quedó (`lib/autorizacion/secciones.ts:297`), por el precedente de Creative; desde la barra
 nueva de la etapa E10, el 2026-10-02, no se dibuja: ninguna línea de `components/`, `app/` ni `lib/` lee
 `menu.galon` (grep del 2026-10-18).
 

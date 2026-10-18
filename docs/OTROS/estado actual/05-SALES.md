@@ -101,7 +101,7 @@ producción sigue pendiente.
 
 ## 2 · Qué hay hoy en pantalla
 
-**La sección.** `lib/autorizacion/secciones.ts:333-338`: clave `sales`, nombre «Closing», capacidad `tablero.ver`.
+**La sección.** `lib/autorizacion/secciones.ts:342-347`: clave `sales`, nombre «Closing», capacidad `tablero.ver`.
 La vista se registra en `components/CommandCenter.jsx:45` y se dibujan sólo las secciones visibles de la sesión
 (`components/CommandCenter.jsx:65-72`). El panel pide `/api/sales` al montarse (`components/sales/PanelDeSales.jsx:75`)
 y lo refresca cada 60 s sólo con la pestaña a la vista (`components/sales/PanelDeSales.jsx:100`,

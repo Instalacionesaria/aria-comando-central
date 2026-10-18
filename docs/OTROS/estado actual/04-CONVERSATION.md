@@ -74,7 +74,7 @@ días.
 ## 1 · Qué pide el documento
 
 El documento funcional no vive en el repositorio. El código lo llama `AIOS_Arquitectura_Funcional_v0.2.md`
-(`lib/autorizacion/secciones.ts:293`). El resumen de abajo es el de la foto del 2026-09-28, cotejado ese día contra
+(`lib/autorizacion/secciones.ts:302`). El resumen de abajo es el de la foto del 2026-09-28, cotejado ese día contra
 ese archivo local, y no se volvió a cotejar:
 
 - **§8 — Misión.** Supervisar, analizar y mejorar las conversaciones automatizadas. Dos módulos, cada uno con agente de
@@ -100,7 +100,7 @@ omisión (`CN1-P01` a `CN1-P06`; § 6 del mismo documento). Lo construido antes,
 
 ## 2 · Qué hay hoy en pantalla
 
-**La sección.** `lib/autorizacion/secciones.ts:308-330`: clave `conversation`, grupo «Inteligencia», capacidad
+**La sección.** `lib/autorizacion/secciones.ts:317-339`: clave `conversation`, grupo «Inteligencia», capacidad
 `auditor.ver`. La vista es `components/views/ConversationView.jsx:23-31`, el envoltorio del prototipo
 `view-scroll cre-scroll`, **sin `estetica-op`** (CN1-01). El panel recarga cada 60 s sólo con la pestaña a la vista
 (`components/conversation/PanelDeConversation.jsx:117-119`, `lib/cadencia.ts:91`).
@@ -479,7 +479,7 @@ empresa no audita sus agentes.»; las cifras de los flujos dependen de `negocio.
 (`components/conversation/comun.jsx:91-97`).
 
 **20 · Dos comentarios decían que la sección pide `tablero.ver`.** **Cerrado** en CN-3 (`a6e6309`):
-`lib/autorizacion/secciones.ts:305-307` y `components/views/ConversationView.jsx:16-18`.
+`lib/autorizacion/secciones.ts:314-316` y `components/views/ConversationView.jsx:16-18`.
 
 **21 · Los patrones se agrupan sin mirar el agente.** **Abierto** (`CN1-P07`: la auditoría no cambia).
 `agruparPorPatron` junta por código (`lib/auditor/vista.ts:106-138`) y cada tarjeta se queda con los patrones cuyo

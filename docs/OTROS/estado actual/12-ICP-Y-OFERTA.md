@@ -72,14 +72,14 @@ Es lo único que la pantalla dice de sí misma y no cumple; ver § 5.
 
 ## 2 · Qué hay hoy
 
-**La sección.** `lib/autorizacion/secciones.ts:242-252`: clave `icp`, nombre «ICP & Oferta»,
+**La sección.** `lib/autorizacion/secciones.ts:251-261`: clave `icp`, nombre «ICP & Oferta»,
 `capacidadRequerida: 'fundaciones.ver'`, todavía declarada en el grupo `AIOS` con el galón `›`. Desde la etapa E10
 (2026-10-02) eso no decide dónde se ve: la barra lateral la abre como la primera entrada de **Research**
 (`lib/autorizacion/departamentos.ts:86`), y no dibuja galones. Su comentario
-(`lib/autorizacion/secciones.ts:245-247`) dice que es «la única de las diez sin la bandera»
+(`lib/autorizacion/secciones.ts:254-256`) dice que es «la única de las diez sin la bandera»
 `sinOperacionesTodavia`, y eso dejó de ser cierto hace mucho: `executive` la bajó el 2026-10-04
-(`lib/autorizacion/secciones.ts:230`), y la única que la lleva hoy es Client OS, desde el 2026-10-08
-(`lib/autorizacion/secciones.ts:474`).
+(`lib/autorizacion/secciones.ts:239`), y la única que la lleva hoy es Client OS, desde el 2026-10-08
+(`lib/autorizacion/secciones.ts:483`).
 
 **La vista.** `components/views/IcpView.jsx:21-45` monta `Fundaciones` con el catálogo
 `CATALOGO_ICP` (`components/fundaciones/Fundaciones.jsx:50-78`): siete herramientas, siete rutas y

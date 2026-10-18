@@ -388,7 +388,7 @@ where o.activa;
 **Cerrada el 2026-10-01** (nueva estructura, E7, `4e9a242`): la maqueta se retiró entera —cifras, panel, chat y
 cajones— y la pantalla `executive` pasó a ser el Inicio, que no dibuja ninguna cifra
 (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`). Desde el 2026-10-04 tiene ruta propia, la del cerebro, y la bandera
-`sinOperacionesTodavia` bajó (`lib/autorizacion/secciones.ts:230`); desde el 2026-10-06 también la Reunión de hoy. Lo
+`sinOperacionesTodavia` bajó (`lib/autorizacion/secciones.ts:239`); desde el 2026-10-06 también la Reunión de hoy. Lo
 que sigue es la deuda como estaba el 2026-09-28, para que se pueda comparar; el detalle pieza por pieza, en
 [11-EXECUTIVE.md](11-EXECUTIVE.md) § 3:
 
@@ -401,7 +401,7 @@ que sigue es la deuda como estaba el 2026-09-28, para que se pueda comparar; el 
   (`lib/aios/executive-panel.js:12-13@c4cf2a8`), y el chat contestaba «Vas 11 de 30» con Conversion y Sales como
   fuentes (`lib/aios/executive-chat.js:35-36@c4cf2a8`).
 
-La veía quien tuviera `tablero.ver` (`lib/autorizacion/secciones.ts:229`), que hoy es la capacidad del Inicio.
+La veía quien tuviera `tablero.ver` (`lib/autorizacion/secciones.ts:238`), que hoy es la capacidad del Inicio.
 
 ---
 
@@ -604,9 +604,9 @@ sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
   líneas en `components/conversion/PanelDeConversion.jsx:8@b2dcdf5` y `lib/negocio/vistaDeConversion.ts:6`,
   cuando `git show 0add4cc^:lib/aios/conversion.js` tiene 655.
 - `lib/aios/shell.js:156-158@c4cf2a8` y `scripts/paridad.mjs:159-162@c4cf2a8`: § 10, cerradas.
-- **Nuevos, del 2026-10-08; cerrados el 2026-10-18 (`65669f4`).** `lib/autorizacion/secciones.ts:230` decía que no
+- **Nuevos, del 2026-10-08; cerrados el 2026-10-18 (`65669f4`).** `lib/autorizacion/secciones.ts:239` decía que no
   quedaba ninguna sección con la bandera `sinOperacionesTodavia`, y `pruebas/codigo/30-portero.test.ts:348-350` que la
-  lista estaba vacía; las dos lo eran hasta que Client OS entró con la bandera (`lib/autorizacion/secciones.ts:474`,
+  lista estaba vacía; las dos lo eran hasta que Client OS entró con la bandera (`lib/autorizacion/secciones.ts:483`,
   `82ba9e7`), y hoy dicen que queda sólo `clientos`. Y `lib/negocio/periodo.ts:76-77` decía que todas las ventanas son
   móviles, que dejó de ser cierto con los días cerrados de CV-1 (§ 13); hoy dice que esas pantallas pasaron a cerrados.
 

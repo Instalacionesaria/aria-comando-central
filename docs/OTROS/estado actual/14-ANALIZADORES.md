@@ -97,8 +97,8 @@ filas**; `negocio.resultados` sigue en 7.
 
 ## 2 · Qué hay hoy en pantalla
 
-La sección se declara en `lib/autorizacion/secciones.ts:376-381` —clave `analizadores`, capacidad
-`analizadores.ver`— con su porqué en `lib/autorizacion/secciones.ts:365-375`: debajo de Closer porque «es el mismo
+La sección se declara en `lib/autorizacion/secciones.ts:385-390` —clave `analizadores`, capacidad
+`analizadores.ver`— con su porqué en `lib/autorizacion/secciones.ts:374-384`: debajo de Closer porque «es el mismo
 trabajo mirado después», una sola casilla aunque adentro haya dos pestañas, y su propia capacidad porque con
 `closer.ver` «cualquier closer leería las transcripciones de todo el equipo». La monta
 `components/views/AnalizadoresView.jsx:16-34` («Cada llamada de tl;dv, juzgada») y el cuerpo es
@@ -176,7 +176,7 @@ rol. Pero 4 de los 15 están en `usuario`, el rol con secciones restringidas, e 
 con **0 filas** de `analizadores`: ninguno de esos 4 la ve. Quedan **11 que ven la pestaña: 2 en `aria`**, la única
 empresa con llamadas, **y 9 en otras empresas**, donde se abre vacía y con Sincronizar deshabilitado porque su
 empresa no tiene llave de tl;dv. La declaración no tiene ninguna bandera que la oculte sin la llave
-(`lib/autorizacion/secciones.ts:376-381`).
+(`lib/autorizacion/secciones.ts:385-390`).
 
 ---
 

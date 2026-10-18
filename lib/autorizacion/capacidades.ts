@@ -114,6 +114,15 @@ export const CAPACIDADES = [
   // `soloDesdeLaPrincipal`, como la de Monitoreo.
   'incidentes.ver',
   'incidentes.revisar',
+  // ── El nivel 3 · los clientes de una empresa (2026-10-18) ────────────────
+  //
+  // Cuatro, con el criterio del `03` § 2. Ver, crear y editar son de la empresa: su administrador los tiene, el
+  // `usuario` no (se le niegan en el reparto). `vincular` —la subcuenta del CRM y la marca de prueba— es sólo de la
+  // plataforma: una empresa que la tuviera podría ocupar la location de otra o sacar sus clientes de los benchmarks.
+  'cuentas.ver',
+  'cuentas.crear',
+  'cuentas.editar',
+  'cuentas.vincular',
   // ── Etapa 11 · Closer y Setter ────────────────────────────────────────
   //
   // UNA de lectura por PESTAÑA, y son dos porque de eso depende que un closer no vea la

@@ -17,7 +17,7 @@
 > prototipo con los datos de `lib/negocio/lecturaDeCreative.ts` (`16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 
 > Fuente: `CC_Arquitectura_Funcional.md` § 18.15 (`:1499-1531`) y § 18.10 (`:1369-1383`).
-> Más la declaración real de la sección en `lib/autorizacion/secciones.ts:261-267`.
+> Más la declaración real de la sección en `lib/autorizacion/secciones.ts:270-276`.
 
 ---
 
@@ -116,7 +116,7 @@ tiene un «antes» que fechar. Ver `C11-P01`.
 
 ## C12-06 · Lo que la sección declara hoy ante la capa de autorización
 
-**Rastro** · `lib/autorizacion/secciones.ts:261-267`, literal:
+**Rastro** · `lib/autorizacion/secciones.ts:270-276`, literal:
 
 ```ts
 {
