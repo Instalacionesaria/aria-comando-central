@@ -108,7 +108,7 @@ y lo refresca cada 60 s sólo con la pestaña a la vista (`components/sales/Pane
 `lib/cadencia.ts:91`). `components/views/SalesView.jsx` es el envoltorio del prototipo, `view-scroll cre-scroll`,
 sin `estetica-op` (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-01).
 
-**La ruta.** `app/api/sales/route.ts:75-112`, un solo `GET`: pide `tablero.ver` al portero (`:79`), **rechaza** con
+**La ruta.** `app/api/sales/route.ts:76-113`, un solo `GET`: pide `tablero.ver` al portero (`:79`), **rechaza** con
 400 un período que no está en la lista en vez de corregirlo (`:88-89`), y llama una vez a `lecturaDeSales` dentro de
 la organización (`:96`). La respuesta lleva los bloques de siempre —`ventanas`, `dinero`, `cancelacion`, `cadena`,
 `ciclo` y `closers`— y `pantalla`, lo que el front arma (`:110`). Los huecos de `lib/negocio/huecosDeSales.ts` ya no

@@ -415,8 +415,8 @@ llamada de las 19 dependa del 14.
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
 Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:63`,
-`app/api/creative/route.ts:62`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:88`,
-`app/api/leads-portal/route.ts:53`).
+`app/api/creative/route.ts:62`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:89`,
+`app/api/leads-portal/route.ts:54`).
 
 **El defecto que cierra la lista cerrada** está enunciado en `lib/negocio/periodo.ts:6-17` y convertido
 en prueba en `pruebas/codigo/155-el-periodo-de-conversation.test.ts:59`. Leer `?dias=` como número abre
@@ -904,7 +904,7 @@ la pantalla publica «ICP alto 51» y, debajo, las 51 tarjetas; con dos consulta
 otra deja la tarjeta diciendo 51 sobre una rejilla de 52, «y ninguna de las dos está mal». Una CTE arma
 una fila por persona y de ella salen la lista y el resumen, que agrupa sin volver a clasificar. Y cuando
 dos pantallas publican la misma cifra, la ruta las compara y lo dice en el aviso en vez de elegir una
-(`coherenciaConSales`, `lib/negocio/leadsDelPortal.ts:610`, `app/api/leads-portal/route.ts:68-69`). Es la
+(`coherenciaConSales`, `lib/negocio/leadsDelPortal.ts:610`, `app/api/leads-portal/route.ts:69-70`). Es la
 regla de «todo en la misma pasada» (§ 9) llevada de una tarjeta a una pantalla entera.
 
 **41 · «Los últimos 30 días» pueden ser tres poblaciones: cada una viaja con su nombre y su grano.** En

@@ -16,6 +16,7 @@
 // ilegible, igual que en sus pantallas.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { ambitoDe, zonaDe } from '../../autorizacion/ambito.ts';
 import { porQueNoAudita } from '../../auditor/pantalla.ts';
 import { ok, rechazo } from '../../autorizacion/respuesta.ts';
 import { esDeLaPrincipal, seccionesConAlcance } from '../../autorizacion/secciones.ts';
@@ -156,9 +157,12 @@ export function laPregunta(contexto: Contexto, identidad: IdentidadDelCerebro, l
      que su caja nunca le mostraría (lo encontró la revisión de AG6). Lo que no se ve no tiene caja. */
   if (seccion !== null && !seccionesVisibles(contexto).some((s) => s.clave === seccion)) return rechazo('seccion_no_concedida');
   if (identidad.llave.tipo === 'falta') return rechazo(identidad.llave.que);
-  const zona = contexto.organizacion.zonaHoraria;
+  // La pantalla de la caja, o el Inicio: de ahí salen el ámbito y la zona (el nivel 3, `lib/autorizacion/ambito.ts`).
+  const pantalla = seccion ?? 'executive';
+  const zona = zonaDe(contexto, pantalla);
   return {
     orgId: contexto.orgEfectiva,
+    ambito: ambitoDe(contexto, pantalla),
     usuarioId: contexto.usuarioId,
     zona,
     llave: identidad.llave.claveIa,

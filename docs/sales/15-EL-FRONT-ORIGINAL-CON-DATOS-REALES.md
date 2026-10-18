@@ -307,7 +307,7 @@ viajan hechos. `huecos` salió de la respuesta con el front, en SA-3; el módulo
 `lib/negocio/huecosDeSales.ts` queda, porque Leads Portal comparte tres de sus huecos.
 
 **Estado** · Construido el 2026-10-09: la lectura en SA-1 (`lib/negocio/lecturaDeSales.ts`, con `armarSales` pura) y
-la ruta en SA-2, que la llama una vez (`app/api/sales/route.ts:95-97`). `huecos` salió en SA-3.
+la ruta en SA-2, que la llama una vez (`app/api/sales/route.ts:96-98`). `huecos` salió en SA-3.
 
 ### S15-14 · El cerebro lee lo mismo
 

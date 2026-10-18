@@ -22,6 +22,7 @@
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
+import { ambitoDe } from '../../../../lib/autorizacion/ambito.ts';
 import { fichaDelLeadDelPortal } from '../../../../lib/negocio/fichaDelLeadDelPortal.ts';
 
 /** A qué pantalla pertenece esta operación. La misma que la lista. */
@@ -41,7 +42,7 @@ export async function GET(
      404. */
   if (!UUID.test(id)) return rechazo('no_encontrado');
 
-  const ficha = await conOrganizacion(contexto.orgEfectiva, () => fichaDelLeadDelPortal(id));
+  const ficha = await conOrganizacion(ambitoDe(contexto, PANTALLA), () => fichaDelLeadDelPortal(id));
   if (ficha === null) return rechazo('no_encontrado');
 
   return ok({ ficha });

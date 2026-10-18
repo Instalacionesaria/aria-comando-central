@@ -29,7 +29,7 @@
 // Los tiempos: 120 s por llamada, 240 s en total, dentro de una función de 300 (`maxDuration` de la ruta).
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { conOrganizacion } from '../../datos/contexto.ts';
+import { conOrganizacion, type Ambito } from '../../datos/contexto.ts';
 import { type FalloDelModelo, anotarIncidente } from '../../fundaciones/fallo-del-modelo.ts';
 import { type BloqueDelModelo, type MensajeAlModelo, llamarAlModelo } from '../llamada.ts';
 import { MODELO_DEL_EXECUTIVE } from '../modelos.ts';
@@ -54,6 +54,12 @@ export type EstadoDeLaMascota = 'hallazgo' | 'neutral' | 'sin-conexion';
 
 export interface Pregunta {
   orgId: string;
+  /**
+   * El ámbito de la pantalla de la caja (el nivel 3): con un cliente enfocado, el cerebro lee sólo ese cliente, igual
+   * que la pantalla (regla 51). Cada transacción de la pregunta lo abre; `orgId` queda para lo que es de la empresa
+   * (los incidentes).
+   */
+  ambito: Ambito;
   usuarioId: string;
   zona: string;
   llave: string;
@@ -128,7 +134,7 @@ export async function preguntar(p: Pregunta): Promise<ResultadoDePreguntar> {
   if (ofrecidas.length === 0) return { tipo: 'sin_herramientas' };
 
   // ── 1 · Reserva, en una transacción corta ─────────────────────────────────
-  const reserva = await conOrganizacion(p.orgId, () =>
+  const reserva = await conOrganizacion(p.ambito, () =>
     reservarPregunta({
       usuarioId: p.usuarioId,
       zona: p.zona,
@@ -153,7 +159,7 @@ export async function preguntar(p: Pregunta): Promise<ResultadoDePreguntar> {
   } catch (e) {
     console.error(`cerebro: la pregunta ${preguntaId} se cortó · ${e instanceof Error ? e.message : 'desconocido'}`);
     try {
-      await conOrganizacion(p.orgId, () => marcarFallida(preguntaId, lugarId, null, null, pagada));
+      await conOrganizacion(p.ambito, () => marcarFallida(preguntaId, lugarId, null, null, pagada));
     } catch (e2) {
       console.error(`cerebro: tampoco se pudo marcar fallida ${preguntaId} · ${e2 instanceof Error ? e2.message : 'desconocido'}`);
     }
@@ -178,7 +184,7 @@ async function elBucle(
   };
   /** Una pregunta que no llegó a respuesta: `fallida`, y cuenta para el tope sólo si se pagó. */
   const fallar = async (situacion: string, ref: string, detalle: string): Promise<ResultadoDePreguntar> => {
-    await conOrganizacion(p.orgId, () => marcarFallida(preguntaId, lugarId, situacion, ref, pagada));
+    await conOrganizacion(p.ambito, () => marcarFallida(preguntaId, lugarId, situacion, ref, pagada));
     return { tipo: 'fallo', hiloId, situacion, ref, detalle, mascota: SIN_CONEXION.includes(situacion) ? 'sin-conexion' : 'neutral' };
   };
   /** Lo que el transporte no puede ver: el modelo contestó, pero nunca con `responder` o sin su forma. */
@@ -251,14 +257,14 @@ async function elBucle(
       // ── 4 · La respuesta, en una transacción corta ─────────────────────────
       const respuesta = v.respuesta;
       try {
-        await conOrganizacion(p.orgId, () => guardarRespuesta(hiloId, preguntaId, lugarId, respuesta, evidencias));
+        await conOrganizacion(p.ambito, () => guardarRespuesta(hiloId, preguntaId, lugarId, respuesta, evidencias));
       } catch (e) {
         /* Se pagó y está validada: la persona la recibe igual, y se le dice que no quedó en el hilo. La
            pregunta cuenta para el tope, porque se respondió. */
         console.error(`cerebro: no se pudo guardar la respuesta de ${preguntaId} · ${e instanceof Error ? e.message : 'desconocido'}`);
         respuesta.avisos.push('Esta respuesta no se pudo guardar en el hilo: cópiala si la necesitas.');
         try {
-          await conOrganizacion(p.orgId, () => cerrarLugar(lugarId, 'respondida'));
+          await conOrganizacion(p.ambito, () => cerrarLugar(lugarId, 'respondida'));
         } catch {
           // Si tampoco se puede cerrar, la reserva vence sola a los diez minutos.
         }
@@ -281,7 +287,7 @@ async function elBucle(
       let resultado;
       try {
         // Cada herramienta, en su transacción corta y en serie: el agrupador tiene cinco conexiones.
-        resultado = await conOrganizacion(p.orgId, () => ejecutarHerramienta(String(pedido.name), pedido.input, ofrecidas, contextoDeHerramienta));
+        resultado = await conOrganizacion(p.ambito, () => ejecutarHerramienta(String(pedido.name), pedido.input, ofrecidas, contextoDeHerramienta));
       } catch (e) {
         console.error(`cerebro: la herramienta ${String(pedido.name)} falló · ${e instanceof Error ? e.message : 'desconocido'}`);
         resultado = { tipo: 'error' as const, mensaje: 'La herramienta no pudo leer los datos ahora.' };

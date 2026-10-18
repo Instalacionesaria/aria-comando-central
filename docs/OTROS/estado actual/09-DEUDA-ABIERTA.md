@@ -550,7 +550,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
 - **La cobertura de Conversion dice «de 570» sobre una base de 594** sin declarar los 24 sin alta
   (§ 2.1), que Leads Portal sí declara. **Cerrado el 2026-10-09** (CV-4 de Conversion): en «Completo» la nota dice
   «{N} contactos sin alta no entran.» (CV15-10).
-- **Leads Portal manda los huecos de Sales siempre** (`app/api/leads-portal/route.ts:79`), con el
+- **Leads Portal manda los huecos de Sales siempre** (`app/api/leads-portal/route.ts:80`), con el
   texto fijo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:59`), sin mirar si hay
   ventas. El día de la primera venta, la tarjeta la va a contar y el hueco la va a negar. Sigue igual el 2026-10-18.
 - **La tarjeta «Todos» de Leads Portal dibuja «0 vendidos»**

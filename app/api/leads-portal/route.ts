@@ -25,6 +25,7 @@
 import { exigir } from '../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
+import { ambitoDe } from '../../../lib/autorizacion/ambito.ts';
 import { cadenaDeCierre } from '../../../lib/negocio/cadenaDeCierre.ts';
 import { frescuraDe } from '../../../lib/negocio/frescura.ts';
 import { HUECOS, MEDIDO_EL } from '../../../lib/negocio/huecosDeSales.ts';
@@ -53,7 +54,7 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  const { portal, cadena, frescura } = await conOrganizacion(contexto.orgEfectiva, async () => ({
+  const { portal, cadena, frescura } = await conOrganizacion(ambitoDe(contexto, PANTALLA), async () => ({
     portal: await leadsDelPortal(periodo.dias),
     /* La cadena de Sales, con el MISMO `dias`. No se dibuja: está para comparar. Cohorte y «agendó»
        son la misma expresión y el mismo predicado en las dos pestañas, y si no dan lo mismo ninguna

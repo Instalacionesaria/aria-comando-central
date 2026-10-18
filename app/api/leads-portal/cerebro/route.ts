@@ -19,6 +19,7 @@ import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
+import { ambitoDe } from '../../../../lib/autorizacion/ambito.ts';
 import { borrarHilo } from '../../../../lib/agentes/executive/conversaciones.ts';
 import {
   UUID,
@@ -45,7 +46,7 @@ export async function GET(peticion: Request): Promise<Response> {
   if (hilo instanceof Response) return hilo;
 
   const { llave } = await conIdentidad((db) => identidadDelCerebro(db, contexto, false));
-  const panel = await conOrganizacion(contexto.orgEfectiva, () => loDelPanel(contexto, PANTALLA, hilo));
+  const panel = await conOrganizacion(ambitoDe(contexto, PANTALLA), () => loDelPanel(contexto, PANTALLA, hilo));
   return respuestaDelPanel(contexto, llave, panel, hilo);
 }
 
@@ -68,7 +69,7 @@ export async function DELETE(peticion: Request): Promise<Response> {
   if (contexto instanceof Response) return contexto;
   const hilo = new URL(peticion.url).searchParams.get('hilo');
   if (hilo === null || !UUID.test(hilo)) return rechazo('no_encontrado');
-  const borrado = await conOrganizacion(contexto.orgEfectiva, () => borrarHilo(contexto.usuarioId, hilo, PANTALLA));
+  const borrado = await conOrganizacion(ambitoDe(contexto, PANTALLA), () => borrarHilo(contexto.usuarioId, hilo, PANTALLA));
   if (!borrado) return rechazo('no_encontrado');
   return ok({ borrado: true });
 }

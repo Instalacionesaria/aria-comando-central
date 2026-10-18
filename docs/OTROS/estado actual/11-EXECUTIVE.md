@@ -202,7 +202,7 @@ el `DELETE` borra un hilo propio, los dos con `cerebro.usar` (`app/api/executive
 
 **Una pregunta**: hasta 6 rondas de modelo con un techo de 12.000 tokens cada una
 (`lib/agentes/executive/preguntar.ts:44-48`), con `claude-sonnet-5-5` (`lib/agentes/modelos.ts:36-37`) y esfuerzo
-`medium` (`lib/agentes/executive/preguntar.ts:221-233`). Las instrucciones son de tú neutro y repiten las reglas de
+`medium` (`lib/agentes/executive/preguntar.ts:227-239`). Las instrucciones son de tú neutro y repiten las reglas de
 esta sección: consume y no recalcula, el piso de 10, el dinero es del mes calendario y es venta reportada, las causas
 son hipótesis (`lib/agentes/executive/prompt.ts:43-53`).
 

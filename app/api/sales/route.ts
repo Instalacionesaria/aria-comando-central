@@ -65,6 +65,7 @@
 import { exigir } from '../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
+import { ambitoDe, zonaDe } from '../../../lib/autorizacion/ambito.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { lecturaDeSales } from '../../../lib/negocio/lecturaDeSales.ts';
 import { VENTANAS } from '../../../lib/negocio/ventanasDeSales.ts';
@@ -92,8 +93,8 @@ export async function GET(peticion: Request): Promise<Response> {
      hablan de las mismas personas. La cancelación es el segundo consumidor de `tasaDeCancelacion` y NO se
      recalcula: reescribirla republicaría el 62,7 % que el commit `9931f4d` ya corrigió mezclando el descarte
      propio con la pérdida. */
-  const lectura = await conOrganizacion(contexto.orgEfectiva, () =>
-    lecturaDeSales(periodo.dias, contexto.organizacion.zonaHoraria),
+  const lectura = await conOrganizacion(ambitoDe(contexto, PANTALLA), () =>
+    lecturaDeSales(periodo.dias, zonaDe(contexto, PANTALLA)),
   );
 
   return ok({

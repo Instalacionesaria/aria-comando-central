@@ -231,7 +231,7 @@ el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fal
 
 **Quién la lee** (búsqueda de `frescuraDe(` en `lib/`, `app/` y `components/`, 2026-10-18): la Agenda del Closer
 (`lib/negocio/agenda.ts:352`), el chat de la ficha (`lib/negocio/ficha.ts:289`, `:295`), Leads Portal
-(`app/api/leads-portal/route.ts:63-64`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
+(`app/api/leads-portal/route.ts:64-65`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
 **comentario de la cabecera** de cada departamento (`lib/agentes/cabecera.ts:126`, `lib/agentes/cabecera.ts:171`,
 `lib/agentes/cabecera.ts:180`), los detectores, que no publican lo que no pueden medir
 (`lib/agentes/detectores/creative.ts:111`, `lib/agentes/detectores/conversion.ts:120`,
