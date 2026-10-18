@@ -220,7 +220,7 @@ asistencia respondida, y hoy son cero.
 **Rastro** · `lib/negocio/citasAlcanzables.ts:87-113`; `lib/negocio/huecosDeSales.ts:35-37`.
 **Estado** · **Construible hoy.** Medido el 2026-09-27: **15 personas** en toda la base. Es la única señal de
 asistencia que existe, y es asimétrica: el lado negativo se observa y el positivo no
-(`lib/negocio/citasAlcanzables.ts:96-100`).
+(`lib/negocio/citasAlcanzables.ts:96-100`). Eso era al 2026-09-27: desde octubre el calendario sí marca `showed` (3 el 2026-10-18) y nada lo lee; el comentario lo dice así desde `65669f4`.
 
 **Nunca se suma con `asistencia`**: no convierte un `sin_registrar` en `no_asistio`, ni entra en el
 conteo de LP02-04. Viaja por persona (`plantón`, en la fila), no como una tarjeta.

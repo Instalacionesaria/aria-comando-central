@@ -1,27 +1,44 @@
 # Setter y Closer
 
-> Corte: **2026-09-28**. Las cifras de producción se midieron ese día a partir de las 18:03 UTC; las
-> de la ficha (§ 2.5) y la re-medición de las ventanas que ruedan (§ 5.6), entre las 23:58 UTC del 28
-> y las 00:02 UTC del 29 (19:02 del 28 en Lima). Todas con consultas de sólo lectura y sólo agregados,
-> sobre la organización `aria` —las otras doce de la base tienen cero contactos y cero citas—. Cada
-> afirmación lleva su archivo:línea o la consulta que la produjo. Lo que no se pudo verificar está
-> dicho como pendiente, no omitido. Una verificación posterior (00:15 a 00:25 UTC del 29) re-midió
-> las cifras principales; donde el reloj ya las había movido, van las dos horas.
->
-> Archivo nuevo. La foto del 2026-09-15 no tenía informe de estas dos pestañas: las nombraba de paso
-> en [05-SALES.md](05-SALES.md) y [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md). Cuando una cifra de
-> esos dos cambió, acá van las dos, cada una con su fecha.
+> Corte: **2026-10-18**, con el código de producción en `972972e`. Las cifras de producción son de dos fechas y cada una
+> lo dice: las del **2026-10-18**, medidas desde las 15:39 UTC con `scripts/supabase.mjs leer` (sólo lectura, sólo
+> conteos y agregados, con el OK del usuario), y las del **2026-09-28**, de la foto anterior —medidas desde las 18:03
+> UTC, las de la ficha y las ventanas que ruedan entre las 23:58 UTC del 28 y las 00:25 UTC del 29—, cuando no se
+> volvieron a medir. Todas sobre producción, donde sólo la organización `aria` tiene contactos y citas. Cada
+> afirmación lleva su `archivo:línea` o la consulta que la produjo; lo que no se pudo verificar está dicho como
+> pendiente. Las pantallas no se abrieron con sesión para esta foto. La versión anterior se lee con
+> `git show 972972e:"docs/OTROS/estado actual/13-SETTER-Y-CLOSER.md"`.
 
 **Construido — en producción desde el 2026-08-24, y sin un solo registro desde el 2026-09-09.**
 
 Son las dos únicas pestañas del producto donde una persona escribe el hecho comercial, y el
 instrumento está entero: Avanzar guarda resultado, etapa, nota, tarea, cita y asistencia en una sola
-transacción. Producción tiene **7 resultados en toda su historia** —del 2026-08-30 al 2026-09-09—,
-**0 ventas, 0 montos y 0 de 333 citas con la asistencia registrada** (medido el 2026-09-28). Los
-siete son anteriores a la pregunta «¿se presentó?», que existe desde el 2026-09-14 21:49 UTC, y desde
-entonces pasaron 15 citas que Avanzar podía cerrar (a las 18 h UTC del corte; 16 a las 23:58) sin que
-se registrara ninguna. Eso es lo que deja el show rate de Conversation en «—» y los dos últimos
-eslabones de la cadena de Sales en 4 y 0 sobre la base entera (3 y 0 en los 30 días con que abre).
+transacción. Producción sigue con **7 resultados en toda su historia** —del 2026-08-30 al 2026-09-09—,
+**0 ventas, 0 montos y 0 de 368 citas con la asistencia registrada** (medido el 2026-10-18; eran 0 de 333 el
+2026-09-28). Los siete son anteriores a la pregunta «¿se presentó?», que existe desde el 2026-09-14 21:49 UTC, y desde
+entonces ocurrieron **38 citas que Avanzar podía cerrar** (eran 15 el 2026-09-28) sin que se registrara ninguna. Lo
+nuevo desde el corte es que el producto ya lo dice en voz alta: la cabecera del Closer cuenta las citas que esperan
+registro, la Reunión de hoy lo trae como tema todos los días desde el 2026-10-06, y el Brief del closer prepara cada
+cita antes de la llamada. **Nada de eso movió el registro**, y el Brief no se generó nunca en producción (§ 2.6).
+
+> **Desde el corte del 2026-09-28**
+>
+> - **2026-10-02 · `40f699a`** — E10 de la nueva estructura: Setter y Closer pasan a ser entradas de **Sales**
+>   (`lib/autorizacion/departamentos.ts:108-109`), con la cabecera del departamento encima (`624a941`).
+> - **2026-10-05 · `13723a0`** — AG6 de los agentes: la caja del pie del cerebro en las dos pestañas
+>   (`app/api/setter/cerebro/route.ts`, `app/api/closer/cerebro/route.ts`) y sus siete herramientas (§ 2.7).
+> - **2026-10-05 · `3170786`** — AG11: las objeciones de las llamadas de venta, clasificadas una vez por Haiku
+>   (`073`); son la objeción de respaldo del Brief.
+> - **2026-10-05 · `e5d6c98`, `88fb9cd`** — AG12: el Brief del closer (`074`), en la ficha abierta desde una cita y con
+>   sus marcas en Mi Día (§ 2.6), y su evaluación real.
+> - **2026-10-06 · `d8effd3`** — AG15: la Reunión de hoy, con la regla de las citas sin registrar como tema de
+>   «Sales · Closer» (§ 2.8).
+> - **2026-10-07 · `2f12fad`** — el comentario de la cabecera en Closer: las citas sin registrar del alcance de quien
+>   mira (§ 2.8).
+> - **2026-10-08 · `71c71b8`** — CV-1 de Conversion toca `citasAlcanzables.ts`, el predicado que comparten la cadena
+>   de Sales y Avanzar; las citas de esta foto a ese archivo se volvieron a verificar.
+> - **2026-10-13, en la base, sin commit** — la plataforma anterior (`public.closer_*`) se borró de producción con el
+>   OK del usuario y respaldo aparte: el 2026-10-18 no queda ninguna tabla `closer_*` en `public` (§ 5.4).
 
 ---
 
@@ -57,19 +74,21 @@ cola no se construyó (§ 5.5).
 ### 2.1 · La declaración, y las dos capacidades
 
 Las dos pestañas están en el grupo «Operación», cada una con su capacidad de lectura propia:
-`setter.ver` y `closer.ver` (`lib/autorizacion/secciones.ts:338-361`). Que un closer no vea la
+`setter.ver` y `closer.ver` (`lib/autorizacion/secciones.ts:341-364`). Desde la nueva estructura la barra
+las muestra dentro de Sales (`lib/autorizacion/departamentos.ts:108-109`), pero las secciones y sus capacidades no
+cambiaron. Que un closer no vea la
 pestaña del setter depende, en el diseño, de que no compartan capacidad; en producción los roles
 dan las dos a todos, y lo que recorta es la lista de secciones (§ 2.4). Las **cuatro**
 sub-pestañas del closer piden `closer.ver`, no una capacidad cada una, porque dos llamadas de la
 misma pantalla con capacidades distintas dejan una parte vacía sin que se note
-(`lib/autorizacion/secciones.ts:345-349`; la Agenda lo repite en
+(`lib/autorizacion/secciones.ts:348-352`; la Agenda lo repite en
 `app/api/closer/agenda/route.ts:57-60`).
 
 La ficha del contacto y Avanzar no son de ninguna de las dos: se abren desde las dos pestañas, y
 sólo desde ellas (§ 2.5). Las nueve rutas bajo `app/api/contactos/` —la ficha y sus cinco
 pestañas, Avanzar, resolver una intervención y la sincronización de contactos— se declaran sin
 pantalla y piden capacidades propias —`contactos.ver`, `contactos.avanzar`, `contactos.resolver`,
-`contactos.comentar` (`lib/autorizacion/secciones.ts:561-601`)—; enviar desde el compositor del chat
+`contactos.comentar` (`lib/autorizacion/secciones.ts:574-614`)—; enviar desde el compositor del chat
 pide `conversaciones.responder` y no `contactos.ver` (`app/api/contactos/[id]/mensajes/route.ts:102`).
 
 ### 2.2 · El Setter
@@ -84,9 +103,11 @@ respuesta de Mi Día declara `llamadasAlCrm: 0` (`app/api/setter/mi-dia/route.ts
 
 ### 2.3 · El Closer
 
-`components/views/CloserView.jsx`, 404 líneas. Inicio · Mi Día · Pipeline · Agenda
-(`components/views/CloserView.jsx:47-52`). Seis rutas bajo `app/api/closer/`, todas con `closer.ver`:
-`mi-dia` (colas + cockpit + comisión, `app/api/closer/mi-dia/route.ts:50-135`), `agenda`, `pipeline`,
+`components/views/CloserView.jsx`, 408 líneas. Inicio · Mi Día · Pipeline · Agenda
+(`components/views/CloserView.jsx:47-52`). Seis rutas de lectura bajo `app/api/closer/`, todas con `closer.ver`, más
+dos que nacieron después del corte: `brief` (§ 2.6) y `cerebro` (§ 2.7). Las seis:
+`mi-dia` (colas + cockpit + comisión, y desde AG12 y AG15 las marcas del Brief y el comentario de la cabecera,
+`app/api/closer/mi-dia/route.ts:50-184`, `app/api/closer/mi-dia/route.ts:124-133`), `agenda`, `pipeline`,
 `meta` (PATCH), `agenda/refrescar` (POST, con `maxDuration = 300`,
 `app/api/closer/agenda/refrescar/route.ts:50`) y `contactos`. **Esta última no la llama ninguna
 pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pestaña Contactos; un
@@ -104,34 +125,37 @@ que dispara la ingesta de mensajes y recarga las colas (`components/views/Closer
 `lib/cadencia.ts:40`). Los contactos entran solos cada diez minutos por el cron
 (`lib/negocio/barrido.ts:207-211`).
 
-### 2.4 · Quién ve qué, medido el 2026-09-28
+### 2.4 · Quién ve qué
 
-Los **15 usuarios activos** tienen `closer.ver`, `setter.ver` y `contactos.avanzar` por su rol (9
-administradores, 2 superadministradores, 4 de rol restringido). Lo que recorta las pestañas es la
+Los **15 usuarios activos** tienen `closer.ver`, `setter.ver`, `contactos.avanzar` y, desde AG5, `cerebro.usar` por su
+rol (medido el 2026-10-18). Lo que sigue es del 2026-09-28 y no se volvió a medir, salvo donde se dice: eran 9
+administradores, 2 superadministradores y 4 de rol restringido. Lo que recorta las pestañas es la
 lista de secciones de los cuatro restringidos: los cuatro tienen Closer y tres también Setter. Hay
-**3 closers designados**, los tres vinculados al CRM (`negocio.closer_asignado`, 3 filas); dos tienen
+**3 closers designados**, los tres vinculados al CRM (`negocio.closer_asignado`, 3 filas, también el 2026-10-18); dos tienen
 rol restringido —uno de ellos ve también el Setter— y el tercero tiene un rol sin restricción.
 
 La cartera del territorio closer se reparte así entre los tres, sin nombres: **210, 25 y 11
 contactos, y 41 sin asignar** (de 287); las citas alcanzables, por el asignado de cada cita y con
 las canceladas adentro, 125, 63 y 11, y 33 sin closer (de 232). La concentración ya estaba medida el
 2026-09-01 —135 de 152 contactos apuntaban al usuario del CRM que la empresa usa como cuenta del
-agente de IA (`components/closer/QuienEsElCloser.jsx:23-27`)—, y sigue igual: re-medido el
+agente de IA (`components/closer/QuienEsElCloser.jsx:24-29`)—, y sigue igual: re-medido el
 2026-09-29 a las 00:15 UTC, el grupo de 210 apunta al usuario que
 `identidad.organizaciones_credenciales.crm_agente_usuario_id` declara como el del agente, y ese
 mismo usuario del CRM es el vínculo de uno de los tres closers designados.
 
 ### 2.5 · La ficha del contacto
 
-`components/negocio/Ficha.jsx`, 1.432 líneas, con sus lecturas en `lib/negocio/ficha.ts`, 740. Es un
+`components/negocio/Ficha.jsx`, 1.440 líneas, con sus lecturas en `lib/negocio/ficha.ts`, 740. Es un
 panel lateral que se superpone y no navega, y un solo componente para toda la aplicación
-(`components/negocio/Ficha.jsx:3-16`). Se abre desde seis lugares, todos de estas dos pestañas: Mi
+(`components/negocio/Ficha.jsx:3-16`). Desde AG12, cuando se abre desde una cita del Closer —Mi Día o la Agenda— suma
+una sexta pestaña, **Brief**, que va primera y se abre sola (`components/negocio/Ficha.jsx:102-104`,
+`components/negocio/Ficha.jsx:487-488`, `components/negocio/Ficha.jsx:498`); ver § 2.6. Se abre desde seis lugares, todos de estas dos pestañas: Mi
 Día, Pipeline y Agenda del closer (`components/closer/MiDia.jsx:440`,
 `components/closer/Pipeline.jsx:313`, `components/closer/Agenda.jsx:554`), y el mismo Mi Día, el
 mismo Pipeline y la lista de Contactos del setter (`components/views/SetterView.jsx:33-39`,
 `components/negocio/ListaDeContactos.jsx:424`). **No se abre desde Conversation ni desde la
 auditoría**, aunque tres comentarios digan que sí (`components/negocio/Ficha.jsx:13-14`,
-`lib/autorizacion/secciones.ts:572-573`, `lib/autorizacion/secciones.ts:586-587`): ningún archivo
+`lib/autorizacion/secciones.ts:585-586`, `lib/autorizacion/secciones.ts:599-600`): ningún archivo
 de `components/conversation/` ni de `components/auditoria/` la importa, y la lista de la auditoría
 abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:295`). Leads Portal tiene
 su propia ficha, `components/leads-portal/FichaDelLead.jsx`, que es otro componente.
@@ -141,9 +165,9 @@ El encabezado es sólo estado, y su única acción es Avanzar (`components/negoc
 trabajo no termine en el CRM (`components/negocio/Ficha.jsx:1056-1073`). Al abrirse pide
 `GET /api/contactos/[id]` (`components/negocio/Ficha.jsx:578`) y cada pestaña pide su ruta cuando se
 la abre (`components/negocio/Ficha.jsx:658`); sólo el Chat tiene reloj, las otras cuatro se piden una
-vez y se quedan (`components/negocio/Ficha.jsx:31-35`). Las cinco pestañas, en su orden
+vez y se quedan (`components/negocio/Ficha.jsx:31-35`). Las cinco pestañas de siempre, en su orden
 (`components/negocio/Ficha.jsx:94-100`), con lo que hay en la base, medido el 2026-09-28 a las 23:58
-UTC sobre toda la tabla:
+UTC sobre toda la tabla (al pie, lo re-medido el 2026-10-18):
 
 | pestaña | qué muestra | de dónde lee | cuánto hay |
 |---|---|---|---|
@@ -152,6 +176,10 @@ UTC sobre toda la tabla:
 | Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:451-472`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
 | Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:572-573`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:575-628`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
 | Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:397-399`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
+
+Re-medido el 2026-10-18: **6.478 mensajes**, de los que siguen siendo **2** los escritos desde el compositor (el último,
+el 2026-09-07); 368 citas; 7 notas, 4 de ellas desde la aplicación; 4 tareas; 7 resultados. Nadie escribió nada desde
+la ficha desde el 2026-09-07.
 
 **El compositor.** Envía por `POST /api/contactos/[id]/mensajes`
 (`app/api/contactos/[id]/mensajes/route.ts:95-102`), que va al CRM con `POST /conversations/messages`
@@ -172,14 +200,71 @@ borrador (`components/negocio/Ficha.jsx:950-952`). Se agregan y se borran desde 
 pestaña (`components/closer/Inicio.jsx:239`, `components/setter/Inicio.jsx:281`,
 `components/negocio/EnlacesRapidos.jsx:138`, `components/negocio/EnlacesRapidos.jsx:162`).
 `negocio.enlaces_rapidos` tiene **10 filas, las 10 del territorio closer y 0 del setter**, de una
-sola organización (medido el 2026-09-28 a las 23:58 UTC). La ficha de un contacto del setter —282 de
+sola organización (medido el 2026-09-28 a las 23:58 UTC; igual el 2026-10-18). La ficha de un contacto del setter —282 de
 594 (§ 4.6)— abre el menú sin ningún enlace configurado; sólo le quedan los dos de su cita, si la
 tiene.
 
 **Dos rastros más de otro sistema en los comentarios**, fuera de las cinco familias de § 3.4: las
 aperturas desde la auditoría (arriba) y el encabezado de `lib/negocio/ficha.ts`, que dice que cinco
 de sus seis tablas están vacías y que hay 239 contactos (`lib/negocio/ficha.ts:6-8`). Hoy la única
-vacía es `negocio.llamadas`, y hay 594 contactos.
+vacía es `negocio.llamadas`, y hay 624 contactos (2026-10-18).
+
+### 2.6 · El Brief del closer (nuevo desde el corte)
+
+Una preparación de la llamada, por cita, en cuatro secciones —quién es, qué dijo, la objeción probable y una
+pregunta para abrir—; cada dato lleva su estado, su fuente y la cita que lo sostiene, y el código degrada a
+«ambiguo» lo «detectado» cuya cita no está en su fuente (`lib/agentes/brief/brief.ts:1-19`). Si lo que dijo la persona
+no alcanza, la objeción probable es la más frecuente de las llamadas de la empresa, **marcada como tal**
+(`lib/agentes/brief/brief.ts:9-10`). Lo genera `claude-sonnet-5-5` (`lib/agentes/modelos.ts:45-46`).
+
+- **Dónde.** En la ficha abierta desde una cita del Closer (§ 2.5), y como marca en la agenda de Mi Día: «BRIEF
+  LISTO» y «SIN FORMULARIO» (`components/closer/MiDia.jsx:181-187`), que arma el servidor sin modelo
+  (`app/api/closer/mi-dia/route.ts:124-128`).
+- **Cuándo.** Al abrir la pestaña, una vez, si no hay uno guardado y se puede
+  (`components/closer/BriefDeLaCita.jsx:88-92`). Regenerarlo a mano cuenta para el tope del cerebro; generarlo al abrir,
+  no (`app/api/closer/brief/route.ts:18-19`, `app/api/closer/brief/route.ts:106-111`).
+- **Quién.** Leer el guardado pide `closer.ver`; generarlo, `cerebro.usar`
+  (`app/api/closer/brief/route.ts:47`, `app/api/closer/brief/route.ts:82`). Es **más estricto que la ficha**: la cita
+  tiene que ser de un contacto del territorio closer y, para un closer con «mío», de uno suyo; si no, 404
+  (`app/api/closer/brief/route.ts:12-14`, `lib/agentes/brief/entrada.ts:12-16`). Bajo delegación o sin llave no se
+  genera, y la pantalla dice por qué en vez de ofrecer un botón que falla (`app/api/closer/brief/route.ts:62-69`).
+- **Lo que no viaja al modelo**: el teléfono y el correo del contacto (`lib/agentes/brief/entrada.ts:18-20`).
+- **Dónde se guarda**: `negocio.briefs_del_closer`, uno por cita, con la huella de lo que leyó; si el formulario o la
+  llamada cambian, la pantalla avisa que hay datos nuevos (`db/migraciones/074_los_briefs_del_closer.sql:16-27`,
+  `app/api/closer/brief/route.ts:74-75`).
+
+**En producción, 0 Briefs** y **0 llamadas del agente `brief`** en `negocio.uso_de_ia` (medido el 2026-10-18): desde
+el 2026-10-05 nadie abrió en producción la ficha de una cita desde el Closer con el Brief en condiciones de generarse.
+La evaluación real de AG12 se hizo contra la base sembrada local, no contra producción. Las objeciones clasificadas
+que el Brief usa de respaldo sí existen: **89** en `negocio.objeciones_clasificadas` (2026-10-18).
+
+### 2.7 · El cerebro en Setter y Closer (nuevo desde el corte)
+
+Cada pestaña tiene su caja «Pregúntale al cerebro sobre …» al pie, con su ruta
+(`app/api/setter/cerebro/route.ts`, `app/api/closer/cerebro/route.ts`), y el cerebro tiene herramientas de las dos:
+tres del Setter y cuatro del Closer, con las mismas funciones y los mismos argumentos que sus rutas
+(`lib/agentes/executive/adaptadores/setter.ts:1-6`, `lib/agentes/executive/adaptadores/closer.ts:1-7`). Del Setter
+**viajan sólo los conteos**, porque sus filas son contactos con teléfono y correo
+(`lib/agentes/executive/adaptadores/setter.ts:4-6`); del Closer, sin el selector «ver como» y con el alcance de quien
+pregunta, y de la agenda las horas y el estado de cada cita sin el contacto ni la sala
+(`lib/agentes/executive/adaptadores/closer.ts:3-7`). En producción, **ninguna conversación con el cerebro salió de la
+caja del pie** de ninguna sección (2026-10-18; ver [11-EXECUTIVE.md](11-EXECUTIVE.md)).
+
+### 2.8 · Las citas sin registrar, dichas en dos lugares (nuevo desde el corte)
+
+- **La cabecera del Closer** dice cuántas citas de los últimos 14 días ya ocurrieron y esperan que se registre si el
+  prospecto se presentó (`lib/agentes/cabecera.ts:144-149`), con el alcance de quien mira y el mismo predicado y la
+  misma ventana con que Avanzar ofrece cerrarlas (`lib/agentes/cabecera.ts:151-166`). La pide `mi-dia`
+  (`app/api/closer/mi-dia/route.ts:129-132`) y la pantalla se la entrega a la cabecera
+  (`components/views/CloserView.jsx:97-98`). Sin modelo. El Setter no tiene nada medible y calla
+  (`lib/agentes/cabecera.ts:22-23`).
+- **La Reunión de hoy** del Inicio trae el tema «Sales · Closer»: contactos de la empresa entera, a 30 días, con una
+  cita ocurrida y sin registro (`lib/agentes/reunion/temas.ts:180-193`). Salió los 13 días con temas, del 2026-10-06 al
+  2026-10-18; su evidencia bajó de **22 de 22** contactos el 2026-10-06 a **14 de 14** desde el 2026-10-12, sin un solo
+  registro en el medio: bajó porque la ventana rueda (medido el 2026-10-18). Ver [11-EXECUTIVE.md](11-EXECUTIVE.md).
+
+Las dos cifras no son la misma y está escrito por qué: la de la Reunión, sobre la empresa, le diría a un closer con
+alcance propio lo de los demás (`lib/agentes/cabecera.ts:18-22`).
 
 ---
 
@@ -242,8 +327,8 @@ Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay
   Hay: el comentario es del commit `28c6937` (2026-08-27 16:58, hora de Lima); `contactos` entró al
   barrido diario esa misma noche (`f6d09a0`, 21:42) y al horario de diez minutos
   (`lib/negocio/barrido.ts:207-211`) con `2e8ce81`, el 2026-08-28.
-- **«Las ÚNICAS dos con una capacidad de lectura propia»** (`lib/autorizacion/secciones.ts:340`).
-  Analizadores pide `analizadores.ver` desde el 2026-09-23 (`lib/autorizacion/secciones.ts:373-378`).
+- **«Las ÚNICAS dos con una capacidad de lectura propia»** (`lib/autorizacion/secciones.ts:343`).
+  Analizadores pide `analizadores.ver` desde el 2026-09-23 (`lib/autorizacion/secciones.ts:374-380`).
 
 ### 3.5 · «Las vencidas NO desaparecen», y desaparecen a medianoche
 
@@ -318,41 +403,42 @@ piden, lo rechaza negativo y lo guarda como texto con dos decimales para no perd
 
 ### 4.5 · Las cifras
 
-Medido el 2026-09-28 contra producción; la columna del medio es la de la foto anterior cuando la
-tenía.
+Contra producción; cada columna con su fecha.
 
-| hecho | tabla | foto anterior | 2026-09-28 |
-|---|---|---|---|
-| resultados registrados | `negocio.resultados` | 7 (2026-09-16) | **7** |
-| — del setter | `rol = 'setter'` | 0 | **0** |
-| — por salida | `salida` | seguimiento 4 · no_show 2 · no_interesa 1 | igual |
-| — ventas, acuerdos sin pago y ventas chicas | `salida` | 0 | **0** |
-| — con monto | `monto` | 0 | **0** |
-| — con cita enganchada | `cita_id` | 0 | **0** |
-| — personas que registraron | `registrado_por` | 2 | 2 |
-| — primero y último | `creado_el` | 2026-08-30 · 2026-09-09 | igual |
-| citas con asistencia | `negocio.citas.asistio` | 0 de 321 (2026-09-16) | **0 de 333** |
-| notas escritas desde la plataforma | `negocio.notas`, `origen = 'plataforma'` | no medido | 4, la última del 2026-09-07 |
-| recordatorios | `negocio.tareas` | no medido | 4 (1 cerrado), el último del 2026-09-07 |
-| mensajes enviados desde el chat de la aplicación | `negocio.mensajes`, `origen = 'propio'` | no medido | **2**, el último del 2026-09-07 |
-| sellos del setter | `contactos.sello_setter_id` | no medido | 0 de 594 |
-| porcentajes de comisión | `negocio.comisiones` | 3 de closer al 10 %, meta nula | igual; **0 filas de setter** |
+| hecho | tabla | 2026-09-16 | 2026-09-28 | 2026-10-18 |
+|---|---|---|---|---|
+| resultados registrados | `negocio.resultados` | 7 | **7** | **7** |
+| — del setter | `rol = 'setter'` | 0 | **0** | **0** |
+| — por salida | `salida` | seguimiento 4 · no_show 2 · no_interesa 1 | igual | no se volvió a desglosar |
+| — ventas, acuerdos sin pago y ventas chicas | `salida` | 0 | **0** | **0** |
+| — con monto | `monto` | 0 | **0** | **0** |
+| — con cita enganchada | `cita_id` | 0 | **0** | **0** |
+| — personas que registraron | `registrado_por` | 2 | 2 | 2 |
+| — primero y último | `creado_el` | 2026-08-30 · 2026-09-09 | igual | último, 2026-09-09 |
+| citas con asistencia | `negocio.citas.asistio` | 0 de 321 | **0 de 333** | **0 de 368** |
+| notas escritas desde la plataforma | `negocio.notas`, `origen = 'plataforma'` | no medido | 4, la última del 2026-09-07 | 4 |
+| recordatorios | `negocio.tareas` | no medido | 4 (1 cerrado), el último del 2026-09-07 | 4, el último del 2026-09-07 |
+| mensajes enviados desde el chat de la aplicación | `negocio.mensajes`, `origen = 'propio'` | no medido | **2**, el último del 2026-09-07 | **2** |
+| sellos del setter | `contactos.sello_setter_id` | no medido | 0 de 594 | 0 de 624 |
+| porcentajes de comisión | `negocio.comisiones` | 3 de closer al 10 %, meta nula | igual; **0 filas de setter** | 3 de closer, meta nula en las 3, 0 de setter |
+| Briefs generados | `negocio.briefs_del_closer` | — | — | **0** |
 
-La última escritura de una persona en cualquiera de estas tablas es del **2026-09-09**. Cuántas
+La última escritura de una persona en cualquiera de estas tablas sigue siendo del **2026-09-09** (2026-10-18). Cuántas
 veces se abrió Avanzar sin registrar **no se puede saber**: la clave de intento nace con cada
 apertura pero sólo se guarda al registrar (`components/negocio/Avanzar.jsx:90-107`).
 
 ### 4.6 · La cartera y el calendario
 
-- **Contactos:** 594 (585 el 2026-09-16): 287 del territorio closer (280), 282 del setter (280) y 25
-  sin territorio (25). Con etapa escrita por un Avanzar, **6** —los mismos de la foto anterior—.
-  Altas en el CRM en los últimos 7 días: 3.
-- **Citas:** 333 (321 el 2026-09-16), del 2026-08-12 al 2026-10-01; 2 todavía por ocurrir a las
-  18 h UTC del corte, 1 a las 23:58. Estado
-  del calendario: `cancelled` 166 (160), `confirmed` 152 (146), `noshow` 15 (15) y `showed`
-  **ninguna**. Los cambios de estado a `noshow` que la tabla registra son 12, todos de `confirmed`,
-  todos entre el 2026-09-15 y el 2026-09-18; ninguno después.
-- **Pipeline del closer**, todo el territorio y sin congelados, recalculado a mano en SQL con la regla
+- **Contactos:** 624 el 2026-10-18 —306 del territorio closer, 282 del setter y 36 sin territorio—; eran 594 el
+  2026-09-28 (287, 282 y 25) y 585 el 2026-09-16. Con etapa escrita por un Avanzar, **6**, los mismos desde
+  septiembre. Altas en el CRM en los últimos 7 días: 1 (eran 3 el 2026-09-28).
+- **Citas:** 368 el 2026-10-18, del 2026-08-12 al 2026-10-20, con 1 por ocurrir; la última creada, del 2026-10-17.
+  Eran 333 el 2026-09-28 y 321 el 2026-09-16. Estado del calendario el 2026-10-18: `cancelled` 179, `confirmed` 166,
+  `noshow` 20 y **`showed` 3** —las tres de citas desde el 2026-09-28—; el 2026-09-28 eran 166, 152, 15 y ninguna.
+  **El calendario marca hoy tres asistencias y la aplicación ninguna**: `showed` es del CRM y no se suma con
+  `asistio` (regla 3). Los cambios de estado a `noshow` que la tabla registraba el 2026-09-28 eran 12, todos de
+  `confirmed`, entre el 2026-09-15 y el 2026-09-18; no se volvieron a medir.
+- **Pipeline del closer** (2026-09-28, no se volvió a calcular), todo el territorio y sin congelados, recalculado a mano en SQL con la regla
   de `lib/negocio/etapas.ts:222-261`: Agendado 228 · No-show 53 · Seguimiento 3 · Ganado 1 · Nurture 1 ·
   Descalificado 1. Clasificados por un Avanzar, 6; por una etiqueta del CRM, 53; por nada, 228
   (`lib/negocio/pipeline.ts:136-141` los cuenta así y la pantalla lo muestra).
@@ -370,7 +456,11 @@ pregunta existían. Eso contesta la pregunta que `docs/sales/01-LA-VENTA-NO-EXIS
 (`docs/sales/01-LA-VENTA-NO-EXISTE.md:126-140`): que cinco de los siete «tenían una cita ofrecible en
 ese momento» no puede ser, porque en ese momento Avanzar no ofrecía ninguna.
 
-### 5.2 · Desde que existe la pregunta: quince citas, cero registros
+### 5.2 · Desde que existe la pregunta: quince citas, cero registros (38 el 2026-10-18)
+
+**Re-medido el 2026-10-18:** desde la `049` ocurrieron **38 citas cerrables** y **0 resultados**; 11 caen hoy dentro
+de los 14 días que Avanzar ofrece. De las 38, 22 son del 2026-09-28 en adelante. Cómo se reparten entre los closers
+no se volvió a medir. Lo que sigue es del 2026-09-28:
 
 Entre el 2026-09-14 21:49 UTC y las 18 h UTC del corte hubo **28 citas alcanzables que ya
 ocurrieron: 13 canceladas y 15 cerrables** (a las 23:58, las ofrecibles eran 16; § 5.8). Las 15
@@ -379,6 +469,10 @@ De las 15, **11 son del único closer que usó la aplicación** después de la `
 dos; ninguna quedó sin closer.
 
 ### 5.3 · Dos de los tres closers no volvieron a entrar
+
+**Re-medido el 2026-10-18:** desde el 2026-09-28, **uno** de los tres closers designados inició sesión (25 veces, la
+última el 2026-10-15), y en toda la organización iniciaron sesión **dos personas**. Los otros dos closers no entraron.
+Lo que sigue es del 2026-09-28:
 
 De los tres closers, **uno** inició sesión después de la `049` (24 inicios hasta las 18:03 UTC del
 corte y 25 a las 00:20 del 29, en `identidad.auditoria_accesos`), y es también el único con una
@@ -398,30 +492,37 @@ empresa tiene como cuenta del agente de IA (§ 2.4); el otro ausente no tenía n
 - **El chat.** Salieron 4.645 mensajes por la ingesta del CRM en toda la historia —233 desde la
   `049`— hasta las 18:03 UTC del corte (4.647 y 235 a las 00:15 del 29), y **2** desde el
   compositor de la aplicación, el último el 2026-09-07.
-- **Una venta.** Un contacto del territorio closer lleva la etiqueta `venta_ganada` en el CRM, **sin
-  ningún resultado ni en esta base ni en la plataforma anterior**, y con dos citas cerrables dentro de
+- **Una venta, y ahora dos.** El 2026-09-28, un contacto del territorio closer llevaba la etiqueta `venta_ganada` en el
+  CRM; el 2026-10-18 son **dos**, y ninguno de los dos tiene un resultado en esta base (0 ventas). El primero, **sin
+  ningún resultado ni en esta base ni en la plataforma anterior** (medido el 2026-09-28), y con dos citas cerrables dentro de
   la ventana de 14 días, la más reciente del 2026-09-28. Es una venta que existe en el CRM y no en
   `negocio.resultados`. El Pipeline la dibuja en «Ganado», porque sin etapa escrita clasifica por
   etiqueta (`lib/negocio/etapas.ts:258-259`, `lib/negocio/pipeline.ts:119`), mientras el Inicio y
   Sales, que leen resultados (`lib/negocio/dineroDelMes.ts:134-153`), dicen cero ventas. Dos pantallas
   del mismo producto, el mismo contacto, dos respuestas.
-- **La llamada.** **63 contactos**, todos del territorio closer (de 287), llevan
+- **La llamada.** **63 contactos** el 2026-09-28 (65 el 2026-10-18), todos del territorio closer (de 287), llevan
   `bot_desactivado_postcall`, que el sistema lee como «ya tuvo
   la llamada de cierre» (`lib/ghl/contrato.ts:117`) y afirma que la pone la aplicación
   (`lib/ghl/contrato.ts:98-100`). **56 de esos 63 no tienen ningún Avanzar en ninguna de las dos
-  plataformas**: la plataforma anterior (`public.closer_avances`, que no es nuestra) tiene 26
-  registros, todos entre el 2026-08-09 y el 2026-08-13, y ninguno de venta. Quién puso esas
+  plataformas**: la plataforma anterior (`public.closer_avances`, que no es nuestra) tenía 26
+  registros, todos entre el 2026-08-09 y el 2026-08-13, y ninguno de venta. **Esa tabla ya no existe**: la
+  plataforma anterior se borró de producción el 2026-10-13, con respaldo fuera de la base, y el 2026-10-18 no queda
+  ninguna tabla `closer_*` en `public`. La comparación con la plataforma anterior ya no se puede repetir contra
+  producción. Quién puso esas
   etiquetas —un flujo del CRM o una persona— **no está verificado**.
 - **La grabación.** Analizadores tiene **38 llamadas de venta (HT) procesadas**, del 2026-07-31 al
   2026-09-24, 2 de ellas después de la `049`; su análisis dice `NO_CERRADA` en 36 e `INDETERMINADO` en
-  2. Prueba que las reuniones ocurren. No llega a `citas.asistio`: `negocio.analizador_llamadas` no
+  2. Prueba que las reuniones ocurren. Desde AG11 cada objeción de esas llamadas lleva su categoría (89 clasificadas
+  el 2026-10-18), y el Brief y la Reunión las leen; ninguna llega a `citas.asistio`. No llega a `citas.asistio`: `negocio.analizador_llamadas` no
   tiene columna que la ate a una cita ni a un contacto de `negocio`.
 
 ### 5.5 · El producto no insiste
 
-Cuatro decisiones hacen que no registrar sea el camino de menor esfuerzo. Ninguna rompe una prueba.
+Cuatro decisiones hacen que no registrar sea el camino de menor esfuerzo. Ninguna rompe una prueba. Desde el
+2026-10-07 el producto, al menos, **lo dice**: la cabecera del Closer cuenta las citas que esperan registro con la
+misma ventana de Avanzar (§ 2.8). Las cuatro siguen en pie:
 
-1. **No hay cola de «registro pendiente».** Mi Día tiene cinco colas —urgentes, agenda, buzón,
+1. **No hay cola de «registro pendiente».** El comentario de la cabecera cuenta, pero no lista ni abre. Mi Día tiene cinco colas —urgentes, agenda, buzón,
    seguimientos, completadas (`lib/negocio/miDia.ts:42-47`)—; la cita sin cerrar vive sólo en «Agenda
    de hoy», hasta medianoche (§ 3.5), y **no suma al contador de tareas**: «una cita es un evento, no
    una tarea» (`lib/negocio/miDia.ts:173-185`). El documento hermano pedía esa cola.
@@ -485,6 +586,11 @@ que tienen una venta. Recalculada el 2026-09-28 con sus mismos predicados:
 | 30 días, 2026-09-28 18 h UTC (la que abre la pantalla, `app/api/sales/route.ts:84-110@48ee16d`) | 277 | 139 | 46 | **3** | **0** |
 | 30 días, re-medida entre las 23:58 UTC del 28 y las 00:02 UTC del 29 | 276 | 139 | 47 | **3** | **0** |
 
+**Re-medida el 2026-10-18 a 30 días**, con la consulta de [11-EXECUTIVE.md](11-EXECUTIVE.md) de la foto anterior:
+**25 entraron → 19 agendaron → 12 con la cita ya ocurrida**; los dos últimos eslabones valen 0, deducido: los 7
+resultados son del 2026-09-09 o antes, fuera de la ventana. La cohorte de 30 días se achicó de 277 a 25 porque desde
+el 2026-09-14 casi no entran contactos (28 a 30 días el 2026-10-16, 25 el 2026-10-18).
+
 En una semana entraron 4 contactos, 3 agendaron, 2 contactos más tuvieron su cita ya ocurrida (3 a
 las 23:58), y el eslabón de registro no se movió. Entre la primera medición de 30 días y la segunda la cohorte bajó de 277 a 276, porque la
 ventana rueda con `now()` (`lib/negocio/cadenaDeCierre.ts:169`), y un contacto más tuvo su cita ya
@@ -514,6 +620,7 @@ select
 -- 2026-09-28 18:0x UTC: 7 · 0 · 0 · 0 · 15
 -- 2026-09-28 23:58 UTC: resultados 7 y ofrecibles_hoy 16 (los otros tres no se re-midieron)
 -- 2026-09-29 00:20 UTC (verificación): 7 · 0 · 0 · 0 · 16
+-- 2026-10-18 15:4x UTC: 7 · 0 · 0 · 0 · 11
 ```
 
 ---
@@ -545,7 +652,8 @@ columnas (`lib/negocio/etapas.ts:76-94`), y lo cobrado suma sólo `venta`
 **6 · Un cero medido no es un cero sin medir.** Con resultados en el mes y ninguna venta, «0»; sin
 ningún resultado, «—» con su motivo (`lib/negocio/dineroDelMes.ts:155-185`). En septiembre de 2026
 (hora de Lima) hay 6 resultados, de dos de los tres closers: la vista de empresa y esos dos ven **0
-ventas medidas**, y el tercero ve «—». Si octubre empieza sin registros, los tres pasan a «—».
+ventas medidas**, y el tercero ve «—». Octubre empezó sin registros —ninguno al 2026-10-18—, así que este mes los
+tres y la vista de empresa ven «—» (deducido de la regla, no visto en pantalla).
 
 **7 · Una clave por apertura del panel.** Reintentar después de un corte no duplica resultado, nota,
 tarea ni comisión (`app/api/contactos/[id]/avanzar/route.ts:156-171`,
@@ -576,6 +684,20 @@ cobrado y la comisión. Y pasados los 14 días, su cita ya no se ofrece para la 
 dicen 0, y salen de resultados. Sumar las dos fuentes, o elegir la del Pipeline porque es la que
 tiene algo, mezcla lo que dijo el CRM con lo que registró una persona.
 
+**Tres avisos y ningún registro.** La cabecera, la Reunión y las marcas del Brief llegaron entre el 5 y el 7 de
+octubre; las citas cerrables desde la `049` pasaron de 15 a 38 y los resultados siguen en 7 (§ 5.2). Agregar más
+avisos no es la palanca: el closer que entra no registra, y dos de los tres no entran (§ 5.3).
+
+**Dos cifras de citas sin registrar que no coinciden.** La cabecera cuenta citas a 14 días con el alcance de quien
+mira; la Reunión, contactos de la empresa a 30 días (§ 2.8). Las dos son ciertas; quien las compare sin leer de dónde
+sale cada una va a creer que una está mal.
+
+**Un `showed` del calendario que tienta.** Hoy el CRM marca tres asistencias y `asistio` ninguna (§ 4.6). Sumarlas
+sería mezclar lo que dijo el calendario con lo que dijo el closer (regla 3).
+
+**Un Brief que nadie probó en producción.** Cero generados (§ 2.6): el primer closer que abra una cita va a ser
+también la primera prueba real, con la llave de la empresa.
+
 **Confiar en los comentarios.** Las cinco familias de § 3.4 describen un sistema con un closer por
 empresa, siete salidas, sin Avanzar, sin cron de contactos y con sólo dos capacidades de lectura
 propias. Quien los lea para decidir, decide sobre otro sistema.
@@ -584,7 +706,7 @@ propias. Quien los lea para decidir, decide sobre otro sistema.
 
 **Lo que sí se puede afirmar hoy, y lo que no.** Sí: que el instrumento existe y funciona —la suite
 lo cubre (`pruebas/base/26-avanzar.test.ts`) y no se corrió para este informe—, que hay 7 resultados
-y 0 ventas registradas, que el calendario marcó 15 plantones y que una venta está en el CRM sin estar
-acá. No: ninguna tasa de asistencia ni de cierre, ninguna cifra del setter, y por qué dos closers
+y 0 ventas registradas, que el calendario marcó 20 plantones y 3 asistencias (2026-10-18) y que dos ventas están en el
+CRM sin estar acá. No: ninguna tasa de asistencia ni de cierre, ninguna cifra del setter, y por qué dos closers
 dejaron de entrar. El cuello de botella no es técnico, pero tampoco es sólo de adopción: el trabajo
 se hace en el CRM y en tl;dv, y la aplicación no retiene la cita que quedó sin cerrar.

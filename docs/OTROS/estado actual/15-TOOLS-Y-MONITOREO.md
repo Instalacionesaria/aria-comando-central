@@ -1,77 +1,91 @@
-# Tools y Panel de Monitoreo
-> Corte: **2026-09-28**. Las cifras de producción se midieron ese día entre las **22:05 y las 22:12
-> UTC**, con `scripts/supabase.mjs leer` y sólo agregados: de la base no salió un nombre, un correo,
-> un teléfono ni un identificador de empresa. Una revisión las volvió a medir antes de las 22:30
-> UTC, con los mismos resultados. Las empresas se nombran «la principal», «empresa A» y
-> «empresa B», en el orden de sus scrapeos. Cada afirmación lleva su archivo:línea o la consulta que
-> la produjo. Lo que no se pudo verificar está dicho como pendiente, no omitido.
-> Para ubicar cualquier cosa nombrada acá, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
+# Tools, el Panel de Monitoreo y el de Incidentes
+> Corte: **2026-10-18**, con el código de producción, el commit `972972e` (2026-10-15; migraciones hasta la `078`). Las
+> cifras de producción se midieron el **2026-10-18 entre las 15:34 y las 15:40 UTC**, con `scripts/supabase.mjs leer` y sólo
+> conteos y agregados: de la base no salió un nombre, un correo, un teléfono, un texto de búsqueda ni un identificador de
+> empresa. Las empresas se nombran «la principal», «empresa A», «empresa B» y «empresa C», en el orden de su primer
+> scrapeo. Lo que no se volvió a medir lleva su fecha y lo dice. Ninguna pantalla se miró en el navegador para este
+> corte: lo que «dibujaría» cada bloque está calculado desde la base con las cuentas del código. Cada afirmación lleva
+> su `archivo:línea`. Para ubicar lo nombrado, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión
+> anterior —el corte del 2026-09-28, con su bloque «Desde el corte del 2026-09-15»— se lee con
+> `git show 972972e:"docs/OTROS/estado actual/15-TOOLS-Y-MONITOREO.md"`.
 
-> **Desde el corte del 2026-09-15**
+> **Desde el corte del 2026-09-28**
 >
-> - **La foto anterior no tenía este archivo.** Como pantallas, las nombraba una sola vez, en el
->   mapa del producto de [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) («Operación
->   (Setter, Closer, Tools, Monitoreo)»); fuera de eso, [02-CREATIVE.md](02-CREATIVE.md) describía
->   el Espía de Anuncios —que vive en Tools— y [01-ACQUISITION.md](01-ACQUISITION.md) y
->   [03-CONVERSION.md](03-CONVERSION.md) listaban `tools` y `monitoreo` entre las carpetas de
->   `app/api/`. Ninguna cifra de scraping ni del panel. Las dos ya estaban construidas: Tools
->   desde el 2026-08-26 (`78e76f3`) y el Panel de Monitoreo desde el 2026-08-29 (`166984e`).
-> - **Tools, tres commits.** `a6d8f48` (2026-09-22): el agente conversacional de Tools firma con el
->   usuario real para el histórico (`app/api/tools/conversar/route.ts:34-37`). `d6b1f90`
->   (2026-09-23): una generación pasa de 5 a 10 minutos de techo
->   (`app/api/tools/generar/route.ts:23-28`). `9697c9f` (2026-09-23): se empieza a medir cuánto
->   tarda cada scrapeo, desde el proxy (`lib/tools/medicion.ts:17-19`). **Esa medición no mide
->   nada**: la tabla que escribe no existe en producción (§ 6).
-> - **Monitoreo, ningún commit.** El último es `67ebf3e`, del 2026-09-09, la estética de operación.
-> - **Los volúmenes crecieron poco.** Contra el censo de Supabase del 2026-09-21 (un documento
->   local, fuera del repositorio; § 6): trabajos 13 → **16**, leads 2.147 → **2.200**, monederos
->   2 → **3**. Desde el 2026-09-24 no se disparó ningún scrapeo.
+> - **2026-10-01 · `c936b24`, `46c5556`, `60f5d81`** — un fallo del modelo dice qué pasó, a quién le toca y trae una
+>   referencia; nace el **Panel de Incidentes** (`negocio.incidentes`, migración `067`), y los dos paneles que miran a
+>   todas las empresas pasan a un grupo propio del menú, «Administración».
+> - **2026-10-01 a 2026-10-02 · `b532a78`, `40f699a`, `624a941`, `1b1799e`** — la nueva estructura (E9 a E12): nace la
+>   pestaña **Scraper** de Tools; la barra lateral por departamentos; Tools y Analizadores pierden su barra propia y sus
+>   pestañas las dibuja la cabecera de cada departamento; Ajustes › Usuarios ofrece las pestañas por departamento.
+> - **2026-10-02 · `8fa9bd3`, `cdb858b`** — la franja del saldo habla en créditos («1 lead = 1 crédito») y el Espía pasa a
+>   llamarse «Espía a tus competidores».
+> - **2026-10-02 · `096751d`, `6b35169`, `857dd68`** — la segunda edición (F1 a F3): Radar, Funnel y Leads como grupos
+>   con sub-pestañas; Monitoreo e Incidentes en el engranaje, con la ceja «MENÚ DE LA CUENTA»; la caja del cerebro al pie.
+> - **2026-10-03 · `821a915`, `6ef4183`, `ac390c6`, `bb389e6`** — el Scraper de Facebook deja la búsqueda por URL; el
+>   Espía guarda su historial (`negocio.analisis_del_espia`, migración `068`, y la ruta `GET /api/tools/busquedas-del-espia`);
+>   **un solo Espía**: el paso 1 del Scraper de Facebook elige entre las búsquedas del Espía.
+> - **2026-10-04 · `cd851b3`, `5d60371`** — el Espía registra su uso en `negocio.uso_de_ia` (AG2) y Tools habla con tú
+>   (AG3, prueba `202`).
+> - **2026-10-05 · `13723a0`, `5f15c01`** — el cerebro: dos herramientas de Tools (`leads_del_scraper` y `espia`), la
+>   ruta `app/api/tools/cerebro/route.ts` y la caja del pie habilitada (AG6 y AG7).
+> - **2026-10-08 · `82ba9e7`** — Client OS: otra sección `soloDesdeLaPrincipal`; el Panel de Monitoreo deja de ser la
+>   única.
+> - **El Panel de Monitoreo no cambió**: ningún commit toca `components/monitoreo/`, `app/api/monitoreo/` ni
+>   `lib/monitoreo/` desde el corte anterior.
+> - **El uso creció poco.** Trabajos 16 → **26**, leads 2.200 → **2.343**, monederos 3 → **4**, empresas que scrapean
+>   3 → **4**. El último scrapeo es del 2026-10-10 (medido el 2026-10-18).
 
-**Construidas las dos, con datos reales, y casi sin uso.** En toda la historia hay **16 scrapeos
-de 3 empresas** —la principal y dos clientes— sobre 11 dadas de alta, y ninguno después del
-2026-09-23 (medido el 2026-09-28). La herramienta que da nombre a Tools, **el plan de Prospección
-en Frío, no la generó nadie**: 0 de las 10 filas del almacén la tienen. El Panel de Monitoreo lo
-ven **3 personas**, y sus dos columnas de plata —ingreso y margen— salen «—» en las once filas
-porque **ninguna empresa tiene precio cargado**. Y la medición de duración que entró el 23 de
-septiembre escribe en una tabla que no existe, cuya migración no está en el repositorio.
+**Construidas, con datos reales, y con poco uso.** En toda la historia hay **26 scrapeos de 4 empresas** —la principal y
+tres clientes— sobre 11 dadas de alta; 10 son posteriores al 2026-09-28 (9 de la principal y 1 de una empresa nueva) y
+ninguno es posterior al 2026-10-10. LinkedIn sigue sin una sola corrida, y la medición de duración sigue escribiendo en una
+tabla que no existe. El Espía es ahora la herramienta más usada —11 de los 26 trabajos— y la única que guarda lo que la IA
+dijo de cada búsqueda: hay 2 análisis guardados. El Panel de Monitoreo sigue con sus dos columnas de plata en «—» porque
+**ninguna empresa tiene precio cargado**, y el Panel de Incidentes, abierto desde el 2026-10-01, registró **un** incidente,
+sin revisar.
 
 ---
 
-## 1 · Qué son, y por qué no están en el prototipo
+## 1 · Qué son, y dónde quedaron en la navegación
 
 **Tools** es «las herramientas de la operación, que heredan de tu ICP y tu oferta»
 (`components/views/ToolsView.jsx:99-101`): lo que se hace *después* del método, no una pieza de él
-(`lib/fundaciones/herramientas.ts:663-665`). Tiene capacidades propias, `tools.ver` y
-`tools.editar` (`db/arranque/001_catalogo.sql:98-99`), y no reusa `fundaciones.*` a propósito:
-darle Tools a alguien le daría también ICP & Oferta (`lib/autorizacion/secciones.ts:405-408`).
+(`lib/fundaciones/herramientas.ts:663-665`). Tiene capacidades propias, `tools.ver` y `tools.editar`
+(`db/arranque/001_catalogo.sql:98-99`), y no reusa `fundaciones.*` a propósito: darle Tools a alguien le daría también ICP
+& Oferta (`lib/autorizacion/secciones.ts:401-404`).
 
-**El Panel de Monitoreo** es «la pantalla con la que ARIA mira a sus clientes: cuántos scrapeos
-hizo cada empresa y con qué scraper» (`lib/autorizacion/secciones.ts:421-424`). Tiene una sola
-capacidad, `monitoreo.ver`, de lectura (`db/arranque/001_catalogo.sql:103-104`, `:125`), y es **la
-única sección con `soloDesdeLaPrincipal`** (`lib/autorizacion/secciones.ts:426`, `:439`). Las dos
-van en el grupo Operación, después de Setter, Closer y Analizadores
-(`lib/autorizacion/secciones.ts:350-452`).
+**Desde la nueva estructura, Tools ya no es una pantalla con una barra: son seis entradas en tres departamentos.** La
+sección y sus permisos no cambiaron; lo que cambió es por dónde se entra (`lib/autorizacion/departamentos.ts:86-116`):
 
-**Ninguna de las dos está en el prototipo.** `aios-command-center_1.html` tiene diez vistas
-—acquisition, closer, contacts, conversation, conversion, creative, executive, icp, sales y
-setter— y ninguna es `v-tools` ni `v-monitoreo` (conteo de `id="v-…"` en el archivo, hecho hoy).
-Tools es la primera pantalla creada de cero en el proyecto (`components/views/ToolsView.jsx:3-5`);
-el panel viene del «Panel de Control» de ARIA-brain, que leía el hub y se borró al portarlo
-(`app/api/monitoreo/route.ts:9-13`).
+| departamento | entrada de la barra | sub-pestaña | pestaña de Tools |
+|---|---|---|---|
+| Research | Radar | Espía a tus competidores · Scraper | `espia` · `scraper` |
+| Marketing | Funnel | Tu landing · Tu VSL | `landing` · `vsl` |
+| Sales | Leads | De Radar · Plan de prospección (junto a «De GHL», que es el Leads Portal, y «Todos», Próximamente) | `mis-leads` · `prospeccion` |
 
-**Por eso tampoco están en `scripts/paridad.mjs`**, y el motivo está escrito en las dos secciones:
-esa compuerta compara contra el prototipo, y comparar una pantalla que ahí no existe daría un rojo
-permanente, que «no se arregla — se ignora, y con él se ignoran los demás»
-(`lib/autorizacion/secciones.ts:410-412`, `:430-432`; lo mismo en
-`components/views/MonitoreoView.jsx:3-5`). Hoy la pregunta es además académica: la lista `VISTAS`
-de la compuerta quedó vacía el 2026-09-26 (`aed4f27`) y la compuerta no corre en la integración
-continua (`scripts/paridad.mjs:140-153`).
+Una sub-pestaña se ve por su propia sección, así que «Leads» cruza el Leads Portal y Tools sin abrirle a nadie una puerta
+que el servidor le cierra (`lib/autorizacion/departamentos.ts:58-73`; commit `096751d`). La pestaña la toma la pantalla cuando se le pide
+(`components/views/ToolsView.jsx:57-59`), y la cabecera del departamento dibuja las sub-pestañas en una segunda fila. En
+Ajustes › Usuarios, la casilla «Tools» dice lo que abre: seis entradas en tres departamentos (commit `1b1799e`).
 
-**El documento funcional tampoco las tiene.** En `CC_Arquitectura_Funcional.md` (1.650 líneas, en
-las descargas del usuario, fuera del repositorio) «Tools», «prospección», «scraping» y «Apify»
-aparecen cero veces; «monitorear» aparece dos, como verbo (líneas 1335 y 1485), y «Operación» una,
-como categoría de error del supervisor (§ 11.6, línea 899). Las dos pantallas salen de pedidos del
-equipo registrados en los commits, no de ese documento.
+**El Panel de Monitoreo** es «la pantalla con la que ARIA mira a sus clientes: cuántos scrapeos hizo cada empresa y con qué
+scraper» (`lib/autorizacion/secciones.ts:424-426`). Una sola capacidad, `monitoreo.ver`, de lectura
+(`db/arranque/001_catalogo.sql:103-104`, `:125`), y la bandera `soloDesdeLaPrincipal`
+(`lib/autorizacion/secciones.ts:453`). **El Panel de Incidentes** (2026-10-01) muestra los fallos del modelo de IA de
+todas las empresas, con `incidentes.ver` y la misma bandera (`lib/autorizacion/secciones.ts:458-465`). Los dos van en el
+grupo «Administración» del menú (`lib/autorizacion/secciones.ts:454`, `:464`) y, en la barra nueva, en el engranaje del pie
+junto a Ajustes (`lib/autorizacion/departamentos.ts:125-128`), con la ceja «MENÚ DE LA CUENTA»
+(`lib/autorizacion/departamentos.ts:140-143`).
+
+**Ya no es la única sección con `soloDesdeLaPrincipal`.** Desde el 2026-10-01 la lleva Incidentes y desde el 2026-10-08
+Client OS (`lib/autorizacion/secciones.ts:463`, `:475`). El comentario de Monitoreo decía al corte «la única»
+(`lib/autorizacion/secciones.ts:429`); desde el 2026-10-18 (`65669f4`) dice que fue la primera y que hoy son tres.
+
+**Ninguna de las tres pantallas está en el prototipo** (`aios-command-center_1.html`): Tools es la primera pantalla
+creada de cero en el proyecto (`components/views/ToolsView.jsx:3-5`); el Panel de Monitoreo viene del «Panel de Control»
+de ARIA-brain (`app/api/monitoreo/route.ts:9-13`), y el de Incidentes es un pedido del equipo
+(`components/views/IncidentesView.jsx:3-8`). Por eso no están en `scripts/paridad.mjs`, cuya lista `VISTAS` está vacía
+desde el 2026-09-26 (`scripts/paridad.mjs:140-153`). El documento funcional (fuera del repositorio) tampoco las tiene:
+del 2026-09-28, no se volvió a buscar.
 
 ---
 
@@ -79,63 +93,58 @@ equipo registrados en los commits, no de ese documento.
 
 ### Tools
 
-Una envoltura que monta el componente de Fundaciones con un catálogo propio
-(`components/views/ToolsView.jsx:40-83`) y, arriba de las pestañas, la franja de saldo
-(`components/views/ToolsView.jsx:100-102@40f699a`). A la izquierda de una raya, el recorrido numerado de
-herramientas; a la derecha, las vistas (`components/fundaciones/Fundaciones.jsx:453-456@40f699a`):
+Una envoltura que monta el componente de Fundaciones con un catálogo propio: las tres herramientas (Prospección, el VSL y
+la Landing) y tres vistas, el Espía, el Scraper y Mis Leads (`components/views/ToolsView.jsx:40-83`). El VSL y la Landing
+comparten almacén y herencia con ICP & Oferta y están en [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md); el análisis del Espía
+como insumo de Creative, en [02-CREATIVE.md](02-CREATIVE.md); el envío de leads a GoHighLevel, en
+[06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md). Acá va lo que es sólo de Tools: el scraping y el Espía.
 
-| pestaña | qué es | rastro |
-|---|---|---|
-| 1 · Prospección en Frío | el plan de ataque outbound (id 20 del hub) y el extractor de leads | `lib/fundaciones/herramientas.ts:672-766` |
-| 2 · Tu video de ventas (VSL) | mudada de ICP & Oferta el 2026-08-31 | `lib/fundaciones/herramientas.ts:788-811` |
-| 3 · Tu página | la Landing, mudada el 2026-09-02 | ídem |
-| Espía de Anuncios | vista: busca anuncios y extrae hooks con IA | `components/views/ToolsView.jsx:67-74` |
-| Mis Leads | vista: el historial de lo scrapeado, con envío al CRM | `components/views/ToolsView.jsx:81` |
+**La franja del saldo** va arriba de las dos pestañas que gastan créditos, Prospección y el Scraper, y sólo con Tools a la
+vista; lleva una `key` por pestaña, así que relee el saldo en cada visita (`components/views/ToolsView.jsx:36-38`,
+`:106-111`). Dice disponibles, de regalo, usados y comprados (`components/tools/SaldoDeLeads.jsx:55-67`), con la
+aritmética de `lib/tools/saldo.ts:47-64`, y desde el 2026-10-02 habla en créditos: «1 lead = 1 crédito»
+(`components/tools/SaldoDeLeads.jsx:57-58`). No se dibuja para un monedero sin límite
+(`components/tools/SaldoDeLeads.jsx:47`).
 
-> **Después del corte, el 2026-10-01** (nueva estructura, E9): Tools gana una pestaña **Scraper**, entre el
-> Espía y Mis Leads, con el mismo extractor de Prospección y la tabla de lo que trae
-> (`components/tools/VistaDelScraper.jsx`). Sin `tools.editar` no dibuja el extractor; Prospección sigue
-> igual. Ver `docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md`, `NE-20`.
->
-> **Y el 2026-10-02** (E10): las seis pestañas se abren desde la barra lateral nueva, repartidas en
-> Research, Marketing y Sales; el Panel de Monitoreo e Incidentes, desde el engranaje del pie. El punto de
-> «hay un scraping corriendo» va en Espía o en Scraper, según dónde se vuelve a ver el trabajo: el Espía
-> retoma las búsquedas de anuncios al abrirse, y el Scraper retoma Maps al abrirse y las demás fuentes al
-> tocar su pestaña. Con Research cerrado, va en su cabecera.
->
-> **Y el 2026-10-02** (E11): Tools ya no tiene barra propia ni la raya, el medidor y la numeración de la
-> tabla de arriba: las pestañas las dibuja la cabecera de cada departamento. La franja del saldo va
-> arriba de Prospección y del Scraper, y no arriba de todo, y se vuelve a leer en cada visita. Los textos
-> del Research que decían «Tools → Mis Leads» dicen «Research › Mis Leads».
->
-> **Y el 2026-10-02** (segunda edición, `docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`): las seis
-> pestañas se ven agrupadas —Research › **Radar** (Espía a tus competidores y Scraper), Marketing ›
-> **Funnel** (Tu landing y Tu VSL) y Sales › **Leads** (De Radar, que es Mis Leads, y Plan de prospección,
-> junto a De GHL, que es el Leads Portal)—, con las sub-pestañas en una segunda fila de la cabecera. El
-> punto «scrapeando» va en Radar, que con un trabajo en vuelo abre la sub-pestaña que lo retoma. Los textos
-> que decían «Research › Mis Leads» sacan el lugar de la tabla de departamentos: «Sales › Leads › De
-> Radar». Las dos notas «Próximamente» del Espía son «Enviar hallazgos a Copywriter» y «Dream 100». La
-> sección, sus pestañas y su permiso no cambiaron.
+**Prospección en Frío** (Sales › Leads › Plan de prospección) no usa el panel genérico: pinta dos de sus cuatro campos
+—canal y tono— y pone en su lugar el extractor de leads (`components/tools/PanelProspeccion.jsx:7-11`). Scrapear no genera
+el plan ni generar el plan scrapea: son dos gastos distintos (`components/tools/PanelProspeccion.jsx:28-32`). No tiene
+agente conversacional (`lib/fundaciones/herramientas.ts:831-837`, `:850-852`).
 
-El VSL y la Landing comparten almacén y herencia con ICP & Oferta y están descritos en
-[12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md); el análisis del Espía, en
-[02-CREATIVE.md](02-CREATIVE.md); el envío de leads a GoHighLevel, en
-[06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md). Acá va lo que es sólo de Tools: el scraping.
+**El Scraper** (Research › Radar › Scraper, desde el 2026-10-01) envuelve el mismo extractor de Prospección sin copiarlo, con
+la tabla de lo que trae; sin `tools.editar` no lo dibuja (`components/tools/VistaDelScraper.jsx:3-21`, `:43-58`). El
+extractor tiene tres pestañas —Google Maps, Facebook y LinkedIn— (`components/tools/Scraper.jsx:676-678`), valida antes de
+llamar el mínimo de 72 leads de Maps y lo demás que el backend cobra aunque devuelva cero
+(`components/tools/Scraper.jsx:7-16`, `lib/tools/scrapers.ts:61`), sondea cada cinco segundos **sin techo**
+(`components/tools/Scraper.jsx:88-108`) y al montarse retoma lo que está en vuelo (`components/tools/Scraper.jsx:115-137`).
+**Facebook cambió dos veces el 2026-10-03:** dejó la opción de pegar una URL de la Ad Library (commit `821a915`) y su paso
+1 ya no busca: **elige entre las búsquedas del Espía** (`components/tools/Scraper.jsx:386`, `:543`), con un enlace para
+espiar una nueva (`components/tools/Scraper.jsx:593`). La fuente `facebook-ads` sigue existiendo en el servidor, en
+Monitoreo y en Mis Leads, porque hay corridas viejas con ese nombre (commit `821a915`).
 
-**Prospección en Frío** no usa el panel genérico: pinta dos de sus cuatro campos —canal y tono— y
-pone en su lugar un extractor de leads (`components/tools/PanelProspeccion.jsx:7-11`). Scrapear
-no genera el plan ni generar el plan scrapea: son dos gastos distintos, leads de un monedero y
-tokens de la llave de IA (`components/tools/PanelProspeccion.jsx:28-32`). No tiene agente
-conversacional, porque su formulario dispara un gasto que no se puede volver a generar
-(`lib/fundaciones/herramientas.ts:831-837`, `:850-852`).
+**El Espía a tus competidores** (Research › Radar) busca anuncios por nicho y país y, con un botón aparte, le pide a la IA
+los hooks y ángulos. Desde el 2026-10-03:
 
-**El extractor** tiene tres pestañas —Google Maps, Facebook, LinkedIn—
-(`components/tools/Scraper.jsx:591-593`). Valida antes de llamar el mínimo de 72 leads de Maps,
-las tres partes de la localización y el rango de LinkedIn, porque el backend cobra la corrida aunque
-devuelva cero (`components/tools/Scraper.jsx:7-16`, `lib/tools/scrapers.ts:61`). Sondea cada
-cinco segundos **sin techo**: sigue hasta `COMPLETED`, `FAILED` o `CANCELLED`
-(`components/tools/Scraper.jsx:86-106`). Al montarse le pregunta a la base qué hay en vuelo para
-esa fuente y lo retoma (`components/tools/Scraper.jsx:113-135`).
+- **trae 60 o 1.000 anuncios**, a elección: 60 para mirar el nicho, 1.000 para sacar contactos después
+  (`components/tools/anuncios.jsx:27-32`). El servidor manda lo que llega, con 60 por omisión
+  (`app/api/tools/scrape/route.ts:57`, `:145`);
+- **guarda su historial**: «Búsquedas anteriores» lista las de la organización, hasta 30, con país, cuántos anuncios trajo
+  y si tiene análisis (`components/tools/EspiaDeAnuncios.jsx:273`, `lib/tools/historial-del-espia.ts:22-79`). Reabrir una no
+  vuelve a pagar Apify: los anuncios se leen del trabajo por la ruta del sondeo (`lib/tools/historial-del-espia.ts:11-13`).
+  Al volver a la pestaña sin nada corriendo, se abre la última búsqueda terminada con anuncios
+  (`components/tools/EspiaDeAnuncios.jsx:139-141`);
+- **guarda el análisis**, uno por búsqueda, en `negocio.analisis_del_espia`: volver a analizar reemplaza el anterior
+  (`db/migraciones/068_el_analisis_del_espia.sql:11-26`, `lib/tools/historial-del-espia.ts:99-125`). Si guardar falla, el
+  análisis igual se entrega (commit `6ef4183`);
+- **«Sacar contactos de estos anunciantes →»** abre el Scraper con esa búsqueda ya elegida
+  (`components/tools/EspiaDeAnuncios.jsx:330-342`), por `sessionStorage` y un evento (`lib/tools/del-espia-al-scraper.ts:3-20`);
+- y dos notas «Próximamente»: «Enviar hallazgos a Copywriter» y «Dream 100» (`components/tools/EspiaDeAnuncios.jsx:401-406`).
+
+**Mis Leads** (Sales › Leads › De Radar) es el historial de lo scrapeado, con envío al CRM. Desde el 2026-10-03 no tiene el
+filtro «Espía», que salía siempre vacío: el Espía trae anuncios, no contactos (commit `6ef4183`).
+
+**El punto de «hay un scraping corriendo»** va en Radar, que con un trabajo en vuelo abre la sub-pestaña que lo retoma: las
+búsquedas de anuncios, el Espía; las demás, el Scraper (`lib/tools/scrapers.ts:455-467`).
 
 **Las rutas**, todas con `PANTALLA = 'tools'`:
 
@@ -144,357 +153,311 @@ esa fuente y lo retoma (`components/tools/Scraper.jsx:113-135`).
 | `POST /api/tools/scrape` | `tools.editar` | arranca un trabajo en el backend y anota el inicio | `app/api/tools/scrape/route.ts:227-263` |
 | `GET /api/tools/scrape?trabajo=` | `tools.ver` | sondea un trabajo y anota el fin | `app/api/tools/scrape/route.ts:182-218` |
 | `GET /api/tools/trabajos` | `tools.ver` | los trabajos en vuelo, de la base, tope 20 | `app/api/tools/trabajos/route.ts:49`, `:58`, `:64-96` |
+| `GET /api/tools/busquedas-del-espia` **(nueva)** | `tools.ver` | las búsquedas del Espía, o con `?trabajo=` su análisis guardado | `app/api/tools/busquedas-del-espia/route.ts:20-28` |
 | `GET /api/tools/leads` | `tools.ver` | el historial, de a 100, por fuente y búsqueda | `app/api/tools/leads/route.ts:51`, `:57-134` |
 | `POST /api/tools/leads/enviar` | `tools.editar` | hasta 100 leads por id al flujo de n8n | `app/api/tools/leads/enviar/route.ts:68`, `:76-79` |
 | `GET /api/tools/saldo` | `tools.ver` | el monedero de la empresa, desglosado | `app/api/tools/saldo/route.ts:19-48` |
 | `POST /api/tools/espia` | `tools.editar` | el análisis con IA de una búsqueda del Espía | `app/api/tools/espia/route.ts:41-47` |
+| `GET`, `POST`, `DELETE /api/tools/cerebro` **(nueva)** | `tools.ver` · `cerebro.usar` | la caja del cerebro de esta pantalla | `app/api/tools/cerebro/route.ts:1-9` |
 | `estado`, `generar`, `conversar`, `rellenar` | ver / editar | las gemelas de Fundaciones | [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md) |
 
-El proxy traduce cada fuente al cuerpo que espera su actor y pone el `org_id` de la sesión en los
-cinco (`app/api/tools/scrape/route.ts:85-151`, `:90-93`; el comentario de `:90` todavía dice «las
-cuatro»: es del 2026-08-29, `f90fd30`, y el Espía entró el 2026-09-02, `e20f78e`). El Espía
-(`ad-spy`) pide 60 anuncios y es la única fuente que no descuenta saldo, según el lado del backend
-que este archivo describe (`app/api/tools/scrape/route.ts:57`, `:129-137`).
+El proxy traduce cada fuente al cuerpo que espera su actor y pone el `org_id` de la sesión en las cinco
+(`app/api/tools/scrape/route.ts:85-151`, `:90-93`; el comentario de `:90` todavía dice «las cuatro»). El Espía (`ad-spy`) es
+la única fuente que no descuenta saldo, según el lado del backend que este archivo describe
+(`app/api/tools/scrape/route.ts:129-137`).
 
-**La franja de saldo** dice disponibles, de regalo, usados y comprados
-(`components/tools/SaldoDeLeads.jsx:55-67`), con la aritmética de `lib/tools/saldo.ts:47-64`. No se
-dibuja para un monedero sin límite (`components/tools/SaldoDeLeads.jsx:47`) y dice «Todavía no
-usaste leads» sin monedero (`components/tools/SaldoDeLeads.jsx:38-44`). Se lee **una vez**, al
-montarse (`components/tools/SaldoDeLeads.jsx:26-34`), y la vista se monta al entrar a la
-aplicación junto con todas las demás que la persona ve (`components/CommandCenter.jsx:86-97`).
-**Después del corte**, desde la etapa E11 (2026-10-02), la franja se monta sólo con Tools a la vista y
-en Prospección o el Scraper, una por pestaña: vuelve a leer el saldo en cada visita a esas dos. Y desde el mismo día dice el saldo en **créditos**, con la equivalencia a la vista: «1 lead = 1 crédito» (la cuenta no cambió).
+### El cerebro, sobre Tools
+
+Desde el 2026-10-05 la caja «Pregúntale al cerebro sobre …» va al pie de cada pantalla de un departamento y, en Tools,
+pregunta a su propia ruta (`components/ConsultaAlCerebro.jsx:3-22`). El cerebro tiene dos herramientas de Tools
+(`lib/agentes/executive/adaptadores/tools.ts:21-72`):
+
+- `leads_del_scraper`: **sólo conteos** de los leads de la ventana, por fuente, con y sin forma de contacto; no lee la ruta
+  de la pantalla, que devuelve nombres, correos y teléfonos (`lib/agentes/executive/adaptadores/tools.ts:3-6`, `:23-36`);
+- `espia`: la lista de búsquedas o el análisis de una, recortado a 4.000 caracteres y **sin datos de contacto**, porque lo
+  escribió un modelo sobre anuncios ajenos (`lib/agentes/executive/adaptadores/tools.ts:14`, `:56-70`).
+
+Las dos dicen dónde vive su pestaña con la tabla de departamentos y no a mano (`lib/agentes/executive/adaptadores/tools.ts:16-19`).
 
 ### El Panel de Monitoreo
 
-La vista monta el panel (`components/views/MonitoreoView.jsx:20-46`). Arriba, las tarjetas
-—Scrapeos con sus completados, Leads guardados, Empresas que scrapean de las dadas de alta,
-Ingreso mensual con cuántas no tienen precio, Costo de Apify con cuántas corridas quedaron sin
-medir, y una por scraper que tenga alguno— (`components/monitoreo/PanelDeMonitoreo.jsx:96-143`).
-Abajo, una fila por empresa: scrapeos, las cinco fuentes, leads, disponibles, ingreso, costo y
-margen (`components/monitoreo/PanelDeMonitoreo.jsx:224-233`), con «Actualizar» y «Descargar CSV»
-(`components/monitoreo/PanelDeMonitoreo.jsx:202-207`). Un clic en la fila reemplaza la tabla por el
-detalle: qué buscó esa empresa, trabajo por trabajo, y qué leads le quedaron
-(`components/monitoreo/DetalleDeEmpresa.jsx:12-20`), hasta 60 trabajos y de a 100 leads
-(`lib/monitoreo/detalle.ts:27`, `:36`).
+Sin cambios de código desde el corte anterior. La vista monta el panel (`components/views/MonitoreoView.jsx:20-46`). Arriba,
+las tarjetas —Scrapeos, Leads guardados, Empresas que scrapean, Ingreso mensual, Costo de Apify y una por scraper que tenga
+alguno— (`components/monitoreo/PanelDeMonitoreo.jsx:96-143`); abajo, una fila por empresa
+(`components/monitoreo/PanelDeMonitoreo.jsx:224-233`), con «Actualizar» y «Descargar CSV»
+(`components/monitoreo/PanelDeMonitoreo.jsx:202-207`), y el detalle de una empresa al hacer clic, hasta 60 trabajos y de a
+100 leads (`lib/monitoreo/detalle.ts:27`, `:36`).
 
-**Las dos rutas** piden lo mismo, `monitoreo.ver` con `PANTALLA = 'monitoreo'`, y **las dos
-vuelven a comprobar la organización principal** en el servidor
-(`app/api/monitoreo/route.ts:113-130`, `app/api/monitoreo/[orgId]/route.ts:65-73`). La tabla sale
-de un bucle: la lista de empresas de identidad —sin las dos de la sonda de aislamiento,
-`lib/administracion/organizaciones.ts:94`— y, por cada una, su contexto abierto como una petición
-normal, de a cuatro (`app/api/monitoreo/route.ts:95`, `:150-173`). Se ordena por scrapeos
-(`app/api/monitoreo/route.ts:179`). El consumo de cada empresa son tres lecturas en la misma
-transacción: trabajos por fuente con su costo, leads y monedero (`lib/monitoreo/consumo.ts:67-112`).
+**Las dos rutas** piden `monitoreo.ver` y **vuelven a comprobar la organización principal** en el servidor
+(`app/api/monitoreo/route.ts:113-130`, `app/api/monitoreo/[orgId]/route.ts:65-73`). La tabla sale de un bucle por empresa, de
+a cuatro (`app/api/monitoreo/route.ts:95`, `:150-173`), sin las dos de la sonda
+(`lib/administracion/organizaciones.ts:94`). El consumo de cada empresa son tres lecturas: trabajos por fuente con su costo,
+leads y monedero (`lib/monitoreo/consumo.ts:67-112`).
 
-**Lo que dibujaría hoy, calculado desde la base el 2026-09-28** con las mismas cuentas del código.
-**No se vio en pantalla** (este trabajo no levanta la aplicación):
+**Lo que dibujaría hoy, calculado desde la base el 2026-10-18** con las cuentas del código. **No se vio en pantalla:**
 
-| tarjeta | valor | pie |
+| tarjeta | valor (2026-10-18) | 2026-09-28 |
 |---|---|---|
-| Scrapeos | 16 | 15 completados |
-| Leads guardados | 2.200 | en el historial de todas las empresas |
-| Empresas que scrapean | 3 | de 11 dadas de alta |
-| Ingreso mensual | — | 11 sin precio cargado |
-| Costo de Apify | 12,17 USD, que `usd` escribiría «$12.1671» (`lib/monitoreo/panel.ts:84-87`) | 2 corridas sin medir |
-| Google Maps · Facebook Ads · Facebook Pages · Espía | 6 · 1 · 4 · 5 | LinkedIn, en 0, no se dibuja (`components/monitoreo/PanelDeMonitoreo.jsx:136`) |
+| Scrapeos | **26**, 25 completados | 16, 15 completados |
+| Leads guardados | **2.343** | 2.200 |
+| Empresas que scrapean | **4** de 11 dadas de alta | 3 de 11 |
+| Ingreso mensual | — · 11 sin precio cargado | ídem |
+| Costo de Apify | **14,74 USD**, 2 corridas sin medir | 12,17 USD, 2 sin medir |
+| Google Maps · Facebook Ads · Facebook Pages · Espía | **8 · 1 · 6 · 11** | 6 · 1 · 4 · 5 |
 
-En la tabla, 8 de las 11 filas van en cero y con «sin monedero», y las columnas Ingreso y Margen van
-«—» en las once (`lib/monitoreo/panel.ts:96-99`).
+LinkedIn, en 0, no se dibuja (`components/monitoreo/PanelDeMonitoreo.jsx:136`). En la tabla, 7 de las 11 filas van en cero
+y con «sin monedero», e Ingreso y Margen van «—» en las once (`lib/monitoreo/panel.ts:96-99`). El panel sigue rotulando la
+fuente `ad-spy` como «Espía de Anuncios»: el cambio de nombre no la alcanzó a propósito (commit `cdb858b`).
 
-**Las pruebas**, contadas por sus `test(` y **no re-corridas hoy** (este trabajo no corre la suite):
-`pruebas/codigo/110-monitoreo.test.ts` con 18 casos,
-`pruebas/codigo/165-medicion-de-los-scrapeos.test.ts` con 5,
-`pruebas/codigo/139-saldo-de-leads.test.ts` con 3, la del Espía,
-`pruebas/codigo/126-espia-de-anuncios.test.ts`, con 12, y la de los anunciantes de la pestaña
-Facebook, `pruebas/codigo/127-anunciantes-de-facebook.test.ts`, con 11 (hay otra 127,
-`127-filas-clicables`, que no es de Tools). Todas son de `pruebas/codigo/`: leen el texto del
-código y ninguna toca una tabla del scraper, porque la base local no las tiene (§ 6). Lo que sí
-corre contra la base local es la autorización del panel: que lo dé `usuario` con la pestaña y nunca
-`administrador` (`pruebas/base/22-los-tres-roles.test.ts:299`) y que el alta con sólo esa pestaña
-se acepte en la principal y se rechace en un cliente (`pruebas/base/31-alcance.test.ts:464`).
+### El Panel de Incidentes (nuevo, 2026-10-01)
+
+Cada fallo del modelo de IA de una organización deja una fila en `negocio.incidentes`, con la misma referencia que vio la
+persona y que quedó en el registro del servidor; ni el prompt ni la respuesta (`db/migraciones/067_los_incidentes.sql:1-24`,
+`:27-47`). La ruta recorre las empresas de a cuatro con `conOrganizacion`, como Monitoreo, y una que no se lee va en
+`ilegibles` (`app/api/incidentes/route.ts:24`, `:54-76`); pide `incidentes.ver` y ser de la principal
+(`app/api/incidentes/route.ts:42-44`). La capacidad la tiene sólo el superadministrador: la familia `incidentes.%` se les
+niega a mano a `usuario` y a `administrador` (`db/arranque/001_catalogo.sql:130-135`, `:408`, `:490`). La pantalla tiene
+ventanas de días, «sólo los nuestros» y un color por a quién le toca
+(`components/incidentes/PanelDeIncidentes.jsx:3-9`, `:15`, `:32`, `:66`).
+
+**Medido el 2026-10-18:** 1 incidente en toda la base, del 2026-10-05, de situación `IA-PETICION` y origen `executive` (el
+cerebro), sin revisar. El comentario de la columna `origen` sólo nombra `generar`, `conversar`, `rellenar` y `espia`
+(`db/migraciones/067_los_incidentes.sql:34`): el único incidente real es de otro origen.
+
+### Las pruebas
+
+Contadas por sus `test(` el 2026-10-18 y **no re-corridas**: `pruebas/codigo/110-monitoreo.test.ts` 18,
+`pruebas/codigo/165-medicion-de-los-scrapeos.test.ts` 5, `pruebas/codigo/139-saldo-de-leads.test.ts` 3,
+`pruebas/codigo/126-espia-de-anuncios.test.ts` 12, `pruebas/codigo/127-anunciantes-de-facebook.test.ts` 10 (eran 11: se fue
+la opción de la URL, y ahora exige que no vuelva, commit `821a915`), y la nueva `pruebas/codigo/202-tools-no-vosea.test.ts`
+con 3. **Una prueba de base ya ejercita tablas del scraper con filas:** `pruebas/base/213-las-herramientas-del-cerebro.test.ts`
+(6 casos) crea `aria_cc_scraper_leads`, `aria_cc_scraper_trabajos` y `aria_cc_foundations` en la base local sólo para la
+prueba, con el aislamiento de `negocio`, y las quita al terminar (`pruebas/apoyo/tablas-de-public.ts:1-15`, `:52-66`). Lo
+que ejercita son las herramientas del cerebro, no las rutas de Tools ni las del panel. La autorización del panel sigue
+probada contra la base local (`pruebas/base/22-los-tres-roles.test.ts:299`, `pruebas/base/31-alcance.test.ts:464`).
 
 ---
 
 ## 3 · Datos que ya tenemos
 
-Todo medido el **2026-09-28** entre las 22:05 y las 22:12 UTC; entre paréntesis, la cifra anterior
-con su fecha. Viven en tres tablas de `public` que **escribe el backend de scraping, no este
-proyecto**, por PostgREST (`lib/datos/esquema.ts:1359-1361`), y las tres tienen RLS activada y
-forzada con una política cada una (consulta a `pg_class` y `pg_policies`, hoy). La cuarta, la de
-mediciones, sería nuestra y no existe (§ 6).
+Todo medido el **2026-10-18** entre las 15:34 y las 15:40 UTC; entre paréntesis, la cifra del 2026-09-28. Las tres tablas
+del scraper viven en `public` y **las escribe el backend de scraping, no este proyecto**, por PostgREST
+(`lib/datos/esquema.ts:1411-1413`), con RLS forzada (medido el 2026-09-28; no se volvió a medir). La cuarta, la de
+mediciones, sería nuestra y sigue sin existir (§ 6).
 
-**Los trabajos** (`public.aria_cc_scraper_trabajos`), lo que el panel cuenta como «un scrapeo»
-(`lib/datos/esquema.ts:1387-1388`):
+**Los trabajos** (`public.aria_cc_scraper_trabajos`), lo que el panel cuenta como «un scrapeo» (`lib/datos/esquema.ts:1440`):
 
-| qué | 2026-09-28 |
+| qué | 2026-10-18 |
 |---|---|
-| trabajos | **16** (13 el 2026-09-21, según el censo de Supabase de ese día) |
-| por estado | `COMPLETED` 15 · `FAILED` 1 · en vuelo 0 |
-| por fuente | Maps 6 · Espía 5 · Facebook Pages 4 · Facebook Ads 1 · **LinkedIn 0** |
-| primero · último | 2026-08-30 03:17 UTC · 2026-09-23 16:06 UTC |
-| desde el 2026-09-15 | 4: uno de la principal ese día y tres de la empresa B el 23 |
-| con costo de Apify | 14 de 16; **12,17 USD** en total; los 2 sin costo son de Maps |
-| con `max_leads` en su columna | **0 de 16**; en `results_data`, 1 (`app/api/tools/trabajos/route.ts:72-85`) |
-| con `actualizado_el` igual a `created_at` | 11 de 16; los otros 5 difieren en menos de 1 s (el 2026-09-23, según `9697c9f`: 9 de 13 iguales y 4 a menos de 1 s) |
+| trabajos | **26** (16) |
+| por estado | `COMPLETED` 25 · `FAILED` 1 · en vuelo 0 |
+| por fuente | Espía 11 (5) · Maps 8 (6) · Facebook Pages 6 (4) · Facebook Ads 1 · **LinkedIn 0** |
+| desde el 2026-09-28 | 10: Espía 6, Maps 2, Pages 2 |
+| el último | 2026-10-10 00:38 UTC, un Espía |
+| con costo de Apify | 24 de 26; **14,74 USD**; los 2 sin costo son de Maps, uno de ellos el fallido |
 
-**Por empresa**, en el orden del panel:
+**Por empresa**, en el orden de su primer scrapeo:
 
-| | la principal | empresa A | empresa B |
-|---|---|---|---|
-| trabajos | 9, los 9 completos | 4, uno fallido (el de Maps) | 3, los 3 completos |
-| Maps · Pages · Ads · Espía | 4 · 2 · 1 · 2 | 1 · 1 · 0 · 2 | 1 · 1 · 0 · 1 |
-| cuándo | 2026-08-30 al 2026-09-15 | el 2026-09-13 | el 2026-09-23, en 65 segundos |
-| leads guardados | 2.047 | 100 | 53 |
-| costo de Apify | 10,57 USD, 1 corrida sin medir | 1,02 USD, 1 sin medir | 0,57 USD |
-| monedero | sin límite; 1.047 descontados | 400 disponibles, 500 regalados, 100 usados | 447 disponibles, **0 regalados**, 53 usados |
+| | la principal | empresa A | empresa B | empresa C (nueva) |
+|---|---|---|---|---|
+| trabajos | **18** (9) | 4 | 3 | 1, un Espía |
+| Maps · Pages · Ads · Espía | 6 · 4 · 1 · 7 | 1 · 1 · 0 · 2 | 1 · 1 · 0 · 1 | 0 · 0 · 0 · 1 |
+| desde el 2026-09-28 | 9 | 0 | 0 | 1, el 2026-10-02 |
+| leads guardados | **2.190** (2.047) | 100 | 53 | 0 |
+| costo de Apify | 12,44 USD | 1,02 USD | 0,57 USD | 0,71 USD |
+| monedero | sin límite; 1.190 descontados (1.047) | 400 disponibles, 500 regalados, 100 usados | 447 disponibles, **0 regalados**, 53 usados | 500 disponibles, **0 regalados**, 0 usados |
 
-Las otras 8 empresas no tienen ni un trabajo ni monedero. La combinación de la empresa B —un Maps,
-un Espía y un Pages en poco más de un minuto— es la que dispara la mirada al mercado del Research
-(`components/fundaciones/PanelResearch.jsx:341-379`); la tabla no dice desde qué pantalla se
-disparó un trabajo, así que es una coincidencia observada, no un dato.
+Las otras 7 empresas no tienen ni un trabajo ni monedero.
 
-**Los leads** (`public.aria_cc_scraper_leads`): **2.200** (2.147 el 2026-09-21); 153 desde el
-2026-09-15; el último, 2026-09-23 16:07 UTC. Ninguno huérfano: los 2.200 apuntan a uno de los 16
-trabajos, y 10 trabajos dejaron leads. Por el trabajo que los trajo:
+**Los leads** (`public.aria_cc_scraper_leads`): **2.343** (2.200); 143 desde el 2026-09-28; el último, 2026-10-07 16:10 UTC. Por
+la fuente del trabajo que los trajo:
 
 | fuente del trabajo | leads | con correo | con teléfono | sin correo ni teléfono |
 |---|---|---|---|---|
-| Facebook Pages | 1.081 | 651 | 542 | 362 |
+| Facebook Pages | 1.117 (1.081) | 667 | 557 | 376 |
 | Facebook Ads | 1.000 | 0 | 0 | **1.000** |
-| Google Maps | 119 | 76 | 116 | 1 |
+| Google Maps | 226 (119) | 135 | 222 | 1 |
 | Espía | 0 | — | — | — |
 
-Los 1.000 de Facebook Ads son **un solo trabajo** del 2026-08-31, el paso que descubre anunciantes
-(`lib/tools/scrapers.ts:317-318`): se guardan con la misma etiqueta `facebook` que los contactos de
-Pages (`lib/monitoreo/fuentes.ts:31-34`) y ninguno trae un dato de contacto. En la principal, lo
-descontado del monedero (1.047) es exactamente lo guardado menos esos 1.000; en las empresas A y B
-lo descontado coincide con lo guardado. Es coherente con que ni Ads ni el Espía descuenten; el
-backend que lo decide no es de este repositorio.
+Los 1.000 de Facebook Ads siguen siendo **un solo trabajo** del 2026-08-31, el paso que descubre anunciantes
+(`lib/tools/scrapers.ts:317-318`), guardados con la misma etiqueta `facebook` que los de Pages
+(`lib/monitoreo/fuentes.ts:31-34`). En la principal, lo descontado (1.190) es exactamente lo guardado menos esos 1.000; en A
+y B coincide con lo guardado.
 
-**Los monederos** (`public.aria_cc_scraper_monedero`): **3** (2 el 2026-09-21), uno sin límite, el
-de la principal (`lib/datos/esquema.ts:1461`). Nadie tiene leads comprados:
-`leads_adicionales_pagados` vale 0 en los tres.
+**Los monederos** (`public.aria_cc_scraper_monedero`): **4** (3), uno sin límite. Nadie tiene leads comprados.
 
-**Cuánto tarda un scrapeo, aproximado.** La medición que lo iba a decir no existe (§ 6), pero hay un
-sustituto: la hora del último lead insertado menos la de creación del trabajo. Sobre los 10 trabajos
-con leads: Maps, 5 trabajos entre 60 y 224 s (mediana 141); Facebook Ads, 174 s; **Facebook Pages,
-35, 184, 1.280 y 1.525 s**. Los dos largos son los de más leads —511 y 424, de la principal, del 31
-de agosto y el 2 de septiembre— e insertaron en 4 y 3 tandas. Es una cota inferior de la duración,
-no la duración: no ve lo que el actor tardó después de su último lead, ni los trabajos sin leads.
+**El Espía.** `negocio.analisis_del_espia` tiene **2** análisis, de una sola empresa, y uno de los dos quedó cortado por el
+techo de tokens. `negocio.uso_de_ia` registra **2** llamadas del Espía, las dos `ok`. El Espía trae anuncios y no contactos:
+ninguno entra a la tabla de leads.
 
-**Las herramientas de IA de Tools.** En el almacén (`public.aria_cc_foundations`, 10 filas), **0
-filas** tienen perfil o historial de Prospección (id 20), del VSL (5) o de la Landing (6); las
-claves presentes son seis de las siete de Fundaciones (0, 2, 3, 4, 10, 26; el Research, id 1,
-guarda aparte) y, sólo en el historial, 101 a 105. Coincide con las «0 versiones» de
-[12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md) § 4.
+**Cuánto tarda un scrapeo**: la medición que lo iba a decir no existe (§ 6). El sustituto del corte anterior —el último lead
+insertado menos la creación del trabajo— daba, sobre los 10 trabajos con leads de entonces, dos de Facebook Pages por encima
+de los diez minutos (1.280 y 1.525 s). Del 2026-09-28; **no se volvió a medir** con los trabajos nuevos.
 
-**Quién ve qué**, sólo conteos, sobre los 15 usuarios activos:
+**Las herramientas de IA de Tools.** El 2026-09-28 ninguna fila del almacén tenía perfil o historial de Prospección, del VSL ni
+de la Landing. **No se volvió a medir.**
 
-| qué | 2026-09-28 |
-|---|---|
-| con `tools.ver` · con `tools.editar` | 15 · 15 |
-| **ven Tools** | **14**, en 10 empresas: los 4 con el rol restringido `usuario` necesitan la pestaña concedida y 3 la tienen |
-| con `monitoreo.ver` | 6: 4 en la principal y 2 en otras empresas, que por el reparto sólo pueden tenerla por `usuario` |
-| **ven el Panel de Monitoreo** | **3**: `superadministrador` 2 · `usuario` con la pestaña concedida 1 |
-| concesiones de la pestaña `monitoreo` | 1, en la principal; 0 fuera de ella |
-| empresas con precio mensual cargado | **0 de 13** (11 en el panel y las 2 de la sonda) |
+**Quién ve qué**, sólo conteos:
+
+| qué | 2026-10-18 | 2026-09-28 |
+|---|---|---|
+| usuarios activos | 15 | 15 |
+| concesiones de la pestaña `tools` | 4 | no medido |
+| concesiones de la pestaña `monitoreo` | 1 | 1 |
+| concesiones de la pestaña `incidentes` | 0 | — |
+| ven el Panel de Monitoreo | no re-medido | 3 (`superadministrador` 2, `usuario` con la pestaña 1) |
+| empresas con precio mensual cargado | **0 de 13** | 0 de 13 |
 
 ---
 
 ## 4 · Datos que faltan, y de dónde tendrían que venir
 
-| hueco | dónde se nota | de dónde tendría que venir | hoy |
+| hueco | dónde se nota | de dónde tendría que venir | hoy (2026-10-18) |
 |---|---|---|---|
-| **La duración de cada scrapeo** | ningún lado la dibuja; era para decidir si los 10 minutos alcanzan (`lib/tools/medicion.ts:6-8`) | `public.aria_cc_scraper_mediciones`, que llena el proxy (`lib/datos/esquema.ts:1471-1480`) | **la tabla no existe** en producción, y la migración «020 de `/migraciones`» que la crearía no está en el repositorio (§ 6) |
-| **El ingreso y el margen por empresa** | Monitoreo, dos columnas y una tarjeta | el precio mensual, a mano en Ajustes → Empresas (`db/migraciones/024_ingreso_por_empresa.sql:11-12`, `lib/monitoreo/fuentes.ts:91-97`) | 0 de 13 empresas lo tienen |
-| El costo de 2 corridas | Monitoreo, «2 corridas sin medir» | el backend, que consulta Apify y escribe `costo_usd` (`lib/datos/esquema.ts:1430-1435`) | 14 de 16 medidas; los 2 huecos son de Maps |
-| El tope pedido de un trabajo | un trabajo retomado sin él no dice cuánto se pidió (`app/api/tools/trabajos/route.ts:74-77`) | la columna `max_leads`, que el backend no escribe (`app/api/tools/trabajos/route.ts:72-78`) | se lee de `results_data`, donde lo tiene 1 de los 16 trabajos |
-| Cuántos lotes se subieron al CRM | ningún lado | un registro que la ruta de envío no deja | ver [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) |
-| El costo de IA por empresa | no hay columna, a propósito (`app/api/monitoreo/route.ts:23-25`) | los tokens de las generaciones, que ninguna tabla guarda por empresa | sin cambio |
-| Qué pantalla disparó un trabajo | la mirada al mercado y el extractor se ven iguales | una columna de origen en la tabla del backend | no existe |
+| **La duración de cada scrapeo** | ningún lado; era para decidir si los 10 minutos alcanzan (`lib/tools/medicion.ts:6-8`) | `public.aria_cc_scraper_mediciones`, que llena el proxy (`lib/datos/esquema.ts:1524-1532`) | **la tabla sigue sin existir** (`to_regclass` nulo), y su migración no está en el repositorio (§ 6) |
+| **El ingreso y el margen por empresa** | Monitoreo, dos columnas y una tarjeta | el precio mensual, a mano en Ajustes › Empresas (`db/migraciones/024_ingreso_por_empresa.sql:11-12`, `lib/monitoreo/fuentes.ts:91-97`) | 0 de 13 |
+| El costo de 2 corridas | Monitoreo, «2 corridas sin medir» | el backend, que consulta Apify y escribe `costo_usd` (`lib/datos/esquema.ts:1481-1487`) | 24 de 26 medidas; los 2 huecos son de Maps |
+| El tope pedido de un trabajo | un trabajo retomado no dice cuánto se pidió (`app/api/tools/trabajos/route.ts:74-77`) | la columna `max_leads`, que el backend no escribe (`app/api/tools/trabajos/route.ts:72-78`) | se lee de `results_data`; no se volvió a contar |
+| Cuántos lotes se subieron al CRM | ningún lado; el cerebro lo dice así (`lib/agentes/executive/adaptadores/tools.ts:24-27`) | un registro que la ruta de envío no deja | ver [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) |
+| El costo de IA por empresa | no hay columna en Monitoreo, a propósito (`app/api/monitoreo/route.ts:23-25`) | `negocio.uso_de_ia`, que **desde el 2026-10-04 sí guarda los tokens por empresa** (`db/migraciones/069_el_uso_de_la_ia.sql:38-67`) | el dato existe; el panel no lo lee |
+| Qué pantalla disparó un trabajo | la mirada al mercado, el Scraper y el Espía se ven iguales | una columna de origen en la tabla del backend | no existe |
 
-**Lo que queda del lado del usuario:** cargar el precio mensual de las empresas que pagan, si el
-panel tiene que decir margen; y decidir si la medición de duración sigue —aplicar la migración que
-crea la tabla y traerla al repositorio— o se retira. Fuera de esta carpeta, ninguna de las dos
-figura como pendiente en `docs/` (búsqueda de `aria_cc_scraper_mediciones` y `precio_mensual` en
-los documentos versionados, hoy: las únicas menciones son una consulta y una nota de que la
-columna existe, en `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:369` y `:448`).
+**Lo que queda del lado del usuario:** cargar el precio mensual de las empresas que pagan; decidir si la medición de duración
+sigue —aplicar la migración que crea la tabla y traerla al repositorio— o se retira; y decidir si el costo de IA por empresa,
+que ya se guarda, entra al panel.
 
 ---
 
-## 5 · Reglas propias de estas dos pantallas
+## 5 · Reglas propias de estas pantallas
 
-**1 · El navegador nunca habla con el backend de scraping, y la empresa sale de la sesión.** El
-backend lleva un monedero por organización; si el navegador lo llamara, bastaría mandar otro
-identificador para gastarle los leads a otra empresa (`app/api/tools/scrape/route.ts:9-12`). El
-`org_id` va en el cuerpo de las cinco fuentes y en la consulta del sondeo, y el backend filtra por
-él (`app/api/tools/scrape/route.ts:90-93`, `:192-199`).
+**1 · El navegador nunca habla con el backend de scraping, y la empresa sale de la sesión.** Si el navegador lo llamara,
+bastaría mandar otro identificador para gastarle los leads a otra empresa (`app/api/tools/scrape/route.ts:9-12`). El `org_id`
+va en el cuerpo de las cinco fuentes y en la consulta del sondeo (`app/api/tools/scrape/route.ts:90-93`, `:192-199`).
 
-**2 · Gastar pide editar; mirar pide ver.** Arrancar un scraping, analizar anuncios, generar y subir
-leads piden `tools.editar`; sondear, listar lo que está en vuelo, el historial y el saldo piden
-`tools.ver` (`app/api/tools/scrape/route.ts:178-183`, `:220-228`,
-`app/api/tools/leads/route.ts:53-58`).
+**2 · Gastar pide editar; mirar pide ver.** Arrancar un scraping, analizar anuncios, generar y subir leads piden
+`tools.editar`; sondear, listar lo que está en vuelo, el historial, las búsquedas del Espía y el saldo piden `tools.ver`
+(`app/api/tools/scrape/route.ts:178-183`, `:220-228`, `app/api/tools/leads/route.ts:53-58`,
+`app/api/tools/busquedas-del-espia/route.ts:21`).
 
-**3 · Lo que dice el backend viaja tal cual.** Su 403 por saldo agotado y su 404 pasan a la pantalla:
-es una excepción deliberada a `ADR-0704`, porque «se te acabaron los leads» es lo único accionable
-(`app/api/tools/scrape/route.ts:34-39`). Y sin URL del backend no hay valor de reserva: se dice
+**3 · Lo que dice el backend viaja tal cual.** Su 403 por saldo agotado y su 404 pasan a la pantalla: «se te acabaron los
+leads» es lo único accionable (`app/api/tools/scrape/route.ts:34-39`). Sin URL del backend no hay valor de reserva
 (`app/api/tools/scrape/route.ts:67-75`).
 
-**4 · Lo que está en vuelo se le pregunta a la base, no a la memoria del componente ni al backend.**
-Cambiar de pestaña ya no pierde un scraping pagado (`app/api/tools/trabajos/route.ts:17-31`).
+**4 · Lo que está en vuelo se le pregunta a la base** (`app/api/tools/trabajos/route.ts:17-31`). Y lo terminado también:
+desde el 2026-10-03 el Espía reabre sus búsquedas desde la base, no desde la memoria del componente
+(`lib/tools/historial-del-espia.ts:6-13`).
 
-**5 · Las tablas del scraper se leen dentro de `conOrganizacion(` y sin `where` de empresa.** La RLS
-es la protección, y un filtro visible taparía cuál es (`app/api/tools/saldo/route.ts:4-6`,
-`lib/monitoreo/consumo.ts:107-110`, `app/api/tools/leads/route.ts:22-25`).
+**5 · Las tablas del scraper se leen dentro de `conOrganizacion(` y sin `where` de empresa.** La RLS es la protección
+(`app/api/tools/saldo/route.ts:4-6`, `lib/monitoreo/consumo.ts:107-110`, `app/api/tools/leads/route.ts:22-25`); el historial
+del Espía, igual (`lib/tools/historial-del-espia.ts:15`).
 
-**6 · Este proyecto no escribe en las tablas del backend.** Declara sólo las columnas que lee, porque
-una columna declarada de más es una que Kysely deja escribir (`lib/datos/esquema.ts:1393-1396`). La
-única tabla nuestra es la de mediciones, y la llena sólo `lib/tools/medicion.ts`
-(`lib/datos/esquema.ts:1472-1480`).
+**6 · Este proyecto no escribe en las tablas del backend.** Declara sólo las columnas que lee
+(`lib/datos/esquema.ts:1445-1448`). Las tablas nuestras de Tools son la de mediciones, que no existe
+(`lib/datos/esquema.ts:1524-1532`), y desde el 2026-10-03 `negocio.analisis_del_espia`, que no lleva clave foránea al
+trabajo porque esa tabla vive en `public` y la escribe el backend (`db/migraciones/068_el_analisis_del_espia.sql:11-13`).
 
-**7 · Medir no puede romper un scrapeo.** Las dos funciones corren después de tener la respuesta del
-backend, no lanzan nunca y van en su propia transacción (`lib/tools/medicion.ts:26-30`); el fin se
-anota una sola vez (`lib/tools/medicion.ts:82-84`).
+**7 · Medir no puede romper un scrapeo, y guardar no puede perder un análisis.** Las funciones de medición no lanzan nunca y
+van en su propia transacción (`lib/tools/medicion.ts:26-30`); el fin se anota una sola vez (`lib/tools/medicion.ts:82-84`).
+Si guardar el análisis del Espía falla, se entrega igual: ya se pagó (commit `6ef4183`).
 
-**8 · El panel tiene tres mitades.** La capacidad `monitoreo.ver`, que `usuario` recibe por
-derivación; la pestaña concedida, porque `usuario` restringe por sección; y ser de la organización
-principal (`lib/autorizacion/secciones.ts:426-435`, `db/arranque/001_catalogo.sql:372-397`). La
-tercera se mide sobre la organización **propia**, no la que se está mirando, para que conmutar no
-apague el panel (`lib/autorizacion/secciones.ts:112-119`, `:755-760`). El formulario de Usuarios no
-ofrece la casilla fuera de la principal (`components/ajustes/Usuarios.jsx:144`). `administrador` no
-tiene la capacidad, porque ahí no hay segunda mitad (`db/arranque/001_catalogo.sql:456-480`), y el
-catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
-(`db/arranque/001_catalogo.sql:753-772`).
+**8 · El Panel de Monitoreo tiene tres mitades.** La capacidad `monitoreo.ver`, que `usuario` recibe por derivación; la
+pestaña concedida, porque `usuario` restringe por sección; y ser de la organización principal
+(`lib/autorizacion/secciones.ts:429-439`, `db/arranque/001_catalogo.sql:382-402`). La tercera se mide sobre la organización
+**propia**, no la que se está mirando (`lib/autorizacion/secciones.ts:112-119`). El formulario de Usuarios no ofrece la casilla
+fuera de la principal (`components/ajustes/Usuarios.jsx:144`). `administrador` no tiene la capacidad
+(`db/arranque/001_catalogo.sql:467-491`), y el catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
+(`db/arranque/001_catalogo.sql:750-785`). **El de Incidentes es más simple:** la capacidad es sólo del superadministrador
+(`db/arranque/001_catalogo.sql:130-135`), así que conceder la pestaña a un `usuario` no le da el panel.
 
-**9 · El panel cruza empresas con un bucle, no con una consulta.** Un `group by org_id` bajo RLS
-devuelve una fila; las otras dos salidas —una función `security definer` o un rol sin RLS— dejan la
-barrera sólo en el código (`lib/monitoreo/consumo.ts:6-35`). De a cuatro, para dejar libre una
-conexión del agrupador (`app/api/monitoreo/route.ts:83-95`).
+**9 · Los paneles cruzan empresas con un bucle, no con una consulta.** Un `group by org_id` bajo RLS devuelve una fila
+(`lib/monitoreo/consumo.ts:6-35`). De a cuatro (`app/api/monitoreo/route.ts:83-95`); Incidentes copia la forma
+(`app/api/incidentes/route.ts:24`, `:58-66`).
 
-**10 · Un cero que no es cero no se dibuja como cero.** Una empresa que no se pudo leer va «Sin leer»
-y los totales lo avisan (`lib/monitoreo/fuentes.ts:98-107`,
-`components/monitoreo/PanelDeMonitoreo.jsx:148-154`); sin monedero es «sin monedero», no 0; un costo
-o un precio que falta es «—», y el margen es `null` si falta cualquiera de los dos lados
-(`lib/monitoreo/panel.ts:96-99`); en el CSV, «sin leer» en cada número
-(`lib/monitoreo/panel.ts:104-111`).
+**10 · Un cero que no es cero no se dibuja como cero** (`lib/monitoreo/fuentes.ts:98-107`,
+`components/monitoreo/PanelDeMonitoreo.jsx:148-154`, `lib/monitoreo/panel.ts:96-99`, `lib/monitoreo/panel.ts:104-111`).
 
-**11 · Un scrapeo fallido también cuenta.** Se disparó y costó una corrida; esconderlo haría que una
-empresa con el scraper roto se vea como una que no lo usa (`lib/monitoreo/fuentes.ts:52-56`).
+**11 · Un scrapeo fallido también cuenta** (`lib/monitoreo/fuentes.ts:52-56`).
 
-**12 · Mis Leads y el detalle del panel no se reúsan.** Uno lee la empresa de la sesión y el otro la
-de la URL, con otra autorización; un componente que decide de quién son los datos según quién lo
-monta es cómo se filtra un inquilino (`components/monitoreo/PanelDeMonitoreo.jsx:18-23`).
+**12 · Mis Leads y el detalle del panel no se reúsan** (`components/monitoreo/PanelDeMonitoreo.jsx:18-23`).
 
-**13 · Al CRM se mandan identificadores, no leads.** Los datos salen de la base filtrados por RLS y
-el token nunca pasa por el navegador (`app/api/tools/leads/enviar/route.ts:7-19`, `:119-126`).
+**13 · Al CRM se mandan identificadores, no leads** (`app/api/tools/leads/enviar/route.ts:7-19`, `:119-126`).
+
+**14 · Lo que viaja al cerebro es conteo o texto limpio.** Los leads, contados; el análisis del Espía, recortado y sin datos de
+contacto (`lib/agentes/executive/adaptadores/tools.ts:3-6`).
+
+**15 · Tools habla con tú** (prueba `202`, commit `5d60371`).
 
 ---
 
 ## 6 · Riesgos
 
-**La medición de duración no mide, y nada lo dice en voz alta.** `public.aria_cc_scraper_mediciones`
-no existe en producción (`to_regclass`, hoy). Los comentarios la atribuyen a «la migración 020 de
-`/migraciones`» (`lib/datos/esquema.ts:1474`, `lib/tools/medicion.ts:19`), y esa carpeta **no está
-en el repositorio ni lo estuvo nunca** (`git log --all` sobre `migraciones/` sin resultados); el
-commit `9697c9f` tocó cuatro archivos y ninguno es una migración. Y la `020` que este repositorio
-sí tiene es otra cosa: `db/migraciones/020_closer_asignado.sql`. Tampoco existe en el repositorio
-`migraciones/006_aria_cc_scraper.sql`, que citan nueve comentarios en ocho archivos
-(`lib/datos/esquema.ts:1369`, `app/api/tools/scrape/route.ts:19`,
-`components/tools/MisLeads.jsx:12-14`, entre otros): el censo de Supabase del 2026-09-21 ya lo
-había dicho, que las crea «la serie de otro servicio». Ese censo es un documento local, excluido
-del repositorio en `.git/info/exclude`, así que no se cita por línea. El código hace lo que
-promete —el scrapeo sigue igual y queda una línea en el registro por intento
-(`lib/tools/medicion.ts:32-33`)—, así que el costo es silencioso: **3 trabajos corrieron después
-del commit, el 2026-09-23 desde las 16:05 UTC, y ninguno quedó medido**. Si esa versión ya
-estaba desplegada a esa hora y si el registro tiene esas líneas: no verificado, no leí los
-registros del servidor. Sobre la tabla, la prueba 165 sólo comprueba que esté declarada en
-`esquema.ts` (`pruebas/codigo/165-medicion-de-los-scrapeos.test.ts:101-103`), no que exista.
+**La medición de duración no mide, y nada lo dice en voz alta.** `public.aria_cc_scraper_mediciones` sigue sin existir en
+producción (`to_regclass`, medido el 2026-10-18). Los comentarios la atribuyen a «la migración 020 de `/migraciones`»
+(`lib/datos/esquema.ts:1526`, `lib/tools/medicion.ts:19`), carpeta que no está en el repositorio; y la `020` que sí está es
+otra cosa, `db/migraciones/020_closer_asignado.sql`. Tampoco está `migraciones/006_aria_cc_scraper.sql`, que citan varios
+comentarios (`lib/datos/esquema.ts:1421`, `app/api/tools/scrape/route.ts:19`, `components/tools/MisLeads.jsx:12-14`). Desde el
+commit que la introdujo corrieron **13 trabajos sin quedar medidos** (3 el 2026-09-23 y los 10 posteriores al 2026-09-28),
+porque el código sigue igual cuando la tabla falta (`lib/tools/medicion.ts:32-33`). La prueba 165 sólo comprueba que esté
+declarada (`pruebas/codigo/165-medicion-de-los-scrapeos.test.ts:101-103`).
 
-**La pregunta que la medición iba a contestar ya tiene una respuesta aproximada, y es «sí».** Por el
-sustituto de § 3, dos de los diez trabajos con leads pasaron de los diez minutos, los dos de Facebook
-Pages. En Tools no rompe nada, porque el sondeo no tiene techo; en el Research sí: espera 120
-intentos de cinco segundos (`components/fundaciones/PanelResearch.jsx:281-284`) y después da el
-trabajo por caído mientras el actor sigue corriendo y descontando. El Research pide como mucho 100
-páginas de Facebook (`lib/fundaciones/mercado.ts:180-184`), y el trabajo de Pages de 100 leads tardó
-184 s; si alguna mirada al mercado pasó de los diez minutos: no verificado.
+**El Research da por caído un trabajo que sigue corriendo.** Espera 120 intentos de cinco segundos
+(`components/fundaciones/PanelResearch.jsx:281-284`), y el sustituto del 2026-09-28 tenía dos Pages de más de diez minutos. Si
+alguna mirada al mercado pasó de los diez minutos: no verificado.
 
-**La franja le diría «53 comprados» a una empresa que no compró nada.** El monedero de la empresa B
-tiene `leads_regalados = 0` con 447 gratuitos y 53 usados. `desglosarSaldo` toma como regalo el
-mayor entre los dos (`lib/tools/saldo.ts:51`), así que el regalo consumido da 0 y los 53 usados
-pasan a «comprados» (`lib/tools/saldo.ts:53-55`): la franja diría 447 disponibles · 447 de regalo ·
-53 usados · 53 comprados, cuando, por la aritmética de la fila (447 + 53, 0 pagados), fueron 500
-de regalo y ninguna compra. Calculado a mano desde el código y la fila, no visto en pantalla. La
-prueba cubre el monedero sin `leads_regalados` sólo con cero usados
-(`pruebas/codigo/139-saldo-de-leads.test.ts:48-49`). Y la fila contradice a
-`lib/datos/esquema.ts:1464-1467` («lo escribe el backend al abrir el monedero»): el monedero se
-abre con el primer scraping (`app/api/tools/saldo/route.ts:8-10`), y el de la empresa B tiene
-`creado_el` el 2026-09-23 a las 16:05 UTC, menos de un segundo antes de su primer trabajo; la
-columna ya existía —el de la empresa A, abierto el 2026-09-13, tiene 500— y su valor por omisión
-es 0 (`information_schema`, medido el 2026-09-28). O sea que el backend no la escribió y quedó el
-valor por omisión. Por qué: no verificado, el backend no es de este repositorio.
+**La franja le diría «53 comprados» a una empresa que no compró nada, y ya son dos monederos con la misma forma.** `desglosarSaldo`
+toma como regalo el mayor entre `leads_regalados` y lo que queda gratis (`lib/tools/saldo.ts:51`), y lo usado que no cabe en
+el regalo pasa a «comprado» (`lib/tools/saldo.ts:53-55`). La empresa B tiene `leads_regalados = 0` con 447 gratuitos y 53
+usados: la franja diría 53 comprados. **La empresa C, cuyo monedero se abrió después del corte anterior, también tiene
+`leads_regalados = 0`** (con 500 gratuitos y 0 usados): hoy no se nota, y se va a notar con su primer lead. O sea que el
+backend sigue sin escribir esa columna al abrir un monedero, contra lo que dice `lib/datos/esquema.ts:1516-1518`. La prueba
+cubre el monedero sin regalo sólo con cero usados (`pruebas/codigo/139-saldo-de-leads.test.ts:48-49`).
 
-**Comentarios en cuatro archivos, y el nombre de una prueba, describen un rol que se retiró el
-2026-09-01.** El rol `monitoreo` se retiró en `6de4403` y la capacidad pasó a `usuario` por
-derivación (`db/arranque/003_retiro_de_roles.sql:52-62`). Siguen diciendo lo contrario:
-`app/api/monitoreo/route.ts:30-35` («la tienen `superadministrador` y un rol propio, `monitoreo`» y
-el reparto «le niega `monitoreo.%` a `usuario`») y `:39-40` («asignarle el rol `monitoreo` a una
-persona de una empresa cliente»); `db/arranque/001_catalogo.sql:106-118`, que se le niega «a DOS
-roles» y va «a un rol propio», contra lo que el mismo archivo dice en `:362-387`;
-`lib/autorizacion/secciones.ts:102-105`, contra `:415-420` del mismo archivo; y la prueba del
-panel: su encabezado (`pruebas/codigo/110-monitoreo.test.ts:10-12`), dos mensajes de falla
-(`:57`, `:159-161`) y el nombre de la prueba de `:342`, «NO se la da a ningún rol de puesto»,
-mientras su cuerpo afirma que `usuario` sí la tiene (`:373-378`). Quien lea el encabezado de la ruta
-para decidir quién ve el panel va a buscar un rol que no existe. En la misma familia, ya señalado
-en [12-ICP-Y-OFERTA.md](12-ICP-Y-OFERTA.md): `lib/tools/scrapers.ts:16-19` sigue diciendo que una
-organización sin vínculo con el hub no puede scrapear; y, sin señalar hasta hoy, `:7-9` del mismo
-archivo, que el monedero vive en `usuarios_scraper`, de la base ajena donde estaba antes de la
-006 (`app/api/tools/scrape/route.ts:19-21`); hoy es `public.aria_cc_scraper_monedero`
-(`lib/datos/esquema.ts:1454`, `:1524`). Y
-`components/monitoreo/PanelDeMonitoreo.jsx:11-12` dice que `app/monitoreo.css` son
-ochenta líneas: hoy son 201.
+**El servidor no acota cuántos anuncios pide el Espía.** La ruta manda `Number(p.count) || 60`
+(`app/api/tools/scrape/route.ts:145`) y la pantalla ofrece 60 o 1.000 (`components/tools/anuncios.jsx:29-32`); un cuerpo armado
+a mano puede pedir cualquier número, y el Espía es justo la fuente que no descuenta saldo
+(`app/api/tools/scrape/route.ts:129-137`). Lo que Apify cobre por eso va a la factura y al costo del panel, no al monedero.
+No es nuevo (la línea es la misma del 2026-09-28): lo nuevo es que el 1.000 está en la pantalla.
 
-**«Leads guardados» cuenta 1.363 filas sin forma de contactar a nadie.** De los 2.200, 1.000 son
-anunciantes de un único trabajo de Facebook Ads y 363 más no traen ni correo ni teléfono. Mis Leads,
-la tarjeta del panel y la columna por empresa los suman igual que un contacto de Maps.
+**Comentarios que siguen describiendo el rol `monitoreo`, retirado el 2026-09-01.** El retiro está en
+`db/arranque/003_retiro_de_roles.sql:52-62`, y siguen diciendo lo contrario `app/api/monitoreo/route.ts:30-35` y `:39-40`,
+`db/arranque/001_catalogo.sql:106-118` (contra el mismo archivo en `:382-402`), `lib/autorizacion/secciones.ts:102-105` (contra
+`:429-437`), y la prueba 110 en su encabezado (`pruebas/codigo/110-monitoreo.test.ts:10-12`), dos mensajes de falla (`:57`,
+`:162-164`) y el nombre de la prueba de `:345`, mientras su cuerpo afirma que `usuario` sí la tiene (`:376-381`). En la misma
+familia: `lib/tools/scrapers.ts:16-19` y `:7-9` describen el hub y `usuarios_scraper`; `components/monitoreo/PanelDeMonitoreo.jsx:11-12`
+dice que `app/monitoreo.css` son ochenta líneas, y son 201. **Nuevos desde el corte, cerrados el 2026-10-18 (`65669f4`):**
+`lib/autorizacion/secciones.ts:429` decía que Monitoreo es «la única sección con `soloDesdeLaPrincipal`» y ya son tres; el
+comentario de Incidentes decía que va en «Operación» (`lib/autorizacion/secciones.ts:458-461`) y va en «Administración»
+(`:464`). Hoy los dos dicen lo que hace el código. Los del rol `monitoreo` de arriba no se tocaron y siguen abiertos.
 
-**El panel mide plata con una sola de sus tres columnas.** Sin precio en ninguna empresa, ingreso y
-margen son «—» en las once filas; el único número de plata es el costo de Apify. Está bien dicho
-—el pie dice «11 sin precio cargado»—, pero hoy el panel no puede decir si alguna empresa es
-rentable.
+**«Leads guardados» cuenta 1.377 filas sin forma de contactar a nadie.** De los 2.343, 1.000 son anunciantes de un único
+trabajo de Facebook Ads y 377 más no traen ni correo ni teléfono (376 de Pages y 1 de Maps). Mis Leads, la tarjeta del panel
+y la columna por empresa los suman igual que un contacto de Maps. El cerebro sí los separa (`sinContacto`,
+`lib/agentes/executive/adaptadores/tools.ts:34`).
 
-**Ninguna tabla del scraper nace de una migración de este repositorio.** Ni `db/`, ni `scripts/`,
-ni `.github/` nombran `aria_cc_` (búsqueda de hoy). La base local de la suite no las tiene, así que
-**ninguna prueba ejercita una consulta de Tools o del panel contra una tabla**: las de § 2 leen
-texto, y las de `pruebas/base/` sólo prueban la autorización. Y la regla «no escribimos en las
-tablas del backend» es una convención de tipos: en producción `app_inquilino` tiene `INSERT`,
-`UPDATE` y `DELETE` sobre las tres (`has_table_privilege`, medido el 2026-09-28).
+**El panel mide plata con una sola de sus tres columnas**: sin precio en ninguna empresa, el único número de plata es el costo
+de Apify, y ahora el costo de IA por empresa existe en `negocio.uso_de_ia` y el panel no lo lee.
 
-**El panel consulta todas las empresas al entrar a la aplicación, no al abrir la pestaña.** Todas
-las vistas visibles se montan juntas (`components/CommandCenter.jsx:86-97`) y el panel carga al
-montarse (`components/monitoreo/PanelDeMonitoreo.jsx:68-70`): hoy son 11 transacciones por cada
-entrada de las 3 personas que lo ven, y crece con cada empresa. Por lo mismo, la franja de saldo se
-lee una vez al montarse (`components/tools/SaldoDeLeads.jsx:10-13`): después de un scraping no se
-refresca mientras se mira —`leerSaldo` lo llaman sólo la franja y el Research—. Hasta la etapa E11 se
-montaba una vez por carga de página; desde entonces se monta en cada visita a Prospección o al Scraper,
-también al pasar de una a otra, así que la deuda se achica a «mientras se mira». No verificado en
-pantalla con datos.
+**Ninguna tabla del scraper nace de una migración de este repositorio.** La suite las crea sólo para la prueba 213, con las
+columnas que este proyecto declara (`pruebas/apoyo/tablas-de-public.ts:1-15`): si el backend cambia una columna, esa prueba
+sigue verde. Las rutas de Tools y del panel siguen sin probarse contra una tabla. Y `app_inquilino` tenía `INSERT`, `UPDATE` y
+`DELETE` sobre las tres (medido el 2026-09-28; no se volvió a medir).
 
-**El botón de subir al CRM se ofrece a quien no puede usarlo.** Mis Leads se monta sin
-`puedeEditar` (`components/views/ToolsView.jsx:81`) y dibuja el envío siempre
-(`components/tools/MisLeads.jsx:392-401`); la ruta pide `tools.editar`
-(`app/api/tools/leads/enviar/route.ts:79`). Hoy no le pasa a nadie: los 15 activos tienen
-`tools.editar`. El Espía, en cambio, sí recibe la bandera (`components/views/ToolsView.jsx:73`), y desde
-la etapa E9 también el Scraper. Los dos la reciben de `Fundaciones.jsx`, que la da falsa también cuando
-falló la lectura del estado de Tools: en ese caso el aviso dice que es el rol, y no lo es.
+**Los dos paneles consultan todas las empresas al entrar a la aplicación, no al abrir la pestaña.** Todas las vistas visibles
+se montan juntas (`components/CommandCenter.jsx:87-99`) y los dos paneles cargan al montarse
+(`components/monitoreo/PanelDeMonitoreo.jsx:68-70`, `components/incidentes/PanelDeIncidentes.jsx:53-55`): son 11
+transacciones por panel en cada entrada de quien los ve, y crece con cada empresa. La franja del saldo ya no tiene ese
+problema desde E11: se monta en cada visita a Prospección o al Scraper (`components/views/ToolsView.jsx:106-111`).
 
-**Dos personas de empresas cliente ya tienen `monitoreo.ver`.** Las separan del panel dos cosas: la
-pestaña no concedida y `soloDesdeLaPrincipal`. Las dos están en pie (0 concesiones fuera de la
-principal, medido hoy) y el catálogo aborta si la primera se cae; es el diseño, pero conviene saber
-que la capacidad sola ya no es la puerta.
+**El botón de subir al CRM se ofrece a quien no puede usarlo.** Mis Leads se monta sin `puedeEditar`
+(`components/views/ToolsView.jsx:81`) y dibuja el envío siempre (`components/tools/MisLeads.jsx:394-403`); la ruta pide
+`tools.editar` (`app/api/tools/leads/enviar/route.ts:79`). El Espía y el Scraper sí reciben la bandera
+(`components/views/ToolsView.jsx:73`, `:79`), y los dos la heredan falsa también cuando falló la lectura del estado de Tools:
+el aviso culpa al rol (`components/tools/VistaDelScraper.jsx:18-21`).
 
-**Y el que ordena a los demás: casi no hay uso que medir.** 16 scrapeos entre el 2026-08-30 y el
-2026-09-23, 0 desde el 24, LinkedIn nunca, y ningún plan de Prospección generado (medido el
-2026-09-28). Las reglas de § 5 están escritas y probadas por texto, pero con estos volúmenes nada
-de Tools ni del panel se ejerció lo suficiente para mostrar sus fallas, y ninguna cifra de § 2 se
-vio dibujada por la aplicación andando.
+**Dos personas de empresas cliente tenían `monitoreo.ver`** (medido el 2026-09-28, no re-medido). Las separan del panel la
+pestaña no concedida —sigue habiendo 1 sola concesión, medida el 2026-10-18— y `soloDesdeLaPrincipal`.
+
+**Y el que ordena a los demás: el uso sigue siendo chico.** 26 scrapeos en siete semanas, ninguno desde el 2026-10-10,
+LinkedIn nunca, 2 análisis del Espía guardados y un incidente. Las reglas de § 5 están escritas y probadas por texto, pero con
+estos volúmenes casi nada de Tools ni de los paneles se ejerció lo suficiente para mostrar sus fallas, y ninguna cifra de § 2
+se vio dibujada por la aplicación andando.

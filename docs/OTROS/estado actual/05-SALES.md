@@ -1,11 +1,13 @@
 # Sales Intelligence
-> Corte: **2026-10-09**, con el código de `904968a`. Las cifras de producción son de dos fechas y cada una lo
-> dice: las del **2026-10-09**, medidas para `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (§ 2 y § 7) con
-> `scripts/supabase.mjs leer` (sólo lectura, sólo agregados); y las del **2026-09-28**, de la foto anterior, que no
-> se re-midieron. Para este corte no se leyó producción. Las ventanas son rodantes: lo que depende de la hora vale
+> Corte: **2026-10-18**. Producción está en el commit `972972e` (migraciones hasta la `078`); el código de esta
+> sección es el de `2421d49` (SA-9), y lo que vino después sólo tocó comentarios y la descripción de una herramienta
+> (ver el bloque de abajo). Las cifras de producción son de tres fechas y cada una lo dice: las del
+> **2026-10-18**, medidas para este corte con `scripts/supabase.mjs leer` (sólo lectura, sólo conteos y agregados); las
+> del **2026-10-09**, de `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (§ 2 y § 7); y las del **2026-09-28**,
+> de la foto de ese día. Lo que no se volvió a medir lo dice. Las ventanas son rodantes: lo que depende de la hora vale
 > para el día de su medición. Cada afirmación lleva su `archivo:línea`. Para ubicar lo nombrado, ver
-> [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior se lee con
-> `git show 51b5d25:"docs/OTROS/estado actual/05-SALES.md"`, y la del corte del 2026-09-28 con
+> [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior —el corte del 2026-10-09— se lee con
+> `git show 2421d49:"docs/OTROS/estado actual/05-SALES.md"`, y la del corte del 2026-09-28 con
 > `git show 861b5f0:"docs/OTROS/estado actual/05-SALES.md"`.
 
 **El front del prototipo, con los datos reales, desde el 2026-10-09.** La pestaña —«Closing» en el menú— vuelve al
@@ -13,11 +15,24 @@ marcado de `aios-command-center_1.html:2931-2995`: las cuatro cifras, la tabla d
 y debajo una tarjeta más con lo que la pantalla anterior medía, en cifras. Todo sale de una sola lectura del servidor,
 `lecturaDeSales`, y cada «—» dice por qué en una línea: el resto de la explicación la da el agente de Sales. Los
 motivos de no venta salen solos, de las llamadas HT que terminaron sin cierre: **4 en 30 días**, la mayoría por
-precio (medido el 2026-10-09). El titular no cambió: **nadie registra**. `negocio.resultados` sigue con
-**7 filas, ninguna venta y ningún monto**, y la última es del 2026-09-09 (medido el 2026-10-09): un mes sin un solo
-resultado. La asistencia está marcada en **0 de 363** citas.
+precio. El titular no cambió: **nadie registra**. `negocio.resultados` sigue con **7 filas, ninguna venta y ningún
+monto**, y la última es del 2026-09-09: **desde el 2026-10-10 la ventana de 30 días ya no alcanza ningún resultado**,
+y Ventas, Revenue y Tasa de cierre dicen «—» con «Nadie registró en esta ventana.». La asistencia está marcada en
+**0 de 368** citas (todo medido el 2026-10-18).
 
-> **Desde el corte del 2026-09-28**
+> **Desde el corte del 2026-10-09**
+>
+> - **2026-10-09 · `2421d49`** — SA-9: la revisión de la segunda ronda. El closer sin vínculo con el CRM dice por qué
+>   (motivo `sin_vinculo`, «Sin vínculo con el CRM.»), y la foto anterior se escribió en este commit: su encabezado
+>   decía el código de `904968a`, pero describía ya este.
+> - **2026-10-10 · `a6e6309`** — CN-3 de Conversation: la descripción de `cancelacion_de_citas`, la herramienta que
+>   Sales comparte con Conversation, agrega que el no-show es un conteo que reporta el closer, no una tasa
+>   (`lib/agentes/executive/adaptadores/sales.ts:146-147`).
+> - **2026-10-11 · `2415e25`** — CF-3 de Creative: `app/inteligencia-estetica.css` se borra entera; `app/sales.css`
+>   sólo cambia el comentario que la nombraba.
+> - **2026-10-15 · `972972e`** — Meta M-2 a M-4, el commit de producción: no toca esta sección.
+>
+> **Del corte del 2026-09-28 al del 2026-10-09**
 >
 > - **2026-10-01 · `4e9a242`** — E7 de la nueva estructura: la maqueta del Executive se va, y con ella las 11
 >   ventas y el 31 % de cierre que dibujaba en nombre de Sales.
@@ -38,7 +53,7 @@ resultado. La asistencia está marcada en **0 de 363** citas.
 >   `app/inteligencia-estetica.css` y la sección deja la estética de operación.
 > - **2026-10-09 · `51b5d25`** — SA-4: la revisión adversarial; tres motivos nuevos para un «—» y la mitad del
 >   cierre para el cerebro.
-> - **2026-10-09 · `7900472`** — SA-5: la comparación medida contra el prototipo y esta foto. El usuario revisó la
+> - **2026-10-09 · `7900472`** — SA-5: la comparación medida contra el prototipo y la foto. El usuario revisó la
 >   pantalla en producción y pidió una segunda ronda (doc 15 § 7).
 > - **2026-10-09 · `f599b51`** — SA-6: la segunda ronda, documentada, con la medición de las llamadas HT.
 > - **2026-10-09 · `ee57d33`** — SA-7: `lib/negocio/motivosDeLasLlamadas.ts`; los motivos de la pantalla salen de las
@@ -75,7 +90,8 @@ El deslinde que la carpeta de requisitos saca de todo esto —Sales genera el he
 interpreta, y la tasa de cierre es de Business— está en `docs/sales/08-LO-QUE-ENTREGA-Y-RECIBE.md:8`
 y `:79`. Lo que pidió el usuario el 2026-10-09 —la forma del prototipo, con el dato— está en
 `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` § 1, con sus cuatro decisiones y cinco respuestas por
-omisión (§ 6 del mismo documento).
+omisión (§ 6 del mismo documento); la segunda ronda, en su § 7. La revisión del usuario de la segunda ronda en
+producción sigue pendiente.
 
 ---
 
@@ -115,26 +131,26 @@ ciclo. Los closers se leen una vez. Todo lo que va en `pantalla` viaja de 0 a 1;
 | `lib/negocio/alcanceDelCloser.ts` | `closersDeLaEmpresa()`, las filas de la tabla | Closer |
 | `lib/negocio/ventanasDeSales.ts`, `vistaDeSales.ts` | los textos de cada ventana; el lector del navegador | Sales |
 
-**Lo que dibuja**, en el orden de `components/sales/PanelDeSales.jsx`, y lo que daba el 2026-10-09 a 30 días —el
+**Lo que dibuja**, en el orden de `components/sales/PanelDeSales.jsx`, y lo que daba el 2026-10-18 a 30 días —el
 período con que abre (`lib/negocio/periodo.ts:109`)—, deducido de la medición de ese día (no leído de la pantalla):
 
-| bloque | dónde | el 2026-10-09, a 30 días |
+| bloque | dónde | el 2026-10-18, a 30 días |
 |---|---|---|
 | El encabezado: «Sales», «Cierre, closers y motivos de pérdida» y el segmentado de cuatro períodos | `components/sales/PanelDeSales.jsx:46`, `:136` | con la cabecera del departamento a la vista, sólo el segmentado |
-| Asistencias | `components/sales/PanelDeSales.jsx:177` | «—», «Nadie marca la asistencia.» (0 de 363 citas marcadas) |
-| Tasa de cierre | igual | «—», «Pocos intentos para una tasa.» (1 intento) |
-| Ventas | igual | **0**, cero medido: hubo 1 resultado y ninguna venta |
-| Revenue reportado | igual | **$0**, «reportado por el closer» |
-| Closers: seis columnas, una fila por closer configurado | `components/sales/PanelDeSales.jsx:221` | 3 filas, sin notas: las da el agente |
-| Motivos de no venta, con «{N} llamadas sin cierre» | `components/sales/PanelDeSales.jsx:263` | «4 llamadas sin cierre»: Precio 3 · No es para su negocio 2 · No confía en el resultado 1 |
-| La cadena comercial, en cifras: los cinco eslabones, y la cancelación, los días hasta la cita y el cobrado del mes | `components/sales/PanelDeSales.jsx:303` | no re-medido; el 2026-09-28 la cancelación era 34,9 % y la cadena terminaba en 0 ventas; el cobrado de octubre, «—» con «Nadie registró este mes.» |
+| Asistencias | `components/sales/PanelDeSales.jsx:160` | «—», «Nadie marca la asistencia.» (0 de 368 citas marcadas) |
+| Tasa de cierre | `components/sales/PanelDeSales.jsx:161` | «—», «Nadie registró en esta ventana.» (0 intentos) |
+| Ventas | `components/sales/PanelDeSales.jsx:162` | «—», «Nadie registró en esta ventana.» (el 2026-10-09 era un **0** medido, con 1 resultado) |
+| Revenue reportado | `components/sales/PanelDeSales.jsx:163` | «—», «Nadie registró en esta ventana.», sin «reportado por el closer» debajo |
+| Closers: seis columnas, una fila por closer configurado | `components/sales/PanelDeSales.jsx:221` | 3 filas, las 3 con vínculo al CRM; Ventas, Cierre y Revenue de cada una en «—» por lo mismo; sin notas: las da el agente |
+| Motivos de no venta, con «{N} llamadas sin cierre» | `components/sales/PanelDeSales.jsx:263` | «4 llamadas sin cierre»: Precio 3 · No es para su negocio 2 · No confía en el resultado 1 (igual que el 2026-10-09) |
+| La cadena comercial, en cifras: los cinco eslabones, y la cancelación, los días hasta la cita y el cobrado del mes | `components/sales/PanelDeSales.jsx:303` | Entraron 25 · Agendaron 19 (76 %) · Cita ocurrida 12 (48 %) · Registrado 0 · Venta 0; Cancelación 35,0 % (14 de 40); Días hasta la cita 1,7 d (19 medidos); Cobrado de octubre «—», «Nadie registró este mes.» |
 
-**El borde de la ventana.** Ese único resultado de 30 días es del 2026-09-09: la ventana lo alcanzaba por un día.
-Desde el 2026-10-10, sin un registro nuevo, Ventas, Revenue y Tasa de cierre dicen «—» con «Nadie registró en esta
-ventana.» también a 30 días, y en la tabla, cada fila sin resultados. No es una rotura: es el cero medido que pasa a
-ser «no hay medición».
+**El borde de la ventana ya pasó.** La foto anterior lo anunció: el único resultado de 30 días era del 2026-09-09, y
+la ventana lo alcanzaba por un día. Desde el 2026-10-10, sin un registro nuevo, Ventas, Revenue y Tasa de cierre dicen
+«—» con «Nadie registró en esta ventana.» (`components/sales/comun.jsx:28`, `lib/negocio/lecturaDeSales.ts:143-147`), y
+en la tabla, cada fila sin resultados. No es una rotura: es el cero medido que pasa a ser «no hay medición».
 
-**La tabla por closer.** Tres filas, una por closer configurado y vinculado (3 de 3, medido el 2026-10-09), en orden
+**La tabla por closer.** Tres filas, una por closer configurado y vinculado (3 de 3, medido el 2026-10-18), en orden
 de designación y nunca por tasa (`lib/negocio/cierrePorCloser.ts:235-244`). Agendadas y Asistieron cuentan citas del
 CRM; Ventas, Cierre y Revenue, lo que cada persona registró (`lib/negocio/cierrePorCloser.ts:516-520`). La subfila
 dice «{N} contactos asignados» —la asignación por ICP del prototipo no existe—. **La tabla muestra el nombre real de
@@ -160,9 +176,11 @@ suma las cuatro cifras con su motivo— y `motivos_de_no_venta` leen la mitad de
 del mes, la cadena, el ciclo y la cancelación llaman a la misma función con los mismos argumentos
 (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-14); y `economia_del_negocio` cruza las ventas del mes
 con la inversión de Acquisition, para quien ve las dos secciones. Lo prueba `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts` en las cuatro ventanas.
+`cancelacion_de_citas`, compartida con Conversation, dice desde el 2026-10-10 que el no-show es un conteo del closer
+(`lib/agentes/executive/adaptadores/sales.ts:146-147`).
 
-**Quién la ve.** 13 de los 15 usuarios activos tenían `tablero.ver` y la sección concedida el 2026-09-28; no
-re-medido.
+**Quién la ve.** 13 de los 15 usuarios activos tienen `tablero.ver` y, si todos sus roles son restringidos, la sección
+concedida (medido el 2026-10-18; la misma cifra que el 2026-09-28).
 
 ---
 
@@ -184,23 +202,26 @@ dibujaba 23 valores escritos a mano que cerraban entre sí, uno al lado del nomb
 Los desvíos de rótulo y de color están declarados en S15-02 del doc 15: «{N} contactos asignados», los motivos como
 categorías del analizador, «Agendadas» como citas del CRM y el color de las barras por lo que es cada fila.
 
-**El nombre de la maqueta sigue en el repositorio**, que es público: en el prototipo `aios-command-center_1.html`,
-`lib/ghl/calendarios.ts`, `components/negocio/Fila.jsx`, `components/views/CloserView.jsx`,
-`pruebas/codigo/91-closer-y-setter.test.ts` y cinco documentos de `docs/` (`git grep` del 2026-10-09). Salió de
+**El nombre de la maqueta sigue en el repositorio**, que es público: el nombre completo en el prototipo
+`aios-command-center_1.html`, `lib/ghl/calendarios.ts`, `components/negocio/Fila.jsx`,
+`components/views/CloserView.jsx`, `pruebas/codigo/91-closer-y-setter.test.ts` y dos documentos de `docs/sales/`; el
+apellido solo, en dos documentos más de esa carpeta (`git grep` del 2026-10-18). Salió de
 `components/views/SalesView.jsx` el 2026-10-09; las versiones viejas del archivo lo conservan en la historia.
 
 **La contradicción con Executive ya no existe**: su maqueta se retiró el 2026-10-01 (`4e9a242`), y con ella las 11
-ventas, el 31 % de cierre y las cuatro tarjetas que hablaban por Sales (la foto anterior las listaba en su § 3.1).
+ventas, el 31 % de cierre y las cuatro tarjetas que hablaban por Sales (la foto del 2026-09-28 las listaba en su
+§ 3.1).
 
 ---
 
 ## 4 · Datos que ya tenemos
 
-Medido el 2026-10-09 salvo donde se dice otra fecha, con `scripts/supabase.mjs leer`, sobre la organización que tiene
-datos de negocio (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` § 2).
+Medido el **2026-10-18** salvo donde se dice otra fecha, con `scripts/supabase.mjs leer`, sobre la única organización
+con datos de negocio (1 de las 11 activas).
 
-**`negocio.resultados`: 7 filas, las mismas desde el 2026-09-09.** 1 «No le interesa» de agosto, con el motivo
-«Otro»; 2 «No-show» y 4 «Seguimiento» de septiembre. **Ninguna venta, ningún monto y ninguna con su cita.**
+**`negocio.resultados`: 7 filas, las mismas desde el 2026-09-09.** Ninguna en los últimos 30 días. Del 2026-10-09,
+no re-medido por tipo: 1 «No le interesa» de agosto, con el motivo «Otro»; 2 «No-show» y 4 «Seguimiento» de
+septiembre. **Ninguna venta ni acuerdo, ningún monto y ninguna con su cita** (2026-10-18).
 
 **El esquema de la venta existe y mapea casi 1:1 contra el §5.4**
 (`docs/sales/01-LA-VENTA-NO-EXISTE.md:65-78`): `salida`, `monto numeric(12,2)`, `forma_pago`, `registrado_por`,
@@ -216,20 +237,24 @@ No es el momento · Competencia · No califica · Otro (`lib/negocio/salidas.ts:
 suma `monto` sólo donde `salida = 'venta'` y cuenta los acuerdos aparte; distingue el `0` medido del `—`, y separa
 «no hay closers» de «nadie registró» (`lib/negocio/dineroDelMes.ts:164-173`).
 
-**Las citas: 363**, del 2026-08-12 al 2026-10-13. Ninguna con la asistencia marcada. 19 son plantones del calendario,
-176 están canceladas, 101 congeladas, y **3 dicen «showed» por primera vez**: el calendario empezó a marcar
-presentes, y nadie lo hizo en Avanzar. En los últimos 30 días, de 111 ya ocurridas: 56 canceladas, 38 confirmadas, 14
-plantones y 2 «showed».
+**Las citas: 368** (363 el 2026-10-09), del 2026-08-12 al 2026-10-20, una sola futura. Ninguna con la asistencia
+marcada. 20 son plantones del calendario, 179 están canceladas, 101 congeladas, y 3 dicen «showed»: el calendario
+marca presentes y nadie lo hizo en Avanzar. En los últimos 30 días, de 46 ya ocurridas —descartados y congeladas
+incluidos—: 19 canceladas, 19 confirmadas, 5 plantones y 3 «showed». La cancelación de la tarjeta, que excluye
+descartados y congeladas, es 14 de 40.
 
-**Los contactos: 620**, 24 sin alta. Las altas por semana desde el 2026-08-31: 175, 89, 5, 5, 11 y 6.
+**Los contactos: 624**, 24 sin alta. Las altas por semana desde el 2026-08-31: 175, 89, 5, 5, 11, 7 y 1 (la semana
+del 2026-10-12); la última, del 2026-10-16.
 
 **Los closers: 3**, los tres con su usuario del CRM; dos registraron alguna vez. La comisión, al 10 % para los tres y
-sin meta mensual (medido el 2026-09-28).
+sin meta mensual (2026-10-18, igual que el 2026-09-28).
 
-**Las llamadas de venta.** Los Analizadores guardaban 115 llamadas el 2026-09-28. El 2026-10-09 había **38 llamadas HT
-analizadas que terminaron sin cierre** (`NO_CERRADA`, `lib/analizadores/nucleo/ht.ts:133-138`), 4 de ellas en los
-últimos 30 días, con sus 87 objeciones clasificadas; ninguna `CERRADA` (el 2026-09-28 eran 36 de 38, con 2
-`INDETERMINADO`). Es una lectura de un modelo, no un registro del closer, y es la fuente de los motivos de no venta.
+**Las llamadas de venta.** Los Analizadores guardan 135 llamadas (115 el 2026-09-28), la última reunión del
+2026-10-12. Hay **38 llamadas HT analizadas que terminaron sin cierre** (`NO_CERRADA`,
+`lib/analizadores/nucleo/ht.ts:133-138`), la última del 2026-10-08: 4 en los últimos 30 días y ninguna en los
+últimos 7; **ninguna `CERRADA`** y 3 `INDETERMINADO` (2 el 2026-09-28). Por categoría, en toda la historia, las
+llamadas con al menos una objeción de cada una: precio 24, confianza 22, encaje 16, decisor 6, momento 3 y otra 2. Es
+una lectura de un modelo, no un registro del closer, y es la fuente de los motivos de no venta.
 
 ---
 
@@ -238,18 +263,18 @@ analizadas que terminaron sin cierre** (`NO_CERRADA`, `lib/analizadores/nucleo/h
 Lo que la pantalla no mide, y qué haría falta para medirlo, está en `docs/OTROS/futuro/lo-que-sales-no-mide.md`. En
 resumen, con la foto del 2026-09-28 donde no se re-midió:
 
-**1 · La venta misma.** 0 filas `venta` o `acuerdo_sin_pago` en `negocio.resultados`, 0 montos (2026-10-09). Los
+**1 · La venta misma.** 0 filas `venta` o `acuerdo_sin_pago` en `negocio.resultados`, 0 montos (2026-10-18). Los
 campos del CRM que podrían traerla están vacíos en todos los contactos, las oportunidades no se ingieren, y el
 2026-09-28 un contacto llevaba en el CRM la etiqueta `venta_ganada` sin ningún resultado en la base: alguien la marcó
 en el CRM y no en Avanzar. «Ticket promedio mensual por cliente» tiene valor en cientos de contactos y es lo que el
 prospecto dice que factura, no lo que le vendimos (`docs/sales/01-LA-VENTA-NO-EXISTE.md:202-229`).
 
-**2 · La asistencia.** `citas.asistio` nulo en las 363 y `resultados.cita_id` nulo en las 7 (2026-10-09). La columna
-existe desde la `049` y la escribe `lib/negocio/avanzar.ts:248`. El calendario marca 3 «showed» y 19 plantones, pero
+**2 · La asistencia.** `citas.asistio` nulo en las 368 y `resultados.cita_id` nulo en las 7 (2026-10-18). La columna
+existe desde la `049` y la escribe `lib/negocio/avanzar.ts:248`. El calendario marca 3 «showed» y 20 plantones, pero
 un conteo sin denominador no es asistencia (S15-P04).
 
-**3 · La llamada de venta.** `negocio.llamadas` sin filas, y las llamadas analizadas no están enganchadas a ningún
-contacto, cita ni resultado (`db/migraciones/056_tablas_del_analizador.sql:34-44`).
+**3 · La llamada de venta.** `negocio.llamadas` sin filas (2026-10-18), y las llamadas analizadas no están enganchadas
+a ningún contacto, cita ni resultado (`db/migraciones/056_tablas_del_analizador.sql:34-44`).
 
 **4 · Los eslabones del §5.2.** `sale_report_id` es `resultados.id` y existe sin ninguna venta; `sales_call_id` no
 tiene tabla propia; el tramo `appointment_id → sale_report_id` se abrió con `resultados.cita_id` y ninguna fila lo
@@ -259,15 +284,16 @@ recorre.
 2026-09-28 no mostraban un reparto de hecho.
 
 **6 · La moneda y la meta.** No hay columna de moneda en `negocio.resultados`, y `meta_mensual` es nulo en las tres
-comisiones.
+comisiones (2026-10-18).
 
 **7 · El cobro verificado.** Ninguna integración de pagos. El revenue es siempre «reportado por el closer».
 
 **8 · Los motivos de pérdida, de una fuente que no es el closer.** La tarjeta los saca de las llamadas HT sin
-cierre, por la categoría de sus objeciones: 4 en 30 días y 38 en toda la historia, con todas sus objeciones
-clasificadas (medido el 2026-10-09). Es lo que un modelo leyó en la transcripción, no una pérdida reportada; lo que el
-closer registra en Avanzar tiene 1 fila en toda la historia y lo da el agente. Los campos del CRM con motivos están en
-tres contactos o menos (`docs/sales/05-LOS-MOTIVOS-DE-NO-VENTA.md:118`).
+cierre, por la categoría de sus objeciones: 4 en 30 días y 38 en toda la historia (2026-10-18). Es lo que un modelo
+leyó en la transcripción, no una pérdida reportada; lo que el closer registra en Avanzar tiene 1 fila en toda la
+historia y lo da el agente. Los campos del CRM con motivos están en tres contactos o menos
+(`docs/sales/05-LOS-MOTIVOS-DE-NO-VENTA.md:118`). Desde el 2026-10-08 no hubo otra llamada HT sin cierre: la tarjeta
+se vacía sola hacia el 2026-11-07 si no entra ninguna.
 
 **9 · El plan y las señales.** Sales no tiene detector (`lib/agentes/senales/tipos.ts:6-7`); el «Plan de acción» del
 prototipo no se dibuja hasta que lo tenga.
@@ -285,8 +311,9 @@ y el predicado compartido (`lib/negocio/ventasDelContacto.ts:27`); el monto de c
 y `lib/negocio/etapas.ts:78`.
 
 **3 · Es venta REPORTADA, no pago verificado.** El §5.4 lo exige por escrito (línea 288 del documento). El revenue
-lleva «reportado por el closer» debajo de la cifra (`components/sales/PanelDeSales.jsx:177`), y el cobrado del mes
-también. Ninguna «CERRADA» del analizador puede reemplazarlo: es la lectura de un modelo.
+con valor lleva «reportado por el closer» debajo de la cifra; sin valor, la línea es la de su motivo
+(`components/sales/PanelDeSales.jsx:178`). El cobrado del mes, igual. Ninguna «CERRADA» del analizador puede
+reemplazarlo: es la lectura de un modelo.
 
 **4 · Un «—» dice por qué, y un cero es un cero medido.** Siete motivos cerrados (`lib/negocio/lecturaDeSales.ts:53`),
 cada uno con su frase de la lista de S15-02 (`components/sales/comun.jsx:28`): sin closers, un closer sin vínculo con
@@ -314,8 +341,8 @@ presentaron entre las citas con la asistencia respondida; sin ninguna respondida
 **11 · De un motivo viaja la categoría, nunca el texto.** Los de la tarjeta, por la categoría vigente de cada
 objeción —la de la misma posición y la misma huella de su texto—, sin la frase ni quién organizó la reunión
 (`lib/negocio/motivosDeLasLlamadas.ts`). Los que registra el closer, por el nombre del motivo cuando casa con el
-catálogo; lo demás se cuenta en «Fuera del catálogo» (`lib/negocio/motivosDeNoVenta.ts:50`), y la base 166 prueba que
-un texto libre no sale en la respuesta.
+catálogo; lo demás se cuenta aparte, en `fueraDelCatalogo` (`lib/negocio/motivosDeNoVenta.ts:16-17`,
+`lib/negocio/motivosDeNoVenta.ts:53-58`), y la base 166 prueba que un texto libre no sale en la respuesta.
 
 **12 · Es un tablero: cifras con su rótulo, y la explicación es del agente.** Bajo un «—», una sola línea de la lista
 cerrada; los avisos, las notas y el texto de cada ventana viajan en la respuesta y en las herramientas del cerebro,
@@ -325,14 +352,14 @@ y la pantalla no los dibuja (doc 15, S15-18).
 
 ## 7 · Riesgos
 
-**El borde de la ventana rodante.** El 2026-10-10 las cifras de lo registrado pasan de «0» a «—» a 30 días sin que
-nadie haga nada (§ 2). Es correcto, y quien lo vea puede leerlo como una rotura. Lo mismo le pasó al dinero del mes el
-2026-10-01: desde ese día dice «—» con «Todavía no se registró ningún resultado este mes»
-(`lib/negocio/dineroDelMes.ts:164-165`).
+**El borde de la ventana rodante.** **Pasó el 2026-10-10**, como la foto anterior anunció: las cifras de lo
+registrado pasaron de «0» a «—» a 30 días sin que nadie hiciera nada (§ 2). Es correcto, y quien lo vea puede leerlo
+como una rotura. Al dinero del mes le pasó el 2026-10-01: desde ese día dice «—»
+(`lib/negocio/dineroDelMes.ts:164-165`). El próximo borde es el de los motivos de no venta (§ 5, punto 8).
 
 **Una tasa con menos de 10 eventos.** La cancelación no aplica el piso (`lib/negocio/indicadoresDeCitas.ts:449`) y la
-tarjeta de abajo la dibuja con su decimal sobre cualquier denominador: con «Hoy» o «7 días», pocas citas mueven la
-tasa muchos puntos. Las demás tasas de la pantalla sí tienen piso.
+tarjeta de abajo la dibuja con su decimal sobre cualquier denominador: el 2026-10-18, con «7 días», 2 de 4 citas dan
+50,0 %. Las demás tasas de la pantalla sí tienen piso.
 
 **Poner nombres reales al lado de números.** La tabla lo hace a propósito, con números medidos y sin ranking; por qué
 a una fila le falta una tasa lo explica el agente. Lo que sí sería un defecto es una cifra inventada al lado de un nombre, que es lo que
@@ -341,11 +368,11 @@ hacía la maqueta.
 **Sumar `venta_chica` con `venta`, lo prometido con lo cobrado, o una venta sin monto como cero.** Hoy dan cero
 porque no hay ninguna venta, así que el defecto entraría sin síntomas. Las pruebas 248 de código y de base lo cuidan.
 
-**Confundir «nadie registró la asistencia» con «nadie asistió».** Con 0 de 363 marcadas, una cuenta sin
+**Confundir «nadie registró la asistencia» con «nadie asistió».** Con 0 de 368 marcadas, una cuenta sin
 `asistio is not null` daría 0 % y dispararía una crisis que no existe.
 
 **Tomar el «showed» del calendario o el resultado del analizador como venta o como asistencia.** Los dos están cerca y
-tientan: el calendario empezó a marcar presentes y el analizador clasifica llamadas como `CERRADA`. Ninguno es lo que el
+tientan: el calendario marca presentes y el analizador clasifica llamadas como `CERRADA`. Ninguno es lo que el
 closer reportó; sumarlos daría una asistencia o un cierre plausibles con otra definición adentro (S15-P04). El
 analizador SÍ es la fuente de los motivos de no venta, por decisión del usuario, y la tarjeta lo dice con su `hint`:
 son llamadas, no ventas perdidas registradas.
@@ -356,8 +383,9 @@ Si la costumbre es marcar la venta en el CRM, el hueco central de este departame
 sino de dónde se anota.
 
 **Lo que se puede construir hoy, y lo que no.** La pantalla del prototipo está construida con todo lo que el sistema
-mide. Sigue sin poder llenarse: la tasa de cierre (0 ventas), la asistencia y el show rate (0 de 363), el revenue
-(0 montos), la llamada de venta enganchada a la cita y la asignación por ICP. Los motivos de no venta, en cambio, ya
-tienen dato, porque salen de las llamadas analizadas. **El cuello de
-botella de Sales sigue sin ser técnico**: la pantalla está, el escritor está (`lib/negocio/avanzar.ts:248`), la
-comisión está configurada, y en un mes no se registró un solo resultado en Avanzar.
+mide. Sigue sin poder llenarse: la tasa de cierre (0 ventas), la asistencia y el show rate (0 de 368), el revenue
+(0 montos), la llamada de venta enganchada a la cita y la asignación por ICP. Los motivos de no venta, en cambio, tienen
+dato, porque salen de las llamadas analizadas. **El cuello de botella de Sales sigue sin ser técnico**: la pantalla
+está, el escritor está (`lib/negocio/avanzar.ts:248`), la comisión está configurada, y en más de un mes —desde el
+2026-09-09— no se registró un solo resultado en Avanzar. Y la entrada casi se detuvo: 1 alta en la semana del
+2026-10-12.

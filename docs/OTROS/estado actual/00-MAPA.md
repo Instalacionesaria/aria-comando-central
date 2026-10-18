@@ -1,165 +1,122 @@
 # Estado actual — el mapa de la aplicación
 
-> Corte: **2026-09-28**. Esta carpeta es una foto con fecha de Comando Central entero: qué está
-> construido, qué es maqueta, qué datos hay y cuáles faltan, qué reglas valen y qué deuda queda.
-> Cada afirmación lleva su archivo:línea, su commit o la consulta que la produjo; lo que no se pudo
-> verificar está dicho como pendiente, no omitido. Las cifras de este mapa salen de los otros
-> diecisiete archivos, que dicen cuándo midió cada una (todos el día; todos salvo 12, también la
-> hora, que en 05 es aproximada). Trece de ellas se volvieron a leer en producción el 2026-09-28 a las **22:46 UTC**, en
-> una sola consulta de agregados con
-> `node --env-file=.env.supabase scripts/supabase.mjs leer` —organizaciones y activas, contactos,
-> organizaciones con contactos, contactos desde el 2026-09-14, citas, citas con asistencia,
-> resultados, ventas, último resultado, último día con gasto, mensajes y reuniones de tl;dv—, y
-> dieron lo mismo que en esos archivos. Una verificación adversarial las repitió a las **23:03
-> UTC**, junto con el gasto guardado y los anuncios con gasto, las HT y OB analizadas y las
-> organizaciones con token del CRM y con llave de IA: dieron igual. Las demás son de ellos.
+> Corte: **2026-10-18**, con el código de producción `972972e` (migraciones hasta la `078`). Esta carpeta es una
+> foto con fecha de Comando Central entero: qué está construido, qué datos hay y cuáles faltan, qué reglas valen y qué
+> deuda queda. Cada afirmación lleva su archivo:línea, su commit o la consulta que la produjo; lo que no se pudo
+> verificar está dicho como pendiente, no omitido. Las cifras de este mapa salen de los otros diecisiete archivos, que
+> las midieron el **2026-10-18 entre las 15:30 y las 16:05 UTC** con
+> `node --env-file=.env.supabase scripts/supabase.mjs leer` —sólo conteos y agregados, sin datos de personas— y dicen
+> cuáles no se volvieron a medir. La del grafo es del 2026-10-11, el día que se rehízo
+> ([08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md)).
 >
-> **Desde el corte del 2026-09-15, en cinco líneas:**
+> **Esta foto describe sólo producción.** En local hay trabajo sobre un modelo de datos nuevo, pendiente de la
+> aprobación de un ingeniero: no está en producción ni en esta foto.
 >
-> 1. Cinco maquetas pasaron a medir —Acquisition (09-16), Creative (09-19), Conversion (09-20), Sales
->    (09-21) y Leads Portal (09-26)— y queda una sola, Executive.
-> 2. Nació una sección, Analizadores (09-23), y el menú pasó de 13 entradas a 14.
-> 3. Debajo: `app/api/` de 17 carpetas a 23 y de 69 `route.ts` a 82; de 3 horarios programados a 5
->    y de 6 tareas a 9; de 49 migraciones a 62; de 1.746 pruebas a 2.273 (del mensaje de commit).
-> 4. El negocio que todo eso mide casi se detuvo: el último día con gasto en Meta es el 2026-09-13, y
->    desde el 14 entraron 8 contactos.
-> 5. La carpeta pasa de 10 archivos a 18 y cubre todo el menú, no sólo los cinco departamentos de
->    Inteligencia.
+> **Desde el corte del 2026-09-28, en ocho líneas:**
 >
-> **Después del corte, del 2026-10-03 al 2026-10-06: los agentes de IA** (`docs/OTROS/agentes/00-MAPA.md`,
-> etapas AG0 a AG16). Lo que esta foto describe como maqueta o como «Próximamente» en el Executive ya mide: el
-> cerebro responde con herramientas de sólo lectura en el Inicio y al pie de cada sección; Acquisition,
-> Creative Insights, Conversion y Conversation tienen señales guardadas cada mañana, su Plan de acción y el
-> comentario de su cabecera; el closer tiene el Brief de cada cita; las objeciones de las llamadas de venta se
-> clasifican; y el Inicio tiene la Reunión de hoy. Todo uso del modelo queda en `negocio.uso_de_ia`. Siete
-> migraciones nuevas, de la `069` a la `075`, todas en producción el 2026-10-06. Algunos archivos llevan su
-> nota fechada (11-EXECUTIVE, el que más cambió); los demás **no se revisaron afirmación por afirmación** contra
-> esto: donde hablan de esas pantallas, la verdad de hoy está en `docs/OTROS/agentes/`.
+> 1. **La nueva estructura** (E0 a E13, 2026-10-01/02, y su segunda edición F0 a F4, 2026-10-03): el Inicio al centro,
+>    cinco departamentos por función y el engranaje del pie. La maqueta del Executive se retiró: **ya no queda
+>    ninguna maqueta**.
+> 2. **Los agentes de IA** (AG0 a AG16, 2026-10-04 a 06): el cerebro con herramientas de sólo lectura en el Inicio y
+>    al pie de cada sección, señales y Plan de acción cada mañana en cuatro departamentos, la Reunión de hoy, el Brief
+>    del closer y las objeciones clasificadas; todo uso del modelo queda en `negocio.uso_de_ia`.
+> 3. **Las cinco pantallas de Inteligencia volvieron al front del prototipo con datos reales**: Acquisition (09-30),
+>    Conversion y Sales (10-09), Conversation (10-10) y Creative (10-11).
+> 4. **El gasto de Meta, entero**: la `076` lee el gasto de toda la cuenta y rellena lo que la pasada diaria no cuadra.
+>    La foto anterior decía que la pauta no gastaba desde el 2026-09-13, y era la fuga de leer sólo las campañas
+>    atribuidas ([06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 9).
+> 5. **Meta directo, listo y dormido** (2026-10-15): «Probar conexión» en Ajustes y la tarea `activos` que trae la
+>    miniatura de cada anuncio. Ninguna empresa cargó el token, así que la tarea queda «saltada».
+> 6. **La base de Supabase se limpió** (2026-10-12/13): se borraron, con respaldo, las tablas de los analizadores HT y
+>    OB retirados y de la plataforma anterior del closer. Lo nuestro no se tocó.
+> 7. Debajo: `app/api/` de 82 `route.ts` a 111; de 5 horarios programados a 8 y de 9 tareas a 12; de 62 migraciones a
+>    78; de 2.273 pruebas a 3.053 en el commit de producción.
+> 8. **El negocio que todo eso mide casi se detuvo otra vez**: la cuenta de Meta no gastó nada desde el 2026-10-06
+>    salvo 1,20 el 2026-10-14, y en la última semana entró un solo contacto.
 >
-> **La foto anterior** se lee con `git show 1c55149:"docs/OTROS/estado actual/<archivo>"`: es la del
-> 2026-09-15 con las correcciones fechadas que le agregaron `bddb516`, `c8494e6`, `3287f74`,
-> `0add4cc`, `aed4f27` y `4fc9e43`, hasta el 2026-09-26, y el traslado a `docs/OTROS/` del
-> 2026-09-28 (`e630823`, `1c55149`, que sólo cambiaron rutas). La original, tal como se escribió,
-> se lee con `git show 93a1341:"docs/estado actual/<archivo>"` (commit del 2026-09-14 a las 21:52
-> de Lima, las 02:52 UTC del 15). Los archivos 10 a 17 son nuevos y no tienen versión anterior.
+> **La foto anterior** se lee con `git show 972972e:"docs/OTROS/estado actual/<archivo>"`: es la del 2026-09-28 con las
+> notas fechadas que se le agregaron hasta el 2026-10-15 (02 y 03 se habían rehecho el 2026-10-11 y el 10-09). Las
+> citas que llegan a esta carpeta desde otros documentos y desde el código quedaron fijadas a ese commit
+> (`archivo:N@972972e`), porque esta reescritura corrió las líneas. Las anteriores, con `git show 1c55149:` (la del
+> 2026-09-15 corregida) y `git show 93a1341:"docs/estado actual/<archivo>"` (la original).
 
-Esta carpeta existe para contestar, antes de discutir qué construir, **qué hay de verdad detrás de
-cada entrada del menú**: si mide o inventa, sobre qué datos, con qué reglas y qué le falta.
+Esta carpeta existe para contestar, antes de discutir qué construir, **qué hay de verdad detrás de cada entrada de la
+barra**: si mide o inventa, sobre qué datos, con qué reglas y qué le falta.
 
 ---
 
-## 1 · Las catorce secciones del menú
+## 1 · La barra: el Inicio, cinco departamentos y el engranaje
 
-El menú sale de una sola lista, `SECCIONES`, repartida en los grupos de `GRUPOS_DEL_MENU`: AIOS sin
-rótulo, «Inteligencia», «Operación» y el pie (`lib/autorizacion/secciones.ts:156-172`). Una sección
-es maqueta cuando lleva la bandera `sinOperacionesTodavia`, que dice que no tiene ninguna ruta de
-servidor detrás; la lista de las que la llevan se deriva de ahí
-(`lib/autorizacion/secciones.ts:465-480`). El 2026-09-15 la llevaban seis de trece —`executive`,
-`contacts`, `acquisition`, `creative`, `conversion` y `sales`
-(`git show 93a1341:lib/autorizacion/secciones.ts`)—; hoy, una.
+La barra sale de dos listas: los cinco departamentos (`lib/autorizacion/departamentos.ts:50-56`) y sus entradas, cada
+una con su sección y, si la tiene, su pestaña (`lib/autorizacion/departamentos.ts:85-116`). El Inicio y los tres
+destinos del engranaje no son de ningún departamento (`lib/autorizacion/departamentos.ts:125-128`). Las secciones,
+sus claves, las capacidades y las rutas **no cambiaron** con la nueva estructura: lo que una persona ve sigue
+saliendo de su capacidad y su alcance, y la barra sólo ordena ([16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md)).
 
-| Grupo | Sección (clave) | Estado | Desde | Capacidad | Archivo | El titular, medido el 2026-09-28 |
-|---|---|---|---|---|---|---|
-| AIOS | Executive (`executive`) | **Maqueta** | el port, 2026-08-18 (`a7f8f91`); sin cambios de datos desde entonces | `tablero.ver` | [11](11-EXECUTIVE.md) | 179 literales numéricos y 14 contactos inventados. A 7 días dice 312 contactos, 8.525 de inversión y 11 ventas (`lib/aios/executive.js:17@c4cf2a8`); la base dice 3 contactos en esos 7 días y 0 ventas en toda su historia |
-| AIOS | Leads Portal (`contacts`) | Construida | 2026-09-26 (`3c361a1`, `aed4f27`) | `tablero.ver` | [10](10-LEADS-PORTAL.md) | 277 personas a 30 días, 139 agendaron, contadas con los mismos predicados que Sales, Creative y Conversion. Cierre y monto salen «—»: 0 asistencias en 333 citas y 0 ventas |
-| AIOS | ICP & Oferta (`icp`) | Construida | 2026-08-23 (`aa4da8e`) | `fundaciones.ver` | [12](12-ICP-Y-OFERTA.md) | De 11 organizaciones activas, 5 cargaron su llave de IA, 4 generaron alguna vez un documento y 2 generaron algo desde el 2026-09-15. Nada de lo que produce se cruza con un dato del negocio |
-| Inteligencia | Acquisition (`acquisition`) | Construida | 2026-09-16 (`be5ba97`) | `tablero.ver` | [01](01-ACQUISITION.md) | 3.511,28 de gasto real guardado desde el 2026-08-18 en 63 de 79 anuncios, leído por GoHighLevel sin conectar Meta. El último día con gasto es el 2026-09-13, y la pantalla no lo advierte |
-| Inteligencia | Creative (`creative`) | Construida | 2026-09-19 (`3287f74`); el front del prototipo con los datos reales, 2026-10-11 (CF-0 a CF-5) | `tablero.ver` | [02](02-CREATIVE.md) | La tira, «Funciona / No funciona» contra la etapa, la tarjeta con su miniatura y la ficha; la miniatura llega por `GET /contacts/{id}` desde el 2026-10-11, y el último día con impresiones de Meta medido es el 2026-10-05 |
-| Inteligencia | Conversion (`conversion`) | Construida | 2026-09-20 (`0add4cc`); con el front del prototipo desde el 2026-10-09 (`87d26b2`) | `tablero.ver` | [03](03-CONVERSION.md) | Su foto es del 2026-10-09, con cifras del 2026-10-08: a 30 días cerrados, 105 contactos, 63 agendaron y 35 calificados; el formulario dice «Sin dato desde el 31 ago.» |
-| Inteligencia | Conversation (`conversation`) | Construida | 2026-09-10 (`f0f09b7`); tablero desde el 2026-09-15 (`13ce499`) | `auditor.ver` | [04](04-CONVERSATION.md) | Las mismas 25 cifras de la foto anterior (23 con número y 2 huecos declarados), sobre 8 contactos nuevos en quince días; el sentimiento de Appointment Flow se va a apagar solo el 2026-10-08 |
-| Inteligencia | Sales (`sales`) | Construida | 2026-09-21 (`c109ebd`, `1c875ac`); con el front del prototipo desde el 2026-10-09 (`2ad23f2`) | `tablero.ver` | [05](05-SALES.md) | Su foto es del 2026-10-09: `negocio.resultados` tiene 7 filas, 0 ventas y 0 montos, y la última es del 2026-09-09; la asistencia está marcada en 0 de 363 citas |
-| Operación | Setter (`setter`) | Construida | 2026-08-24 (`9ef7ecc`) | `setter.ver` | [13](13-SETTER-Y-CLOSER.md) | Avanzar guarda resultado, etapa, nota, tarea, cita y asistencia en una transacción, y nadie registra nada desde el 2026-09-09 |
-| Operación | Closer (`closer`) | Construida | 2026-08-24 (`9ef7ecc`) | `closer.ver` | [13](13-SETTER-Y-CLOSER.md) | 0 de 333 citas con la asistencia registrada; desde que existe la pregunta «¿se presentó?» pasaron 15 citas que se podían cerrar, y no se cerró ninguna |
-| Operación | Analizadores (`analizadores`) | Construida | 2026-09-23 (`35665f2`) | `analizadores.ver` | [14](14-ANALIZADORES.md) | 115 reuniones de tl;dv y 48 analizadas (38 HT, 10 OB), en una sola empresa; nada fuera de la pestaña lee lo que produce |
-| Operación | Tools (`tools`) | Construida | 2026-08-26 (`78e76f3`) | `tools.ver` | [15](15-TOOLS-Y-MONITOREO.md) | 16 scrapeos de 3 empresas en toda su historia, ninguno después del 2026-09-23; el plan de Prospección en Frío no lo generó nadie |
-| Operación | Panel de Monitoreo (`monitoreo`) | Construida | 2026-08-29 (`166984e`) | `monitoreo.ver`, y `soloDesdeLaPrincipal` | [15](15-TOOLS-Y-MONITOREO.md) | Lo ven 3 personas; ingreso y margen salen «—» en las once filas porque ninguna empresa tiene precio cargado |
-| Pie | Ajustes (`credenciales`) | Construida | 2026-08-24 (`9fa82c9`); el modelo de permisos, 2026-08-21 (`433ca86`) | `credenciales.ver`; sus pestañas Empresas y Usuarios, `organizaciones.listar` y `usuarios.ver` | [16](16-AJUSTES-Y-PERMISOS.md) | 32 capacidades, 3 roles, 13 organizaciones (15 el 2026-09-15) y 15 personas; el token del CRM está cargado en una sola organización y nadie tiene segundo factor |
-
-Las fechas de «Desde» son las del commit que le dio a la sección su primera operación de servidor o
-le borró la maqueta. La clave y la capacidad de cada fila están en
-`lib/autorizacion/secciones.ts:182-453`; Empresas y Usuarios son secciones sin entrada propia en el
-menú, pestañas de Ajustes (`lib/autorizacion/secciones.ts:183-202`). La capacidad de la sección no
-es siempre la única puerta: guardar un prompt del auditor pide `auditor.editar`
-(`app/api/auditoria/prompts/route.ts:69`), y el Panel de Monitoreo pide tres cosas a la vez
-([16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md) § 3). El sexto departamento que la foto
-anterior contaba en el organigrama del documento funcional, Business Intelligence, sigue sin
-sección: ninguna clave de `SECCIONES` lo nombra.
+| Dónde | Entrada (sección) | Archivo | El titular, medido el 2026-10-18 |
+|---|---|---|---|
+| Inicio | Nueva conversación (`executive`) | [11](11-EXECUTIVE.md) | El cerebro y la Reunión de hoy. 12 conversaciones en toda la historia, todas de una persona y todas desde el Inicio; la última pregunta es del 2026-10-12. La Reunión se guardó 143 veces para 11 empresas, y sólo una tiene temas |
+| Research | ICP & Oferta (`icp`) | [12](12-ICP-Y-OFERTA.md) | 41 versiones de documento (eran 24); las 17 nuevas son de la organización principal, del 2 al 7 de octubre. La rama de ICP y oferta v2 de otra persona sigue sin integrar y choca con `main` |
+| Research | Radar: Espía y Scraper (`tools`) | [15](15-TOOLS-Y-MONITOREO.md) | 26 scrapeos de 4 empresas en toda su historia, ninguno desde el 2026-10-10; el Espía guarda su historial (2 análisis) |
+| Systems | Acquisition (`acquisition`) | [01](01-ACQUISITION.md) | La cuenta de Meta gastó 7.100,65 del 2026-08-18 al 10-18, el último día el 2026-10-14; a 30 días cerrados, 626,06. **Ninguna campaña tiene funnel asignado**: las tres tarjetas dicen «Sin campañas asignadas» |
+| Systems | Conversion (`conversion`) | [03](03-CONVERSION.md) | A 30 días cerrados (2026-09-18 a 10-17): 28 contactos, 22 agendaron y 19 calificados. El formulario sigue «Sin dato desde el 31 ago.» |
+| Systems | Conversation (`conversation`) | [04](04-CONVERSATION.md) | A 30 días, 25 contactos y 19 agendaron (76 %), sobre una cohorte que ya no tiene pauta. 27 hallazgos del auditor abiertos en 7 códigos, ninguno resuelto nunca |
+| Marketing | Creative Insights (`creative`) | [02](02-CREATIVE.md) | 2 piezas con miniatura (una en la ventana), 0 activos leídos de Meta y 5 piezas a 30 días; el último día con impresiones es el 2026-10-14, 127 de un solo anuncio |
+| Marketing | Funnel: Tu landing y Tu VSL (`tools`); Copywriter y Content Studio, «Próximamente» | [15](15-TOOLS-Y-MONITOREO.md) | Pestañas de Tools, sin cifras propias |
+| Sales | Sales (`sales`) | [05](05-SALES.md) | 7 resultados, 0 ventas, el último del 2026-09-09. La cadena a 30 días es 25 → 19 → 12 → 0 → 0 |
+| Sales | Leads: De GHL (`contacts`), De Radar y Plan de prospección (`tools`); «Todos», «Próximamente» | [10](10-LEADS-PORTAL.md), [15](15-TOOLS-Y-MONITOREO.md) | De GHL: 25 personas a 30 días, 19 agendaron; «Completo», 600 |
+| Sales | Setter y Closer (`setter`, `closer`) | [13](13-SETTER-Y-CLOSER.md) | 0 de 368 citas con la asistencia registrada y 0 Briefs generados; sólo 1 de los 3 closers entró desde el 2026-09-28 |
+| Sales | Llamadas de venta (`analizadores`, HT) | [14](14-ANALIZADORES.md) | 135 llamadas descubiertas en tl;dv, 41 de venta analizadas; las 89 objeciones tienen categoría. La última reunión descubierta es del 2026-10-12 |
+| Client Success | Llamadas de onboarding (`analizadores`, OB) | [14](14-ANALIZADORES.md) | 13 de onboarding analizadas |
+| Client Success | Client OS (`clientos`); Seguimiento de clientes, «Próximamente» | [16](16-AJUSTES-Y-PERMISOS.md) | Una sección sin operaciones propias en Comando Central: es otra herramienta |
+| Engranaje | Ajustes (`credenciales`) | [16](16-AJUSTES-Y-PERMISOS.md) | 38 capacidades, 3 roles, 15 personas, ninguna con segundo factor. De 13 empresas: 1 con token del CRM, 5 con llave de IA, 1 con la de tl;dv, 0 con el de Meta |
+| Engranaje | Panel de Monitoreo e Incidentes (`monitoreo`, `incidentes`) | [15](15-TOOLS-Y-MONITOREO.md) | Sólo desde la organización principal; 1 incidente en toda la tabla, y ninguna empresa con precio cargado |
 
 ---
 
-## 2 · La situación general, en ocho hechos
+## 2 · La situación general, en siete hechos
 
-**1 · Trece de las catorce secciones miden, y la única maqueta habla en nombre de las otras.** El
-2026-09-15 medían siete de trece. Hoy la bandera queda sólo en `executive`
-(`lib/autorizacion/secciones.ts:223-229`), y `lib/aios/` pasó de 13 archivos a 8: se borraron las
-maquetas de Acquisition (dos archivos), Creative, Conversion y Leads Portal; la de Sales vivía en
-`components/views/SalesView.jsx`, que pasó de 231 líneas a 82. Executive no cambió una línea de datos
-desde el port, y lo que dibuja contradice a las seis pantallas a las que enlaza
-([11-EXECUTIVE.md](11-EXECUTIVE.md) § 3, [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 9).
+**1 · Ya no hay maquetas: todo lo que se ve mide, y el Inicio habla por todas.** La maqueta del Executive se retiró
+con la nueva estructura (E7, `4e9a242`), y en su lugar el Inicio tiene el cerebro y la Reunión de hoy, que leen las
+mismas lecturas que las pantallas ([11-EXECUTIVE.md](11-EXECUTIVE.md)). Las cinco de Inteligencia volvieron al marcado
+del prototipo con los datos reales, cada una con su foto rehecha.
 
-**2 · Lo que se mide describe un negocio con la adquisición apagada.** El último día con
-`gasto > 0` en `negocio.metricas_de_anuncio` es el 2026-09-13, y desde el 2026-09-14 (medianoche de
-Lima) entraron **8 de los 594 contactos** (leído el 2026-09-28 a las 22:46 UTC). Es compatible con la
-pauta pausada y no está verificado contra Meta (la primera de las cinco mediciones de
-[06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md)). Las ventanas se vacían solas: Acquisition,
-Creative, Conversion, Conversation, Sales y Leads Portal abren en 30 días
-(`lib/negocio/periodo.ts:109`), que ya describen casi sólo la primera quincena de septiembre; el
-sentimiento de Appointment Flow se apaga el 2026-10-08 ([04-CONVERSATION.md](04-CONVERSATION.md)),
-y Leads Portal queda bajo el piso de 10 a mediados de octubre
-([10-LEADS-PORTAL.md](10-LEADS-PORTAL.md)). Acquisition y Creative no lo advierten en pantalla
-([01-ACQUISITION.md](01-ACQUISITION.md), [02-CREATIVE.md](02-CREATIVE.md)). Por eso una cifra que
-cae desde el 14 no se lee como una falla ([09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 8 y § 12).
+**2 · Lo que se mide describe un negocio con la adquisición apagada.** La cuenta de Meta no gastó nada desde el
+2026-10-06 salvo 1,20 el 2026-10-14, y entre el 2026-10-11 y el 10-18 entró un solo contacto, aunque la sincronización
+siguió corriendo ([03-CONVERSION.md](03-CONVERSION.md), [01-ACQUISITION.md](01-ACQUISITION.md)). Las ventanas de 30
+días todavía tienen la pauta de septiembre y se vacían solas: cualquier tasa está a pocos contactos del piso, y una
+cifra que cae no se lee como una falla ([09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md)).
 
-**3 · Todo el volumen es de una empresa.** De 13 organizaciones (11 activas), **1** tiene contactos
-—los 594— (22:46 UTC); las 333 citas y los 6.110 mensajes son de la misma
-([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 7). Es también la única con el token del CRM
-cargado, así que las ocho tareas que dejan sello corren en ella y se saltean con su motivo en las
-otras diez activas ([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 2,
-[16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md) § 5).
+**3 · Todo el volumen es de una empresa.** De 13 organizaciones (11 activas), una tiene contactos, el token del CRM y
+datos; las otras diez se saltean con su motivo en cada tarea. Y 9 de las 11 activas siguen con la zona horaria en UTC,
+que es la que decide el «día» de sus cifras ([16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md),
+[17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md)).
 
-**4 · Nadie registra el hecho comercial, y eso vacía tres pantallas.** `negocio.resultados` tiene 7
-filas, 0 con `salida = 'venta'`, la última del 2026-09-09; `citas.asistio` está en 0 de 333 (22:46
-UTC). El instrumento está entero; lo que falta es uso. De ahí salen el show rate de Conversation en
-«—», los dos últimos eslabones de la cadena de Sales en 4 y 0, y el cierre y el monto de Leads Portal
-en «—» ([13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) § 5,
-[10-LEADS-PORTAL.md](10-LEADS-PORTAL.md) § 2). La única señal de una venta está fuera del registro:
-un contacto lleva en el CRM la etiqueta `venta_ganada` y no tiene resultado en la base
-([05-SALES.md](05-SALES.md) § 5, [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 4).
+**4 · Nadie registra el hecho comercial, y el CRM ya lo empezó a decir.** `negocio.resultados` sigue con 7 filas y 0
+ventas, la última del 2026-09-09, y ninguna de las 368 citas tiene la asistencia registrada. Mientras tanto el CRM
+marca 2 contactos con `venta_ganada` y 3 citas como `showed`, y nada de eso llega a una pantalla
+([05-SALES.md](05-SALES.md), [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md)).
 
-**5 · «Agendó» todavía tiene dos definiciones.** Desde el 2026-09-21 hay un predicado compartido,
-`tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:115-145`, `1164984`), que excluye a quien
-sólo tiene citas congeladas y que usan Acquisition, Creative, Conversion, Sales, Leads Portal y la
-atribución de Lead Flow. El booking rate de Lead Flow, en la misma pantalla, cuenta cualquier cita:
-a 7, 14 y 30 días coinciden porque no queda nadie así, y en «Completo» dice 279 agendados mientras
-las filas de la atribución suman 200 ([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 4,
-[04-CONVERSATION.md](04-CONVERSATION.md) § 7). Y su cadena sigue sin ser un embudo: a 30 días
-una barra de 161 respondieron a 139 agendaron diría 86,3 %, y los que agendaron habiendo contestado
-son 73 de 161, el 45,3 % ([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 11).
+**5 · Los agentes están construidos y casi no se usaron.** 12 conversaciones del cerebro en toda su historia, 0 Briefs
+del closer, y los avisos nuevos —la cabecera del Closer, la Reunión, las marcas del Brief— no movieron el registro.
+`negocio.planes_de_accion` crece unas 88 filas por día, diez de las once empresas sin datos, y nada las borra
+([11-EXECUTIVE.md](11-EXECUTIVE.md), [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md)).
 
-**6 · Lo construido en el período dejó datos que se escriben y nadie lee.** Analizadores audita
-llamadas de venta de personas que están en `negocio.contactos` —22 de las 38 HT— y ninguna otra
-pantalla lo cruza ([14-ANALIZADORES.md](14-ANALIZADORES.md) § 4,
-[09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 11). De los sellos de las tareas programadas, sólo
-la Agenda del Closer, el chat de la ficha y Leads Portal leen alguno; ninguna
-pantalla lee el de `anuncios`, `auditoria`, `mejora`, `analizadores` ni `reintentos`
-([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 3). La medición de duración de Tools escribe en
-una tabla que no existe en producción ([15-TOOLS-Y-MONITOREO.md](15-TOOLS-Y-MONITOREO.md) § 6). Y
-el aviso de Lead Flow sigue sin lector
-([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 1 y § C).
+**6 · Hay instrumentos listos que esperan a una persona.** El token de Meta (la miniatura de cada anuncio y el post),
+el funnel de cada campaña en Acquisition (0 asignadas), la zona horaria de cada empresa y el precio de cada una en el
+Panel de Monitoreo: todo está construido y vacío por falta de carga ([02-CREATIVE.md](02-CREATIVE.md),
+[01-ACQUISITION.md](01-ACQUISITION.md), [15-TOOLS-Y-MONITOREO.md](15-TOOLS-Y-MONITOREO.md)).
 
-**7 · El error más repetido sigue siendo dar un dato por inexistente.** Pasó tres veces hasta el
-2026-09-15 y cuatro más en la semana siguiente; las siete, el dato venía de GoHighLevel
-([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § A). El más caro fue creer que el gasto
-de Meta necesitaba una credencial propia: GoHighLevel expone el Ad Manager con el mismo token
-(`3d96e8c`, `lib/ghl/anuncios.ts:4-25`), y de esa frase colgaban veintiún KPI.
-
-**8 · Lo que tendría que frenar un error no está puesto.** `main` no tiene protección de rama, y el
-2026-09-21 dos corridas rojas de la CI llegaron igual a `main`
-([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 5 y § 10). El repositorio es público, y el nombre de
-pila de una persona del equipo está en 43 archivos y los apellidos de los dos closers que mide Sales
-en 10 ([09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 15). Y la auditoría de citas no mira las que
-llegan a esta carpeta desde `docs/conversion/`, `docs/acquisition/`, `docs/creative/` ni los
-comentarios del código (§ 4 de este mapa).
+**7 · Lo que falla en silencio.** La señal de atribución por UTM de Acquisition salía cada mañana y era falsa: buscaba
+`utmCampaign`, que ningún contacto trae, cuando la campaña llega como `campaign`. **Cerrado el 2026-10-18 (`65669f4`,
+subido el mismo día; hasta entonces producción buscaba sólo `utmCampaign`)**: hoy cuenta las dos claves, y la señal sigue
+saliendo por la causa real, `utmTerm` ([01-ACQUISITION.md](01-ACQUISITION.md)).
+Los textos de la conexión con Meta y una frase de Leads Portal voseaban, y la prueba de voseo sólo miraba Tools; en el
+mismo commit pasaron a tú, y la prueba nueva `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts` mira toda la aplicación
+fuera de Fundaciones: el resto del voseo (38 archivos) quedó contado y vigilado, no corregido. De los comentarios
+del código que esta foto encontró falsos, trece se corrigieron ese mismo día, sin mover líneas, y otros siguen. Los
+contactos congelados pasaron de 25 a 36. El detalle y la consulta para volver a medir cada uno, en
+[09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md).
 
 ---
 
@@ -169,131 +126,64 @@ Los de sección están en la tabla de la § 1. Éstos cruzan todas las pantallas
 
 | Archivo | Qué contesta |
 |---|---|
-| [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) | Qué nos da GoHighLevel hoy (18 operaciones sobre 17 rutas, 16 con llamador; un piso de 1.432 llamadas por día), qué le estamos tirando, qué no nos puede dar, y **si hace falta conectar el API de Meta**, contestado con lo que ya está guardado |
-| [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) | Las reglas que valen para todas las pantallas —las 11 centrales, de la 12 a la 29, y las 30 a 41 que aparecieron desde el 2026-09-16—, cada una con el defecto que cerró, y los errores de método de la A a la M. **Leer antes de escribir una cifra nueva** |
-| [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md) | Cómo ubicar cualquier cosa nombrada en la carpeta con el grafo de conocimiento (6854 nodos, 19569 aristas, 244 comunidades, corte del 2026-09-29), y qué no garantiza. Desde ese corte, los 18 archivos de esta carpeta están en el grafo |
-| [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) | Lo que está roto o incompleto: los once puntos del 2026-09-15 uno por uno (uno cerrado a medias, ocho abiertos), la deuda nueva de cada sección y la que las cruza (§§ 9 a 18 y § 20), lo que falta verificar (§ 19), y la consulta para volver a medir cada punto |
-| [16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md) | Quién ve qué: las capacidades, los roles, el alcance por persona, `soloDesdeLaPrincipal`, el portero, la entrada y las credenciales por organización, con las pruebas que vigilan cada regla |
-| [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) | Lo que está debajo de las pantallas: el cron único con sus 5 horarios y 9 tareas, cómo se sabe si un dato está fresco, la base (40 tablas de `negocio` e `identidad`, todas con RLS forzada), la suite, la CI y los volúmenes por tabla |
+| [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) | Qué nos dan los proveedores hoy: las 18 operaciones de GoHighLevel, todas con llamador desde la `076`; las 12 tareas del cron con su costo (un piso de 1.568 llamadas diarias a GoHighLevel); el gasto de toda la cuenta de Meta; y Meta directo (§ 11), de sólo lectura y sin token cargado |
+| [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) | Las reglas que valen para todas las pantallas —las 11 centrales, de la 12 a la 41 y las nuevas 42 a 52: el transporte único, `uso_de_ia` sin textos, el cerebro, señales y planes, el voseo prohibido, `PANTALLA` en cada ruta…—, y los errores de método. **Leer antes de escribir una cifra nueva** |
+| [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md) | Cómo ubicar cualquier cosa con el grafo de conocimiento (7.999 nodos, 22.107 aristas, 353 comunidades, rehecho el 2026-10-11), y lo que no tiene: todo lo posterior, empezando por Meta directo |
+| [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) | Lo que está roto o incompleto, cada punto con su consulta para volver a medirlo: lo que se cerró desde el 2026-09-28 (con su commit), lo que sigue abierto y lo nuevo (§§ 21 a 23) |
+| [16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md) | Quién ve qué: las 38 capacidades, los roles, el alcance por persona, `soloDesdeLaPrincipal`, las credenciales por organización (con la de Meta y «Probar conexión»), los topes del cerebro y la zona horaria de cada empresa |
+| [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) | Lo que está debajo: el cron con sus 8 horarios y 12 tareas, la frescura de cada dato, la base (`negocio` con 49 tablas e `identidad` con 11, todas con RLS forzada), las migraciones `063` a `078` con su hora de aplicación y la limpieza de Supabase |
 
 ---
 
 ## 4 · Cómo leer los informes de sección
 
-Los once informes de sección —01 a 05 y 10 a 15— abren igual: un recuadro con el corte y, salvo en
-12, la hora de la medición (en 05, aproximada); una línea en negrita con el estado y desde cuándo; el titular
-medido y, donde algo se movió en el período, un bloque «Desde el corte del 2026-09-15» con sus
-commits. Después vienen siete secciones, y el orden es deliberado:
+Los informes de sección —01 a 05 y 10 a 15— abren igual: un recuadro con el corte y el commit de producción, y un
+bloque «Desde el corte del …» con los commits que cambiaron la sección (los que ya se habían rehecho después del
+2026-09-28 conservan su bloque anterior debajo, como historia). Después vienen sus secciones, en este orden:
 
-1. **Qué pide el documento** — con sus números de sección, para volver a la fuente. El documento
-   funcional no vive en el repositorio (`docs/sales/00-MAPA.md:47-48`), así que lo que no se pudo
-   cotejar está dicho.
+1. **Qué pide el documento** — con sus números de sección, para volver a la fuente. El documento funcional no vive en
+   el repositorio, así que lo que no se pudo cotejar está dicho.
 2. **Qué hay hoy en pantalla** — con archivo y línea.
-3. **Lo que era maqueta y qué la reemplazó** en las que dejaron de serlo; en Executive, cada pieza
-   inventada con el dato real que hay hoy para ella; en 12, 13 y 14, lo que queda escrito a mano.
+3. **Lo que era maqueta, o lo que había antes, y qué lo reemplazó.**
 4. **Datos que ya tenemos** — con su cobertura medida.
-5. **Datos que faltan** — y de dónde tendrían que venir: GoHighLevel, Meta, la landing, tl;dv o el
-   registro manual. La distinción decide el costo.
+5. **Datos que faltan** — y de dónde tendrían que venir: GoHighLevel, Meta, la landing, tl;dv o el registro manual.
 6. **Reglas propias** — vocabularios, umbrales, cohortes, y qué **no** se puede mezclar.
 7. **Riesgos** — lo que rompería una cifra si se construye mal.
 
-Dos se apartan, y lo dicen: [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) cambia la 4 y la 5 por
-qué registra el closer y por qué está casi vacío, y [15-TOOLS-Y-MONITOREO.md](15-TOOLS-Y-MONITOREO.md)
-tiene seis y empieza por qué son, porque Tools y el Panel de Monitoreo nunca estuvieron en el
-prototipo. Los transversales tienen el orden de su tema.
+Algunos se apartan y lo dicen: [11-EXECUTIVE.md](11-EXECUTIVE.md) es ahora la foto del Inicio y el cerebro,
+[13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) cambia la 4 y la 5 por qué registra el closer, y
+[15-TOOLS-Y-MONITOREO.md](15-TOOLS-Y-MONITOREO.md) empieza por qué son, porque Tools y el Panel de Monitoreo nunca
+estuvieron en el prototipo. Los transversales tienen el orden de su tema.
 
-**Las convenciones de toda la carpeta.** Una cita al código va entre acentos graves como
-`ruta:línea` o `ruta:desde-hasta`, con ruta suficiente para que no sea ambigua; una referencia a otro
-archivo de esta carpeta va como enlace y «§ N», nunca con línea. Toda cifra lleva su fecha, su
-denominador y su población; si cambió desde la foto anterior van las dos, y la que no se pudo volver
-a medir dice «del 2026-09-15, no re-medida». Ningún archivo nombra a una persona: el repositorio es
-público.
+**Las convenciones de toda la carpeta.** Una cita al código va entre acentos graves como `ruta:línea` o
+`ruta:desde-hasta`, con ruta suficiente para que no sea ambigua; una cita a código que ya no existe va fijada al
+último commit donde existía (`ruta:N@sha`). Una referencia a otro archivo de esta carpeta va como enlace y «§ N»,
+nunca con línea. Toda cifra lleva su fecha, su denominador y su población; si cambió desde la foto anterior van las
+dos, y la que no se pudo volver a medir lo dice. Ningún archivo nombra a una persona ni a un cliente: el repositorio
+es público.
 
-**Qué audita la prueba de citas, y qué no.** `pruebas/codigo/101-las-citas-de-los-documentos.test.ts`
-comprueba que cada cita de las carpetas auditadas resuelva a un único archivo y que su línea exista.
-Esta carpeta entra a esa lista en un cambio que está en el árbol y todavía no tiene commit
-(`pruebas/codigo/101-las-citas-de-los-documentos.test.ts:42`). El mismo cambio abre el patrón a
-corchetes y, sólo entre `estado` y `actual/`, al espacio
-(`pruebas/codigo/101-las-citas-de-los-documentos.test.ts:63-64`); hasta entonces una cita como
-`app/api/monitoreo/[orgId]/route.ts` o una que entrara a esta carpeta se salteaba sin aviso
-(`pruebas/codigo/101-las-citas-de-los-documentos.test.ts:52-61`). Con eso ya se auditan las que
-`docs/sales/` y `docs/leads-portal/` hacen a esta carpeta; las de `docs/conversion/`,
-`docs/acquisition/`, `docs/creative/` y los comentarios del código, no, porque no están en la lista
-de auditadas. Varias ya quedaron corridas con esta reescritura
-([09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 17). Y una cita que resuelve no garantiza que muestre
-lo que el texto dice ([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § J).
+**Qué audita la prueba de citas, y qué no.** `pruebas/codigo/101-las-citas-de-los-documentos.test.ts` comprueba que
+cada cita de las carpetas auditadas —esta incluida— resuelva a un único archivo y que su línea exista; las fijadas a
+un commit no las mira, porque valen para ese commit. Que una cita resuelva no garantiza que muestre lo que el texto
+dice: cada archivo de esta foto revisó las suyas abriendo la línea, y las que estaban corridas se reapuntaron
+([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md)).
 
 ---
 
 ## 5 · Lo que esta carpeta NO es
 
-**No es un plan.** No propone orden de trabajo ni estima esfuerzo. Es una foto con fecha, para que
-la discusión sobre qué construir se haga sobre hechos medidos y no sobre lo que cada uno recuerda de
-la maqueta.
+**No es un plan.** No propone orden de trabajo ni estima esfuerzo. Es una foto con fecha, para que la discusión sobre
+qué construir se haga sobre hechos medidos y no sobre lo que cada uno recuerda.
 
-**No es la aplicación vista con sus datos.** Desde el 2026-09-15 la aplicación se miró en el
-navegador varias veces, y conviene separar qué se miró y dónde, porque son miradas que encuentran
-cosas distintas:
+**No es la aplicación vista con sus datos.** Desde el 2026-09-28 las pantallas que volvieron al prototipo se miraron
+en el navegador sobre la base local, con respuestas sintéticas o sembradas, contra el prototipo. Lo que no consta en
+ningún commit ni documento es que alguien haya abierto una pantalla **en producción, con sesión iniciada y los datos
+reales**, y comparado lo que dibuja contra la base: las revisiones con sesión de Acquisition, Conversion, Sales,
+Conversation y Creative siguen pendientes del usuario ([09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md)). Para esta foto
+tampoco se levantó ningún servidor: cada cifra «de pantalla» es lo que el código produce sobre los datos medidos,
+reconstruido con consultas equivalentes a las de sus módulos. Y un tablero de cifras reales se ve exactamente igual
+que uno que las calcula mal.
 
-- **Sin sesión**, el 2026-09-15 y el 16: el rediseño de Conversation, montando el marcado real sobre
-  las hojas reales (`13ce499`), y la línea nueva de Lead Flow (`bddb516`). Los dos commits dejan
-  escrito que falta la mirada con sesión.
-- **Pendiente por falta de contraseña**, del 2026-09-16 al 19: Acquisition (`be5ba97`, `e1aefb8`,
-  `be7ef03`, `c1093f4`) y Creative (`3287f74`, `332c0e6`) dejaron la comprobación visual con sesión
-  como pendiente.
-- **Con sesión, sobre la base local**, el 2026-09-20: Conversion (`0add4cc`), y después en los dos
-  temas con 341 contactos sembrados en local (`00e251d`, que encontró la frase «A y B y C», un rótulo
-  desalineado y el ancho de teléfono, y dejó este último sin tocar porque era del armazón). El ancho
-  se arregló ese mismo día: `1020412` saca la barra lateral de la rejilla bajo 760 px y el cuerpo
-  pasa de 75 px a 375 de 375 en las doce pantallas, mirado a 375, 760, 762, 880 y 1400 px; `0810498`
-  recorre las doce a 375 px, encuentra tres que seguían desbordando de costado y las deja en
-  `doc=375`. El arreglo sigue en `app/armazon.css:434-448` (leído el 2026-09-28, no vuelto a mirar en
-  un navegador). `0810498` deja dicho lo que no arregla: la tabla de Monitoreo se desliza dentro de
-  su propia caja, por decisión, y 7 px de Leads Portal que eran de la maqueta, borrada el 2026-09-26
-  (`aed4f27`). Sólo `00e251d` nombra la base; `0add4cc`, `1020412` y `0810498` dicen «con sesión»
-  sin decir cuál, y
-  [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § H da estas miradas por hechas sobre la
-  base local sembrada.
-- **Humo con login de Analizadores**, el 2026-09-23 (`70a84c6`;
-  `docs/OTROS/analizadores/ANALIZADORES.md:115`, `docs/OTROS/analizadores/ANALIZADORES.md:120`). El
-  documento lo pone junto a la primera corrida real de producción
-  (`docs/OTROS/analizadores/ANALIZADORES.md:212-214`), pero no dice sobre qué base se miró ni que
-  se cotejaran cifras.
-- **Sólo la hoja de estilos de Leads Portal**, el 2026-09-26: a escritorio, a 375 px y en los dos
-  temas (`aed4f27`). La prueba de humo con sesión es un paso del usuario y no tiene registro
-  ([10-LEADS-PORTAL.md](10-LEADS-PORTAL.md) § 2, [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 10).
-
-Lo que no consta en ningún commit ni documento es que alguien haya abierto una pantalla **en
-producción, con sesión iniciada y los datos reales**, y comparado lo que dibuja contra la base. Para
-esta foto tampoco: no se levantó ningún servidor, y cada cifra «de pantalla» de la carpeta es lo que
-el código produce sobre los datos medidos, reconstruido con consultas equivalentes a las de sus
-módulos. La distinción importa: la mirada del 2026-09-20 encontró el ancho, la frase y la alineación,
-que no son cifras; sólo la otra puede decir si los números que hoy manda la base entran y dónde quedó
-la línea entre aviso visible y nota escondida ([09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 19). Y un
-tablero de cifras reales se ve exactamente igual que uno que las calcula mal.
-
-**No es una corrida de la suite.** La suite no se corrió para esta foto: usa una sola base local y
-otros archivos se escribían en paralelo. Donde un archivo dice que una prueba cubre algo, es leído,
-no ejecutado, y las 2.273 pruebas son las del último mensaje de commit
-([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 5).
-
----
-
-> **Después del corte, 2026-10-01.** Se decidió reorganizar la app entera: el Inicio al centro y cinco
-> departamentos por función —Research, Systems, Marketing, Sales y Client Success—, bajo la marca v2, sin
-> cambiar roles, pestañas ni claves de sección. Todo lo que se va a hacer, y cada cambio, está en
-> [`docs/OTROS/nueva-estructura/`](../nueva-estructura/00-MAPA.md), antes de tocar el código. Lo de esta
-> carpeta describe la app de antes de ese cambio; cada etapa que la cambie lo anota en el documento que
-> corresponda. Desde el corte también entró el grupo «Administración» del menú, con el Panel de Monitoreo
-> y el de Incidentes (`60f5d81`).
->
-> **Después del corte, el 2026-10-01**: la maqueta del Executive se retiró (nueva estructura, E7), y su lugar lo tomó el Inicio (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`). Donde esta foto dice que queda una sola maqueta, habla del 2026-09-28.
->
-> **Y el 2026-10-02, la nueva estructura quedó terminada** (E8 a E13). La barra lateral ya no tiene los
-> grupos del menú de esta foto («Inteligencia», «Operación»…): es la barra de los cinco departamentos, con
-> «Nueva conversación» para el Inicio y el engranaje del pie para Ajustes, el Panel de Monitoreo e
-> Incidentes (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`). Arriba de cada pantalla de un
-> departamento va su cabecera, con la fila de pestañas; Tools y Analizadores ya no tienen barra propia, y
-> sus pestañas son entradas de varios departamentos. Ajustes › Usuarios agrupa las pestañas por
-> departamento. Las secciones, sus claves, los permisos y las rutas no cambiaron: donde esta foto nombra
-> una sección o una capacidad, sigue valiendo; donde describe el menú, habla del 2026-09-28.
+**No es una corrida de la suite.** Donde un archivo dice que una prueba cubre algo, es leído, no ejecutado. Las cifras
+de la suite son las de los commits: 3.053 pruebas en verde en el commit de producción (`972972e`)
+([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md)).

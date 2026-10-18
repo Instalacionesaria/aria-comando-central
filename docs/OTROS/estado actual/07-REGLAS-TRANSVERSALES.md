@@ -1,53 +1,49 @@
 # Las reglas transversales: lo que hay que saber antes de escribir una cifra nueva
-> Corte: **2026-09-28**. Las cifras de producción se midieron ese día entre las **22:06 y las 22:11
-> UTC**, con `scripts/supabase.mjs leer` y sólo agregados: de la base no salió un nombre, un correo ni
-> un teléfono. Cada afirmación lleva su archivo:línea, su commit o la consulta que la produjo.
-> Lo que no se pudo verificar está dicho como pendiente, no omitido.
-> Para ubicar cualquier cosa nombrada acá, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
+> Corte: **2026-10-18**. Producción corre el commit **`972972e`** (migraciones hasta la `078`). Las cifras
+> de producción se midieron el 2026-10-18 entre las **15:38 y las 15:40 UTC** con `scripts/supabase.mjs leer`, sólo
+> conteos y agregados y con el OK del usuario: de la base no salió un nombre, un correo ni un teléfono. Lo que no se
+> volvió a medir lleva su fecha; lo que no se pudo verificar está dicho como pendiente. Ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
 
-> **Desde el corte del 2026-09-15**
+> **Desde el corte del 2026-09-28** (129 commits, `ceec000..972972e`)
 >
-> - **Las reglas dejaron de vivir en una sola pantalla.** La foto anterior decía que Conversation era
->   la única de Inteligencia construida. Después dejaron de ser maqueta Acquisition (`be5ba97`,
->   2026-09-16), Creative (`3287f74`, 09-19), Conversion (`0add4cc`, 09-20), Sales (`1c875ac`, 09-21)
->   y Leads Portal (`aed4f27`, 09-26), y nació Analizadores (`35665f2`, 09-23). Las once reglas
->   centrales se ejercen hoy en seis pantallas, y varias se mudaron de un módulo de Conversation a un
->   archivo compartido.
-> - **Las once siguen en pie, y casi todas sus cifras cambiaron.** Las congeladas dentro de la ventana
->   de catorce días pasaron de 11 a **0**, y dentro de la de treinta de 77 a **14** (§ 4); la tasa de
->   cancelación del negocio a treinta días, de 40,9 % a **32,0 %** a las 22:06 UTC (§ 9). Y casi no
->   entran leads: **desde el 2026-09-14 entraron 8 contactos** (una caída real de las altas, según
->   [10-LEADS-PORTAL.md](10-LEADS-PORTAL.md)), así que las ventanas cortas se vaciaron y los
->   ejemplos de catorce días de la foto anterior ya no se pueden reproducir (§ 5, § 11).
-> - **Doce reglas nuevas, de la 30 a la 41**, cada una con el defecto que cerró y su commit (§ «Las
->   reglas que aparecieron entre el 2026-09-16 y el 2026-09-28»).
-> - **Errores de método:** el A —concluir que un dato no existe— pasó de tres casos a **siete**, y hay
->   cinco nuevos, del I al M.
-> - **Lo que la foto anterior dejó abierto, re-verificado hoy:** el `aviso` de Lead Flow sigue sin
->   lector (§ 1), la cadena visible sin fecha sigue sin fecha, el comentario «la fila más vieja es de
->   2026» sigue siendo falso y los 25 contactos con territorio nulo siguen ahí (sección final).
-> - El párrafo «Actualización del 2026-09-26» que `4fc9e43` le agregó a esta página queda absorbido
->   en este corte.
+> - **2026-09-29/30 · `7a7eb17`..`ecfbc26`, `8ff8d9d`..`43ce5ac`** — Creative CR-0 a CR-3 (`063`, `064`) y Acquisition
+>   AQ-0 a AQ-5 (`065`, `066`): nace un escritor único por tabla de Acquisition (regla 46).
+> - **2026-10-01 · `c936b24`, `46c5556`, `33e0a76`** — el fallo del modelo con su referencia y el Panel de Incidentes (`067`).
+> - **2026-10-01/02 · `3c07cc7`..`8ee595d`, `e5499d9`..`522c9bc`** — la nueva estructura (E0 a E13) y su segunda edición:
+>   la marca en dos capas, sólo oscuro, Geist, la paleta, el menú por departamentos y la sesión entera (reglas 49 y 50).
+> - **2026-10-03 · `97fc905`** — las funciones de Vercel en São Paulo, al lado de la base.
+> - **2026-10-04 a 07 · `db6bc34`..`75228c5`, `5b8b236`, `d0e711c`, `2f12fad`** — los agentes de IA (AG0 a AG16, `068` a
+>   `075`): el transporte único, `negocio.uso_de_ia` sin texto, el cerebro con herramientas, las señales y los planes, el
+>   voseo prohibido en Tools (reglas 42 a 45 y 48; desde `65669f4`, del 2026-10-18, en toda la aplicación). Desde AG6 el `aviso` de Lead Flow tiene lector: el cerebro (§ 1).
+> - **2026-10-07 · `22ec755`, `ae30048`, `d17e029`** — el gasto de toda la cuenta de Meta (`076`), la 205 deja de
+>   depender de la hora, y «el día de la empresa» diagnosticado y dejado para después (regla 47).
+> - **2026-10-08 a 11 · `210ac73`..`253cc79`** — Conversion, Sales, Conversation y Creative vuelven al front del
+>   prototipo (`077`): una lectura por pantalla, el piso en toda tasa, sin párrafos, y los días cerrados (reglas 47 y 51).
+> - **2026-10-08 · `82ba9e7`** — Client OS: la única sección que hoy lleva `sinOperacionesTodavia` (regla 31).
+> - **2026-10-15 · `66d88de`, `cce2d56`, `972972e`** — Meta directo, listo y dormido (`078`). Es lo que corre producción.
+> - Las cifras: la cancelación del negocio a treinta días pasa de 32,0 % a **35,0 %** (14 de 40, § 9); las congeladas
+>   salieron de la ventana de treinta días (**0**, § 4); entraron **25 contactos** en treinta días (§ 5).
+> - **Lo que la foto anterior dejó abierto, re-verificado el 2026-10-18:** el `aviso` de Lead Flow ya tiene lector —el
+>   cerebro, desde `13723a0`—; la cadena visible sin fecha y el comentario «la fila más vieja es de 2026» siguen; los
+>   contactos con territorio nulo pasaron de 25 a **36** (sección final).
 
 Comando Central tiene un cuerpo de reglas que no pertenecen a ningún departamento: valen para todos.
-No son estilo ni gusto — cada una cerró un defecto concreto que ya estaba en producción, y casi todas
-están escritas en el encabezado del archivo que las paga. Este informe las reúne, las ordena y
-verifica sus cifras contra la base de producción (mediciones del 2026-09-28, 22:06 a 22:11 UTC). Hay
-once reglas centrales —el silencio, el piso de 10, los dos ceros, las citas congeladas, la cohorte
-contra el territorio, la ventana y su lista cerrada, la RLS forzada, la migración antes del push, el
-descarte propio, un solo escritor por tabla y **la cadena que no es un embudo**—, dieciocho menores
-que ningún documento había reunido (12 a 29) y doce que aparecieron al construir las otras seis
-pantallas (30 a 41). Y una sección final con los errores de método que este proyecto ya cometió: siete
-veces se concluyó que un dato no existía y existía; tres veces se empujó código antes de aplicar su
-migración; y más de una vez una prueba verde no estaba mirando nada.
+No son estilo ni gusto — cada una cerró un defecto concreto, y casi todas están escritas en el encabezado del archivo
+que las paga. Este informe las reúne, las ordena y verifica sus cifras contra producción (2026-10-18, 15:38 a 15:40
+UTC). Hay once reglas centrales —el silencio, el piso de 10, los dos ceros, las citas congeladas, la cohorte contra el
+territorio, la ventana y su lista cerrada, la RLS forzada, la migración antes del push, el descarte propio, un solo
+escritor por tabla y **la cadena que no es un embudo**—, dieciocho menores (12 a 29), doce del 16 al 28 de septiembre
+(30 a 41) y **once nuevas o recién reunidas, del 29 de septiembre al 16 de octubre (42 a 52)**, que van después de los errores de método
+para no correr las líneas que otros documentos citan. Y los errores de método: siete veces se concluyó que un dato no
+existía y existía; tres veces se empujó código antes de aplicar su migración; y más de una vez una prueba verde no
+estaba mirando nada.
 
 ---
 
 ## Cómo leer esto, y de dónde salen las reglas
 
-Ninguna de estas reglas se inventó para este informe. Todas estaban escritas —en el encabezado de un
-módulo de `lib/negocio/`, en el comentario de una migración de `db/migraciones/`, o convertidas en una
-prueba de `pruebas/`— con su defecto pagado al lado. Lo que faltaba era tenerlas juntas.
+Ninguna de estas reglas se inventó para este informe: estaban en el encabezado de un módulo de `lib/negocio/`, en el
+comentario de una migración de `db/migraciones/` o convertidas en una prueba de `pruebas/`, con su defecto al lado.
 
 **Tres cosas sobre el método de este documento, porque son las mismas que las reglas exigen:**
 
@@ -58,24 +54,25 @@ prueba de `pruebas/`— con su defecto pagado al lado. Lo que faltaba era tenerl
    afirmación es sobre el dato, la evidencia es una consulta a la base, no una búsqueda en el
    repositorio.
 3. **Lo histórico se cita como historia.** Los incidentes de despliegue y las mediciones que quedaron
-   en los mensajes de commit no se pueden volver a medir: se citan con su commit (`git log
-   --format=%B`) y se marcan como tales. Lo que no se volvió a medir hoy dice «del 2026-09-15, no
-   re-medida».
+   en los mensajes de commit no se pueden volver a medir: se citan con su commit y se marcan como tales.
+   Lo que no se volvió a medir dice su fecha («del 2026-09-28, no re-medida»).
+4. **La suite no se corrió para este corte**: comparte una sola base local (regla 37). Sí se corrió la prueba
+   `101`, la auditoría de citas, que mira esta carpeta.
 
-**El reloj de las mediciones.** `now()` en producción devolvió `2026-09-28 22:06:43 UTC` en la primera
-consulta y `22:11:07` en la última: «30 días» empieza el 2026-08-29, y toda cifra de ventana de este
-documento es de esa hora. La ventana rueda sola: [04-CONVERSATION.md](04-CONVERSATION.md) midió a las
-18 h 277 contactos y 37 canceladas de 106 donde acá hay 276 y 33 de 103, las dos correctas a su hora
-(§ «Cómo se midió este corte»). La cancelación a catorce días, **22,2 %** sobre 18, no se movió (§ 9).
+**El reloj de las mediciones.** `now()` en producción devolvió `2026-10-18 15:38:44 UTC` en la primera consulta y
+`15:39:06` en la última: «30 días» empieza el 2026-09-18 a esa hora, y toda cifra de ventana es de ese instante. La
+ventana rueda sola: la foto anterior (2026-09-28 22:06 UTC) y [04-CONVERSATION.md](04-CONVERSATION.md) (2026-10-10)
+midieron otras poblaciones y las tres son correctas a su hora. La cancelación a catorce días es hoy **37,5 %** sobre 16.
+La tabla trae una cita que no ocurrió (empieza el 2026-10-20): las cifras de citas no la cuentan, porque cierran en
+`inicio_el < now()` (`lib/negocio/indicadoresDeCitas.ts:417`); el booking rate de Lead Flow sí, porque agendar es el evento (§ 4).
 
-**El mapa del producto, para ubicarse.** `lib/autorizacion/secciones.ts:169-172` define tres grupos del
-cuerpo del menú, más el pie donde va Ajustes: AIOS (Executive, Leads Portal, ICP & Oferta),
-Inteligencia (Acquisition, Creative, Conversion, Conversation, Sales) y Operación (Setter, Closer,
-Analizadores, Tools, Monitoreo; Analizadores entró el 2026-09-23,
-`lib/autorizacion/secciones.ts:374-377`). Las cinco de Inteligencia y Leads Portal tienen ruta propia
-y dibujan datos reales; la única pantalla que sigue sin operaciones de servidor es
-Executive (`lib/autorizacion/secciones.ts:227`). Estas reglas nacieron casi todas en Operación, se
-ejercieron primero en Conversation y entre el 16 y el 26 de septiembre se aplicaron a las otras cinco.
+**El mapa del producto, para ubicarse.** `lib/autorizacion/secciones.ts:169-175` sigue definiendo los grupos que
+filtra `menuVisible()` —AIOS, Inteligencia, Operación, Administración y el pie—, pero desde la nueva estructura
+(`4742d74`, 2026-10-01) la barra lateral dibuja el reparto de `lib/autorizacion/departamentos.ts:50-56`: el Inicio,
+Research, Systems, Marketing, Sales y Client Success, con Credenciales, Monitoreo e Incidentes en el engranaje (`:125-128`).
+Ninguna sección de trabajo sigue sin operaciones: el Inicio (`executive`) bajó la bandera con el cerebro el 2026-10-04
+(`lib/autorizacion/secciones.ts:230`) y la única que la lleva es Client OS (`:474`). Estas reglas nacieron casi todas en
+Operación, se ejercieron primero en Conversation y desde el 16 de septiembre las comparten todas las pantallas.
 
 ---
 
@@ -105,16 +102,16 @@ aviso compartido estaría siempre encendido, «incluido el de las citas congelad
 | Todo lo demás | **`null`** — nada en pantalla | nada |
 
 Y el tercero se apaga solo: «el día que dejen de caer en la ventana […] el aviso desaparece solo».
-**Ya pasó en dos ventanas:** medido el 2026-09-28, ninguna cita congelada cae en los últimos siete ni
-en los últimos catorce días (§ 4), así que ahí el aviso de congeladas calla sin que nadie lo tocara. A
-treinta días quedan 14; la más nueva de las 101 es del 2026-09-10, así que alrededor del 2026-10-10 se
-apaga también ahí.
+**Ya pasó en las tres ventanas cortas:** medido el 2026-10-18, ninguna cita congelada cae en los últimos
+siete, catorce ni treinta días (§ 4): la más nueva de las 101 es del 2026-09-10, y desde el 2026-10-10 el
+aviso de congeladas calla también en la ventana con la que abren las pantallas, sin que nadie lo tocara.
+Sólo queda en «Completo», donde no se apaga nunca.
 
-**Dónde está implementada.** La foto anterior contaba ocho campos; medido el 2026-09-28 con `grep` del
-patrón `aviso…: string | null` sobre `lib/`, son **28 campos en 18 archivos** —los de Conversation más
-los de Acquisition, Creative, Conversion, Sales y Leads Portal—. Los de Conversation, re-verificados:
+**Dónde está implementada.** Con `grep` del patrón `aviso…: string | null` sobre `lib/` del árbol de este corte
+son **38 campos en 21 archivos** (el mismo `grep` da 30 en 18 en `861b5f0`). Los de Conversation, re-verificados; **la columna de
+la derecha es historia**: desde CN-3 (2026-10-10) la pantalla ya no dibuja ninguno (ver abajo):
 
-| Archivo:línea | Campo | Quién lo dibuja |
+| Archivo:línea | Campo | Quién lo dibujaba hasta el 2026-10-10 |
 | --- | --- | --- |
 | `lib/negocio/indicadoresDeCitas.ts:72` | `aviso` (cancelación) | `components/conversation/PanelDeConversation.jsx:686@6f3bdb5` |
 | `lib/negocio/indicadoresDeCitas.ts:100` | `avisoDeLaVentana` | `components/conversation/PanelDeConversation.jsx:618@6f3bdb5` |
@@ -122,27 +119,27 @@ los de Acquisition, Creative, Conversion, Sales y Leads Portal—. Los de Conver
 | `lib/negocio/indicadoresDeCitas.ts:172` | `avisoDeConfirmacion` | `components/conversation/PanelDeConversation.jsx:974@6f3bdb5` |
 | `lib/negocio/indicadoresDelLead.ts:106` | `avisoDeLaVentana` | `components/conversation/PanelDeConversation.jsx:505@6f3bdb5` |
 | `lib/negocio/indicadoresDelLead.ts:126` | `avisoDelBooking` | `components/conversation/PanelDeConversation.jsx:516@6f3bdb5` |
-| `lib/negocio/indicadoresDelLead.ts:183` | `aviso` (Lead Flow) | **nadie — ver abajo** |
+| `lib/negocio/indicadoresDelLead.ts:183` | `aviso` (Lead Flow) | **nadie**; desde AG6, el cerebro (ver abajo) |
 | `lib/negocio/indicadoresDelLead.ts:185` | `avisoDeLatencias` | `components/conversation/PanelDeConversation.jsx:933@6f3bdb5` |
 | `lib/negocio/atribucionDelLead.ts:69` | `aviso` | `components/conversation/PanelDeConversation.jsx:727@6f3bdb5` |
 | `lib/negocio/consumoDelPrecall.ts:140` | `aviso` | `components/conversation/PanelDeConversation.jsx:803@6f3bdb5` |
 | `lib/auditor/sentimiento.ts:65` | `aviso` | `components/conversation/PanelDeConversation.jsx:827@6f3bdb5` y `:835@6f3bdb5` |
-| `lib/negocio/frescura.ts:58` y `:215` | `aviso` (frescura del barrido) | no re-verificado |
+| `lib/negocio/frescura.ts:58` y `:221` | `aviso` (frescura del barrido) | no re-verificado |
 
-Los otros 15 campos de las otras pantallas (28 menos los 13 de la tabla) no se auditaron uno por uno
-contra su lector: **no verificado** que todos se dibujen.
+Los otros 25 campos (38 menos los 13 de la tabla) no se auditaron uno por uno contra su lector: **no
+verificado** que todos tengan uno.
 
-**El otro modo de romper esta regla, y sigue roto trece días después: un aviso que nadie dibuja.** El
-de la cohorte de Lead Flow se declara en `lib/negocio/indicadoresDelLead.ts:183`, se arma en `:323`
-con `avisoDe` (`:407-423`), y ni `r.aviso` ni `respuesta.aviso` aparecen una sola vez en las 989 líneas
-del panel (`grep` del 2026-09-28). Y no es un aviso que sobre: medido el 2026-09-28 en la ventana con
-la que abre la pantalla, entraron 276 contactos y se les escribió a 269, así que el campo trae
-*«7 contacto(s) no entran en la tasa de respuesta porque todavía no se les escribió…»*, y nadie lo lee.
-En una ventana sin altas el que se pierde es el que explica el tablero entero —*«No entró ningún
-contacto nuevo al CRM en N días»* (`lib/negocio/indicadoresDelLead.ts:409`)— mientras la pestaña dibuja
-«Cada barra es sobre los 0 que entraron» (`components/conversation/PanelDeConversation.jsx:497@6f3bdb5`). **Un
-aviso sin lector es peor que un aviso siempre encendido: al segundo se lo puede aprender a ignorar, al
-primero no hay forma de notarlo.**
+**El otro modo de romper esta regla: un aviso que nadie lee.** El de la cohorte de Lead Flow se declara en
+`lib/negocio/indicadoresDelLead.ts:183`, se arma en `:323` con `avisoDe` (`:407-423`), y hasta el 2026-10-05 no lo
+leía nadie: ni el panel ni otro módulo —en una ventana sin altas se perdía justo el que explica el tablero, *«No entró
+ningún contacto nuevo al CRM en N días»* (`lib/negocio/indicadoresDelLead.ts:409`), mientras la pestaña dibujaba
+«Cada barra es sobre los 0 que entraron» (`components/conversation/PanelDeConversation.jsx:497@6f3bdb5`)—. **Desde
+AG6 (`13723a0`) lo lee el cerebro**: la herramienta `lead_flow` lo pasa entero, junto con los demás avisos del módulo
+(`lib/agentes/executive/adaptadores/conversation.ts:74-77`). Y desde CN-3 la pantalla no dibuja ningún aviso «sin
+párrafos»: viajan en la respuesta (`app/api/auditoria/route.ts:105-107`) y los da el agente cuando se le pregunta
+(`components/conversation/PanelDeConversation.jsx:30-31`). **El riesgo cambió de forma:** un aviso que sólo lee el
+cerebro se lee sólo si alguien pregunta. Un aviso sin lector es peor que uno siempre encendido —al segundo se lo
+aprende a ignorar, al primero no hay forma de notarlo—, y uno que espera la pregunta queda a mitad de camino.
 
 **Un corolario fuera de las cifras.** `lib/auditor/rubrica.ts:559` usa el mismo argumento dentro del
 prompt del modelo: un renglón «Mensajes no entregados: 0» en cada análisis enseña a saltearlo, «y
@@ -171,8 +168,8 @@ de las 151».
 «nombrar una constante compartida por la primera que la necesitó invita a que la quinta se escriba su
 propio piso», y el motivo sigue escrito en `lib/negocio/indicadoresDeCitas.ts:316-318`.
 
-**Quién lo usa hoy.** Medido el 2026-09-28 con `grep`: **15 archivos de `lib/` nombran la constante**
-(la foto anterior listaba ocho cifras en cuatro archivos). Los de Conversation, re-verificados: la asistencia
+**Quién lo usa hoy.** Con `grep` sobre el árbol de este corte, **21 archivos de `lib/` nombran la constante** (15 el
+2026-09-28), y desde CN-1 las lecturas lo aplican a toda tasa (regla 51). Los de Conversation, re-verificados: la asistencia
 (`lib/negocio/indicadoresDeCitas.ts:473-476`), la confirmación (`:482-485`), los descartados
 (`:492-495`), las filas de atribución (`lib/negocio/atribucionDelLead.ts:174`), el consumo del precall
 y su desglose fino con las dos ramas sobre el piso (`lib/negocio/consumoDelPrecall.ts:242` y `:239`),
@@ -181,30 +178,30 @@ dejó escrita la variante que hay que evitar: el click-to-landing de Creative **
 comentario de arriba afirmaba que sí —8 de 24 piezas tenían menos de diez clics, y la menor, con uno,
 publicaba 100 %— y se arregló con `PISO_DE_UNA_TASA`, «no uno nuevo».
 
-**El piso funcionando, y la parte que no protege.** La atribución por fuente del primer toque, medida
-el 2026-09-28 con el mismo predicado de «agendó» que usa el módulo (`tieneCitaAlcanzable`,
-`lib/negocio/atribucionDelLead.ts:151`) y agrupada por el valor crudo de `sessionSource`:
+**El piso funcionando, y la parte que no protege.** La atribución por fuente del primer toque, medida el 2026-10-18
+con el predicado de «agendó» del módulo (`tieneCitaAlcanzable`, `lib/negocio/atribucionDelLead.ts:151`) y agrupada
+por el valor crudo de `sessionSource`:
 
 | Fuente | Cohorte 30 d | Agendaron | Tasa 30 d | Cohorte completo | Tasa completo |
 | --- | --- | --- | --- | --- | --- |
-| Paid Social | 252 | 121 | **48,0 %** | 360 | 42,2 % |
-| Direct traffic | **13** | 12 | **92,3 %** | 29 | 51,7 % |
-| Social media | **10** | 5 | 50,0 % | 161 | 13,7 % |
-| sin fuente | 1 | 1 | — (a «Otras») | 17 | — (a «Otras»: sin etiqueta) |
+| Paid Social | 5 | 2 | — (a «Otras») | 365 | 42,2 % (154) |
+| Social media | **13** | 11 | **84,6 %** | 178 | 21,3 % (38) |
+| Direct traffic | 5 | 5 | — (a «Otras») | 33 | **54,5 %** (18) |
+| sin fuente | 1 | 1 | — (a «Otras») | 20 | — (a «Otras»: sin etiqueta) |
+| Referral | 1 | 0 | — (a «Otras») | 1 | — (a «Otras») |
 | CRM UI | 0 | 0 | — | 3 | — (a «Otras») |
 
-El encabezado del módulo (`lib/negocio/atribucionDelLead.ts:22-38`, medido el 2026-09-14) advierte
-exactamente este dibujo: con 8 y 6 leads, las dos fuentes chicas tenían las tasas más altas y «dicen
-que lo pago es lo que peor convierte». Hoy pasan el piso con 13 y 10, y **la trampa se dibuja entera**:
-Direct traffic al 92,3 % sobre trece contactos, al lado de Paid Social al 48,0 % sobre 252. Es lo que
-la foto anterior ya había visto a treinta días y ahora es más fuerte: **el piso protege de una muestra
-chica, no de una comparación mal hecha.** Y en la ventana de catorce días, que es la que los
-comentarios del módulo describen, la cohorte entera son 8 contactos (§ 5): ninguna fila pasa el piso y
-todo va a «Otras».
+El encabezado del módulo (`lib/negocio/atribucionDelLead.ts:22-38`, medido el 2026-09-14) advierte este dibujo: con
+8 y 6 leads, las fuentes chicas tenían las tasas más altas y «dicen que lo pago es lo que peor convierte». El
+2026-09-28 Direct traffic pasaba el piso con 13 (92,3 %) al lado de Paid Social con 252 (48,0 %). **Hoy la pauta casi
+no aparece a treinta días** —5 de 25 contactos— y la única barra es la de Social media, 84,6 % sobre trece; en
+«Completo» la trampa sigue entera: Direct traffic al 54,5 % sobre 33 al lado de Paid Social al 42,2 % sobre 365.
+**El piso protege de una muestra chica, no de una comparación mal hecha.** A catorce días la cohorte son 9 contactos
+(§ 5): ninguna fila pasa el piso y todo va a «Otras».
 
-**Apartar no es esconder.** La fila «Otras» lleva su conteo y las filas suman la cohorte exacta —252 +
-13 + 10 + 1 = 276, medido el 2026-09-28—, así que si faltara un pedazo se vería. Lo que no recibe es
-una barra que invite a compararla con una que sí tiene datos.
+**Apartar no es esconder.** La fila «Otras» lleva su conteo y las filas suman la cohorte exacta —13 + 12 = 25 a
+treinta días, medido el 2026-10-18 (252 + 13 + 10 + 1 = 276 el 2026-09-28)—, así que si faltara un pedazo se vería.
+Lo que no recibe es una barra que invite a compararla con una que sí tiene datos.
 
 ---
 
@@ -223,19 +220,19 @@ para el hecho medido — y donde hace falta, un aviso que diga cuál de los dos 
 - `db/migraciones/048_de_donde_vino_el_lead.sql:67` y `db/migraciones/049_si_se_presento_a_la_cita.sql:44-45`
   — «un nulo significa una sola cosa. *No se presentó* es `false`».
 
-**Los casos vivos, medidos el 2026-09-28:**
+**Los casos vivos, medidos el 2026-10-18:**
 
 | Caso | Medición | Qué significa el vacío |
 | --- | --- | --- |
-| `citas.asistio` | **0 de 333** citas (era 0 de 317 el 2026-09-15) | Nadie cerró el intento. **No** «no se presentó nadie» |
-| `resultados.cita_id` | **0 de 7** resultados, los mismos 7 de la foto anterior (el más nuevo es del 2026-09-09) | No se registró ningún intento nuevo desde la `049` |
-| `estado_ghl = 'noshow'` | **15** de 333 citas (eran 3) | El lado negativo de la asistencia sí se observa; `showed` no aparece ni una vez |
-| Campo `Confirmación Agendamiento` | **184 de 594** contactos (178 de 584 el 2026-09-15) | Sin el campo en el catálogo no hay cifra, y no es «nadie confirmó» (abajo) |
+| `citas.asistio` | **0 de 368** citas (0 de 333 el 2026-09-28) | Nadie cerró el intento. **No** «no se presentó nadie» |
+| `resultados.cita_id` | **0 de 7** resultados, los mismos 7 (el más nuevo es del 2026-09-09) | No se registró ningún intento nuevo desde la `049` |
+| `estado_ghl = 'noshow'` y `'showed'` | **20** y **3** de 368 citas (15 y 0 el 2026-09-28) | El calendario ya dice las dos cosas: las 3 `showed` pasaron de `confirmed`, la última el 2026-10-08 |
+| Campo `Confirmación Agendamiento` | **190 de 624** contactos (184 de 594 el 2026-09-28) | Sin el campo en el catálogo no hay cifra, y no es «nadie confirmó» (abajo) |
 
-La tercera fila es nueva como regla: `citasAlcanzables.ts` publica los plantones del calendario con su
-propio nombre y prohíbe sumarlos con `asistio` —«son dos fuentes de la misma pregunta y sólo una es
-nuestra»— (`lib/negocio/citasAlcanzables.ts:87-113`). Un «0 asistencias» y un «15 plantones» conviven
-sin contradecirse porque ninguno se hace pasar por el otro.
+La tercera fila es una regla: `citasAlcanzables.ts` publica los plantones del calendario con su propio nombre y
+prohíbe sumarlos con `asistio` —«son dos fuentes de la misma pregunta y sólo una es nuestra»—
+(`lib/negocio/citasAlcanzables.ts:87-113`). Un «0 asistencias» y un «20 plantones» conviven sin contradecirse. El
+lado positivo, `ESTADO_ASISTIO` (`lib/ghl/calendarios.ts:195`), ya tiene 3 citas y ningún lector (error C).
 
 El caso de la asistencia es el que mejor muestra por qué la regla importa:
 `lib/negocio/indicadoresDeCitas.ts:385-390` dice que sin el filtro `asistio is not null` en el
@@ -249,18 +246,18 @@ las letras en `:297-299`: si el campo no está en el catálogo, «no es que nadi
 existe* se arregla mirando el CRM».
 
 **Y el cuarto, en el sentimiento del auditor.** `lib/auditor/sentimiento.ts:11-26` censa poblaciones
-que se ven idénticas en `sentimiento is null`. Re-medido el 2026-09-28 sobre las 70 filas de
-`negocio.analisis_del_agente` (eran 47):
+que se ven idénticas en `sentimiento is null`. Re-medido el 2026-10-18 sobre las 102 filas de
+`negocio.analisis_del_agente` (70 el 2026-09-28):
 
 | Población | Filas | Con sentimiento |
 | --- | --- | --- |
-| auditable, disparo `debounce` | 21 | 21 |
+| auditable, disparo `debounce` | 24 | 24 |
 | auditable, disparo `alarma` | 2 | 2 |
-| auditable, disparo `mejora` | 28 | **0** (el carril escribe null a propósito) |
-| no auditable | 19 | **0** (nunca se llamó al modelo) |
+| auditable, disparo `mejora` | 48 | **0** (el carril escribe null a propósito) |
+| no auditable | 28 | **0** (nunca se llamó al modelo) |
 
-Sobre las 70 filas la distribución diría «67 % sin dato», que describe los carriles del propio auditor
-y no las conversaciones. **El denominador son las 23**, y viaja al lado.
+Sobre las 102 filas la distribución diría «75 % sin dato», que describe los carriles del propio auditor
+y no las conversaciones. **El denominador son las 26**, y viaja al lado.
 
 ---
 
@@ -282,20 +279,20 @@ era una advertencia, se volvió un hecho medido: el predicado **ya estaba copiad
 calendario. El CRM ya no devuelve sus eventos, así que su estado quedó fijo en el que tenían el día que
 dejaron de sincronizarse (`lib/negocio/citasAlcanzables.ts:48-50`).
 
-**Medido el 2026-09-28 contra producción:**
+**Medido el 2026-10-18 contra producción:**
 
-| | Hoy | 2026-09-15 |
+| | 2026-10-18 | 2026-09-28 |
 | --- | --- | --- |
-| Citas totales | **333** | 317 |
-| Alcanzables (`ghl_calendario_id is not null`) | **232** | 216 |
+| Citas totales | **368** | 333 |
+| Alcanzables (`ghl_calendario_id is not null`) | **267** | 232 |
 | Congeladas (`is null`) | **101** | 101 |
 | Última sincronización de las congeladas | 2026-09-06 04:03 UTC | la misma |
 | Rango de `inicio_el` de las congeladas | 2026-08-12 a 2026-09-10 | el mismo |
-| Congeladas dentro de la ventana de 14 días | **0** | 11 |
-| Congeladas dentro de la de 30 días —la que la pantalla abre— | **14** | 77 |
+| Congeladas dentro de la ventana de 14 días | **0** | 0 |
+| Congeladas dentro de la de 30 días —la que la pantalla abre— | **0** | 14 |
 
-Las congeladas no se mueven y la ventana sí: el problema se está yendo solo por el borde trasero. Es la
-regla de la ventana (§ 6) en la dirección contraria a la de la foto anterior.
+Las congeladas no se mueven y la ventana sí: el problema se fue solo por el borde trasero de las tres ventanas
+cortas, como la foto anterior anticipó. Queda en «Completo», que las cuenta a todas (§ 6).
 
 **Por qué esto es una regla y no un detalle.** El sesgo que produjeron está medido en
 `lib/negocio/indicadoresDeCitas.ts:6-18` y en
@@ -314,14 +311,14 @@ commit `bddb516`): a catorce días no descartaba a nadie; a treinta, la ventana 
 cifra cinco puntos y medio (44,8 % contra 50,4 %, medido el 2026-09-16). Hoy el booking rate cuenta
 **cualquier** cita (`:237-239`), y `agendaronSoloCongeladas` con `avisoDelBooking` declaran cuántos
 descansan en una congelada (`:124-126`), porque la cancelación de al lado no los cuenta. Medido el
-2026-09-28: son **0** a treinta días y **79** en «Completo».
+2026-10-18: **0** a treinta días y **79** en «Completo», los mismos que el 2026-09-28.
 
 **Y eso dejó dos definiciones de «agendó» en el producto.** El booking rate de Lead Flow cuenta
 cualquier cita; la atribución de la misma pantalla y Acquisition, Creative, Conversion, Sales y Leads
 Portal usan `tieneCitaAlcanzable`, que excluye a quien sólo tiene congeladas
 (`lib/negocio/citasAlcanzables.ts:115-145`). A 7, 14 y 30 días coinciden porque no queda nadie así;
-en «Completo» Lead Flow dice **279** agendados y las filas de la atribución suman **200** (medido el
-2026-09-28; el hallazgo es de [04-CONVERSATION.md](04-CONVERSATION.md) § 7). Y el comentario que
+en «Completo» Lead Flow dice **303** agendados y las filas de la atribución suman **224** (2026-10-18; 279 y 200
+el 2026-09-28: la diferencia son los mismos 79). Y el comentario que
 debería impedirlo afirma lo contrario: «el mismo filtro de cita alcanzable que el booking rate»
 (`lib/negocio/atribucionDelLead.ts:148-150`). Es la regla 12 incumplida entre dos tarjetas vecinas.
 
@@ -336,21 +333,21 @@ tasa de conversión, por construcción.
 Enunciada en `lib/negocio/indicadoresDelLead.ts:29-31`: «**El territorio es consecuencia de agendar,
 no una cohorte.** […] sobre esa población un booking rate da 2 de 280, que es una tautología».
 
-**La medición, reproducida el 2026-09-28** (cita alcanzable = `tieneCitaAlcanzable`):
+**La medición, reproducida el 2026-10-18** (cita alcanzable = `tieneCitaAlcanzable`):
 
-| Territorio | Contactos | Con cita alcanzable | Proporción | 2026-09-15 |
+| Territorio | Contactos | Con cita alcanzable | Proporción | 2026-09-28 |
 | --- | --- | --- | --- | --- |
-| `setter` | 282 | **2** | 0,7 % | 2 de 280 |
-| `closer` | 287 | 197 | 68,6 % | 188 de 279 |
-| `null` (congelados) | 25 | 5 | — | 4 de 25 |
+| `setter` | 282 | **1** | 0,4 % | 2 de 282 |
+| `closer` | 306 | 216 | 70,6 % | 197 de 287 |
+| `null` (congelados) | 36 | 11 | — | 5 de 25 |
 
-Sobre la población de zona setter el booking rate daría **0,7 % para siempre**, y no por el negocio
-sino porque la pregunta está mal hecha. La proporción no se movió en trece días.
+Sobre la población de zona setter el booking rate daría **0,4 % para siempre**, y no por el negocio
+sino porque la pregunta está mal hecha. La proporción no se movió en tres semanas.
 
 **La segunda cohorte rota, `creado_el`, sigue fuera** (`91e4e07`): la columna dice cuándo *nuestro
 barrido* vio al contacto, y la carga inicial le puso la misma marca a 239. La cohorte es
-`alta_en_el_crm` (migración `048`); medido el 2026-09-28, **570 de 594 contactos la tienen** (559 de 584
-el 2026-09-15). Leads Portal nació con la misma regla escrita en su encabezado
+`alta_en_el_crm` (migración `048`); medido el 2026-10-18, **600 de 624 contactos la tienen** (570 de 594
+el 2026-09-28). Leads Portal nació con la misma regla escrita en su encabezado
 (`lib/negocio/leadsDelPortal.ts:22-27`): el alta y no `creado_el`, de cualquier territorio.
 
 **El precio se dice en voz alta, y esa también es la regla.** `lib/negocio/indicadoresDelLead.ts:33-36`:
@@ -361,10 +358,10 @@ de excluir a los que agendaron sin escribirnos nunca.
 con cohortes distintas, «60,9 % contesta» y «52,5 % agenda» no permitirían preguntarse cuántos hicieron
 las dos.
 
-**Medido el 2026-09-28 en la ventana con la que la pantalla abre:** 276 contactos entraron al CRM en
-los últimos treinta días, **139 agendaron (50,4 %)** y a 269 se les escribió al menos una vez (el
-2026-09-15 eran 412, 176 y 382). **Y la ventana de catorce días, la de los comentarios del módulo, tiene
-8 contactos**: son todos los que entraron desde el 2026-09-14. El comentario de
+**Medido el 2026-10-18 en la ventana con la que la pantalla abre:** 25 contactos entraron al CRM en
+los últimos treinta días, **19 agendaron (76,0 %)** y a 20 se les escribió al menos una vez (el
+2026-09-28 eran 276, 139 y 269). **La ventana de catorce días, la de los comentarios del módulo, tiene
+9 contactos**, y la de siete, uno: desde el 2026-09-14 entraron 29. El comentario de
 `lib/negocio/indicadoresDelLead.ts:134-140` —«entraron 231, se le escribió a 225, contestaron 138,
 agendaron 121»— era cierto cuando se escribió y hoy no se reproduce ni de lejos. La ventana es móvil;
 los comentarios, no. Por eso van fechados y por eso la pantalla dibuja `desde`.
@@ -385,37 +382,37 @@ cerrada, y lo que no está se rechaza — nunca se corrige al valor por omisión
 La primera sigue enunciada donde nació, `lib/negocio/indicadoresDeCitas.ts:331-339` («**Catorce y no
 treinta** […] Pedir una ventana más larga no trae más señal: trae más citas que el sistema dejó de
 mirar»), elevada a regla de proyecto en `:20-24` y repetida en
-`db/migraciones/045_cuando_cambio_el_estado_de_la_cita.sql:36-37`. Medido el 2026-09-28, con las tres
+`db/migraciones/045_cuando_cambio_el_estado_de_la_cita.sql:36-37`. Medido el 2026-10-18, con las tres
 poblaciones dichas por su nombre porque no son la misma:
 
 | Ventana | Alcanzables ya ocurridas | Las que la tarjeta publica (alcanzables **menos** descartados) | Congeladas |
 | --- | --- | --- | --- |
-| hoy | 2 | 2 | 0 |
-| 7 días | 7 | 6 | 0 |
-| 14 días | 29 | 18 | 0 |
-| 30 días | **191** | **103** | **14** |
-| completo | **231** | **143** | **101** |
+| hoy | 1 | 1 | 0 |
+| 7 días | 4 | 4 | 0 |
+| 14 días | 18 | 16 | 0 |
+| 30 días | **46** | **40** | **0** |
+| completo | **266** | **173** | **101** |
 
 La columna del medio es el campo `citas` de `tasaDeCancelacion`
 (`lib/negocio/indicadoresDeCitas.ts:359`, `filter (where ${alcanzable} and not ${descartado})`). **La
-foto anterior decía que el cuarto botón no agregaba ni una cita alcanzable sobre el tercero** (205
-contra 205). Ya no: con la ventana corrida al 2026-08-29, «Completo» agrega 40 citas publicables y 87
-congeladas sobre «30 días». La conclusión se dio vuelta en trece días sin que nadie tocara el código,
+foto del 2026-09-15 decía que el cuarto botón no agregaba ni una cita alcanzable sobre el tercero** (205
+contra 205); el 2026-09-28 agregaba 40 publicables y 87 congeladas, y hoy, con la ventana en el 2026-09-18, agrega
+**133** publicables y las **101** congeladas. La conclusión se dio vuelta en trece días sin que nadie tocara el código,
 que es exactamente por qué un comentario que describe la lectura de una ventana envejece.
 
 **Qué cambió de `DIAS_DE_LA_TASA`.** Sigue en 14 (`lib/negocio/indicadoresDeCitas.ts:339`) y, medido
-con `grep` el 2026-09-28, es el valor por omisión de **18 funciones** en 17 archivos de `lib/` —las de
+con `grep` sobre el árbol de este corte, es el valor por omisión de **19 funciones** en 18 archivos de `lib/` —las de
 Conversation más las de Acquisition, Creative, Conversion, Sales y Leads Portal—. Las rutas les pasan siempre el período
 elegido, así que ese 14 sólo actúa donde nadie pide ventana; el caso conocido sigue siendo
 `citasParaCerrar` (`lib/negocio/citasParaCerrar.ts:60`), de Avanzar. **No verificado** que ninguna otra
-llamada de las 18 dependa del 14.
+llamada de las 19 dependa del 14.
 
 **Las cuatro ventanas son una lista cerrada, en un archivo propio** (`lib/negocio/periodo.ts:83-96`):
 `hoy` = 1 día, `7d`, `30d` y `completo` = `DIAS_DE_TODO` = 3650 (`:52`). La pantalla abre en **30 días**
 (`PERIODO_POR_OMISION`, `:109`) porque catorce no es ninguno de los cuatro botones. **Entre el
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
 Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:63`,
-`app/api/creative/route.ts:61`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:88`,
+`app/api/creative/route.ts:62`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:88`,
 `app/api/leads-portal/route.ts:53`).
 
 **El defecto que cierra la lista cerrada** está enunciado en `lib/negocio/periodo.ts:6-17` y convertido
@@ -432,7 +429,7 @@ Por eso `periodoDe()` (`lib/negocio/periodo.ts:188`) devuelve `null` ante cualqu
 **`null` significa rechazar**: `app/api/auditoria/route.ts:64` lo convierte en un 400. La prueba exige
 el rechazo con `=== null` y prohíbe el `??` (`pruebas/codigo/155-el-periodo-de-conversation.test.ts:127`),
 porque `periodoDe(x) ?? POR_OMISION` compila, se lee razonable y es exactamente el defecto. La única
-ausencia que cae en el valor por omisión es la real, la primera carga sin parámetro (`:79`).
+ausencia que cae en el valor por omisión es la real, la primera carga sin parámetro (`:80`).
 
 **Y la lista viaja entera hacia los dos lados.** La clave elegida vuelve en la respuesta
 (`app/api/auditoria/route.ts:124`) para que el botón encendido describa lo que el servidor contestó;
@@ -442,26 +439,26 @@ forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:174`).
 
 **Y «completo» no puede leerse como historia.** Por eso las cifras traen `desde`, que es `min()` sobre
 las filas alcanzadas y no `now() - dias` (`lib/negocio/indicadoresDelLead.ts:268`,
-`lib/negocio/indicadoresDeCitas.ts:400-403`). Medido el 2026-09-28: en Lead Flow «Completo» arranca el
-**2025-08-08** (el alta más vieja); en las citas, el **2026-08-24 13:00 UTC** contra el **2026-08-29 23:00**
-de «30 días». La foto anterior decía que en las citas los dos botones coincidían al minuto; ya no. Y
+`lib/negocio/indicadoresDeCitas.ts:400-403`). Medido el 2026-10-18: en Lead Flow «Completo» arranca el
+**2025-08-08** (el alta más vieja); en las citas, el **2026-08-24 13:00 UTC** contra el **2026-09-18 16:00**
+de «30 días». Desde CN-3 la pantalla dibuja el año cuando no es el de hoy (`components/conversation/comun.jsx:91-96`). Y
 `desde` solo también miente cuando describe a un caso suelto: para eso está `avisoDeLaCola`
 (`lib/negocio/periodo.ts:111-147` y `:158`), que hoy usan los dos módulos de Conversation y Leads
 Portal (el error D).
 
 **La ventana se mide con `inicio_el`, no con `reservada_el`** (`lib/negocio/indicadoresDeCitas.ts:31-37`):
-la cobertura de `reservada_el` es parcial y crece sola. Medido el 2026-09-28: **201 de 333** citas la
-tienen; `inicio_el` es `not null` por esquema.
+la cobertura de `reservada_el` es parcial y crece sola. Medido el 2026-10-18: **236 de 368** citas la
+tienen (201 de 333 el 2026-09-28); `inicio_el` es `not null` por esquema.
 
 **La ventana la calcula la BASE, no la aplicación** (`lib/negocio/indicadoresDeCitas.ts:414-416`): «es
-la única forma de que el “ahora” sea el mismo reloj que escribió las filas». **Con una excepción
-declarada, que es nueva:** el gasto de anuncios vive en una columna `date`, así que
-`lib/negocio/costoDelAnuncio.ts:37-45` cuenta días de calendario y no 24 horas, y lo dice en su
-encabezado en vez de mezclar las dos formas (ver la regla 41).
+la única forma de que el “ahora” sea el mismo reloj que escribió las filas». **Con dos excepciones
+declaradas:** el gasto de anuncios vive en una columna `date`, así que `lib/negocio/costoDelAnuncio.ts:37-45`
+cuenta días de calendario y no 24 horas (regla 41); y desde CV-1 los «7 días» y «30 días» de Acquisition y
+Conversion son días CERRADOS en la zona de la empresa (`lib/negocio/diasCerrados.ts:16`, `:82-88`; regla 47).
 
 **Una cifra que cruza el piso hacia abajo sola, y ya pasó.** El sentimiento del auditor: medido el
-2026-09-28, `chat_post_agenda` tiene **23** conversaciones juzgadas a treinta días y **0** a siete (el
-2026-09-15 eran 20 y 5). Cada ventana es un denominador nuevo, y el piso se evalúa en cada una.
+2026-10-18, `chat_post_agenda` tiene **6** conversaciones juzgadas a treinta días y **1** a siete (23 y 0 el
+2026-09-28), así que la cifra es `null` en las dos. Cada ventana es un denominador nuevo, y el piso se evalúa en cada una.
 
 ---
 
@@ -491,9 +488,10 @@ migración nace vacía y se llena hacia adelante (`db/migraciones/048_de_donde_v
 `db/migraciones/045_cuando_cambio_el_estado_de_la_cita.sql:56`: «El nulo es *no se sabe cuándo*, nunca
 *no cambió*».
 
-**Dónde se resuelve entonces.** El dato se arregla **al leer**, no al migrar. El ejemplo canónico sigue
-siendo la `040`: el canal efectivo se infiere en `lib/negocio/ficha.ts:186` (`CANAL_EFECTIVO`), sin tocar
-una fila.
+**Dónde se resuelve entonces.** El dato se arregla **al leer**, no al migrar: la `040` infiere el canal en
+`lib/negocio/ficha.ts:186` (`CANAL_EFECTIVO`) sin tocar una fila. Y cuando hay que escribir, una fase de
+`scripts/db.mjs` que corre con el rol que sí ve las filas, como `retiro`, que corre como `app_identidad`
+(`scripts/db.mjs:219`).
 
 ---
 
@@ -505,7 +503,7 @@ el código no se empuja.** Es una regla de **orden, no de memoria**.
 **El contexto que la hace necesaria.** `docs/OTROS/produccion/DESPLIEGUE.md:395-396`: «Vercel despliega
 por push, no por chequeo»; un commit rojo se publica igual, y la protección de rama en `main` con
 `verificar` requerido, pendiente según ese documento y `docs/OTROS/capa-base/ETAPA-8.md:170`, **sigue
-sin estar**: el 2026-09-28 `gh api` da `protected: false` ([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 5.2).
+sin estar**: el 2026-10-18 `gh api …/branches/main` da `protected: false` ([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 5.2).
 
 **Las tres veces que se rompió** (documentadas en `git log` antes del 2026-09-15; no re-medibles):
 
@@ -532,11 +530,10 @@ ls db/migraciones | tail -1
 `scripts/supabase.mjs correr` —la Management API conecta como `postgres`, que no es dueño de nuestras
 tablas— y sólo con `.env.supabase`, porque `npm run db:migrar` puede apuntar a la base local.
 
-**Estado el 2026-09-28.** Entre el 16 y el 23 de septiembre entraron trece migraciones, de la `050` a la
-`062`. Medido: **producción está en la `062`, que es la última del repositorio**. El commit `a434f98`
-declara la `062` aplicada antes del push; para la `050` a la `061` **no verifiqué el orden** uno por
-uno, y ningún mensaje de commit de esos días registra un `42P01` ni un `42703` (búsqueda en `git log
---since=2026-09-15`).
+**Estado el 2026-10-18.** Entraron dieciséis migraciones (`063` a `078`, del 2026-09-30 al 2026-10-15) y **producción
+está en la `078`**. La memoria del proyecto registra «migrar y después empujar» en la `063` a la `066`, la `069` a la
+`075`, la `077` y la `078`; en la `067`, la `068` y la `076` **no lo verifiqué**, y ningún commit desde el corte nombra un
+`42P01` ni un `42703`. La comprobación da hoy lo mismo en los dos lados: la `078`.
 
 ---
 
@@ -549,26 +546,26 @@ ninguna de las dos.
 El vocabulario vive en `lib/ghl/contrato.ts:231` (`ETIQUETAS_DE_DESCARTE`), con su censo en
 `:193-230`, y el predicado que lo aplica en `descartado()` de `lib/negocio/citasAlcanzables.ts:68-85`.
 
-**Medido el 2026-09-28, en las tres ventanas que importan:**
+**Medido el 2026-10-18, en las tres ventanas que importan:**
 
 | Población | Citas 30 d | Canceladas | Tasa 30 d | Tasa 14 d | Tasa completo |
 | --- | --- | --- | --- | --- | --- |
-| De contactos descartados | 88 | 79 | **89,8 %** | 81,8 % (11) | 89,8 % |
-| El resto | 103 | 33 | **32,0 %** | 22,2 % (18) | 39,2 % (143) |
-| **Las dos juntas** | **191** | **112** | **58,6 %** | 44,8 % (29) | 58,4 % (231) |
+| De contactos descartados | 6 | 5 | — (bajo el piso) | — (2) | 89,2 % (93) |
+| El resto | 40 | 14 | **35,0 %** | 37,5 % (16) | 37,6 % (173) |
+| **Las dos juntas** | **46** | **19** | **41,3 %** | 38,9 % (18) | 55,6 % (266) |
 
-**Casi la mitad de las citas del período (88 de 191, 46,1 %) son de contactos que la empresa MISMA
-había rechazado**, y cancelan al 89,8 % porque su flujo de descarte las cancela. «Publicar 62,7 % como
-*tasa de cancelación* le atribuía al negocio la mitad del trabajo de su propio filtro»
-(`lib/negocio/indicadoresDeCitas.ts:186-188`, con la medición del 2026-09-14 en `:179-184`).
+**El 2026-09-28 casi la mitad de las citas del período (88 de 191) eran de contactos que la empresa MISMA
+había rechazado; hoy son 6 de 46**, y en «Completo» siguen siendo 93 de 266, que cancelan al 89,2 % porque su flujo
+de descarte las cancela. «Publicar 62,7 % como *tasa de cancelación* le atribuía al negocio la mitad del trabajo de
+su propio filtro» (`lib/negocio/indicadoresDeCitas.ts:186-188`, con la medición del 2026-09-14 en `:179-184`).
 
 **Y la cifra que abre la pantalla cambió otra vez sin que nadie la tocara.** El comentario del módulo
-publica **33,3 %** (`lib/negocio/indicadoresDeCitas.ts:183`, del 2026-09-14, a catorce días); la foto
-anterior medía 40,9 % a treinta días (52 de 127); a las 22:06 UTC, **32,0 %** (33 de 103; 34,9 % a
-las 18:00). Las 88 citas de descartados son de los últimos treinta días: «Completo» no suma ninguna.
+publica **33,3 %** (`lib/negocio/indicadoresDeCitas.ts:183`, del 2026-09-14, a catorce días); el 2026-09-15 era
+40,9 % a treinta días; el 2026-09-28 a las 22:06 UTC, 32,0 % (33 de 103); el 2026-10-18 a las 15:38 UTC, **35,0 %**
+(14 de 40). Con 6 citas de descartados a treinta días, su tasa ya no se publica: está bajo el piso (regla 2).
 
 **Apartar no es esconder** (`lib/negocio/indicadoresDeCitas.ts:190-191`): las descartadas van con su
-conteo y su tasa, y las dos poblaciones suman exactamente el total (88 + 103 = 191).
+conteo y su tasa, y las dos poblaciones suman exactamente el total (6 + 40 = 46, medido el 2026-10-18).
 
 **Dónde se trazó la línea, y por qué da igual.** Medido el 2026-09-14 (`lib/ghl/contrato.ts:218-222`):
 con las dos etiquetas grandes o con las seis, la cifra del resto daba 33,3 %. Que la conclusión no
@@ -599,26 +596,26 @@ prueba de código lo hace cumplir.
 | `negocio.citas` | `lib/negocio/citas.ts` (el barrido) | `pruebas/codigo/147-un-solo-escritor-de-citas.test.ts` |
 | `negocio.resultados` | `lib/negocio/avanzar.ts:1` — «Avanzar: el ÚNICO lugar donde se registra un resultado» | `pruebas/codigo/132-avanzar-sin-respuesta.test.ts` |
 | El sello del setter | — | `pruebas/codigo/112-sello-del-setter.test.ts` |
+| Las cuatro de Acquisition (2026-09-30) | `lib/negocio/recolectarAnuncios.ts` y `lib/negocio/funnelDeLaCampana.ts` | `pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:50` |
+| `negocio.enlaces_de_pieza` (2026-09-29) | el link manual de Creative | `pruebas/codigo/179-url-externa.test.ts:86` |
+| `negocio.uso_de_ia` y las tablas de los agentes (2026-10-04) | `lib/agentes/uso.ts` y uno por tabla | `pruebas/codigo/198-el-transporte-de-los-agentes.test.ts:484` |
+| `negocio.hallazgos` (sigue siendo del auditor) | `lib/auditor/` | `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:132` |
 
-**Por qué existe: el caso de `negocio.mensajes`.** `lib/negocio/ingesta.ts` decía ser «EL único
-escritor» y era falso: el chat insertaba directo, con un identificador fabricado que nunca colisiona
-con el real, y cada mensaje propio quedaba dos veces. «Y no falla nada»
-(`lib/negocio/mensajes.ts:4-24`). La prueba busca la FORMA, no el nombre: todo `insertInto('mensajes')`
-es un escritor, «se llame como se llame» (`pruebas/codigo/111-un-solo-escritor.test.ts:55-56`).
+**Por qué existe: el caso de `negocio.mensajes`.** `lib/negocio/ingesta.ts` decía ser «EL único escritor» y era
+falso: el chat insertaba directo, con un identificador fabricado, y cada mensaje propio quedaba dos veces. «Y no falla
+nada» (`lib/negocio/mensajes.ts:4-24`). La prueba busca la FORMA: todo `insertInto('mensajes')` es un escritor, «se
+llame como se llame» (`pruebas/codigo/111-un-solo-escritor.test.ts:55-56`).
 
-**Por qué importa para las cifras** (`pruebas/codigo/147-un-solo-escritor-de-citas.test.ts:14-26`):
-`inicio_anterior_el` sólo es correcta si la escribe el `do update` que lee la fila vieja en la misma
-sentencia, y un escritor del webhook pondría como fecha de reserva la hora del aviso, «que se parece
-tanto a la buena que nadie lo notaría».
+**Por qué importa para las cifras** (`pruebas/codigo/147-un-solo-escritor-de-citas.test.ts:14-26`): `inicio_anterior_el`
+sólo es correcta si la escribe el `do update` que lee la fila vieja, y un escritor del webhook pondría como fecha de
+reserva la hora del aviso, «que se parece tanto a la buena que nadie lo notaría».
 
-**La excepción, y por qué no afloja la regla.** `citas.asistio` tiene un segundo escritor (`avanzar.ts`)
-porque **el CRM no la tiene** —su campo de asistencia estaba poblado en 3 de 1052 citas, medido en
-septiembre de 2026—. El barrido la deja fuera de su `do update`. «No hay dos escritores de una misma
-columna: hay dos columnas con un escritor cada una.» La prueba se **afinó** en vez de aflojarse.
+**La excepción, y por qué no afloja la regla.** `citas.asistio` tiene un segundo escritor (`avanzar.ts`) porque **el
+CRM no la tiene** —3 de 1052 citas, medido en septiembre de 2026—, y el barrido la deja fuera de su `do update`. «No
+hay dos escritores de una misma columna: hay dos columnas con un escritor cada una.» La prueba se **afinó**.
 
-**Un corolario para toda prueba de código.** Las pruebas de escritor único leen el archivo **sin
-comentarios**: «una prueba que leyera el texto crudo contaría explicaciones y se pondría roja por
-documentar bien» (`pruebas/codigo/147-un-solo-escritor-de-citas.test.ts:28-32`).
+**Un corolario para toda prueba de código.** Las pruebas de escritor único leen el archivo **sin comentarios**: «una
+prueba que leyera el texto crudo [...] se pondría roja por documentar bien» (`pruebas/codigo/147-un-solo-escritor-de-citas.test.ts:28-32`).
 
 ---
 
@@ -628,22 +625,22 @@ documentar bien» (`pruebas/codigo/147-un-solo-escritor-de-citas.test.ts:28-32`)
 no lo es, la flecha miente aunque los dos números sean correctos — y entonces la cadena se corta ahí y
 lo que sigue es una **bifurcación**, con los dos sumandos sumando el total.
 
-**El defecto concreto, re-medido el 2026-09-28** en la ventana con la que abre Lead Flow: entraron
-**276**, se les escribió a **269**, respondieron **161**, agendaron **139**. De los 139, sólo **73**
-habían contestado alguna vez. Una barra de 161 a 139 afirmaría que convirtieron el **86,3 %**; lo real
-es 73 de 161, el **45,3 %**. Casi el doble, con los cuatro números correctos.
+**El defecto concreto, re-medido el 2026-10-18** en la ventana con la que abre Lead Flow: entraron **25**, se les
+escribió a **20**, respondieron **12**, agendaron **19**. De los 19, **12** habían contestado alguna vez. Una barra de
+12 a 19 afirmaría que convirtieron el **158 %**; lo real es 12 de 12. El 2026-09-28 eran 276, 269, 161 y 139, y la
+barra habría dicho 86,3 % donde lo real era 45,3 %: casi el doble, con los cuatro números correctos.
 
-| Ventana | Lo que afirmaría el embudo | Lo que es verdad | 2026-09-15 |
+| Ventana | Lo que afirmaría el embudo | Lo que es verdad | 2026-09-28 |
 | --- | --- | --- | --- |
-| 7 días | **200 %** (2 de 1) | 100 % (1 de 1) | 97,2 % contra 38,9 % |
-| 14 días | **175 %** (7 de 4) | 100 % (4 de 4) | 87,7 % contra 46,4 % |
-| 30 días (la que abre) | 86,3 % (139 de 161) | 45,3 % (73 de 161) | 83,0 % contra 44,3 % |
-| completo | 95,2 % (279 de 293) | 56,7 % (166 de 293) | 66,4 % contra 35,0 % |
+| 7 días | 100 % (1 de 1) | 100 % (1 de 1) | 200 % contra 100 % |
+| 14 días | **120 %** (6 de 5) | 100 % (5 de 5) | 175 % contra 100 % |
+| 30 días (la que abre) | **158 %** (19 de 12) | 100 % (12 de 12) | 86,3 % contra 45,3 % |
+| completo | 98,4 % (303 de 308) | 59,1 % (182 de 308) | 95,2 % contra 56,7 % |
 
-**Las ventanas cortas lo muestran sin disfraz:** con 8 altas en dos semanas, a catorce días agendaron 7 y
-respondieron 4. Un «embudo» dibujado ahí **se ensancharía**, que es la prueba más directa de que
-«agendaron» no es un escalón de «respondieron». (Son cohortes de 3 y 8 contactos, debajo del piso: se
-citan como ilustración, no como tasas.)
+**Con pocas altas el defecto se ve sin disfraz:** a treinta días agendaron más de los que respondieron, y un
+«embudo» dibujado ahí **se ensancharía**, la prueba más directa de que «agendaron» no es un escalón de
+«respondieron». (Las cohortes de 7, 14 y 30 días están debajo o cerca del piso: se citan como ilustración.) Desde
+CN-3 el front dibuja «Conversaron antes» como parte de los que agendaron, que sí es subconjunto (`lib/negocio/lecturaDeConversation.ts:261`).
 
 **Por qué es cara: no falla.** Los cuatro valores se pueden auditar uno por uno y están bien. Lo único
 falso es la flecha, que no es un dato sino un dibujo.
@@ -660,8 +657,8 @@ falso es la flecha, que no es un dato sino un dibujo.
 4. **Hay una prueba que exige la suma** (`pruebas/base/150-indicadores-del-lead.test.ts:558`) y otra
    que impide confundirla con la tasa de respuesta (`pruebas/base/150-indicadores-del-lead.test.ts:601`).
 
-**Medido: la suma cierra, descuadre 0.** 73 + 66 = 139 a treinta días (de los 66, 6 nunca recibieron un
-mensaje); 166 + 113 = 279 en «Completo» (17 sin mensaje).
+**Medido el 2026-10-18: la suma cierra, descuadre 0.** 12 + 7 = 19 a treinta días (de los 7, 3 nunca recibieron un
+mensaje); 182 + 121 = 303 en «Completo» (19 sin mensaje). El 2026-09-28: 73 + 66 = 139 y 166 + 113 = 279.
 
 **La regla ya se aplicó fuera de Conversation, por construcción.** La cadena de Sales nace monótona
 porque cada eslabón exige al anterior, y los intentos que no encajan viajan aparte en `intentosSinCita`
@@ -679,7 +676,7 @@ poblaciones que se cruzan.
 ## Las otras reglas transversales, que no estaban en la lista
 
 Salieron de leer los encabezados de `lib/negocio/*.ts`, `db/migraciones/*.sql` y `pruebas/codigo/*.ts`.
-Todas tienen un defecto pagado escrito al lado. Las citas se re-verificaron el 2026-09-28.
+Todas tienen un defecto pagado escrito al lado. Las citas se re-verificaron el 2026-10-18.
 
 **12 · Un solo predicado por concepto.** Dos cifras de la misma pantalla no pueden tener cada una su
 definición de «cancelada». El commit `a0e1eb5` encontró `consumoDelPrecall` con `not like 'cancel%'` e
@@ -690,7 +687,7 @@ granos dibujados en la misma frase, con un 12,7 % de diferencia (`7d1bc8b`); y u
 filtro apenas distinto publicó 26 puntos de brecha entre dos closers que con el predicado compartido
 son 14, y 5 en la ventana por omisión (`371c0c5`, `lib/negocio/cierrePorCloser.ts:28`). La regla 30 es
 la respuesta estructural. **Y el riesgo del vocabulario sigue vivo:** el 2026-09-15 había 3 citas
-`noshow`; medido el 2026-09-28 son **15**, y no están en `ESTADOS_CANCELADOS` a propósito —se cuentan
+`noshow`; 15 el 2026-09-28 y **20** el 2026-10-18, y no están en `ESTADOS_CANCELADOS` a propósito —se cuentan
 aparte como plantones (§ 3)—.
 
 **13 · El denominador se elige, y `exists` no es `join`.** Cuando el campo vive en el contacto y la
@@ -720,7 +717,7 @@ reproducción» y no «no vio el video».
 
 **18 · Una cifra medida que llega a una cadena VISIBLE va fechada.** Del commit `a0e1eb5`. Cumplida en
 `components/conversation/PanelDeConversation.jsx:131@6f3bdb5` («medido en septiembre de 2026, 3 citas de 1052») y
-`:960` («las 316 citas que había al medirlo»). **Y su versión para el código, nueva:** un comentario con
+`:969@6f3bdb5` («las 316 citas que había al medirlo»), el panel de antes de CN-3. **Y su versión para el código:** un comentario con
 una cifra medida envejece cada vez que corre el colector, y nada avisa; `7d1bc8b` sacó tres cifras
 escritas a mano del encabezado del panel y de la ruta de Creative («5 de 26», que ya era 11 de 26) para
 que las calcule la pantalla. Lo que no se puede calcular viaja con su fecha (regla 39).
@@ -739,7 +736,7 @@ oculta = cero intervalos. Las cadencias viven en `lib/cadencia.ts`, con `intelig
 argumento no depende del número.
 
 **22 · Ninguna ruta autenticada se cachea.** `ADR-0701`, forzado por `pruebas/codigo/70-publicacion.test.ts`
-y por `pruebas/codigo/10-arquitectura.test.ts:308`, `:356` y `:399`.
+y por `pruebas/codigo/10-arquitectura.test.ts:308`, `:360` y `:403`.
 
 **23 · Toda operación abre el contexto de su organización.** `ADR-0202`, forzado por
 `pruebas/codigo/10-arquitectura.test.ts:238`: «olvidarse NO FALLA» (`:10-11`), y en el sistema del que
@@ -772,8 +769,8 @@ respuesta** —las ventanas de Sales con su texto (`c109ebd`), el título de Cre
 
 **29 · En CSS la especificidad manda sobre el orden.** `app/inteligencia-estetica.css:588-592@a39a732`: el corte
 de 640 px tiene que nombrar `:is(.pn-b, .pn-b.q3, .pn-b.q4)` porque el de 900 px pesa más, y sin eso a
-400 px el panel queda en dos columnas de 170 px. «Visto en el navegador, no deducido.» La hoja hoy la
-comparten las cinco pantallas de Inteligencia.
+400 px el panel queda en dos columnas de 170 px. «Visto en el navegador, no deducido.» La hoja se borró en
+CF-3 (`2415e25`, 2026-10-11), cuando la última pantalla de Inteligencia volvió al front del prototipo: la regla queda.
 
 ---
 
@@ -791,23 +788,23 @@ la otra da «226 citas alcanzables» con el rótulo de «201 contactos» (`:19-3
 y no constantes porque una constante se ata a un nombre de tabla (`:32-37`). Y la mutación mostró por
 qué compartir sirve: aceptar las congeladas en el módulo compartido rompe 7 pruebas de tres archivos,
 cuando antes mutar el predicado de un módulo dejaba a los otros ocho intactos (mensaje de `1164984`).
-**Lo que no quedó en un solo lugar, medido con `grep` el 2026-09-28:** dos consultas de Conversation
+**Lo que no quedó en un solo lugar, re-verificado el 2026-10-18:** dos consultas de Conversation
 siguen escribiendo el predicado a mano —la confirmación (`lib/negocio/indicadoresDeCitas.ts:270`) y el
 precall (`lib/negocio/consumoDelPrecall.ts:201`, que además reescribe `cancelada` como
-`<> all(ESTADOS_CANCELADOS)` en `:195`)—, y «agendó» tiene dos definiciones en el producto (§ 4).
+`<> all(ESTADOS_CANCELADOS)` en `:204`)—, y «agendó» tiene dos definiciones en el producto (§ 4).
 
 **31 · La bandera `sinOperacionesTodavia` y la primera ruta de una pantalla se mueven en el mismo
 commit.** La bandera es un cable trampa editado a mano (`lib/autorizacion/secciones.ts:80-91`): la
 prueba `ADR-0304` que empieza en `pruebas/codigo/30-portero.test.ts:354` da rojo en las dos
 direcciones —una sección con la bandera que sí tiene ruta (`pruebas/codigo/30-portero.test.ts:446-456`),
-o una sin la bandera que no tiene ninguna ruta con su `PANTALLA` (`:454-457`)—; `ADR-0303` (`:325`)
-vigila además que ninguna de las marcadas reciba una operación sin entrar al modelo de permisos; y el
-conteo literal de `pruebas/codigo/90-fundaciones.test.ts:1263@22ec755` obliga a decidir en vez de derivar.
-Por eso la ruta, la bandera y el conteo van juntos: Sales los movió de 3 a 2 en `c109ebd` y Leads
-Portal de 2 a 1 en `3c361a1` (`app/api/leads-portal/route.ts:3-8`), con una prueba de base por
-pantalla que lo exige (`pruebas/base/166-la-ruta-de-sales.test.ts:82`,
-`pruebas/base/177-la-ruta-del-leads-portal.test.ts:115`). Queda `executive`
-(`lib/autorizacion/secciones.ts:227`).
+o una sin la bandera que no tiene ninguna ruta con su `PANTALLA` (`:458-461`)—; `ADR-0303` (`:325`)
+vigila que ninguna de las marcadas reciba una operación sin entrar al modelo de permisos; y la lista literal de
+`pruebas/codigo/90-fundaciones.test.ts:1266` (hoy `['clientos']`) obliga a decidir en vez de derivar. Sales movió la
+cuenta de 3 a 2 en `c109ebd`, Leads Portal de 2 a 1 en `3c361a1` (`app/api/leads-portal/route.ts:3-8`) y el Inicio
+de 1 a 0 con el cerebro (`ce8ff6e`, 2026-10-04, `lib/autorizacion/secciones.ts:230`), con pruebas de base que lo exigen
+(`pruebas/base/166-la-ruta-de-sales.test.ts:87`, `pruebas/base/177-la-ruta-del-leads-portal.test.ts:115`). El
+2026-10-08 entró Client OS con la bandera (`lib/autorizacion/secciones.ts:474`): es una herramienta externa en un
+`iframe`, sin operaciones nuestras. El comentario de `pruebas/codigo/30-portero.test.ts:348-350` decía que la lista está vacía; dice `clientos` desde `65669f4`.
 
 **32 · El GET de una pantalla pide exactamente la capacidad que declara su sección.**
 `pruebas/codigo/30-portero.test.ts:280` (`c109ebd`). El agujero lo encontró una mutación: `ADR-0304`
@@ -817,7 +814,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:324-326`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:811`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:825`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -830,14 +827,14 @@ casos, los tres del 2026-09-21 al 26:
 - La fila de Leads Portal tiene **exactamente catorce claves**, sin teléfono ni correo
   (`pruebas/base/175-leads-del-portal.test.ts:431`, `d97848e`).
 - Del cockpit de Sales viajan cuatro campos, y los otros cuatro se buscan por nombre en la respuesta
-  serializada (`pruebas/base/166-la-ruta-de-sales.test.ts:106`, `c109ebd`): `return ok({ cockpit })`
+  serializada (`pruebas/base/166-la-ruta-de-sales.test.ts:105`, `c109ebd`): `return ok({ cockpit })`
   los traería con la forma correcta y sin que nada fallara.
 
 Lista blanca y no negra porque con una negra lo nuevo aparece solo (`lib/negocio/atribucionVisible.ts:12-14`).
 
 **34 · Toda prueba nueva se ve roja con su mutación antes de quedar.** Escrita como regla de etapa en
 `docs/OTROS/analizadores/ANALIZADORES.md:102` y nombrada en más de la mitad de los commits del
-período (`git log --since=2026-09-15 -i --grep=mutaci` devuelve 39 de los 67, medido el 2026-09-28).
+período (39 de 67 commits del 09-15 al 09-28 la nombran; del 09-29 al 10-15, 58 de 129 en `git log 861b5f0..972972e`).
 El defecto que cierra: **en verde no se distingue una prueba que protege de una que no mira nada.**
 Tres pruebas de Creative sobrevivían a su mutación (`e9ca19a`): una sembraba diez valores iguales, así
 que el promedio, el máximo y el mínimo daban lo mismo; otra no distinguía `null` de `false`; la tercera
@@ -849,24 +846,24 @@ que no tenía (`8dcb619`), y el agujero de la regla 32 sólo apareció mutando. 
 `dineroDelMes` acortó `inicio.ts` de 268 a 177 líneas y **trece citas de `docs/sales/` quedaron
 apuntando al vacío** en ese mismo commit (`pruebas/codigo/101-las-citas-de-los-documentos.test.ts:10-13`).
 La prueba exige que el archivo exista, que la línea esté en rango y que el sufijo no sea ambiguo
-(`:153-192`). Auditaba `docs/sales`; `docs/leads-portal` entró el día que nació, y **esta carpeta entra
-el 2026-09-28** (`:37-42`), cuando el patrón pasó a admitir corchetes y el espacio de `estado actual/`
-(`:52-64`); los dos cambios, en el árbol sin commit. **Lo que no atrapa, y lo dice:** la cita que sigue
-en rango y ya apunta a otra cosa (`:17-19`). Es el error J. **Y lo que no mira:** las citas de
-`docs/conversion/`, `docs/acquisition/` y el código (fuera de `AUDITADAS`, `:42`). Medido el 2026-09-28:
-en `HEAD` las cinco citas de la regla 11 —`cadenaDeCierre.ts:36`, `PanelDeConversion.jsx:24@b2dcdf5`,
-`14-LOS-CINCO-ESLABONES.md:54`, `01-LOS-DOS-RECORRIDOS.md:101`, `03-EL-RECORRIDO.md:62`— dicen 451,
-cierta al escribirlas y corrida por `4fc9e43` a la regla 10; en el árbol ya dicen 625, el título de § 11.
+(`:176`, `:184`, `:202`). Auditaba `docs/sales`; `docs/leads-portal` entró el día que nació, **esta carpeta el
+2026-09-28** (`:39-41`, con el patrón que admite corchetes y el espacio de `estado actual/`, `:77-84`; los dos en
+`861b5f0`), y desde entonces cada plan nuevo (`:55-65`). **Lo que no atrapa, y lo dice:** la cita que sigue en rango
+y ya apunta a otra cosa (`:17-19`). Es el error J. **Y lo que no mira:** el resto de `docs/conversion/` y de
+`docs/acquisition/`, y los comentarios del código. La defensa es fijar la cita a su commit: el 2026-10-18 el árbol de
+trabajo tiene las citas que llegan a esta carpeta fijadas a `972972e` (`lib/negocio/cadenaDeCierre.ts:36`, cambio sin
+commit), y este corte además no movió ninguna línea citada: § 11 sigue en la 625 y lo nuevo va después del error D.
+Una línea corrida en un archivo que la 101 no mira no se pone roja nunca.
 
 **36 · La suite corre en tres zonas horarias.** `America/Lima`, `UTC` y `Asia/Tokyo`, «justamente porque
 una cifra que cambia según dónde esté el servidor es indistinguible de una cifra correcta»
 (`lib/negocio/periodo.ts:74-77`); una prueba de Mi Día recorre además las tres zonas dentro del mismo
 archivo (`pruebas/base/92-mi-dia.test.ts:818`). No es nueva —ya se practicaba el 2026-09-10
-(`d4d6ecf`)— pero no estaba en esta lista; 32 de los 67 commits del período la nombran
-(`git log --since=2026-09-15 -i -E --grep='Asia/Tokyo|tres zonas|3 zonas'`, medido el 2026-09-28).
-**Su límite, medido en `1164984`:** cuatro pruebas de agenda fallaban sólo en la hora siguiente a la
-medianoche de Lima, porque la zona de la organización está fijada en el archivo y cambiar `TZ` no lo
-evita; quedó anotado como trabajo aparte. **No verificado** si se arregló.
+(`d4d6ecf`)— pero no estaba en esta lista; 32 de los 67 commits del 09-15 al 09-28 la nombran.
+**Su límite, medido en `1164984`:** pruebas de agenda que fallan cerca de la medianoche de Lima, porque la zona de la
+organización está fijada en el archivo. La 205 fallaba además toda la mañana y se arregló el 2026-10-07 (`ae30048`); la
+27 y la 92 siguen fallando cerca de la medianoche de Lima (memoria del proyecto, 2026-10-06). La CI de `main` está en
+verde desde la corrida siguiente a `d0e711c` (2026-10-07), la última roja (`gh run list`, 2026-10-16).
 
 **37 · Antes de la suite, una construcción fresca; y mientras corre, nada más.** Dos pruebas leen la
 construcción: `ADR-0601` exige que el paquete sea más nuevo que el código
@@ -887,7 +884,7 @@ la estética (`833fc51`), en vez de quedar en rojo; con Creative se fueron los p
 (`aed4f27`, `scripts/paridad.mjs:153`). El mismo archivo dice lo que eso significa de verdad: la
 compuerta no está en `.github/workflows/verificar.yml` y hace tiempo que no corre
 (`scripts/paridad.mjs:141-146`), así que sacar vistas de ella «es registrar una pérdida que ya había
-ocurrido». **No verificado** cuándo corrió por última vez.
+ocurrido». **No verificado** cuándo corrió por última vez; las comparaciones con el prototipo de CV-5, SA-5, CN-5 y CF-5 (09 a 11 de octubre) se midieron en el navegador, fuera de ella.
 
 **39 · Los huecos se declaran, viajan con su fecha y no se escriben en el JSX.** El defecto
 (`0c93853`, 2026-09-19): la decisión era «sólo GHL, y el hueco se declara», y el back de Creative no
@@ -897,7 +894,7 @@ que se omite no se distingue de una regresión». El patrón es `fueraDeAlcance`
 `MEDIDO_EL` viaja con la lista (`lib/negocio/huecosDeSales.ts:46-53`, `app/api/sales/route.ts:101@a39a732`;
 `lib/negocio/huecosDelLeadsPortal.ts:37`) porque sin ella «no hay ventas registradas» se lee como un
 hecho permanente del producto. **La deuda que trae:** `MEDIDO_EL` es un literal escrito a mano, y envejece
-como cualquier cifra de comentario (lo registra [05-SALES.md](05-SALES.md)).
+como cualquier cifra de comentario: el 2026-10-18 siguen diciendo el 21 y el 27 de septiembre ([05-SALES.md](05-SALES.md)).
 
 **40 · La cohorte y su resumen salen de UNA sentencia.** `lib/negocio/leadsDelPortal.ts:6-13` (`d97848e`):
 la pantalla publica «ICP alto 51» y, debajo, las 51 tarjetas; con dos consultas, un barrido entre una y
@@ -921,8 +918,8 @@ declara (`lib/negocio/costoDelAnuncio.ts:37-45`).
 
 ## Los errores de método que este proyecto ya cometió
 
-Los del A al H son de la foto anterior, actualizados. Del I al M aparecieron entre el 16 y el 28 de
-septiembre.
+Los del A al H son de la foto del 2026-09-15; del I al M, del 16 al 28 de septiembre. Los casos del 29 de
+septiembre al 16 de octubre entran en sus letras (C, I y M); ninguno pidió una letra nueva.
 
 ## A · Buscar un nombre de columna, no encontrarlo, y concluir que el dato no existe
 
@@ -945,9 +942,9 @@ escrito en su commit: la conclusión salió de mirar las columnas de primer nive
 extenderla a un campo anidado sin comprobar. El séptimo además escondía una columna que no podía
 guardar el dato —`score` era una letra— y lo encontró una prueba nueva, no `tsc`.
 
-**Verificado el 2026-09-28 contra la base:** la atribución trae `sessionSource` en **553 de 594**
-contactos, `utmSource` en 511 y `adId` en 213 (544, 506 y 213 de 584 el 2026-09-15); `score` está en
-**472 de 594**. La tabla de campos del video (`Video Pre-Call` en 213 de 584; los dos NUMERICAL en 0) es
+**Verificado el 2026-10-18 contra la base:** la atribución trae `sessionSource` en **580 de 624**
+contactos, `utmSource` en 516 y `adId` en 215 (553, 511 y 213 de 594 el 2026-09-28); `score` está en
+**477 de 624**. La tabla de campos del video (`Video Pre-Call` en 213 de 584; los dos NUMERICAL en 0) es
 del 2026-09-15, no re-medida.
 
 **La regla que sale de ahí:** *«Cierto como nombre de campo, engañoso como conclusión.»* Un `grep` sobre
@@ -976,11 +973,11 @@ Un patrón propio. El dato estaba guardado, completo, y ninguna línea del siste
 El coste no es sólo la cifra que falta: es que **se propusieron integraciones externas para conseguir
 datos que ya estaban en la base**.
 
-**Estado el 2026-09-28, verificado:** `resultados.cita_id` sigue en **0 de 7** —no hay intentos nuevos
-desde la `049`—, así que sigue sin haber nada que conectar.
+**Estado el 2026-10-18, verificado:** `resultados.cita_id` sigue en **0 de 7**. Y un caso nuevo, abierto: el CRM ya
+marca `showed` en 3 citas y `ESTADO_ASISTIO` (`lib/ghl/calendarios.ts:195`) no lo lee ningún archivo de `lib/`.
 
-**Pero el patrón volvió por otra puerta, y sigue abierto: un CAMPO CALCULADO sin lector.** El `aviso` de
-Lead Flow (`lib/negocio/indicadoresDelLead.ts:183`, armado en `:323`) sigue sin nadie que lo dibuje (§ 1).
+**Y el patrón volvió por otra puerta: un CAMPO CALCULADO sin lector.** El `aviso` de Lead Flow
+(`lib/negocio/indicadoresDelLead.ts:183`) no lo leía nadie hasta AG6 (`13723a0`, 2026-10-05), que se lo pasa al cerebro (§ 1).
 Y el período agregó dos casos del mismo tipo, cerrados en `7d1bc8b`: `coberturaMedida` se escribía y
 ningún archivo la leía, y el click-to-landing de Creative «se calculaba, se probaba, viajaba y no se
 dibujaba». Ninguna búsqueda de columnas lo habría visto: **el escritor y el lector de un campo calculado
@@ -1006,10 +1003,11 @@ cambia tiene que declarar ese cambio en cada una.
 las filas con la fecha que promete `desde` y avisa cuando `desde` describe a un caso suelto
 (`lib/negocio/periodo.ts:111-147`); lo usan los dos módulos de Conversation y Leads Portal. Acquisition
 lo tomó como requisito —cada período declara la cobertura del dato en ese período— en su § A5-23. **Y la
-lectura de hoy ya trae un sesgo nuevo que ningún aviso declara:** con 8 altas desde el 2026-09-14,
-casi toda cifra de cohorte a treinta días describe a gente que entró antes de la caída de altas del
-14 de septiembre (268 de 276, medido el 2026-09-28), y la de catorce días, a casi nadie. No es un
-defecto de cálculo; es la pregunta que hay que hacerse antes de leer una caída.
+lectura de hoy trae un sesgo que ningún aviso declara:** desde el 2026-09-14 entraron 29 contactos, así que la
+ventana de treinta días (25 contactos) describe sólo al negocio de después de la caída de altas, y «Completo» (600)
+casi sólo al de antes; y la pauta casi desapareció de la cohorte —5 de 25 vienen de Paid Social, contra 252 de 276 el
+2026-09-28 (§ 2)—. Comparar las dos ventanas compara dos negocios. No es un defecto de cálculo; es la pregunta que
+hay que hacerse antes de leer una caída.
 
 ## E · Aflojar una prueba en vez de corregir la cohorte que medía
 
@@ -1029,7 +1027,8 @@ reescribieron para afirmar **la propiedad** y no **la distancia**. Es la otra ca
 
 La tarjeta de sentimiento escribía `'chat_pre_agenda'` en la ruta y
 `pruebas/codigo/114-derivacion-del-nivel.test.ts` la rechazó. **Las listas salen de una constante, no
-del teclado.**
+del teclado.** Los agentes de IA lo llevaron a los modelos: cada agente nombra su modelo con una constante de
+`lib/agentes/modelos.ts`, y `pruebas/codigo/199-los-modelos-de-los-agentes.test.ts:19` exige que sea uno válido.
 
 ## H · Creer que revisar el código alcanza para revisar una pantalla
 
@@ -1048,12 +1047,14 @@ quedaban **75 píxeles** en las doce pantallas, «y no lo veía ninguna prueba p
 falle» (`1020412`, 2026-09-20); al arreglarlo, tres pantallas seguían desbordando de costado
 (`0810498`). Y abrir Conversion «en los dos temas y los tres anchos» encontró tres defectos que no eran
 cifras —la frase, la alineación y el ancho—, uno de ellos un «A y B y C» que sólo aparece con tres
-familias (`00e251d`). **Medir antes de arreglar vale también para lo que se ve.**
+familias (`00e251d`). Del 09 al 11 de octubre, Conversion, Sales, Conversation y Creative cerraron su vuelta al
+prototipo con una comparación medida en el navegador (CV-5, SA-5, CN-5 y CF-5). **Medir antes de arreglar vale también
+para lo que se ve.**
 
-**Lo que sigue pendiente, dicho como corresponde:** esas verificaciones se hicieron sobre la base local
-sembrada. **No verificado** si alguien abrió Conversation con sesión y datos reales desde el
-2026-09-15; para Leads Portal la prueba de humo con sesión sigue pendiente
-([10-LEADS-PORTAL.md](10-LEADS-PORTAL.md)).
+**Lo que sigue pendiente, dicho como corresponde:** esas verificaciones se hicieron en el preview local, con la base
+sembrada o con una respuesta sintética. **No verificado** que alguien haya abierto Conversation, Sales, Creative o
+Acquisition con sesión y datos reales de producción: las revisiones del usuario figuran como pendientes en la memoria
+del proyecto, y la prueba de humo de Leads Portal también ([10-LEADS-PORTAL.md](10-LEADS-PORTAL.md)).
 
 ## I · Una prueba en verde que no mira nada
 
@@ -1071,6 +1072,10 @@ El defecto que la regla 34 existe para atrapar, con los casos del período:
   mutaciones sin mirar nada. Costó ocho turnos encontrarlo.
 - **La ventana que nadie probaba** (`7d1bc8b`): poner `ventanaDeMetricas` en 999 días dejaba la suite
   entera en verde.
+- **La prueba que pasó a mirar nada sin que cambiara una línea suya** (2026-10-08): `30-portero` exige que las
+  secciones marcadas no tengan operaciones; desde el cerebro (`ce8ff6e`) la lista quedó vacía y la aserción no
+  miraba nada, y su comentario lo dice (`pruebas/codigo/30-portero.test.ts:348-350`). Con Client OS volvió a tener
+  una, y el comentario quedó viejo (regla 31) hasta el 2026-10-18 (`65669f4`), que lo corrigió.
 
 La lección: una prueba se da por buena cuando se la vio roja por la razón correcta, no cuando está
 verde.
@@ -1081,8 +1086,11 @@ Borrar la maqueta de Acquisition dejó **374 citas** apuntando a un archivo que 
 seguían resolviendo y mostraban otra cosa**: «una línea corrida no falla» (`c8494e6`, 2026-09-16). Se
 repitió con las trece citas de `docs/sales/` que motivaron la regla 35 (`371c0c5`) y con cinco citas
 corridas en Creative, entre ellas dos citas de la `053` que señalaban un ternario y un `leftJoin`
-(`7d1bc8b`). La prueba de la regla 35 atrapa la mitad cruda; la otra mitad sólo la atrapa releer la
-línea citada, que es lo que este corte hizo con cada una de las suyas.
+(`7d1bc8b`). Y se repitió en esta carpeta: al rehacer este corte, de las 524 citas que traían este documento y
+[09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md), 25 resolvían y mostraban otra cosa —una ruta que pasó de la línea
+61 a la 62, una prueba de la 82 a la 87, una lista de la 811 a la 825— sin que la 101 dijera nada. Lo que no se pudo
+reapuntar al mismo contenido se fijó a su commit (`archivo:N@sha`). La prueba de la regla 35 atrapa la mitad cruda;
+la otra mitad sólo la atrapa releer la línea citada.
 
 ## K · Medir con una sonda propia en vez de con el predicado compartido
 
@@ -1090,7 +1098,8 @@ La tabla por closer de Sales se justificaba con «69,1 % de cancelación contra 
 puntos». La sonda contaba citas de descartados y metía los `noshow` entre los cancelados; con el
 predicado de `citasAlcanzables.ts` son 14 puntos, y en la ventana por omisión 5, con uno de los dos
 closers a una cancelación de caer bajo el piso (`371c0c5`). La cifra estaba en seis documentos. **Una
-cifra de un documento se mide con el mismo predicado que la pantalla, o describe otra pantalla.**
+cifra de un documento se mide con el mismo predicado que la pantalla, o describe otra pantalla.** Las consultas
+de este corte copian los predicados de `lib/negocio/citasAlcanzables.ts` (sección final).
 
 ## L · Creer que un sello de éxito prueba que algo avanzó
 
@@ -1100,21 +1109,134 @@ presupuesto cortaba por el final. **Y el primer arreglo introdujo el defecto con
 orden hacía que lo que el presupuesto sacrificaba quedara perdido por construcción. Lo encontró una
 revisión adversarial con dos escépticos por hallazgo, que ejecutaron la función real (`be7ef03`,
 2026-09-18): «una marca de agua no puede describir un conjunto con agujeros». La ventana ahora sale de
-lo que FALTA.
+lo que FALTA. **Y volvió con el gasto**: el colector pedía 13 de las 61 campañas de la cuenta, el sello decía `corrio`
+y una campaña de mensajes no entraba nunca; la `076` (`22ec755`, 2026-10-07) lee la serie de toda la cuenta y el
+sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:923-926`).
 
 ## M · Un comentario que afirma sin medir
 
 Un comentario falso es un defecto de primera clase, porque es lo que alguien lee antes de tocar el
-código. Casos del período, todos medidos después de escritos:
+código. Casos, todos medidos después de escritos:
 
 - `esquema.ts` decía que «nada calcula el score», y de ahí salió la decisión de protegerlo como dato
   nuestro (`e350a47`); el CRM lo calculaba (error A, fila 7).
 - El comentario del click-to-landing afirmaba un piso que no existía (`7d1bc8b`).
 - `lib/negocio/atribucionDelLead.ts:148-150` afirma usar «el mismo filtro de cita alcanzable que el
-  booking rate», y desde el 2026-09-16 no es el mismo (§ 4). **Abierto el 2026-09-28.**
+  booking rate», y desde el 2026-09-16 no es el mismo (§ 4). **Sigue abierto el 2026-10-18.**
 - `lib/negocio/periodo.ts:48` y `pruebas/codigo/155-el-periodo-de-conversation.test.ts:98` dicen que la
-  fila más vieja del CRM es de 2026; medido el 2026-09-28, `min(alta_en_el_crm)` es **2025-08-08**.
-  **Abierto** (sección final).
+  fila más vieja del CRM es de 2026; `min(alta_en_el_crm)` es **2025-08-08** (medido otra vez el 2026-10-18).
+  **Sigue abierto** (sección final).
+- `lib/negocio/periodo.ts:76-77` decía que todas las ventanas del sistema son móviles; desde CV-1 (2026-10-08) los «7
+  días» y «30 días» de Acquisition y Conversion son días cerrados (regla 47). **Cerrado el 2026-10-18 (`65669f4`)**:
+  hoy dice que las ventanas eran móviles y que Acquisition, Creative y Conversion pasaron a días cerrados.
+- `pruebas/codigo/30-portero.test.ts:348-350` decía que la lista de secciones sin operaciones está vacía; desde el
+  2026-10-08 tiene a Client OS (regla 31). **Cerrado el 2026-10-18 (`65669f4`)**: hoy dice que sólo queda `clientos`.
+- Los demás que encontró esta foto —la 053 y `costoDelAnuncio.ts` en Acquisition, `conexion.ts` y
+  `recolectarActivos.ts` en Meta, `barrido.ts`, `secciones.ts`, `citasAlcanzables.ts` y `Credenciales.jsx`— se
+  cerraron en el mismo commit, sin mover ninguna línea (cada uno en el archivo de su sección, y
+  [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 14).
+
+---
+
+## Las reglas que aparecieron entre el 2026-09-29 y el 2026-10-16
+
+Van acá, después de los errores, y no detrás de la regla 41, para no correr las líneas de este documento que otros
+archivos citan (regla 35). Nacieron con Acquisition, la nueva estructura, los agentes de IA y la vuelta de las
+pantallas al front del prototipo; la 52 es vieja y no estaba en la lista.
+
+**42 · Un solo camino hacia afuera, y uno solo hacia el modelo.** `fetch(` aparece en exactamente tres archivos
+(`lib/http/cliente.ts:235-236`), forzado por `pruebas/codigo/30-portero.test.ts:546` (`ADR-0305`): todo pedido del
+servidor a un tercero sale por `pedirExterno` (`lib/http/cliente.ts:348`), porque un segundo cliente traería el manejo
+de errores opuesto. Los agentes nuevos llegan a Anthropic sólo por `llamarAlModelo`, que sale por `pedirExterno` con
+la dirección de `lib/agentes/proveedor.ts` (`lib/agentes/llamada.ts:9-10`, `d75f3be`, 2026-10-04); un reintento y sólo
+si el fallo es pasajero; nunca dentro de una transacción abierta (`:40-41`); y nunca una herramienta forzada, porque
+`claude-sonnet-5-5` la rechaza con un 400 (`:45-52`). Lo fuerza `pruebas/codigo/198-el-transporte-de-los-agentes.test.ts:159`,
+y nadie más escribe la dirección de la API (`pruebas/codigo/171-transporte-del-analizador.test.ts:198`).
+
+**43 · El uso de la IA se cuenta sin guardar ningún texto, y un fallo se nombra.** `negocio.uso_de_ia` (`069`) guarda
+una fila por llamada —agente, modelo, cuatro contadores de tokens, duración y resultado— y «ningún texto»: ni el
+prompt ni la respuesta, y `ref` acotada para que no se vuelva uno (`db/migraciones/069_el_uso_de_la_ia.sql:26-29`,
+`:71-72`). Una columna nueva ahí es una decisión: la forma la fija `pruebas/base/200-el-uso-de-la-ia.test.ts:272`. Y
+un fallo del modelo dice qué pasó, a quién le toca y una referencia que es la misma en la pantalla, en el registro y en
+`negocio.incidentes` (`pruebas/codigo/183-fallo-del-modelo.test.ts:1`, `:38`; `c936b24`, 2026-10-01). Y el error de
+un análisis ya no guarda el comienzo de la respuesta del modelo, que empezaba por los datos del cliente
+(`pruebas/codigo/201-el-error-del-analisis.test.ts:66`). Medido el 2026-10-18: **208 filas** de
+uso desde el 2026-10-05 y **1** incidente.
+
+**44 · El cerebro lee lo mismo que la pantalla, fuera de toda transacción, y sólo lo que se le ofrece.** Cada sección
+tiene su `app/api/<carpeta>/cerebro/route.ts` (`ce8ff6e` a `854a3da`, 2026-10-04 y 05). Tres reglas con su prueba: el
+modelo no se espera dentro de `conOrganizacion(` (`pruebas/codigo/207-el-cerebro-fuera-de-las-transacciones.test.ts:56`);
+lo que se ofrece es el permiso —quien ve una sección recibe exactamente sus herramientas
+(`pruebas/codigo/214-lo-que-se-ofrece-al-cerebro.test.ts:55`)—; y una cifra de la respuesta sin evidencia válida se
+quita y se dice (`pruebas/codigo/208-la-respuesta-del-cerebro.test.ts:47`). El tope del proveedor, 20 herramientas
+estrictas (`lib/agentes/llamada.ts:121-125`), lo encontró la primera evaluación real: al administrador se le ofrecían 31
+y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas-del-cerebro-son-estrictos.test.ts:59`.
+
+**45 · Una señal nombra un identificador, nunca a una persona, y no existe bajo el piso.** `negocio.senales` (`072`,
+`d715b2a`, 2026-10-05) es una tabla común para los cuatro departamentos: la huella —departamento, regla, entidad,
+ventana— impide que una señal descartada renazca mientras su condición siga, la entidad es un id y no un nombre, y no
+hay texto libre de personas (`db/migraciones/072_las_senales.sql:15-26`); con menos de 10 no hay señal
+(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:331-337`),
+y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:141` y
+`pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:101`. **Y las dos excepciones con datos de personas tienen
+su regla:** el Brief del closer es el agente que manda al modelo datos de una persona (`lib/agentes/brief/entrada.ts:14`),
+sin teléfono ni correo (`pruebas/codigo/232-el-brief-cada-dato-con-su-fuente.test.ts:96`); y ninguna evaluación real
+corre sin `--confirmo N` con el número exacto de pedidos (`scripts/evaluar-agentes.mjs:9-13`,
+`pruebas/codigo/204-el-guion-de-evaluacion-pide-el-numero.test.ts:40`), ni el sembrado de los agentes contra una base
+remota (`pruebas/codigo/203-el-sembrado-de-los-agentes-es-local.test.ts:47`). Medido el 2026-10-18: 30 señales y
+**1.152 planes** en 11 organizaciones, aunque sólo una tiene datos (el plan vacío es la marca de «ya corrió hoy»).
+
+**46 · Cada tabla de Acquisition tiene un escritor, y quien asigna un funnel lo audita.** `campanas`,
+`gasto_de_la_cuenta` y `lecturas_de_gasto` las escribe el colector y `funnels_de_campana` su módulo
+(`pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:50`, `e77d31f`, 2026-09-30). Es la regla 10 aplicada a un
+departamento entero. Medido el 2026-10-18: `negocio.funnels_de_campana` tiene **0 filas** —ninguna campaña asignada—.
+
+**47 · Dos regímenes de ventana, y el día es el de la empresa.** Las ventanas de `lib/negocio/periodo.ts` son móviles
+(`now() - make_interval`); desde CV-1 (`71c71b8`, 2026-10-08) los «7 días» y «30 días» de Acquisition y Conversion son
+días CERRADOS en la zona de la empresa —el comentario de `lib/negocio/periodo.ts:76-77` lo dice así desde `65669f4`— (`lib/negocio/diasCerrados.ts:16`, `:82-88`), y Conversion arma su cohorte con
+la misma expresión que Acquisition (`pruebas/base/246-pasos-de-conversion.test.ts:226`). Lo que no se arregló está
+diagnosticado y dejado para después (`d17e029`): las ventanas ancladas a `current_date` usan el día UTC de la base y no
+el de la empresa (`docs/OTROS/futuro/el-dia-de-la-empresa.md:8-13`). Medido el 2026-10-18: **9 de las 11 empresas
+activas** tienen la zona `UTC`; la que tiene datos tiene la suya.
+
+**48 · Las pantallas hablan de tú, nunca de vos.** `pruebas/apoyo/voseo.ts:8-9` es una lista de formas vistas en
+pantalla, no una regla gramatical (`:3`), y `pruebas/codigo/202-tools-no-vosea.test.ts:39` la pasa por
+`components/tools`, `lib/tools` y `app/api/tools` (`:40-44`, `5d60371`, 2026-10-04). Mira sólo Tools, y al corte los
+textos de la conexión con Meta (`lib/meta/graph.ts:68`, `:74`; `components/ajustes/ConexionConMeta.jsx:36`) voseaban
+sin que nada fallara. **Desde el 2026-10-18 (`65669f4`)** esos textos hablan de tú y la regla la vigila también
+`pruebas/codigo/258-la-aplicacion-no-vosea.test.ts:80-90` en `components/`, `lib/` y `app/` enteros, sin comentarios y
+fuera de Fundaciones, que es de la rama `feature/icp-oferta-v2` (`:16`). No exige todavía que toda la aplicación hable de tú: exige
+que nada vosee fuera de `TODAVIA_VOSEAN` (`:27-66`), los 38 archivos que vosean hoy, y que la lista no tenga entradas muertas
+(`:92-96`), así que sólo puede achicarse. El voseo del resto de la aplicación quedó contado y vigilado, no corregido
+([09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md), sección de lo nuevo).
+
+**49 · La marca se pinta en capas, y una sola paleta.** La capa de la marca va debajo de la aplicación y la de su
+alcance encima (`app/globals.css:22`, `pruebas/codigo/184-la-marca-en-dos-capas.test.ts:33`); la aplicación es sólo
+oscura (`app/tema.ts:33`, `pruebas/codigo/186-solo-oscuro.test.ts:32`), con Geist cargada por `next/font`
+(`pruebas/codigo/187-la-letra-de-la-marca.test.ts:35`) y un solo acento con contraste de 4,5 a 1
+(`pruebas/codigo/188-la-paleta-de-la-marca.test.ts:244`, `:275`). El defecto, en su encabezado: «un recolor se rompe
+en verde». Todo de E1 a E5 de la nueva estructura (`6d32f91` a `7ab823d`, 2026-10-01).
+
+**50 · El menú reparte lo que el portero ya dejó pasar, y la sesión llega entera.** `lib/autorizacion/departamentos.ts`
+«reparte lo que el menú ya dejó pasar» (`:1-37`, `4742d74`): ninguna regla de acceso vive ahí, y toda sección del menú
+cae en un solo lugar (`pruebas/codigo/191-los-departamentos.test.ts:92`); la barra lee la navegación de la sesión y
+nada más (`pruebas/codigo/193-la-barra-lateral.test.ts:121`). Y toda clave que la ruta de sesión manda llega al
+contexto, salvo las declaradas (`pruebas/codigo/185-la-sesion-llega-entera.test.ts:100`): «Eliminar» no aparecía para
+nadie porque `app/guardia.tsx` no copiaba una clave (`34e966c`, 2026-10-01).
+
+**51 · Una lectura por pantalla, con el piso en toda tasa y sin párrafos.** Desde la vuelta al front del prototipo
+(2026-10-08 a 11), la ruta, el cerebro y el detector leen la misma lectura: `lib/negocio/lecturaDeConversation.ts:12`,
+`lib/negocio/lecturaDeCreative.ts:13`, `lib/negocio/lecturaDeSales.ts:1-15` y, para Conversion,
+`lib/agentes/detectores/conversion.ts:5-12` (`b2dcdf5`), con la prueba que compara la cifra del cerebro con la de la
+pantalla (`pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:118`). Toda tasa lleva el piso de 10
+sobre su denominador (`lib/negocio/lecturaDeConversation.ts:18`, `pruebas/codigo/250-lectura-de-conversation.test.ts:72`),
+cada «—» viaja con su motivo, y la pantalla es un tablero sin párrafos: los avisos viajan y los da el agente
+(`components/conversation/PanelDeConversation.jsx:30-31`). Es la regla 40 llevada a todas las pantallas.
+
+**52 · Toda ruta declara su `PANTALLA`, o dice por qué no.** Una operación nueva nace cerrada: cada manejador exporta
+`PANTALLA` o está en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:502`), y `pruebas/codigo/30-portero.test.ts:363-373`
+lo exige (`433ca86`, 2026-08-21). Es lo que ata una ruta a la capacidad de su sección (reglas 31 y 32). Contado el
+2026-10-18: 111 archivos `route.ts` bajo `app/api/`, 82 con `PANTALLA` y 29 en la lista.
 
 ---
 
@@ -1124,50 +1246,47 @@ Dicho como pendiente, que es la regla.
 
 **No verificado — lo histórico.** Los incidentes de despliegue (§ 8), los códigos `42P01`, `42703` y
 `42501`, los 69 minutos de cron caído, las mediciones que sólo están en mensajes de commit (el 14 contra
-26 de Sales, los 75 píxeles, el colector atascado) y las de la memoria del proyecto (los fallos
-fantasma de la suite, el `.next` viejo). Son hechos documentados en su momento; las ventanas ya pasaron.
+26 de Sales, los 75 píxeles, el colector atascado, las 31 herramientas estrictas) y las de la memoria del proyecto (los
+fallos fantasma de la suite, el `.next` viejo, el orden de las migraciones). Son hechos documentados en su momento.
 
-**No verificado — la suite.** Las reglas 34 a 37 hablan de la suite, y este informe no la corrió: la
-base local es una sola y otros trabajos corrían en paralelo (regla 37). El número de pruebas que se cita
-en los commits del período, 2273 × 3 zonas (`1c55149`), es del mensaje, no de una corrida mía.
+**No verificado — la suite.** Las reglas 34 a 37 hablan de la suite, y este informe no la corrió (regla 37). Los
+números que se citan en los commits del período (por ejemplo, 3053 pruebas en `972972e`, según la memoria del
+proyecto) son de los mensajes, no de una corrida mía. Sí se corrió la `101` sobre esta carpeta.
 
 **Verificado, y ausente — la protección de rama.** `docs/OTROS/produccion/DESPLIEGUE.md:396` la declara
-pendiente, y el 2026-09-28 `gh api …/branches/main` da `protected: false`: **la regla de § 8 es lo único
+pendiente, y el 2026-10-18 `gh api …/branches/main` da `protected: false`: **la regla de § 8 es lo único
 que separa un commit rojo de producción** ([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 5.2).
 
-**No verificado — los 15 avisos de las otras pantallas** (§ 1) y las 18 llamadas con el 14 por omisión
+**No verificado — los 25 avisos de las otras pantallas** (§ 1) y las 19 llamadas con el 14 por omisión
 (§ 6): se contaron con `grep`, no se siguieron uno por uno hasta su lector o su llamador.
 
 **No verificado — lo que no se re-midió:** las latencias de la regla 14, el censo de etiquetas de
-descarte y la tabla de campos del video del error A. Van con su
-fecha del 2026-09-15 o anterior.
+descarte y la tabla de campos del video del error A. Van con su fecha del 2026-09-15 o anterior.
 
 **Encontrado de paso — la cadena visible sin fecha, que la foto anterior ya había señalado.**
-`lib/negocio/indicadoresDeCitas.ts:514-516` arma un aviso que se dibuja en pantalla
-(`components/conversation/PanelDeConversation.jsx:685@6f3bdb5`) y termina en presente: «el CRM tiene ese campo en
-3 de 1052 citas». La cadena vecina del panel sí está fechada (regla 18). **Sigue igual el 2026-09-28.**
+`lib/negocio/indicadoresDeCitas.ts:514-516` arma un aviso que termina en presente: «el CRM tiene ese campo en 3 de 1052
+citas». Hasta CN-3 se dibujaba (`components/conversation/PanelDeConversation.jsx:685@6f3bdb5`); hoy viaja en la
+respuesta (`app/api/auditoria/route.ts:105-107`). **Sigue igual el 2026-10-18.**
 
 **Encontrado de paso — el comentario de las ventanas que afirma sin medir.** `lib/negocio/periodo.ts:48`
 dice que la fila más vieja es de 2026, y `pruebas/codigo/155-el-periodo-de-conversation.test.ts:98` lo
-repite. Medido el 2026-09-28: `min(alta_en_el_crm)` es **2025-08-08 13:11 UTC**. La conclusión («la
-ventana no recorta nada») es cierta; el hecho con el que se justifica, no. **Sigue igual.**
+repite. Medido el 2026-10-18: `min(alta_en_el_crm)` es **2025-08-08**. La conclusión («la ventana no recorta nada») es
+cierta; el hecho con el que se justifica, no. **Sigue igual.**
 
 **Encontrado de paso — dos agujeros de integridad que ninguna de estas reglas cubre:**
 
-1. **25 contactos con `territorio` nulo**, medido el 2026-09-28 (los mismos 25 de la foto anterior en
-   número). `congelarLosQueYaNoEstan` (`lib/negocio/sincronizar.ts:289`) pone el territorio en nulo y el
-   barrido no vuelve a esas filas. **24 de los 25 no tienen `alta_en_el_crm`** (el 2026-09-15 eran los
-   25), así que son invisibles para todas las cohortes de Lead Flow y de Leads Portal en las cuatro
-   ventanas, sin ningún aviso; 5 tienen una cita alcanzable.
-2. **Las citas no tienen resta.** No hay equivalente de `congelarLosQueYaNoEstan` en `lib/negocio/citas.ts`
-   (búsqueda del 2026-09-28): una cita que el CRM deja de listar conserva su estado para siempre. Hoy las
-   que quedan fuera lo hacen por casualidad —son las 101 sin calendario— y ese accidente no protege a
-   ninguna cita nueva.
+1. **36 contactos con `territorio` nulo**, medido el 2026-10-18 (25 el 2026-09-28). `congelarLosQueYaNoEstan`
+   (`lib/negocio/sincronizar.ts:289`) pone el territorio en nulo y el barrido no vuelve a esas filas. **24 no tienen
+   `alta_en_el_crm`** —los mismos 24 viejos—, así que son invisibles para todas las cohortes sin ningún aviso; los otros
+   12 tienen alta y se congelaron desde el 2026-09-17; 11 de los 36 tienen una cita alcanzable.
+2. **Las citas no tienen resta.** No hay equivalente de `congelarLosQueYaNoEstan` en `lib/negocio/citas.ts`, que no
+   cambia desde el 2026-09-14: una cita que el CRM deja de listar conserva su estado para siempre. El detalle, con su
+   consulta, en [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) § 2.2.
 
 **Encontrado de paso — dos definiciones de «agendó» y dos copias del predicado** (§ 4 y regla 30): en
-«Completo» Lead Flow dice 279 y su atribución suma 200; y la confirmación y el precall de Conversation
-escriben `ghl_calendario_id is not null` a mano después de que `1164984` lo mudara a un solo archivo.
-Coinciden hoy a treinta días; no hay prueba que las obligue a seguir coincidiendo.
+«Completo» Lead Flow dice 303 y su atribución suma 224; y la confirmación y el precall de Conversation
+escriben `ghl_calendario_id is not null` a mano. Coinciden a treinta días; no hay prueba que las obligue a seguir
+coincidiendo.
 
 Todos son del tipo que estas reglas existen para hacer visibles, y hoy no lo son.
 
@@ -1175,45 +1294,27 @@ Todos son del tipo que estas reglas existen para hacer visibles, y hoy no lo son
 
 ## Cómo se midió este corte
 
-Cinco consultas de sólo lectura con `scripts/supabase.mjs leer`, el 2026-09-28 entre las 22:06 y las
-22:11 UTC, todas agregadas y sobre una sola organización con datos (`count(distinct org_id)` = 1 en
-`negocio.citas` y en `negocio.contactos`). Los predicados copian los de `lib/negocio/citasAlcanzables.ts`
-en SQL literal:
+Ocho consultas de sólo lectura con `scripts/supabase.mjs leer`, el 2026-10-18 entre las 15:38:44 y las 15:39:06 UTC,
+todas agregadas y sobre una sola organización con datos (`count(distinct org_id)` = 1 en `negocio.citas` y en
+`negocio.contactos`). Los predicados copian los de `lib/negocio/citasAlcanzables.ts` en SQL literal:
 
 1. **Citas** (§ 3, 4, 6, 9): alcanzable = `ghl_calendario_id is not null`; descartado = `exists` sobre
    `unnest(etiquetas)` contra las seis `ETIQUETAS_DE_DESCARTE` en minúscula; cancelada = `estado_ghl`
    en minúscula dentro de `ESTADOS_CANCELADOS`; ventana = `inicio_el >= now() - make_interval(days => N)
    and inicio_el < now()`, para N = 1, 7, 14, 30 y 3650. Más el censo de `estado_ghl`, `asistio`,
-   `reservada_el`, `negocio.resultados` y la última de `migraciones.migraciones_aplicadas`.
+   `reservada_el`, `negocio.resultados` y la última de `migraciones.migraciones_aplicadas` (`078`).
 2. **Contactos** (§ 5, 11, error A): cohorte = `alta_en_el_crm >= now() - make_interval(days => N)`;
    escritos y respondieron = `exists` de un mensaje saliente / de uno saliente y uno entrante; agendó =
    `exists` de cualquier cita (Lead Flow) y, aparte, de una alcanzable; territorio y cobertura de claves
-   de `atribucion_primera` y de `score`.
+   de `atribucion_primera`, `score` y el campo `Confirmación Agendamiento`.
 3. **Atribución por fuente** (§ 2): la cohorte de 30 y de 3650 días agrupada por
    `atribucion_primera ->> 'sessionSource'`, con «agendó» = cita alcanzable.
 4. **Sentimiento** (§ 3, 6): `negocio.analisis_del_agente` por `auditable` y `disparo`, con
    `count(sentimiento)`, y las juzgadas de `chat_post_agenda` a 7 y 30 días.
-5. **Ventanas de citas** (§ 6, 9): la consulta 1 repetida por ventana, con descartados y canceladas.
+5. a 8. **Los de la deuda**, que comparte [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md): congelados, citas sin releer,
+   mensajes, organizaciones y sus zonas, anuncios y gasto, y los conteos de las tablas de los agentes.
 
-Una verificación adversarial volvió a correr las consultas 1 a 5 el mismo día, entre las 22:27 y las
-22:40 UTC, con los predicados de `lib/negocio/citasAlcanzables.ts` y de `lib/negocio/indicadoresDelLead.ts`
-(«respondieron» = saliente **y** entrante): todas las cifras dieron iguales. Agregó dos que faltaban:
-la cobertura de `Confirmación Agendamiento` (contactos con la clave del catálogo en `campos_del_crm`,
-184 de 594) y el `creado_el` más nuevo de `negocio.resultados` (2026-09-09).
-
-**Las mismas pantallas, cuatro horas antes.** [04-CONVERSATION.md](04-CONVERSATION.md) (18:07 a 18:45
-UTC) y [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) (desde las 18:03) publican, a treinta días, una
-cohorte de Lead Flow de **277**, 270 escritos y un booking rate de **50,2 %** (139 de 277); una
-cancelación del negocio de **34,9 %** (37 de 106) y un «Completo» de 142 citas con 56 canceladas
-(39,4 %). Acá, a las 22:06: **276**, 269 y **50,4 %** (139 de 276); **32,0 %** (33 de 103); 143 citas
-con las mismas 56 (39,2 %). Ninguna lectura está mal. A las 23:56 UTC las consultas 1 y 2 se
-corrieron otra vez con el instante fijo en lugar de `now()` —2026-09-28 18:00 y 22:06:43— y
-devolvieron exactamente las dos series. La diferencia es la ventana, que rueda: en esas cuatro horas
-salió de la cohorte un contacto con alta del 2026-08-29 al que se le había escrito y que no tenía
-cita (escritos 270 → 269, agendaron 139 en los dos); salieron de la ventana de citas cuatro canceladas
-del resto que empezaban ese 29 de agosto, y entró una sin cancelar que empezó hoy entre las 18:00 y
-las 22:06 (por eso «Completo» sube a 143 con las mismas 56 canceladas). La de catorce días dio igual
-en los dos instantes: 8 contactos, 18 citas del resto, 4 canceladas (22,2 %). La foto anterior ya
-había pagado esta cuenta en quince horas —la cancelación a catorce días pasó de 33,3 % a 32,4 % entre
-dos pasadas del 2026-09-15—; por eso cada cifra de ventana va con la hora de su consulta, y
+Las mismas consultas se corrieron el 2026-10-16 a las 19:16 UTC, al empezar este corte, y dieron cifras vecinas (por
+ejemplo, 44 citas publicables a treinta días y 14 canceladas): la ventana rueda, y en dos días salieron cuatro citas
+del borde. Por eso cada cifra de ventana va con la hora de su consulta, y
 [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) lo dice para toda la carpeta.

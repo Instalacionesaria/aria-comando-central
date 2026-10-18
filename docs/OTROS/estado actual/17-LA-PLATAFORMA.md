@@ -1,45 +1,43 @@
 # La plataforma: cómo entran los datos, dónde viven y qué los vigila
-> Corte: **2026-09-28**. Las cifras de producción se midieron ese día entre las **22:01 y las 22:12
-> UTC** (`now()` de la base), con `scripts/supabase.mjs leer` y sólo agregados: de la base no salió
-> un nombre, un correo ni un teléfono, y de las credenciales sólo si están cargadas o no. El estado
-> de GitHub (protección de rama, corridas de la CI) se leyó con `gh` en modo lectura a las ~22:05
-> UTC. Cada afirmación lleva su archivo:línea, su commit o la consulta que la produjo.
-> Una verificación adversarial re-midió las cifras principales el mismo día entre las 22:25 y las
-> 22:30 UTC: coinciden, salvo los contadores que el cron movió en el medio (se dice dónde).
-> Lo que no se pudo verificar está dicho como pendiente, no omitido.
-> Para ubicar cualquier cosa nombrada acá, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
+> Corte: **2026-10-18**, con el código de producción, `972972e` (migraciones hasta la `078`). Las cifras de producción
+> son de dos fechas y cada una lo dice: las del **2026-10-18**, re-medidas para esta foto entre las 15:41 y las 16:12
+> UTC (`now()` de la base) con `scripts/supabase.mjs leer` (sólo lectura, sólo conteos y agregados, con el OK del
+> usuario): de la base no salió un nombre, un correo ni un teléfono, y de las credenciales sólo si están cargadas o
+> no; y las del **2026-09-28**, de la foto anterior, que se conservan para comparar o porque no se volvieron a medir,
+> y lo dicen. **GitHub no se volvió a leer** para esta foto (protección de rama, corridas de la CI): esas cifras son
+> del 2026-09-28. Cada afirmación lleva su `archivo:línea`, su commit o la consulta que la produjo. Lo que no se pudo verificar está dicho como pendiente, no
+> omitido. Para ubicar cualquier cosa nombrada acá, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La
+> versión anterior, con sus anexos del 2026-10-04, se lee con `git show 972972e:"docs/OTROS/estado actual/17-LA-PLATAFORMA.md"`.
 
-> **Desde el corte del 2026-09-15**
+> **Desde el corte del 2026-09-28**
 >
-> - **La foto anterior no tenía este archivo.** La plataforma estaba repartida: el costo de las
->   llamadas y los avisos en [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md), la RLS forzada y el
->   orden migración-push en [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md), y la deuda de
->   frescura en [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md). Acá se junta lo que está debajo de las
->   pantallas; el detalle de GoHighLevel sigue siendo de 06 y el del grafo, de 08.
-> - **De 3 horarios y 6 tareas a 5 horarios y 9 tareas.** En el árbol de `93a1341` (la foto
->   anterior) `vercel.json` tenía `*/10`, `3 * * * *` y `17 6 * * *`. Se sumaron `anuncios` al horario
->   diario (`3d96e8c`, 2026-09-16), `analizadores` al minuto 41 (`35665f2`, 2026-09-23) y
->   `reintentos` a las 10:07 UTC (`a434f98`, 2026-09-23).
-> - **Trece migraciones, de la `050` a la `062`**, con ocho tablas nuevas. El repositorio tenía 49
->   el 2026-09-15; hoy tiene 62, y producción tiene las 62 aplicadas. Las trece se aplicaron antes del
->   push que llevaba su código (§ 4).
-> - **La suite pasó de 1.746 a 2.273 pruebas**, y de 137 a 178 archivos (§ 5). Después del corte, al cerrar
->   la nueva estructura el 2026-10-02, eran 2.445 pruebas en 198 archivos, corridas en las tres zonas.
-> - **La compuerta de paridad se quedó sin vistas**: `contacts`, la última, salió el 2026-09-26
->   (`aed4f27`).
-> - **Lo que no cambió:** `main` sigue sin protección de rama, y el 2026-09-21 dos corridas rojas de
->   la CI llegaron igual a `main` (§ 5 y § 10).
+> - **Dieciséis migraciones, de la `063` a la `078`, aplicadas en producción** entre el 2026-09-30 y el 2026-10-15,
+>   con veinte tablas nuevas en `negocio`: de 29 a **49** (§ 4).
+> - **De 5 horarios y 9 tareas a 8 horarios y 12 tareas.** `senales` al minuto 23 (`d715b2a`, 2026-10-05),
+>   `anuncios_relleno` al 53 (`22ec755`, 2026-10-07) y `activos` al 37 (`972972e`, 2026-10-15); y la pasada de
+>   miniaturas de los contactos, dentro de `contactos` cada diez minutos (`90439cf`, 2026-10-11) (§ 2).
+> - **2026-10-03 · `97fc905`** — las funciones de Vercel corren en São Paulo (`gru1`), al lado de la base
+>   (`vercel.json:3-5`).
+> - **2026-10-04 · `d75f3be`, `cd851b3`** — el uso de la IA: `negocio.uso_de_ia`, una fila por llamada al modelo
+>   (`069`), y los incidentes que ya no retienen a la persona (`070`) (§ 4).
+> - **2026-10-12 y 2026-10-13** — la limpieza de Supabase: se borraron, con respaldo, las tablas de dos aplicaciones de
+>   análisis retiradas y las de la plataforma anterior, Closer v1; las de ARIA Brain pasaron a un esquema de respaldo
+>   (§ 4).
+> - **La suite pasó de 2.273 a 3.053 pruebas** en `972972e` (§ 5).
+> - **Lo que no cambió:** `main` sigue sin protección de rama según la última lectura (2026-09-28), y la sonda sigue sin
+>   dejar sello.
 
 **Construido y corriendo.**
 
-Un solo punto de entrada —`GET /api/cron`— recibe los seis horarios de Vercel y reparte diez
-tareas (la décima, `senales`, desde el 2026-10-05). Medido el 2026-09-28, con las nueve de entonces: las ocho tareas que dejan sello **corrieron** en la única empresa con
-token del CRM y se **saltearon con su motivo** en las otras diez activas —88 sellos, 8 tareas × 11
-empresas—. Los datos de negocio viven en 29 tablas de `negocio` con RLS forzada, y **todo el volumen
-es de una sola empresa**: 594 contactos, 333 citas, 6.110 mensajes, 3.318 filas de costo por anuncio.
-Lo que más le falta a la plataforma no es código: es **la protección de rama**, sin la cual el rojo
-de la CI no frena el despliegue, y **un rastro durable de la sonda de aislamiento**, la única señal
-de seguridad activa del sistema, que no deja sello.
+Un solo punto de entrada —`GET /api/cron`— recibe los **ocho** horarios de Vercel y reparte **doce** tareas. Medido el
+2026-10-18: las once tareas que dejan sello tienen **121 sellos**, 11 tareas × las 11 empresas activas; en la única
+empresa con token del CRM corren todas menos `activos`, que espera un token de Meta que nadie cargó, y en las otras
+diez se saltean con su motivo, salvo `senales`, que corre en las once porque mide sobre nuestra base. Los datos de
+negocio viven en **49 tablas de `negocio` con RLS forzada** y **todo el volumen sigue siendo de una sola empresa**:
+624 contactos, 368 citas, 6.478 mensajes, 4.918 filas de costo por anuncio. La base la comparten otras plataformas,
+distinguidas por el esquema; desde la limpieza del 2026-10-12/13, en `public` quedan sólo 27 tablas, ninguna de las
+dos aplicaciones retiradas ni de Closer v1. Lo que más le falta a la plataforma sigue sin ser código: **la protección
+de rama**, sin la cual el rojo de la CI no frena el despliegue, y **un rastro durable de la sonda de aislamiento**.
 
 ---
 
@@ -47,300 +45,281 @@ de seguridad activa del sistema, que no deja sello.
 
 | pieza | dónde | qué hace |
 |---|---|---|
-| El disparador | `vercel.json` | cinco entradas `crons`, todas a `/api/cron`, distinguidas sólo por el horario |
+| El disparador | `vercel.json` | ocho entradas `crons`, todas a `/api/cron`, distinguidas sólo por el horario; región `gru1` |
 | El punto de entrada | `app/api/cron/route.ts` | autentica, resuelve las empresas y sus llaves, llama al orquestador |
 | El orquestador | `lib/negocio/barrido.ts` | qué tareas toca cada horario, en qué orden, con qué presupuesto; sella |
-| Las tareas | `lib/negocio/`, `lib/auditor/`, `lib/analizadores/`, `lib/deteccion/` | una por módulo (§ 2.4) |
+| Las tareas | `lib/negocio/`, `lib/auditor/`, `lib/analizadores/`, `lib/agentes/detectores/`, `lib/deteccion/` | una por módulo (§ 2.4) |
 | El aviso del CRM | `app/api/avisos/crm/route.ts` | el webhook de GoHighLevel; un solo evento llega (§ 2.5) |
 | Los disparos manuales | cuatro rutas de `app/api/` | el reloj y los botones del Closer, el Setter y la Agenda, y la sonda a mano; aparte, `GET /api/control`, que nada llama (§ 2.6) |
-| La frescura | `lib/negocio/frescura.ts` | convierte el sello en un aviso de pantalla (§ 3) |
+| La frescura | `lib/negocio/frescura.ts` | convierte el sello en un aviso de pantalla y, desde AG15, en el comentario de la cabecera (§ 3) |
 | La capa de datos | `lib/datos/contexto.ts`, `lib/datos/capa.ts` | la transacción por organización y la de identidad (§ 4) |
-| La base | `db/arranque/`, `db/migraciones/`, `db/sembrado/`, `db/controles/`, `db/vigilancia/` | roles, 62 migraciones, siembra, sonda |
-| La suite | `pruebas/`, `scripts/pruebas.mjs` | 178 archivos, 2.273 pruebas (§ 5) |
+| La base | `db/arranque/`, `db/migraciones/`, `db/sembrado/`, `db/controles/`, `db/vigilancia/` | roles, 78 migraciones, siembra, sonda |
+| La suite | `pruebas/`, `scripts/pruebas.mjs` | 264 archivos en `972972e` (§ 5) |
 | La CI | `.github/workflows/verificar.yml` | build, tipos, base desde cero y suite en cada push y cada PR |
 | El despliegue | `docs/OTROS/produccion/DESPLIEGUE.md` | el guion y el registro; Vercel despliega por push |
-| La paridad | `scripts/paridad.mjs` | compara la app contra `aios-command-center_1.html`; hoy sin vistas (§ 6) |
+| La paridad | `scripts/paridad.mjs` | retirada desde el 2026-10-01 (§ 6) |
 | El grafo | `graphify-out/` | para ubicar; su detalle es de [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md) |
 | La lectura de producción | `scripts/supabase.mjs` | `leer` va con `read_only: true` (§ 9) |
 
 ---
 
-## 2 · Cómo entran los datos: un cron, seis horarios, diez tareas
+## 2 · Cómo entran los datos: un cron, ocho horarios, doce tareas
 
 ### 2.1 · El punto de entrada
 
-- **Es un GET que escribe, y no hay otra.** Vercel dispara los cron con GET y el tipo del cron no
-  tiene método; un `POST` recibiría un 405 y el cron no correría nunca, sin nada rojo
-  (`app/api/cron/route.ts:9-13`). Las corridas duplicadas, que Vercel admite, las frena el candado
-  del pulso (`app/api/cron/route.ts:19-21`).
+- **Es un GET que escribe, y no hay otra.** Vercel dispara los cron con GET; un `POST` recibiría un 405 y el cron no
+  correría nunca, sin nada rojo (`app/api/cron/route.ts:9-13`). Las corridas duplicadas las frena el candado del pulso
+  (`app/api/cron/route.ts:19-21`).
 - **La autenticación.** Sin `CRON_SECRET` responde 403 y lo grita en el registro, no en el cuerpo
-  (`app/api/cron/route.ts:99-112`); la cabecera trae el prefijo `Bearer ` como parte del valor y se
-  compara con `timingSafeEqual` (`app/api/cron/route.ts:86-93`, `:112-114`). Nunca se autoriza por el
-  user agent (`app/api/cron/route.ts:44-45`).
-- **Vive bajo `/api/`** porque `proxy.ts` redirige todo lo demás a `/entrar`, y una respuesta 3xx
-  da la corrida por terminada sin rastro (`app/api/cron/route.ts:49-54`); lo ata
-  `pruebas/codigo/99-cron.test.ts:269`.
-- **`maxDuration = 300`**, declarado en la ruta y no en `vercel.json` (`app/api/cron/route.ts:83`,
-  prueba en `pruebas/codigo/99-cron.test.ts:252`).
-- **La fase de identidad va primero y se cierra antes del bucle**: lista las empresas, se queda con
-  las activas (`app/api/cron/route.ts:154`) y resuelve en la misma transacción sus tres accesos —al
-  CRM, al auditor y a los Analizadores— y, sólo en el horario de `senales`, la llave de IA para redactar el
-  Plan de acción (`app/api/cron/route.ts:147-173`; AG9 de los agentes).
-- **Devuelve el reporte completo**, no un `{ ok: true }` (`app/api/cron/route.ts:175-185`). Pero ese
-  cuerpo sólo sirve para depurar a mano: lo que sobrevive es el sello de `negocio.tareas_programadas`.
+  (`app/api/cron/route.ts:99-112`); la cabecera se compara con `timingSafeEqual` (`app/api/cron/route.ts:86-93`). Nunca
+  se autoriza por el user agent (`app/api/cron/route.ts:44-45`).
+- **Vive bajo `/api/`** porque `proxy.ts` redirige todo lo demás a `/entrar`, y una respuesta 3xx da la corrida por
+  terminada sin rastro (`app/api/cron/route.ts:49-54`); lo ata `pruebas/codigo/99-cron.test.ts:269`.
+- **`maxDuration = 300`**, declarado en la ruta y no en `vercel.json` (`app/api/cron/route.ts:83`, prueba en
+  `pruebas/codigo/99-cron.test.ts:252`).
+- **La fase de identidad va primero y se cierra antes del bucle**: lista las empresas, se queda con las activas
+  (`app/api/cron/route.ts:154`) y resuelve en la misma transacción sus accesos —al CRM, al auditor y a los
+  Analizadores—, más la llave de IA sólo en el horario de `senales` y el token de Meta sólo en el de `activos`
+  (`app/api/cron/route.ts:144-146`, `app/api/cron/route.ts:147-173`).
+- **Devuelve el reporte completo**, no un `{ ok: true }` (`app/api/cron/route.ts:175-185`). Lo que sobrevive es el
+  sello de `negocio.tareas_programadas`.
 
-### 2.2 · Los seis horarios
+### 2.2 · Los ocho horarios
 
-Del mapa `HORARIOS` (`lib/negocio/barrido.ts:207-338`), indexado por la cadena literal del horario:
+Del mapa `HORARIOS` (`lib/negocio/barrido.ts:135-350`), indexado por la cadena literal del horario:
 
 | horario (UTC) | en Lima | tareas, en orden | umbral de atraso | desde |
 |---|---|---|---|---|
-| `*/10 * * * *` | cada 10 min | `contactos`, `mensajes`, `auditoria` | 80 min | antes del 2026-09-15 |
+| `*/10 * * * *` | cada 10 min | `contactos` (con la pasada de miniaturas), `mensajes`, `auditoria` | 80 min | antes del 2026-09-15; miniaturas el 2026-10-11 |
 | `3 * * * *` | al minuto 3 | `citas`, `sonda` | 180 min | antes del 2026-09-15 |
-| `17 6 * * *` | 01:17 | `mejora`, `anuncios` | 3.000 min | `mejora` antes; `anuncios` el 2026-09-16 |
+| `17 6 * * *` | 01:17 | `mejora`, `anuncios` | 3.000 min | `anuncios` el 2026-09-16 |
 | `41 * * * *` | al minuto 41 | `analizadores` | 180 min | 2026-09-23 |
 | `7 10 * * *` | 05:07 | `reintentos` | 2.940 min | 2026-09-23 |
-| `23 * * * *` | al minuto 23; a cada empresa, después de las 6:00 de su zona | `senales` | 2.940 min | 2026-10-05 |
+| `23 * * * *` | al minuto 23; a cada empresa, una vez por día después de las 6:00 de su zona | `senales` | 2.940 min | 2026-10-05 |
+| `53 * * * *` | al minuto 53 | `anuncios_relleno` | 180 min | 2026-10-07 |
+| `37 * * * *` | al minuto 37 | `activos` | 180 min | 2026-10-15 |
 
-Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:299-300`). Los minutos 3, 17, 41 y 7 no son
-adorno: dos horarios en el mismo minuto se frenan por el candado y uno queda `frenada` sin trabajar
-(`lib/negocio/barrido.ts:213-216`, `:259-260`). Cuatro pruebas atan el mapa a la configuración:
+Están en `lib/negocio/barrido.ts:207-211`, `:219-223`, `:256-260`, `:275-279`, `:303-307`, `:334-338`, `:290-294` y
+`:318-322`, y en `vercel.json:6-39`. Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:299-300`). Los minutos
+no son adorno: dos horarios en el mismo minuto se frenan por el candado y uno queda `frenada` sin trabajar
+(`lib/negocio/barrido.ts:213-216`, `lib/negocio/barrido.ts:237-239`), y cada horario nuevo eligió el suyo entre los
+libres (`lib/negocio/barrido.ts:288-289`, `lib/negocio/barrido.ts:316-317`). Las pruebas atan el mapa a la
+configuración:
 
 - cada horario de `vercel.json` tiene entrada en `HORARIOS` y cada entrada está en `vercel.json`
   (`pruebas/codigo/99-cron.test.ts:80`, `:92`);
-- el umbral es al menos `2 × cadencia + 60`, para que perder una corrida no grite
-  (`lib/negocio/barrido.ts:126-133`, prueba en `pruebas/codigo/99-cron.test.ts:104`);
-- un horario ausente o desconocido corre **todas** las tareas y lo dice con `horarioDesconocido`,
-  nunca «no hacer nada» (`lib/negocio/barrido.ts:456-466`, prueba en
-  `pruebas/codigo/99-cron.test.ts:227`).
+- el umbral es al menos `2 × cadencia + 60` (`lib/negocio/barrido.ts:126-133`, prueba en
+  `pruebas/codigo/99-cron.test.ts:104`); `senales` dispara cada hora pero su cadencia es diaria, y su umbral es el de
+  una tarea diaria (`lib/negocio/barrido.ts:324-329`);
+- un horario ausente o desconocido corre **todas** las tareas y lo dice con `horarioDesconocido`
+  (`lib/negocio/barrido.ts:456-466`, prueba en `pruebas/codigo/99-cron.test.ts:227`);
+- el relleno corre sólo en su horario, cada hora (`pruebas/codigo/99-cron.test.ts:354`).
 
-El plan de Vercel es **Pro, confirmado el 2026-08-28** (`lib/negocio/barrido.ts:145`); con Hobby, un
-horario más frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:139-141`).
+El plan de Vercel es **Pro, confirmado el 2026-08-28** (`lib/negocio/barrido.ts:145`); con Hobby, un horario más
+frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:139-141`).
 
 ### 2.3 · El bucle
 
-- **Es reconciliación, no una cola.** Vercel no reintenta y admite corridas perdidas y duplicadas;
-  nada se acumula ni se incrementa, y el orden se decide cada vez por el sello más viejo
-  (`lib/negocio/barrido.ts:15-24`).
-- **La sonda va primero**, en su propio `try/catch`: es la única señal de seguridad y cuesta cero
-  llamadas (`lib/negocio/barrido.ts:487-505`).
-- **Las empresas van por sello más viejo**, y las que nunca corrieron o quedaron `sin_tiempo`, antes
-  que todas (`lib/negocio/barrido.ts:507-520`, `:848`). Sin la segunda regla, la que se queda sin
-  tiempo se sellaría última y volvería al fondo de la fila para siempre.
-- **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:368`). Es un
-  guardia parcial: una sola llamada colgada puede esperar 240 s y Vercel corta la función a los 300
-  (`lib/negocio/barrido.ts:355-366`). Los Analizadores, que corren solos, tienen hasta 285 s
-  (`lib/negocio/barrido.ts:380`).
-- **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca
-  un `+1` (`lib/negocio/barrido.ts:1050-1084`). Los estados son `corrio`, `saltada`, `frenada`,
-  `sin_tiempo` y `fallo`; los tres del medio son normales (`lib/negocio/barrido.ts:110-111`,
-  `lib/negocio/frescura.ts:160-161`).
+- **Es reconciliación, no una cola** (`lib/negocio/barrido.ts:15-24`).
+- **La sonda va primero**, en su propio `try/catch` (`lib/negocio/barrido.ts:487-505`).
+- **Las empresas van por sello más viejo**, y las que nunca corrieron o quedaron `sin_tiempo`, antes que todas
+  (`lib/negocio/barrido.ts:507-520`, `lib/negocio/barrido.ts:1034`).
+- **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:368`). Es un guardia
+  parcial: una sola llamada colgada puede esperar 240 s y Vercel corta la función a los 300
+  (`lib/negocio/barrido.ts:355-366`). Los Analizadores y la pasada de los detectores, que corren solos, tienen hasta
+  285 s (`lib/negocio/barrido.ts:380`, `lib/negocio/barrido.ts:770-774`).
+- **Qué credencial pide cada tarea.** `auditoria`, `mejora`, `analizadores`, `reintentos`, `senales` y `activos` no
+  piden el token del CRM (`lib/negocio/barrido.ts:549-557`); cada una se saltea con su propio texto si le falta lo suyo
+  (`lib/negocio/barrido.ts:564-586`).
+- **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca un `+1`
+  (`lib/negocio/barrido.ts:1050-1084`). Los estados son `corrio`, `saltada`, `frenada`, `sin_tiempo` y `fallo`
+  (`lib/negocio/barrido.ts:110-111`). La pasada de los detectores es la excepción: a la empresa a la que no le tocaba,
+  no la sella (`lib/negocio/barrido.ts:756-775`).
 
-**Cuánto dura una corrida, medido en los sellos de la de las 22:10 UTC del 2026-09-28** (horario
-`*/10`): van de las 22:10:16 a las 22:11:49, **93 s de los 180 del presupuesto**. Cada una de las diez
-empresas sin token se sella en ~1,7 s; la única con token tomó ~75 s, casi todo en `contactos` (su
-sello llegó 70 s después de terminar la empresa anterior). Consulta: primer y último sello de
-`contactos`, `mensajes` y `auditoria` por empresa, sin slugs.
+**Cuánto dura una corrida** se midió el 2026-09-28 (horario `*/10`, 93 s de los 180 del presupuesto, ~75 de la única
+empresa con token). **No se volvió a medir**; desde el 2026-10-11 esa misma corrida suma la pasada de hasta 50
+miniaturas (`lib/negocio/miniaturaDelContacto.ts:43`, llamada en `lib/negocio/barrido.ts:856-860`).
 
-### 2.4 · Las nueve tareas
+### 2.4 · Las doce tareas
 
-| tarea | módulo | qué hace | llamadas en la última corrida (sello de `aria`) |
+| tarea | módulo | qué hace | llamadas en el último sello de `aria`, 2026-10-18 |
 |---|---|---|---|
-| `sonda` | `lib/deteccion/sonda.ts:103` | busca filas de una organización de control vistas desde la otra; avisa si hay fuga | 0 al proveedor; **no deja sello** |
-| `contactos` | `lib/negocio/sincronizar.ts:157` | trae los contactos por etiqueta de territorio | 7 |
+| `sonda` | `lib/deteccion/sonda.ts:103` | busca filas de una organización de control vistas desde la otra | 0 al proveedor; **no deja sello** |
+| `contactos` | `lib/negocio/sincronizar.ts:157` y `lib/negocio/miniaturaDelContacto.ts:157` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
 | `mensajes` | `lib/negocio/ingesta.ts:106` | camina las conversaciones por marca de agua | 1 |
 | `auditoria` | `lib/auditor/analisis.ts:319` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
-| `citas` | `lib/negocio/citas.ts:146` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:74`, `:80`) | 10 |
+| `citas` | `lib/negocio/citas.ts:146` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:74`, `:80`) | 11 |
 | `mejora` | `lib/auditor/buscarMejora.ts:137` | una mejora de prompt por día y por empresa | 1 inferencia |
-| `anuncios` | `lib/negocio/recolectarAnuncios.ts:508` | el costo diario por anuncio, vía GoHighLevel | 40 |
-| `analizadores` | `lib/analizadores/tarea.ts:75` | descubre reuniones en tl;dv, analiza pendientes, completa fichas | 1 |
+| `anuncios` | `lib/negocio/recolectarAnuncios.ts:508` | el costo diario por anuncio y el gasto de toda la cuenta, vía GoHighLevel | 8 |
+| `anuncios_relleno` | `lib/negocio/rellenarAnuncios.ts:205` | busca qué campaña gastó en los días que no cuadran con la cuenta; con todo cuadrado no llama | 0 |
+| `activos` | `lib/negocio/recolectarActivos.ts:183` | la miniatura y el post de cada anuncio, de Meta | `saltada`: sin token de Meta |
+| `analizadores` | `lib/analizadores/tarea.ts:75` | descubre, analiza, completa fichas y clasifica objeciones | 2 |
 | `reintentos` | `lib/analizadores/tarea.ts:231` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:207`) | 0 |
+| `senales` | `lib/agentes/detectores/correr.ts:131` | la pasada diaria de los detectores y el Plan de acción de cada departamento | 8 (las redacciones) |
 
-- **`contactos` va antes de `mensajes`, y eso es corrección, no gusto.** La ingesta descarta la
-  conversación de un contacto que no está en `negocio.contactos` y avanza la marca de agua sobre ella:
-  si el contacto se sincronizara después, sus mensajes quedarían debajo de la marca para siempre
-  (`lib/negocio/barrido.ts:159-163`; prueba en `pruebas/codigo/99-cron.test.ts:150`). `auditoria` va
-  después de `mensajes` para no juzgar un transcript incompleto (`lib/negocio/barrido.ts:189-194`).
-- **`anuncios` relee hoy y los dos días anteriores** (`lib/negocio/recolectarAnuncios.ts:61`), porque
-  Meta corrige hacia atrás y la fila se reescribe en vez de ignorarse
-  (`lib/negocio/recolectarAnuncios.ts:11-19`); el relleno inicial es de 30 días
-  (`lib/negocio/recolectarAnuncios.ts:69`). Su detalle y lo que falta de Meta están en
-  [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 9 y en [01-ACQUISITION.md](01-ACQUISITION.md).
-- **Los Analizadores corren solos y cada hora** porque un análisis necesita minutos seguidos y en una
-  corrida de 300 s entran un descubrimiento y uno o dos análisis (`lib/analizadores/tarea.ts:1-25`).
-  Su detalle es de [14-ANALIZADORES.md](14-ANALIZADORES.md).
-- **La lista de tareas válidas la cierra también la base**: el `check` de
-  `tareas_programadas.tarea` acepta exactamente las nueve desde la `062`
-  (`db/migraciones/062_reintentos_de_los_analizadores.sql:22-23`).
-
-El gasto contra GoHighLevel de la única empresa conectada, contado por día, está en
-[06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 3.
+- **`contactos` va antes de `mensajes`, y eso es corrección, no gusto** (`lib/negocio/barrido.ts:159-163`; prueba en
+  `pruebas/codigo/99-cron.test.ts:150`). `auditoria` va después de `mensajes` para no juzgar un transcript incompleto
+  (`lib/negocio/barrido.ts:189-194`).
+- **`anuncios` relee hoy y los dos días anteriores** (`lib/negocio/recolectarAnuncios.ts:61`), porque Meta corrige
+  hacia atrás (`lib/negocio/recolectarAnuncios.ts:11-19`). Desde la `076` lee también el gasto de toda la cuenta, y lo
+  que no cuadra lo busca el relleno con su propio presupuesto (`lib/negocio/barrido.ts:252-255`,
+  `lib/negocio/rellenarAnuncios.ts:65`). Su detalle es de [01-ACQUISITION.md](01-ACQUISITION.md) y
+  [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md).
+- **`activos` corre cada hora** porque la URL de la miniatura vence, y sin token se sella `saltada` sin llamar a nadie
+  (`lib/negocio/barrido.ts:309-314`). Su detalle es de [02-CREATIVE.md](02-CREATIVE.md).
+- **Los Analizadores corren solos y cada hora** (`lib/analizadores/tarea.ts:1-25`); su detalle es de
+  [14-ANALIZADORES.md](14-ANALIZADORES.md).
+- **La lista de tareas la cierra también la base**: el `check` de `tareas_programadas.tarea` acepta exactamente las
+  doce desde la `078` (`db/migraciones/078_el_activo_del_anuncio.sql:65-68`); la `072` y la `076` lo habían ampliado
+  antes.
 
 ### 2.5 · El aviso del CRM
 
-`POST /api/avisos/crm` es el webhook. La cabecera trae dos mitades —una pimienta global y el
-secreto de la empresa— y la global se compara antes de tocar la base
-(`app/api/avisos/crm/route.ts:17`, `:31`); el evento viaja en `?evento=`
-(`app/api/avisos/crm/route.ts:192`); responde **siempre 200** salvo que falle nuestra base, porque
-GoHighLevel apaga un workflow ante fallos repetidos (`app/api/avisos/crm/route.ts:61-70`); y tiene
-`maxDuration = 10` (`app/api/avisos/crm/route.ts:92`). Hay siete eventos declarados
-(`lib/ghl/avisos.ts:65`).
+`POST /api/avisos/crm` es el webhook. La cabecera trae una pimienta global y el secreto de la empresa, y la global se
+compara antes de tocar la base (`app/api/avisos/crm/route.ts:17`, `:31`); el evento viaja en `?evento=`
+(`app/api/avisos/crm/route.ts:192`); responde **siempre 200** salvo que falle nuestra base
+(`app/api/avisos/crm/route.ts:61-70`); y tiene `maxDuration = 10` (`app/api/avisos/crm/route.ts:92`). Hay siete
+eventos declarados (`lib/ghl/avisos.ts:65`).
 
-Medido el 2026-09-28 22:04 UTC (re-medido a las 22:26, sin cambios):
+Medido el 2026-10-18:
 
-- **Llega un solo evento, `mensaje.entrante`**: 327 filas y 339 entregas (el 2026-09-15 eran 311 y
-  320). Los otros seis, cero, igual que en la foto anterior; el detalle es de
-  [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 7.
-- **7 avisos sin procesar y sin error**, recibidos entre el 2026-08-29 y el 2026-09-17; ninguno
-  desde entonces.
-- **3 avisos en los últimos 7 días**; el último se recibió el 2026-09-27 a las 21:39 UTC y se procesó
-  dos segundos después. **Después de él no entró ningún mensaje**: 0 entrantes con fecha posterior.
-- De los 6.110 mensajes, **303 entraron por el aviso** (13 desde el 2026-09-15), **5.805 por la
-  ingesta** (254 desde el 2026-09-15) y 2 son propios.
+- **Sigue llegando un solo evento, `mensaje.entrante`**: 342 filas (327 el 2026-09-28).
+- El último aviso se procesó el **2026-10-17 a las 06:07 UTC**.
+- De los 6.478 mensajes, **318 entraron por el aviso**, **6.158 por la ingesta** y 2 son propios (el 2026-09-28: 303,
+  5.805 y 2).
 
 ### 2.6 · Los disparos manuales, que siguen vivos
 
-El cron no es el único que trae datos. El Closer y el Setter piden la ingesta desde el navegador,
-cada 10 s mientras la pestaña está a la vista (`components/views/CloserView.jsx:176`, `:183`;
-`components/views/SetterView.jsx:237`, `:242` → `app/api/mensajes/ingesta/route.ts:62`), la Agenda
-tiene su botón de refresco (`components/closer/Agenda.jsx:173` →
+El Closer y el Setter piden la ingesta desde el navegador, cada 10 s mientras la pestaña está a la vista
+(`components/views/CloserView.jsx:176`; `components/views/SetterView.jsx:237`, `:242` →
+`app/api/mensajes/ingesta/route.ts:62`), la Agenda tiene su botón de refresco (`components/closer/Agenda.jsx:173` →
 `app/api/closer/agenda/refrescar/route.ts:63`) y la lista de contactos el suyo
-(`components/negocio/ListaDeContactos.jsx:234` →
-`app/api/contactos/sincronizar/route.ts:64`). Lo que impide que pestañas y cron se pisen es el pulso:
-un candado `.forUpdate().skipLocked()` para el reclamo y un alquiler de 10 s para todo lo demás
-(`lib/negocio/pulso.ts:12-25`, `:113`; `lib/cadencia.ts:40`).
+(`components/negocio/ListaDeContactos.jsx:234` → `app/api/contactos/sincronizar/route.ts:64`). Lo que impide que
+pestañas y cron se pisen es el pulso: un candado `.forUpdate().skipLocked()` para el reclamo y un alquiler de 10 s
+para todo lo demás (`lib/negocio/pulso.ts:12-25`, `:113`; `lib/cadencia.ts:40`).
 
-La cuarta es `POST /api/sonda`, que corre la sonda de aislamiento fuera del cron con su propio secreto,
-`SONDA_TOKEN`, comparado con `timingSafeEqual` (`app/api/sonda/route.ts:16-17`, `:46-47`,
-`:69`). Ninguna entrada de `vercel.json` la llama: la sonda programada corre dentro de `/api/cron`, al
-minuto 3. Su encabezado todavía dice que «lo llama una tarea programada» (`app/api/sonda/route.ts:3`);
-el guion del despliegue la usa como chequeo a mano después de un push
-(`docs/OTROS/produccion/DESPLIEGUE.md:408`). Si algo más la llama hoy, no lo verifiqué.
+La cuarta es `POST /api/sonda`, con su propio secreto, `SONDA_TOKEN`, comparado con `timingSafeEqual`
+(`app/api/sonda/route.ts:16-17`, `:46-47`). Ninguna entrada de `vercel.json` la llama: la sonda programada corre
+dentro de `/api/cron`, al minuto 3, y su encabezado todavía dice que «lo llama una tarea programada»
+(`app/api/sonda/route.ts:3`). El despliegue la usa como chequeo a mano (`docs/OTROS/produccion/DESPLIEGUE.md:408`).
 
-Hay otra ruta que se presenta como sonda y ningún archivo de esta carpeta nombraba: **`GET
-/api/control`**, de la Etapa 3 (`433ca86`, 2026-08-21). Pide `NINGUNA` capacidad y `SIN_SECCION`
-(`app/api/control/route.ts:25-26`, `:35`), así que la atiende cualquier sesión activa, y lee
-`control_aislamiento` con `conOrganizacion(contexto.orgEfectiva)`: la cadena entera, del manejador a
-la base (`app/api/control/route.ts:10-12`, `:40-46`). Figura entre las rutas sin pantalla
-(`lib/autorizacion/secciones.ts:498-500`). **Nada del repositorio llama al manejador** (búsqueda de
-`api/control` en `lib/`, `app/`, `components/`, `pruebas/` y `scripts/`, 2026-09-28): las pruebas
-arman peticiones con ese camino y se las pasan al portero, sin importar la ruta
-(`pruebas/base/40-portero.test.ts:293`, `pruebas/base/42-login.test.ts:729`,
-`pruebas/base/50-administracion.test.ts:671`), y la sonda programada no pasa por ella, sino que
-repite el camino con `conOrganizacion()` y `datos()` (`lib/deteccion/sonda.ts:119-121`). Su
-encabezado dice ser «la sonda que la Etapa 8 necesita» (`app/api/control/route.ts:22-23`), y ya no
-describe lo que corre (§ 10). Por la RLS forzada, cada sesión ve sólo las filas de su organización
-efectiva, y las dos filas son de las organizaciones de control (§ 7): a una empresa real le
-devolvería la lista vacía. Es una deducción del código; que la ruta responda en producción no lo
-verifiqué, porque Vercel no está al alcance. No expone datos, pero es superficie sin uso que viaja
-en cada push a `main` (§ 5.3).
+**`GET /api/control`**, de la Etapa 3, pide `NINGUNA` capacidad y `SIN_SECCION` (`app/api/control/route.ts:25-26`,
+`:35`), lee `control_aislamiento` con `conOrganizacion` (`app/api/control/route.ts:40-46`) y figura entre las rutas sin
+pantalla (`lib/autorizacion/secciones.ts:513`). Nada del repositorio llama al manejador (búsqueda del 2026-09-28, no
+repetida); las pruebas arman peticiones con ese camino y se las pasan al portero (`pruebas/base/40-portero.test.ts:293`).
+Su encabezado dice ser «la sonda que la Etapa 8 necesita» (`app/api/control/route.ts:22-23`), y la sonda programada no
+pasa por ella (`lib/deteccion/sonda.ts:119-121`).
 
 ---
 
 ## 3 · Cómo se sabe si un dato está fresco
 
-**El sello es la única evidencia durable de que el cron corre.** Hay una fila por par (empresa,
-tarea) en `negocio.tareas_programadas`, escrita siempre; la consulta para mirarla a mano está en
-`docs/OTROS/produccion/DESPLIEGUE.md:337-352`.
+**El sello es la única evidencia durable de que el cron corre.** Hay una fila por par (empresa, tarea) en
+`negocio.tareas_programadas`; la consulta para mirarla a mano está en `docs/OTROS/produccion/DESPLIEGUE.md:337-352`.
 
-`frescuraDe(tarea)` la convierte en un aviso de pantalla (`lib/negocio/frescura.ts:114`) con cuatro
-estados —`nunca`, `atrasada`, `fallando`, `al_dia`— de los que sólo el último se calla
-(`lib/negocio/frescura.ts:50-59`). El umbral es el máximo de los horarios que corren la tarea
-(`lib/negocio/frescura.ts:72`), y un `fallo` se avisa antes de mirar el umbral, porque el sello de una
-tarea que falla siempre está fresco (`lib/negocio/frescura.ts:163`). `frescuraDelAviso()` hace lo
-mismo con el webhook: lee `procesado_el` y no `recibido_el`, cambia `fallando` por
-`llega_sin_procesar` —avisos que llegan y no se interpretan, el caso que motivó la función— y tiene
-un umbral de 120 minutos (`lib/negocio/frescura.ts:209-215`, `:231`, `:258`).
+`frescuraDe(tarea)` la convierte en un aviso (`lib/negocio/frescura.ts:114`) con cuatro estados —`nunca`,
+`atrasada`, `fallando`, `al_dia`— de los que sólo el último se calla (`lib/negocio/frescura.ts:50-59`). El umbral es
+el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fallo` se avisa antes de mirar el umbral
+(`lib/negocio/frescura.ts:163`); `saltada`, `frenada` y `sin_tiempo` no se avisan (`lib/negocio/frescura.ts:160-161`).
+`frescuraDelAviso()` hace lo mismo con el webhook, con `llega_sin_procesar` y un umbral de 120 minutos
+(`lib/negocio/frescura.ts:209-215`, `:231`, `:258`).
 
-**Quién la lee** (búsqueda de `frescuraDe(` y `frescuraDelAviso(` en `lib/`, `app/` y `components/`,
-2026-09-28):
+**Quién la lee** (búsqueda de `frescuraDe(` en `lib/`, `app/` y `components/`, 2026-10-18): la Agenda del Closer
+(`lib/negocio/agenda.ts:352`), el chat de la ficha (`lib/negocio/ficha.ts:289`, `:295`), Leads Portal
+(`app/api/leads-portal/route.ts:63-64`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
+**comentario de la cabecera** de cada departamento (`lib/agentes/cabecera.ts:126`, `lib/agentes/cabecera.ts:171`,
+`lib/agentes/cabecera.ts:180`), los detectores, que no publican lo que no pueden medir
+(`lib/agentes/detectores/creative.ts:111`, `lib/agentes/detectores/conversion.ts:120`,
+`lib/agentes/detectores/conversation.ts:90`), y una herramienta del cerebro que lee la frescura de las tareas
+(`lib/agentes/executive/adaptadores/plataforma.ts:58`). **Lo que nadie lee es el motivo del sello**:
+`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:723`).
 
-- la Agenda del Closer, `citas` (`lib/negocio/agenda.ts:352`);
-- el chat de la ficha, `mensajes` y el aviso (`lib/negocio/ficha.ts:289`, `:295`);
-- Leads Portal, `contactos` y `citas` (`app/api/leads-portal/route.ts:63-64`).
-
-**Quién no:** ninguna pantalla lee el sello de `anuncios`, `auditoria`, `mejora`, `analizadores` ni
-`reintentos`. `tareas_programadas` aparece sólo en `lib/negocio/barrido.ts`,
-`lib/negocio/frescura.ts`, el tipo del esquema (`lib/datos/esquema.ts:715`) y un comentario de
-`app/api/cron/route.ts:184` (búsqueda en `lib/`, `app/` y `components/`). O sea que si el
-colector de anuncios dejara de correr, Acquisition, Creative, Conversion y Sales no lo dirían con un
-aviso de frescura; qué fecha de datos muestra cada una es de su propio archivo de esta carpeta.
-
-**La frescura por tabla, medida el 2026-09-28 a las 22:03 UTC:**
+**La frescura por tabla, medida el 2026-10-18 hacia las 15:42 UTC:**
 
 | tabla | marca | valor | lectura |
 |---|---|---|---|
-| `contactos` | `max(sincronizado_el)` | 22:00:30 | 569 de 594 releídos en la última hora; los 25 restantes, § 8 |
-| `citas` | `max(sincronizado_el)` | 22:03:50 | 34 de 333 releídas en 2 h: la ventana −14/+45 tiene 30 por `inicio_el` |
-| `mensajes` | marca de agua de la ingesta | 21:56:31 | último guardado a las 20:51; último entrante guardado el 2026-09-27 21:41 (enviado 21:39) |
-| `avisos_del_crm` | `max(procesado_el)` | 2026-09-27 21:39 | ~24 h: no hubo entrantes desde entonces (§ 2.5) |
-| `anuncios`, `metricas_de_anuncio` | `max(sincronizado_el)` | 06:20 | la pasada diaria de las 06:17 |
-| `campos_del_crm` | `max(visto_el)` | 00:00:30 | el catálogo se relee como mucho una vez por día (`lib/negocio/camposDelCrm.ts:66`) |
-| `analizador_llamadas` | `max(creado_el)` | 17:41 | última reunión descubierta; último análisis, 2026-09-25 21:41 |
-| `hallazgos` | `max(detectado_el)` | 2026-09-21 21:12 | 24 filas, las 24 sin `resuelto_el` |
+| `contactos` | `max(sincronizado_el)` | 15:40:10 | 588 de 624 releídos en la última hora (a las 16:11); los 36 restantes, § 8 |
+| `citas` | `max(sincronizado_el)` | 16:03:20 (a las 16:05) | 16 releídas en las últimas 2 h |
+| `avisos_del_crm` | `max(procesado_el)` | 2026-10-17 06:07 | ~34 h |
+| `anuncios`, `metricas_de_anuncio` | `max(sincronizado_el)` | 06:18 | la pasada diaria de las 06:17; último día con gasto > 0, el **2026-10-14** |
+| `analizador_llamadas` | `max(creado_el)` | 2026-10-12 18:41 | ver [14-ANALIZADORES.md](14-ANALIZADORES.md) § 4 |
+| `hallazgos` | `max(detectado_el)` | 2026-10-06 16:40 | 27 filas, las 27 sin `resuelto_el` |
+| `incidentes` | `max(creado_el)` | 2026-10-05 15:30 | 1 fila |
 
 ---
 
-## 4 · La base: tres esquemas, 42 tablas, 62 migraciones
+## 4 · La base: esquemas, 49 tablas nuestras, 78 migraciones
 
-**Los esquemas**, medidos en `pg_class` el 2026-09-28:
+**Una base, varias plataformas.** El proyecto de Supabase aloja otras herramientas, y lo nuestro se distingue por el
+**esquema**: `identidad`, `negocio` y `migraciones`. Medido en `pg_class` el 2026-10-18:
 
-| esquema | tablas | RLS habilitada | RLS forzada | políticas |
+| esquema | de quién | tablas | RLS forzada | políticas |
 |---|---|---|---|---|
-| `identidad` | 11 (+1 vista) | 11 | 11 | 19, 8 de ellas por `app.org_id` |
-| `negocio` | 29 | 29 | 29 | 29, una por tabla, las 29 por `app.org_id` |
-| `migraciones` | 2 | 0 | 0 | — |
+| `identidad` | nuestro | 11 (+1 vista) | 11 | 19 |
+| `negocio` | nuestro | **49** (29 el 2026-09-28) | **49** | 49, una por tabla |
+| `migraciones` | nuestro | 2 | 0 | — |
+| `public` | compartido | 27: 6 `aria_cc_*` que leemos, 16 `clientos_*` de una herramienta externa sin repositorio en este proyecto y 5 de bots de otra herramienta | — | — |
+| `respaldo_aria_brain` | respaldo | 12, las de ARIA Brain | — | — |
+| `aria_leads`, `aria_pool` | ARIA Leads, otro producto | 5 (+1 vista) y 1 | — | — |
 
-El 2026-09-15 `negocio` tenía 21: las ocho nuevas son `anuncios` y `metricas_de_anuncio` (`050`) y las
-seis `analizador_*` (`056`). `lib/datos/esquema.ts` tipa hoy las 40 tablas de `identidad` y `negocio`
-(en `93a1341`, 32) y además seis `public.aria_cc_*` que ninguna migración de `db/` crea
-(`lib/datos/esquema.ts:1876-1881`; eran cuatro). **No son las seis que hay en producción**
-(`to_regclass` y `pg_class`, medido el 2026-09-28 a las 23:57 UTC). Cuatro existen y se leen:
-`scraper_trabajos`, `scraper_leads`, `scraper_monedero` (`lib/monitoreo/consumo.ts:71`, `:95`,
-`:100`) y `foundations` (`lib/fundaciones/almacen.ts:214`). `fundaciones_mensajes` existe y el código
-sólo la escribe (`lib/fundaciones/historico.ts:234`). `aria_cc_scraper_mediciones` **no existe**, y
-el código también sólo la escribe (`lib/tools/medicion.ts:65`, `:94`), dentro de un `catch` que deja
-fallar cada intento con una línea en el registro (`lib/tools/medicion.ts:71-76`, `:109-114`); el
-detalle es de [15-TOOLS-Y-MONITOREO.md](15-TOOLS-Y-MONITOREO.md) § 6. La sexta de producción,
-`aria_cc_icp_oferta`, no está tipada: la aplicación no la toca y la lee un disparador de la base
-(`lib/fundaciones/estado.ts:50-51`). El resto de `public` es de otras plataformas que comparten el
-proyecto —`public.closer_*` es la anterior—, no nuestro.
+**La limpieza del 2026-10-12 y 2026-10-13**, hecha con el OK del usuario y con respaldo fuera de la base (el plan y
+el registro están en `docs/OTROS/produccion/PLAN-DE-LA-BASE.md`, local, fuera de git): se borraron las tablas `ht_*`
+y `ob_*` de dos aplicaciones de análisis retiradas —**no** las `negocio.analizador_*`, que siguen intactas— y las de
+Closer v1, la plataforma anterior (`public.closer_*`, con sus vistas, funciones y tipos); y las de ARIA Brain pasaron
+de `public` a `respaldo_aria_brain`. Medido el 2026-10-18: en `public` hay **0** tablas `closer_*`, `ht_*`, `ob_*`,
+`aria_brain_*` y `agentforge_*`, y 0 funciones `closer_*`. Antes de cada borrado se comprobó que
+`negocio.ingesta_pulso` siguiera avanzando; el 2026-10-18 lo sigue haciendo (§ 7). **Pendientes de seguridad de la
+base**: la misma revisión del 2026-10-12 dejó permisos de producción por corregir, revisados ese día, con su plan fuera
+del repositorio a propósito.
 
-**Cómo se aísla una tabla.** Toda tabla de `negocio` pasa por `negocio.aplicar_aislamiento`, que
-habilita **y fuerza** la RLS, revoca `public` y crea una política `aislamiento` para
-`app_inquilino` con `org_id = current_setting('app.org_id')`
-(`db/migraciones/008_aislamiento_de_negocio.sql:151-158`). La aplicación pone esa variable con
-`set_config(…, true)` dentro de la transacción de `conOrganizacion` y la vuelve a leer: si no quedó
-puesta, lanza (`lib/datos/contexto.ts:76`, `:122-124`, `:136`). Lo que una migración no puede hacer
-por culpa de la RLS forzada está en [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 7.
+**Las `aria_cc_*`.** `lib/datos/esquema.ts:1876-1881` tipa seis; en producción hay seis, y no son las mismas:
+`aria_cc_scraper_mediciones` **sigue sin existir** (`to_regclass` nulo, 2026-10-18) aunque el código la escribe
+(`lib/tools/medicion.ts:65`, `:94`, dentro de un `catch`, `lib/tools/medicion.ts:71-76`), y `aria_cc_icp_oferta`
+existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`). El detalle es de
+[15-TOOLS-Y-MONITOREO.md](15-TOOLS-Y-MONITOREO.md) § 6.
 
-**Los roles.** Tres, `migrador`, `app_inquilino` y `app_identidad`, todos `nobypassrls`
-(`db/arranque/000_cluster.sql:34`, `:42`, `:51`); medido en `pg_roles` sobre esos tres: 0
-superusuarios y 0 con `rolbypassrls`. Producción es PostgreSQL 17.4 (`server_version`, re-medido; el registro del
-despliegue ya lo decía, `docs/OTROS/produccion/DESPLIEGUE.md:12`), y la base
-local, `postgres:17-alpine` en `127.0.0.1:55432` (`docker-compose.yml`).
+**Cómo se aísla una tabla.** Toda tabla de `negocio` pasa por `negocio.aplicar_aislamiento`, que habilita **y fuerza**
+la RLS, revoca `public` y crea una política para `app_inquilino` con `org_id = current_setting('app.org_id')`
+(`db/migraciones/008_aislamiento_de_negocio.sql:151-158`). La aplicación pone esa variable con `set_config(…, true)`
+dentro de la transacción de `conOrganizacion`, después de comprobar que la conexión llegó limpia, y la vuelve a leer:
+si no quedó puesta, lanza (`lib/datos/contexto.ts:123@972972e`, el código de producción).
 
-**Las migraciones.** 62 archivos en `db/migraciones/`; 62 filas en `migraciones.migraciones_aplicadas`,
-la última `062_reintentos_de_los_analizadores`. Las trece desde la foto anterior, con la hora de
-aplicación (de esa tabla) contra la hora del primer push que llevó su código (la de la corrida de la
-CI de ese push, `gh run list`):
+**Los roles.** En producción, tres: `migrador`, `app_inquilino` y `app_identidad`, todos `nobypassrls`
+(`db/arranque/000_cluster.sql:34`, `:42`, `:51`); medido en `pg_roles` el 2026-10-18: 0 superusuarios y 0 con
+`rolbypassrls`. Producción es PostgreSQL **17.4**
+(`server_version`, 2026-10-18).
 
-| migración | qué | commit | aplicada (UTC) | push (UTC) |
-|---|---|---|---|---|
-| `050`, `051` | el costo por anuncio y su tarea | `3d96e8c` | 09-16 21:30 | 09-17 14:37 |
-| `052` | el índice que la `048` dejó debiendo | `c1093f4` | 09-18 16:52 | 09-18 17:00 |
-| `053` | el desglose de acciones que ya llegaba | `7660d2a` | 09-19 14:21 | 09-19 14:23 |
-| `054`, `055` | fuera dos columnas sin escritor; el score pasa a número | `e350a47` | 09-21 19:06 y 19:28 | 09-21 19:46 |
-| `056`, `057` | las seis tablas del analizador; la llave de tl;dv | `05534de` | 09-22 21:46 | 09-23 17:00 |
-| `058`, `059` | la tarea y la sección de los Analizadores | `35665f2` | 09-23 16:58 | 09-23 17:00 |
-| `060` | la copia del historial puede escribir | `7506742` | 09-23 16:58 | 09-23 17:00 |
-| `061` | la copia del historial ya no escribe | `b056a96` | 09-23 17:29 | 09-23 17:45 |
-| `062` | los reintentos de los Analizadores | `a434f98` | 09-23 22:34:27 | 09-23 22:34:58 |
+**Las migraciones.** 78 filas en `migraciones.migraciones_aplicadas`, la última `078_el_activo_del_anuncio`. Las
+dieciséis desde la foto anterior, con la hora de aplicación (de esa tabla) y el commit que las trajo:
 
-**Trece de trece antes del push**, la más ajustada por unos 30 segundos (la `062`: aplicada a las
-22:34:27,6, corrida de la CI creada a las 22:34:58). Re-medido por el verificador: las trece horas de
-aplicación y los nueve commits coinciden. La regla y los tres incidentes que la escribieron están en
-[07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 8; en esta foto no hubo un cuarto.
+| migración | qué | commit | aplicada (UTC) |
+|---|---|---|---|
+| `063` | el link manual de una pieza de Creative | `1159c43` | 09-30 16:15 |
+| `064` | el token de Meta y la cuenta publicitaria, en las credenciales | `ecfbc26` | 09-30 16:15 |
+| `065`, `066` | los nombres de las campañas; el funnel de cada una | `fd553b7`, `e77d31f` | 10-01 03:10 |
+| `067` | los incidentes del modelo, y la sección `incidentes` | `46c5556` | 10-01 06:31 |
+| `068` | el análisis del Espía | `6ef4183` | 10-03 20:18 |
+| `069`, `070` | el uso de la IA; el incidente no retiene a la persona | `d75f3be`, `cd851b3` | 10-04 23:21 (hito H1) |
+| `071` | las conversaciones, mensajes, preguntas y topes del cerebro | `ce8ff6e` | 10-05 15:24 (H2) |
+| `072` | las señales, los planes de acción y los umbrales; la tarea `senales` | `d715b2a` | 10-06 00:13 (H3) |
+| `073` | las objeciones clasificadas | `3170786` | 10-06 01:59 |
+| `074` | los briefs del closer | `e5d6c98` | 10-06 02:52 |
+| `075` | la Reunión de hoy | `d8effd3` | 10-06 17:35 (H5) |
+| `076` | el gasto de toda la cuenta; la tarea `anuncios_relleno` | `22ec755` | 10-07 21:28 |
+| `077` | la miniatura del contacto | `90439cf` | 10-11 20:43 |
+| `078` | los activos de anuncio de Meta; la tarea `activos` | `972972e` | 10-15 22:17 |
+
+Que cada una se aplicó **antes del push** que llevó su código es lo que registra el plan de los agentes para sus
+hitos (`docs/OTROS/agentes/08-LAS-ETAPAS.md:16`); la hora de cada push **no se volvió a medir** con `gh` para esta
+foto. Las veinte tablas nuevas de `negocio`: `enlaces_de_pieza`, `campanas`, `funnels_de_campana`, `incidentes`,
+`analisis_del_espia`, `uso_de_ia`, las cuatro del cerebro, `senales`, `planes_de_accion`, `umbrales`,
+`objeciones_clasificadas`, `briefs_del_closer`, `reuniones_del_dia`, `gasto_de_la_cuenta`, `lecturas_de_gasto`,
+`miniaturas_del_contacto` y `activos_de_anuncio`. La regla de migrar antes de empujar y sus incidentes están en
+[07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 8.
+
+**El uso de la IA** (`069`): una fila por llamada al modelo, con sus cuatro contadores, su duración y su resultado, sin
+una palabra del prompt ni de la respuesta (`db/migraciones/069_el_uso_de_la_ia.sql:38-77`). La escribe sólo
+`lib/agentes/uso.ts`. Medido el 2026-10-18: **208 filas**, todas de `aria`.
 
 ---
 
@@ -348,376 +327,232 @@ aplicación y los nueve commits coinciden. La regla y los tres incidentes que la
 
 ### 5.1 · La suite
 
-- **178 archivos**: 95 en `pruebas/codigo/`, 82 en `pruebas/base/` —las que necesitan la base local— y
-  1 en `pruebas/construccion/`. En `93a1341` eran 74, 62 y 1: 137.
-- **2.273 pruebas** según el mensaje de `aed4f27` (2026-09-26), repetido en `e630823` y `1c55149`
-  (2026-09-28, sólo documentos). En la foto anterior eran **1.746** (mensaje de `a0e1eb5`, el último
-  commit con cifra antes de `93a1341`). **No re-corrida en este corte**: la suite usa una sola base
-  local y otros trabajos corrían en paralelo. **Después del corte**, el 2026-10-02, al cerrar la nueva
-  estructura (`docs/OTROS/nueva-estructura/`): **2.445 pruebas en 198 archivos** (111 en
-  `pruebas/codigo/`, 86 en `pruebas/base/` y 1 en `pruebas/construccion/`), corridas sobre la etapa E12
-  en `America/Lima`, `UTC` y `Asia/Tokyo`, las tres en verde.
-- **El corredor** enumera los archivos y aborta si la lista sale vacía, porque `node --test` con un
-  patrón sin coincidencias sale 0 (`scripts/pruebas.mjs:1-13`, `:82-89`), y corre **de a un archivo**
-  porque las pruebas de base comparten una base y enumeran objetos globales
-  (`scripts/pruebas.mjs:113-128`).
-- **Las tres zonas —`America/Lima`, `UTC` y `Asia/Tokyo`— son una práctica, no una máquina.** Los
-  mensajes de commit las declaran («Suite 2273 × 3 zonas en verde»), pero la CI corre la suite **una
-  vez**, sin fijar `TZ` (`.github/workflows/verificar.yml`), y ningún guion del repositorio recorre
-  las tres. Dos archivos cambian `process.env.TZ` adentro (`pruebas/codigo/98-agenda.test.ts:235-239`,
-  `pruebas/base/92-mi-dia.test.ts:816-819`).
-- **Cuatro pruebas de agenda dependen de la hora del día.** Siembran una cita en el pasado y la
-  buscan en la cola de hoy, y `ZONA` está fijada en el archivo, así que cambiar `TZ` no lo evita
-  (mensaje de `1164984`, 2026-09-21, que lo dejó «como trabajo aparte»). Tres siembran «hace 60
-  minutos» y fallan en la hora que sigue a la medianoche de Lima (`pruebas/base/27-agenda.test.ts:217`,
-  `:232`, `:675`); la cuarta siembra «dos horas atrás» y falla en las dos primeras horas
-  (`pruebas/base/92-mi-dia.test.ts:473`, `:486`). Ningún commit tocó después los archivos de
-  `pruebas/base/` con «agenda» o «mi día» en el nombre (`git log --since=2026-09-21T06:20`), así que
-  lo más probable es que siga; no verificado corriendo, por la prohibición de arriba.
+- **264 archivos de prueba en `972972e`**: 146 en `pruebas/codigo/`, 117 en `pruebas/base/` y 1 en
+  `pruebas/construccion/` (178 el 2026-09-28).
+- **3.053 pruebas en `972972e`**, según la memoria del proyecto. Eran 2.273 el 2026-09-28. **No re-corrida para esta
+  foto.**
+- **El corredor** aborta si la lista sale vacía (`scripts/pruebas.mjs:1-13`, `:82-89`) y corre **de a un archivo**
+  porque las pruebas de base comparten una base (`scripts/pruebas.mjs:113-128`).
+- **Las tres zonas —`America/Lima`, `UTC` y `Asia/Tokyo`— siguen siendo una práctica, no una máquina**: la CI corre la
+  suite una vez, sin fijar `TZ` (`.github/workflows/verificar.yml`). Dos archivos cambian `process.env.TZ` adentro
+  (`pruebas/codigo/98-agenda.test.ts:235-239`, `pruebas/base/92-mi-dia.test.ts:816-819`).
+- **Las pruebas de agenda que dependen de la hora del día** siguen escritas igual (`pruebas/base/27-agenda.test.ts:217`,
+  `:232`, `:675`; `pruebas/base/92-mi-dia.test.ts:473`, `:486`); la 205, que fallaba de mañana, se arregló el 2026-10-07
+  (`ae30048`).
 
 ### 5.2 · La CI
 
-`verificar` corre en cada push a `main` y en cada PR: `npm ci`, credenciales efímeras para los tres
-roles sin un solo secreto de GitHub, `npm run build`, `npm run tipos`, `npm run db:reset` y `npm
-test`, con 20 minutos de tope (`.github/workflows/verificar.yml`). Node sale de `.nvmrc` (24.14.1) y
-los guiones de instalación están apagados por `.npmrc`.
-
-Medido con `gh` el 2026-09-28:
-
-- **49 corridas desde el 2026-09-15 05:00 UTC (48 de push y 1 de PR): 47 verdes y 2 rojas.** Las
-  rojas son `1164984` y `d72c4ef`, el 2026-09-21 a las 05:54 y 06:15 UTC —00:54 y 01:15 en Lima—, y
-  son las pruebas de la hora del día: la primera con las cuatro (4 de 1.923), la segunda sólo con la
-  de «dos horas atrás» (1 de 1.937), porque ya había pasado la una de la mañana. Leído con
-  `gh run view --log-failed` de cada corrida.
-- **La última corrida** es la de `4fc9e43`, verde, el 2026-09-27 a las 03:29 UTC. `HEAD` tiene dos
-  commits sin empujar, `e630823` y `1c55149`, los dos sólo de documentos.
-- **`main` no tiene protección de rama**: `gh api …/branches/main` devuelve `protected: false`. El
-  propio encabezado de `verificar.yml` lo advierte: sin la regla y sin trabajo por PR, el rojo se
-  publica igual.
+`verificar` corre en cada push a `main` y en cada PR: `npm ci`, `npm run build`, `npm run tipos`, `npm run db:reset` y
+`npm test`, con 20 minutos de tope (`.github/workflows/verificar.yml`). **No se leyó GitHub para esta foto.** La última
+lectura, del 2026-09-28, daba 47 corridas verdes y 2 rojas desde el 2026-09-15 —las dos por las pruebas de la hora— y
+`main` **sin protección de rama**.
 
 ### 5.3 · El despliegue
 
-- **Vercel despliega por push, no por chequeo** (`docs/OTROS/produccion/DESPLIEGUE.md:395`). La
-  protección de rama figura como pendiente (`docs/OTROS/produccion/DESPLIEGUE.md:443`), y sigue
-  pendiente (§ 5.2). Las dos corridas rojas del 2026-09-21 llegaron a `main`; que Vercel las haya
-  publicado **no está verificado** (no hay acceso de lectura a Vercel desde acá), pero es lo que hace
-  con cada push.
-- **La protección de despliegue está en Standard**: la URL de producción es pública y la generada del
-  despliegue va al muro de SSO (`docs/OTROS/produccion/DESPLIEGUE.md:305-309`). Medido el 2026-08-26;
-  **no re-medido**. Las dos fuentes no dicen lo mismo sobre adónde pega el cron: el comentario de la
-  ruta dice que a la de producción (`app/api/cron/route.ts:59-60`), y el despliegue leyó que Vercel lo
-  registró contra la URL generada, la que responde 302 desde afuera
-  (`docs/OTROS/produccion/DESPLIEGUE.md:298-301`). Lo que zanja que hoy corre son los sellos cada diez
-  minutos (§ 7): es el caso «el disparador pasa la protección» (`docs/OTROS/produccion/DESPLIEGUE.md:314`,
-  `:325`). Que pasarla a «All Deployments» lo apague en silencio lo afirma la ruta
-  (`app/api/cron/route.ts:60-61`); no verificado.
-- **Cómo se comprueba después de un push**, en orden: `/api/salud`, la raíz que redirige a `/entrar`,
-  el ingreso, la sonda, el cron con `curl -i` sin seguir redirecciones
-  (`docs/OTROS/produccion/DESPLIEGUE.md:399-414`).
+- **Vercel despliega por push, no por chequeo** (`docs/OTROS/produccion/DESPLIEGUE.md:395`). La protección de rama
+  figura como pendiente (`docs/OTROS/produccion/DESPLIEGUE.md:443`).
+- **Desde el 2026-10-03 las funciones corren en `gru1`**, São Paulo, la misma región que la base (`vercel.json:3-5`).
+- **La protección de despliegue estaba en Standard** (`docs/OTROS/produccion/DESPLIEGUE.md:305-309`), medido el
+  2026-08-26 y **no re-medido**. Lo que zanja que el cron corre son los sellos cada diez minutos (§ 7). Que pasarla a
+  «All Deployments» lo apague en silencio lo afirma la ruta (`app/api/cron/route.ts:60-61`); no verificado.
+- **Cómo se comprueba después de un push**: `docs/OTROS/produccion/DESPLIEGUE.md:399-414`.
 
 ---
 
 ## 6 · La paridad con el prototipo, y el grafo
 
-**La paridad.** `scripts/paridad.mjs` comparaba cada vista contra `aios-command-center_1.html` en tres
-ejes —forma del DOM, texto, geometría—. Con Leads Portal salió la última vista y **`VISTAS` quedó
-vacía** (`scripts/paridad.mjs:153`, commit `aed4f27`); quedan tres pasos de Executive, así que la
-compuerta no se retira (`scripts/paridad.mjs:147-150@c4cf2a8`). El mismo archivo admite que **hace tiempo que no corre**: no está en la CI,
-necesita los navegadores de Playwright instalados a mano y una sesión
-(`scripts/paridad.mjs:141-146`). El conteo de la lista lo ata `pruebas/codigo/90-fundaciones.test.ts:1397-1402`.
-La geometría no la reemplaza ninguna prueba que lea el fuente (`scripts/paridad.mjs:131`).
-**Después del corte, el 2026-10-01**: la compuerta se retiró en la etapa E7 de la nueva estructura. Los tres pasos de Executive se fueron con la maqueta, y con `VISTAS` y `PASOS` vacías el guardián imprime «retirada» y sale 0 (`scripts/paridad.mjs:301-305`).
+**La paridad** se retiró en la etapa E7 de la nueva estructura (2026-10-01): con `VISTAS` y `PASOS` vacías, el guardián
+imprime «retirada» y sale 0 (`scripts/paridad.mjs:301-305`). Las pantallas que volvieron al prototipo después
+(Acquisition, Conversion, Sales, Conversation, Creative) se compararon en el navegador, etapa por etapa, cada una con
+su documento.
 
-**El grafo.** Se rehízo por última vez el 2026-09-29 con un AST completo del código, sobre `1c55149` y
-esta carpeta todavía sin commit: 6.854 nodos, 19.569 aristas y 244 comunidades rotuladas (la mañana
-del 2026-09-28: 5.902, 16.324 y 275; el 2026-09-15: 3.875, 9.709 y 228). Sirve para ubicar; nunca
-prueba que algo no existe. Los 18 archivos de esta carpeta ya están adentro, con 734 nodos. Todo
-eso, con sus comandos, en [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md) § 1 y § 5.
+**El grafo** es de [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md): sirve para ubicar; nunca prueba que algo no
+existe.
 
 ---
 
-## 7 · Datos: volúmenes por tabla y última corrida, medidos el 2026-09-28
+## 7 · Datos: volúmenes por tabla y última corrida
 
-**Las 29 tablas de `negocio`**, conteo exacto a las 22:01 UTC. Cada tabla con filas es de una sola
-organización (`count(distinct org_id)` = 1), salvo `control_aislamiento` —las dos de control— y
-`tareas_programadas` —las once activas—. La columna del 2026-09-15 sale de la foto
-anterior —[04-CONVERSATION.md](04-CONVERSATION.md) en la versión que `bddb516` dejó el 2026-09-16,
-con cifras medidas el 2026-09-15 a las 17:24 UTC (la de `93a1341` decía 5.843 mensajes a las 02:28),
-y [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) para los avisos—; «—» es que la foto no la
-midió o la tabla no existía. Re-contadas las 29 por el verificador a las 22:25 UTC: iguales.
+**Las 49 tablas de `negocio`**, conteo exacto el 2026-10-18 hacia las 15:42 UTC. Cada tabla con filas es de una sola
+organización (`count(distinct org_id)` = 1), salvo `control_aislamiento` —las dos de control— y las tres que se
+escriben por empresa sin el CRM: `tareas_programadas`, `planes_de_accion` y `reuniones_del_dia`, de las once activas.
 
-| tabla | filas | 2026-09-15 |
+| tabla | 2026-10-18 | 2026-09-28 |
 |---|---|---|
-| `mensajes` | 6.110 | 5.864 |
-| `metricas_de_anuncio` | 3.318 | — (nace en la `050`) |
-| `contactos` | 594 | 584 |
-| `citas` | 333 | 317 |
-| `avisos_del_crm` | 327 | 311 |
-| `campos_del_crm` | 195 | — |
-| `analizador_llamadas`, `analizador_transcripciones` | 115 y 115 | — (nacen en la `056`) |
-| `tareas_programadas` | 88 | — |
-| `anuncios` | 79 | — (nace en la `050`) |
-| `analisis_del_agente` | 70 | — |
-| `analizador_analisis` | 51 | — |
-| `analizador_prospectos` | 46 | — |
-| `analizador_fichas` | 38 | — |
-| `carpetas_del_crm` | 25 | — |
-| `hallazgos` | 24 | — |
-| `analizador_lapidas` | 13 | — |
-| `cambios_de_territorio` | 12 | — |
-| `enlaces_rapidos` | 10 | — |
-| `notas`, `resultados` | 7 y 7 | — |
-| `tareas` | 4 | — |
-| `closer_asignado`, `comisiones`, `ingesta_pulso` | 3, 3 y 3 | — |
-| `control_aislamiento` | 2 | — |
-| `llamadas`, `prompts_del_agente`, `versiones_del_prompt` | **0, 0 y 0** | — |
+| `mensajes` | 6.478 | 6.110 |
+| `metricas_de_anuncio` | 4.918 | 3.318 |
+| `lecturas_de_gasto` | 2.929 | — (nace en la `076`) |
+| `planes_de_accion` | 1.152 | — (`072`) |
+| `contactos` | 624 | 594 |
+| `miniaturas_del_contacto` | 526 | — (`077`) |
+| `citas` | 368 | 333 |
+| `avisos_del_crm` | 342 | 327 |
+| `campos_del_crm` | 212 | 195 |
+| `uso_de_ia` | 208 | — (`069`) |
+| `reuniones_del_dia` | 143 | — (`075`) |
+| `analizador_llamadas`, `analizador_transcripciones` | 135 y 135 | 115 y 115 |
+| `anuncios` | 129 | 79 |
+| `tareas_programadas` | 121 | 88 |
+| `analisis_del_agente` | 102 | 70 |
+| `objeciones_clasificadas` | 89 | — (`073`) |
+| `analizador_analisis` | 65 | 51 |
+| `campanas`, `gasto_de_la_cuenta` | 62 y 62 | — (`065`, `076`) |
+| `analizador_prospectos` | 55 | 46 |
+| `cambios_de_territorio` | 52 | 12 |
+| `analizador_fichas` | 41 | 38 |
+| `mensajes_del_executive` | 39 | — (`071`) |
+| `senales` | 30 | — (`072`) |
+| `hallazgos` | 27 | 24 |
+| `carpetas_del_crm` | 26 | 25 |
+| `preguntas_del_executive` | 20 | — (`071`) |
+| `analizador_lapidas` | 13 | 13 |
+| `conversaciones_del_executive` | 12 | — (`071`) |
+| `enlaces_rapidos` | 10 | 10 |
+| `notas`, `resultados` | 7 y 7 | 7 y 7 |
+| `tareas` | 4 | 4 |
+| `closer_asignado`, `comisiones`, `ingesta_pulso` | 3, 3 y 3 | 3, 3 y 3 |
+| `analisis_del_espia`, `control_aislamiento` | 2 y 2 | — y 2 |
+| `incidentes`, `topes_del_executive` | 1 y 1 | — |
+| `activos_de_anuncio`, `briefs_del_closer`, `enlaces_de_pieza`, `funnels_de_campana`, `umbrales` | **0** | — |
+| `llamadas`, `prompts_del_agente`, `versiones_del_prompt` | **0, 0 y 0** | 0, 0 y 0 |
 
-**`identidad`**, en agregado: 13 organizaciones, 11 activas; 15 usuarios, 95 sesiones, 288 filas de
-auditoría de accesos, 42 asignaciones de sección, 3 roles, 32 permisos. De las 11 activas: **1 con
-token del CRM**, **5 con llave de IA** (4 de ellas sin el identificador del agente, según el motivo de
-sus sellos), **1 con llave de tl;dv** y **1 con secreto del aviso**. El 2026-09-15 eran 15
-organizaciones, 12 activas, 4 con llave de IA y 1 con token ([04-CONVERSATION.md](04-CONVERSATION.md)
-de `93a1341`); **no investigué** qué se dio de baja.
+**`identidad`**, en agregado, el 2026-10-18: 13 organizaciones, 11 activas; 15 usuarios, 119 sesiones, 326 filas de
+auditoría de accesos, 42 asignaciones de sección, 3 roles, 38 permisos. De las 11 activas: **1 con token del CRM**,
+**5 con llave de IA**, **1 con llave de tl;dv**, **1 con secreto del aviso** y **0 con token de Meta**. El detalle es
+de [16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md).
 
-Ese mismo día, la foto anterior de [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) contaba 13
-«organizaciones que el cron barre» (la fila sigue en su § 1, rotulada ahora como sellos). No eran 13
-barridas: la cifra es `count(distinct org_id)` de `tareas_programadas`,
-que cuenta organizaciones **con sello**. El cron se queda con las activas desde el 2026-08-26
-(`f17a464`, `app/api/cron/route.ts:154`), y un sello sólo se borra en cascada cuando se borra la
-organización (`db/migraciones/014_tareas_programadas.sql:46`): una empresa desactivada conserva los
-suyos. Hoy no queda ninguno así: 11 organizaciones con sello, las 11 activas, 0 sellos de
-organizaciones inactivas (medido el 2026-09-28 a las 23:57 UTC). Que la 13.ª fuera una organización
-ya inactiva con sellos viejos es la lectura que cierra con el código, **no verificada**: sus sellos ya
-no están, y `identidad.organizaciones.actualizada_el` no sirve para fechar una baja, porque nada la
-escribe después del alta: sólo tiene el valor por omisión
-(`db/migraciones/002_organizaciones_y_usuarios.sql:50`).
+**La última corrida por tarea**, leída el 2026-10-18, en la única empresa con token (`aria`); las otras diez activas
+tienen su par en `saltada` con su motivo, salvo `senales`. Ninguna de las 121 filas está en `fallo`, `frenada` ni
+`sin_tiempo`, y en `aria` ninguna tiene motivo:
 
-**La última corrida por tarea**, leída a las ~22:03 UTC, en la única empresa con token (`aria`); las
-otras diez activas
-tienen su par en `saltada`, con el motivo `sin_token` o la llave que falta. Ninguna de las 88 filas
-está en `fallo`, `frenada` ni `sin_tiempo`:
+| tarea | última corrida (UTC) | estado | llamadas |
+|---|---|---|---|
+| `contactos`, `mensajes`, `auditoria` | 15:40 | `corrio` | 8, 1 y 0 |
+| `citas` | 15:03 | `corrio` | 11 |
+| `analizadores` | 15:41 | `corrio` | 2 |
+| `activos` | 15:37 | `saltada` (sin token de Meta) | 0 |
+| `anuncios_relleno` | 14:53 | `corrio` | 0 |
+| `senales` | 11:23 | `corrio` | 8 |
+| `reintentos` | 10:07 | `corrio` | 0 |
+| `anuncios`, `mejora` | 06:18 | `corrio` | 8 y 1 |
+| `sonda` | — | — | no se sella (§ 8) |
 
-| tarea | última corrida (UTC) | estado | llamadas | motivo |
-|---|---|---|---|---|
-| `contactos` | 2026-09-28 22:01:40 | `corrio` | 7 | — |
-| `mensajes` | 2026-09-28 22:01:44 | `corrio` | 1 | — |
-| `auditoria` | 2026-09-28 22:01:46 | `corrio` | 0 | — |
-| `citas` | 2026-09-28 21:03:55 | `corrio` | 10 | — |
-| `analizadores` | 2026-09-28 21:41:37 | `corrio` | 1 | — |
-| `reintentos` | 2026-09-28 10:07:47 | `corrio` | 0 | — |
-| `anuncios` | 2026-09-28 06:20:14 | `corrio` | 40 | «3 par(es) (campaña, día) sin datos» |
-| `mejora` | 2026-09-28 06:18:04 | `corrio` | 1 | — |
-| `sonda` | — | — | 0 | no se sella (§ 8) |
-
-Como el sello guarda sólo la última pasada, «corrio» en la última es la última sincronización
-exitosa; no hay historial de corridas en la base.
-
-**El pulso de la ingesta**, que guarda la marca de agua y la contabilidad acumulada (tres filas, las
-tres de la misma empresa), re-leído a las 22:27 UTC: `mensajes` 10.208 corridas y 13.744 llamadas
-desde el 2026-08-26, marca en 21:56:31; `citas` 754 corridas y 7.444 llamadas, último fallo el
-2026-09-15 11:03; `auditoria` 4.014 corridas y 23 inferencias desde el 2026-09-01. La primera
-lectura, minutos antes, daba 10.206, 13.742 y 4.012: la diferencia son las dos corridas de diez
-minutos del medio.
+**El pulso de la ingesta** (tres filas, las tres de la misma empresa), el 2026-10-18: `mensajes` 13.106 corridas y
+16.921 llamadas desde el 2026-08-26; `citas` 1.227 corridas y 12.318 llamadas; `auditoria` 6.854 corridas y 26
+inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 10.208, 754 y 4.014 corridas.
 
 ---
 
 ## 8 · Lo que falta
 
-- **La protección de rama en `main`** con `verificar` requerido. Es una configuración de GitHub, no
-  código, y es la que convierte el rojo en un freno (§ 5.2).
-- **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a
-  propósito (`lib/negocio/barrido.ts:1001`, `:460`, `:468`), así que su resultado vive sólo en la
-  respuesta del cron. Que corre cada hora **no se puede demostrar desde la base**;
-  `negocio.control_aislamiento` tiene sus dos filas de control, creadas el 2026-08-23.
-- **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente en el despliegue
-  (`docs/OTROS/produccion/DESPLIEGUE.md:241-243`, `:444`); sin él, `avisar()` lanza y la sonda que
-  detecte una fuga sale como `fallo` en la respuesta del cron (`lib/negocio/barrido.ts:494-504`).
-  **No verificado** si hoy está cargado en Vercel.
-- **Verificar el certificado de la base.** Desde el 2026-08-24 (`86aee3b`) las tres cadenas de
-  producción piden `?uselibpqcompat=true&sslmode=require`
-  (`docs/OTROS/produccion/DESPLIEGUE.md:596-616`), que **cifra y no verifica el certificado**: protege de que alguien escuche, no de que alguien se
-  ponga en el medio. `verify-full` falla contra Supabase, que firma con su propia autoridad, y el
-  despliegue lo deja pendiente con esas palabras (`docs/OTROS/produccion/DESPLIEGUE.md:623-632`). El
-  guardia `exigirCifradoSiEsRemoto` sólo exige que haya `sslmode` y que no sea `disable` ni `allow`
-  (`lib/datos/anfitrion.ts:204-208`, `:233-235`), y su propio mensaje recomienda `require`
-  (`lib/datos/anfitrion.ts:239`). `sslrootcert`, `verify-full` y `rejectUnauthorized` no aparecen en
-  `lib/`, `app/`, `scripts/` ni `db/` (búsqueda del 2026-09-28). Qué cadena carga hoy Vercel, **no
-  verificado**: sus variables no están al alcance, y la base no puede ver si el cliente verifica.
-- **Frescura en los tableros.** Acquisition, Creative, Conversion, Sales y Analizadores no dicen cuándo
-  corrió por última vez la tarea que los alimenta (§ 3).
-- **Las tres zonas en la CI**, y el arreglo de las cuatro pruebas que dependen de la hora (§ 5.1).
-- **La espera externa corta para el camino del cron**, que el propio orquestador llama «la mitigación
-  de fondo» y no está hecha (`lib/negocio/barrido.ts:363-366`).
-- **Los 25 contactos congelados siguen afirmando una frescura que no tienen.**
-  `congelarLosQueYaNoEstan` pone `territorio = null` sin tocar `sincronizado_el`
-  (`lib/negocio/sincronizar.ts:289-297`): medido el 2026-09-28, son 25 de 594 sin releer en la última
-  hora, los 25 sin territorio, con sellos de entre **11,0 y 34,9 días** (el 2026-09-15, 25 de 584,
-  entre 3,9 y 21,8 según [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md)).
-- **Tres tablas sin una fila**: `llamadas`, `prompts_del_agente` y `versiones_del_prompt`. No
-  investigué sus escritores en este corte.
-- **Una segunda empresa con datos.** El cron recorre once y trabaja en una; toda cifra de volumen y de
-  costo de esta foto describe a una sola cuenta.
+- **La protección de rama en `main`** con `verificar` requerido (§ 5.2).
+- **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a propósito
+  (`lib/negocio/barrido.ts:1001`, `lib/negocio/barrido.ts:659-669`), así que su resultado vive sólo en la respuesta
+  del cron. `negocio.control_aislamiento` tiene sus dos filas de control.
+- **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente (`docs/OTROS/produccion/DESPLIEGUE.md:241-243`,
+  `:444`); sin él, la sonda que detecte una fuga sale como `fallo` en la respuesta del cron
+  (`lib/negocio/barrido.ts:494-504`). **No verificado** si hoy está cargado en Vercel.
+- **Verificar el certificado de la base.** Las cadenas piden `sslmode=require`, que **cifra y no verifica el
+  certificado** (`docs/OTROS/produccion/DESPLIEGUE.md:596-616`, `:623-632`); el guardia sólo exige que haya `sslmode`
+  (`lib/datos/anfitrion.ts:204-208`, `:233-235`).
+- **Leer el motivo del sello.** Desde AG15 las pantallas dicen si una tarea nunca corrió, falló o está atrasada, pero
+  una llave rechazada que deja la tarea en `corrio` con motivo no la dice ninguna (§ 3).
+- **Las tres zonas en la CI**, y el arreglo de las pruebas que dependen de la hora (§ 5.1).
+- **La espera externa corta para el camino del cron** (`lib/negocio/barrido.ts:363-366`).
+- **Los contactos congelados siguen afirmando una frescura que no tienen, y crecen.** `congelarLosQueYaNoEstan` pone
+  `territorio = null` sin tocar `sincronizado_el` (`lib/negocio/sincronizar.ts:289-297`): medido el 2026-10-18, **36 de
+  624** sin territorio y sin releer, con sellos entre el 2026-08-24 y el 2026-10-09 (25 de 594 el 2026-09-28).
+- **Ocho tablas sin una fila**: las tres de siempre (`llamadas`, `prompts_del_agente`, `versiones_del_prompt`) y cinco
+  nuevas que esperan su primer uso —`activos_de_anuncio` (Meta), `briefs_del_closer`, `enlaces_de_pieza`,
+  `funnels_de_campana` y `umbrales`—.
+- **Una segunda empresa con datos.** El cron recorre once y trabaja en una; toda cifra de volumen y de costo de esta
+  foto describe a una sola cuenta.
 
 ---
 
 ## 9 · Reglas de la plataforma
 
-1. **Reconciliación, no cola.** Nada se acumula ni se incrementa; cada pasada mira qué falta y lo
-   reescribe, y una corrida perdida se arregla en la siguiente (`lib/negocio/barrido.ts:22-24`,
-   `lib/negocio/recolectarAnuncios.ts:11-19`).
-2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`.** Es la diferencia entre «no
-   tiene token» y «el cron no pasó nunca» (`lib/negocio/barrido.ts:1040-1084`).
-3. **Un horario desconocido corre todo y lo dice.** Nunca «no hacer nada»
-   (`lib/negocio/barrido.ts:450-455`).
+1. **Reconciliación, no cola** (`lib/negocio/barrido.ts:22-24`, `lib/negocio/recolectarAnuncios.ts:11-19`).
+2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`** (`lib/negocio/barrido.ts:1040-1084`).
+3. **Un horario desconocido corre todo y lo dice** (`lib/negocio/barrido.ts:450-455`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`
    (`lib/negocio/barrido.ts:118-133`).
-5. **`contactos` antes de `mensajes`, `auditoria` después**, en el mismo horario
-   (`lib/negocio/barrido.ts:159-167`, `:173-182`).
+5. **`contactos` antes de `mensajes`, `auditoria` después**, en el mismo horario (`lib/negocio/barrido.ts:159-167`).
 6. **Dos horarios no comparten minuto**, o uno queda `frenada` sin trabajar.
-7. **La migración va antes del push**, y se pregunta qué **toca** la columna nueva, no sólo qué la
-   lee: ver [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md). Hoy la comprobación es comparar
-   `select max(name) from migraciones.migraciones_aplicadas` con `ls db/migraciones | tail -1`.
-8. **Producción se lee sólo con `scripts/supabase.mjs leer`**, que manda `read_only: true` y lo hace
-   cumplir el motor (`scripts/supabase.mjs:21-23`, `:71`). Los roles de la aplicación ven **cero
-   filas sin error** fuera de `conOrganizacion`: no es una base vacía, es la RLS forzada.
+7. **La migración va antes del push**, y se pregunta qué **toca** la columna nueva: ver
+   [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md). La comprobación es comparar `select max(name) from
+   migraciones.migraciones_aplicadas` con `ls db/migraciones | tail -1`; hoy da `078` en los dos lados.
+8. **Producción se lee sólo con `scripts/supabase.mjs leer`**, que manda `read_only: true`
+   (`scripts/supabase.mjs:21-23`, `:71`). Los roles de la aplicación ven **cero filas sin error** fuera de
+   `conOrganizacion`.
 9. **Un secreto se compara con `timingSafeEqual`, y nunca se autoriza por el user agent**
    (`app/api/cron/route.ts:33-45`, `app/api/avisos/crm/route.ts:101-111`).
-10. **La suite corre de a un archivo, contra una sola base, sin nadie más usándola**; y en tres zonas
-    antes de empujar, por práctica (§ 5.1).
+10. **La suite corre de a un archivo, contra una sola base, sin nadie más usándola**; y en tres zonas antes de empujar,
+    por práctica (§ 5.1).
+11. **Lo nuestro se distingue por el esquema.** Ninguna tabla nuestra vive en `public`; antes de cualquier DDL fuera de
+    `identidad` y `negocio`, el objeto es de otra plataforma (§ 4).
 
 ---
 
 ## 10 · Riesgos
 
-1. **El rojo no frena.** Rama sin protección y despliegue por push: el 2026-09-21 dos commits con la
-   CI en rojo llegaron a `main` (§ 5.2). Esa vez el rojo era de pruebas que dependen de la hora; el
-   día que sea un defecto real, llega igual.
-2. **Un rojo que se repite enseña a ignorarlo.** Las cuatro pruebas de agenda ponen la CI en rojo en
-   cualquier push de la primera hora de la madrugada de Lima, y una de ellas también en la segunda
-   (§ 5.1).
-3. **El modo de fallar del cron es el silencio.** Fuera del sello no hay nada: la respuesta del cron
-   se pierde con el registro y Vercel no alerta por ausencia (`app/api/cron/route.ts:177-184`). La
-   sonda ni siquiera deja sello (§ 8).
-4. **El aviso del CRM dice algo falso cuando no hay actividad.** Con más de 120 minutos sin un aviso
-   procesado, el chat de la ficha dibuja «Los mensajes están entrando por el ciclo de diez minutos, no
-   en el momento» (`lib/negocio/frescura.ts:353-362`, pintado en
-   `components/negocio/Ficha.jsx:287-290`). Hoy, a las 22:04 UTC, el último aviso tiene ~24 h y
-   **después de él no entró ningún mensaje**: el aviso no está atrasado, el negocio está quieto. El
-   último día con gasto mayor que cero en `negocio.metricas_de_anuncio` es el 2026-09-13 (medido el
-   2026-09-28; hay filas hasta el 28, todas en cero o vacías), compatible con la pauta pausada y no
-   verificado contra Meta ([06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 9). El umbral contempla la noche
-   (`lib/negocio/frescura.ts:233-235`), no una cuenta sin tráfico.
-5. **El presupuesto de la corrida de diez minutos ya está a la mitad con una sola empresa.** 93 s de
-   180, 75 de ellos de la única con token (§ 2.3). Una segunda empresa de tamaño parecido lo acercaría
-   al tope y la última quedaría `sin_tiempo`; es una inferencia de estas dos mediciones, no una prueba.
-6. **Una llamada colgada pasa el tope de la función.** `pedirExterno` espera hasta 240 s, el guardia
-   sólo mira antes de cada empresa y Vercel corta a los 300 sin reintentar
-   (`lib/negocio/barrido.ts:355-366`).
-7. **Un cambio de configuración de Vercel apaga el cron sin error**: la protección a «All
-   Deployments», según la ruta y sin medir (`app/api/cron/route.ts:56-61`; § 5.3). Volver a Hobby no
-   es silencioso pero es peor: con horarios de menos de un día el despliegue entero falla
-   (`lib/negocio/barrido.ts:139-141`).
+1. **El rojo no frena.** Rama sin protección y despliegue por push (§ 5.2), según la última lectura.
+2. **El modo de fallar del cron es el silencio.** Fuera del sello no hay nada, y la sonda ni siquiera deja sello (§ 8).
+   Lo que mejoró: desde AG15 la cabecera de cada departamento dice si su tarea nunca corrió, falló o está atrasada.
+3. **El presupuesto de la corrida de diez minutos.** Medido el 2026-09-28 en 93 s de 180 con una sola empresa; desde
+   el 2026-10-11 suma la pasada de miniaturas. Una segunda empresa de tamaño parecido lo acercaría al tope: es una
+   inferencia, no una medición.
+4. **Una llamada colgada pasa el tope de la función** (`lib/negocio/barrido.ts:355-366`).
+5. **Un cambio de configuración de Vercel apaga el cron sin error** (`app/api/cron/route.ts:56-61`; § 5.3).
+6. **Nueve de once empresas activas en `UTC`.** La pasada de los detectores corre a cada empresa después de las 6:00 de
+   su zona (`lib/negocio/barrido.ts:324-329`): para esas nueve, a la 1 de la madrugada de Lima. Hoy no tienen datos.
+7. **La base compartida.** La limpieza dejó en `public` una herramienta externa viva sin repositorio y tablas de bots
+   ajenos; un DDL hecho sin mirar el esquema apaga un producto que nadie está mirando. Y quedan los pendientes de
+   seguridad del 2026-10-12 (§ 4).
 8. **Documentos y comentarios que ya no dicen la verdad**, verificados hoy contra el código o la base:
-   - `docs/OTROS/produccion/DESPLIEGUE.md:254-255` dice que `vercel.json` declara **un** cron diario a
-     las 12:00 UTC con tres tareas, y `:356-357` que ponerse al día lleva «≈23 días con el cron
-     diario». Hay cinco horarios y nueve tareas desde el 2026-09-23, y seis y diez desde el 2026-10-05. El mismo documento dice que los
-     registros «en Hobby duran una hora» (`docs/OTROS/produccion/DESPLIEGUE.md:339`) y lista como
-     pendiente «la tarea horaria de la sonda» (`:444`), que corre al minuto 3 desde antes del
-     2026-09-15.
-   - `app/api/sonda/route.ts:3` dice que a esa ruta «lo llama una tarea programada»; ninguna entrada
-     de `vercel.json` la llama (§ 2.6).
-   - `lib/negocio/barrido.ts:75` y `:79` hablan de «las cinco» tareas; `TAREAS` tiene nueve
-     (`lib/negocio/barrido.ts:91-108`).
-   - `lib/negocio/barrido.ts:243-245@d17e029` cuenta los anuncios como «cuatro días (hoy más los tres que se
-     releen)» y **52 llamadas por día**; se releen dos (`lib/negocio/recolectarAnuncios.ts:61`) y el
-     sello de hoy dice 40.
-   - `lib/negocio/barrido.ts:430` y `app/api/cron/route.ts:159-161` dicen que «solo una empresa de
-     cinco tiene llave de IA, y todas las que trabajan tienen token del CRM»; hoy 5 de las 11 activas
-     tienen llave de IA y 1 tiene token (§ 7).
-   - `app/api/cron/route.ts:181-183` describe la retención de registros «en el plan Hobby», y el plan
-     es Pro desde el 2026-08-28 (`lib/negocio/barrido.ts:145`); cuánto duran en Pro, no lo verifiqué.
-   - `scripts/paridad.mjs:36@c4cf2a8` empieza con «UNA.» encima de `const VISTAS = [];`
-     (`scripts/paridad.mjs:153@c4cf2a8`). **Corregido el 2026-10-01** (nueva estructura, E7): dice «NINGUNA».
-   - `app/api/control/route.ts:22-23` y `lib/autorizacion/secciones.ts:498-499` presentan esa ruta
-     como la sonda de la Etapa 8, o como algo que le sirve; la sonda programada no la usa (§ 2.6).
-9. **Todo el volumen es de una cuenta.** Cualquier cifra de costo, duración o frescura de esta foto
-   cambia de escala con la segunda empresa conectada.
-10. **La conexión a la base cifra pero no autentica al servidor.** Con `sslmode=require`, alguien en
-    el camino entre Vercel y `sa-east-1` que presente su propio certificado podría leer y alterar el
-    tráfico, y nada fallaría (§ 8). Es una debilidad dicha en el propio despliegue
-    (`docs/OTROS/produccion/DESPLIEGUE.md:623-632`), no un incidente: no se midió ningún ataque.
+   - `docs/OTROS/produccion/DESPLIEGUE.md:254-255` dice que `vercel.json` declara **un** cron diario, y `:356-357` que
+     ponerse al día lleva «≈23 días con el cron diario». Hay ocho horarios y doce tareas. El mismo documento dice que
+     los registros «en Hobby duran una hora» (`docs/OTROS/produccion/DESPLIEGUE.md:339`) y lista como pendiente «la
+     tarea horaria de la sonda» (`:444`), que corre al minuto 3.
+   - `app/api/sonda/route.ts:3` dice que a esa ruta «lo llama una tarea programada»; ninguna entrada de `vercel.json`
+     la llama.
+   - `lib/negocio/barrido.ts:75` hablaba de «las cinco» tareas; `TAREAS` tiene doce (`lib/negocio/barrido.ts:91-108`).
+     **Cerrado el 2026-10-18 (`65669f4`)**: hoy dice «Las doce».
+   - `lib/negocio/barrido.ts:430` y `app/api/cron/route.ts:159-161` dicen que «solo una empresa de cinco tiene llave de
+     IA, y todas las que trabajan tienen token del CRM»; hoy 5 de las 11 activas tienen llave de IA y 1 tiene token.
+   - `app/api/cron/route.ts:181-183` describe la retención de registros «en el plan Hobby», y el plan es Pro.
+   - `app/api/control/route.ts:22-23` presenta esa ruta como la sonda de la Etapa 8; la sonda programada no la usa.
+   - `scripts/comparar-con-brain.sql:26-27` lee una tabla de ARIA Brain que desde el 2026-10-12 ya no está en `public`
+     (ver [14-ANALIZADORES.md](14-ANALIZADORES.md) § 5).
+9. **Todo el volumen es de una cuenta.** Cualquier cifra de costo, duración o frescura de esta foto cambia de escala
+   con la segunda empresa conectada.
+10. **La conexión a la base cifra pero no autentica al servidor** (§ 8). Es una debilidad dicha en el propio despliegue
+    (`docs/OTROS/produccion/DESPLIEGUE.md:623-632`), no un incidente.
 
 ---
 
-## Cómo se midió, y lo que no pude verificar
+## Cómo se midió, y lo que no se pudo verificar
 
-**Consultas**, todas con `node --env-file=.env.supabase scripts/supabase.mjs leer`, sólo agregados, el
-2026-09-28 entre las 22:01 y las 22:12 UTC:
+**Consultas**, todas con `node --env-file=.env.supabase scripts/supabase.mjs leer`, sólo agregados, el 2026-10-18
+entre las 15:41 y las 16:12 UTC:
 
-- esquemas, tablas, RLS habilitada y forzada: `pg_class` × `pg_namespace`; políticas: `pg_policies`;
-  roles: `pg_roles` filtrado a los tres nuestros;
-- un `count(*)` por cada una de las 29 tablas de `negocio`, en una sola consulta con subselects;
-- `migraciones.migraciones_aplicadas`: `count(*)`, `max(name)`, y `name` con `timestamp` desde la `049`;
-- organizaciones y credenciales: `count(*)` con `is not null` sobre las columnas cifradas, sin leer
-  ningún valor;
-- `negocio.tareas_programadas` agrupado por tarea y estado, y los motivos de `saltada` agrupados;
+- esquemas, tablas, vistas, RLS forzada y políticas: `pg_class` × `pg_namespace` y `pg_policies`; las de `public`,
+  contadas por prefijo; roles: `pg_roles` filtrado a los nombres de nuestros roles; `server_version`;
+- un `count(*)` y un `count(distinct org_id)` por cada tabla de `negocio`, con `query_to_xml` sobre `pg_class`;
+- `migraciones.migraciones_aplicadas`: `count(*)`, `max(name)`, y `name` con `timestamp` desde la `062`;
+- credenciales: `count()` de cada columna, sin leer ningún valor;
+- `negocio.tareas_programadas` agrupado por tarea y estado, con la última corrida, las llamadas y si hay motivo;
 - `negocio.ingesta_pulso`, sin la columna de organización;
-- las marcas de frescura (`max` de `sincronizado_el`, `procesado_el`, `creado_el`, `visto_el`,
-  `analizado_el`, `detectado_el`) y los mensajes por `origen` y `direccion`;
-- el último día con gasto: `max(fecha)` de `negocio.metricas_de_anuncio` con `gasto > 0`.
+- las marcas de frescura (`max` de `sincronizado_el`, `procesado_el`, `creado_el`, `detectado_el`), los mensajes por
+  `origen`, los avisos por `evento` y el último día con gasto;
+- `to_regclass` de `public.aria_cc_scraper_mediciones` y de la tabla de Brain en `public`.
 
-GitHub, con `gh` en lectura: `gh api repos/{owner}/{repo}/branches/main`, `gh run list --workflow
-verificar.yml --limit 150` y `gh run view <id> --log-failed` de las dos rojas. Git: `git log`,
-`git show` y `git merge-base --is-ancestor` para saber qué push llevó cada migración.
+**Lo que no se pudo verificar:**
 
-**La verificación**, el 2026-09-28 entre las 22:25 y las 22:30 UTC, con el mismo guion y sólo
-agregados: los 29 conteos, esquemas, RLS, políticas, roles, versión, credenciales, organizaciones por
-tabla, sellos por tarea, la duración de la corrida de las 22:20 (92,7 s, la misma forma que la de las
-22:10), los avisos, los mensajes por origen, las marcas de frescura, el pulso y las trece migraciones.
-Todo coincidió salvo lo que se corrigió arriba y los contadores que avanzaron con el cron.
-
-**Una lectura más, a las 23:57 UTC**, tras una revisión crítica del mismo día y con el mismo guion:
-`to_regclass` de las seis `public.aria_cc_*` tipadas y los nombres de las `aria_cc_*` de `pg_class`
-(§ 4); `count(distinct org_id)` de `tareas_programadas`, total y unido a `identidad.organizaciones`
-por `activa`, y los sellos de organizaciones inactivas (§ 7). Sin columnas personales.
-
-**Lo que no pude verificar:**
-
-- **Nada de Vercel**: despliegues, registros, variables (`CRON_SECRET`, `AVISO_URL`, las cadenas de
-  conexión y su `sslmode`), la protección de despliegue y la retención de registros en Pro. No hay
-  acceso de lectura desde acá.
-- **La suite**: no se corrió (§ 5.1). Las 2.273 y las tres zonas son las del mensaje de commit.
-- **La zona horaria de la máquina de la CI**: `verificar.yml` no fija `TZ`; cuál usa GitHub no lo medí.
-- **Por qué el pulso de `auditoria` tiene `atrasado = true`**, que según
-  `lib/auditor/analisis.ts:359` significa que quedó cola o hubo un corte; el sello de la misma tarea
-  no trae motivo.
-- **Qué organizaciones se dieron de baja** entre el 2026-09-15 (15) y hoy (13).
-- **Si algo además del chequeo a mano llama a `POST /api/sonda`** (§ 2.6): desde el repositorio no se
-  ve ningún llamador, y los registros de Vercel no están al alcance.
-- **La hora del push** es la de creación de la corrida de la CI que disparó; un push sin corrida de
-  CI no aparecería en esa lista.
-
----
-
-## Después del corte: el uso de la IA (2026-10-04)
-
-Agregado con AG1 del plan de los agentes (`docs/OTROS/agentes/08-LAS-ETAPAS.md`). La `069` suma
-`negocio.uso_de_ia`, una fila por llamada al modelo con sus cuatro contadores de tokens, su duración y su
-resultado, sin una palabra del prompt ni de la respuesta (`db/migraciones/069_el_uso_de_la_ia.sql:38-77`).
-La escribe sólo `registrarUso` (`lib/agentes/uso.ts`). Desde AG2 la escriben el Espía (`espia`), el auditor
-(`auditor`, `auditor_mejora`) y los Analizadores (`analizador_clasificar`, `analizador_analizar`,
-`analizador_ficha`), una fila por llamada, también las que fallan —el Espía, una por pedido, con su
-reintento adentro—; Fundaciones se suma después de integrar
-la rama `feature/icp-oferta-v2`, y los agentes nuevos desde AG5. La `070` deja
-`negocio.incidentes.usuario_id` en `on delete set null`: un incidente ya no impide borrar a la persona que
-lo tuvo. La `069` y la `070` se aplicaron a producción con el hito H1 (2026-10-04); con la `069`, `negocio`
-pasó a tener 35 tablas: las 29 del corte, las cinco que crearon la `063` y de la `065` a la `068`, y
-`uso_de_ia`.
-
-## Después del corte: el cerebro (2026-10-04)
-
-AG5 del plan de los agentes. La `071` suma las cuatro tablas del cerebro —`conversaciones_del_executive`,
-`mensajes_del_executive`, `topes_del_executive` y `preguntas_del_executive`—, así que `negocio` llega a 39
-tablas y `lib/datos/esquema.ts` tipa 50 de `identidad` y `negocio` (las 40 del § 4 son las del corte). Las
-escriben sólo `lib/agentes/executive/conversaciones.ts` y `topes.ts`. Van a producción con el hito H2, junto con la capacidad
-`cerebro.usar`.
+- **Nada de Vercel**: despliegues, registros, variables, la protección de despliegue y la retención de registros.
+- **GitHub**: la protección de rama y las corridas de la CI no se volvieron a leer.
+- **La suite**: no se corrió para esta foto; las cifras son las de los mensajes de commit.
+- **La hora de cada push** de las migraciones `063` a `078`.
+- **Por qué el pulso de `auditoria` tiene `atrasado = true`**, que según `lib/auditor/analisis.ts:359` significa que
+  quedó cola o hubo un corte.
+- **Si algo además del chequeo a mano llama a `POST /api/sonda`**.

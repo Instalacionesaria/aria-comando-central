@@ -1,12 +1,16 @@
 # Conversion Intelligence
-> Corte: **2026-10-09**, con el código de `b3ca9ad`. Las cifras de producción son de dos fechas y cada
-> una lo dice: las del **2026-10-08**, medidas para `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`
-> (§ 2) sobre 30 días cerrados, del 2026-09-08 al 2026-10-07, con `scripts/supabase.mjs leer` (sólo lectura,
-> sólo agregados); y las del **2026-09-28**, de la foto anterior, que no se re-midieron. Para este corte no se
-> leyó producción. El 2026-10-09 el usuario revisó la pantalla nueva en producción. Cada afirmación lleva su
-> `archivo:línea`. Para ubicar lo nombrado, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La
-> versión anterior se lee con `git show b3ca9ad:"docs/OTROS/estado actual/03-CONVERSION.md"`, y la de antes
-> con `git show 93a1341:"docs/estado actual/03-CONVERSION.md"`.
+> Corte: **2026-10-18**, con el código de producción, `972972e`. El código de Conversion no cambió desde
+> `b3ca9ad` salvo comentarios (ver abajo), así que lo que dibuja es lo del corte anterior. Las cifras de producción
+> son de tres fechas y cada una lo dice: las del **2026-10-18**, re-medidas para esta foto con
+> `scripts/supabase.mjs leer` (sólo lectura, sólo conteos y agregados, con el OK del usuario) y con los mismos
+> predicados que el código —contrastados contra las del 2026-10-08, que reproducen exactas—; las del
+> **2026-10-08**, de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (§ 2), que no se re-midieron; y las
+> del **2026-09-28**, de la foto de entonces, re-medidas en parte. Lo que la pantalla «dibuja» con las cifras de hoy
+> está deducido del código, no leído de una captura. Cada afirmación lleva su `archivo:línea`. Para ubicar lo
+> nombrado, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior —el corte del 2026-10-09—
+> se lee con `git show 83798a4:"docs/OTROS/estado actual/03-CONVERSION.md"`, la del 2026-09-28 con
+> `git show b3ca9ad:"docs/OTROS/estado actual/03-CONVERSION.md"`, y la de antes con
+> `git show 93a1341:"docs/estado actual/03-CONVERSION.md"`.
 
 **El front del prototipo, con los datos reales, desde el 2026-10-09.** La pestaña vuelve al marcado de
 `aios-command-center_1.html` —la tira de tres paneles, la nota de cobertura, el recorrido de cinco pasos, la
@@ -14,25 +18,22 @@ alarma— y lo llena con una sola lectura del servidor, `lecturaDeConversion`, e
 cohorte que Acquisition. El reparto por camino de entrada, que desde el 2026-09-20 era la pantalla entera, es
 ahora el cajón de Landing; el formulario, el de Formulario. El titular sigue siendo de población: **el
 formulario de la landing se escribió por última vez el 2026-08-31**, así que en «7 días» y «30 días» su tarjeta
-dice «Sin dato desde el 31 ago.». Medido el 2026-10-08, sobre 30 días cerrados: **105 contactos, 63 agendaron
-(60 %), 35 calificados (33 % de contacto a cita útil)** y 462 vistas de landing contadas por Meta.
+dice «Sin dato desde el 31 ago.». **Medido el 2026-10-18**, sobre 30 días cerrados, del 2026-09-18 al 2026-10-17:
+**28 contactos, 22 agendaron (79 %), 19 calificados (68 % de contacto a cita útil)** y 11 vistas de landing contadas
+por Meta. La cohorte se encogió —el 2026-10-08 eran 105 sobre otra ventana—: entre el 2026-10-11 y el 2026-10-18
+entró **un solo contacto**, el 2026-10-16, y la tarea `contactos` siguió corriendo cada diez minutos.
 
-> **Desde el corte del 2026-09-28**
+> **Desde el corte del 2026-10-09**
 >
-> - **2026-10-06 · `28d6954`** — AG14 de los agentes: el detector de Conversion, cuatro reglas `CNV-*` y el
->   plan de la pasada de la mañana; la pantalla de entonces suma el botón «Plan de acción» y la tarjeta de
->   señales.
-> - **2026-10-08 · `210ac73`** — CV-0: el usuario decide volver al front del prototipo con los datos reales, y
->   nace `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (requisitos `CV15-01` a `CV15-27`) junto con
->   `docs/OTROS/futuro/lo-que-conversion-no-mide.md`.
-> - **2026-10-08 · `71c71b8`** — CV-1: los días cerrados se mudan de Acquisition a `lib/negocio/diasCerrados.ts`,
->   la cohorte pasa a una sola expresión para las dos pantallas, y entran los predicados de calificado, confirmó
->   y canceló.
-> - **2026-10-08 · `02d9207`** — CV-2: `lib/negocio/pasosDeConversion.ts`, el módulo de los cinco pasos.
-> - **2026-10-09 · `b2dcdf5`** — CV-3: la ruta, el cerebro y el detector leen la misma lectura.
-> - **2026-10-09 · `87d26b2`** — CV-4: la pantalla nueva, su cajón y `app/conversion.css`.
-> - **2026-10-09 · `b3ca9ad`** — CV-5: la comparación medida contra el prototipo, los anchos y la revisión en
->   producción.
+> - **2026-10-11 · `2415e25`** — CF-3 de Creative: se borra `app/inteligencia-estetica.css`, de la que Conversion ya
+>   había salido; el comentario de `app/conversion.css` lo dice (`app/conversion.css:8-9`) y la cita de
+>   `lib/negocio/recorrido.ts` a Creative queda fijada a su commit (`lib/negocio/recorrido.ts:249`). Ningún cambio en
+>   lo que dibuja.
+> - **2026-10-11 · `d9c10e5`** — CF-4 de Creative: el comentario del cajón deja de decir que el de Creative tiene su
+>   `id` (`components/conversion/CajonDelPaso.jsx:19-20`). Sólo comentario.
+> - **2026-10-11 · `fefffa1`** — CF-5 de Creative: la cita de `lib/negocio/recorridoDelLead.ts` a la foto de Creative
+>   queda fijada a su commit (`lib/negocio/recorridoDelLead.ts:159`). Sólo comentario.
+> - **2026-10-18** — esta foto: las cifras re-medidas.
 
 ---
 
@@ -54,11 +55,12 @@ especificación está en esa carpeta; acá va el resumen.
   Landing, el reparto en su cajón y el formulario— y el segundo es la tarjeta de VSL, un hueco en su lugar.
 - **§ 5.1 y § 5.3 piden tres entidades y un historial**: `Landing Session`, `VSL Session` y
   `Form Submission`, y que la reproducción del VSL conserve historial en vez de un valor fijo en el
-  contacto (`docs/conversion/10-LO-QUE-PIDE-EL-DOCUMENTO.md:50-61`). Ninguna existe; ver § 5.
+  contacto (`docs/conversion/10-LO-QUE-PIDE-EL-DOCUMENTO.md:50-61`). Ninguna existe en producción; ver § 5.
 - **§ 5.2 pone `visitor_id → session_id` en el centro de la traza**
   (`docs/conversion/10-LO-QUE-PIDE-EL-DOCUMENTO.md:63-76`). Ningún código del repositorio los usa.
 - **§ 9.5 pide un trigger link con seis estados** (`docs/conversion/10-LO-QUE-PIDE-EL-DOCUMENTO.md:91-98`).
-  Lo único que queda de él es su huella en el último toque: 31 de 594 contactos, medido el 2026-09-28.
+  Lo único que queda de él es su huella en el último toque: 31 de 624 contactos, medido el 2026-10-18 (31 de 594
+  el 2026-09-28: ninguno nuevo).
 - **§ 9.7 pone `landing visit rate`, `form start rate` y `form completion rate` bajo Lead Flow**, no
   bajo Conversion (`docs/conversion/10-LO-QUE-PIDE-EL-DOCUMENTO.md:100-104`). Se construyó en
   Conversion y el solapamiento queda declarado (`docs/conversion/01-LOS-DOS-RECORRIDOS.md:259-265`).
@@ -73,10 +75,10 @@ Estado de las cinco promesas del § 18.16, con su fecha:
 
 | promesa | estado | de dónde |
 |---|---|---|
-| campaña y anuncio de origen | **llega**: `adId` en 213 de 594 contactos, `utmContent` en 506 | `atribucion_primera`, medido el 2026-09-28 |
+| campaña y anuncio de origen | **llega**: `adId` en 215 de 624 contactos, `utmContent` en 508 | `atribucion_primera`, medido el 2026-10-18 (213 y 506 de 594 el 2026-09-28) |
 | calidad del tráfico | **no está definida**: el documento no dice qué es | `docs/conversion/07-LO-QUE-ENTREGA-Y-RECIBE.md:36` |
 | CTR | **llega**, por anuncio y por día | `negocio.metricas_de_anuncio` |
-| *landing page views* | **llega, y Conversion la publica desde el 2026-10-09**: «Vistas de landing, según Meta», sin tasa. El desglose de acciones empieza el 2026-08-18, y `landingPageView` y `omniLandingPageView` valen lo mismo en las 221 filas que traen las dos | medido el 2026-10-08; `lib/negocio/pasosDeConversion.ts:468` |
+| *landing page views* | **llega, y Conversion la publica desde el 2026-10-09**: «Vistas de landing, según Meta», sin tasa. El desglose de acciones empieza el 2026-08-18 (re-medido el 2026-10-18), y `landingPageView` y `omniLandingPageView` valían lo mismo en las 221 filas que traían las dos el 2026-10-08 | `lib/negocio/pasosDeConversion.ts:468` |
 | audiencia y placement | **no llega**: GoHighLevel sólo agrupa por día, semana o mes | del 2026-09-20, no re-medido: `docs/conversion/07-LO-QUE-ENTREGA-Y-RECIBE.md:39` |
 
 Las vistas de landing son un agregado de Meta por anuncio y por día: no son sesiones ni se pueden cruzar con
@@ -90,8 +92,9 @@ base de ningún porcentaje (§ 6, regla 14).
 **La sección.** `conversion` se registra en `lib/autorizacion/secciones.ts:279` con
 `capacidadRequerida: 'tablero.ver'` y **sin** `sinOperacionesTodavia`: la bandera bajó con la ruta el
 2026-09-20, porque `ADR-0304` exige que las dos se muevan juntas (`lib/autorizacion/secciones.ts:282-284`).
-El galón del menú se quedó, por el precedente de Creative; desde la barra nueva de la etapa E10, el
-2026-10-02, no se dibuja.
+El galón del menú se quedó (`lib/autorizacion/secciones.ts:288`), por el precedente de Creative; desde la barra
+nueva de la etapa E10, el 2026-10-02, no se dibuja: ninguna línea de `components/`, `app/` ni `lib/` lee
+`menu.galon` (grep del 2026-10-18).
 
 **La ruta.** `GET /api/conversion?periodo=…` (`app/api/conversion/route.ts:53-116`) pide `tablero.ver`
 por el portero (`app/api/conversion/route.ts:57`) y **rechaza** con 400 un período que no está en la
@@ -122,7 +125,7 @@ variaciones y su lectura; todo viaja de 0 a 1. El cerebro (`pasos_de_conversion`
 lectura, así que lo que dicen de una cifra es lo que la pantalla dibuja.
 
 **La vista.** `components/views/ConversionView.jsx` (29 líneas) monta el panel dentro de `cv-wrap`, sin
-`estetica-op` (`components/views/ConversionView.jsx:19`).
+`estetica-op` (`components/views/ConversionView.jsx:19-27`).
 
 **El panel.** `components/conversion/PanelDeConversion.jsx` (520 líneas) dibuja el marcado del prototipo, en su
 orden (`components/conversion/PanelDeConversion.jsx:187`):
@@ -152,30 +155,37 @@ observaciones van sólo en los pasos a los que apunta una regla (`components/con
 
 Las frases de los huecos y los motivos son una lista cerrada (`components/conversion/comun.jsx:41`), la del
 `CV15-02`; el navegador no calcula y multiplica por 100 en un solo lugar (`components/conversion/comun.jsx:74`).
-Lo nuevo de estilo vive en `app/conversion.css` (174 líneas), acotado a la vista y al cajón.
+Lo nuevo de estilo vive en `app/conversion.css` (175 líneas), acotado a la vista y al cajón.
 
 **Las pruebas.** 20 en `pruebas/codigo/246-pasos-de-conversion.test.ts`, 19 en
 `pruebas/base/246-pasos-de-conversion.test.ts`, 14 en `pruebas/codigo/247-la-pantalla-de-conversion.test.ts`,
 14 en `pruebas/base/160-recorrido-del-lead.test.ts`, 12 en `pruebas/base/161-embudo-del-formulario.test.ts`, 8 en
 `pruebas/codigo/236-el-detector-de-conversion.test.ts` y 3 en `pruebas/base/237-las-senales-de-conversion.test.ts`,
-contadas por `grep` el 2026-10-09. Cada etapa de CV-1 a CV-4 se probó con mutaciones: las 40 de CV-4 salen en rojo.
+contadas por `grep` el 2026-10-18: las mismas del 2026-10-09. Cada etapa de CV-1 a CV-4 se probó con mutaciones:
+las 40 de CV-4 salieron en rojo.
 
-**Lo que dibuja con lo medido el 2026-10-08**, 30 días cerrados, del 2026-09-08 al 2026-10-07. Es lo que el
-código calcula sobre esas cifras, no una captura:
+**Lo que dibuja con lo medido el 2026-10-18**, 30 días cerrados, del 2026-09-18 al 2026-10-17 —el último día cerrado
+de la serie de gasto en la zona de la empresa—. Es lo que el código calcula sobre esas cifras, no una captura:
 
 | lugar | cifra | por qué así |
 |---|---|---|
-| Contactos | **105**, ▼ contra 447 en la anterior | las personas comparan: la historia cubre la anterior |
-| Vistas de landing | **462**, según Meta, sin flecha | la anterior no tiene el gasto de la cuenta entero (21 de 30 días, porque la base guarda gasto desde el 2026-08-18): «Faltan días de gasto.» |
+| Contactos | **28**, ▼ contra 367 en la anterior (2026-08-19 a 2026-09-17) | las personas comparan: la historia de contactos cubre la anterior |
+| Vistas de landing | **11**, según Meta; la anterior suma unas 2.870 | desde que la ventana anterior empieza el 2026-08-19, la serie de gasto y el desglose (desde el 2026-08-18) la cubren: puede llevar ▼, si el gasto de la anterior está entero y cuadra; eso no se comprobó |
 | Empiezan el form | «—», «Sin dato desde el 31 ago.» | la ventana empieza después del corte |
-| Agendan | **63**, 60 %, «sin comparación» | 80 de los 447 contactos de la anterior tienen citas congeladas: «Los agendados no comparan: hay citas congeladas.» |
-| Calificados / no calificados | **35** (56 %) / **28** (44 %) | sobre los agendados, nunca comparan |
-| De contacto a cita útil | **33 %** | 35 de 105 |
-| Confirmados | **18**, 51 % | sobre los calificados; los 18 que respondieron dijeron «Si» (`CV15-P10`) |
-| Cancelaron | **12**, 34 % | calificados con todas sus citas canceladas |
+| Agendan | **22**, 79 %, «sin comparación» | 9 de los 367 contactos de la anterior tienen citas congeladas: «Los agendados no comparan: hay citas congeladas.» |
+| Calificados / no calificados | **19** (86 %) / **3** (14 %) | sobre los agendados, nunca comparan |
+| De contacto a cita útil | **68 %** | 19 de 28 |
+| Confirmados | **8**, 42 % | sobre los calificados; los 8 que respondieron dijeron «Si» (`CV15-P10`) |
+| Cancelaron | **5**, 26 % | calificados con todas sus citas canceladas |
 
-En 7 días cerrados, del 2026-10-01 al 10-07: 12 contactos y 7 agendados; la anterior, 6 y 5, bajo el piso de
-diez, así que la tasa de agenda dice «sin comparación». Una vista de landing, contra 3.
+En 7 días cerrados, del 2026-10-11 al 10-17: **1 contacto**, agendado, calificado y que confirmó; la anterior, 8
+contactos y 5 agendados. Con un contacto la tasa de agenda queda bajo el piso de diez y dice «—». Las vistas de
+landing: 0, contra 0. En «Hoy», sin contactos, la nota dice «Sin contactos en este período» (regla 12).
+
+**El 2026-10-08**, sobre 2026-09-08 a 10-07 (reproducido el 2026-10-16 con la misma consulta que las cifras de arriba): 105
+contactos, 63 agendados (60 %), 35 calificados (33 % de contacto a cita útil), 18 confirmados, 12 cancelaron y 462
+vistas de landing. La diferencia es de población, no de código: la ventana nueva ya no tiene los días de antes del
+2026-09-14, cuando la pauta se detuvo.
 
 ---
 
@@ -187,7 +197,7 @@ La pestaña tuvo tres vidas:
   seis números multiplicados por un factor de período. Se lee con `git show 0add4cc^:lib/aios/conversion.js`;
 - **del 2026-09-20 al 2026-10-09**, una pantalla medida con la estética de operación: el reparto por camino de
   entrada, el embudo del formulario y cinco huecos declarados. Se lee con
-  `git show b3ca9ad^:components/conversion/PanelDeConversion.jsx` y con la foto anterior;
+  `git show b3ca9ad^:components/conversion/PanelDeConversion.jsx` y con la foto del 2026-09-28;
 - **desde el 2026-10-09**, el front del prototipo con los datos reales (§ 2).
 
 | lugar del prototipo | la maqueta | hoy |
@@ -214,52 +224,58 @@ nueva estructura. **Leads Portal consume y no inventa**: su ficha trae la famili
 
 ## 4 · Datos que ya tenemos
 
-**Medido el 2026-10-08** (doc 15, § 2): **620 contactos**, y 24 sin `alta_en_el_crm`, que no entran en ninguna
-ventana; en «Completo» la nota los dice. Las cifras de la cohorte de 30 días están en § 2.
+**Medido el 2026-10-18**: **624 contactos**, y 24 sin `alta_en_el_crm`, que no entran en ninguna ventana; en
+«Completo» la nota los dice. **Entre el 2026-10-11 y el 2026-10-18 entró un solo contacto, el 2026-10-16**, con la
+tarea `contactos` sellada `corrio` el 2026-10-18. Las cifras de la cohorte de 30 días
+están en § 2.
 
-- **La confirmación**: el campo `Confirmación Agendamiento` existe y, sobre los 35 calificados de 30 días, 18 lo
-  traen y los 18 dicen `Si`.
-- **Las citas congeladas** —sin `ghl_calendario_id`, anteriores a la `038`—: 80 de los 447 contactos de la
-  anterior de 30 días; ninguna en la anterior de 7.
-- **El gasto de la cuenta** se guarda desde el 2026-08-18. La ventana de 30 días que termina el 2026-10-07 lo
-  tiene entero; la anterior, en 21 de sus 30 días.
+- **La confirmación**: el campo `Confirmación Agendamiento` existe y, sobre los 19 calificados de 30 días, 8 lo
+  traen y los 8 dicen `Si` (el 2026-10-08: 18 de 35, los 18 `Si`).
+- **Las citas congeladas** —sin `ghl_calendario_id`, anteriores a la `038`—: 9 de los 367 contactos de la
+  anterior de 30 días (el 2026-10-08, 80 de 447); ninguna en la anterior de 7.
+- **El gasto de la cuenta** se guarda desde el 2026-08-18. Las dos ventanas de 30 días del 2026-10-18 —la
+  que termina el 2026-10-17 y su anterior, desde el 2026-08-19— caen dentro de la serie.
 - **El desglose de acciones de Meta** empieza también el 2026-08-18; en «Completo», por eso, las vistas son «—».
+- **La pauta**, según la serie de la cuenta: entregó todos los días del 2026-10-01 al 10-05, nada del 10-06 al 10-13,
+  127 impresiones el 10-14 y nada del 10-15 al 10-18.
 
-**Medido el 2026-09-28** (la foto anterior, no re-medido), sobre 594 contactos:
+**Medido el 2026-09-28** (la foto de entonces), con lo re-medido el 2026-10-18:
 
-| dato | 2026-09-28 |
-|---|---|
-| `atribucion_ultima` con `url` | **477 de 594** (80,3 %) |
-| `atribucion_primera` con `url` | 332 de 594 |
-| `Trigger Link` como `sessionSource` del último toque | **31 de 594**; en el primero, 0 |
-| `Form Landing VSL`: `Agendado` / incompleto / completo | 121 / 87 / 39 = 247; último día 2026-08-31, cero desde septiembre, cero fuera del vocabulario |
-| `Agendado` con cita alcanzable | 47 de 121; 119 con alguna cita, 72 congeladas |
-| `VSL % máximo visto` y `VSL segundos vistos` | **79, todos `0`**, altas del 2026-08-11 al 08-30 |
-| `Porcentaje de Video Visto`, `Video Watch Percentage` | 0 de 594 |
-| `Last Landing URL` (campo del CRM) | 183 de 594, 108 desde septiembre |
-| definiciones en `negocio.campos_del_crm` | 195 |
+| dato | 2026-09-28 | 2026-10-18 |
+|---|---|---|
+| `atribucion_ultima` con `url` | **477 de 594** (80,3 %) | 483 de 624 |
+| `atribucion_primera` con `url` | 332 de 594 | 340 de 624 |
+| `Trigger Link` como `sessionSource` del último toque | **31 de 594**; en el primero, 0 | 31 de 624; en el primero, 0 |
+| `Form Landing VSL`: `Agendado` / incompleto / completo | 121 / 87 / 39 = 247; último día 2026-08-31, cero desde septiembre, cero fuera del vocabulario | 120 / 88 / 39 = 247; el último contacto con el campo es del 2026-08-31 |
+| `Agendado` con cita alcanzable | 47 de 121; 119 con alguna cita, 72 congeladas | no re-medido |
+| `VSL % máximo visto` y `VSL segundos vistos` | **79, todos `0`**, altas del 2026-08-11 al 08-30 | `VSL % máximo visto`: 79, un solo valor, `0` |
+| `Porcentaje de Video Visto`, `Video Watch Percentage` | 0 de 594 | no re-medido |
+| `Last Landing URL` (campo del CRM) | 183 de 594, 108 desde septiembre | no re-medido |
+| definiciones en `negocio.campos_del_crm` | 195 | 212 |
 
 **La atribución guarda dos toques, no uno, y ninguno tiene historia ni fecha.** Las dos columnas existen desde
-la `048` (`db/migraciones/048_de_donde_vino_el_lead.sql:100-110`); el 2026-09-28 `atribucion_primera` estaba no
-vacía en 553 de 594 y `atribucion_ultima` en 567, y en 279 los dos toques eran distintos. El barrido reescribe
-las dos cada vez que el CRM las devuelve (`lib/negocio/sincronizar.ts:443-448`) y ninguna de sus claves es una
-fecha, así que no se puede detectar un primer toque sobrescrito (`lib/negocio/calidadDeLaAtribucion.ts:26-29`).
-La clasificación de Conversion lee el último (`lib/negocio/recorrido.ts:126-128`).
+la `048` (`db/migraciones/048_de_donde_vino_el_lead.sql:100-110`); el 2026-10-18 `atribucion_primera` estaba no
+vacía en 580 de 624 y `atribucion_ultima` en 597 (553 y 567 de 594 el 2026-09-28, cuando en 279 los dos toques eran
+distintos; eso no se re-midió). El barrido reescribe las dos cada vez que el CRM las devuelve
+(`lib/negocio/sincronizar.ts:443-448`) y ninguna de sus claves es una fecha, así que no se puede detectar un primer
+toque sobrescrito (`lib/negocio/calidadDeLaAtribucion.ts:26-29`). La clasificación de Conversion lee el último
+(`lib/negocio/recorrido.ts:126-128`).
 
-**El reparto por época**, el 2026-09-28, sobre los 570 con alta y por host del último toque:
+**El reparto por época**, el 2026-09-28, sobre los 570 con alta y por host del último toque (no re-medido):
 
 | época | contactos | landing con VSL | widget de reserva | sin página | navegador de Meta |
 |---|---|---|---|---|---|
 | agosto y antes | 325 | **203 (62 %)** | 84 (26 %) | 29 | 0 |
 | septiembre | 245 | **32 (13 %)** | **106 (43 %)** | 61 (25 %) | 23 (9 %) |
 
-**El censo de hosts**, el 2026-09-28 sobre los 594: `accelerator.ariaia.com` 230, `calls.ariaia.com` 144,
-`api.leadconnectorhq.com` 46, `www.fbsbx.com` 23, `precall.ariaia.com` 20, `grow.ariaia.com` 5,
+**El censo de hosts**, el 2026-09-28 sobre los 594 (no re-medido): `accelerator.ariaia.com` 230, `calls.ariaia.com`
+144, `api.leadconnectorhq.com` 46, `www.fbsbx.com` 23, `precall.ariaia.com` 20, `grow.ariaia.com` 5,
 `trabaja-con-nosotros.ariaia.com` 4, dos previsualizaciones de `vibepreview.com` 5, y sin dirección 117.
 
 **La población.** El 2026-09-28 la pauta estaba en cero desde el 2026-09-14 y entraban contactos de a uno; el
-2026-10-08 la cohorte de 30 días cerrados tenía 105 contactos y 462 vistas de landing, y la de 7 días, 12
-contactos y una vista. Las dos mediciones no dicen día por día cuándo volvió a haber gasto, y no lo re-medí.
+2026-10-08 la cohorte de 30 días cerrados tenía 105 contactos y 462 vistas de landing; el 2026-10-18, 28 y 11, y
+la de 7 días, un contacto. La entrega de la primera semana de octubre no trajo vistas de landing: en la semana del
+2026-10-02 al 10-08 Meta contó una.
 
 ---
 
@@ -273,7 +289,7 @@ Formulario, «Qué pasa después» de la Agenda—. La lista viaja en la respues
 
 | hueco | por qué no hay dato | de dónde tendría que venir |
 |---|---|---|
-| La retención, el play y el CTA del VSL | 79 escrituras del medidor, las 79 en cero (2026-09-28) | vTurb o su integración, fuera de este sistema |
+| La retención, el play y el CTA del VSL | 79 escrituras del medidor, las 79 en cero (2026-09-28; el mismo único valor el 2026-10-18) | vTurb o su integración, fuera de este sistema |
 | Sesiones, visitantes y dispositivo | no hay tabla de sesiones; el `userAgent`, en 47 de 106 contactos de 30 días (2026-10-08) | eventos de página con un identificador de visita que se una al contacto |
 | El mapa de calor, el scroll y los clics muertos | Clarity no está integrado | Clarity o equivalente, con credencial por empresa |
 | La tasa de conversión de la landing | la dirección se registra al convertir, no al llegar | lo mismo que las sesiones |
@@ -302,10 +318,10 @@ Conservan su número, porque el código y `docs/conversion/` las citan por núme
 **1. Los ceros de este departamento son tres, y hay que nombrarlos distinto.**
 
 No hay campo · el campo dice cero · el medidor no reportó. `VSL % máximo visto` es el caso: 79 contactos lo
-traen y los 79 dicen `0` (2026-09-28). **Mientras el censo de un campo numérico tenga un solo valor distinto,
-ese campo no es una medición: es un indicador de que algo se instaló y no funcionó.** En código: el VSL es un
-hueco en su tarjeta y no una cifra, y una tasa bajo el piso o sin dato es «—» y no «0 %», con la frase de su
-motivo de la lista cerrada (`components/conversion/comun.jsx:41`).
+traen y los 79 dicen `0` (2026-09-28; el 2026-10-18, el mismo único valor). **Mientras el censo de un campo numérico
+tenga un solo valor distinto, ese campo no es una medición: es un indicador de que algo se instaló y no funcionó.**
+En código: el VSL es un hueco en su tarjeta y no una cifra, y una tasa bajo el piso o sin dato es «—» y no «0 %», con
+la frase de su motivo de la lista cerrada (`components/conversion/comun.jsx:41`).
 
 **2. Nunca mezclar cohortes de antes y después del 2026-08-31.**
 
@@ -338,8 +354,8 @@ nuevo caiga visible en «otra página» (`lib/negocio/recorrido.ts:108`).
 **6. Primer toque y último toque son dos preguntas, y para este departamento manda el último.**
 
 Acquisition mira el primer toque —de qué anuncio vino—; Conversion mira el último —por dónde volvió a entrar—.
-`Trigger Link` valía 31 de 594 en el último toque y 0 en el primero (2026-09-28). La clasificación lee
-`atribucion_ultima` (`lib/negocio/recorrido.ts:10-18`).
+`Trigger Link` valía 31 de 594 en el último toque y 0 en el primero (2026-09-28), y 31 de 624 y 0 el 2026-10-18.
+La clasificación lee `atribucion_ultima` (`lib/negocio/recorrido.ts:10-18`).
 
 **7. Lo que NO es de este departamento, aunque la pantalla lo dibuje.**
 
@@ -351,7 +367,7 @@ Conversion la del VSL de la landing, y hoy no puede (regla 1).
 **8. El piso de publicación, y dónde muerde acá.**
 
 `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`), sobre el denominador. Muerde en las tasas de
-la ventana corta: en 7 días la anterior tiene 6 contactos y la tasa de agenda no compara; en la finalización del
+la ventana corta: el 2026-10-18, en 7 días hay un contacto y la tasa de agenda dice «—»; en la finalización del
 formulario, sobre los que lo empezaron (`lib/negocio/embudoDelFormulario.ts:251`); y en confirmados y cancelaron,
 sobre los calificados. La porción de cada familia va sin piso, porque es un conteo exacto.
 
@@ -401,7 +417,8 @@ Conservan el número de la foto anterior, porque otros documentos los citan así
 
 **1. «Completo» es la única ventana con formulario, y describe una ruta que ya no existe.** La tarjeta publica
 quienes traen el campo sobre la cohorte anterior al corte, y la nota dice que la ventana cruza el 31 de agosto;
-quien lea esa cifra como «el formulario de hoy» está mirando una ruta que se cerró.
+quien lea esa cifra como «el formulario de hoy» está mirando una ruta que se cerró. Sigue así el 2026-10-18: el
+último contacto con el campo es del 2026-08-31.
 
 **2. Cerrado el 2026-10-09.** El hueco de Clarity decía que Clarity aparecía en la pantalla como fuente
 conectada (`lib/negocio/embudoDelFormulario.ts:142-143@b2dcdf5`). Ahora dice que no está integrado.
@@ -410,7 +427,7 @@ conectada (`lib/negocio/embudoDelFormulario.ts:142-143@b2dcdf5`). Ahora dice que
 días, eran 43 contactos, 37 capturados al reservar (86 %). El cajón marca sólo la fila registrada entera
 (`components/conversion/CajonDelPaso.jsx:113`), y el aviso del servidor nombra las de un 90 % o más
 (`lib/negocio/recorridoDelLead.ts:273-275`): esta fila sale sin marca, y sus agendados se leen como conversión de
-la landing. Su rótulo (`lib/negocio/recorrido.ts:70-73`) describe agosto.
+la landing. Su rótulo (`lib/negocio/recorrido.ts:70-73`) describe agosto. No se re-midió con la ventana de hoy.
 
 **4. Cerrado el 2026-10-09.** «Hoy» decía en su `title` «las últimas 24 horas» y medía el día de calendario. El
 segmentado de Conversion ya no lleva ese `title`; `lib/negocio/periodo.ts:84` sigue diciéndolo para las otras
@@ -437,18 +454,25 @@ respuesta por defecto (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md
 cuatro reglas del detector siguen provisionales (`lib/agentes/detectores/conversion.ts:47`).
 
 **10. Si se vuelve a instrumentar, que sean eventos y no un campo por contacto.** Dos toques sobrescribibles sin
-fecha y un `% máximo visto` con 79 ceros son la demostración.
+fecha y un `% máximo visto` con 79 ceros son la demostración: un hecho del lead se guarda una vez, con su fecha, y
+no se sobrescribe.
 
 **11. La alarma no aparece nunca.** Sólo se dibuja con señales `critica`, y ninguna regla de Conversion lo es
 (`lib/agentes/detectores/conversion.ts:47`). Es la respuesta por defecto de `CV15-P05`: el lugar existe, vacío,
 hasta que alguna regla merezca la alarma.
 
 **12. «Confirmados» depende de un campo del CRM sin fecha.** Sobre los calificados, la tasa cuenta a quien
-respondió `Si`; el 2026-10-08, la mitad de los calificados no había respondido. No es la confirmación de
-Conversation, que se calcula sobre los que respondieron (`CV15-P10`).
+respondió `Si`; el 2026-10-18, 11 de los 19 calificados no habían respondido (el 2026-10-08, la mitad). No es la
+confirmación de Conversation, que se calcula sobre los que respondieron (`CV15-P10`).
 
 **13. «7 días» no es la misma ventana en Creative.** Conversion y Acquisition cortan en días cerrados; Creative
-termina hoy. Mirando las tres pestañas el mismo día, «7 días» puede dar dos cohortes distintas.
+termina hoy. Mirando las tres pestañas el mismo día, «7 días» puede dar dos cohortes distintas: el 2026-10-18, la
+de Conversion va del 10-11 al 10-17 y la de Creative, del 10-12 al 10-18.
+
+**14. La cohorte de 30 días ya casi no tiene pauta.** **Nuevo, 2026-10-18.** Con 28 contactos, uno solo dado de alta
+después del 2026-10-10, cada tasa de la tira está a pocos contactos del piso, y las que comparan lo hacen contra una
+anterior de 367. No es un defecto del código: la pantalla dice lo que pasó. Pero una lectura de «30 días» que no
+mire la cifra de Contactos va a tomar una cohorte de 28 personas por una tendencia.
 
 ---
 
@@ -458,4 +482,5 @@ termina hoy. Mirando las tres pestañas el mismo día, «7 días» puede dar dos
   usuario contesta otra cosa, el cambio empieza en ese documento.
 - **Lo que no mide** —el VSL, las sesiones, el mapa de calor, el campo por campo, las bandas— tiene su plan en
   `docs/OTROS/futuro/lo-que-conversion-no-mide.md`.
-- **Las cifras de esta foto** son del 2026-10-08 y del 2026-09-28. La próxima foto las re-mide.
+- **Las cifras de esta foto** son del 2026-10-18, del 2026-10-08 y del 2026-09-28, y cada una dice su fecha. No se
+  re-midieron el reparto por época, el censo de hosts, el `userAgent` ni la columna «Con cita» del formulario.
