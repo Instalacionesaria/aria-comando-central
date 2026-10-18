@@ -31,6 +31,12 @@ export interface TablaOrganizaciones {
   precio_mensual: string | null;
   creada_el: Generated<Date>;
   actualizada_el: Generated<Date>;
+  /** `plataforma` = ARIA, la principal; `agencia` = una empresa cliente. GENERADA desde `es_principal` (080): no se escribe. */
+  tipo: ColumnType<'plataforma' | 'agencia', never, never>;
+  /** El nicho al que más se dedica la empresa (`catalogo.nichos`). Nulo = nadie lo fijó. */
+  nicho_principal: string | null;
+  /** El país de la empresa (`catalogo.paises`), no el de sus clientes: ése va en cada cuenta. */
+  pais: string | null;
 }
 
 export interface TablaUsuarios {
@@ -292,6 +298,19 @@ export interface TablaControlAislamiento {
 /** La columna del inquilino, igual en las ocho. Ver `TablaControlAislamiento.org_id`. */
 type ColumnaInquilino = ColumnType<string, string | undefined, never>;
 
+/**
+ * La cuenta de una fila de negocio: la subcuenta del CRM, el cliente de una empresa (migraciones 082 y 083).
+ *
+ * Al insertar se puede omitir: el puente `negocio.completar_cuenta` la toma del contacto, o de la única cuenta activa
+ * de la organización. `never` al actualizar, igual que `org_id`: una fila no se muda de cuenta, y el mismo puente lo
+ * impide en la base. Qué tabla lleva cuál está en `pruebas/apoyo/regimenes-de-negocio.ts`, y la 259 exige que los
+ * tipos coincidan con esa lista.
+ */
+type ColumnaCuenta = ColumnType<string, string | undefined, never>;
+
+/** La de las tablas que son de una cuenta O de la organización entera: nula = de la organización. */
+type ColumnaCuentaOpcional = ColumnType<string | null, string | null | undefined, never>;
+
 /** El territorio: de qué pestaña es el contacto. `null` = en ninguno ("congelado"). */
 export type Territorio = 'closer' | 'setter';
 
@@ -332,6 +351,7 @@ export type SalidaResultado =
 export interface TablaContactos {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   ghl_contact_id: string;
   nombre: string;
   telefono: string | null;
@@ -448,6 +468,15 @@ export interface TablaContactos {
   /** El país del contacto. 100 de 100 — es lo que queda cuando `zona_horaria_del_lead` falta. */
   pais: string | null;
   creado_el: Generated<Date>;
+  // Las columnas estándar del modelo (084): nulas hasta que el normalizador (Fase 1) las escriba.
+  etapa_estandar: string | null;
+  cuadrante: string | null;
+  puntaje: number | null;
+  canal_de_entrada: string | null;
+  fuente_estandar: string | null;
+  primer_toque_id: string | null;
+  ultimo_toque_id: string | null;
+  no_contactar_desde: Date | null;
 }
 
 /**
@@ -459,6 +488,7 @@ export interface TablaContactos {
  */
 export interface TablaCarpetasDelCrm {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   carpeta_id: string;
   /** `null` = la carpeta existe y su nombre no se pudo leer. GoHighLevel no lista carpetas. */
   nombre: string | null;
@@ -473,6 +503,7 @@ export type GrupoDePerfil = 'detalles' | 'origen' | 'calificacion' | 'interaccio
 /** El espejo del catálogo de campos personalizados de la subcuenta. Una fila por campo. */
 export interface TablaCamposDelCrm {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   campo_id: string;
   /** El `name` de GoHighLevel, tal cual. */
   nombre: string;
@@ -495,6 +526,7 @@ export interface TablaCamposDelCrm {
 export interface TablaCitas {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   ghl_evento_id: string;
   contacto_id: string;
   inicio_el: Date;
@@ -570,11 +602,16 @@ export interface TablaCitas {
   inicio_anterior_el: Date | null;
   sincronizado_el: Date | null;
   creado_el: Generated<Date>;
+  // Las columnas estándar del modelo (084): nulas hasta que el normalizador (Fase 1) las escriba.
+  tipo: 'venta' | 'onboarding' | 'coaching' | 'otra' | null;
+  cuadrante_al_agendar: string | null;
+  calificada: boolean | null;
 }
 
 export interface TablaMensajes {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   ghl_mensaje_id: string;
   /** De qué conversación del CRM salió. Es lo que permite pedir el resto sin buscarla de nuevo. */
   ghl_conversacion_id: string | null;
@@ -649,6 +686,8 @@ export interface TablaMensajes {
   origen: Generated<'aviso' | 'ingesta' | 'revision' | 'apertura' | 'propio'>;
 
   creado_el: Generated<Date>;
+  /** El canal en el idioma común (084): nulo hasta que el normalizador (Fase 1) lo escriba. */
+  canal_estandar: string | null;
 }
 
 /**
@@ -673,6 +712,7 @@ export interface TablaMensajes {
  */
 export interface TablaComisiones {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   usuario_id: string;
   /** Hoy solo `closer`. Está en la clave primaria para que agregar un tramo no sea migrarla. */
   tipo: string;
@@ -700,6 +740,7 @@ export interface TablaComisiones {
  */
 export interface TablaCloserAsignado {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   usuario_id: string;
   /**
    * El usuario de GoHighLevel con el que se vincula. **Lo que decide de quién es cada lead.**
@@ -714,6 +755,7 @@ export interface TablaCloserAsignado {
 
 export interface TablaTareasProgramadas {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   tarea: string;
   /** Cuándo PASÓ el cron, no cuándo hizo trabajo. Lo segundo lo dice `ultimo_estado`. */
   ultima_corrida_el: Date;
@@ -733,6 +775,7 @@ export interface TablaTareasProgramadas {
  */
 export interface TablaAvisosDelCrm {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   id: Generated<string>;
   /** sha256 hex del cuerpo crudo. Es la idempotencia ante entregas duplicadas del proveedor. */
   huella: string;
@@ -756,6 +799,7 @@ export interface TablaAvisosDelCrm {
 
 export interface TablaIngestaPulso {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   clave: string;
   /**
    * **Toda conversación cuya última actividad es anterior o igual a esto ya fue ingerida.**
@@ -778,6 +822,7 @@ export interface TablaIngestaPulso {
 export interface TablaLlamadas {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   externa_id: string;
   contacto_id: string;
   agente: string | null;
@@ -793,6 +838,7 @@ export interface TablaLlamadas {
 export interface TablaTareas {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   contacto_id: string;
   /** Vence UN DÍA, no a una hora: la frontera la calcula la consulta con la zona. */
   vence_el: Date;
@@ -810,6 +856,7 @@ export interface TablaTareas {
 export interface TablaResultados {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   contacto_id: string;
   salida: SalidaResultado;
   /** El rol que lo registró: las dos comisiones se calculan distinto. */
@@ -843,6 +890,10 @@ export interface TablaResultados {
    */
   cita_id: string | null;
   creado_el: Generated<Date>;
+  // Las columnas estándar del modelo (084): nulas hasta que el normalizador (Fase 1) las escriba.
+  moneda: string | null;
+  monto_usd: string | null;
+  motivo: string | null;
 }
 
 /**
@@ -855,6 +906,7 @@ export interface TablaResultados {
 export interface TablaNotas {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   contacto_id: string;
   cuerpo: string;
   /** `null` solo para las importadas: el endpoint de notas de GHL no devuelve autor. */
@@ -926,6 +978,7 @@ export interface TablaVersionesDelPrompt {
 export interface TablaCambiosDeTerritorio {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   contacto_id: string;
   /** Nulo = no había contacto (en un `alta`) o estaba congelado. Lo desambigua `que_paso`. */
   territorio_anterior: 'closer' | 'setter' | null;
@@ -947,6 +1000,7 @@ export interface TablaCambiosDeTerritorio {
  */
 export interface TablaAnuncios {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   meta_anuncio_id: string;
   /** El conjunto de anuncios. Es el mismo valor que `atribucion_primera->>'utmTerm'`: 9 de 9 cruzan. */
   meta_conjunto_id: string | null;
@@ -966,12 +1020,17 @@ export interface TablaAnuncios {
  */
 export interface TablaCampanas {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   meta_campana_id: string;
   /** `null` cuando el proveedor no mandó nombre: no se inventa uno. */
   nombre: string | null;
   /** `ACTIVE`, `PAUSED`, … La foto de la última lectura, reescrita plana. */
   estado: string | null;
   sincronizado_el: Generated<Date>;
+  /** La plataforma de la campaña (084). Todas las de hoy son de Meta. */
+  plataforma: Generated<'meta' | 'tiktok' | 'google'>;
+  /** Cómo convierte la campaña (084): nulo = nadie lo dijo. Reemplazará a `funnels_de_campana` en la contracción. */
+  funnel: 'leadform' | 'profile' | 'booking' | null;
 }
 
 /**
@@ -982,6 +1041,7 @@ export interface TablaCampanas {
  */
 export interface TablaGastoDeLaCuenta {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   /** El día de la cuenta publicitaria, como lo devuelve el proveedor. */
   fecha: Date;
   gasto: string | null;
@@ -1003,6 +1063,7 @@ export interface TablaGastoDeLaCuenta {
  */
 export interface TablaLecturasDeGasto {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   meta_campana_id: string;
   fecha: Date;
   gasto: string;
@@ -1029,6 +1090,7 @@ export interface TablaAnalisisDelEspia {
  */
 export interface TablaIncidentes {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   id: Generated<string>;
   creado_el: Generated<Date>;
   ref: string;
@@ -1051,6 +1113,7 @@ export interface TablaIncidentes {
  */
 export interface TablaFunnelsDeCampana {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   meta_campana_id: string;
   /** `leadform` · `profile` · `booking`. `string` y no la unión: la valida `funnelValido` al leer. */
   funnel: string;
@@ -1072,6 +1135,7 @@ export interface TablaFunnelsDeCampana {
  */
 export interface TablaMetricasDeAnuncio {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   meta_anuncio_id: string;
   /** Día calendario de la zona de la cuenta publicitaria. No es un instante y no se guarda como tal. */
   fecha: Date;
@@ -1120,6 +1184,7 @@ export type ProveedorDeReuniones = 'MANUAL' | 'TLDV';
 
 export interface TablaAnalizadorProspectos {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   id: Generated<string>;
   nombre: string | null;
   /** En minúsculas y sin espacios: lo garantiza un CHECK. Nulo = la llamada no trajo correo. */
@@ -1131,6 +1196,7 @@ export interface TablaAnalizadorProspectos {
 
 export interface TablaAnalizadorLlamadas {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   id: Generated<string>;
   prospecto_id: string | null;
   tipo: TipoDeLlamadaAnalizada;
@@ -1160,6 +1226,7 @@ export interface TablaAnalizadorLlamadas {
 
 export interface TablaAnalizadorTranscripciones {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   llamada_id: string;
   texto: string;
   segmentos: Json<{ startSec: number; endSec: number; speaker: string; text: string }[]>;
@@ -1171,6 +1238,7 @@ export interface TablaAnalizadorTranscripciones {
 
 export interface TablaAnalizadorAnalisis {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   llamada_id: string;
   tipo: 'HT' | 'OB';
   /** False = el modelo la vetó (`match:false`). El veto también se guarda porque también se pagó. */
@@ -1195,6 +1263,7 @@ export interface TablaAnalizadorAnalisis {
 
 export interface TablaAnalizadorFichas {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   llamada_id: string;
   tipo_derivado: 'PROSPECT_CARD';
   estado: 'OK' | 'FAILED';
@@ -1217,6 +1286,7 @@ export interface TablaAnalizadorFichas {
 
 export interface TablaAnalizadorLapidas {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   proveedor: ProveedorDeReuniones;
   reunion_externa_id: string;
   borrada_el: Generated<Date>;
@@ -1258,6 +1328,7 @@ export interface TablaPromptsDelAgente {
  */
 export interface TablaEnlacesDePieza {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   pieza: string;
   url: string;
   actualizado_el: Generated<Date>;
@@ -1271,6 +1342,7 @@ export interface TablaEnlacesDePieza {
  */
 export interface TablaMiniaturasDelContacto {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   contacto_id: string;
   encontrado: boolean;
   video_url: string | null;
@@ -1283,6 +1355,7 @@ export interface TablaMiniaturasDelContacto {
 /** La miniatura y el post de cada anuncio, leídos de Meta (`078`). La escribe sólo `recolectarActivos.ts`. */
 export interface TablaActivosDeAnuncio {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   meta_anuncio_id: string;
   meta_creativo_id: string | null;
   tipo_de_objeto: string | null;
@@ -1323,6 +1396,7 @@ export interface TablaEnlacesRapidos {
 export interface TablaHallazgos {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   contacto_id: string;
   /** De qué análisis salió. Obligatoria: un hallazgo sin análisis no se puede fechar ni explicar. */
   analisis_id: string;
@@ -1367,6 +1441,7 @@ export interface TablaHallazgos {
 export interface TablaAnalisisDelAgente {
   id: Generated<string>;
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   contacto_id: string;
   agente: string;
   /** ¿Se pudo juzgar? Lo decide la precondición, ANTES de llamar al modelo. */
@@ -1607,6 +1682,7 @@ export interface TablaFundacionesMensajes {
  */
 export interface TablaUsoDeIa {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   id: Generated<string>;
   creado_el: Generated<Date>;
   /** Uno del juego cerrado de la `069`: `AGENTES_DE_USO` en `lib/agentes/uso.ts`. */
@@ -1690,6 +1766,7 @@ export interface TablaTopesDelExecutive {
  */
 export interface TablaSenales {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   id: Generated<string>;
   creada_el: Generated<Date>;
   departamento: 'acquisition' | 'creative' | 'conversion' | 'conversation';
@@ -1734,6 +1811,7 @@ export interface TablaSenales {
  */
 export interface TablaPlanesDeAccion {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   id: Generated<string>;
   departamento: 'acquisition' | 'creative' | 'conversion' | 'conversation';
   ventana: '7d' | '30d';
@@ -1762,6 +1840,7 @@ export interface TablaUmbrales {
  */
 export interface TablaObjecionesClasificadas {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   llamada_id: string;
   indice: number;
   /** `md5` del texto de la objeción: la categoría vale mientras el texto sea el mismo. */
@@ -1777,6 +1856,7 @@ export interface TablaObjecionesClasificadas {
  */
 export interface TablaBriefsDelCloser {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
   cita_id: string;
   brief: ColumnType<unknown, string, string>;
   sin_formulario: boolean;
@@ -1792,10 +1872,178 @@ export interface TablaBriefsDelCloser {
  */
 export interface TablaReunionesDelDia {
   org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuentaOpcional;
   dia: ColumnType<Date, string, string>;
   temas: ColumnType<unknown, string, string>;
   redaccion: ColumnType<unknown | null, string | null, string | null>;
   corrio_el: Generated<Date>;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LAS DE LA FASE 0 DEL MODELO DE DATOS (079 a 084)
+//
+// La cuenta es el nivel 3 (el cliente de una empresa): una subcuenta del CRM. ARIA es el nivel 1 y cada empresa
+// cliente el nivel 2; el modelo de datos los numera 0, 1 y 2, y los comentarios de las migraciones también.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Cada cliente de una empresa: una subcuenta del CRM. Migración 080. */
+export interface TablaCuentas {
+  id: Generated<string>;
+  org_id: string;
+  nombre: string;
+  slug: string;
+  crm: Generated<'ghl'>;
+  /** La location de GoHighLevel. Única en toda la plataforma. */
+  crm_cuenta_id: string | null;
+  /** `catalogo.nichos`. Lo confirma una persona: sin confirmar, no entra a benchmarks. */
+  nicho: string | null;
+  nicho_confirmado_el: Date | null;
+  nicho_confirmado_por: string | null;
+  modelo_de_negocio: string | null;
+  pais: string | null;
+  moneda: string | null;
+  /** La zona IANA del cliente: define el «día» de sus hechos diarios. */
+  zona_horaria: Generated<string>;
+  snapshot_version_id: string | null;
+  /** Sandbox o demo: no entra a ninguna métrica agregada. */
+  es_prueba: Generated<boolean>;
+  estado: Generated<'activa' | 'pausada' | 'baja'>;
+  alta_el: Generated<Date>;
+  baja_el: Date | null;
+  creado_el: Generated<Date>;
+  actualizado_el: Generated<Date>;
+}
+
+/** Las credenciales que son del cliente, copiadas de `organizaciones_credenciales` (080). Sólo las lee identidad. */
+export interface TablaCuentasCredenciales {
+  org_id: string;
+  cuenta_id: string;
+  crm_token_cifrado: string | null;
+  crm_refresh_cifrado: string | null;
+  crm_expira_el: Date | null;
+  crm_estado: Generated<'ausente' | 'activa' | 'vencida' | 'revocada'>;
+  crm_calendario_id: string | null;
+  crm_dominio_reservas: string | null;
+  crm_agente_usuario_id: string | null;
+  aviso_secreto_hash: string | null;
+  meta_cuenta_id: string | null;
+  meta_token_cifrado: string | null;
+  actualizado_el: Generated<Date>;
+  actualizado_por: string | null;
+}
+
+/** A qué clientes entra una persona limitada (080). */
+export interface TablaUsuariosCuentas {
+  org_id: string;
+  usuario_id: string;
+  cuenta_id: string;
+  concedida_el: Generated<Date>;
+  concedida_por: string | null;
+}
+
+/** Lo que firmó cada organización (080). Nunca se edita: un cambio es una fila nueva. */
+export interface TablaAcuerdos {
+  id: Generated<string>;
+  org_id: string;
+  tipo: 'terminos' | 'tratamiento_de_datos' | 'benchmarks';
+  version: string;
+  aceptado_el: Generated<Date>;
+  aceptado_por: string | null;
+  participa_en_benchmarks: boolean | null;
+  revocado_el: Date | null;
+}
+
+/** Si cada organización participa HOY en los benchmarks (080, `security_invoker`). */
+export interface VistaParticipacionEnBenchmarks {
+  org_id: string;
+  participa: boolean;
+  version: string;
+  aceptado_el: Date;
+}
+
+/** El árbol de nichos: sector › nicho › subnicho (079). Sólo se lee. */
+export interface TablaCatalogoNichos {
+  clave: string;
+  padre: string | null;
+  nivel: number;
+  nombre: string;
+  descripcion: string | null;
+  vigente: boolean;
+  creado_el: Date;
+}
+
+/** Los modelos de negocio (079). Sólo se lee. */
+export interface TablaCatalogoModelosDeNegocio {
+  clave: string;
+  nombre: string;
+  descripcion: string | null;
+  ticket_minimo_usd: string | null;
+  ticket_maximo_usd: string | null;
+  vigente: boolean;
+}
+
+/** Los países (079). Sólo se lee. */
+export interface TablaCatalogoPaises {
+  codigo: string;
+  nombre: string;
+  region: string;
+  moneda: string;
+  zona_horaria: string;
+  vigente: boolean;
+}
+
+/** Las monedas (079). Sólo se lee. */
+export interface TablaCatalogoMonedas {
+  codigo: string;
+  nombre: string;
+  decimales: number;
+  vigente: boolean;
+}
+
+/** Los hechos, de sólo agregar y particionados por mes (084). Sin escritor todavía: llega con la Fase 1. */
+export interface TablaEventos {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  ocurrio_el: Date;
+  registrado_el: Generated<Date>;
+  tipo: string;
+  tipo_version: Generated<number>;
+  contacto_id: string | null;
+  visitante_id: string | null;
+  canal: string | null;
+  actor_tipo: 'lead' | 'agente_ia' | 'persona' | 'sistema';
+  actor_id: string | null;
+  fuente: 'ghl' | 'meta' | 'tiktok' | 'fathom' | 'tldv' | 'landing' | 'n8n' | 'elevenlabs' | 'comando_central';
+  id_externo: string;
+  recibido_id: string | null;
+  datos: ColumnType<unknown, string | undefined, never>;
+}
+
+/** Cómo se traduce al idioma común lo propio de una cuenta (084). */
+export interface TablaMapeosDeCuenta {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  tipo: 'etapa_del_pipeline' | 'etiqueta' | 'campo' | 'valor_de_campo' | 'calendario' | 'pregunta';
+  valor_origen: string;
+  destino_catalogo: string;
+  destino_clave: string | null;
+  sugerido_por_ia: Generated<boolean>;
+  creado_por: string | null;
+  creado_el: Generated<Date>;
+}
+
+/** Lo que llegó de una cuenta y todavía no tiene traducción (084). */
+export interface TablaValoresSinMapear {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  tipo: string;
+  valor_origen: string;
+  apariciones: Generated<number>;
+  primera_vez_el: Generated<Date>;
+  ultima_vez_el: Generated<Date>;
+  sugerencia_catalogo: string | null;
+  sugerencia_clave: string | null;
 }
 
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
@@ -1813,6 +2061,11 @@ export interface BaseDeDatos {
   usuarios_segundo_factor: TablaUsuariosSegundoFactor;
   organizaciones_credenciales: TablaOrganizacionesCredenciales;
   usuarios_permisos: VistaUsuariosPermisos;
+  cuentas: TablaCuentas;
+  cuentas_credenciales: TablaCuentasCredenciales;
+  usuarios_cuentas: TablaUsuariosCuentas;
+  acuerdos: TablaAcuerdos;
+  participacion_en_benchmarks: VistaParticipacionEnBenchmarks;
 
   // Las de negocio. Sin calificar, como las demás: la ruta de búsqueda por rol las resuelve en
   // `negocio`, y `public` no está en la ruta de ningún rol nuestro.
@@ -1869,6 +2122,16 @@ export interface BaseDeDatos {
   objeciones_clasificadas: TablaObjecionesClasificadas;
   briefs_del_closer: TablaBriefsDelCloser;
   reuniones_del_dia: TablaReunionesDelDia;
+  eventos: TablaEventos;
+  mapeos_de_cuenta: TablaMapeosDeCuenta;
+  valores_sin_mapear: TablaValoresSinMapear;
+
+  // El catálogo común (079): lo leen todos los roles y no lo escribe ninguno de la aplicación. Calificado, porque
+  // `catalogo` no está en la ruta de búsqueda de ningún rol.
+  'catalogo.nichos': TablaCatalogoNichos;
+  'catalogo.modelos_de_negocio': TablaCatalogoModelosDeNegocio;
+  'catalogo.paises': TablaCatalogoPaises;
+  'catalogo.monedas': TablaCatalogoMonedas;
 
   // Las calificadas con su esquema. El porqué está en `TablaScraperLeads`: viven en el `public`
   // compartido de Supabase, y el prefijo `aria_cc_` es lo que dice de quién son. Tienen el mismo
