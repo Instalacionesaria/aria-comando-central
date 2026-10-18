@@ -285,7 +285,7 @@ Eso fue cierto del 2026-08-23 al 2026-09-07. El commit `b0a983b` lo cortó:
 Lo que queda del hub, y **nada de esto corre en ejecución**:
 
 - **El proyecto de Supabase.** `public` se comparte con otras plataformas, entre ellas ARIA-brain, y
-  el prefijo `aria_cc_` es lo que dice de quién es cada tabla (`lib/datos/esquema.ts:1548-1553`).
+  el prefijo `aria_cc_` es lo que dice de quién es cada tabla (`lib/datos/esquema.ts:1627-1632`).
 - **Los nombres, como contrato.** Los identificadores de herramienta son los del hub
   (`lib/fundaciones/herramientas.ts:11-16`), los campos del JSON siguen en inglés
   (`lib/fundaciones/estado.ts:11-17`) y las metodologías nacieron como copias, de las que seis ya
@@ -452,7 +452,7 @@ sola conversación, la última del 2026-10-02 a las 19:25 UTC**. Lo que sigue es
 concedido `icp`; eso no se volvió a medir.
 
 **El otro ICP.** El 2026-09-28, `negocio.contactos` tenía 594 contactos con 472 puntajes del CRM, todos de una sola
-organización (eran 471 de 590 el 2026-09-21, `lib/datos/esquema.ts:320-322`); el 2026-10-18 tiene 624 contactos, y
+organización (eran 471 de 590 el 2026-09-21, `lib/datos/esquema.ts:343-345`); el 2026-10-18 tiene 624 contactos, y
 los puntajes no se volvieron a contar. De las 3
 organizaciones con avatar generado, sólo la principal tiene contactos puntuados.
 
@@ -464,7 +464,7 @@ organizaciones con avatar generado, sólo la principal tiene contactos puntuados
 `lib/fundaciones/` consulta una tabla de `negocio`: lo único que lee es su almacén y, para la mirada
 al mercado, las tablas del scraper (`lib/fundaciones/almacen.ts:211-226`,
 `lib/fundaciones/operaciones.ts:818-851`). El avatar describe al cliente ideal; el puntaje del CRM,
-`negocio.contactos.score` (`lib/datos/esquema.ts:343-347`), califica a cada lead. Son dos «ICP» que
+`negocio.contactos.score` (`lib/datos/esquema.ts:367-371`), califica a cada lead. Son dos «ICP» que
 no se cruzan en ninguna tabla (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:366-369`,
 `docs/OTROS/futuro/icp-interno-calculado.md:35-37`). Y aunque se escribiera el cruce, hoy tendría con
 qué sólo en una organización de las diez con fila.
@@ -547,7 +547,7 @@ Research, para que de los 500 de regalo le queden al menos 300 a la empresa
 (`components/fundaciones/PanelResearch.jsx:308-316`), y la arranca el navegador con las funciones de
 Tools (`components/fundaciones/PanelResearch.jsx:258-260`). Por eso pide
 `tools.editar` (`app/api/tools/scrape/route.ts:228`) y, a un rol restringido, también la pestaña
-Tools concedida (`lib/autorizacion/portero.ts:248-252`). Sin eso el Research corre y la mirada no: la
+Tools concedida (`lib/autorizacion/portero.ts:277-281`). Sin eso el Research corre y la mirada no: la
 pantalla dice «No se pudo buscar en Google Maps» con el motivo del rechazo
 (`components/fundaciones/PanelResearch.jsx:327-330`). Hoy no le pasa a nadie: los 15 usuarios activos
 tienen `tools.editar` (2026-10-18), y los 3 de rol restringido con la pestaña `icp` concedida tenían también

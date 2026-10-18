@@ -56,7 +56,7 @@ de UTM incompletas— era falsa por el defecto que la foto anterior ya había me
 > - **Construido en local, sin subir (`693a383..dc84cb2`, 2026-10-16)** — la Fase 0 del modelo de datos
 >   multiempresa. Las seis tablas de Acquisition y `negocio.contactos` reciben una `cuenta_id` obligatoria
 >   (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:124-127`) y `senales` y `planes_de_accion`, una opcional
->   (`:129-131`); `conOrganizacion` abre todas las cuentas (`lib/datos/contexto.ts:147`). Ninguna línea de la
+>   (`:129-131`); `conOrganizacion` abre todas las cuentas (`lib/datos/contexto.ts:208`). Ninguna línea de la
 >   pantalla, la ruta o el cálculo cambia. Espera la aprobación de un ingeniero.
 
 ---

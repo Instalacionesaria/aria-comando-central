@@ -53,7 +53,7 @@ que este documento discute es **de quién depende**, no si hoy anda.
   compatible: con la etiqueta `icp_rechazado` hay **0 en ICP alto**, 22 en medio, 45 en bajo y 1 sin
   calificar.
 - **No tiene versión.** El CRM lo recalcula cuando el lead responde el cuestionario y la
-  sincronización lo pisa en cada corrida (`lib/datos/esquema.ts:320-321`). Un 70 de agosto y un 70 de
+  sincronización lo pisa en cada corrida (`lib/datos/esquema.ts:343-344`). Un 70 de agosto y un 70 de
   septiembre pueden venir de fórmulas distintas y nada en la fila lo dice.
 - **Ya cambió de forma más de una vez.** El catálogo guarda la versión vieja del cuestionario
   (`📁 Score | ICP`, fuera del Perfil a propósito: `lib/ghl/contrato.ts:262-265`). Buscando en el
@@ -140,9 +140,9 @@ Tres cosas que salen de lo medido:
 - **Solo preguntas de opción cerrada.** «A quién ayuda y qué entrega» es texto libre —el formulario
   de Meta le agrega *«Se especifico o sera rechazado»* (`lib/ghl/contrato.ts:358-359`)— y pesarlo
   exigiría un modelo, que es gastar. Las URL tampoco entran. El tipo de cada campo está en
-  `negocio.campos_del_crm.tipo` (`lib/datos/esquema.ts:478`), y es lo primero que se mira.
+  `negocio.campos_del_crm.tipo` (`lib/datos/esquema.ts:513`), y es lo primero que se mira.
 - **Las opciones no están en el catálogo**: `TablaCamposDelCrm` no las guarda
-  (`lib/datos/esquema.ts:470-489`). El vocabulario de cada pregunta sale de los valores ya guardados,
+  (`lib/datos/esquema.ts:504-524`). El vocabulario de cada pregunta sale de los valores ya guardados,
   y **se mueve**: en «Video Pre-Call» el CRM renombró «Sin abrir (0%)» a «Nada» el 2026-09-08
   (`lib/negocio/consumoDelPrecall.ts:44-48`), y hoy conviven 130 y 50. Una respuesta que ninguna
   regla nombra es **«no reconocida»**, no una respuesta que vale cero.

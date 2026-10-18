@@ -49,6 +49,11 @@ export const RECHAZOS = {
   // arregla en el catálogo de roles; esto significa «tu rol la tiene y a vos no te dieron esta
   // pestaña», y se arregla en la ficha de esa persona. Colapsarlos manda a buscar al lugar equivocado.
   seccion_no_concedida: 403,
+  // Paso 3b · el cliente final (el nivel 3) pidió algo que no es suyo, o no tiene ninguna cuenta. Códigos propios: el
+  // primero se arregla dándole otra pantalla (que es una decisión de producto, en `lib/autorizacion/cliente.ts`), el
+  // segundo asignándole una cuenta en Ajustes › Usuarios.
+  fuera_de_su_cuenta: 403,
+  sin_cuentas: 403,
   // 08 § 5.3. DECISIÓN: la especificación es el único lugar donde da un 403 SIN código de
   // cuerpo —"responder 403 'Origen no permitido'"—, y justo es el que el cliente no podría
   // distinguir de los otros cinco. Se le pone código.

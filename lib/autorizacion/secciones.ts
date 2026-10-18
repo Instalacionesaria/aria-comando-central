@@ -796,8 +796,10 @@ export type Alcance =
 export function esDeLaPrincipal(contexto: {
   esRolDePlataforma: boolean;
   organizacion: { esPrincipal: boolean };
+  /** El nivel 3: un cliente final de las cuentas de ARIA es de la principal y NO ve lo de la principal. */
+  cuentas?: { limitado: boolean };
 }): boolean {
-  return contexto.esRolDePlataforma || contexto.organizacion.esPrincipal;
+  return !contexto.cuentas?.limitado && (contexto.esRolDePlataforma || contexto.organizacion.esPrincipal);
 }
 
 /**

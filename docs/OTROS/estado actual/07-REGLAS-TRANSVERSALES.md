@@ -1268,7 +1268,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
   (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:4-21`).
 - **Lo demás.** El idioma común compartido sin `org_id` (`079`), las cuentas (`080`), la bandeja de lo crudo con una
   sola puerta (`081`) y los eventos de sólo agregar, con particiones que nacen cerradas (`084`,
-  `pruebas/base/257-el-modelo-fase-0.test.ts:623`).
+  `pruebas/base/257-el-modelo-fase-0.test.ts:644`).
 
 ---
 

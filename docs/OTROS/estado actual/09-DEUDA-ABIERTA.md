@@ -698,7 +698,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
 - `docs/OTROS/especificacion/TRAZABILIDAD.md:25` dice «75 reglas, 26 ⛔»; las tablas del mismo
   archivo tienen **85 filas `ADR-` distintas, 31 con ⛔** (contadas el 2026-09-28).
 - `docs/OTROS/especificacion/LEXICO.md:18` ubica `conOrganizacion(` en `lib/datos/capa.ts`; vive en
-  `lib/datos/contexto.ts:92`.
+  `lib/datos/contexto.ts:156`.
 - `docs/OTROS/capa-base/ETAPA-0.md:201-202` y `docs/OTROS/produccion/COMPATIBILIDAD.md:148` dicen
   que la imagen es `postgres:18-alpine`; `docker-compose.yml` fija `postgres:17-alpine`, que es lo que
   `docs/OTROS/produccion/DESPLIEGUE.md:12` explica.
@@ -873,10 +873,10 @@ se revisó) y la firma de los rótulos sigue siendo del 2026-09-15.
 Cuando un rol de plataforma trabaja sobre una empresa cliente, su sesión lleva la organización de
 la empresa y el usuario de la principal, y ese par no existe en `identidad.usuarios`: la foránea
 compuesta lo rechaza con `23503`, «nadie lo atrapa, y sale un 500 sin diagnóstico»
-(`lib/autorizacion/sesion.ts:354-356`). `d8b542e` (2026-09-17) lo resolvió para «quién tocó esta
-configuración», que bajo delegación va nulo (`lib/autorizacion/sesion.ts:384-385`), y **dejó
+(`lib/autorizacion/sesion.ts:423-425`). `d8b542e` (2026-09-17) lo resolvió para «quién tocó esta
+configuración», que bajo delegación va nulo (`lib/autorizacion/sesion.ts:453-454`), y **dejó
 afuera a propósito la autoría de contenido**, donde un nulo sería una nota sin autor o una venta
-que no registró nadie (`lib/autorizacion/sesion.ts:374-381`, y la sección «DÓNDE NO SE APLICÓ» del
+que no registró nadie (`lib/autorizacion/sesion.ts:443-450`, y la sección «DÓNDE NO SE APLICÓ» del
 mensaje del commit). Esas cuatro escrituras siguen fallando bajo delegación:
 
 - `resultados.registrado_por`, `notas.autor_id` y `tareas.creada_por`, las tres de Avanzar

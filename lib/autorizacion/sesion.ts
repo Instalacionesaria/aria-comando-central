@@ -18,6 +18,7 @@ import { createHash } from 'node:crypto';
 import { sql } from 'kysely';
 import { conIdentidad } from '../datos/capa.ts';
 import type { Alcance } from './secciones.ts';
+import { CAPACIDADES_DEL_CLIENTE, SECCIONES_DEL_CLIENTE } from './cliente.ts';
 
 /** El nombre de la cookie. El prefijo es parte del nombre, no un adorno (08 § 5.2). */
 // El nombre de la cookie se define en `cookie.ts`, que no importa nada, y se REEXPORTA acá.
@@ -125,6 +126,31 @@ export interface Contexto {
   esRolDePlataforma: boolean;
   /** ¿Está mirando una organización que no es la suya? Lo necesita el cartel permanente. */
   mirandoOtraOrganizacion: boolean;
+  /**
+   * Los clientes de `orgEfectiva` que ve esta persona (el nivel 3: las cuentas), y el que tiene enfocado.
+   *
+   * `limitado` = es un CLIENTE FINAL: ve sólo sus cuentas (sin ninguna, nada), sólo sus pantallas y sólo con las
+   * capacidades del cliente (`lib/autorizacion/cliente.ts`). Para todos los demás, `visibles` son los clientes de la
+   * empresa que no están de baja, y `activa` el que eligió mirar, si alguno.
+   */
+  cuentas: CuentasDeLaSesion;
+}
+
+/** Un cliente que la sesión ve. Sin la subcuenta del CRM: eso no viaja con la sesión. */
+export interface CuentaDeLaSesion {
+  id: string;
+  nombre: string;
+  zonaHoraria: string;
+  esPorOmision: boolean;
+  estado: 'activa' | 'pausada';
+  esPrueba: boolean;
+}
+
+export interface CuentasDeLaSesion {
+  limitado: boolean;
+  visibles: readonly CuentaDeLaSesion[];
+  /** El cliente enfocado: uno de `visibles`, o `null` (todos). */
+  activa: string | null;
 }
 
 /**
@@ -197,11 +223,13 @@ export async function resolverSesion(token: string | undefined): Promise<Context
         's.usuario_id',
         's.estado',
         's.org_activa',
+        's.cuenta_activa',
         's.expira_el',
         's.creada_el',
         'u.org_id as org_propia',
         'u.nombre as usuario_nombre',
         'u.tema as tema',
+        'u.limitado_a_cuentas as limitado',
       ])
       .executeTakeFirst();
 
@@ -307,6 +335,37 @@ export async function resolverSesion(token: string | undefined): Promise<Context
       );
     }
 
+    /* ── EL NIVEL 3: los clientes que ve, y el que tiene enfocado ──────────────
+     *
+     * Se calcula en CADA petición, como los permisos: quitarle una cuenta a un cliente final se ve en la siguiente.
+     * El cliente final ve sus filas de `usuarios_cuentas`, y sin ninguna, NINGUNA (`087`: el límite es un hecho
+     * afirmado en la persona, no la presencia de filas). El enfocado vale sólo si está entre los visibles: una
+     * `cuenta_activa` de otra organización, escrita por cualquier vía, se ignora. */
+    const limitado = fila.limitado;
+    const visibles: CuentaDeLaSesion[] = (
+      await db
+        .selectFrom('cuentas as c')
+        .where('c.org_id', '=', orgEfectiva)
+        .where('c.estado', '<>', 'baja')
+        .$if(limitado, (q) =>
+          q.where('c.id', 'in', db.selectFrom('usuarios_cuentas as uc').select('uc.cuenta_id').where('uc.usuario_id', '=', fila.usuario_id)),
+        )
+        .select(['c.id', 'c.nombre', 'c.zona_horaria', 'c.es_por_omision', 'c.estado', 'c.es_prueba'])
+        .orderBy('c.es_por_omision', 'desc')
+        .orderBy('c.alta_el')
+        .orderBy('c.id')
+        .execute()
+    ).map((c) => ({
+      id: c.id,
+      nombre: c.nombre,
+      zonaHoraria: c.zona_horaria,
+      esPorOmision: c.es_por_omision,
+      estado: c.estado === 'pausada' ? 'pausada' : 'activa',
+      esPrueba: c.es_prueba,
+    }));
+    const activa =
+      fila.cuenta_activa !== null && visibles.some((c) => c.id === fila.cuenta_activa) ? fila.cuenta_activa : null;
+
     await renovar(db, fila.sesion_id, fila.estado, fila.expira_el);
 
     return {
@@ -329,10 +388,20 @@ export async function resolverSesion(token: string | undefined): Promise<Context
         zonaHoraria: org.zona_horaria,
         esPrincipal: org.es_principal,
       },
-      permisos,
-      alcance,
+      // El cliente final conserva sólo las capacidades del cliente, y sólo sus pantallas: intersecciones, nunca
+      // uniones (el alcance no habilita nada que el rol no habilite).
+      permisos: limitado ? new Set([...permisos].filter((p) => CAPACIDADES_DEL_CLIENTE.has(p))) : permisos,
+      alcance: limitado
+        ? {
+            restringido: true,
+            concedidas: new Set(
+              [...(alcance.restringido ? alcance.concedidas : SECCIONES_DEL_CLIENTE)].filter((s) => SECCIONES_DEL_CLIENTE.has(s)),
+            ),
+          }
+        : alcance,
       esRolDePlataforma,
       mirandoOtraOrganizacion: orgEfectiva !== fila.org_propia,
+      cuentas: { limitado, visibles, activa },
     };
   });
 }

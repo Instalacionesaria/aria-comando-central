@@ -232,7 +232,7 @@ prompt pide además `auditor.editar`.
 que lee esta pantalla —`contactos`, `citas`, `mensajes`, `hallazgos`, `analisis_del_agente`, `llamadas`— ganan
 `cuenta_id` obligatoria y una política por organización Y cuenta
 (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`, `db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:99-104`);
-`conOrganizacion` pone `app.cuentas = '*'` (`lib/datos/contexto.ts:60`, `lib/datos/contexto.ts:147`), así que la
+`conOrganizacion` pone `app.cuentas = '*'` (`lib/datos/contexto.ts:60`, `lib/datos/contexto.ts:208`), así que la
 pantalla vería lo mismo que hoy. Ningún archivo de la sección cambia, y los eventos de la `084` no los escribe nadie
 todavía (`db/migraciones/084_los_eventos.sql:14`). Ver riesgo 26.
 
@@ -511,7 +511,7 @@ la revisión del usuario en producción sigue pendiente.
 **26 · La Fase 0 vacía la pantalla si sube en el orden equivocado.** **Nuevo**, construido en local y sin subir. La
 `083` pone en las tablas que lee esta pantalla una política que exige `app.cuentas`, y sin la variable no se ve nada
 (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`). La variable la pone `conOrganizacion` desde el Paso 1
-(`lib/datos/contexto.ts:147`): si la `083` llegara a producción antes que ese código, la pantalla diría cero contactos
+(`lib/datos/contexto.ts:208`): si la `083` llegara a producción antes que ese código, la pantalla diría cero contactos
 y cero citas sin ningún error, que es justo el cero que esta sección distingue de «no hay medición».
 
 **El cuello de botella de Conversation no es técnico**: la pantalla está, con todo lo que el sistema mide, y sigue sin

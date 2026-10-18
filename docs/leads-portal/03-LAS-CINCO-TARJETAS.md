@@ -260,7 +260,7 @@ la pantalla nueva no puede heredar sin querer.
   comentario de `comision.ts` describe ese mismo defecto (`lib/negocio/comision.ts:26-27`).
 - **El formato de la maqueta es andamiaje:** `'$'+n.toLocaleString('en-US')`
   (`aios-command-center_1.html:4587`). La tabla de resultados guarda el monto y ninguna moneda
-  (`lib/datos/esquema.ts:806-818`).
+  (`lib/datos/esquema.ts:856-869`).
 
 ### LP03-14 · Las tarjetas no emiten `data-leads`
 

@@ -41,9 +41,9 @@ un puntaje por contacto. No se cruzan en ninguna tabla
   (`lib/ghl/contrato.ts:288-291`).
 - **Qué se acepta:** un entero de 0 a 100; cualquier otra cosa se guarda como `null`
   (`lib/negocio/sincronizar.ts:524-530`), y la columna es `smallint` con `check between 0 and 100`
-  desde la migración `055` (`lib/datos/esquema.ts:352`).
+  desde la migración `055` (`lib/datos/esquema.ts:376`).
 - **Qué significa el nulo:** que el CRM no lo trae para ese contacto. **No es un cero**
-  (`lib/datos/esquema.ts:355-356`).
+  (`lib/datos/esquema.ts:379-380`).
 
 Hasta el 2026-09-21 la columna estaba vacía: Acquisition la midió el 2026-09-16 con cero valores y
 el dato vivía sólo en el `jsonb` (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:399-401`). Hoy la leen el
@@ -56,7 +56,7 @@ El documento funcional pide las dos cosas por separado —«ICP score» y «Segm
 ### LP14-02 · Se pisa en cada corrida, y el de los congelados deja de moverse
 
 **La columna se pisa en cada sincronización**: el CRM recalcula el puntaje cuando el lead responde el
-cuestionario (`lib/datos/esquema.ts:340-343`). Dos consecuencias:
+cuestionario (`lib/datos/esquema.ts:364-367`). Dos consecuencias:
 
 1. **El tramo es el de hoy, no el del día del alta.** «30 días · ICP alto» son los que entraron en
    los últimos 30 días **y hoy** tienen 75 o más. El reparto de una misma ventana puede cambiar sin
@@ -113,7 +113,7 @@ Medido el 2026-09-27, con los tramos de LP14-05:
 - De ahí sale también que **los nulos son sobre todo de contactos de más de 30 días o sin alta**: al
   menos 108 de los 122 están fuera de la cohorte por omisión.
 - Entre el 2026-09-21 y el 2026-09-27 el universo pasó de 590 a 593 y los nulos de 119 a 122
-  (`lib/datos/esquema.ts:355`), con los mismos 471 con valor. Por la cuenta, lo más probable es que
+  (`lib/datos/esquema.ts:379`), con los mismos 471 con valor. Por la cuenta, lo más probable es que
   los tres contactos nuevos hayan llegado sin puntaje; no se midió contacto por contacto.
 
 La cobertura del grupo `calificacion` **no sirve para validar esto**: 475 contactos tienen alguna

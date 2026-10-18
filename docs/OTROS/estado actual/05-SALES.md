@@ -190,7 +190,7 @@ concedida (medido el 2026-10-18; la misma cifra que el 2026-09-28).
 esta pantalla —`contactos`, `citas`, `resultados`, `comisiones`, `closer_asignado`, y las del analizador— ganan
 `cuenta_id` y una política por organización Y cuenta (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`,
 `db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:99-110`); `conOrganizacion` pone `app.cuentas = '*'`
-(`lib/datos/contexto.ts:60`, `lib/datos/contexto.ts:147`), así que la pantalla vería lo mismo que hoy. Lo que sí es
+(`lib/datos/contexto.ts:60`, `lib/datos/contexto.ts:208`), así que la pantalla vería lo mismo que hoy. Lo que sí es
 nuevo para Sales: un resultado ya no puede quedar en otra cuenta que su cita
 (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:68-70`), que es el eslabón `appointment_id → sale_report_id` del
 §5.2. Ningún archivo de la sección cambia. Ver § 7.
@@ -398,7 +398,7 @@ sino de dónde se anota.
 **La Fase 0, si sube en el orden equivocado.** Construido en local y sin subir. La `083` pone en las tablas que lee
 esta pantalla una política que exige `app.cuentas`, y sin la variable no se ve nada
 (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`). La pone `conOrganizacion` desde el Paso 1
-(`lib/datos/contexto.ts:147`): si la `083` llegara antes que ese código, la pantalla diría cero citas, cero closers y
+(`lib/datos/contexto.ts:208`): si la `083` llegara antes que ese código, la pantalla diría cero citas, cero closers y
 «Sin closers configurados.» sin ningún error.
 
 **Lo que se puede construir hoy, y lo que no.** La pantalla del prototipo está construida con todo lo que el sistema

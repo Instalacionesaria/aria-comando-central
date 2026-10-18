@@ -38,7 +38,7 @@ nombra tres entidades —`Landing Session`, `VSL Session`, `Form Submission`— 
 coincidencias en todo el repositorio** —`db/migraciones`, `lib`, `app`, `components`—. No hay tabla
 de sesiones web, ni de eventos de página, ni de reproducción de video. La única `sesiones` del
 esquema es `identidad.sesiones`, que son los inicios de sesión de nuestros usuarios
-(`lib/datos/esquema.ts:120-134`).
+(`lib/datos/esquema.ts:128-144`).
 
 Así que la unidad de este departamento **es el contacto**, y eso no es una simplificación: es un
 techo. Un visitante que no se convierte en contacto **no deja rastro en ninguna parte**. La

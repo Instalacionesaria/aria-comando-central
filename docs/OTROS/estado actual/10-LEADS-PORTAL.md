@@ -29,7 +29,7 @@
 > - **Construido en local, sin subir (`693a383..dc84cb2`, 2026-10-16)** — la Fase 0 del modelo de datos
 >   multiempresa: `contactos`, `citas` y `resultados` reciben una `cuenta_id` obligatoria
 >   (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:124-127`) y `conOrganizacion` abre todas las cuentas
->   (`lib/datos/contexto.ts:147`). La pestaña no cambia una línea. Espera la aprobación de un ingeniero.
+>   (`lib/datos/contexto.ts:208`). La pestaña no cambia una línea. Espera la aprobación de un ingeniero.
 > - **Y el dato cambió solo**: la ventana de 30 días se vació como la foto anterior anticipaba (§ 7).
 
 > **Del corte del 2026-09-15 al del 2026-09-28**

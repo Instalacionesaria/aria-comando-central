@@ -84,7 +84,7 @@ desarrollada en el documento que se indica.
 
 | id | decisión | dónde |
 |---|---|---|
-| `T-01` | **Rutas por pantalla, sin reimplementar el portero.** El Inicio tiene `app/api/executive/route.ts` (`PANTALLA='executive'`). La caja del pie de cada sección habla con una ruta fina en la carpeta de la API de esa sección, con `PANTALLA` de esa sección. Así el paso 6 del portero (`lib/autorizacion/portero.ts:294`) aplica el alcance solo y no hace falta tocar `SIN_PANTALLA` | `03` |
+| `T-01` | **Rutas por pantalla, sin reimplementar el portero.** El Inicio tiene `app/api/executive/route.ts` (`PANTALLA='executive'`). La caja del pie de cada sección habla con una ruta fina en la carpeta de la API de esa sección, con `PANTALLA` de esa sección. Así el paso 6 del portero (`lib/autorizacion/portero.ts:323`) aplica el alcance solo y no hace falta tocar `SIN_PANTALLA` | `03` |
 | `T-02` | **NE-33**: la única línea de `lib/autorizacion/secciones.ts` que cambia es la bandera de `:219`, que pasa a ser un comentario de una línea. No se suma ni se quita ninguna | `03`, `08` |
 | `T-03` | **La identidad sólo en los archivos de ruta.** La llave y el estado de las integraciones se resuelven con `conIdentidad` en la ruta; cada ruta nueva entra en `ARCHIVOS_AUTORIZADOS` (y en `CRUZAN_LOS_DOS_DOMINIOS` si corresponde) y lleva el literal `conOrganizacion(`. Nada bajo `lib/agentes/**` importa `conIdentidad` | `01`, `05` |
 | `T-04` | **Transacciones cortas**: ninguna queda abierta mientras se espera al modelo, y las herramientas corren en serie (el grupo de conexiones tiene 5, `lib/datos/capa.ts:83`) | `01` |

@@ -237,7 +237,7 @@ el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fal
 (`lib/agentes/detectores/creative.ts:111`, `lib/agentes/detectores/conversion.ts:120`,
 `lib/agentes/detectores/conversation.ts:90`), y una herramienta del cerebro que lee la frescura de las tareas
 (`lib/agentes/executive/adaptadores/plataforma.ts:58`). **Lo que nadie lee es el motivo del sello**:
-`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:723`).
+`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:769`).
 
 **La frescura por tabla, medida el 2026-10-18 hacia las 15:42 UTC:**
 
@@ -277,7 +277,7 @@ de `public` a `respaldo_aria_brain`. Medido el 2026-10-18: en `public` hay **0**
 base**: la misma revisión del 2026-10-12 dejó permisos de producción por corregir, revisados ese día, con su plan fuera
 del repositorio a propósito.
 
-**Las `aria_cc_*`.** `lib/datos/esquema.ts:1876-1881` tipa seis; en producción hay seis, y no son las mismas:
+**Las `aria_cc_*`.** `lib/datos/esquema.ts:2148-2153` tipa seis; en producción hay seis, y no son las mismas:
 `aria_cc_scraper_mediciones` **sigue sin existir** (`to_regclass` nulo, 2026-10-18) aunque el código la escribe
 (`lib/tools/medicion.ts:65`, `:94`, dentro de un `catch`, `lib/tools/medicion.ts:71-76`), y `aria_cc_icp_oferta`
 existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`). El detalle es de
@@ -288,8 +288,8 @@ la RLS, revoca `public` y crea una política para `app_inquilino` con `org_id = 
 (`db/migraciones/008_aislamiento_de_negocio.sql:151-158`). La aplicación pone esa variable con `set_config(…, true)`
 dentro de la transacción de `conOrganizacion`, después de comprobar que la conexión llegó limpia, y la vuelve a leer:
 si no quedó puesta, lanza (`lib/datos/contexto.ts:123@972972e`, el código de producción). En local, desde `d424d8b`,
-pone además `app.cuentas = '*'` con la misma verificación (`lib/datos/contexto.ts:146-147`,
-`lib/datos/contexto.ts:160-166`): sin la política nueva de la Fase 0, no cambia nada (§ 11).
+pone además `app.cuentas = '*'` con la misma verificación (`lib/datos/contexto.ts:207-208`,
+`lib/datos/contexto.ts:222-228`): sin la política nueva de la Fase 0, no cambia nada (§ 11).
 
 **Los roles.** En producción, tres: `migrador`, `app_inquilino` y `app_identidad`, todos `nobypassrls`
 (`db/arranque/000_cluster.sql:34`, `:42`, `:51`); medido en `pg_roles` el 2026-10-18: 0 superusuarios y 0 con
@@ -558,11 +558,11 @@ producción** (medido el 2026-10-18: la última migración aplicada es la `078`,
 | `c88b7cf` | 2 | `079`: el esquema `catalogo`, 23 tablas de referencia comunes a todas las empresas (`db/migraciones/079_el_idioma_comun.sql:25`); los roles `ingestor`, `app_ingesta` y `app_analista`, **sin login** (`db/arranque/000_cluster.sql:82-97`) |
 | `01baaf2` | 3 | `080`: `identidad.cuentas`, sus credenciales copiadas, `usuarios_cuentas` y `acuerdos`; la fase `cuentas` de `scripts/db.mjs` crea las de hoy |
 | `99f6e1e` | 4 | `081`: la bandeja de entrada, esquemas `sistema` e `ingesta`, con la puerta `ingesta.recibir` (`db/migraciones/081_la_bandeja_de_entrada.sql:122`); nada la usa todavía |
-| `ce5ed91` | 5a | `082`: `cuenta_id` nulable en 39 tablas de `negocio`, con su puente; la fase `cuenta-en-negocio` rellena las filas de hoy (`scripts/db.mjs:555`) |
+| `ce5ed91` | 5a | `082`: `cuenta_id` nulable en 39 tablas de `negocio`, con su puente; la fase `cuenta-en-negocio` rellena las filas de hoy (`scripts/db.mjs:585`) |
 | `8ad73f3` | 5b | `083`: `cuenta_id` obligatoria en 26 tablas, las claves «misma cuenta que la madre» y la política por organización **y** cuenta (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:1-8`) |
 | `dc84cb2` | 6 | `084`: `negocio.eventos`, de sólo agregar y particionada por mes (`db/migraciones/084_los_eventos.sql:117-141`), y las particiones que nacen cerradas |
 
-Las fases nuevas van en el `reset` local, después de sembrar (`scripts/db.mjs:563`). Lo que el diseño validado el
+Las fases nuevas van en el `reset` local, después de sembrar (`scripts/db.mjs:593`). Lo que el diseño validado el
 2026-10-14 no había visto y se corrigió al construirlo está escrito en el plan de subida y en los mensajes de cada
 commit; el más serio: **una partición de `negocio` no heredaba la RLS de su madre** y, leída directo, mostraba los
 eventos de todas las organizaciones; `sistema.crear_particiones` se redefinió para que nazca cerrada

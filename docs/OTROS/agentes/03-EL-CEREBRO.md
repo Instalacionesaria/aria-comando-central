@@ -25,7 +25,7 @@
 
 Cada ruta declara la `PANTALLA` de donde se usa (`T-01`), así que **el portero aplica el alcance solo**: el
 paso 6 de `exigir` niega con `seccion_no_concedida` a quien no tiene concedida esa pestaña
-(`lib/autorizacion/portero.ts:294`). No se reimplementa ese paso y no se toca `SIN_PANTALLA`.
+(`lib/autorizacion/portero.ts:323`). No se reimplementa ese paso y no se toca `SIN_PANTALLA`.
 
 | ruta | pantalla | GET | POST y DELETE | qué hace |
 |---|---|---|---|---|
@@ -61,7 +61,7 @@ de la ruta, la 206, como manda la regla 31 (`docs/OTROS/estado actual/07-REGLAS-
 ## AG-41 · Sólo se ofrece lo de las pestañas que la persona ve
 
 Las secciones visibles salen de `seccionesConAlcance(permisos, alcance, desdeLaPrincipal)`
-(`lib/autorizacion/secciones.ts:826`), con los datos que ya trae el contexto de la sesión. El modelo recibe
+(`lib/autorizacion/secciones.ts:828`), con los datos que ya trae el contexto de la sesión. El modelo recibe
 **sólo** las herramientas de esas secciones; una herramienta que no se ofrece no existe para él. Con la
 caja del pie, las de la sección abierta van primero.
 
@@ -282,7 +282,7 @@ detalle está en `06`.
 ## AG-54 · Bajo delegación
 
 El cerebro se apaga y lo dice (`D-17`). El POST lo rechaza el servidor con `contexto.mirandoOtraOrganizacion`
-(`lib/autorizacion/sesion.ts:127`), no sólo la pantalla.
+(`lib/autorizacion/sesion.ts:128`), no sólo la pantalla.
 
 ## AG-55 · La mascota
 

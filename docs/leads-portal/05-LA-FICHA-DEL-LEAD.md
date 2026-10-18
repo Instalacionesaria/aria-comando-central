@@ -89,7 +89,7 @@ acciones y siete secciones:
     y sin puntaje, «sin puntaje · sin calificar». Es la prueba de LP-3: el 0 viaja con su motivo;
   - **país**. Medido: **569** de 593 lo tienen;
   - **alta en el CRM**, con fecha absoluta y relativa. No es `creado_el`: `creado_el` es cuando lo vio
-    nuestro barrido (`lib/datos/esquema.ts:403-416`);
+    nuestro barrido (`lib/datos/esquema.ts:427-440`);
   - **sincronizado el**, y para un congelado, que ya no se refresca;
   - **la marca de descartado**, con la etiqueta que lo descartó, si la hay.
 - **No hay un «estado» de una palabra.** Hasta dónde llegó la persona lo dice el recorrido
@@ -257,11 +257,11 @@ acciones y siete secciones:
   persona, y **el nombre de un closer real** en «Llamada con…» (`aios-command-center_1.html:4607`).
 - **Qué pide:**
   - **mensajes:** la fecha del último entrante y la del último saliente
-    (`lib/datos/esquema.ts:380-382`). El conteo, sólo cuando la historia se leyó (`mensajes_desde_el`).
+    (`lib/datos/esquema.ts:404-406`). El conteo, sólo cuando la historia se leyó (`mensajes_desde_el`).
     Si no se leyó, la ficha dice «no se leyó su historia», no «nunca escribió»
-    (`lib/datos/esquema.ts:384-390`). **Medido:** 305 con algún mensaje entrante, 484 con alguno
+    (`lib/datos/esquema.ts:408-414`). **Medido:** 305 con algún mensaje entrante, 484 con alguno
     saliente, 541 con la historia leída;
-  - **sin el texto.** `ultimo_entrante_texto` (`lib/datos/esquema.ts:381`) no viaja. La conversación
+  - **sin el texto.** `ultimo_entrante_texto` (`lib/datos/esquema.ts:405`) no viaja. La conversación
     es del closer y del setter, que ya la ven en su pantalla; el portal cuenta y fecha;
   - **citas:** fecha, estado del calendario (confirmada, cancelada o plantón), si es alcanzable o
     congelada, y la asistencia registrada;
@@ -278,7 +278,7 @@ acciones y siete secciones:
 - **Rastro:** once campos y cuatro UTM (`aios-command-center_1.html:4846-4854`). Para catorce contactos,
   el relleno los fabrica (`aios-command-center_1.html:4672-4676`).
 - **Qué pide:** `atribucion_primera` se guarda cruda *«y sin lista blanca»*
-  (`lib/datos/esquema.ts:417-429`). Por eso la lista blanca va en la lectura, en
+  (`lib/datos/esquema.ts:441-453`). Por eso la lista blanca va en la lectura, en
   `atribucionVisible.ts` (LP-3). Medido sobre los 593:
 
   | clave | rótulo | contactos |
@@ -297,8 +297,8 @@ acciones y siete secciones:
   Notas sobre la tabla:
   - `utmMedium` es un nombre, no un id, y un renombre en Meta parte la serie. Acquisition pide
     decirlo en pantalla (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`);
-  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:947`);
-  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:944-954`). **Medido: 213 de 213
+  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1004`);
+  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1001-1012`). **Medido: 213 de 213
     cruzan.**
 - **Sólo el host.** **286** direcciones traen un token: un JWT, un `fbclid` o un `token=`. Es lo que
   pide A8-18 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:239`). Hosts medidos:
@@ -322,10 +322,10 @@ acciones y siete secciones:
   | campo de la maqueta | qué es hoy | rastro |
   |---|---|---|
   | Ubicación · Posición | **hueco**: el placement no llega de ningún lado | A8-29, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304` |
-  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1036-1044`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
+  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1102-1110`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
   | Dispositivo · Ciudad | **hueco**: están dentro de `userAgent` e `ip`, que no se muestran. Acquisition pide derivarlos y no mostrarlos (A8-17). La maqueta elige el dispositivo por la paridad del puntaje (`aios-command-center_1.html:4673`) | `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:238` |
   | Plataforma | **no es un dato aparte**: lo dice `sessionSource`. No se inventa «Meta» | — |
-  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:951-952`). Ver `LP05-P02` | — |
+  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1009-1010`). Ver `LP05-P02` | — |
   | Punto de captura | **se reemplaza** por el host de `url` y por «Llegó por» (`LP05-07`) | A8-18 |
   | Conjunto · Creative · UTM | **dato real**, por la lista blanca (`LP05-13`); «Creative» es el **nombre** del anuncio, no la pieza (ver la nota) | A8-07, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93` |
 
@@ -372,9 +372,9 @@ acciones y siete secciones:
 - **Qué pide:**
   - **teléfono y correo, sólo en la ficha.** Es la decisión del 2026-09-26, y la ruta del detalle es
     la única que los trae (LP-4). La respuesta sale con `no-store`, como toda respuesta con datos de
-    un inquilino (`lib/autorizacion/respuesta.ts:314-316`);
+    un inquilino (`lib/autorizacion/respuesta.ts:319-321`);
   - **el closer asignado:** `crm_asignado_a` es el usuario del CRM, crudo
-    (`lib/datos/esquema.ts:359-369`). Se cruza con `closersDeLaEmpresa`
+    (`lib/datos/esquema.ts:383-393`). Se cruza con `closersDeLaEmpresa`
     (`lib/negocio/alcanceDelCloser.ts:77-95`) por `crmUsuarioId`. Si cruza, se muestra el nombre.
     Si no cruza, «asignado en el CRM a alguien que no es un closer configurado». Si no hay
     asignación, «sin asignar en el CRM». **El id crudo no se muestra nunca.** Un closer designado y
@@ -401,9 +401,9 @@ portal completarían el recorrido: la confirmación de asistencia es justo lo qu
 
 Ninguno es un dato personal. `medium` está en 552 contactos y `campaignId` en 358. El objetivo existe
 para los 213 contactos cuyo `adId` cruza con `negocio.anuncios`; cuántos lo traen cargado no se midió,
-y la columna puede ser nula (`lib/datos/esquema.ts:951-952`). Quedaron afuera porque la lista del plan
+y la columna puede ser nula (`lib/datos/esquema.ts:1009-1010`). Quedaron afuera porque la lista del plan
 es la mínima que llena la ficha de la maqueta. `campaignId` sólo serviría para cruzar, y hoy
-`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:944-954`).
+`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1001-1012`).
 `medium` y el objetivo sí llenarían dos filas que la maqueta tiene: «Plataforma» y «Objetivo».
 Para el objetivo, es la misma pregunta que `LP09-P04` (`09-DE-DONDE-VIENE-CADA-DATO.md`), y se
 contesta una sola vez.

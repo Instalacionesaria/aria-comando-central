@@ -132,8 +132,8 @@ puede heredar.
   puntaje, tramo, territorio, descartado, cita, asistencia, plantón, vendió y monto. La prueba de la
   ruta (LP-4) comprueba que la lista no trae teléfono, correo, atribución ni `campos_del_crm`. La
   atribución no se muestra cruda porque *«`referrer` y `url` son direcciones completas y pueden llevar
-  el identificador de una persona adentro»* (`lib/datos/esquema.ts:423-424`).
-- **Tampoco viaja el texto del último mensaje** (`lib/datos/esquema.ts:381`).
+  el identificador de una persona adentro»* (`lib/datos/esquema.ts:447-448`).
+- **Tampoco viaja el texto del último mensaje** (`lib/datos/esquema.ts:405`).
 
 ### LP04-07 · El bloque de dinero dice «reportado», y sin venta dice el estado de la cita
 

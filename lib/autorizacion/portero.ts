@@ -55,6 +55,7 @@ import { rechazo } from './respuesta.ts';
 import { COOKIE_SESION, resolverSesion, type Contexto } from './sesion.ts';
 import { conIdentidad } from '../datos/capa.ts';
 import { auditar } from '../autenticacion/auditoria.ts';
+import { rechazoDelCliente } from './cliente.ts';
 
 export { NINGUNA } from './capacidades.ts';
 export type { Contexto } from './sesion.ts';
@@ -211,6 +212,34 @@ export async function exigir(
   // Paso 3 · ¿La organización está activa?
   if (!contexto.organizacion.activa && !EXENTAS_DE_ORGANIZACION_ACTIVA.includes(ruta)) {
     return rechazo('organizacion_inactiva');
+  }
+
+  /* ── Paso 3b · El cliente final (el nivel 3) sólo entra a lo suyo ──
+   *
+   * Un cliente final es una persona limitada a sus cuentas. La base ya le cierra todo lo que no es suyo (la `086`),
+   * pero no ve las rutas que no leen negocio, ni las capacidades que su rol traería: esto sí. Pasan sus pantallas
+   * (Leads y Sales) y las rutas de su propia sesión; nada más.
+   *
+   * Va ANTES del Paso 4 a propósito: las operaciones abiertas a cualquier sesión (`NINGUNA`) tampoco son suyas, salvo
+   * las de su sesión, que `RUTAS_DEL_CLIENTE` nombra. Y DESPUÉS de los pasos 2 y 3: un cliente final con la contraseña
+   * temporal recibe `debe_cambiar_password`, que le dice qué hacer, y su salida está en esa lista. */
+  if (contexto.cuentas.limitado) {
+    const motivo = rechazoDelCliente(ruta, pantalla, contexto.cuentas.visibles.length);
+    if (motivo !== null) {
+      try {
+        await conIdentidad(async (db) => {
+          await auditar(db, {
+            accion: 'fuera_de_su_cuenta',
+            usuarioId: contexto.usuarioId,
+            orgId: contexto.orgEfectiva,
+            detalle: { ruta, ...(pantalla === SIN_SECCION ? {} : { seccion: pantalla }) },
+          });
+        });
+      } catch {
+        return rechazo('base_no_disponible');
+      }
+      return rechazo(motivo);
+    }
   }
 
   // Paso 4 · Las operaciones abiertas a cualquiera con sesión.

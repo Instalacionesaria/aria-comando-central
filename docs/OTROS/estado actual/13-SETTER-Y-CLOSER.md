@@ -485,7 +485,7 @@ corte y 25 a las 00:20 del 29, en `identidad.auditoria_accesos`), y es también 
 sesión que siguió viva después del 2026-09-21. Los otros dos no iniciaron sesión: la última sesión de
 uno venció el 2026-09-14 a las 20:19 UTC, antes de la `049`, y la del otro el 2026-09-21 a las 14:58
 UTC, sin renovarse. La medición tiene un punto ciego que hay que decir: la sesión se renueva por
-siete días sólo cuando le queda menos de uno (`lib/autorizacion/sesion.ts:389-390`), así que un uso
+siete días sólo cuando le queda menos de uno (`lib/autorizacion/sesion.ts:458-459`), así que un uso
 aislado del segundo entre el 14 y el 20 de septiembre podría no haber dejado rastro. **No
 verificado** con un registro de uso por pantalla, porque no hay.
 

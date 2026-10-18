@@ -24,7 +24,7 @@ del embudo de Executive terminaba abriendo la ficha inventada de esta pestaña. 
 
 ### LP08-01 · Lee lo que el barrido ya guarda, y no le pide nada nuevo al CRM
 
-**Rastro** · La tabla `negocio.contactos` en `lib/datos/esquema.ts:328-446`: el puntaje (`:358`),
+**Rastro** · La tabla `negocio.contactos` en `lib/datos/esquema.ts:351-470`: el puntaje (`:358`),
 el asignado del CRM (`:369`), cuándo se sincronizó (`:383`), desde cuándo hay mensajes (`:390`), los
 campos del CRM (`:402`), el alta (`:416`), la atribución del primer toque (`:429`) y el país
 (`:445`). Las siete tablas de las que sale todo están en `LP09-01`.

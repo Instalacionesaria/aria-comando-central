@@ -272,7 +272,7 @@ Es la regla de Sales (`docs/sales/06-PERIODOS-Y-PISOS.md:127-135`) aplicada acá
 
 La cohorte se fija por el alta, pero el tramo sale del puntaje **que el contacto tiene ahora**: la
 columna se pisa en cada corrida, porque el CRM lo recalcula cuando el lead responde
-(`lib/datos/esquema.ts:340-343`). O sea que «30 días · ICP alto» son **los que entraron en los últimos
+(`lib/datos/esquema.ts:364-367`). O sea que «30 días · ICP alto» son **los que entraron en los últimos
 30 días y hoy tienen 75 o más**. La misma ventana puede dar otro reparto mañana sin que entre nadie.
 Se declara en la pantalla y está desarrollado en `14-EL-PUNTAJE-DEL-CRM.md`.
 

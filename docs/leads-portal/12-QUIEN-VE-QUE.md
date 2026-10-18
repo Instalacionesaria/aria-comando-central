@@ -32,8 +32,8 @@ decide en dos pasos, y cada uno tiene su código de rechazo:
 
 | paso | qué mira | si falla | rastro |
 |---|---|---|---|
-| 5 | ¿el rol tiene `tablero.ver`? | `sin_permiso`, 403, y queda auditado | `lib/autorizacion/portero.ts:219-246` |
-| 6 | ¿la sección `contacts` está en el alcance de la persona? | `seccion_no_concedida`, 403 | `lib/autorizacion/portero.ts:276-295`, `lib/autorizacion/respuesta.ts:51` |
+| 5 | ¿el rol tiene `tablero.ver`? | `sin_permiso`, 403, y queda auditado | `lib/autorizacion/portero.ts:248-275` |
+| 6 | ¿la sección `contacts` está en el alcance de la persona? | `seccion_no_concedida`, 403 | `lib/autorizacion/portero.ts:305-324`, `lib/autorizacion/respuesta.ts:51` |
 
 El paso 6 se comprueba **además** del 5, nunca en su lugar (`lib/autorizacion/secciones.ts:716-718`).
 
@@ -254,7 +254,7 @@ muestra: no es una exposición nueva.
 
 ### LP12-09 · Nada de esto queda guardado en un caché
 
-`ok()` responde con `cache-control: no-store` (`lib/autorizacion/respuesta.ts:314-316`), y el lector
+`ok()` responde con `cache-control: no-store` (`lib/autorizacion/respuesta.ts:319-321`), y el lector
 del navegador pide también sin caché (`lib/http/cliente.ts:156-158`). **Requisito:** la pantalla no
 guarda la lista ni la ficha en el almacenamiento del navegador. Una lista de 593 nombres que
 sobrevive al cierre de sesión en una computadora compartida es la fuga más barata de todas.

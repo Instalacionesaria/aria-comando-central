@@ -170,7 +170,7 @@ se midieron cero roles propios de una organización, cero personas sin rol y cer
 
 **Qué hace distinto a cada uno, además de la lista.** `superadministrador` es el único con `solo_principal`, que un
 disparador de la base ata a la organización principal (`lib/autorizacion/secciones.ts:780-783`), y es el único que
-puede conmutar la sesión a otra empresa (`lib/autorizacion/sesion.ts:292-293`). `administrador` administra las
+puede conmutar la sesión a otra empresa (`lib/autorizacion/sesion.ts:320-321`). `administrador` administra las
 personas **de su empresa** desde el 2026-09-08 (`6cae3eb`): el servidor filtra por organización y
 `lib/autorizacion/delegacion.ts` le impide fabricar otro administrador (`db/arranque/001_catalogo.sql:431-443`).
 `usuario` es el único con `secciones_restringidas` (`db/arranque/001_catalogo.sql:311-313`).
@@ -189,7 +189,7 @@ intersección, y es la única forma de separar las pantallas que comparten `tabl
 
 - **Qué decide si se aplica** es una bandera del rol, no la presencia de filas: rol no restringido, las filas se
   ignoran; rol restringido, sólo las concedidas, y **cero filas son cero pestañas** (`lib/autorizacion/secciones.ts:733-748`).
-  Con dos roles basta uno no restringido para no estar restringido: `bool_and` (`lib/autorizacion/sesion.ts:246`).
+  Con dos roles basta uno no restringido para no estar restringido: `bool_and` (`lib/autorizacion/sesion.ts:274`).
 - **El `check` de la base** acepta las 17 claves concedibles; la `067` sumó `incidentes`
   (`db/migraciones/067_los_incidentes.sql:61-70`). En producción, el 2026-10-18, la restricción tiene esas 17 claves.
   `clientos` no está y no hace falta: es `sinAlcance`, no se concede ni se recorta
@@ -214,22 +214,22 @@ sigue siendo de una persona de la principal, y ninguna fila tiene `incidentes`.
 ### 3.5 · El portero: el origen y seis pasos, en orden fijo
 
 `exigir(peticion, capacidades, pantalla)` devuelve el contexto o la respuesta de rechazo
-(`lib/autorizacion/portero.ts:167-298`). Olvidarse de la línea de salida no compila (`lib/autorizacion/portero.ts:26-32`).
+(`lib/autorizacion/portero.ts:168-327`). Olvidarse de la línea de salida no compila (`lib/autorizacion/portero.ts:26-32`).
 Antes de todo, llamarlo con una de las rutas sin sesión lanza, porque ésas van por `sesionOpcional`
-(`lib/autorizacion/portero.ts:174-179`). Después, con la numeración del código:
+(`lib/autorizacion/portero.ts:175-180`). Después, con la numeración del código:
 
-- **Origen**, antes de tocar la base, para todo lo que modifica (`lib/autorizacion/portero.ts:182-184`).
-1. **Sesión**; «no pude preguntar» es 503, no 401 (`lib/autorizacion/portero.ts:186-195`).
-2. **Estado de la sesión** contra la lista blanca de rutas por estado (`lib/autorizacion/portero.ts:197-209`,
+- **Origen**, antes de tocar la base, para todo lo que modifica (`lib/autorizacion/portero.ts:183-185`).
+1. **Sesión**; «no pude preguntar» es 503, no 401 (`lib/autorizacion/portero.ts:187-196`).
+2. **Estado de la sesión** contra la lista blanca de rutas por estado (`lib/autorizacion/portero.ts:198-210`,
    `lib/autorizacion/estados.ts:61-72`).
-3. **Organización activa** (`lib/autorizacion/portero.ts:211-214`).
-4. **`NINGUNA` sale acá** con el contexto: ni capacidad ni sección (`lib/autorizacion/portero.ts:216-217`).
-5. **Capacidad**, con la auditoría `permiso_denegado` y la capacidad en el detalle (`lib/autorizacion/portero.ts:219-246`).
+3. **Organización activa** (`lib/autorizacion/portero.ts:212-215`).
+4. **`NINGUNA` sale acá** con el contexto: ni capacidad ni sección (`lib/autorizacion/portero.ts:245-246`).
+5. **Capacidad**, con la auditoría `permiso_denegado` y la capacidad en el detalle (`lib/autorizacion/portero.ts:248-275`).
 6. **Sección**, después de la capacidad y nunca en su lugar, con su propia acción `seccion_denegada`
-   (`lib/autorizacion/portero.ts:248-295`).
+   (`lib/autorizacion/portero.ts:277-324`).
 
 No hay atajo para el rol de plataforma: el superadministrador pasa porque tiene las 38 cargadas en la tabla
-(`lib/autorizacion/portero.ts:158-165`). `proxy.ts`, en la raíz, sólo redirige a `/entrar` a quien no trae la cookie de
+(`lib/autorizacion/portero.ts:159-166`). `proxy.ts`, en la raíz, sólo redirige a `/entrar` a quien no trae la cookie de
 sesión; no decide ningún permiso.
 
 **Qué rutas llaman al portero, medido sobre el árbol del 2026-10-18.** De **111** archivos `route.ts` bajo `app/api/`
@@ -355,7 +355,7 @@ los topes, el de la pasada de los detectores, que corre a cada empresa después 
 empresa está diagnosticado y dejado para después (`docs/OTROS/futuro/el-dia-de-la-empresa.md`).
 
 **Quién firma el cambio.** `actualizado_por` tiene una foránea compuesta que exige un usuario de la misma
-organización, así que bajo delegación va nulo (`lib/autorizacion/sesion.ts:384-385`,
+organización, así que bajo delegación va nulo (`lib/autorizacion/sesion.ts:453-454`,
 `app/api/admin/credenciales/route.ts:230`); el actor real queda en `identidad.auditoria_accesos` como
 `credenciales_cargadas` (`app/api/admin/credenciales/route.ts:246`). Los topes del cerebro siguen la misma regla
 (`app/api/admin/cerebro/route.ts:59`).
@@ -450,7 +450,7 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 direcciones». La de código → tabla está (`pruebas/base/22-los-tres-roles.test.ts:363-370`), y la de sección → archivo
 que la carga (`pruebas/codigo/91-closer-y-setter.test.ts:298`); una que lea `identidad.permisos` y busque filas
 ausentes de `CAPACIDADES`, no, con `grep` de `CAPACIDADES` y de `identidad.permisos` sobre `pruebas/` (2026-09-28, no
-repetido). La que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:345-352`, cruza la tabla con el rol de
+repetido). La que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:365-372`, cruza la tabla con el rol de
 plataforma. Y `pruebas/codigo/110-monitoreo.test.ts:6-7` se apoya en ese cruce como si existiera. Hoy no muerde: las
 dos listas coinciden en producción.
 

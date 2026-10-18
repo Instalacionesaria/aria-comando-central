@@ -65,6 +65,8 @@ export interface TablaUsuarios {
    * aplicación era antes de que el claro existiera.
    */
   tema: Generated<'oscuro' | 'claro'>;
+  /** La persona es un cliente final: sólo entra a sus cuentas (`usuarios_cuentas`), y sin ninguna a nada (087). */
+  limitado_a_cuentas: Generated<boolean>;
 }
 
 export interface TablaPermisos {
@@ -129,6 +131,8 @@ export interface TablaSesiones {
   /** El HASH del token, nunca el token. */
   token_hash: string;
   org_activa: string | null;
+  /** El cliente enfocado (087). Sólo vale si es de la organización de la sesión y la persona lo ve. */
+  cuenta_activa: string | null;
   estado: Generated<EstadoSesion>;
   /** Deslizante: se extiende al usar la sesión. */
   expira_el: Date;

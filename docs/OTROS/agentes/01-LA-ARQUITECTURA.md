@@ -51,7 +51,7 @@ gasta se apaga ahí (`D-17`, `T-25`).
 
 ## AG-04 · El ciclo de una llamada
 
-1. **El portero**: `exigir(peticion, capacidades, PANTALLA)` (`lib/autorizacion/portero.ts:167`).
+1. **El portero**: `exigir(peticion, capacidades, PANTALLA)` (`lib/autorizacion/portero.ts:168`).
 2. **Identidad, en la ruta**: la llave (`conIdentidad`), y el estado de las integraciones sólo si la persona
    tiene `credenciales.ver`.
 3. **Inquilino, transacción corta**: el hilo, el tope bajo candado de fila y la reserva de la pregunta.
@@ -68,7 +68,7 @@ como incidente. Una pregunta que falla libera su reserva: no consume tope.
 
 ## AG-05 · Ninguna transacción abierta mientras se espera al modelo
 
-`conOrganizacion` abre una transacción (`lib/datos/contexto.ts:76`) y el grupo de conexiones tiene un
+`conOrganizacion` abre una transacción (`lib/datos/contexto.ts:140`) y el grupo de conexiones tiene un
 máximo de 5 (`lib/datos/capa.ts:83`). Una transacción abierta durante una llamada de dos minutos retiene una
 conexión de cinco. Es la regla que ya siguen los Analizadores (`lib/analizadores/datos.ts:26-28`) y el
 entrevistador (`conversarConElAgente`, `lib/fundaciones/operaciones.ts:578`, que lee, llama y guarda en tres

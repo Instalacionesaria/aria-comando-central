@@ -140,6 +140,11 @@ export type Accion =
   // `detalle->>'capacidad'` y acá **no hay capacidad que culpar** —la persona la tiene—. Meterlo ahí
   // contaminaría *"la señal más subestimada"* con filas cuyo problema no es una capacidad.
   | 'seccion_denegada'
+  // ── El nivel 3 · el cliente final pidió algo que no es suyo ──
+  //
+  // Propia, y no `seccion_denegada`: la persona no está restringida por pestañas sino por cuentas, y lo que se
+  // arregla es otra cosa. Lleva la ruta, porque muchas de las que no son suyas no tienen pantalla.
+  | 'fuera_de_su_cuenta'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -196,6 +201,8 @@ export interface Detalle {
    * «¿a quién le falta qué pestaña?», que es otra pregunta que «¿a qué rol le falta qué capacidad?».
    */
   seccion?: string;
+  /** La ruta (`MÉTODO /camino`) que se negó, en `fuera_de_su_cuenta`. Sin la consulta: el camino solo. */
+  ruta?: string;
   /**
    * La organización a la que se cambió, en `organizacion_cambiada`.
    *
