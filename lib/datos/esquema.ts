@@ -1912,6 +1912,11 @@ export interface TablaCuentas {
   baja_el: Date | null;
   creado_el: Generated<Date>;
   actualizado_el: Generated<Date>;
+  /**
+   * La cuenta que recibe lo que entra con las credenciales de la organización, y la que el puente de negocio elige
+   * cuando una fila no dice de qué cuenta es (085). Una por organización, siempre activa.
+   */
+  es_por_omision: Generated<boolean>;
 }
 
 /** Las credenciales que son del cliente, copiadas de `organizaciones_credenciales` (080). Sólo las lee identidad. */

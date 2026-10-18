@@ -29,8 +29,8 @@
 //     mutación: la política de lectura de cuentas que el diseño daba a la puerta;
 //   · la cuenta en negocio (Paso 5, `082` y la fase `cuenta-en-negocio`): las listas de tablas de los SQL son las de
 //     los regímenes — mutación: olvidar una tabla en un archivo;
-//   · el puente pone la cuenta del contacto, exige decirla con dos cuentas activas y no deja mudarla — mutación:
-//     quitar el disparador, o su rama de update;
+//   · el puente pone la cuenta del contacto, con dos cuentas activas cae en la por omisión (desde la `085`), sin
+//     ninguna por omisión exige decirla, y no deja mudarla — mutación: quitar el disparador, o su rama de update;
 //   · la fase rellena una fila vieja sin cuenta, y no toca otra organización (eso lo garantiza la política de hoy,
 //     porque corre como el inquilino con su organización puesta) — mutación: sacarle una tabla a la fase;
 //   · la 083: la columna de cada tabla es la de su régimen (obligatoria, nulable o ninguna) y la política de las 39
@@ -408,7 +408,7 @@ test('las listas de tablas de los SQL de la cuenta son las de los regímenes', (
   }
 });
 
-test('el puente pone la cuenta del contacto, exige decirla con dos cuentas activas y no deja mudarla', async () => {
+test('el puente pone la cuenta del contacto, con dos activas cae en la por omisión, y no deja mudarla', async () => {
   const org = await unaFila<{ id: string; cuenta: string }>(
     admin,
     `select o.id, c.id as cuenta from identidad.organizaciones o join identidad.cuentas c on c.org_id = o.id where o.slug = 'alfa'`,
@@ -445,13 +445,22 @@ test('el puente pone la cuenta del contacto, exige decirla con dos cuentas activ
     );
     await admin.query('rollback to savepoint s');
 
-    // Con dos cuentas activas, quien inserta tiene que decir de cuál es.
+    // Con dos cuentas activas cae en la por omisión (085): dar de alta un segundo cliente no corta la ingesta.
     await admin.query(`insert into identidad.cuentas (org_id, nombre, slug) values ($1, 'Segunda 257', 'segunda-257')`, [org.id]);
+    const segundo = await unaFila<{ cuenta_id: string }>(
+      admin,
+      `insert into negocio.contactos (org_id, ghl_contact_id, nombre) values ($1, 'puente-257-b', 'Puente') returning cuenta_id`,
+      [org.id],
+    );
+    assert.equal(segundo?.cuenta_id, org.cuenta, 'con dos cuentas activas el puente no cayó en la por omisión');
+
+    // Y sin ninguna por omisión, quien inserta tiene que decir de cuál es.
     await admin.query('savepoint t');
+    await admin.query(`update identidad.cuentas set es_por_omision = false where id = $1`, [org.cuenta]);
     await assert.rejects(
-      admin.query(`insert into negocio.contactos (org_id, ghl_contact_id, nombre) values ($1, 'puente-257-b', 'Puente')`, [org.id]),
-      /tiene 2 cuentas activas/,
-      'con dos cuentas activas el puente eligió una',
+      admin.query(`insert into negocio.contactos (org_id, ghl_contact_id, nombre) values ($1, 'puente-257-c', 'Puente')`, [org.id]),
+      /tiene 2 cuentas activas y ninguna por omisión/,
+      'con dos cuentas activas y sin por omisión el puente eligió una',
     );
     await admin.query('rollback to savepoint t');
   } finally {

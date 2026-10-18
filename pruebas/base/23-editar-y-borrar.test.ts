@@ -540,6 +540,19 @@ test('una empresa cliente SÍ se puede renombrar, desactivar y reactivar', async
   assert.equal(fila.rows[0]?.nombre, 'Cliente renombrado');
   assert.equal(fila.rows[0]?.activa, true);
 
+  // La zona de la empresa es también la de su cuenta por omisión (085): si se separan, el «día» de sus hechos deja
+  // de ser el de sus pantallas.
+  const zona = await editarOrg(
+    pedir(`/api/admin/organizaciones/${nueva.id}`, token, { zonaHoraria: 'America/Lima' }, 'PATCH'),
+    ctx(nueva.id),
+  );
+  assert.equal(zona.status, 200, await zona.clone().text());
+  const cuenta = await admin.query<{ zona_horaria: string }>(
+    'select zona_horaria from identidad.cuentas where org_id = $1 and es_por_omision',
+    [nueva.id],
+  );
+  assert.equal(cuenta.rows[0]?.zona_horaria, 'America/Lima', 'la cuenta por omisión no siguió la zona de su empresa');
+
   // Y se puede borrar, porque está vacía.
   const borrada = await borrarOrg(
     pedir(`/api/admin/organizaciones/${nueva.id}`, token, undefined, 'DELETE'),

@@ -160,6 +160,16 @@ export async function PATCH(
         .where('id', '=', id)
         .executeTakeFirst();
       tocadas = r.numUpdatedRows;
+      // La zona de la empresa es también la de su cuenta por omisión (085), que es la que recibe lo que entra con
+      // sus credenciales: si las dos se separan, el «día» de sus hechos deja de ser el de las pantallas.
+      if (typeof zonaHoraria === 'string' && tocadas > 0n) {
+        await db
+          .updateTable('cuentas')
+          .set({ zona_horaria: zonaHoraria.trim() })
+          .where('org_id', '=', id)
+          .where('es_por_omision', '=', true)
+          .execute();
+      }
     } catch (e) {
       // El disparador de la organización principal: *"no se puede desactivar"*, *"no se puede
       // desmarcar"*. Su mensaje sube tal cual, discriminado por SQLSTATE y no por texto.

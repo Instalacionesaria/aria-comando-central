@@ -542,6 +542,35 @@ async function cuentaEnNegocio() {
   console.log(`  ${orgs.length} organización(es) con la cuenta en negocio`);
 }
 
+/**
+ * La cuenta por omisión de cada organización que no la tiene, y su zona igual a la de la organización. **Corre como
+ * `app_identidad`.**
+ *
+ * El nivel 3 (`085`) marca con `es_por_omision` la cuenta que recibe lo que entra con las credenciales de la
+ * organización, y el puente de negocio cae en ella cuando hay más de una activa. Las organizaciones nuevas nacen con
+ * la suya marcada; las que ya existen la reciben acá. El motivo completo, en el encabezado de
+ * `db/arranque/006_la_cuenta_por_omision.sql`.
+ *
+ * En local, `reset` la corre después de `cuentas`. En producción va sola, después de la `085`:
+ *
+ *     node --env-file=.env.supabase scripts/db.mjs cuenta-por-omision
+ */
+async function cuentaPorOmision() {
+  if (!process.env.DATABASE_URL_IDENTIDAD) throw new Error('DATABASE_URL_IDENTIDAD no está definida.');
+  const identidad = new pg.Client({ connectionString: process.env.DATABASE_URL_IDENTIDAD });
+  await identidad.connect();
+  try {
+    const sql = readFileSync(new URL('../db/arranque/006_la_cuenta_por_omision.sql', import.meta.url), 'utf8')
+      .replace(/\r\n/g, '\n');
+    const marcas = sql.match(/@[A-Z_]+@/g);
+    if (marcas) throw new Error(`006_la_cuenta_por_omision.sql tiene marcas sin sustituir: ${[...new Set(marcas)].join(', ')}`);
+    identidad.on('notice', (n) => console.log(`  ${n.message}`));
+    await identidad.query(sql);
+  } finally {
+    await identidad.end();
+  }
+}
+
 const FASES = {
   bajar,
   levantar,
@@ -552,15 +581,19 @@ const FASES = {
   retiro,
   sembrar,
   cuentas,
+  'cuenta-por-omision': cuentaPorOmision,
   'cuenta-en-negocio': cuentaEnNegocio,
   verificar,
   'sembrar-agentes': sembrarAgentes,
   'quitar-agentes': quitarAgentes,
 };
 // `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
-// `cuentas` y `cuenta-en-negocio` van DESPUÉS de `sembrar`: comprueban que toda organización sembrada nació con su
-// cuenta, y que ninguna fila de negocio quedó sin ella.
-const RESET = ['bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'cuentas', 'cuenta-en-negocio', 'verificar'];
+// `cuentas`, `cuenta-por-omision` y `cuenta-en-negocio` van DESPUÉS de `sembrar`: comprueban que toda organización
+// sembrada nació con su cuenta y su cuenta por omisión, y que ninguna fila de negocio quedó sin cuenta.
+const RESET = [
+  'bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'cuentas', 'cuenta-por-omision', 'cuenta-en-negocio',
+  'verificar',
+];
 
 const comando = process.argv[2];
 const completadas = [];
