@@ -60,6 +60,70 @@ function enReposo(v: string | null | undefined): boolean {
 const TODAS_LAS_CUENTAS = '*';
 
 /**
+ * El ámbito de una transacción: de qué organización, qué cuentas ve y si ve lo de la organización entera.
+ *
+ * ── LAS TRES VARIABLES (el nivel 3, 2026-10-18) ──────────────────────────────
+ *
+ * El nivel 3 son los clientes de cada empresa (las cuentas). Dos personas distintas los miran:
+ *
+ *   · la EMPRESA (y el sistema: el cron, las fases) ve la organización entera. Puede mirar todos sus clientes a la vez
+ *     (`cuentas: '*'`) o enfocarse en uno (`cuentas: [uno]`), y sigue viendo y escribiendo lo que es de la
+ *     organización: el chat del cerebro, los sellos del cron, las señales;
+ *   · el CLIENTE FINAL (un usuario limitado a sus cuentas) ve sólo sus cuentas (`todaLaOrganizacion: false`), y nada
+ *     de lo que es de la organización.
+ *
+ * Por eso son tres variables y no dos: `app.cuentas` dice qué filas de cuenta se ven, y `app.toda_la_organizacion`
+ * (`'si'`/`'no'`) dice si se ve lo que no es de ninguna cuenta. Con dos, la empresa enfocada en un cliente perdería
+ * las filas de la organización —y no podría escribirlas—, o el cliente final las vería.
+ *
+ * Las invariantes se comprueban ANTES de abrir la transacción, porque una combinación mal armada es un defecto del
+ * código y no un dato:
+ *   · `'*'` sólo con la organización entera: el cliente final nunca ve «todas»;
+ *   · la organización entera con una lista es el FOCO, y el foco es UNA cuenta;
+ *   · el cliente final tiene entre 1 y `MAXIMO_DE_CUENTAS` cuentas: sin ninguna no ve nada, y eso se rechaza en la
+ *     sesión, no acá.
+ */
+export interface Ambito {
+  readonly orgId: string;
+  /** `true` = la empresa o el sistema; `false` = el cliente final, que sólo ve sus cuentas. */
+  readonly todaLaOrganizacion: boolean;
+  /** `'*'` = todas las cuentas de la organización; una lista = sólo ésas. */
+  readonly cuentas: typeof TODAS_LAS_CUENTAS | readonly string[];
+}
+
+/** Cuántas cuentas puede tener a la vista un cliente final. La variable viaja como texto en cada transacción. */
+export const MAXIMO_DE_CUENTAS = 200;
+
+/** Lo que se pone en las variables, ya validado. Lanza si el ámbito no es una combinación posible. */
+function variablesDe(donde: string | Ambito): { orgId: string; cuentas: string; toda: 'si' | 'no'; lista: string[] } {
+  const ambito: Ambito =
+    typeof donde === 'string' ? { orgId: donde, todaLaOrganizacion: true, cuentas: TODAS_LAS_CUENTAS } : donde;
+  // Se valida acá y no en la política: el `nullif(btrim(...))::uuid` de la política
+  // LANZA sobre cualquier texto que no sea un uuid, y ese error saldría desde el fondo
+  // de una consulta de negocio sin decir de dónde vino.
+  if (!UUID.test(ambito.orgId)) {
+    throw new Error(`conOrganizacion: "${ambito.orgId}" no es un uuid`);
+  }
+  const toda = ambito.todaLaOrganizacion ? 'si' : 'no';
+  if (ambito.cuentas === TODAS_LAS_CUENTAS) {
+    if (!ambito.todaLaOrganizacion) throw new Error('conOrganizacion: el cliente final no ve «todas las cuentas»');
+    return { orgId: ambito.orgId, cuentas: TODAS_LAS_CUENTAS, toda, lista: [] };
+  }
+  const lista = [...ambito.cuentas];
+  for (const c of lista) {
+    if (!UUID.test(c)) throw new Error(`conOrganizacion: la cuenta "${c}" no es un uuid`);
+  }
+  if (new Set(lista).size !== lista.length) throw new Error('conOrganizacion: una cuenta repetida en el ámbito');
+  if (ambito.todaLaOrganizacion && lista.length !== 1) {
+    throw new Error('conOrganizacion: con la organización entera, el foco es una sola cuenta');
+  }
+  if (!ambito.todaLaOrganizacion && (lista.length < 1 || lista.length > MAXIMO_DE_CUENTAS)) {
+    throw new Error(`conOrganizacion: el cliente final ve entre 1 y ${MAXIMO_DE_CUENTAS} cuentas`);
+  }
+  return { orgId: ambito.orgId, cuentas: lista.join(','), toda, lista };
+}
+
+/**
  * Abre el contexto de una organización y corre el trabajo dentro.
  *
  * `conOrganizacion(` es la cadena que van a buscar las pruebas que leen el código
@@ -89,13 +153,9 @@ const TODAS_LAS_CUENTAS = '*';
  * del filtro de la base corre dentro de una transacción.** No es un detalle de
  * implementación, es una restricción.
  */
-export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T>): Promise<T> {
-  // Se valida acá y no en la política: el `nullif(btrim(...))::uuid` de la política
-  // LANZA sobre cualquier texto que no sea un uuid, y ese error saldría desde el fondo
-  // de una consulta de negocio sin decir de dónde vino.
-  if (!UUID.test(orgId)) {
-    throw new Error(`conOrganizacion: "${orgId}" no es un uuid`);
-  }
+export async function conOrganizacion<T>(donde: string | Ambito, trabajo: () => Promise<T>): Promise<T> {
+  // Con un texto es la organización entera con todas sus cuentas: el sistema, y todo el código anterior al nivel 3.
+  const { orgId, cuentas, toda, lista } = variablesDe(donde);
 
   return clienteInquilino().transaction().execute(async (trx) => {
     // ── ANTES DE PONER NADA: la conexión tiene que venir LIMPIA ──────────────────
@@ -120,8 +180,9 @@ export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T
     // de otro" en un error ruidoso. Al empezar una transacción el valor de reposo es
     // nulo (nunca se puso en esta conexión) o cadena vacía (ya se usó): cualquier otra
     // cosa significa que la conexión trae estado.
-    const reposo = await sql<{ v: string | null; cuentas: string | null }>`
-      select current_setting('app.org_id', true) as v, current_setting('app.cuentas', true) as cuentas
+    const reposo = await sql<{ v: string | null; cuentas: string | null; toda: string | null }>`
+      select current_setting('app.org_id', true) as v, current_setting('app.cuentas', true) as cuentas,
+             current_setting('app.toda_la_organizacion', true) as toda
     `.execute(trx);
 
     if (!enReposo(reposo.rows[0]?.v)) {
@@ -132,7 +193,7 @@ export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T
       );
     }
     // Lo mismo con las cuentas: una conexión que trae `app.cuentas` de otra transacción trae su alcance.
-    if (!enReposo(reposo.rows[0]?.cuentas)) {
+    if (!enReposo(reposo.rows[0]?.cuentas) || !enReposo(reposo.rows[0]?.toda)) {
       throw new Error(
         'conOrganizacion: la conexión vino del agrupador con las cuentas ya puestas. Alguien devolvió una ' +
           'conexión sin cerrar su transacción, o hay un agrupador externo que no respeta el alcance de transacción.',
@@ -142,9 +203,10 @@ export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T
     // `SET` no acepta parámetros, así que tiene que ser `set_config`. Escrito a mano
     // obligaría a interpolar en el texto de la consulta un identificador que viene de
     // una sesión, que es exactamente lo que no se quiere hacer (08 § 1).
-    const puesto = await sql<{ v: string | null; cuentas: string | null }>`
+    const puesto = await sql<{ v: string | null; cuentas: string | null; toda: string | null }>`
       select set_config('app.org_id', ${orgId}, true) as v,
-             set_config('app.cuentas', ${TODAS_LAS_CUENTAS}, true) as cuentas
+             set_config('app.cuentas', ${cuentas}, true) as cuentas,
+             set_config('app.toda_la_organizacion', ${toda}, true) as toda
     `.execute(trx);
 
     // LA VERIFICACIÓN PROPIA, y no es paranoia: `set_config(…, true)` FUERA de una
@@ -157,12 +219,24 @@ export async function conOrganizacion<T>(orgId: string, trabajo: () => Promise<T
     // transacción abierta (09 § 6). Esta lectura de vuelta es la única defensa que no
     // cuesta infraestructura, y falla ruidosamente si algún día alguien pone un agrupador
     // mal configurado delante.
-    if (puesto.rows[0]?.v !== orgId || puesto.rows[0]?.cuentas !== TODAS_LAS_CUENTAS) {
+    if (puesto.rows[0]?.v !== orgId || puesto.rows[0]?.cuentas !== cuentas || puesto.rows[0]?.toda !== toda) {
       throw new Error(
         'conOrganizacion: la variable de transacción no quedó puesta. ' +
           'Suele ser un agrupador de conexiones en modo sentencia, que rompe el alcance ' +
           'de transacción sin avisar.',
       );
+    }
+
+    // Con una lista, cada cuenta tiene que ser de ESTA organización. La política de las cuentas ya filtra por
+    // organización y por lista, así que basta con contar cuántas ve: una cuenta de otra empresa (o borrada) en la
+    // lista no se vería, y el ámbito quedaría distinto del que se pidió sin que nada lo dijera.
+    if (lista.length > 0) {
+      const vistas = await sql<{ n: number }>`
+        select count(*)::int as n from identidad.cuentas where id = any(cast(${lista} as uuid[]))
+      `.execute(trx);
+      if (vistas.rows[0]?.n !== lista.length) {
+        throw new Error('conOrganizacion: una cuenta del ámbito no es de esta organización');
+      }
     }
 
     return almacen.run({ orgId, trx }, trabajo);

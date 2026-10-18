@@ -452,6 +452,18 @@ test('ADR-0201 · y un solo archivo pone `app.cuentas`, la segunda llave', () =>
   assert.deepEqual(archivosQueContienen(/set_config\s*\(\s*['"]app\.cuentas['"]/), ['lib/datos/contexto.ts']);
 });
 
+test('ADR-0201 · y un solo archivo pone `app.toda_la_organizacion`, la tercera', () => {
+  // El nivel 3 (2026-10-18): la variable que separa a la empresa —que ve la organización entera— del cliente final,
+  // que sólo ve sus cuentas. Ponerla en `'si'` a mano sobre la transacción cruda le abriría al cliente final todo lo
+  // que es de la organización. Las dos mitades, como las de arriba.
+  assert.deepEqual(
+    archivosQueContienen(/set_config\s*\(\s*['"]app\.toda_la_organizacion['"]/).filter((r) => r !== 'lib/datos/contexto.ts'),
+    [],
+    'la variable de la organización entera se pone en `conOrganizacion()` y en ningún otro lado',
+  );
+  assert.deepEqual(archivosQueContienen(/set_config\s*\(\s*['"]app\.toda_la_organizacion['"]/), ['lib/datos/contexto.ts']);
+});
+
 // ─── Que el código esté DENTRO del repositorio ──────────────────────────────
 
 test('ningún archivo de código está ignorado por git', async () => {
