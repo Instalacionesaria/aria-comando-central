@@ -1,6 +1,8 @@
 # Tools, el Panel de Monitoreo y el de Incidentes
-> Corte: **2026-10-18**, con el código de producción, el commit `972972e` (2026-10-15; migraciones hasta la `078`). Las
-> cifras de producción se midieron el **2026-10-18 entre las 15:34 y las 15:40 UTC**, con `scripts/supabase.mjs leer` y sólo
+> Corte: **2026-10-18**, con el código de producción, el commit `972972e` (2026-10-15; migraciones hasta la `078`). En
+> local hay ocho commits más, `693a383..dc84cb2`, del modelo de datos multiempresa (Fase 0, migraciones `079` a `084`),
+> construidos y **sin subir**: ninguno toca un archivo de Tools, del Panel de Monitoreo ni del de Incidentes. Las cifras
+> de producción se midieron el **2026-10-18 entre las 15:34 y las 15:40 UTC**, con `scripts/supabase.mjs leer` y sólo
 > conteos y agregados: de la base no salió un nombre, un correo, un teléfono, un texto de búsqueda ni un identificador de
 > empresa. Las empresas se nombran «la principal», «empresa A», «empresa B» y «empresa C», en el orden de su primer
 > scrapeo. Lo que no se volvió a medir lleva su fecha y lo dice. Ninguna pantalla se miró en el navegador para este

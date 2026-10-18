@@ -6,7 +6,9 @@
 > **2026-09-28**, de las fotos anteriores, que se conservan para comparar. La pantalla se miró en el navegador por
 > última vez el 2026-10-11 (CF-5), en el preview local, contra el prototipo y con una respuesta sintética: lo que
 > «dibuja» cada bloque con los datos de producción está deducido del código y de la medición. Las ventanas cuentan
-> días del calendario con hoy incluido: lo que depende de la fecha vale para el día de su medición. Cada afirmación
+> días del calendario con hoy incluido: lo que depende de la fecha vale para el día de su medición. En local hay ocho
+> commits más, `693a383..dc84cb2`, del modelo de datos multiempresa (Fase 0, migraciones `079` a `084`): construidos
+> y **sin subir**, esperando la aprobación de un ingeniero; lo que toca a Creative se dice como tal. Cada afirmación
 > lleva su `archivo:línea`. Para ubicar lo nombrado, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La
 > versión anterior —el corte del 2026-10-11, con su anexo del 2026-10-15— se lee con
 > `git show 972972e:"docs/OTROS/estado actual/02-CREATIVE.md"`, la del 2026-09-28 con
@@ -37,6 +39,10 @@ sin entrega—; el 2026-10-18 ninguna pieza está «Entregando» y la ventana de
 >   producción ese día), la lectura por lotes `lib/meta/anuncios.ts`, el escritor `lib/negocio/recolectarActivos.ts`,
 >   la tarea horaria `activos` al minuto 37, la miniatura y el post de Meta antes que los de los contactos
 >   (`lib/negocio/lecturaDeCreative.ts:275-284`), y la guía `docs/creative/17-CONECTAR-META-PASO-A-PASO.md`.
+> - **2026-10-16 · `693a383..dc84cb2`, construido en local, sin subir** — la Fase 0 del modelo de datos:
+>   `anuncios`, `metricas_de_anuncio`, `miniaturas_del_contacto`, `enlaces_de_pieza` y `activos_de_anuncio` reciben
+>   `cuenta_id` (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:123-127`). Ninguno de los ocho commits toca
+>   `lib/negocio/`, `lib/meta/`, `components/` ni `app/`.
 > - **2026-10-18** — esta foto: las cifras re-medidas, y el anexo del 2026-10-15 integrado.
 
 ---

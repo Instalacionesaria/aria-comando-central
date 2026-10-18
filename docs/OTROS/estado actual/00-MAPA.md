@@ -9,8 +9,10 @@
 > cuáles no se volvieron a medir. La del grafo es del 2026-10-11, el día que se rehízo
 > ([08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md)).
 >
-> **Esta foto describe sólo producción.** En local hay trabajo sobre un modelo de datos nuevo, pendiente de la
-> aprobación de un ingeniero: no está en producción ni en esta foto.
+> **En local hay ocho commits más que en producción** (`693a383..dc84cb2`): la Fase 0 del modelo de datos
+> multiempresa, migraciones `079` a `084`. Están **construidos, probados y sin subir**, esperando la aprobación de un
+> ingeniero y el cierre de los pendientes de seguridad de la base. La foto describe producción; cada archivo dice qué
+> le cambia la Fase 0 cuando llegue, y la descripción entera está en [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 11.
 >
 > **Desde el corte del 2026-09-28, en ocho líneas:**
 >
@@ -30,7 +32,7 @@
 > 6. **La base de Supabase se limpió** (2026-10-12/13): se borraron, con respaldo, las tablas de los analizadores HT y
 >    OB retirados y de la plataforma anterior del closer. Lo nuestro no se tocó.
 > 7. Debajo: `app/api/` de 82 `route.ts` a 111; de 5 horarios programados a 8 y de 9 tareas a 12; de 62 migraciones a
->    78; de 2.273 pruebas a 3.053 en el commit de producción.
+>    78 en producción (84 en local); de 2.273 pruebas a 3.053 en el commit de producción (3.074 con la Fase 0).
 > 8. **El negocio que todo eso mide casi se detuvo otra vez**: la cuenta de Meta no gastó nada desde el 2026-10-06
 >    salvo 1,20 el 2026-10-14, y en la última semana entró un solo contacto.
 >
@@ -74,7 +76,7 @@ saliendo de su capacidad y su alcance, y la barra sólo ordena ([16-AJUSTES-Y-PE
 
 ---
 
-## 2 · La situación general, en siete hechos
+## 2 · La situación general, en ocho hechos
 
 **1 · Ya no hay maquetas: todo lo que se ve mide, y el Inicio habla por todas.** La maqueta del Executive se retiró
 con la nueva estructura (E7, `4e9a242`), y en su lugar el Inicio tiene el cerebro y la Reunión de hoy, que leen las
@@ -118,6 +120,12 @@ del código que esta foto encontró falsos, trece se corrigieron ese mismo día,
 contactos congelados pasaron de 25 a 36. El detalle y la consulta para volver a medir cada uno, en
 [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md).
 
+**8 · Lo grande que viene está construido en local y pendiente de aprobación.** El modelo de datos multiempresa —la
+subcuenta como segunda llave de aislamiento, el idioma común entre agencias, la bandeja única de entrada y los
+eventos— está en ocho commits locales, con su orden de subida escrito. No sube hasta que lo apruebe un ingeniero y se
+cierren los pendientes de seguridad de la base, revisados el 2026-10-12, cuyo plan vive fuera del repositorio a
+propósito ([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 11, [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md)).
+
 ---
 
 ## 3 · Los archivos transversales
@@ -127,11 +135,11 @@ Los de sección están en la tabla de la § 1. Éstos cruzan todas las pantallas
 | Archivo | Qué contesta |
 |---|---|
 | [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) | Qué nos dan los proveedores hoy: las 18 operaciones de GoHighLevel, todas con llamador desde la `076`; las 12 tareas del cron con su costo (un piso de 1.568 llamadas diarias a GoHighLevel); el gasto de toda la cuenta de Meta; y Meta directo (§ 11), de sólo lectura y sin token cargado |
-| [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) | Las reglas que valen para todas las pantallas —las 11 centrales, de la 12 a la 41 y las nuevas 42 a 52: el transporte único, `uso_de_ia` sin textos, el cerebro, señales y planes, el voseo prohibido, `PANTALLA` en cada ruta…—, y los errores de método. **Leer antes de escribir una cifra nueva** |
-| [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md) | Cómo ubicar cualquier cosa con el grafo de conocimiento (7.999 nodos, 22.107 aristas, 353 comunidades, rehecho el 2026-10-11), y lo que no tiene: todo lo posterior, empezando por Meta directo |
+| [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) | Las reglas que valen para todas las pantallas —las 11 centrales, de la 12 a la 41 y las nuevas 42 a 52: el transporte único, `uso_de_ia` sin textos, el cerebro, señales y planes, el voseo prohibido, `PANTALLA` en cada ruta…—, los errores de método, y aparte lo que la Fase 0 cambiaría. **Leer antes de escribir una cifra nueva** |
+| [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md) | Cómo ubicar cualquier cosa con el grafo de conocimiento (7.999 nodos, 22.107 aristas, 353 comunidades, rehecho el 2026-10-11), y lo que no tiene: todo lo posterior, empezando por Meta directo y el modelo de datos |
 | [09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md) | Lo que está roto o incompleto, cada punto con su consulta para volver a medirlo: lo que se cerró desde el 2026-09-28 (con su commit), lo que sigue abierto y lo nuevo (§§ 21 a 23) |
 | [16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md) | Quién ve qué: las 38 capacidades, los roles, el alcance por persona, `soloDesdeLaPrincipal`, las credenciales por organización (con la de Meta y «Probar conexión»), los topes del cerebro y la zona horaria de cada empresa |
-| [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) | Lo que está debajo: el cron con sus 8 horarios y 12 tareas, la frescura de cada dato, la base (`negocio` con 49 tablas e `identidad` con 11, todas con RLS forzada), las migraciones `063` a `078` con su hora de aplicación y la limpieza de Supabase |
+| [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) | Lo que está debajo: el cron con sus 8 horarios y 12 tareas, la frescura de cada dato, la base (`negocio` con 49 tablas e `identidad` con 11, todas con RLS forzada), las migraciones `063` a `078` con su hora de aplicación, la limpieza de Supabase, y la Fase 0 sin subir (§ 11) |
 
 ---
 
@@ -185,5 +193,5 @@ reconstruido con consultas equivalentes a las de sus módulos. Y un tablero de c
 que uno que las calcula mal.
 
 **No es una corrida de la suite.** Donde un archivo dice que una prueba cubre algo, es leído, no ejecutado. Las cifras
-de la suite son las de los commits: 3.053 pruebas en verde en el commit de producción (`972972e`)
-([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md)).
+de la suite son las de los commits: 3.053 pruebas en verde en el commit de producción (`972972e`) y 3.074 con la Fase 0
+local (`dc84cb2`) ([17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md)).

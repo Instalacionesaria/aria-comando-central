@@ -5,7 +5,9 @@
 > usuario): de la base no salió un nombre, un correo ni un teléfono, y de las credenciales sólo si están cargadas o
 > no; y las del **2026-09-28**, de la foto anterior, que se conservan para comparar o porque no se volvieron a medir,
 > y lo dicen. **GitHub no se volvió a leer** para esta foto (protección de rama, corridas de la CI): esas cifras son
-> del 2026-09-28. Cada afirmación lleva su `archivo:línea`, su commit o la consulta que la produjo. Lo que no se pudo verificar está dicho como pendiente, no
+> del 2026-09-28. En local hay ocho commits más, `693a383..dc84cb2`, del modelo de datos multiempresa: la Fase 0,
+> construida y **sin subir**, esperando la aprobación de un ingeniero; va aparte, en el § 11. Cada afirmación lleva su
+> `archivo:línea`, su commit o la consulta que la produjo. Lo que no se pudo verificar está dicho como pendiente, no
 > omitido. Para ubicar cualquier cosa nombrada acá, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La
 > versión anterior, con sus anexos del 2026-10-04, se lee con `git show 972972e:"docs/OTROS/estado actual/17-LA-PLATAFORMA.md"`.
 
@@ -23,7 +25,10 @@
 > - **2026-10-12 y 2026-10-13** — la limpieza de Supabase: se borraron, con respaldo, las tablas de dos aplicaciones de
 >   análisis retiradas y las de la plataforma anterior, Closer v1; las de ARIA Brain pasaron a un esquema de respaldo
 >   (§ 4).
-> - **La suite pasó de 2.273 a 3.053 pruebas** en `972972e` (§ 5).
+> - **2026-10-16 · `693a383..dc84cb2`, construido en local, sin subir** — la Fase 0 del modelo de datos
+>   multiempresa: migraciones `079` a `084` y dos fases nuevas de `scripts/db.mjs` (§ 11).
+> - **La suite pasó de 2.273 a 3.055 pruebas** con la base de producción (mensaje de `d424d8b`), y a 3.074 con la
+>   Fase 0 (mensaje de `dc84cb2`) (§ 5).
 > - **Lo que no cambió:** `main` sigue sin protección de rama según la última lectura (2026-09-28), y la sonda sigue sin
 >   dejar sello.
 
@@ -53,7 +58,7 @@ de rama**, sin la cual el rojo de la CI no frena el despliegue, y **un rastro du
 | Los disparos manuales | cuatro rutas de `app/api/` | el reloj y los botones del Closer, el Setter y la Agenda, y la sonda a mano; aparte, `GET /api/control`, que nada llama (§ 2.6) |
 | La frescura | `lib/negocio/frescura.ts` | convierte el sello en un aviso de pantalla y, desde AG15, en el comentario de la cabecera (§ 3) |
 | La capa de datos | `lib/datos/contexto.ts`, `lib/datos/capa.ts` | la transacción por organización y la de identidad (§ 4) |
-| La base | `db/arranque/`, `db/migraciones/`, `db/sembrado/`, `db/controles/`, `db/vigilancia/` | roles, 78 migraciones, siembra, sonda |
+| La base | `db/arranque/`, `db/migraciones/`, `db/sembrado/`, `db/controles/`, `db/vigilancia/` | roles, 78 migraciones en producción (84 en local), siembra, sonda |
 | La suite | `pruebas/`, `scripts/pruebas.mjs` | 264 archivos en `972972e` (§ 5) |
 | La CI | `.github/workflows/verificar.yml` | build, tipos, base desde cero y suite en cada push y cada PR |
 | El despliegue | `docs/OTROS/produccion/DESPLIEGUE.md` | el guion y el registro; Vercel despliega por push |
@@ -282,11 +287,13 @@ existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`
 la RLS, revoca `public` y crea una política para `app_inquilino` con `org_id = current_setting('app.org_id')`
 (`db/migraciones/008_aislamiento_de_negocio.sql:151-158`). La aplicación pone esa variable con `set_config(…, true)`
 dentro de la transacción de `conOrganizacion`, después de comprobar que la conexión llegó limpia, y la vuelve a leer:
-si no quedó puesta, lanza (`lib/datos/contexto.ts:123@972972e`, el código de producción).
+si no quedó puesta, lanza (`lib/datos/contexto.ts:123@972972e`, el código de producción). En local, desde `d424d8b`,
+pone además `app.cuentas = '*'` con la misma verificación (`lib/datos/contexto.ts:146-147`,
+`lib/datos/contexto.ts:160-166`): sin la política nueva de la Fase 0, no cambia nada (§ 11).
 
 **Los roles.** En producción, tres: `migrador`, `app_inquilino` y `app_identidad`, todos `nobypassrls`
 (`db/arranque/000_cluster.sql:34`, `:42`, `:51`); medido en `pg_roles` el 2026-10-18: 0 superusuarios y 0 con
-`rolbypassrls`. Producción es PostgreSQL **17.4**
+`rolbypassrls`, y ninguno de los tres roles nuevos de la Fase 0 existe todavía. Producción es PostgreSQL **17.4**
 (`server_version`, 2026-10-18).
 
 **Las migraciones.** 78 filas en `migraciones.migraciones_aplicadas`, la última `078_el_activo_del_anuncio`. Las
@@ -328,9 +335,10 @@ una palabra del prompt ni de la respuesta (`db/migraciones/069_el_uso_de_la_ia.s
 ### 5.1 · La suite
 
 - **264 archivos de prueba en `972972e`**: 146 en `pruebas/codigo/`, 117 en `pruebas/base/` y 1 en
-  `pruebas/construccion/` (178 el 2026-09-28).
-- **3.053 pruebas en `972972e`**, según la memoria del proyecto. Eran 2.273 el 2026-09-28. **No re-corrida para esta
-  foto.**
+  `pruebas/construccion/` (178 el 2026-09-28). En local, con la Fase 0, 265 (`pruebas/base/257-el-modelo-fase-0.test.ts`).
+- **3.055 pruebas con la base de producción**, según el mensaje de `d424d8b` (2026-10-16), el primer commit de la Fase 0,
+  que no toca la base; **3.074 con la Fase 0 entera** (mensaje de `dc84cb2`). Eran 2.273 el 2026-09-28. **No
+  re-corrida para esta foto.**
 - **El corredor** aborta si la lista sale vacía (`scripts/pruebas.mjs:1-13`, `:82-89`) y corre **de a un archivo**
   porque las pruebas de base comparten una base (`scripts/pruebas.mjs:113-128`).
 - **Las tres zonas —`America/Lima`, `UTC` y `Asia/Tokyo`— siguen siendo una práctica, no una máquina**: la CI corre la
@@ -481,7 +489,8 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 6. **Dos horarios no comparten minuto**, o uno queda `frenada` sin trabajar.
 7. **La migración va antes del push**, y se pregunta qué **toca** la columna nueva: ver
    [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md). La comprobación es comparar `select max(name) from
-   migraciones.migraciones_aplicadas` con `ls db/migraciones | tail -1`; hoy da `078` en los dos lados.
+   migraciones.migraciones_aplicadas` con `ls db/migraciones | tail -1`; **hoy da `078` contra `084`**, y no es un
+   olvido: las seis de la Fase 0 esperan su aprobación y su orden (§ 11).
 8. **Producción se lee sólo con `scripts/supabase.mjs leer`**, que manda `read_only: true`
    (`scripts/supabase.mjs:21-23`, `:71`). Los roles de la aplicación ven **cero filas sin error** fuera de
    `conOrganizacion`.
@@ -531,13 +540,66 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 
 ---
 
+## 11 · Construido en local, sin subir: la Fase 0 del modelo de datos multiempresa
+
+**Qué es.** El modelo de datos para que ARIA opere como matriz de muchas agencias: la **organización** sigue siendo la
+frontera de la RLS, y se suma la **cuenta** (la subcuenta del CRM) como segunda llave, `cuenta_id`. La propuesta, el
+modelo físico, el diccionario y el plan de subida están en `docs/modelo de datos/` (carpeta local, fuera de git); el
+plan de subida de esta fase, en `docs/modelo de datos/20-PLAN-DE-SUBIDA-FASE-0.md`.
+
+**Qué está construido**, en ocho commits del 2026-10-16 sobre `main` local, **sin push y sin nada aplicado en
+producción** (medido el 2026-10-18: la última migración aplicada es la `078`, no existen los esquemas `catalogo`,
+`ingesta` ni `sistema`, ni los roles nuevos):
+
+| commit | paso | qué |
+|---|---|---|
+| `693a383` | A | el régimen de cada tabla de `negocio`, escrito a mano (`pruebas/apoyo/regimenes-de-negocio.ts`): de una cuenta, de una cuenta o de la organización, o sólo de la organización |
+| `d424d8b` | 1 | `conOrganizacion` pone `app.cuentas = '*'` junto a `app.org_id` (`lib/datos/contexto.ts:60`), sin migración |
+| `c88b7cf` | 2 | `079`: el esquema `catalogo`, 23 tablas de referencia comunes a todas las empresas (`db/migraciones/079_el_idioma_comun.sql:25`); los roles `ingestor`, `app_ingesta` y `app_analista`, **sin login** (`db/arranque/000_cluster.sql:82-97`) |
+| `01baaf2` | 3 | `080`: `identidad.cuentas`, sus credenciales copiadas, `usuarios_cuentas` y `acuerdos`; la fase `cuentas` de `scripts/db.mjs` crea las de hoy |
+| `99f6e1e` | 4 | `081`: la bandeja de entrada, esquemas `sistema` e `ingesta`, con la puerta `ingesta.recibir` (`db/migraciones/081_la_bandeja_de_entrada.sql:122`); nada la usa todavía |
+| `ce5ed91` | 5a | `082`: `cuenta_id` nulable en 39 tablas de `negocio`, con su puente; la fase `cuenta-en-negocio` rellena las filas de hoy (`scripts/db.mjs:555`) |
+| `8ad73f3` | 5b | `083`: `cuenta_id` obligatoria en 26 tablas, las claves «misma cuenta que la madre» y la política por organización **y** cuenta (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:1-8`) |
+| `dc84cb2` | 6 | `084`: `negocio.eventos`, de sólo agregar y particionada por mes (`db/migraciones/084_los_eventos.sql:117-141`), y las particiones que nacen cerradas |
+
+Las fases nuevas van en el `reset` local, después de sembrar (`scripts/db.mjs:563`). Lo que el diseño validado el
+2026-10-14 no había visto y se corrigió al construirlo está escrito en el plan de subida y en los mensajes de cada
+commit; el más serio: **una partición de `negocio` no heredaba la RLS de su madre** y, leída directo, mostraba los
+eventos de todas las organizaciones; `sistema.crear_particiones` se redefinió para que nazca cerrada
+(`db/migraciones/084_los_eventos.sql:22`). La suite completa dio **3.074 de 3.074** con la Fase 0 (mensaje de
+`dc84cb2`), con la prueba nueva `pruebas/base/257-el-modelo-fase-0.test.ts`.
+
+**El orden de subida**, según el plan (todo con el OK del usuario y en modo de pedir permiso):
+
+0. **Antes de empezar**: la aprobación del ingeniero, los pendientes de seguridad de la base del 2026-10-12 cerrados y
+   una copia de la base del día confirmada.
+1. **El código de `app.cuentas`** (`d424d8b`), con su push: sin la política nueva no hace nada.
+2. **`079`** y el arranque con los tres roles sin login.
+3. **`080`** y, después, la fase `cuentas` (`node --env-file=.env.supabase scripts/db.mjs cuentas`).
+4. **`081`**.
+5. **`082`**, migrando desde ese commit; **la fase `cuenta-en-negocio`**; y recién después **`083`**. Son dos subidas:
+   si la `083` se aplicara antes del relleno, su `set not null` falla y se deshace entera.
+6. **`084`**.
+
+Cada paso se comprueba con conteos (filas sin `cuenta_id` en las obligatorias), con `negocio.ingesta_pulso`
+avanzando y con el humo de la aplicación; la vuelta atrás de los pasos 5 y 6 es volver a la política de sólo
+organización, sin perder datos. **Queda para la Fase 1**: la tarea mensual que cree las particiones —crearlas exige ser
+dueño de la tabla madre y el cron corre con los roles de la aplicación—; hasta entonces alcanzan los seis meses que
+crea la `084`.
+
+**Lo que cambia para esta foto cuando suba**: `negocio` pasa de 49 a 52 tablas más sus particiones, `identidad` suma
+cuatro tablas y una vista, aparecen tres esquemas nuestros (`catalogo`, `ingesta` y `sistema`) y tres roles. Mientras
+no suba, nada de esto existe en producción.
+
+---
+
 ## Cómo se midió, y lo que no se pudo verificar
 
 **Consultas**, todas con `node --env-file=.env.supabase scripts/supabase.mjs leer`, sólo agregados, el 2026-10-18
 entre las 15:41 y las 16:12 UTC:
 
 - esquemas, tablas, vistas, RLS forzada y políticas: `pg_class` × `pg_namespace` y `pg_policies`; las de `public`,
-  contadas por prefijo; roles: `pg_roles` filtrado a los nombres de nuestros roles; `server_version`;
+  contadas por prefijo; roles: `pg_roles` filtrado a los seis nombres del modelo; `server_version`;
 - un `count(*)` y un `count(distinct org_id)` por cada tabla de `negocio`, con `query_to_xml` sobre `pg_class`;
 - `migraciones.migraciones_aplicadas`: `count(*)`, `max(name)`, y `name` con `timestamp` desde la `062`;
 - credenciales: `count()` de cada columna, sin leer ningún valor;

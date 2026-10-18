@@ -1,6 +1,9 @@
 # Executive Intelligence: hoy, el Inicio y el cerebro
 
-> Corte: **2026-10-18**, con el código de producción en `972972e`. Las cifras de producción se midieron el **2026-10-18** a partir de las 15:39 UTC con `scripts/supabase.mjs leer` (sólo lectura, sólo
+> Corte: **2026-10-18**, con el código de producción en `972972e`. En local hay ocho commits más
+> (`693a383..dc84cb2`, el modelo de datos multiempresa, Fase 0, migraciones `079` a `084`) construidos y **sin
+> subir**: lo que de ellos toca esta sección va dicho como «construido en local, sin subir». Las cifras de producción
+> se midieron el **2026-10-18** a partir de las 15:39 UTC con `scripts/supabase.mjs leer` (sólo lectura, sólo
 > conteos y agregados, con el OK del usuario); las que vienen de la foto anterior llevan su fecha, el 2026-09-28. La
 > pantalla no se abrió con sesión para esta foto: lo que «dibuja» sale de leer el código. Cada afirmación lleva su
 > `archivo:línea`; una cita fijada a un commit (`archivo:N@sha`) se lee en esa versión. Para ubicar lo nombrado, ver
@@ -52,6 +55,10 @@ Inicio lo dice.
 >   comentario de la cabecera en Sales) y las rutas y herramientas del cerebro de los fronts nuevos: `b2dcdf5`
 >   (Conversion), `a39a732` (Sales), `6f3bdb5` (Conversation), `1971ab2` (Creative).
 > - **2026-10-12 · `f59cf44`** — CONVERSACIONES: borrar un hilo desde la barra, con confirmación.
+> - **2026-10-16 · `d424d8b`, `ce5ed91`, `8ad73f3`** — construido en local, sin subir: `conOrganizacion` pone
+>   `app.cuentas = '*'` y la `082`/`083` llevan la cuenta a 39 tablas de negocio, entre ellas `reuniones_del_dia`,
+>   `senales`, `planes_de_accion` y `uso_de_ia` (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:131`). Las
+>   tablas de las conversaciones del cerebro no están en esa lista.
 
 ---
 

@@ -3,7 +3,12 @@
 > son de dos fechas y cada una lo dice: las del **2026-10-18**, re-medidas para esta foto entre las 15:41 y las 15:50
 > UTC con `scripts/supabase.mjs leer` (sólo lectura, sólo conteos y agregados, con el OK del usuario); y las del
 > **2026-09-28**, de la foto anterior, que se conservan para comparar. La pantalla no se miró en el navegador para esta
-> foto: lo que dibuja está deducido del código. Cada afirmación lleva su `archivo:línea` o la consulta que la produjo. Lo que no se pudo verificar está dicho como pendiente, no omitido. Para ubicar cualquier
+> foto: lo que dibuja está deducido del código. En local hay ocho commits más, `693a383..dc84cb2`, del modelo de datos
+> multiempresa (Fase 0, migraciones `079` a `084`): construidos y **sin subir**, esperando la aprobación de un
+> ingeniero; no tocan el código de la sección, y las siete tablas suyas quedan entre las que reciben un `cuenta_id`
+> nulable, «de una cuenta o de la organización» (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:128-132`;
+> [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 11). Cada afirmación lleva su `archivo:línea` o
+> la consulta que la produjo. Lo que no se pudo verificar está dicho como pendiente, no omitido. Para ubicar cualquier
 > cosa nombrada acá, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior —el corte del
 > 2026-09-28, con sus anexos— se lee con `git show 972972e:"docs/OTROS/estado actual/14-ANALIZADORES.md"`.
 
@@ -350,9 +355,10 @@ medido hoy, las 36 OB copiadas vetadas siguen vetadas.
 **4 · El vínculo con el CRM, guardado.** `negocio.analizador_prospectos` sigue sin `contacto_id`
 (`db/migraciones/056_tablas_del_analizador.sql:34-44`): desde AG11 el vínculo se calcula en cada lectura, por correo
 o por una cita única (`lib/negocio/vinculoDeLlamadas.ts:1-14`), y no hay una cifra guardada de cuántas llamadas casan.
-Fuera de `lib/analizadores/` y de los lectores del § 4, las tablas sólo se nombran en el esquema
-(`lib/datos/esquema.ts`) y en el borrado de una empresa (`lib/administracion/borrado.ts:155-160`, y la de las
-objeciones en `lib/administracion/borrado.ts:185`).
+El modelo de datos multiempresa deja la fusión de las `analizador_*` para su Fase 5
+(`docs/modelo de datos/20-PLAN-DE-SUBIDA-FASE-0.md`, carpeta local fuera de git). Fuera de `lib/analizadores/` y de
+los lectores del § 4, las tablas sólo se nombran en el esquema (`lib/datos/esquema.ts`) y en el borrado de una
+empresa (`lib/administracion/borrado.ts:170-175`, y la de las objeciones en `lib/administracion/borrado.ts:200`).
 
 **5 · La comparación con Brain.** `scripts/comparar-con-brain.sql` lee `public.aria_brain_analyzer_calls`
 (`scripts/comparar-con-brain.sql:26-27`), que desde el 2026-10-12 ya no existe: hoy falla con «relation does not

@@ -6,7 +6,9 @@
 > predicados que el código —contrastados contra las del 2026-10-08, que reproducen exactas—; las del
 > **2026-10-08**, de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (§ 2), que no se re-midieron; y las
 > del **2026-09-28**, de la foto de entonces, re-medidas en parte. Lo que la pantalla «dibuja» con las cifras de hoy
-> está deducido del código, no leído de una captura. Cada afirmación lleva su `archivo:línea`. Para ubicar lo
+> está deducido del código, no leído de una captura. En local hay ocho commits más, `693a383..dc84cb2`, del modelo de
+> datos multiempresa (Fase 0, migraciones `079` a `084`): construidos y **sin subir**, esperando la aprobación de un
+> ingeniero; lo que toca a Conversion se dice como tal. Cada afirmación lleva su `archivo:línea`. Para ubicar lo
 > nombrado, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior —el corte del 2026-10-09—
 > se lee con `git show 83798a4:"docs/OTROS/estado actual/03-CONVERSION.md"`, la del 2026-09-28 con
 > `git show b3ca9ad:"docs/OTROS/estado actual/03-CONVERSION.md"`, y la de antes con
@@ -33,6 +35,11 @@ entró **un solo contacto**, el 2026-10-16, y la tarea `contactos` siguió corri
 >   `id` (`components/conversion/CajonDelPaso.jsx:19-20`). Sólo comentario.
 > - **2026-10-11 · `fefffa1`** — CF-5 de Creative: la cita de `lib/negocio/recorridoDelLead.ts` a la foto de Creative
 >   queda fijada a su commit (`lib/negocio/recorridoDelLead.ts:159`). Sólo comentario.
+> - **2026-10-16 · `693a383..dc84cb2`, construido en local, sin subir** — la Fase 0 del modelo de datos: `contactos`
+>   y `citas` reciben `cuenta_id` (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:123-127`), y nace
+>   `negocio.eventos`, de sólo agregar, en el que nada escribe todavía (`db/migraciones/084_los_eventos.sql:6-7`,
+>   `db/migraciones/084_los_eventos.sql:14`, `db/migraciones/084_los_eventos.sql:117`). Ninguno de los ocho commits
+>   toca `lib/negocio/`, `components/` ni `app/`.
 > - **2026-10-18** — esta foto: las cifras re-medidas.
 
 ---
@@ -300,7 +307,10 @@ Formulario, «Qué pasa después» de la Agenda—. La lista viaja en la respues
 **Y los que no tienen lugar en la pantalla:**
 
 - **La historia de los toques.** El § 5.3 pide historial y el § 18.5 los dos toques con sus fechas. Hay dos
-  toques por contacto, sobrescritos en cada barrido y sin fecha (§ 4).
+  toques por contacto, sobrescritos en cada barrido y sin fecha (§ 4). **Construido en local, sin subir**: la
+  Fase 0 crea `negocio.eventos`, una tabla de sólo agregar para cada hecho del lead
+  (`db/migraciones/084_los_eventos.sql:6-7`, `db/migraciones/084_los_eventos.sql:117`); nada escribe en ella todavía
+  (`db/migraciones/084_los_eventos.sql:14`), así que no cambia este hueco.
 - **Las etapas del widget.** El widget de reserva fue en septiembre el camino mayoritario y no se sabe si
   distingue «abrió el calendario» de «eligió horario» de «confirmó»
   (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:240-245`).
@@ -454,8 +464,9 @@ respuesta por defecto (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md
 cuatro reglas del detector siguen provisionales (`lib/agentes/detectores/conversion.ts:47`).
 
 **10. Si se vuelve a instrumentar, que sean eventos y no un campo por contacto.** Dos toques sobrescribibles sin
-fecha y un `% máximo visto` con 79 ceros son la demostración: un hecho del lead se guarda una vez, con su fecha, y
-no se sobrescribe.
+fecha y un `% máximo visto` con 79 ceros son la demostración. La Fase 0 del modelo de datos, **construida en local
+y sin subir**, ya trae la tabla para eso, `negocio.eventos` (`db/migraciones/084_los_eventos.sql:117`), vacía y sin
+escritor (`db/migraciones/084_los_eventos.sql:14`).
 
 **11. La alarma no aparece nunca.** Sólo se dibuja con señales `critica`, y ninguna regla de Conversion lo es
 (`lib/agentes/detectores/conversion.ts:47`). Es la respuesta por defecto de `CV15-P05`: el lugar existe, vacío,
@@ -484,3 +495,5 @@ mire la cifra de Contactos va a tomar una cohorte de 28 personas por una tendenc
   `docs/OTROS/futuro/lo-que-conversion-no-mide.md`.
 - **Las cifras de esta foto** son del 2026-10-18, del 2026-10-08 y del 2026-09-28, y cada una dice su fecha. No se
   re-midieron el reparto por época, el censo de hosts, el `userAgent` ni la columna «Con cita» del formulario.
+- **La Fase 0 del modelo de datos** (`693a383..dc84cb2`) espera la aprobación de un ingeniero; cuando suba, esta
+  pantalla no cambia, pero sus tablas llevan `cuenta_id`.

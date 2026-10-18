@@ -1,10 +1,11 @@
 # Las reglas transversales: lo que hay que saber antes de escribir una cifra nueva
-> Corte: **2026-10-18**. Producción corre el commit **`972972e`** (migraciones hasta la `078`). Las cifras
+> Corte: **2026-10-18**. Producción corre el commit **`972972e`** (migraciones hasta la `078`); las citas son al árbol
+> de `dc84cb2`, que suma ocho commits locales del modelo de datos sin subir (sección «Construido en local»). Las cifras
 > de producción se midieron el 2026-10-18 entre las **15:38 y las 15:40 UTC** con `scripts/supabase.mjs leer`, sólo
 > conteos y agregados y con el OK del usuario: de la base no salió un nombre, un correo ni un teléfono. Lo que no se
 > volvió a medir lleva su fecha; lo que no se pudo verificar está dicho como pendiente. Ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
 
-> **Desde el corte del 2026-09-28** (129 commits, `ceec000..972972e`)
+> **Desde el corte del 2026-09-28** (137 commits, `ceec000..dc84cb2`)
 >
 > - **2026-09-29/30 · `7a7eb17`..`ecfbc26`, `8ff8d9d`..`43ce5ac`** — Creative CR-0 a CR-3 (`063`, `064`) y Acquisition
 >   AQ-0 a AQ-5 (`065`, `066`): nace un escritor único por tabla de Acquisition (regla 46).
@@ -21,6 +22,8 @@
 >   prototipo (`077`): una lectura por pantalla, el piso en toda tasa, sin párrafos, y los días cerrados (reglas 47 y 51).
 > - **2026-10-08 · `82ba9e7`** — Client OS: la única sección que hoy lleva `sinOperacionesTodavia` (regla 31).
 > - **2026-10-15 · `66d88de`, `cce2d56`, `972972e`** — Meta directo, listo y dormido (`078`). Es lo que corre producción.
+> - **2026-10-16 · `693a383`..`dc84cb2`** — el modelo de datos multiempresa, Fase 0 (`079` a `084`): construido en local,
+>   sin subir, pendiente de la aprobación de un ingeniero. Cambia la regla 23 y la 7 (sección «Construido en local»).
 > - Las cifras: la cancelación del negocio a treinta días pasa de 32,0 % a **35,0 %** (14 de 40, § 9); las congeladas
 >   salieron de la ventana de treinta días (**0**, § 4); entraron **25 contactos** en treinta días (§ 5).
 > - **Lo que la foto anterior dejó abierto, re-verificado el 2026-10-18:** el `aviso` de Lead Flow ya tiene lector —el
@@ -490,8 +493,7 @@ migración nace vacía y se llena hacia adelante (`db/migraciones/048_de_donde_v
 
 **Dónde se resuelve entonces.** El dato se arregla **al leer**, no al migrar: la `040` infiere el canal en
 `lib/negocio/ficha.ts:186` (`CANAL_EFECTIVO`) sin tocar una fila. Y cuando hay que escribir, una fase de
-`scripts/db.mjs` que corre con el rol que sí ve las filas, como `retiro`, que corre como `app_identidad`
-(`scripts/db.mjs:219`).
+`scripts/db.mjs` que corre con el rol que sí ve las filas (sección «Construido en local», 2026-10-16).
 
 ---
 
@@ -533,7 +535,8 @@ tablas— y sólo con `.env.supabase`, porque `npm run db:migrar` puede apuntar 
 **Estado el 2026-10-18.** Entraron dieciséis migraciones (`063` a `078`, del 2026-09-30 al 2026-10-15) y **producción
 está en la `078`**. La memoria del proyecto registra «migrar y después empujar» en la `063` a la `066`, la `069` a la
 `075`, la `077` y la `078`; en la `067`, la `068` y la `076` **no lo verifiqué**, y ningún commit desde el corte nombra un
-`42P01` ni un `42703`. La comprobación da hoy lo mismo en los dos lados: la `078`.
+`42P01` ni un `42703`. **La comprobación hoy da distinto a propósito**: el árbol local llega a la `084` y los ocho commits
+del modelo de datos no se empujan sin la aprobación de un ingeniero (sección «Construido en local»).
 
 ---
 
@@ -834,7 +837,7 @@ Lista blanca y no negra porque con una negra lo nuevo aparece solo (`lib/negocio
 
 **34 · Toda prueba nueva se ve roja con su mutación antes de quedar.** Escrita como regla de etapa en
 `docs/OTROS/analizadores/ANALIZADORES.md:102` y nombrada en más de la mitad de los commits del
-período (39 de 67 commits del 09-15 al 09-28 la nombran; del 09-29 al 10-15, 58 de 129 en `git log 861b5f0..972972e`).
+período (39 de 67 commits del 09-15 al 09-28 la nombran; del 09-29 al 10-16, 66 de 137 en `git log 861b5f0..HEAD`).
 El defecto que cierra: **en verde no se distingue una prueba que protege de una que no mira nada.**
 Tres pruebas de Creative sobrevivían a su mutación (`e9ca19a`): una sembraba diez valores iguales, así
 que el promedio, el máximo y el mínimo daban lo mismo; otra no distinguía `null` de `false`; la tercera
@@ -1237,6 +1240,35 @@ cada «—» viaja con su motivo, y la pantalla es un tablero sin párrafos: los
 `PANTALLA` o está en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:502`), y `pruebas/codigo/30-portero.test.ts:363-373`
 lo exige (`433ca86`, 2026-08-21). Es lo que ata una ruta a la capacidad de su sección (reglas 31 y 32). Contado el
 2026-10-18: 111 archivos `route.ts` bajo `app/api/`, 82 con `PANTALLA` y 29 en la lista.
+
+---
+
+## Construido en local, sin subir: el modelo de datos multiempresa (pendiente de aprobación)
+
+**Estado.** Ocho commits del 2026-10-16, `693a383..dc84cb2`, con las migraciones `079` a `084`, están en el árbol y
+**no en producción**: esperan la aprobación de un ingeniero, y se suben en el orden de
+`docs/modelo de datos/20-PLAN-DE-SUBIDA-FASE-0.md` (carpeta local, fuera de git). Nada de lo que sigue vale todavía
+para la base de producción; sí para el código del árbol y para la suite local.
+
+- **La segunda llave de aislamiento.** Además de `org_id`, las 39 tablas de negocio de una cuenta llevan `cuenta_id`
+  —la subcuenta de GoHighLevel— y una política que exige `app.cuentas`: `'*'` ve todas las cuentas de la
+  organización y **sin la variable no se ve nada** (`lib/datos/contexto.ts:49-60`). La pone `conOrganizacion()` y sólo
+  ella (`:146-147`, verificada en `:160`; `pruebas/codigo/10-arquitectura.test.ts:443`), así que la regla 23 gana una
+  mitad: abrir el contexto de la organización ahora también abre el de sus cuentas.
+- **Los regímenes de negocio.** Cada tabla es de una cuenta, de una cuenta o de la organización, o sólo de la
+  organización, y la lista es a mano porque el régimen es una decisión (`pruebas/apoyo/regimenes-de-negocio.ts:1-19`);
+  `pruebas/base/257-el-modelo-fase-0.test.ts:78` pone la suite en rojo si una tabla no tiene régimen o tiene dos.
+- **El revisor del migrador.** Sigue prohibiendo `no force row level security` (`lib/datos/migrador.ts:131`), suma
+  los esquemas `catalogo`, `sistema` e `ingesta` (`:70`), no le pide `org_id` a una partición (`:177`) y acepta
+  `aplicar_aislamiento_de_cuenta` como aislamiento (`:208`).
+- **Las fases de relleno.** Como el migrador no ve filas (regla 7), las filas que ya existen reciben su cuenta con dos
+  fases de `scripts/db.mjs`: `cuentas`, como `app_identidad` (`scripts/db.mjs:478`), y `cuenta-en-negocio`, como
+  `app_inquilino` dentro de `conOrganizacion` (`:514`). La cuenta en negocio va en tres pasos: la `082` la agrega nula
+  con un puente, la fase rellena y la `083` la vuelve obligatoria con la política por cuenta
+  (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:4-21`).
+- **Lo demás.** El idioma común compartido sin `org_id` (`079`), las cuentas (`080`), la bandeja de lo crudo con una
+  sola puerta (`081`) y los eventos de sólo agregar, con particiones que nacen cerradas (`084`,
+  `pruebas/base/257-el-modelo-fase-0.test.ts:623`).
 
 ---
 

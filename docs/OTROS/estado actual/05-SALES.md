@@ -1,7 +1,9 @@
 # Sales Intelligence
 > Corte: **2026-10-18**. Producción está en el commit `972972e` (migraciones hasta la `078`); el código de esta
 > sección es el de `2421d49` (SA-9), y lo que vino después sólo tocó comentarios y la descripción de una herramienta
-> (ver el bloque de abajo). Las cifras de producción son de tres fechas y cada una lo dice: las del
+> (ver el bloque de abajo). En local hay ocho commits más, `693a383..dc84cb2`, del modelo de datos multiempresa (Fase 0,
+> migraciones `079` a `084`), **construidos y sin subir**: lo que tocan de esta sección va al final de § 2, como
+> «construido en local, sin subir». Las cifras de producción son de tres fechas y cada una lo dice: las del
 > **2026-10-18**, medidas para este corte con `scripts/supabase.mjs leer` (sólo lectura, sólo conteos y agregados); las
 > del **2026-10-09**, de `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` (§ 2 y § 7); y las del **2026-09-28**,
 > de la foto de ese día. Lo que no se volvió a medir lo dice. Las ventanas son rodantes: lo que depende de la hora vale
@@ -31,6 +33,8 @@ y Ventas, Revenue y Tasa de cierre dicen «—» con «Nadie registró en esta v
 > - **2026-10-11 · `2415e25`** — CF-3 de Creative: `app/inteligencia-estetica.css` se borra entera; `app/sales.css`
 >   sólo cambia el comentario que la nombraba.
 > - **2026-10-15 · `972972e`** — Meta M-2 a M-4, el commit de producción: no toca esta sección.
+> - **2026-10-16 · `693a383..dc84cb2`** — la Fase 0 del modelo de datos, **construida en local y sin subir**: la
+>   cuenta en todas las tablas que lee esta pantalla (ver el final de § 2).
 >
 > **Del corte del 2026-09-28 al del 2026-10-09**
 >
@@ -181,6 +185,15 @@ con la inversión de Acquisition, para quien ve las dos secciones. Lo prueba `pr
 
 **Quién la ve.** 13 de los 15 usuarios activos tienen `tablero.ver` y, si todos sus roles son restringidos, la sección
 concedida (medido el 2026-10-18; la misma cifra que el 2026-09-28).
+
+**Construido en local, sin subir: la Fase 0 del modelo de datos** (`693a383..dc84cb2`, 2026-10-16). Las tablas que lee
+esta pantalla —`contactos`, `citas`, `resultados`, `comisiones`, `closer_asignado`, y las del analizador— ganan
+`cuenta_id` y una política por organización Y cuenta (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`,
+`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:99-110`); `conOrganizacion` pone `app.cuentas = '*'`
+(`lib/datos/contexto.ts:60`, `lib/datos/contexto.ts:147`), así que la pantalla vería lo mismo que hoy. Lo que sí es
+nuevo para Sales: un resultado ya no puede quedar en otra cuenta que su cita
+(`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:68-70`), que es el eslabón `appointment_id → sale_report_id` del
+§5.2. Ningún archivo de la sección cambia. Ver § 7.
 
 ---
 
@@ -381,6 +394,12 @@ son llamadas, no ventas perdidas registradas.
 escribió la etapa (`lib/negocio/etapas.ts:222-261`); Sales, Leads Portal y el dinero del mes leen `negocio.resultados`.
 Si la costumbre es marcar la venta en el CRM, el hueco central de este departamento no es de adopción del producto
 sino de dónde se anota.
+
+**La Fase 0, si sube en el orden equivocado.** Construido en local y sin subir. La `083` pone en las tablas que lee
+esta pantalla una política que exige `app.cuentas`, y sin la variable no se ve nada
+(`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`). La pone `conOrganizacion` desde el Paso 1
+(`lib/datos/contexto.ts:147`): si la `083` llegara antes que ese código, la pantalla diría cero citas, cero closers y
+«Sin closers configurados.» sin ningún error.
 
 **Lo que se puede construir hoy, y lo que no.** La pantalla del prototipo está construida con todo lo que el sistema
 mide. Sigue sin poder llenarse: la tasa de cierre (0 ventas), la asistencia y el show rate (0 de 368), el revenue

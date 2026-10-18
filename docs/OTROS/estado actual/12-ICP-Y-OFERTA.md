@@ -1,6 +1,8 @@
 # ICP & Oferta
 
-> Corte: **2026-10-18**, con el código de producción en `972972e`. Las cifras de producción son de dos fechas y cada una lo dice: las del
+> Corte: **2026-10-18**, con el código de producción en `972972e`. Los ocho commits locales del modelo de datos
+> multiempresa (`693a383..dc84cb2`, Fase 0, sin subir) no tocan esta pantalla: sus dos tablas viven en `public` y la
+> cuenta entra sólo a tablas de `negocio`. Las cifras de producción son de dos fechas y cada una lo dice: las del
 > **2026-10-18**, medidas desde las 15:39 UTC con `scripts/supabase.mjs leer` (sólo lectura, sólo conteos y
 > agregados, con el OK del usuario), y las del **2026-09-28**, de la foto anterior, cuando no se volvieron a medir.
 > Cada afirmación sobre el código lleva su `archivo:línea`; lo que no se pudo verificar está dicho como pendiente. La
@@ -345,7 +347,7 @@ Oferta, y sobrevive a salir de la pantalla, con una tabla y una ruta nuevas para
 Lo que choca con `main`, verificado con `git diff --stat` y con los nombres de archivo:
 
 - **La migración.** La rama trae `db/migraciones/068_la_cadena_del_metodo.sql`; en `main` el número 068 es
-  `068_el_analisis_del_espia.sql`, que ya corre en producción, y la última es la `078`.
+  `068_el_analisis_del_espia.sql`, que ya corre en producción, y la última es la `084`.
 - **Las pruebas.** La rama numera sus pruebas nuevas de la 184 a la 192 (`pruebas/codigo/184-el-segmento-se-confirma`
   a `192-la-cadena-sobrevive-a-salir`); en `main` esos nueve números son de la nueva estructura (de
   `184-la-marca-en-dos-capas` a `192-la-navegacion-pide-la-pestana`).

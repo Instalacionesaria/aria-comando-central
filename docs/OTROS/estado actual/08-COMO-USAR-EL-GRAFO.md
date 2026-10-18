@@ -12,7 +12,9 @@
 > **Lo que el grafo no tiene**: todo lo que entró después de `253cc79`. Borrar un hilo de
 > CONVERSACIONES (`f59cf44`, 2026-10-12); la miniatura por la pieza del anuncio (`66d88de`) y Meta M-1
 > a M-4 (`cce2d56` y `972972e`, 2026-10-15: `lib/meta/`, `lib/negocio/recolectarActivos.ts` y la
-> migración `078`). Creative CF-5 **sí** está: sus commits (`fefffa1` y `f598d7d`) son anteriores a `253cc79`. Tampoco
+> migración `078`); y, sólo en local y sin subir, el modelo de datos multiempresa: los ocho commits del
+> 2026-10-16 (migraciones `079` a `084`) y la carpeta `docs/modelo de datos/`, todavía sin versionar.
+> Creative CF-5 **sí** está: sus commits (`fefffa1` y `f598d7d`) son anteriores a `253cc79`. Tampoco
 > tiene las versiones de hoy de esta carpeta: los 18 archivos están en el grafo con su texto del
 > 2026-10-11, y 14 ya habían cambiado el 2026-10-18, a mitad de esta reescritura (fila «Lo que cambió en disco
 > después del grafo»). Cómo se pone al día y qué cuesta, en la § 3.
@@ -36,7 +38,8 @@
   tipo, y los pares contados pasaron de 30 a 69 (§ 3).
 - **Los tres caminos de ejemplo de `graphify path` siguen cruzando por documentos**, por otros nodos
   (§ 3).
-- Citas reapuntadas al código de hoy: `pedirExterno()` en `cliente.ts` con Meta M-1, y `ok()` y
+- Citas reapuntadas al código de hoy: `datos()` y `conOrganizacion()` bajaron en `contexto.ts` con el
+  paso 1 del modelo de datos (`d424d8b`), `pedirExterno()` en `cliente.ts` con Meta M-1, y `ok()` y
   `rechazo()` una línea en `respuesta.ts`. Los conteos con `grep` de la § 2, re-medidos.
 - **Un cuarto cuidado antes de actualizar**: guardar el grafo de hoy, porque los pasos del skill no
   dejan respaldo (§ 3, punto 4).
@@ -97,7 +100,7 @@ disco— y, donde sirve, las copias que sí quedaron:
 | Archivos con al menos un nodo | **1085 de 1085**; ninguno falta en el disco y ninguno tiene ruta absoluta | 773 de 775 el 2026-09-29 | `source_file` distintos, contra el disco |
 | Extraído el 2026-10-11 | todo: los 879 de código por AST en serie, sin pérdida, y los documentos; según las notas de la corrida, 163 sin caché semántica, con 12 subagentes en trozos de hasta ~45 mil palabras, y 1655 aristas semánticas descartadas porque apuntaban a nodos que nadie definió | el 2026-09-29, en dos pasos: los 18 de esta carpeta con 5 subagentes más 11 de código, y después los 641 de código por AST | `manifest.json`; el reparto de documentos y subagentes no quedó en disco |
 | Tokens del 2026-10-11 | **2.928.223** de entrada (~2,93 M), en una corrida de 1085 archivos | 1.479.338 el 2026-09-29, en dos corridas · 2.248.224 la mañana del 2026-09-28 · 746.727 el 2026-09-17 | `cost.json`, lo mismo que la línea *Token cost* del informe |
-| Lo que cambió en disco después del grafo | **52 archivos del corpus con otro contenido** el 2026-10-18 (30 `.md` —14 de esta carpeta, que se está reescribiendo—, 18 `.ts`, 3 `.jsx` y 1 `.json`), ninguno borrado, y **~13 nuevos**: la migración `078`, 3 de `lib/meta/`, 3 de `pruebas/`, `lib/negocio/recolectarActivos.ts`, la ruta y la pantalla de la conexión con Meta, `docs/creative/17-CONECTAR-META-PASO-A-PASO.md` y 2 `.json` | — | md5 de cada archivo contra el `ast_hash` de `manifest.json`; los nuevos, `git ls-files --cached --others --exclude-standard` fuera del manifiesto, con las extensiones del corpus; contado sobre el código de producción. Aproximado: la detección de graphify puede descartar alguno (los dos `.json`, por ejemplo) |
+| Lo que cambió en disco después del grafo | **62 archivos del corpus con otro contenido** el 2026-10-18 (30 `.md` —14 de esta carpeta, que se está reescribiendo—, 26 `.ts`, 3 `.jsx`, 1 `.sql`, 1 `.mjs` y 1 `.json`), ninguno borrado, y **~53 nuevos**: 30 de `docs/modelo de datos/` (20 `.md` y 10 `.sql`), 7 migraciones (`078` a `084`), 3 de `lib/meta/`, 5 de `pruebas/`, 2 de `db/arranque/`, `lib/negocio/recolectarActivos.ts`, la ruta y la pantalla de la conexión con Meta, `docs/creative/17-CONECTAR-META-PASO-A-PASO.md` y 2 `.json` | — | md5 de cada archivo contra el `ast_hash` de `manifest.json`; los nuevos, `git ls-files --cached --others --exclude-standard` fuera del manifiesto, con las extensiones del corpus. Aproximado: la detección de graphify puede descartar alguno (los dos `.json`, por ejemplo) |
 | Pares tipo/función fundidos en un nodo | **69**, 62 en `lib/` y 7 en `pruebas/`; cada par es un solo nodo, que lleva el nombre de la función en 62 y el del tipo en 7 (§ 3) | 30 el 2026-09-29, con el nombre del tipo en el ejemplo de la § 3 | declaraciones buscadas en `lib/`, `app/`, `components/`, `pruebas/` y `scripts/`, cruzadas con los nodos |
 | Aristas entre `lib/auditor/vista.ts` y `app/api/auditoria/route.ts` | **0**: el salto por HTTP no es arista (§ 3) | 0 el 2026-09-29 | aristas cuyos extremos tienen esos `source_file` |
 | Nodos de los archivos de credenciales | `lib/credenciales/resolver.ts` 37 · `cifrado.ts` 6 · `refresco.ts` 7 · `scripts/credenciales.mjs` 6 (§ 6) | 32 · 6 · 7 · 6 el 2026-09-29 | `source_file` |
@@ -110,12 +113,12 @@ Salen del grafo, no de una opinión: son los nodos más conectados, sin contar l
 el informe excluye. Van en el orden del informe, sin el documento que se mete entre ellas (abajo); sus
 aristas de hoy y de los cortes anteriores están en la fila «Nodos dios» de la tabla de la § 1. Las
 líneas son las del código de hoy: donde el archivo cambió después del 2026-10-11, el grafo todavía
-dice la vieja.
+dice la vieja (para `datos()`, `L159`).
 
 | Función | Dónde vive | Qué significa que esté acá |
 |---|---|---|
-| `datos()` | `lib/datos/contexto.ts:159` | La capa de datos del inquilino: las lecturas y escrituras de negocio dentro de una organización pasan por el mismo constructor de consultas, que lanza si no hay organización activa (`lib/datos/contexto.ts:201`) |
-| `conOrganizacion()` | `lib/datos/contexto.ts:76` | **Toda operación abre el contexto de su organización.** Es la regla `ADR-0202` (`docs/OTROS/especificacion/TRAZABILIDAD.md:55`), y el grafo la confirma: es el segundo nodo más conectado, contando también los nodos-archivo |
+| `datos()` | `lib/datos/contexto.ts:183` | La capa de datos del inquilino: las lecturas y escrituras de negocio dentro de una organización pasan por el mismo constructor de consultas, que lanza si no hay organización activa (`lib/datos/contexto.ts:225`) |
+| `conOrganizacion()` | `lib/datos/contexto.ts:92` | **Toda operación abre el contexto de su organización.** Es la regla `ADR-0202` (`docs/OTROS/especificacion/TRAZABILIDAD.md:55`), y el grafo la confirma: es el segundo nodo más conectado, contando también los nodos-archivo |
 | `exigir()` | `lib/autorizacion/portero.ts:167` | El portero: lo nombran 108 de los 111 `route.ts` de `app/api/` (`grep`, 2026-10-16; eran 79 de 82 el 2026-09-29); los tres que no son el login, el aviso del CRM y la salud |
 | `ok()` / `rechazo()` | `lib/autorizacion/respuesta.ts:320` y `lib/autorizacion/respuesta.ts:331` | La respuesta de éxito y la de rechazo |
 | `conIdentidad()` | `lib/datos/capa.ts:125` | El otro contexto: identidad va por su propio camino. Hasta el 2026-09-29 era el que más llamadas había perdido entre pasadas por lote; con la corrida completa la llaman 126 funciones (fila «Llamadas entre archivos de código») |
@@ -235,10 +238,11 @@ correr `/graphify --update` para ellos, que es la extracción semántica del ski
 eso es lo que cuesta tokens.
 
 **Qué hay pendiente hoy, y qué costaría.** Lo que cambió en disco desde el grafo está en la fila «Lo
-que cambió en disco después del grafo» de la § 1. Del lado del código —22 archivos cambiados y unos 12
-nuevos, entre ellos `lib/meta/`, `recolectarActivos.ts` y la migración `078`—, el AST es gratis. Del lado de
-los documentos, del orden de 35: los 30 `.md` cambiados, el nuevo de `docs/creative/` y los 18 de esta carpeta
-cuando termine su reescritura (14 ya cuentan entre los 30). Lo que cuestan no se puede anticipar con precisión; las dos referencias que
+que cambió en disco después del grafo» de la § 1. Del lado del código —32 archivos cambiados y unos 32
+nuevos, entre ellos `lib/meta/`, `recolectarActivos.ts`, las migraciones `078` a `084` y los 10 `.sql`
+de `docs/modelo de datos/`—, el AST es gratis. Del lado de los documentos, del orden de 55: los 30 `.md` cambiados y los ~21 nuevos (20 de
+`docs/modelo de datos/`), y los 18 de esta carpeta cuando termine su reescritura (14 ya cuentan entre
+los 30). Lo que cuestan no se puede anticipar con precisión; las dos referencias que
 hay, en `cost.json`, son muy distintas: el 2026-09-29, extraer los 18 de esta carpeta costó 1.365.067
 tokens, y el 2026-10-11, extraer 163 documentos sin caché costó 2.928.223. Mover un documento de
 carpeta también lo cuenta como nuevo (lo que enseñó la pasada del 2026-09-28, abajo).
@@ -492,8 +496,8 @@ en disco con aristas colgantes.
 Consecuencia práctica: **el grafo sirve para ubicar y para explorar, no para afirmar que algo NO
 existe.** Si una consulta no devuelve nada, eso no prueba la ausencia: hay que comprobarlo contra el
 código o contra la base. El ejemplo más a mano hoy es lo que entró después del 2026-10-11: `lib/meta/`
-existe desde el 2026-10-15 y en el grafo tiene **0 nodos**, igual que `recolectarActivos.ts` y la
-migración `078`; y los números de línea que el grafo da para los
+existe desde el 2026-10-15 y en el grafo tiene **0 nodos**, igual que `recolectarActivos.ts`, las
+migraciones `078` a `084` y `docs/modelo de datos/`; y los números de línea que el grafo da para los
 archivos que cambiaron después ya no son los del código (§ 2).
 
 **Y no reemplaza a la base.** El grafo conoce el código y los documentos, no los datos. Para

@@ -1,6 +1,8 @@
 # Conversation Intelligence
 > Corte: **2026-10-18**. Producción está en el commit `972972e` (migraciones hasta la `078`); el código de esta
-> sección es el de `d297289` (CN-5), y lo que vino después no la cambió (ver el bloque de abajo). Las cifras de
+> sección es el de `d297289` (CN-5), y lo que vino después no la cambió (ver el bloque de abajo). En local hay ocho
+> commits más, `693a383..dc84cb2`, del modelo de datos multiempresa (Fase 0, migraciones `079` a `084`), **construidos
+> y sin subir**: lo que tocan de esta sección va al final de § 2, como «construido en local, sin subir». Las cifras de
 > producción son de tres fechas y cada una lo dice: las del **2026-10-18**, medidas para este corte con
 > `scripts/supabase.mjs leer` (sólo lectura, sólo conteos y agregados); las del **2026-10-10**, de
 > `docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md` § 2; y las del **2026-09-28**, de la foto de ese día.
@@ -39,6 +41,8 @@ días.
 >   Conversation.
 > - **2026-10-15 · `972972e`** — Meta M-2 a M-4, el commit de producción: la tarea nueva `activos` es de Creative y no
 >   entra entre las de esta pantalla (`lib/agentes/executive/adaptadores/plataforma.ts:38`).
+> - **2026-10-16 · `693a383..dc84cb2`** — la Fase 0 del modelo de datos, **construida en local y sin subir**: la
+>   cuenta en todas las tablas que lee esta pantalla (ver el final de § 2).
 >
 > **Del corte del 2026-09-28 al del 2026-10-10**
 >
@@ -223,6 +227,14 @@ volvió a mirar en el navegador para este corte.
 **Quién la ve.** Los 3 roles de producción llevan `auditor.ver`, y **14 de los 15 usuarios activos** ven la sección:
 tienen la capacidad y, si todos sus roles son restringidos, la sección concedida (medido el 2026-10-18). Editar un
 prompt pide además `auditor.editar`.
+
+**Construido en local, sin subir: la Fase 0 del modelo de datos** (`693a383..dc84cb2`, 2026-10-16). Todas las tablas
+que lee esta pantalla —`contactos`, `citas`, `mensajes`, `hallazgos`, `analisis_del_agente`, `llamadas`— ganan
+`cuenta_id` obligatoria y una política por organización Y cuenta
+(`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`, `db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:99-104`);
+`conOrganizacion` pone `app.cuentas = '*'` (`lib/datos/contexto.ts:60`, `lib/datos/contexto.ts:147`), así que la
+pantalla vería lo mismo que hoy. Ningún archivo de la sección cambia, y los eventos de la `084` no los escribe nadie
+todavía (`db/migraciones/084_los_eventos.sql:14`). Ver riesgo 26.
 
 ---
 
@@ -495,6 +507,12 @@ fila de abajo y las tarjetas de agente dirán cosas distintas.
 
 **25 · La pantalla no se vio con los datos de producción.** **Abierto**: CN-5 la midió con una respuesta sintética, y
 la revisión del usuario en producción sigue pendiente.
+
+**26 · La Fase 0 vacía la pantalla si sube en el orden equivocado.** **Nuevo**, construido en local y sin subir. La
+`083` pone en las tablas que lee esta pantalla una política que exige `app.cuentas`, y sin la variable no se ve nada
+(`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`). La variable la pone `conOrganizacion` desde el Paso 1
+(`lib/datos/contexto.ts:147`): si la `083` llegara a producción antes que ese código, la pantalla diría cero contactos
+y cero citas sin ningún error, que es justo el cero que esta sección distingue de «no hay medición».
 
 **El cuello de botella de Conversation no es técnico**: la pantalla está, con todo lo que el sistema mide, y sigue sin
 poder llenarse la asistencia, la voz, la landing y la atribución de la cita al agente. Y desde la semana del

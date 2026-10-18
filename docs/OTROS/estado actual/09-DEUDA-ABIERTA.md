@@ -1,13 +1,14 @@
 # Deuda abierta
 
-> Corte: **2026-10-18**. Producción corre el commit **`972972e`** (migraciones hasta la `078`). Las cifras de
-> producción se midieron el 2026-10-18 entre las **15:38 y las 16:03 UTC** con `scripts/supabase.mjs leer`, sólo conteos y agregados
+> Corte: **2026-10-18**. Producción corre el commit **`972972e`** (migraciones hasta la `078`); las citas son al árbol
+> de `dc84cb2`, que suma ocho commits locales del modelo de datos sin subir (§ 22). Las cifras de producción se
+> midieron el 2026-10-18 entre las **15:38 y las 16:03 UTC** con `scripts/supabase.mjs leer`, sólo conteos y agregados
 > y con el OK del usuario: de la base no salió un nombre, un correo ni un teléfono. Cada punto lleva la consulta que
 > lo mide o el `archivo:línea` donde se comprueba, para volver a correrla y ver si creció, se arregló sola o dejó de
 > importar. Lo que no se volvió a medir lleva su fecha. Cada deuda que se cerró queda marcada **Cerrada**, con su
 > commit y su fecha. Para ubicar lo nombrado, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
 
-> **Desde el corte del 2026-09-28** (129 commits, `ceec000..972972e`)
+> **Desde el corte del 2026-09-28** (137 commits, `ceec000..dc84cb2`)
 >
 > - **Cerradas:** la maqueta del Executive y lo que colgaba de ella (E7, `4e9a242`, 10-01); el «Eliminar» invisible,
 >   el panel lateral y el menú sin teclado (E2 a E9, 10-01); la fuga del gasto de Meta —la pauta sí gastaba— con el
@@ -16,7 +17,7 @@
 >   10-10); el gasto sin escribir y el error con datos de los Analizadores (AG2, 10-04); la CI de `main` en rojo
 >   (verde desde `ae30048`, 10-07). Fuera del repositorio, las tablas de HT/OB y de Closer v1 se borraron de
 >   producción con respaldo y el OK del usuario (2026-10-12 y 13; § 22).
-> - **Nuevas:** los pendientes de seguridad de la base (§ 22); Meta directo dormido y la
+> - **Nuevas:** el modelo de datos sin subir y los pendientes de seguridad de la base (§ 22); Meta directo dormido y la
 >   miniatura que casi no llega (§ 21); el voseo de Meta, que la prueba no miraba (§ 23, cerrado en `65669f4`); las zonas en
 >   UTC y el día de la empresa (§ 23); ninguna campaña asignada a un funnel (§ 12); el `showed` sin lector (§ 4); y las
 >   revisiones con sesión que siguen sin hacerse (§ 19).
@@ -331,7 +332,9 @@ from negocio.contactos where alta_en_el_crm is not null;
 
 ## 7 · El descarte no tiene fecha
 
-**Sigue igual el 2026-10-18.** De la `050` a la `078` ninguna migración toca `etiquetas`. La partición entre «citas de
+**Sigue igual el 2026-10-18.** De la `050` a la `078` ninguna migración toca `etiquetas` (`grep -li` sólo la encuentra
+en un comentario de la `079`, que no está en producción). Los eventos de la `084`, de sólo agregar, podrían guardar
+cuándo se puso cada etiqueta, pero nada los escribe hasta la Fase 1 del modelo (§ 22). La partición entre «citas de
 contactos descartados» y el resto se lee de las etiquetas **actuales** del contacto, y
 `negocio.contactos` no guarda cuándo se aplicó cada etiqueta. El archivo de la `047` guarda la zona,
 no las etiquetas.
@@ -652,7 +655,8 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
 - **No hay un acuerdo de tratamiento de datos con los clientes** sobre mandar datos de sus leads a un proveedor de
   IA (`AG-86`, `docs/OTROS/agentes/05-PERMISOS-Y-PRIVACIDAD.md`, 2026-10-04). Viajan la conversación del lead (el
   auditor), la transcripción de la llamada (los Analizadores) y, desde AG12, el Brief del closer, el agente que manda
-  los datos de una persona.
+  los datos de una persona. El modelo de datos sin subir trae la tabla donde se anotaría lo que firmó cada empresa
+  (`identidad.acuerdos`, `db/migraciones/080_las_cuentas.sql:5-17`; § 22); el acuerdo en sí sigue sin existir.
 
 ---
 
@@ -694,7 +698,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
 - `docs/OTROS/especificacion/TRAZABILIDAD.md:25` dice «75 reglas, 26 ⛔»; las tablas del mismo
   archivo tienen **85 filas `ADR-` distintas, 31 con ⛔** (contadas el 2026-09-28).
 - `docs/OTROS/especificacion/LEXICO.md:18` ubica `conOrganizacion(` en `lib/datos/capa.ts`; vive en
-  `lib/datos/contexto.ts:76`.
+  `lib/datos/contexto.ts:92`.
 - `docs/OTROS/capa-base/ETAPA-0.md:201-202` y `docs/OTROS/produccion/COMPATIBILIDAD.md:148` dicen
   que la imagen es `postgres:18-alpine`; `docker-compose.yml` fija `postgres:17-alpine`, que es lo que
   `docs/OTROS/produccion/DESPLIEGUE.md:12` explica.
@@ -924,8 +928,18 @@ credencial de Meta en Ajustes, con las migraciones `063` y `064`— y el 2026-10
 
 ---
 
-## 22 · La base de producción: lo pendiente y lo que se limpió
+## 22 · Lo construido en local y lo pendiente en producción
 
+- **El modelo de datos multiempresa, Fase 0: construido en local, sin subir, pendiente de aprobación.** Ocho
+  commits del 2026-10-16 (`693a383..dc84cb2`) con las migraciones `079` a `084`: el catálogo común, las cuentas, la
+  bandeja de lo crudo, `cuenta_id` en las 39 tablas de negocio de una cuenta con la política por cuenta, y los
+  eventos (el detalle y las reglas que cambia, en [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md), sección
+  «Construido en local»). **Esperan la aprobación de un ingeniero**, y se suben en el orden de
+  `docs/modelo de datos/20-PLAN-DE-SUBIDA-FASE-0.md` (carpeta local, fuera de git): el código de `app.cuentas`
+  primero, después cada migración con su fase de relleno, y la `083` recién cuando la fase `cuenta-en-negocio` dejó
+  todas las filas con su cuenta. Mientras no se suban, **`main` local va ocho commits adelante de producción**, y el
+  próximo push de cualquier otra cosa los lleva si no se separan. Se comprueba con
+  `git log 972972e..HEAD --oneline` y con la última de `migraciones.migraciones_aplicadas` (hoy, `078`).
 - **Hay pendientes de seguridad de la base**, revisados el 2026-10-12, con su plan fuera del repositorio a
   propósito. No se detallan acá.
 - **Cerrada fuera del repositorio, el 2026-10-12 y 13: lo ajeno que ya no se usaba.** Con el OK del usuario y un
@@ -1007,7 +1021,7 @@ Y, aparte, lo que encontró la línea base de la suite del 2026-10-01 en `main` 
   (`lib/administracion/borrado.ts`): si un borrado se bloqueaba por un incidente, el rechazo decía «tiene historial»
   sin decir cuál. **Cerrado el mismo 2026-10-01** (`33e0a76`): las tres tienen su frase. Desde la `070` (AG2,
   2026-10-04) `incidentes_usuario_id_fkey` es `on delete set null` y ya no frena nada, así que su frase salió de la
-  lista.
+  lista. El modelo de datos sin subir agrega las frases de sus tablas nuevas en el mismo archivo (§ 22).
 - **El CI de `main` estaba en rojo desde `43ce5ac`** por pruebas que dependen de la hora: la del mes pasado de
   `pruebas/base/98-setter-inicio.test.ts`, que falla en UTC el día 1 antes de las 05:00; cuatro de la agenda y del
   día del closer; y «una cita vencida sigue en la lista» (`pruebas/base/92-mi-dia.test.ts`). **Cerrada el

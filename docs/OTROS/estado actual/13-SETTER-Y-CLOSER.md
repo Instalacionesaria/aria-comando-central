@@ -1,6 +1,8 @@
 # Setter y Closer
 
-> Corte: **2026-10-18**, con el código de producción en `972972e`. Las cifras de producción son de dos fechas y cada una
+> Corte: **2026-10-18**, con el código de producción en `972972e`. En local hay ocho commits más (`693a383..dc84cb2`,
+> el modelo de datos multiempresa, Fase 0, migraciones `079` a `084`) construidos y **sin subir**: lo que tocan de
+> estas pestañas va dicho como «construido en local, sin subir». Las cifras de producción son de dos fechas y cada una
 > lo dice: las del **2026-10-18**, medidas desde las 15:39 UTC con `scripts/supabase.mjs leer` (sólo lectura, sólo
 > conteos y agregados, con el OK del usuario), y las del **2026-09-28**, de la foto anterior —medidas desde las 18:03
 > UTC, las de la ficha y las ventanas que ruedan entre las 23:58 UTC del 28 y las 00:25 UTC del 29—, cuando no se
@@ -39,6 +41,10 @@ cita antes de la llamada. **Nada de eso movió el registro**, y el Brief no se g
 >   de Sales y Avanzar; las citas de esta foto a ese archivo se volvieron a verificar.
 > - **2026-10-13, en la base, sin commit** — la plataforma anterior (`public.closer_*`) se borró de producción con el
 >   OK del usuario y respaldo aparte: el 2026-10-18 no queda ninguna tabla `closer_*` en `public` (§ 5.4).
+> - **2026-10-16 · `ce5ed91`, `8ad73f3`** — construido en local, sin subir: la cuenta (`cuenta_id`) entra a
+>   `contactos`, `citas`, `notas`, `tareas`, `resultados`, `comisiones`, `closer_asignado` y `briefs_del_closer`, entre
+>   otras (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:26-28`), y un Brief no puede quedar en otra cuenta que
+>   su cita (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:65-66`).
 
 ---
 

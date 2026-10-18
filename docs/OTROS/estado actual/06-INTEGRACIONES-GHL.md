@@ -1,6 +1,9 @@
 # Las integraciones con proveedores: GoHighLevel, Meta directo y el cron que les habla
 > Corte: **2026-10-18**, con el código de producción, el commit `972972e` (2026-10-15; migraciones hasta la `078`,
-> comprobado ese día en `migraciones.migraciones_aplicadas`). Las cifras nuevas se midieron en producción el **2026-10-18 entre las 15:34 y
+> comprobado ese día en `migraciones.migraciones_aplicadas`). En local hay ocho commits más, `693a383..dc84cb2`, del
+> modelo de datos multiempresa (Fase 0, migraciones `079` a `084`), construidos y **sin subir**: no tocan ningún archivo
+> de `lib/ghl/`, `lib/meta/`, `lib/http/`, del cron ni de los colectores; lo que de ellos toca esta sección va marcado
+> «construido en local, sin subir» (§ 7). Las cifras nuevas se midieron en producción el **2026-10-18 entre las 15:34 y
 > las 15:40 UTC**, con `scripts/supabase.mjs leer`, sólo conteos y agregados: ninguna fila con datos de una persona y
 > ninguna credencial (de las credenciales se contaron columnas no nulas). Las del corte anterior —2026-09-28 entre las
 > 17:50 y las 18:20 UTC, re-medidas el 2026-09-29 hasta las 00:30— siguen donde no se volvieron a medir, y lo dicen.
@@ -28,6 +31,8 @@
 > - **2026-10-15 · `972972e`** — Meta directo, M-2 a M-4: `lib/meta/anuncios.ts`, `lib/negocio/recolectarActivos.ts`, la
 >   tarea `activos` al minuto 37 y la `078` (`negocio.activos_de_anuncio`). Está en producción y **dormido**: ninguna
 >   empresa cargó el token de Meta (0 de 13, medido el 2026-10-18), así que la tarea se sella `saltada` cada hora.
+> - **2026-10-16 · `693a383..dc84cb2`** — Fase 0 del modelo de datos, **construida en local, sin subir**: entre otras
+>   cosas, la bandeja de entrada única para lo crudo de todos los proveedores (`081`, § 7).
 
 Comando Central habla hoy con **dos proveedores de datos de marketing**. Con GoHighLevel, por **18 operaciones sobre 17
 rutas** de la API v2, en los ocho archivos de `lib/ghl/` (3.379 líneas por `wc -l`; eran 3.278), y desde el 2026-10-07
@@ -732,6 +737,16 @@ la del cuerpo que no es un objeto JSON (`app/api/avisos/crm/route.ts:246`), y no
 objetos JSON válidos, igual que los 327 (medido el 2026-09-29 00:20 UTC con `jsonb_typeof`). Lo que
 queda compatible es que la petición murió entre guardar la fila e interpretarla. Queda como
 pendiente (§ 10). El 2026-10-18 siguen siendo **7 de 342**: ninguno nuevo desde el 2026-09-17.
+
+### La bandeja de entrada única: construida en local, sin subir
+
+La Fase 0 del modelo de datos multiempresa (2026-10-16, commit `99f6e1e`, **no subido**: espera la aprobación de un
+ingeniero) crea el esquema `ingesta` con una tabla particionada por mes, `ingesta.recibidos`, para guardar **tal cual llegó**
+todo lo que mandan los proveedores —GoHighLevel por n8n o por aviso directo, Meta, tl;dv, las landings y otros—, con una
+sola puerta, `ingesta.recibir`, que ejecuta sólo un rol que no lee nada (`db/migraciones/081_la_bandeja_de_entrada.sql:1-14`,
+`:83-102`). La razón escrita: reprocesar hacia atrás sin volver a pedirle nada al proveedor, y que un error del intérprete no
+pierda el dato. **Nada la usa todavía**: `negocio.avisos_del_crm` pasaría a ser una fuente más cuando llegue el normalizador,
+en la Fase 1 (`db/migraciones/081_la_bandeja_de_entrada.sql:8-11`). En producción no existe.
 
 ---
 

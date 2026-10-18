@@ -4,7 +4,9 @@
 > UTC con `scripts/supabase.mjs leer` (sólo lectura, sólo conteos y agregados, con el OK del usuario): de la base no
 > salió un nombre, un correo, un id ni el valor de una credencial; y las del **2026-09-28**, de la foto anterior, que
 > se conservan para comparar o porque no se volvieron a medir, y lo dicen. Ajustes no se miró en el navegador para
-> esta foto. Cada afirmación lleva su `archivo:línea` o la consulta que la produjo. Lo que no se pudo verificar
+> esta foto. En local hay ocho commits más, `693a383..dc84cb2`, del modelo de datos multiempresa (Fase 0, migraciones
+> `079` a `084`): construidos y **sin subir**, esperando la aprobación de un ingeniero; lo que agregan a identidad
+> está en el § 9. Cada afirmación lleva su `archivo:línea` o la consulta que la produjo. Lo que no se pudo verificar
 > está dicho como pendiente, no omitido. Para ubicar cualquier cosa nombrada acá, ver
 > [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior se lee con
 > `git show 972972e:"docs/OTROS/estado actual/16-AJUSTES-Y-PERMISOS.md"`.
@@ -25,6 +27,8 @@
 > - **2026-10-08 · `82ba9e7`** — Client OS: una sección sólo de la principal que no se recorta por pestañas
 >   (`sinAlcance`), con la bandera `sinOperacionesTodavia`.
 > - **2026-10-15 · `cce2d56`** — Meta M-1: **«Probar conexión»** debajo de las credenciales (§ 5).
+> - **2026-10-16 · `693a383..dc84cb2`, construido en local, sin subir** — la Fase 0 del modelo de datos: las cuentas
+>   (subcuentas) en identidad y tres roles nuevos sin login (§ 9).
 > - **2026-10-18** — esta foto: las cifras re-medidas.
 
 **Construido — la pantalla desde la Etapa 11; el modelo desde la Etapa 3.**
@@ -121,7 +125,7 @@ en el código, las mismas** (comparadas como lista ordenada).
 Las capacidades **no se cargan por migración**. `identidad.permisos` tiene RLS forzada sin política para el migrador,
 así que un `insert` desde una migración escribe cero filas (`db/arranque/001_catalogo.sql:4-11`). Las carga
 `db/arranque/001_catalogo.sql:75-239` con la credencial de nivel clúster, y en producción eso es un paso a mano
-(`scripts/db.mjs:271-276`). Las seis nuevas llegaron así: las de Incidentes con su etapa, `cerebro.usar` con el hito
+(`scripts/db.mjs:273-278`). Las seis nuevas llegaron así: las de Incidentes con su etapa, `cerebro.usar` con el hito
 H2 y las de señales con el H3 (`docs/OTROS/agentes/08-LAS-ETAPAS.md`).
 
 Por familia:
@@ -411,7 +415,7 @@ de rol restringido** (§ 3.6).
 (consulta sobre `pg_class`, 2026-10-18). La regla y sus dos accidentes están en
 [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 7. **Pendientes de seguridad de la base**: una revisión del
 2026-10-12 encontró permisos de producción a corregir, sobre todo fuera de nuestros esquemas; su plan vive fuera del
-repositorio a propósito.
+repositorio a propósito, y el plan de subida de la Fase 0 la pone como condición previa.
 
 ---
 
@@ -446,7 +450,7 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 direcciones». La de código → tabla está (`pruebas/base/22-los-tres-roles.test.ts:363-370`), y la de sección → archivo
 que la carga (`pruebas/codigo/91-closer-y-setter.test.ts:298`); una que lea `identidad.permisos` y busque filas
 ausentes de `CAPACIDADES`, no, con `grep` de `CAPACIDADES` y de `identidad.permisos` sobre `pruebas/` (2026-09-28, no
-repetido). La que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:335-342`, cruza la tabla con el rol de
+repetido). La que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:345-352`, cruza la tabla con el rol de
 plataforma. Y `pruebas/codigo/110-monitoreo.test.ts:6-7` se apoya en ese cruce como si existiera. Hoy no muerde: las
 dos listas coinciden en producción.
 
@@ -502,7 +506,7 @@ Y la matriz generada de la especificación sigue listando `ADR-0412` y `ADR-0413
 ### 8.4 · Lo demás
 
 - **Agregar una capacidad no es una migración**: hay que correr `db/arranque/001_catalogo.sql` contra producción a
-  mano (`scripts/db.mjs:271-276`), y como una migración, antes del push
+  mano (`scripts/db.mjs:273-278`), y como una migración, antes del push
   ([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 8). Olvidarlo deja la pantalla en 403 para todos
   (`lib/autorizacion/capacidades.ts:12-16`). Desde el 2026-10-01 se hizo tres veces (Incidentes, H2 y H3), y el
   2026-10-18 las 38 claves de la tabla y del código coinciden.
@@ -518,3 +522,22 @@ Y la matriz generada de la especificación sigue listando `ADR-0412` y `ADR-0413
 - **Un camino de alta sin auditoría** (§ 6), con dos altas de septiembre sin rastro en `identidad.auditoria_accesos`.
 - **No verificado:** el comportamiento en pantalla de Ajustes con sesión iniciada y qué dice el documento funcional
   de roles y ajustes (§ 1).
+
+---
+
+## 9 · Construido en local, sin subir: las cuentas (Fase 0 del modelo de datos)
+
+Los commits `693a383..dc84cb2` (2026-10-16) están en `main` local y **no en producción**: esperan la aprobación de un
+ingeniero. Lo que tocan de identidad y permisos, y su orden de subida, en [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md)
+§ 11:
+
+- **`identidad.cuentas`**, la subcuenta del CRM dentro de su organización, con `cuentas_credenciales` —las credenciales
+  **copiadas**, sin mover las de `organizaciones_credenciales`, que el código sigue leyendo—, `usuarios_cuentas` y
+  `acuerdos` (`db/migraciones/080_las_cuentas.sql:41`, `db/migraciones/080_las_cuentas.sql:118`,
+  `db/migraciones/080_las_cuentas.sql:150` y `db/migraciones/080_las_cuentas.sql:173`). Las cuentas de las
+  organizaciones que ya existen las crea una fase aparte, `cuentas` (`db/arranque/004_las_cuentas_iniciales.sql`).
+- **`conOrganizacion` pone `app.cuentas = '*'`** junto a `app.org_id` (`d424d8b`); sin la variable, la política nueva
+  de `negocio` no deja ver nada.
+- **Tres roles nuevos sin login ni contraseña**: `ingestor`, `app_ingesta` y `app_analista`
+  (`db/arranque/000_cluster.sql`). En la Fase 0 ningún servicio se conecta con ellos.
+- Ninguna capacidad nueva, ninguna sección nueva y ningún cambio en Ajustes.
