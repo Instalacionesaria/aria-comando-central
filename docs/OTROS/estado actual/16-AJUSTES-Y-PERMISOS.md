@@ -169,7 +169,7 @@ Consulta: `identidad.roles` con `count(*)` de `roles_permisos` y de `usuarios_ro
 se midieron cero roles propios de una organización, cero personas sin rol y cero con más de uno; no se volvió a medir.
 
 **Qué hace distinto a cada uno, además de la lista.** `superadministrador` es el único con `solo_principal`, que un
-disparador de la base ata a la organización principal (`lib/autorizacion/secciones.ts:789-792`), y es el único que
+disparador de la base ata a la organización principal (`lib/autorizacion/secciones.ts:794-797`), y es el único que
 puede conmutar la sesión a otra empresa (`lib/autorizacion/sesion.ts:320-321`). `administrador` administra las
 personas **de su empresa** desde el 2026-09-08 (`6cae3eb`): el servidor filtra por organización y
 `lib/autorizacion/delegacion.ts` le impide fabricar otro administrador (`db/arranque/001_catalogo.sql:443-455`).
@@ -185,17 +185,17 @@ otorga los tres roles, el administrador sólo `usuario` (`lib/autorizacion/deleg
 le concedieron a cada persona. Parece violar la regla de la 003 —«solo suma, nunca resta»
 (`db/migraciones/003_roles_y_permisos.sql:114-118`)— y el código dice por qué no: no toca ninguna capacidad, es una
 intersección, y es la única forma de separar las pantallas que comparten `tablero.ver`
-(`lib/autorizacion/secciones.ts:709-736`).
+(`lib/autorizacion/secciones.ts:714-741`).
 
 - **Qué decide si se aplica** es una bandera del rol, no la presencia de filas: rol no restringido, las filas se
-  ignoran; rol restringido, sólo las concedidas, y **cero filas son cero pestañas** (`lib/autorizacion/secciones.ts:742-757`).
+  ignoran; rol restringido, sólo las concedidas, y **cero filas son cero pestañas** (`lib/autorizacion/secciones.ts:747-762`).
   Con dos roles basta uno no restringido para no estar restringido: `bool_and` (`lib/autorizacion/sesion.ts:274`).
 - **El `check` de la base** acepta las 17 claves concedibles; la `067` sumó `incidentes`
   (`db/migraciones/067_los_incidentes.sql:61-70`). En producción, el 2026-10-18, la restricción tiene esas 17 claves.
   `clientos` no está y no hace falta: es `sinAlcance`, no se concede ni se recorta
-  (`lib/autorizacion/secciones.ts:702-707`).
+  (`lib/autorizacion/secciones.ts:707-712`).
 - **La pantalla que lo concede** es la de Usuarios. Las casillas salen de `alcanceOfrecible`, que deriva de
-  `SECCIONES` y ofrece sólo lo que la capacidad del rol habilita (`lib/autorizacion/secciones.ts:684-700`); para una
+  `SECCIONES` y ofrece sólo lo que la capacidad del rol habilita (`lib/autorizacion/secciones.ts:689-705`); para una
   empresa que no es la principal no ofrece Monitoreo (`lib/autorizacion/secciones.ts:449-451`). **Desde E12
   (2026-10-02)** las agrupa por departamento con `alcancePorDepartamento` (`lib/autorizacion/departamentos.ts:328`,
   llamado en `app/api/admin/roles/route.ts:119`), sin una sección de más ni de menos, y cada casilla que abre más de
@@ -207,7 +207,7 @@ intersección, y es la única forma de separar las pantallas que comparten `tabl
 `soloDesdeLaPrincipal` lo llevan Monitoreo, Incidentes y Client OS (`lib/autorizacion/secciones.ts:462`,
 `lib/autorizacion/secciones.ts:472` y `lib/autorizacion/secciones.ts:484`): las dos primeras miran a todas las empresas
 y ningún rol global sabe de qué empresa es quien lo tiene (`lib/autorizacion/secciones.ts:96-110`). Se pregunta sobre
-la organización **propia**, no sobre la que se está mirando (`lib/autorizacion/secciones.ts:792-797`), y la vuelve a
+la organización **propia**, no sobre la que se está mirando (`lib/autorizacion/secciones.ts:797-802`), y la vuelve a
 preguntar la ruta (`app/api/monitoreo/route.ts:125`). Medido el 2026-10-18: la única fila de alcance con `monitoreo`
 sigue siendo de una persona de la principal, y ninguna fila tiene `incidentes`.
 
@@ -233,11 +233,11 @@ No hay atajo para el rol de plataforma: el superadministrador pasa porque tiene 
 sesión; no decide ningún permiso.
 
 **Qué rutas llaman al portero, medido sobre el árbol del 2026-10-18.** De **111** archivos `route.ts` bajo `app/api/`
-(82 el 2026-09-28), **82** declaran `PANTALLA` y **29** están en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:511-640`):
+(82 el 2026-09-28), **82** declaran `PANTALLA` y **29** están en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:511-645`):
 son exactamente, archivo por archivo, los que no la declaran (comparadas las dos listas con `diff`). No llaman a
 `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**, las mismas: `salud` y `login`, que son
-las públicas (`pruebas/apoyo/autorizados.ts:722-730`), y la sonda, el cron y el aviso del CRM, que van con secreto
-propio (`pruebas/apoyo/autorizados.ts:872-916`).
+las públicas (`pruebas/apoyo/autorizados.ts:729-737`), y la sonda, el cron y el aviso del CRM, que van con secreto
+propio (`pruebas/apoyo/autorizados.ts:879-923`).
 
 **Rechazos registrados.** En toda la historia de `identidad.auditoria_accesos`, 3 `permiso_denegado` y 0
 `seccion_denegada`; **ninguno** desde el 2026-09-28 (consulta del 2026-10-18 agrupada por `accion`).
@@ -281,7 +281,7 @@ restringe por sección, dársela sería dársela a todos los administradores (`d
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:724-729`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
+(`pruebas/apoyo/autorizados.ts:731-736`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
 origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con N=16384, r=8, p=1
 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login exitoso (`lib/autenticacion/freno.ts:85-96`).
 
@@ -408,7 +408,7 @@ de rol y de correo (`components/ajustes/Usuarios.jsx:34-36`).
 **Alcance: 42 filas de 5 personas**, la última concedida el 2026-09-11. 31 son de las 4 de rol `usuario` y 11 de un
 administrador, que el portero ignora porque su rol no restringe. Si esa persona pasara a `usuario`, esas 11 volverían a
 mandar sin que nadie las elija de nuevo: asignar un rol reemplaza los roles y no toca nada más
-(`lib/autorizacion/secciones.ts:744-748`). **Analizadores, Incidentes y las secciones nuevas no están concedidas a nadie
+(`lib/autorizacion/secciones.ts:749-753`). **Analizadores, Incidentes y las secciones nuevas no están concedidas a nadie
 de rol restringido** (§ 3.6).
 
 **RLS forzada: 11 de 11 tablas de `identidad` y 49 de 49 de `negocio`** (eran 29), con `relforcerowsecurity`
@@ -443,7 +443,7 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 | Los topes y Meta | Los topes del cerebro en Ajustes; la prueba de conexión con Meta | `pruebas/base/218-los-topes-del-cerebro-en-ajustes.test.ts`, `pruebas/codigo/255-la-conexion-con-meta.test.ts` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` sigue vacía: no hay ninguna excepción viva
-(`pruebas/apoyo/autorizados.ts:832-839`).
+(`pruebas/apoyo/autorizados.ts:839-846`).
 
 **Un cruce que el código anuncia y no se encontró.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en las dos
@@ -464,7 +464,7 @@ dos listas coinciden en producción.
   `components/ajustes/Usuarios.jsx:13-15` dicen que un administrador no ve Usuarios y recibe 403 en sus rutas. Es falso
   desde `6cae3eb` (2026-09-08): el rol tiene `usuarios.ver`, `.crear`, `.editar`, `.desactivar` y `roles.asignar`,
   como manda `db/arranque/001_catalogo.sql:426-455`.
-- **«Siete secciones comparten `tablero.ver`».** `lib/autorizacion/secciones.ts:732-736` cuenta siete, con
+- **«Siete secciones comparten `tablero.ver`».** `lib/autorizacion/secciones.ts:737-741` cuenta siete, con
   `conversation` entre ellas, que pide `auditor.ver` desde el 2026-09-21 (`lib/autorizacion/secciones.ts:319-338`).
   Entre las que se recortan por pestañas son seis. El comentario de Conversation que la foto anterior señalaba como
   falso ya se corrigió.

@@ -452,6 +452,13 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // sólo tiene la plataforma, más `esDeLaPrincipal` una línea después del portero; y el `update` nombra la
   // organización además del id.
   'app/api/admin/cuentas/[id]/vinculo/route.ts',
+  // Las cuentas de un cliente final: `usuarios_cuentas` sólo la escribe identidad. La persona sale de
+  // `usuarioObjetivo(`, acotada a la empresa de la sesión, y las cuentas se comprueban de esa misma empresa antes de
+  // escribir; la clave foránea compuesta lo repite en la base.
+  'app/api/admin/usuarios/[id]/cuentas/route.ts',
+  // El foco de la sesión en un cliente: escribe la fila de la PROPIA sesión, como el cambio de empresa
+  // (`app/api/auth/sesion/route.ts`). El cliente se comprueba contra los que la sesión ve.
+  'app/api/auth/cliente/route.ts',
 ];
 
 /**

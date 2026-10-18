@@ -149,6 +149,9 @@ export type Accion =
   | 'cuenta_creada'
   | 'cuenta_editada'
   | 'cuenta_vinculada'
+  | 'cuentas_asignadas'
+  // El foco de una sesión en un cliente. Como `organizacion_cambiada`: lleva el destino.
+  | 'cuenta_cambiada'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -215,6 +218,8 @@ export interface Detalle {
    * un cero por falta de datos se lee como "nadie miró nada".
    */
   org_destino?: string | null;
+  /** El cliente enfocado, en `cuenta_cambiada`. `null` = todos. */
+  cuenta_destino?: string | null;
   /**
    * El link que se agregó o se sacó, en `enlace_rapido_creado` y `enlace_rapido_borrado`.
    *
@@ -299,6 +304,8 @@ export async function auditarAdministracion(
       | 'cuenta_creada'
       | 'cuenta_editada'
       | 'cuenta_vinculada'
+      // Las cuentas de un cliente final. El objetivo es la persona.
+      | 'cuentas_asignadas'
     >;
     actor: string;
     objetivo: string;

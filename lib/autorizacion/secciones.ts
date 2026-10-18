@@ -513,6 +513,9 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/salud/route.ts',
   // Las tres operaciones de la propia sesión. No son de una pantalla: son de la aplicación.
   'app/api/auth/sesion/route.ts',
+  // El foco de la sesión en un cliente (el nivel 3). Es de la sesión, como la de arriba: la alcanzan la empresa y el
+  // cliente final.
+  'app/api/auth/cliente/route.ts',
   /* El tema de quien pide. No pertenece a ninguna pantalla porque el botón vive en el ARMAZÓN, que
      se dibuja en todas — y tiene que funcionar también en la de contraseña temporal, donde todavía
      no hay ninguna sección concedida. Atarlo a una pantalla sería exactamente lo que impediría eso. */
@@ -568,6 +571,8 @@ export const SIN_PANTALLA: readonly string[] = [
   'app/api/admin/usuarios/[id]/desactivar/route.ts',
   'app/api/admin/usuarios/[id]/restablecer-password/route.ts',
   'app/api/admin/usuarios/[id]/roles/route.ts',
+  // Las cuentas de un cliente final (el nivel 3). Es parte de la administración de personas, como los roles.
+  'app/api/admin/usuarios/[id]/cuentas/route.ts',
   // ── Etapa 12 · el resto del ciclo de vida ────────────────────────────────────
   //
   // Reactivar, y editar o borrar una empresa. Van acá por el mismo motivo que las seis de arriba:

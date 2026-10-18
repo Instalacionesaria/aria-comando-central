@@ -55,6 +55,8 @@ import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { hashear } from '../../../../lib/datos/hash.ts';
 import { contrasenaTemporal } from '../../../../lib/autenticacion/temporal.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
+import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
+import { SECCIONES_DEL_CLIENTE } from '../../../../lib/autorizacion/cliente.ts';
 
 /** No valida direcciones de correo del mundo real: valida que tenga forma de correo (05 § 3). */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -76,6 +78,9 @@ const MOTIVOS = {
   alcance_vacio:
     'Ninguna de las pestañas elegidas la habilita el rol de esta persona, así que no vería ' +
     'ninguna. Hay que elegir entre las que ese rol alcanza.',
+  cuentas_invalidas: 'Los clientes de un cliente final van como una lista no vacía de identificadores.',
+  secciones_del_cliente: 'Un cliente final sólo ve Leads y Sales.',
+  rol_del_cliente: 'Un cliente final tiene un rol restringido por pestañas y nada de la plataforma: el rol usuario.',
 } as const;
 
 /** La forma de un uuid. Se comprueba antes de que el motor la rechace con un 500. */
@@ -97,6 +102,7 @@ export async function POST(peticion: Request): Promise<Response> {
     orgId?: unknown;
     rol?: unknown;
     secciones?: unknown;
+    cuentas?: unknown;
   } | null;
   const nombre = c?.nombre;
   const email = c?.email;
@@ -132,6 +138,28 @@ export async function POST(peticion: Request): Promise<Response> {
       return rechazo('peticion_invalida', MOTIVOS['seccion_invalida']);
     }
   }
+
+  /* ── EL CLIENTE FINAL (el nivel 3) ──────────────────────────────────────────
+   *
+   * Con `cuentas`, la persona nace limitada a esos clientes de la empresa (`usuarios.limitado_a_cuentas`, `087`): sólo
+   * ve sus cuentas y sólo sus pantallas. Por eso sus pestañas tienen que ser de las del cliente, y su rol, uno
+   * restringido sin nada de la plataforma —la base lo exige igual, al confirmar—. Sin `cuentas`, el alta es la de
+   * siempre. */
+  const cuentas = c?.cuentas;
+  const esClienteFinal = cuentas !== undefined;
+  if (esClienteFinal) {
+    if (
+      !Array.isArray(cuentas) ||
+      cuentas.length === 0 ||
+      cuentas.some((x) => typeof x !== 'string' || !UUID_ORG.test(x))
+    ) {
+      return rechazo('peticion_invalida', MOTIVOS['cuentas_invalidas']);
+    }
+    if (secciones !== undefined && (secciones as string[]).some((s) => !SECCIONES_DEL_CLIENTE.has(s))) {
+      return rechazo('peticion_invalida', MOTIVOS['secciones_del_cliente']);
+    }
+  }
+  const cuentasPedidas = esClienteFinal ? [...new Set(cuentas as string[])] : [];
 
   // EL 404 DEL ALTA, y la elección de empresa. Ver el encabezado.
   //
@@ -262,6 +290,22 @@ export async function POST(peticion: Request): Promise<Response> {
      * Así que se resuelven las capacidades del rol que se está asignando y se comprueba que la
      * intersección no sea vacía. Es la misma función que decide el menú, así que no hay dos reglas.
      */
+    if (esClienteFinal && (!rolDestino || !rolDestino.secciones_restringidas || rolDestino.solo_principal)) {
+      return rechazo('peticion_invalida', MOTIVOS['rol_del_cliente']);
+    }
+    // Los clientes del cliente final, de la empresa destino y no de baja. Preguntarlo antes es lo que separa «no existe»
+    // (404) de un `23503` que subiría nombrando una tabla.
+    if (esClienteFinal) {
+      const validas = await db
+        .selectFrom('cuentas')
+        .select('id')
+        .where('org_id', '=', orgDestino)
+        .where('estado', '<>', 'baja')
+        .where('id', 'in', cuentasPedidas)
+        .execute();
+      if (validas.length !== cuentasPedidas.length) return rechazo('no_encontrado');
+    }
+
     let alcanceAGuardar: string[] = [];
     if (rolDestino?.secciones_restringidas) {
       if (secciones === undefined) {
@@ -312,6 +356,8 @@ export async function POST(peticion: Request): Promise<Response> {
           // Nace con la marca. El `05` § 3: *"se guarda hasheada y el usuario nace con la marca de
           // 'debe cambiar la contraseña'"*, que es lo que hace que la temporal sea temporal.
           debe_cambiar_password: true,
+          // El cliente final (el nivel 3): sólo sus cuentas.
+          limitado_a_cuentas: esClienteFinal,
           // QUIÉN LO HIZO, obligatorio y sin valor por defecto. El `07` § 1: *"si mañana aparece un
           // llamador nuevo, que no compile hasta que diga quién es."* El caso real que documenta
           // ocurrió con un parámetro que tenía valor por defecto —el id de una persona real— y
@@ -382,6 +428,23 @@ export async function POST(peticion: Request): Promise<Response> {
         .execute();
     }
 
+    // Y SUS CLIENTES, si es un cliente final. En la misma transacción: sin ellos no vería nada.
+    if (cuentasPedidas.length > 0) {
+      await db
+        .insertInto('usuarios_cuentas')
+        .values(
+          cuentasPedidas.map((cuenta_id) => ({
+            org_id: orgDestino,
+            usuario_id: creado.id,
+            cuenta_id,
+            // La clave foránea exige una persona de la misma empresa: la plataforma operando sobre otra firma nulo, y
+            // quién fue queda en la auditoría.
+            concedida_por: orgDestino === contexto.orgEfectiva ? autorDelCambio(contexto) : null,
+          })),
+        )
+        .execute();
+    }
+
     // El correo SÍ va a la auditoría; la contraseña temporal NUNCA, *"ni ahí"*. El tipo `Detalle`
     // no tiene campo para ella, así que esto no depende de que nadie se olvide.
     //
@@ -408,6 +471,7 @@ export async function POST(peticion: Request): Promise<Response> {
         // Las pestañas que quedaron, para que la pantalla muestre lo que se guardó y no lo que se
         // mandó. Vacío significa «este rol no se restringe», no «no ve ninguna».
         secciones: alcanceAGuardar,
+        cuentas: cuentasPedidas,
       },
       201,
     );

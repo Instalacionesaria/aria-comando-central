@@ -94,7 +94,7 @@ La ficha del contacto y Avanzar no son de ninguna de las dos: se abren desde las
 sólo desde ellas (§ 2.5). Las nueve rutas bajo `app/api/contactos/` —la ficha y sus cinco
 pestañas, Avanzar, resolver una intervención y la sincronización de contactos— se declaran sin
 pantalla y piden capacidades propias —`contactos.ver`, `contactos.avanzar`, `contactos.resolver`,
-`contactos.comentar` (`lib/autorizacion/secciones.ts:583-623`)—; enviar desde el compositor del chat
+`contactos.comentar` (`lib/autorizacion/secciones.ts:588-628`)—; enviar desde el compositor del chat
 pide `conversaciones.responder` y no `contactos.ver` (`app/api/contactos/[id]/mensajes/route.ts:102`).
 
 ### 2.2 · El Setter
@@ -161,7 +161,7 @@ Día, Pipeline y Agenda del closer (`components/closer/MiDia.jsx:440`,
 mismo Pipeline y la lista de Contactos del setter (`components/views/SetterView.jsx:33-39`,
 `components/negocio/ListaDeContactos.jsx:424`). **No se abre desde Conversation ni desde la
 auditoría**, aunque tres comentarios digan que sí (`components/negocio/Ficha.jsx:13-14`,
-`lib/autorizacion/secciones.ts:594-595`, `lib/autorizacion/secciones.ts:608-609`): ningún archivo
+`lib/autorizacion/secciones.ts:599-600`, `lib/autorizacion/secciones.ts:613-614`): ningún archivo
 de `components/conversation/` ni de `components/auditoria/` la importa, y la lista de la auditoría
 abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:295`). Leads Portal tiene
 su propia ficha, `components/leads-portal/FichaDelLead.jsx`, que es otro componente.

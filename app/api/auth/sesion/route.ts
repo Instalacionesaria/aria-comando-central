@@ -222,7 +222,8 @@ export async function PATCH(peticion: Request): Promise<Response> {
   await conIdentidad(async (db) => {
     await db
       .updateTable('sesiones')
-      .set({ org_activa: pedida })
+      // El cliente enfocado era de la empresa anterior: al cambiar de empresa, se vacía (el nivel 3).
+      .set({ org_activa: pedida, cuenta_activa: null })
       .where('id', '=', contexto.sesionId)
       .execute();
 

@@ -61,7 +61,7 @@ de la ruta, la 206, como manda la regla 31 (`docs/OTROS/estado actual/07-REGLAS-
 ## AG-41 · Sólo se ofrece lo de las pestañas que la persona ve
 
 Las secciones visibles salen de `seccionesConAlcance(permisos, alcance, desdeLaPrincipal)`
-(`lib/autorizacion/secciones.ts:837`), con los datos que ya trae el contexto de la sesión. El modelo recibe
+(`lib/autorizacion/secciones.ts:842`), con los datos que ya trae el contexto de la sesión. El modelo recibe
 **sólo** las herramientas de esas secciones; una herramienta que no se ofrece no existe para él. Con la
 caja del pie, las de la sección abierta van primero.
 

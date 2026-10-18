@@ -35,6 +35,8 @@ export const RUTAS_DEL_CLIENTE: readonly Ruta[] = [
   'POST /api/auth/2fo/configurar',
   'POST /api/auth/2fo/confirmar',
   'PUT /api/auth/tema',
+  // Elegir cuál de sus cuentas mira, si tiene más de una.
+  'PATCH /api/auth/cliente',
 ];
 
 /** ¿Es una pantalla del cliente? La usa el menú, el portero y el ámbito de la transacción. */

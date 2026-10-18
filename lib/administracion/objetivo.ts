@@ -50,6 +50,8 @@ export interface Objetivo {
   org_id: string;
   activo: boolean;
   es_admin_principal: boolean;
+  /** Es un cliente final (el nivel 3, `087`): sus cuentas se asignan en `PUT /api/admin/usuarios/[id]/cuentas`. */
+  limitado_a_cuentas: boolean;
 }
 
 /**
@@ -83,6 +85,6 @@ export async function usuarioObjetivo(
     .where('id', '=', id)
     // ── LA LÍNEA ────────────────────────────────────────────────────────────
     .where('org_id', '=', orgEfectiva)
-    .select(['id', 'org_id', 'activo', 'es_admin_principal'])
+    .select(['id', 'org_id', 'activo', 'es_admin_principal', 'limitado_a_cuentas'])
     .executeTakeFirst();
 }
