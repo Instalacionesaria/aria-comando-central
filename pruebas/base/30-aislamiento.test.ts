@@ -237,7 +237,8 @@ test('ADR-0208 · pero SÍ ve las cuatro columnas de usuarios que necesita', asy
   const inq = await conectar('inquilino');
   await inq.query('begin');
   try {
-    await inq.query(`select set_config('app.org_id', $1, true)`, [alfa]);
+    // Con la organización entera (`086`): las personas de la empresa no las ve el cliente final.
+    await inq.query(`select set_config('app.org_id', $1, true), set_config('app.toda_la_organizacion', 'si', true)`, [alfa]);
     const f = await unaFila<{ n: number }>(
       inq,
       'select count(*)::int as n from identidad.usuarios',

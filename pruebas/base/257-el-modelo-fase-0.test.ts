@@ -271,7 +271,7 @@ test('el inquilino ve las cuentas de su organización sólo con `app.cuentas`, y
     await inq.query(`select set_config('app.org_id', $1, true)`, [org.id]);
     const sinCuentas = await unaFila<{ n: number }>(inq, `select count(*)::int as n from identidad.cuentas`);
     assert.equal(sinCuentas?.n, 0, 'sin app.cuentas se vio una cuenta: la política no falla cerrada');
-    await inq.query(`select set_config('app.cuentas', '*', true)`);
+    await inq.query(`select set_config('app.cuentas', '*', true), set_config('app.toda_la_organizacion', 'si', true)`);
     const conCuentas = await unaFila<{ n: number; otras: number }>(
       inq,
       `select count(*)::int as n, count(*) filter (where org_id <> $1)::int as otras from identidad.cuentas`,
@@ -406,6 +406,11 @@ test('las listas de tablas de los SQL de la cuenta son las de los regímenes', (
     assert.deepEqual(ordenar(listaDelSql(sql, 'v_obligatorias')), ordenar(rellenadas), `${archivo}: las obligatorias`);
     assert.deepEqual(ordenar(listaDelSql(sql, 'v_opcionales')), ordenar(DE_UNA_CUENTA_O_DE_LA_ORGANIZACION), `${archivo}: las opcionales`);
   }
+  // La 086 (el nivel 3) rehace la política de las TRES listas, con las que nacieron con cuenta.
+  const sql = readFileSync(join(RAIZ, 'db/migraciones/086_la_organizacion_entera.sql'), 'utf8');
+  assert.deepEqual(ordenar(listaDelSql(sql, 'v_obligatorias')), ordenar(DE_UNA_CUENTA), '086: las obligatorias');
+  assert.deepEqual(ordenar(listaDelSql(sql, 'v_opcionales')), ordenar(DE_UNA_CUENTA_O_DE_LA_ORGANIZACION), '086: las opcionales');
+  assert.deepEqual(ordenar(listaDelSql(sql, 'v_de_la_organizacion')), ordenar(DE_LA_ORGANIZACION), '086: las de la organización');
 });
 
 test('el puente pone la cuenta del contacto, con dos activas cae en la por omisión, y no deja mudarla', async () => {
@@ -491,7 +496,8 @@ test('la fase `cuenta-en-negocio` rellena una fila vieja sin cuenta, y no toca o
   const inq = await conectar('inquilino');
   try {
     await inq.query('begin');
-    await inq.query(`select set_config('app.org_id', $1, true), set_config('app.cuentas', '*', true)`, [alfa.id]);
+    await inq.query(`select set_config('app.org_id', $1, true), set_config('app.cuentas', '*', true),
+                            set_config('app.toda_la_organizacion', 'si', true)`, [alfa.id]);
     await inq.query(readFileSync(join(RAIZ, 'db/arranque/005_la_cuenta_en_negocio.sql'), 'utf8'));
     await inq.query('commit');
     const filas_ = await filas<{ modelo: string; cuenta_id: string | null }>(
@@ -533,6 +539,11 @@ test('la columna de cada tabla es la de su régimen, y la política de las 39 pi
   for (const t of DE_LA_ORGANIZACION) {
     if (/app\.cuentas/.test(de.get(t)?.politica ?? '')) malas.push(`${t}: es de la organización y su política pide la cuenta`);
   }
+  // Desde la 086 (el nivel 3), toda política pide además la organización entera: para lo de la organización, y para
+  // que «todas las cuentas» no le sirva al cliente final.
+  for (const t of [...DE_UNA_CUENTA, ...DE_UNA_CUENTA_O_DE_LA_ORGANIZACION, ...DE_LA_ORGANIZACION]) {
+    if (!/app\.toda_la_organizacion/.test(de.get(t)?.politica ?? '')) malas.push(`${t}: la política no pide la organización entera`);
+  }
   assert.deepEqual(malas, []);
 });
 
@@ -546,7 +557,7 @@ test('sin `app.cuentas` el inquilino no ve ningún contacto; con `*` ve los de s
     await inq.query(`select set_config('app.org_id', $1, true)`, [org.id]);
     const sin = await unaFila<{ n: number }>(inq, `select count(*)::int as n from negocio.contactos where ghl_contact_id = 'visible-257'`);
     assert.equal(sin?.n, 0, 'sin app.cuentas se vio un contacto: la política no falla cerrada');
-    await inq.query(`select set_config('app.cuentas', '*', true)`);
+    await inq.query(`select set_config('app.cuentas', '*', true), set_config('app.toda_la_organizacion', 'si', true)`);
     const con = await unaFila<{ n: number }>(inq, `select count(*)::int as n from negocio.contactos where ghl_contact_id = 'visible-257'`);
     assert.equal(con?.n, 1);
     await inq.query('rollback');
@@ -603,7 +614,8 @@ test('el inquilino agrega eventos y no los edita ni los borra; el tipo tiene que
   const inq = await conectar('inquilino');
   try {
     await inq.query('begin');
-    await inq.query(`select set_config('app.org_id', $1, true), set_config('app.cuentas', '*', true)`, [org.id]);
+    await inq.query(`select set_config('app.org_id', $1, true), set_config('app.cuentas', '*', true),
+                            set_config('app.toda_la_organizacion', 'si', true)`, [org.id]);
     const tipo = await unaFila<{ clave: string }>(inq, `select clave from catalogo.tipos_de_evento order by clave limit 1`);
     assert.ok(tipo);
     // El puente le pone la cuenta.

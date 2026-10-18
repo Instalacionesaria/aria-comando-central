@@ -44,7 +44,11 @@ async function cuentaDeUnContactoNuevo(cuentas: string): Promise<string> {
   const inq = await conectar('inquilino');
   try {
     await inq.query('begin');
-    await inq.query(`select set_config('app.org_id', $1, true), set_config('app.cuentas', $2, true)`, [org, cuentas]);
+    // La empresa (o el sistema): ve la organización entera. El puente cuenta las cuentas que ve la sesión.
+    await inq.query(
+      `select set_config('app.org_id', $1, true), set_config('app.cuentas', $2, true), set_config('app.toda_la_organizacion', 'si', true)`,
+      [org, cuentas],
+    );
     const fila = await unaFila<{ cuenta_id: string }>(
       inq,
       `insert into negocio.contactos (org_id, ghl_contact_id, nombre) values ($1, 'contacto-260', 'Contacto 260') returning cuenta_id`,

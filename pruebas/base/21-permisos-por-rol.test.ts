@@ -123,6 +123,26 @@ const ESPERADO: Record<string, Partial<Record<'app_inquilino' | 'app_identidad',
   organizaciones_credenciales: {
     app_identidad: { tabla: ['SELECT', 'INSERT', 'UPDATE', 'DELETE'] },
   },
+  // Los clientes de una empresa (el nivel 3, `080` y `086`). La empresa los da de alta y los edita por el inquilino,
+  // con la red de la política; la subcuenta del CRM, la marca de prueba, la versión del snapshot y la cuenta por
+  // omisión las escribe sólo la plataforma: una empresa que escribiera `crm_cuenta_id` podría ocupar la location de
+  // otra.
+  cuentas: {
+    app_inquilino: {
+      tabla: ['SELECT'],
+      columnas: {
+        INSERT: [
+          'org_id', 'nombre', 'slug', 'nicho', 'nicho_confirmado_el', 'nicho_confirmado_por', 'nicho_confirmado_desde',
+          'modelo_de_negocio', 'pais', 'moneda', 'zona_horaria',
+        ],
+        UPDATE: [
+          'nombre', 'nicho', 'nicho_confirmado_el', 'nicho_confirmado_por', 'nicho_confirmado_desde', 'modelo_de_negocio',
+          'pais', 'moneda', 'zona_horaria', 'estado', 'baja_el',
+        ],
+      },
+    },
+    app_identidad: { tabla: ['SELECT', 'INSERT', 'UPDATE', 'DELETE'] },
+  },
 };
 
 const TODOS: Privilegio[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
