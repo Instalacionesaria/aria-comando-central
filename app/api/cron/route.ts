@@ -72,7 +72,13 @@ import {
   resolverLlaveDeIa,
 } from '../../../lib/credenciales/resolver.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
-import { barrerTodo, tareasDelHorario, type EmpresaParaBarrer } from '../../../lib/negocio/barrido.ts';
+import {
+  TAREAS_DE_LA_PLATAFORMA,
+  barrerTodo,
+  tareasDelHorario,
+  type EmpresaParaBarrer,
+} from '../../../lib/negocio/barrido.ts';
+import { leerLaConfiguracion, type ConfiguracionDeLosNegocios } from '../../../lib/cartera/configuracion.ts';
 
 /**
  * El tope de Vercel en el plan Hobby, y no hay palanca para subirlo ahí.
@@ -144,7 +150,29 @@ export async function GET(peticion: Request): Promise<Response> {
   const conLaPasada = tareasDelHorario(horario).tareas.includes('senales');
   // El token de Meta, igual: sólo en la corrida de los activos (`078`).
   const conLosActivos = tareasDelHorario(horario).tareas.includes('activos');
-  const empresas: EmpresaParaBarrer[] = await conIdentidad(async (db) => {
+  const { tareas } = tareasDelHorario(horario);
+
+  /* ── LA FOTO DE LOS NEGOCIOS LEE A TODAS LAS EMPRESAS, Y NO CONTRADICE LO DE ARRIBA ──
+   *
+   * `leerLaConfiguracion` (`089`) trae la configuración de todas las empresas en una consulta, y la prohibición de
+   * arriba es sobre las credenciales: lo que se puede entregar a otra empresa es un TOKEN. Ésta lee presencias
+   * (`is not null`), nunca un valor cifrado, así que no hay nada que entregar.
+   *
+   * En su propia transacción: un error de SQL deja abortada la transacción en la que ocurre, y no puede llevarse
+   * puestas las credenciales de las demás tareas del horario desconocido. Si falla, la foto sale `fallo` y el resto
+   * corre. */
+  let configuracion: ConfiguracionDeLosNegocios | undefined;
+  if (tareas.includes('foto')) {
+    try {
+      configuracion = await conIdentidad(leerLaConfiguracion);
+    } catch (e) {
+      console.error('cron: no se pudo leer la configuración de los negocios', e);
+    }
+  }
+
+  // Un horario que sólo trae tareas de la plataforma no descifra ninguna credencial: no le habla a ningún proveedor.
+  const soloDeLaPlataforma = tareas.every((t) => TAREAS_DE_LA_PLATAFORMA.includes(t));
+  const empresas: EmpresaParaBarrer[] = soloDeLaPlataforma ? [] : await conIdentidad(async (db) => {
     const todas = await listarOrganizaciones(db);
     // ── EL FILTRO POR `activa`, QUE LA CONSULTA NO TRAE ─────────────────────
     //
@@ -172,7 +200,7 @@ export async function GET(peticion: Request): Promise<Response> {
     );
   });
 
-  const r = await barrerTodo(horario, empresas);
+  const r = await barrerTodo(horario, empresas, Date.now, configuracion);
 
   /* Se devuelve el reporte COMPLETO, no un `{ ok: true }`. Es el mismo criterio que la
    * sincronización de contactos: *"un contacto salteado en silencio es la peor forma de esto: la

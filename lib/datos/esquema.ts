@@ -2057,6 +2057,85 @@ export interface TablaValoresSinMapear {
   sugerencia_clave: string | null;
 }
 
+/**
+ * La foto de los negocios (089): una fila por empresa y por día, bajo la organización principal. Escritor único:
+ * `lib/cartera/foto.ts`. Sin datos de personas; nulo = sin medir.
+ */
+export interface TablaFotoDeLasEmpresas {
+  org_id: ColumnaInquilino;
+  dia: ColumnType<string, string, string>;
+  organizacion_ref: string;
+  contrato: number;
+  tomada_el: Generated<Date>;
+  es_principal: boolean;
+  activa: boolean;
+  pais: string | null;
+  nicho: string | null;
+  nicho_origen: 'fijado' | 'calculado' | null;
+  precio_mensual: string | null;
+  zona_horaria: string;
+  alta_el: Date;
+  usuarios: number;
+  usuarios_limitados: number;
+  cuentas_activas: number;
+  cuentas_pausadas: number;
+  cuentas_de_baja: number;
+  cuentas_de_prueba: number;
+  cuentas_configuradas: number;
+  llave_de_ia: boolean;
+  configurada: boolean;
+  faltan: string[];
+  medida: boolean;
+  motivo_sin_medir: string | null;
+  contactos: number | null;
+  contactos_nuevos_30d: number | null;
+  ventas_30d: number | null;
+  ia_llamadas_30d: number | null;
+  incidentes_30d: number | null;
+  senales_abiertas: number | null;
+}
+
+/** La foto de los negocios por cliente (089). `cuenta_ref` es el cliente medido, no una llave de aislamiento. */
+export interface TablaFotoDeLasCuentas {
+  org_id: ColumnaInquilino;
+  dia: ColumnType<string, string, string>;
+  cuenta_ref: string;
+  organizacion_ref: string;
+  contrato: number;
+  tomada_el: Generated<Date>;
+  estado: 'activa' | 'pausada' | 'baja';
+  es_prueba: boolean;
+  es_por_omision: boolean;
+  nicho: string | null;
+  nicho_confirmado: boolean;
+  modelo_de_negocio: string | null;
+  pais: string | null;
+  moneda: string | null;
+  zona_horaria: string;
+  alta_el: Date;
+  crm_vinculado: boolean;
+  crm_conectado: boolean;
+  calendario: boolean;
+  meta: boolean;
+  aviso_del_crm: boolean;
+  configurada: boolean;
+  faltan: string[];
+  medida: boolean;
+  motivo_sin_medir: string | null;
+  contactos: number | null;
+  contactos_nuevos_30d: number | null;
+  contactos_nuevos_30d_previos: number | null;
+  agendaron_30d: number | null;
+  calificados_30d: number | null;
+  ventas_30d: number | null;
+  ventas_30d_previas: number | null;
+  monto_30d: string | null;
+  compradores: number | null;
+  gasto_30d: string | null;
+  ultima_ingesta_el: Date | null;
+  ultima_alta_el: Date | null;
+}
+
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -2134,6 +2213,8 @@ export interface BaseDeDatos {
   briefs_del_closer: TablaBriefsDelCloser;
   reuniones_del_dia: TablaReunionesDelDia;
   eventos: TablaEventos;
+  foto_de_las_empresas: TablaFotoDeLasEmpresas;
+  foto_de_las_cuentas: TablaFotoDeLasCuentas;
   mapeos_de_cuenta: TablaMapeosDeCuenta;
   valores_sin_mapear: TablaValoresSinMapear;
 

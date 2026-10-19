@@ -159,6 +159,10 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   eventos_org_id_fkey: 'tiene la historia de sus leads (los eventos)',
   mapeos_de_cuenta_org_id_fkey: 'tiene mapeos propios al idioma común',
   valores_sin_mapear_org_id_fkey: 'tiene valores de su CRM esperando traducción al idioma común',
+  /* La foto diaria de los negocios (`089`): su dueña es la organización principal, la única que la escribe. La empresa
+     medida (`organizacion_ref`) cascadea: borrar una empresa se lleva su historia de la foto. */
+  foto_de_las_empresas_org_id_fkey: 'es la dueña de la foto diaria de los negocios',
+  foto_de_las_cuentas_org_id_fkey: 'es la dueña de la foto diaria de los clientes de los negocios',
   mapeos_de_cuenta_org_id_creado_por_fkey: 'creó un mapeo al idioma común',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.

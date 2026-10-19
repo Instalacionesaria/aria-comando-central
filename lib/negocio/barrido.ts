@@ -44,6 +44,8 @@ import { rellenarAnuncios } from './rellenarAnuncios.ts';
 import { recolectarActivos } from './recolectarActivos.ts';
 import { barrerCitas } from './citas.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
+import type { ConfiguracionDeLosNegocios } from '../cartera/configuracion.ts';
+import { tomarLaFoto, type ResumenDeLaFoto } from '../cartera/foto.ts';
 import { correrLaPasada } from '../agentes/detectores/correr.ts';
 
 /**
@@ -69,7 +71,8 @@ export type Tarea =
   | 'activos'
   | 'analizadores'
   | 'reintentos'
-  | 'senales';
+  | 'senales'
+  | 'foto';
 
 /**
  * Las doce, **en el orden en que hay que correrlas**. La única lista en tiempo de ejecución.
@@ -105,7 +108,16 @@ export const TAREAS = [
   'reintentos',
   // La pasada de los detectores, al final: lee lo que las demás trajeron.
   'senales',
+  // La foto de los negocios (el nivel 3, `089`): de la plataforma, sola en su horario.
+  'foto',
 ] as const satisfies readonly Tarea[];
+
+/**
+ * Las tareas de la PLATAFORMA: corren una vez por corrida, no por empresa. La sonda no deja sello (es del sistema);
+ * la foto lo deja bajo la principal, que es su dueña (`089`). El bucle por empresa las saltea.
+ */
+export const TAREAS_DE_LA_PLATAFORMA: readonly Tarea[] = ['sonda', 'foto'];
+const esDeLaPlataforma = (t: Tarea): boolean => TAREAS_DE_LA_PLATAFORMA.includes(t);
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
 export type EstadoDeTarea = 'corrio' | 'saltada' | 'frenada' | 'sin_tiempo' | 'fallo';
@@ -337,6 +349,21 @@ export const HORARIOS = {
     umbralMinutos: 2940,
   },
 
+  /* ── LA FOTO DE LOS NEGOCIOS, UNA VEZ POR DÍA (el nivel 3, `089`) ───────
+
+     Una fila por empresa y por cliente con su configuración y sus cifras, bajo la principal: la lee el tablero de
+     Negocios y, después, un agente. Sola en su horario porque recorre todas las empresas, y no pide ningún token:
+     lee presencias de identidad y cuenta sobre nuestra base. A las 11:29 UTC (6:29 de Lima): la foto del día
+     anterior entero, antes de que la gente mire.
+
+     El minuto 29 porque no lo usa nadie (el 3, el 7, el 17, el 23, el 37, el 41, el 53 y los múltiplos de diez
+     ya están). Diaria: 2 × 1440 + 60 = 2940. */
+  '29 11 * * *': {
+    tareas: ['foto'],
+    cadenciaMinutos: 1440,
+    umbralMinutos: 2940,
+  },
+
   /* ── EL HORARIO DIARIO SE FUE, Y LA REGLA ES BIDIRECCIONAL ─────────────
      Primero lo dejé acá «por si alguien vuelve a Hobby», con el argumento de que la prueba solo exige
      que cada horario de `vercel.json` tenga entrada en este mapa. **Eso es falso**, y la prueba lo
@@ -413,6 +440,8 @@ export interface ResultadoDelBarridoCompleto {
   horarioDesconocido?: true;
   tareas: readonly Tarea[];
   sonda: { estado: 'corrio' | 'fallo' | 'no_tocaba'; revisadas?: number; porque?: string };
+  /** La foto de los negocios (`089`): de la plataforma, sellada bajo la principal. Sólo conteos, ningún nombre. */
+  foto: { estado: 'corrio' | 'fallo' | 'sin_tiempo' | 'no_tocaba'; porque?: string } & Partial<ResumenDeLaFoto>;
   renglones: RenglonDelBarrido[];
   /**
    * Cuántos pares (empresa, tarea) **de verdad corrieron**.
@@ -474,11 +503,14 @@ export function tareasDelHorario(horario: string | null): {
  *   en el manejador, donde se lee.
  * @param ahora Inyectable **para poder probar el presupuesto**. Sin la costura, comprobar que las
  *   empresas restantes salen como `sin_tiempo` exigiría una prueba de tres minutos.
+ * @param configuracion La de todas las empresas, para la foto de los negocios. La lee el manejador de identidad por
+ *   la misma razón que las credenciales, y sólo cuando el horario trae `foto`. Sin ella, la foto sale `fallo`.
  */
 export async function barrerTodo(
   horario: string | null,
   empresas: readonly EmpresaParaBarrer[],
   ahora: () => number = Date.now,
+  configuracion?: ConfiguracionDeLosNegocios,
 ): Promise<ResultadoDelBarridoCompleto> {
   const { tareas, desconocido } = tareasDelHorario(horario);
   const arranque = ahora();
@@ -523,7 +555,7 @@ export async function barrerTodo(
     // El guardia del presupuesto, antes de empezar la empresa. Ver `PRESUPUESTO_MS`.
     if (ahora() - arranque > PRESUPUESTO_MS) {
       for (const tarea of tareas) {
-        if (tarea === 'sonda') continue;
+        if (esDeLaPlataforma(tarea)) continue;
         renglones.push({ slug: org.slug, tarea, estado: 'sin_tiempo' });
         await sellar(org.id, tarea, 'sin_tiempo', 'se agotó el presupuesto de la corrida', null);
       }
@@ -531,7 +563,7 @@ export async function barrerTodo(
     }
 
     for (const tarea of tareas) {
-      if (tarea === 'sonda') continue; // no es por empresa
+      if (esDeLaPlataforma(tarea)) continue; // no es por empresa
 
       // ── LA CREDENCIAL AUSENTE NO ES UN FALLO, Y SU MOTIVO NO SE COLAPSA ───
       //
@@ -656,6 +688,12 @@ export async function barrerTodo(
     }
   }
 
+  /* ── LA FOTO VA AL FINAL, Y TAMBIÉN ES DELIBERADO ──────────────────────────
+   *
+   * Sola en su horario no compite con nadie. Pero el horario desconocido corre TODO, y ahí tiene que ver lo que las
+   * demás trajeron, igual que la pasada de los detectores. */
+  const foto = tareas.includes('foto') ? await sacarLaFoto(configuracion, arranque, ahora) : { estado: 'no_tocaba' as const };
+
   /* ── LA SONDA NO DEJA SELLO, Y ES UNA DECISIÓN ────────────────────────────
    *
    * Las otras dos tareas sí, porque su pregunta es «¿está esta empresa al día?». La sonda no es de
@@ -672,6 +710,7 @@ export async function barrerTodo(
     ...(desconocido ? { horarioDesconocido: true as const } : {}),
     tareas,
     sonda,
+    foto,
     renglones,
     // Los que DE VERDAD corrieron. Ver el comentario del campo.
     corrieron: renglones.filter((r) => r.estado === 'corrio').length,
@@ -992,13 +1031,42 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
 }
 
 /**
+ * La foto de los negocios, con su sello. **Su dueña es la principal**: el sello va ahí, y no en cada empresa medida.
+ *
+ * Una foto con empresas sin medir CORRIÓ —las demás quedaron escritas— pero no es completa, y el sello lo dice con
+ * el mismo campo libre que las pasadas truncadas. Su propio try/catch: una foto que falla no tumba la respuesta.
+ */
+async function sacarLaFoto(
+  configuracion: ConfiguracionDeLosNegocios | undefined,
+  arranque: number,
+  ahora: () => number,
+): Promise<ResultadoDelBarridoCompleto['foto']> {
+  // Sin la configuración no hay a quién medir ni dónde sellar. El manejador ya lo gritó en el registro.
+  if (!configuracion) return { estado: 'fallo', porque: 'no llegó la configuración de los negocios' };
+  const principal = configuracion.principal.id;
+  if (ahora() - arranque > PRESUPUESTO_MS) {
+    await sellar(principal, 'foto', 'sin_tiempo', 'se agotó el presupuesto de la corrida', null);
+    return { estado: 'sin_tiempo', porque: 'se agotó el presupuesto de la corrida' };
+  }
+  try {
+    const r = await tomarLaFoto(configuracion, ahora());
+    await sellar(principal, 'foto', 'corrio', r.sinMedir > 0 ? `${r.sinMedir} empresa(s) sin medir` : null, 0);
+    return { estado: 'corrio', ...r };
+  } catch (e) {
+    console.error('cron: falló la foto de los negocios', e);
+    await sellar(principal, 'foto', 'fallo', 'la foto no pudo completarse', null);
+    return { estado: 'fallo', porque: 'la foto no pudo completarse' };
+  }
+}
+
+/**
  * El sello más viejo de las tareas que toca hacer, en milisegundos. `null` = alguna nunca corrió.
  *
  * Se mira solo las tareas del horario: si el horario de hoy es solo `mensajes`, un sello viejo de
  * `citas` no tiene por qué adelantar a esta empresa en la fila.
  */
 async function selloMasViejo(orgId: string, tareas: readonly Tarea[]): Promise<number | null> {
-  const delTrabajo = tareas.filter((t) => t !== 'sonda');
+  const delTrabajo = tareas.filter((t) => !esDeLaPlataforma(t));
   if (delTrabajo.length === 0) return null;
 
   return conOrganizacion(orgId, async () => {

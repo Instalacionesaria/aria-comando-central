@@ -163,7 +163,7 @@ Meta y después la imagen de los contactos (`lib/negocio/lecturaDeCreative.ts:28
 `lib/negocio/lecturaDeCreative.ts:299`). Sin token, Meta no aporta nada y la pantalla es la de los contactos.
 
 - **La de los contactos** la escribe una pasada colgada de la tarea `contactos`, después de sincronizar
-  (`lib/negocio/barrido.ts:856-860`), que corre cada diez minutos (`lib/negocio/barrido.ts:207-211`). Pide
+  (`lib/negocio/barrido.ts:895-899`), que corre cada diez minutos (`lib/negocio/barrido.ts:219-223`). Pide
   `GET /contacts/{id}` (`lib/ghl/cliente.ts:545`) para los contactos con `adId` en su primera atribución que
   todavía no se pidieron, de los más recientes a los más viejos, hasta 50 por pasada
   (`lib/negocio/miniaturaDelContacto.ts:78-90`), y guarda una fila por contacto pedido —también sin dato, o rechazado
@@ -171,15 +171,15 @@ Meta y después la imagen de los contactos (`lib/negocio/lecturaDeCreative.ts:28
   pisar lo guardado (`lib/negocio/miniaturaDelContacto.ts:174-181`). Cada pedido espera hasta 15 s y la pasada entera
   hasta 60 (`lib/negocio/miniaturaDelContacto.ts:46`, `lib/negocio/miniaturaDelContacto.ts:49`); un 429, un 401 o un
   GoHighLevel que no contesta la cortan (`lib/negocio/miniaturaDelContacto.ts:124-128`), y el sello de la tarea dice
-  por qué (`lib/negocio/barrido.ts:933-943`). La miniatura de la pieza es la imagen más frecuente entre sus contactos
+  por qué (`lib/negocio/barrido.ts:972-982`). La miniatura de la pieza es la imagen más frecuente entre sus contactos
   —el `videoUrl` o, si no hay, el `photoUrl`—, en empate la del contacto que entró más tarde al CRM, y sólo si su host
   es de Facebook, Instagram o el CDN de Meta (`lib/negocio/miniaturaDelContacto.ts:184-187`,
   `lib/negocio/miniaturaDelContacto.ts:214-221`). La pieza de un contacto
   sale de su anuncio —el `adId` cruzado con `negocio.anuncios`— y sólo sin anuncio de su `utmContent`
   (`lib/negocio/miniaturaDelContacto.ts:189-198`): los contactos que traen la imagen entran por un anuncio de
   Instagram y llegan sin UTMs.
-- **La de Meta** la escribe la tarea `activos`, cada hora en el minuto 37 (`lib/negocio/barrido.ts:318-322`), y sin
-  token se sella `saltada` sin llamar a nadie (`lib/negocio/barrido.ts:575-579`). Con token, pide los anuncios que
+- **La de Meta** la escribe la tarea `activos`, cada hora en el minuto 37 (`lib/negocio/barrido.ts:330-334`), y sin
+  token se sella `saltada` sin llamar a nadie (`lib/negocio/barrido.ts:607-611`). Con token, pide los anuncios que
   nunca se leyeron, los leídos hace más de un día y aquellos cuya miniatura vence en las próximas seis horas, primero
   los que entregaron hace menos (`lib/negocio/recolectarActivos.ts:95-113`), hasta 200 por pasada y 90 s
   (`lib/negocio/recolectarActivos.ts:24`, `lib/negocio/recolectarActivos.ts:27`). Lee por lotes de 50, primero el
@@ -552,7 +552,7 @@ dice «sobre N contactos con puntaje» (`lib/agentes/plan/creative.ts:57`).
 miniatura no tenía ruta, y viajaba así al cerebro en `rendimiento_de_piezas`
 (`lib/agentes/executive/adaptadores/creative.ts:76`); ahora dice que llega por el «Video Url» y sólo para las piezas
 cuyos contactos la traen (`lib/negocio/rendimientoDelCreativo.ts:159-163`). El comentario del barrido que lista qué
-tareas informan un motivo nombra `contactos` y `activos` (`lib/negocio/barrido.ts:639-640`), y el detector ya no dice
+tareas informan un motivo nombra `contactos` y `activos` (`lib/negocio/barrido.ts:671-672`), y el detector ya no dice
 que su promedio de ICP lo muestra la pantalla (`lib/agentes/detectores/creative.ts:253-256`).
 
 **13 · La miniatura no se vio cargar.** **Abierto** (`CF1-P06`). No se sabe si la imagen de `facebook.com/ads/image`
@@ -577,7 +577,7 @@ pantalla está, con todo lo que el sistema mide, y la mitad que el § 18.12 le r
 más allá de su imagen.
 
 **16 · Meta está listo y nadie lo conectó.** **Abierto** desde el 2026-10-15. La tarea `activos` corre cada hora en el
-minuto 37 (`lib/negocio/barrido.ts:318`) y, sin token, se sella `saltada` (`lib/negocio/barrido.ts:575`): el
+minuto 37 (`lib/negocio/barrido.ts:330`) y, sin token, se sella `saltada` (`lib/negocio/barrido.ts:607`): el
 2026-10-18 lo estaba en las 11 empresas, con `negocio.activos_de_anuncio` vacía. Es lo esperado, y hasta que alguien
 siga `docs/creative/17-CONECTAR-META-PASO-A-PASO.md` la pantalla no cambia. Nada se midió con un token real: cuánto dura
 la firma de una miniatura (`C15-P02`), si la miniatura de 640 px llega de ese tamaño, ni cuántas llamadas cuesta la

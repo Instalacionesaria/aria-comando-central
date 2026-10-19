@@ -59,7 +59,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 
 | lugar del prototipo | dato | fuente | medido |
 |---|---|---|---|
-| Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:114`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:110`) | — |
+| Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:116`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:110`) | — |
 | Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:120-127`) | sólo con 7 y 30 días |
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |

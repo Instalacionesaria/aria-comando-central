@@ -517,8 +517,8 @@ sin estar**: el 2026-10-18 `gh api …/branches/main` da `protected: false` ([17
 
 **La corrección que dejó la tercera.** No alcanza con preguntar qué LEE el arranque: hay que preguntar
 **qué TOCA la columna nueva, en cualquier sentido** —un `insert` que la nombra rompe igual que un
-`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:135`; el barrido de
-citas va a la hora y tres, `lib/negocio/barrido.ts:219`).
+`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:147`; el barrido de
+citas va a la hora y tres, `lib/negocio/barrido.ts:231`).
 
 **La comprobación de treinta segundos, antes de cada `git push`:**
 
@@ -1114,7 +1114,7 @@ revisión adversarial con dos escépticos por hallazgo, que ejecutaron la funci�
 2026-09-18): «una marca de agua no puede describir un conjunto con agujeros». La ventana ahora sale de
 lo que FALTA. **Y volvió con el gasto**: el colector pedía 13 de las 61 campañas de la cuenta, el sello decía `corrio`
 y una campaña de mensajes no entraba nunca; la `076` (`22ec755`, 2026-10-07) lee la serie de toda la cuenta y el
-sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:923-926`).
+sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:962-965`).
 
 ## M · Un comentario que afirma sin medir
 
@@ -1179,7 +1179,7 @@ y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas
 `d715b2a`, 2026-10-05) es una tabla común para los cuatro departamentos: la huella —departamento, regla, entidad,
 ventana— impide que una señal descartada renazca mientras su condición siga, la entidad es un id y no un nombre, y no
 hay texto libre de personas (`db/migraciones/072_las_senales.sql:15-26`); con menos de 10 no hay señal
-(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:331-337`),
+(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:343-349`),
 y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:141` y
 `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:101`. **Y las dos excepciones con datos de personas tienen
 su regla:** el Brief del closer es el agente que manda al modelo datos de una persona (`lib/agentes/brief/entrada.ts:14`),
@@ -1257,7 +1257,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
   mitad: abrir el contexto de la organización ahora también abre el de sus cuentas.
 - **Los regímenes de negocio.** Cada tabla es de una cuenta, de una cuenta o de la organización, o sólo de la
   organización, y la lista es a mano porque el régimen es una decisión (`pruebas/apoyo/regimenes-de-negocio.ts:1-19`);
-  `pruebas/base/257-el-modelo-fase-0.test.ts:78` pone la suite en rojo si una tabla no tiene régimen o tiene dos.
+  `pruebas/base/257-el-modelo-fase-0.test.ts:79` pone la suite en rojo si una tabla no tiene régimen o tiene dos.
 - **El revisor del migrador.** Sigue prohibiendo `no force row level security` (`lib/datos/migrador.ts:131`), suma
   los esquemas `catalogo`, `sistema` e `ingesta` (`:70`), no le pide `org_id` a una partición (`:177`) y acepta
   `aplicar_aislamiento_de_cuenta` como aislamiento (`:208`).
@@ -1268,7 +1268,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
   (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:4-21`).
 - **Lo demás.** El idioma común compartido sin `org_id` (`079`), las cuentas (`080`), la bandeja de lo crudo con una
   sola puerta (`081`) y los eventos de sólo agregar, con particiones que nacen cerradas (`084`,
-  `pruebas/base/257-el-modelo-fase-0.test.ts:644`).
+  `pruebas/base/257-el-modelo-fase-0.test.ts:649`).
 
 ---
 

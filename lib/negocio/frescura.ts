@@ -102,6 +102,8 @@ const NOMBRE: Record<Tarea, string> = {
   senales: 'la pasada diaria de los detectores de señales',
   // La duodécima (`078`): la miniatura de cada anuncio, leída de Meta.
   activos: 'la lectura de las miniaturas de los anuncios en Meta',
+  // La decimotercera (`089`): la foto de los negocios, de la plataforma.
+  foto: 'la foto diaria de los negocios',
 };
 
 /**

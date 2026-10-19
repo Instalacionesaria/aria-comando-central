@@ -49,4 +49,9 @@ export const DE_LA_ORGANIZACION = [
   'conversaciones_del_executive', 'mensajes_del_executive', 'preguntas_del_executive', 'topes_del_executive',
   'analisis_del_espia', 'enlaces_rapidos', 'prompts_del_agente', 'versiones_del_prompt', 'umbrales',
   'control_aislamiento',
+  // La foto de los negocios (089): de la principal. El cliente medido va en `cuenta_ref`, no en `cuenta_id`.
+  'foto_de_las_empresas', 'foto_de_las_cuentas',
 ] as const;
+
+/** Las de la organización que nacieron DESPUÉS de la `086`, que rehízo la política de las que existían. */
+export const NACIERON_DESPUES_DE_LA_086 = ['foto_de_las_empresas', 'foto_de_las_cuentas'] as const;

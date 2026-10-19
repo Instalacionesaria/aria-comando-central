@@ -35,6 +35,10 @@
     {
       "path": "/api/cron",
       "schedule": "37 * * * *"
+    },
+    {
+      "path": "/api/cron",
+      "schedule": "29 11 * * *"
     }
   ]
 }

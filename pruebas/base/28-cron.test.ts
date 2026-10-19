@@ -27,7 +27,7 @@ import type { Client } from 'pg';
 import { cerrarTodo, conectar, filas, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
-import { TAREAS, barrerTodo, type EmpresaParaBarrer } from '../../lib/negocio/barrido.ts';
+import { TAREAS, TAREAS_DE_LA_PLATAFORMA, barrerTodo, type EmpresaParaBarrer } from '../../lib/negocio/barrido.ts';
 import type { AccesoAlAnalizador, AccesoAlAuditor } from '../../lib/credenciales/resolver.ts';
 
 /**
@@ -337,7 +337,7 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
     { org: org(alfa, 'alfa'), acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR, analizador: SIN_ANALIZADOR },
   ], DE_DIA);
   const s = await sellos();
-  /* TODAS las tareas de la empresa, `sonda` afuera. `contactos` entre ellas porque una empresa sin
+  /* TODAS las tareas de la empresa, las de la plataforma afuera. `contactos` entre ellas porque una empresa sin
      token tampoco puede releer sus etiquetas; `auditoria` porque **su falta es otra** —no tiene
      llave de IA— y el sello tiene que decir esa y no la del CRM: son dos proveedores y dos acciones
      distintas para arreglarlo; y `anuncios` porque el Ad Manager va por el mismo token del CRM.
@@ -347,7 +347,7 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
      excepción del token del CRM, saldría `saltada` con `sin_token` en toda empresa sin GoHighLevel. */
   assert.deepEqual(
     s.map((x) => `${x.tarea}:${x.estado}`).sort(),
-    TAREAS.filter((t) => t !== 'sonda')
+    TAREAS.filter((t) => !TAREAS_DE_LA_PLATAFORMA.includes(t))
       .map((t) => `${t}:${t === 'senales' ? 'corrio' : 'saltada'}`)
       .sort(),
   );
@@ -377,9 +377,9 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
  * lección que `lib/datos/esquema.ts` ya dejó escrita para su lista de tablas —*«un conteo escrito a
  * mano envejece con cada tabla nueva»*— y se aplica igual: **quitándolo**, no actualizándolo.
  *
- * `sonda` se resta porque no es de ninguna empresa y no deja sello, que es una decisión escrita en
- * el pie de `barrerTodo`. */
-const SELLOS_POR_EMPRESA = TAREAS.filter((t) => t !== 'sonda').length;
+ * Las de la plataforma se restan porque no son de ninguna empresa: la sonda no deja sello, que es una decisión
+ * escrita en el pie de `barrerTodo`, y la foto lo deja bajo la principal y sólo con su configuración (`089`). */
+const SELLOS_POR_EMPRESA = TAREAS.filter((t) => !TAREAS_DE_LA_PLATAFORMA.includes(t)).length;
 
 test('dos corridas idénticas dejan UNA fila por (empresa, tarea), sin contadores que crezcan', async () => {
   // La plataforma admite corridas duplicadas y no reintenta. Un `+1` en cualquier columna contaría de
