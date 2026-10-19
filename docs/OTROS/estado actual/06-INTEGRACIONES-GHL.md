@@ -341,7 +341,7 @@ A eso se le suman tres caminos que no tienen horario:
 - **Una llamada por aviso de un contacto que todavía no conocemos.** Un aviso de mensaje sobre un
   contacto que ya está en `negocio.contactos` **no llama**: toma el territorio de nuestra base; sólo
   el contacto nuevo, y todo aviso de contacto o de cita, se relee con `GET /contacts/{id}`
-  (`lib/negocio/avisoDelCrm.ts:153-167` y la condición en `lib/negocio/avisoDelCrm.ts:182`). Estimado el 2026-09-29
+  (`lib/negocio/avisoDelCrm.ts:155-169` y la condición en `lib/negocio/avisoDelCrm.ts:184`). Estimado el 2026-09-29
   00:25 UTC: de los 320 avisos procesados entre el 2026-08-29 y el 2026-09-27, **65** eran de un contacto cuya fila nació
   después del aviso. Es una estimación por `creado_el`, no un conteo: la llamada no deja registro. No se volvió a estimar.
 - **Una llamada por apertura de ficha** (`lib/ghl/cliente.ts:529-543`), deliberada. No medida: no deja registro.
@@ -704,7 +704,7 @@ ritmo de los mensajes no se volvió a medir. El gasto de esos días sí: hubo, e
 
 **Seis de los siete workflows no están configurados en GoHighLevel.** No es un problema de código: las
 siete URLs se ofrecen en el panel y el manejador reconoce las siete (`lib/ghl/avisos.ts:127-129`) y
-las reparte en dos ramas, mensaje o contacto y cita (`lib/negocio/avisoDelCrm.ts:167-182`); no hay un
+las reparte en dos ramas, mensaje o contacto y cita (`lib/negocio/avisoDelCrm.ts:169-184`); no hay un
 `switch` por evento. Lo que falta es pegar
 seis URLs en seis workflows. Lo que se gana, por cada uno:
 
@@ -721,8 +721,8 @@ seis URLs en seis workflows. Lo que se gana, por cada uno:
 La foto del 2026-09-15 decía que cada aviso procesado hace un `GET /contacts/{id}`, y contaba 305
 llamadas. **Era falso**: un aviso de mensaje sobre un contacto que ya está en nuestra base toma el
 territorio de la fila y cuesta cero llamadas; sólo el contacto nuevo —la «red de seguridad del
-alta»— y los eventos de contacto y de cita releen al proveedor (`lib/negocio/avisoDelCrm.ts:153-167`
-y `lib/negocio/avisoDelCrm.ts:182`). Cuando se relee, es para que haya **un solo lugar** que decida
+alta»— y los eventos de contacto y de cita releen al proveedor (`lib/negocio/avisoDelCrm.ts:155-169`
+y `lib/negocio/avisoDelCrm.ts:184`). Cuando se relee, es para que haya **un solo lugar** que decida
 el territorio (`lib/negocio/avisoDelCrm.ts:10-18`). Estimado el 2026-09-29 00:25 UTC: **65 de los 320**
 avisos procesados eran de un contacto cuya fila nació después del aviso (§ 3). El payload nativo trae
 `tags` en **327 de 327** cuerpos y `attributionSource` en 321, así que esas 65 también se podrían
@@ -732,8 +732,8 @@ ahorrar; no recomiendo tocarlo sin resolver antes la duplicación de la decisió
 
 **7 de 327** tienen `procesado_el` nulo **y** `error` nulo (eran 6 de 311; el nuevo es del
 2026-09-17). Después de guardar, el manejador escribe `procesado_el` en el camino feliz y `error` en
-los demás (`app/api/avisos/crm/route.ts:249-281`). La única rama que deja las dos columnas nulas es
-la del cuerpo que no es un objeto JSON (`app/api/avisos/crm/route.ts:246`), y no es ésta: los 7 son
+los demás (`app/api/avisos/crm/route.ts:280-312`). La única rama que deja las dos columnas nulas es
+la del cuerpo que no es un objeto JSON (`app/api/avisos/crm/route.ts:277`), y no es ésta: los 7 son
 objetos JSON válidos, igual que los 327 (medido el 2026-09-29 00:20 UTC con `jsonb_typeof`). Lo que
 queda compatible es que la petición murió entre guardar la fila e interpretarla. Queda como
 pendiente (§ 10). El 2026-10-18 siguen siendo **7 de 342**: ninguno nuevo desde el 2026-09-17.
@@ -983,7 +983,7 @@ Cada uno es un hueco medido, no una suposición.
 
 2. **Siete avisos quedaron sin procesar y sin motivo.** 7 de 342 (2026-10-18), con `procesado_el` y `error` los dos
    nulos. La única rama del manejador que deja ese estado es la del cuerpo ilegible
-   (`app/api/avisos/crm/route.ts:246`), y los siete son objetos JSON válidos (§ 7), así que lo
+   (`app/api/avisos/crm/route.ts:277`), y los siete son objetos JSON válidos (§ 7), así que lo
    compatible es que la petición murió entre guardar e interpretar. Hace falta el registro de la función en Vercel de
    esas siete fechas (2026-08-29, 08-31, 09-04, 09-08, 09-09, 09-11 y 09-17).
 
@@ -1053,8 +1053,8 @@ Para distinguir los motivos hace falta el código numérico del error, que `pedi
 
 **La credencial.** Dos columnas de `identidad.organizaciones_credenciales`, desde la `064` (2026-09-29): el token cifrado y
 la cuenta publicitaria `act_…`. `resolverAccesoAMeta` distingue tres faltas —sin token, token ilegible, sin cuenta— y pide
-el token primero (`lib/credenciales/resolver.ts:570-585`, `:599-627`); la cuenta se acepta con o sin el prefijo y se
-normaliza (`lib/credenciales/resolver.ts:594-597`). **Medido el 2026-10-18: 0 de 13 empresas tienen el token, y 0 la
+el token primero (`lib/credenciales/resolver.ts:687-702`, `:599-627`); la cuenta se acepta con o sin el prefijo y se
+normaliza (`lib/credenciales/resolver.ts:711-714`). **Medido el 2026-10-18: 0 de 13 empresas tienen el token, y 0 la
 cuenta.**
 
 **Las dos operaciones que lo usan:**

@@ -77,6 +77,8 @@ export const PANTALLA = 'credenciales';
  * trabajo del cliente de GoHighLevel, no de esta validación.
  */
 const TOPE = 4096;
+/** Una location de GoHighLevel, la misma forma que pide `app/api/admin/cuentas/[id]/vinculo`. */
+const LOCATION = /^[A-Za-z0-9_-]{1,100}$/;
 
 /**
  * Los campos que esta ruta acepta, y a qué columna va cada uno.
@@ -204,6 +206,12 @@ export async function PUT(peticion: Request): Promise<Response> {
       'No vino ningún campo conocido. Nada se guardó, y se dice en vez de responder que sí.',
     );
   }
+  // La subcuenta tiene la forma de una location —la misma que pide el vínculo de un cliente—: se compara con la de
+  // los clientes (el nivel 3), y una que no tiene esa forma no es de nadie.
+  const location = cambios['crm_cuenta_id'];
+  if (typeof location === 'string' && !LOCATION.test(location)) {
+    return rechazo('peticion_invalida', 'Esa subcuenta no tiene forma de location del CRM.');
+  }
 
   // El estado del CRM se pone en `activa` SOLO si vino un token de CRM nuevo. Antes se ponía
   // siempre, así que cargar la llave de IA de una organización con el token de GoHighLevel
@@ -218,6 +226,18 @@ export async function PUT(peticion: Request): Promise<Response> {
   }
 
   return conIdentidad(async (db) => {
+    /* La subcuenta de la empresa es la de su cliente principal. Si ya es la de otro cliente —de esta empresa o de
+       otra—, los datos de ese negocio entrarían en éste: 409, sin decir de quién, como el vínculo. */
+    if (typeof location === 'string') {
+      const deOtroCliente = await db
+        .selectFrom('cuentas')
+        .select('id')
+        .where('crm_cuenta_id', '=', location)
+        .where((w) => w.or([w('org_id', '<>', contexto.orgEfectiva), w('es_por_omision', '=', false)]))
+        .executeTakeFirst();
+      if (deOtroCliente) return rechazo('subcuenta_en_uso');
+    }
+
     // La fila puede no existir: una organización nueva nace sin ninguna (05 § 2). `on conflict` es
     // lo que hace que cargar la primera credencial y rotar una existente sean el mismo camino.
     //

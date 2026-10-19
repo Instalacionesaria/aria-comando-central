@@ -191,8 +191,8 @@ proveedor con lo que respondió el closer en Avanzar, y hoy esas dos cosas se di
 **Estado** · **No existe, y no puede existir hoy.** `identidad.organizaciones_credenciales` tiene
 `pagos_clave_cifrada` y `pagos_comercio_id` (`006_segundo_factor_y_credenciales.sql:87,93`), y
 **están en 0 de 5 organizaciones**. Nadie las consume salvo el formulario que las guarda
-(`app/api/admin/credenciales/route.ts:91`) y el resolvedor que las descifra
-(`lib/credenciales/resolver.ts:199`). No hay llamada a ningún proveedor, ni webhook, ni tabla de
+(`app/api/admin/credenciales/route.ts:93`) y el resolvedor que las descifra
+(`lib/credenciales/resolver.ts:242`). No hay llamada a ningún proveedor, ni webhook, ni tabla de
 transacciones.
 
 **Consecuencia que va en pantalla:** el día que haya una `venta` con monto, «cobrado» seguirá

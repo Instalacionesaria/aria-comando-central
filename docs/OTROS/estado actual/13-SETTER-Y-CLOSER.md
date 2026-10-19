@@ -95,7 +95,7 @@ sólo desde ellas (§ 2.5). Las nueve rutas bajo `app/api/contactos/` —la fich
 pestañas, Avanzar, resolver una intervención y la sincronización de contactos— se declaran sin
 pantalla y piden capacidades propias —`contactos.ver`, `contactos.avanzar`, `contactos.resolver`,
 `contactos.comentar` (`lib/autorizacion/secciones.ts:599-639`)—; enviar desde el compositor del chat
-pide `conversaciones.responder` y no `contactos.ver` (`app/api/contactos/[id]/mensajes/route.ts:102`).
+pide `conversaciones.responder` y no `contactos.ver` (`app/api/contactos/[id]/mensajes/route.ts:103`).
 
 ### 2.2 · El Setter
 
@@ -188,12 +188,12 @@ el 2026-09-07); 368 citas; 7 notas, 4 de ellas desde la aplicación; 4 tareas; 7
 la ficha desde el 2026-09-07.
 
 **El compositor.** Envía por `POST /api/contactos/[id]/mensajes`
-(`app/api/contactos/[id]/mensajes/route.ts:95-102`), que va al CRM con `POST /conversations/messages`
-(`app/api/contactos/[id]/mensajes/route.ts:148`, `lib/ghl/conversaciones.ts:419-427`) —un endpoint
+(`app/api/contactos/[id]/mensajes/route.ts:96-103`), que va al CRM con `POST /conversations/messages`
+(`app/api/contactos/[id]/mensajes/route.ts:147`, `lib/ghl/conversaciones.ts:419-427`) —un endpoint
 que el propio código declara no medido, porque medirlo manda un mensaje real
 (`lib/ghl/conversaciones.ts:413`)— y guarda el mensaje con `origen = 'propio'`
-(`app/api/contactos/[id]/mensajes/route.ts:233`); después pasa por `sellarSiEsDelSetter`
-(`app/api/contactos/[id]/mensajes/route.ts:257`), el sello que hoy está en 0 de 594 (§ 4.5). En toda
+(`app/api/contactos/[id]/mensajes/route.ts:232`); después pasa por `sellarSiEsDelSetter`
+(`app/api/contactos/[id]/mensajes/route.ts:256`), el sello que hoy está en 0 de 594 (§ 4.5). En toda
 la historia salieron por acá **2 mensajes**, contra miles por el CRM (§ 5.4). Las notas se escriben
 con otra capacidad, `contactos.comentar` (`app/api/contactos/[id]/notas/route.ts:84`), y quedan con
 `origen = 'plataforma'` (`app/api/contactos/[id]/notas/route.ts:127`).
@@ -317,8 +317,8 @@ su fecha.
 Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay cinco familias:
 
 - **«Seis de sus siete salidas».** Lo dicen `lib/ghl/contrato.ts:414`,
-  `lib/negocio/salidasDelSetter.ts:18`, `app/api/contactos/[id]/avanzar/route.ts:458-459` y
-  `app/api/contactos/[id]/avanzar/route.ts:473` («sus siete declaran etiqueta»). El catálogo tiene
+  `lib/negocio/salidasDelSetter.ts:18`, `app/api/contactos/[id]/avanzar/route.ts:464-465` y
+  `app/api/contactos/[id]/avanzar/route.ts:479` («sus siete declaran etiqueta»). El catálogo tiene
   **seis** salidas (`lib/negocio/salidas.ts:69`) y **cinco** apagan el agente, como dice la propia
   tabla (`lib/ghl/contrato.ts:385-387`, `lib/ghl/contrato.ts:396-403`).
 - **«Todavía no se escriben: Avanzar es el paso siguiente»** (`lib/ghl/contrato.ts:382`), sobre las
@@ -369,12 +369,12 @@ entra junto o no entra:
 | el recordatorio nuevo, salvo que lo persiga el CRM | `negocio.tareas` | `lib/negocio/avanzar.ts:328-351` |
 
 Después, y fuera de la transacción, la ruta le manda las etiquetas al CRM; su fallo no deshace nada
-y la respuesta lo dice aparte (`app/api/contactos/[id]/avanzar/route.ts:329-336`).
+y la respuesta lo dice aparte (`app/api/contactos/[id]/avanzar/route.ts:334-342`).
 
 ### 4.2 · Las salidas
 
 El territorio **del contacto** decide el vocabulario, no el rol de quien registra
-(`app/api/contactos/[id]/avanzar/route.ts:257-280`).
+(`app/api/contactos/[id]/avanzar/route.ts:261-284`).
 
 - **Closer, seis** (`lib/negocio/salidas.ts:82-201`): `venta` (pide monto y forma de pago: Contado,
   Splitwise, Buy Now Pay Later, Cuotas), `acuerdo_sin_pago` (pide monto), `seguimiento` (nivel de
@@ -393,7 +393,7 @@ cita tiene `asistio` y el resultado tiene `cita_id`
 
 Qué citas ofrece Avanzar para preguntar: las que **ya empezaron, no están canceladas, son
 alcanzables** y cayeron en los **últimos 14 días** (`lib/negocio/citasParaCerrar.ts:58-71`; la ficha
-la llama sin argumento en `app/api/contactos/[id]/route.ts:151`). Con una sola candidata viene
+la llama sin argumento en `app/api/contactos/[id]/route.ts:153`). Con una sola candidata viene
 elegida y la respuesta es obligatoria; con dos o más, el selector arranca en «No es sobre ninguna de
 estas citas» (`components/negocio/Avanzar.jsx:86`, `components/negocio/Avanzar.jsx:337`), y
 registrar sin elegir
@@ -405,7 +405,7 @@ se guarda `false` sin preguntar (`components/negocio/Avanzar.jsx:128-129`).
 `numeric(12,2)`, nulo cuando la salida no lo pide y **nunca cero por omisión**
 (`db/migraciones/011_negocio_closer_setter.sql:394-395`). El servidor lo exige en las salidas que lo
 piden, lo rechaza negativo y lo guarda como texto con dos decimales para no perder centavos
-(`app/api/contactos/[id]/avanzar/route.ts:398-407`). No hay columna de moneda en `negocio.resultados`.
+(`app/api/contactos/[id]/avanzar/route.ts:404-413`). No hay columna de moneda en `negocio.resultados`.
 
 ### 4.5 · Las cifras
 
@@ -662,7 +662,7 @@ ventas medidas**, y el tercero ve «—». Octubre empezó sin registros —ning
 tres y la vista de empresa ven «—» (deducido de la regla, no visto en pantalla).
 
 **7 · Una clave por apertura del panel.** Reintentar después de un corte no duplica resultado, nota,
-tarea ni comisión (`app/api/contactos/[id]/avanzar/route.ts:156-171`,
+tarea ni comisión (`app/api/contactos/[id]/avanzar/route.ts:158-173`,
 `components/negocio/Avanzar.jsx:90-107`).
 
 **8 · El alcance no es un permiso.** Vive en la consulta, y el closer sin vincular ve todo, porque

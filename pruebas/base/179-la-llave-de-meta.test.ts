@@ -105,7 +105,7 @@ async function metaDeBeta(token: string | null, cuenta: string | null): Promise<
   );
 }
 
-const resolver = () => conIdentidad((db) => resolverAccesoAMeta(db, beta));
+const resolver = () => conIdentidad((db) => resolverAccesoAMeta(db, beta, 'la_de_la_empresa'));
 
 test('sin fila de credenciales, lo que falta es el token: la empresa no conectó Meta', async () => {
   await admin.query('delete from identidad.organizaciones_credenciales where org_id = $1', [beta]);

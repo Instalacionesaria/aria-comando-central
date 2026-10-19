@@ -457,6 +457,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // sólo tiene la plataforma, más `esDeLaPrincipal` una línea después del portero; y el `update` nombra la
   // organización además del id.
   'app/api/admin/cuentas/[id]/vinculo/route.ts',
+  // La conexión de un cliente que no es el principal: su token y su calendario del CRM, su Meta y el secreto de su
+  // aviso, en `identidad.cuentas_credenciales`. La misma escotilla que `app/api/admin/credenciales/route.ts`, con su
+  // misma capacidad (`credenciales.ver`/`.editar`); el cliente se busca por (organización efectiva, id) antes de
+  // escribir, y uno de otra empresa es 404.
+  'app/api/admin/cuentas/[id]/conexion/route.ts',
   // Las cuentas de un cliente final: `usuarios_cuentas` sólo la escribe identidad. La persona sale de
   // `usuarioObjetivo(`, acotada a la empresa de la sesión, y las cuentas se comprueban de esa misma empresa antes de
   // escribir; la clave foránea compuesta lo repite en la base.

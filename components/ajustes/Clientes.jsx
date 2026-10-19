@@ -22,11 +22,13 @@ import { usarLectura } from '../../lib/usarLectura.ts';
 import Ventana from '../Ventana.jsx';
 import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
 import FormularioDeCliente, { cuerpoDe, valoresDe } from './FormularioDeCliente.jsx';
+import ConexionDelCliente from './ConexionDelCliente.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede hacer esto con los clientes.',
   no_encontrado: 'Ese cliente ya no existe, o no es de esta empresa.',
   subcuenta_en_uso: 'Esa subcuenta de GoHighLevel ya es de otro cliente.',
+  cliente_principal: 'La subcuenta del cliente principal es la de la empresa: se carga en Ajustes › Credenciales.',
 };
 
 const ESTADOS = { activa: 'Activo', pausada: 'Pausado', baja: 'De baja' };
@@ -38,7 +40,9 @@ function porQue(r) {
   return 'No se pudo.';
 }
 
-export default function Clientes({ sesion }) {
+/* `conConexion`: si la persona ve Ajustes › Credenciales. La conexión de un cliente pide las mismas capacidades que
+   la de la empresa, así que quien no ve una no ve la otra. */
+export default function Clientes({ sesion, conConexion = false }) {
   const { datos, situacion, causa, refrescar } = usarLectura('/api/admin/cuentas', {
     sinRespuesta: 'No se pudo contactar al servidor.',
     motivos: MOTIVOS,
@@ -228,19 +232,22 @@ export default function Clientes({ sesion }) {
             ) : null}
           </div>
 
-          {/* Sólo ARIA: la subcuenta del CRM y la marca de prueba. */}
+          {/* Sólo ARIA: la subcuenta del CRM y la marca de prueba. La del cliente principal es la de la empresa y se
+              carga en Ajustes › Credenciales: acá sólo la marca de prueba. */}
           {editando && sesion?.puedeVincularClientes ? (
             <div className="aj-bloque">
-              <div className="fd-campo">
-                <label htmlFor="ed-cli-subcuenta">Subcuenta de GoHighLevel</label>
-                <input
-                  id="ed-cli-subcuenta"
-                  type="text"
-                  value={vinculo.crmCuentaId}
-                  placeholder={editando.crmVinculado ? 'Vinculada: escribe otra para cambiarla' : 'El identificador de la location'}
-                  onChange={(e) => setVinculo({ ...vinculo, crmCuentaId: e.target.value })}
-                />
-              </div>
+              {editando.esPorOmision ? null : (
+                <div className="fd-campo">
+                  <label htmlFor="ed-cli-subcuenta">Subcuenta de GoHighLevel</label>
+                  <input
+                    id="ed-cli-subcuenta"
+                    type="text"
+                    value={vinculo.crmCuentaId}
+                    placeholder={editando.crmVinculado ? 'Vinculada: escribe otra para cambiarla' : 'El identificador de la location'}
+                    onChange={(e) => setVinculo({ ...vinculo, crmCuentaId: e.target.value })}
+                  />
+                </div>
+              )}
               <label className="aj-casilla">
                 <input type="checkbox" checked={vinculo.esPrueba} onChange={(e) => setVinculo({ ...vinculo, esPrueba: e.target.checked })} />
                 <span>Es un cliente de prueba: no entra a ninguna cifra agregada.</span>
@@ -252,6 +259,9 @@ export default function Clientes({ sesion }) {
               </div>
             </div>
           ) : null}
+
+          {/* La conexión propia del cliente: su GoHighLevel, su Meta y su aviso. Una por cliente (`key`). */}
+          {editando && conConexion ? <ConexionDelCliente key={editando.id} cliente={editando} /> : null}
         </Ventana>
       ) : null}
     </>

@@ -143,7 +143,7 @@ test('la ruta: POST, credenciales.editar, el token se lee en identidad y Meta se
   assert.match(f, /export async function POST\(/);
   assert.doesNotMatch(f, /export async function (GET|PUT|DELETE)\(/, 'probar la conexión no puede ser un GET');
   assert.match(f, /exigir\(peticion, \['credenciales\.editar'\], PANTALLA\)/);
-  assert.match(f, /const acceso = await conIdentidad\(async \(db\) => resolverAccesoAMeta\(db, contexto\.orgEfectiva\)\);/);
+  assert.match(f, /const acceso = await conIdentidad\(async \(db\) => resolverAccesoAMeta\(db, contexto\.orgEfectiva, 'la_de_la_empresa'\)\);/);
   // La llamada a Meta va DESPUÉS de cerrar la transacción, no adentro.
   assert.match(f, /return ok\(await probarConexionConMeta\(acceso\.token, acceso\.cuentaId\)\);/);
   const pantalla = readFileSync(join(RAIZ, 'components/ajustes/ConexionConMeta.jsx'), 'utf8');

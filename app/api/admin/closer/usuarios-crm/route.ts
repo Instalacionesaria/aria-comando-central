@@ -32,6 +32,8 @@ import { usuariosDelCrm } from '../../../../../lib/ghl/cliente.ts';
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
 export const PANTALLA = 'credenciales';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['credenciales.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
@@ -42,17 +44,48 @@ export async function GET(peticion: Request): Promise<Response> {
      `zona_closer` con asignado —de 152— apuntan a `0peGoq7VvFqnDGA7gxtX`, que es el identificador
      cargado como `crm_agente_usuario_id` para el auditor. O sea que quien vincule a un closer con
      ese usuario se lleva TODOS los leads — no es un error, pero hay que saberlo antes de elegir. */
-  const { acceso, agenteId } = await conIdentidad(async (db) => ({
-    acceso: await resolverAccesoAGhl(db, contexto.orgEfectiva),
-    agenteId:
-      (
-        await db
-          .selectFrom('organizaciones_credenciales')
-          .select('crm_agente_usuario_id')
+  /* `?cuenta=` (el nivel 3): los usuarios de la subcuenta de UN cliente, con SUS credenciales. Sólo un cliente de la
+     organización efectiva —uno de otra empresa es 404—; sin el parámetro, los de la empresa, como siempre. */
+  const pedido = new URL(peticion.url).searchParams.get('cuenta');
+  if (pedido !== null && !UUID.test(pedido)) return rechazo('no_encontrado');
+  const leido = await conIdentidad(async (db) => {
+    const cliente = pedido
+      ? await db
+          .selectFrom('cuentas')
+          .select(['id', 'es_por_omision'])
           .where('org_id', '=', contexto.orgEfectiva)
+          .where('id', '=', pedido)
           .executeTakeFirst()
-      )?.crm_agente_usuario_id ?? null,
-  }));
+      : null;
+    if (pedido && !cliente) return null;
+    const propio = cliente && !cliente.es_por_omision;
+    return {
+      acceso: await resolverAccesoAGhl(
+        db,
+        contexto.orgEfectiva,
+        cliente ? { id: cliente.id, esPorOmision: cliente.es_por_omision } : 'la_de_la_empresa',
+      ),
+      agenteId:
+        (propio
+          ? (
+              await db
+                .selectFrom('cuentas_credenciales')
+                .select('crm_agente_usuario_id')
+                .where('org_id', '=', contexto.orgEfectiva)
+                .where('cuenta_id', '=', cliente.id)
+                .executeTakeFirst()
+            )?.crm_agente_usuario_id
+          : (
+              await db
+                .selectFrom('organizaciones_credenciales')
+                .select('crm_agente_usuario_id')
+                .where('org_id', '=', contexto.orgEfectiva)
+                .executeTakeFirst()
+            )?.crm_agente_usuario_id) ?? null,
+    };
+  });
+  if (!leido) return rechazo('no_encontrado');
+  const { acceso, agenteId } = leido;
   if (acceso.tipo === 'falta') {
     /* Los cinco motivos de falta de credencial se dicen con su texto, que nombra la acción: cargar
        el token, cargar la subcuenta, volver a cargarlo porque no se puede descifrar. Un «no se pudo»

@@ -64,6 +64,8 @@ import {
   parDeSalida,
 } from '../../../../../lib/negocio/salidas.ts';
 import type { ParDeResultado } from '../../../../../lib/negocio/salidas.ts';
+import type { ClienteDeLaCredencial } from '../../../../../lib/credenciales/resolver.ts';
+import { clienteDelContacto } from '../../../../../lib/negocio/clienteDelContacto.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -253,6 +255,8 @@ export async function POST(
       .where('id', '=', id)
       .executeTakeFirst();
     if (!contacto) return { tipo: 'no_encontrado' as const };
+    // El cliente del contacto (el nivel 3): las etiquetas van a SU subcuenta.
+    const cliente = await clienteDelContacto(id);
 
     /* ══ FASE B · EL TERRITORIO DEL CONTACTO DECIDE EL VOCABULARIO ═══════════
      *
@@ -318,6 +322,7 @@ export async function POST(
       tipo: 'listo' as const,
       ...r,
       ghlContactId: contacto.ghl_contact_id,
+      cliente,
       rol,
       modo: lo.modo,
     };
@@ -329,6 +334,7 @@ export async function POST(
   // ── PASO 2 · EL CRM, y su fallo NO invalida el paso 1 ─────────────────────
   const aviso = await avisarAlCrm(
     contexto.orgEfectiva,
+    registrado.cliente ?? 'la_de_la_empresa',
     registrado.ghlContactId,
     registrado.rol,
     salida,
@@ -493,6 +499,7 @@ interface AvisoAlCrm {
  */
 async function avisarAlCrm(
   orgId: string,
+  cliente: ClienteDeLaCredencial,
   ghlContactId: string | null,
   rol: Territorio,
   salida: string,
@@ -546,7 +553,7 @@ async function avisarAlCrm(
     };
   }
 
-  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, orgId));
+  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, orgId, cliente));
   if (acceso.tipo === 'falta') {
     return { avisado: false, etiquetas: [], porque: TEXTO_DE_FALTA_GHL[acceso.que] };
   }

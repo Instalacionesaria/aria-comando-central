@@ -29,7 +29,7 @@ Dónde, en `current_date`:
 Y dos que se ven directo en pantalla, fuera de las ventanas:
 
 - **Avanzar** (Mi Día de Closer y de Setter): el «hoy» del selector (`components/negocio/Avanzar.jsx:48`, usado como
-  `min` en `:482`) y la validación de la ruta (`app/api/contactos/[id]/avanzar/route.ts:218`) son días UTC. De
+  `min` en `:482`) y la validación de la ruta (`app/api/contactos/[id]/avanzar/route.ts:220`) son días UTC. De
   19:00 a 24:00 de Lima no se puede poner un seguimiento para hoy: el selector lo esconde y la ruta responde
   `fecha_pasada`, mientras las colas vencen las tareas con el día de la empresa (`lib/negocio/colas.ts:428`).
 - El rótulo de la cola desproporcionada (`lib/negocio/periodo.ts:169`) se escribe en UTC, y lo usan Conversation,

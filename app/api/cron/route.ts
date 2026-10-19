@@ -183,19 +183,19 @@ export async function GET(peticion: Request): Promise<Response> {
     return Promise.all(
       activas.map(async (org) => ({
         org,
-        acceso: await resolverAccesoAGhl(db, org.id),
+        acceso: await resolverAccesoAGhl(db, org.id, 'la_de_la_empresa'),
         /* El segundo acceso, en la MISMA transacción de identidad. Dos proveedores distintos con dos
            llaves distintas: hoy en producción solo una empresa de cinco tiene llave de IA, y todas las
            que trabajan tienen token del CRM. Resolverlos en dos transacciones dejaría la puerta a
            leerlos en dos instantes, y el registro de `credencial_ilegible` de los dos tiene que caer
            en la misma transacción que su lectura — `ADR-0809`. */
-        auditor: await resolverAccesoAlAuditor(db, org.id),
+        auditor: await resolverAccesoAlAuditor(db, org.id, 'la_de_la_empresa'),
         // El tercero, por el mismo motivo y en la misma transacción: las llaves de los Analizadores.
         analizador: await resolverAccesoAlAnalizador(db, org.id),
         // Y la de redactar el plan, sólo con la pasada. Sin llave, el plan queda con plantillas.
         llaveDeIa: conLaPasada ? llaveLista(await resolverLlaveDeIa(db, org.id)) : null,
         // Y el de Meta, sólo con los activos, en la misma transacción por el mismo motivo (`ADR-0809`).
-        ...(conLosActivos ? { meta: await resolverAccesoAMeta(db, org.id) } : {}),
+        ...(conLosActivos ? { meta: await resolverAccesoAMeta(db, org.id, 'la_de_la_empresa') } : {}),
       })),
     );
   });

@@ -39,6 +39,7 @@ import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
 import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../../lib/credenciales/resolver.ts';
 import { resolverLaIntervencion } from '../../../../../lib/auditor/intervencion.ts';
+import { clienteDelContacto } from '../../../../../lib/negocio/clienteDelContacto.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -56,16 +57,14 @@ export async function POST(
      lo hace la política de la base, así que un contacto de otra empresa sale como no encontrado, que
      es lo que `ADR-0501` pide— y sacar su identificador del CRM, sin el cual no hay a quién quitarle
      etiquetas. */
-  const contacto = await conOrganizacion(contexto.orgEfectiva, () =>
-    datos()
-      .selectFrom('contactos')
-      .select(['ghl_contact_id'])
-      .where('id', '=', id)
-      .executeTakeFirst(),
-  );
+  const [contacto, cliente] = await conOrganizacion(contexto.orgEfectiva, async () => [
+    await datos().selectFrom('contactos').select(['ghl_contact_id']).where('id', '=', id).executeTakeFirst(),
+    // El cliente del contacto (el nivel 3): la etiqueta se le quita en SU subcuenta.
+    await clienteDelContacto(id),
+  ] as const);
   if (!contacto) return rechazo('no_encontrado');
 
-  const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, contexto.orgEfectiva));
+  const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, contexto.orgEfectiva, cliente ?? 'la_de_la_empresa'));
   if (acceso.tipo !== 'listo') {
     /* ── SIN TOKEN NO SE RESUELVE, Y ES DELIBERADO ─────────────────────────
      *

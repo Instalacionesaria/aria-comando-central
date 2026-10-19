@@ -44,6 +44,7 @@ import { filaDeContacto } from '../../../../lib/negocio/fila.ts';
 import { citasParaCerrar } from '../../../../lib/negocio/citasParaCerrar.ts';
 import { enlacesDeLaCita } from '../../../../lib/negocio/enlacesDeLaCita.ts';
 import { refrescarUnContacto } from '../../../../lib/negocio/sincronizar.ts';
+import { clienteDelContacto } from '../../../../lib/negocio/clienteDelContacto.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -83,7 +84,7 @@ export async function GET(
 
   // 1 · La caché, PRIMERO. Es la fuente de la respuesta, y además es de donde sale el
   //     identificador del CRM que el refresco necesita.
-  const antes = await conOrganizacion(orgId, () => filaDeContacto(id));
+  const [antes, cliente] = await conOrganizacion(orgId, async () => [await filaDeContacto(id), await clienteDelContacto(id)] as const);
   // Cero filas es 404, y cubre los dos casos con la misma respuesta: no existe, o es de otra
   // organización. Que sean indistinguibles ES el requisito (`ADR-0501`).
   if (!antes) return rechazo('no_encontrado');
@@ -106,7 +107,8 @@ export async function GET(
   if (!antes.ghlContactId) {
     porque = REFRESCO.sin_id;
   } else {
-    const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, orgId));
+    // Las del cliente del contacto (el nivel 3): con las de otro cliente, el contacto no existe en esa subcuenta.
+    const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, orgId, cliente ?? 'la_de_la_empresa'));
     if (acceso.tipo !== 'listo') {
       // Se dice cuál falta, con el texto que ya existe para eso. Un «no se pudo» sin decir que la
       // empresa no tiene token manda a alguien a revisar la red.
@@ -141,7 +143,7 @@ export async function GET(
    * Y es una columna sola, sin descifrar nada: `dominioDeReservasDe` existe para eso, en vez de
    * pasar por `resolverAccesoAGhl`, que descifraría el token del CRM para no mirarlo.
    */
-  const dominio = await conIdentidad((db) => dominioDeReservasDe(db, orgId));
+  const dominio = await conIdentidad((db) => dominioDeReservasDe(db, orgId, cliente ?? 'la_de_la_empresa'));
   /* Las dos lecturas de `citas` van en la MISMA transacción. Separadas, el barrido —que corre cada
      hora— podría escribir en el medio y la ficha mostraría el enlace de una cita y la lista de
      asistencia de otro momento: dos cosas de la misma tabla contradiciéndose en la misma pantalla,

@@ -110,7 +110,7 @@ export async function POST(peticion: Request): Promise<Response> {
   // Antes de leer un solo lead: si falta el token, leerlos habría sido trabajo tirado. Y el
   // mensaje que llega a la pantalla dice QUÉ falta y dónde se carga, no "no se pudo".
   const acceso = await conIdentidad(async (db) =>
-    resolverAccesoAGhl(db, contexto.orgEfectiva),
+    resolverAccesoAGhl(db, contexto.orgEfectiva, 'la_de_la_empresa'),
   );
   if (acceso.tipo === 'falta') {
     return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);

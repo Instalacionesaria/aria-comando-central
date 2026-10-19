@@ -41,7 +41,7 @@ archivo nuevo de este plan, ni siquiera el guion de evaluación, llama a `fetch(
 ## AG-03 · La llave es de cada empresa
 
 ADR-0908: no hay `ANTHROPIC_API_KEY` en el entorno ni llave de ARIA para los clientes. La llave se resuelve
-con `resolverLlaveDeIa` (`lib/credenciales/resolver.ts:401`), que devuelve la falta con nombre
+con `resolverLlaveDeIa` (`lib/credenciales/resolver.ts:513`), que devuelve la falta con nombre
 (`sin_llave_de_ia`, `llave_de_ia_ilegible`). Sin llave, **todo lo que sale de reglas funciona igual**
 (señales, Plan de acción armado con plantillas, Reunión con texto fijo, comentario de la cabecera, agregados
 de llamadas) y lo que necesita el modelo se deshabilita diciendo por qué (`D-02`).

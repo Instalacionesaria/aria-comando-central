@@ -75,6 +75,7 @@ import { sql } from 'kysely';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
+import { ambitoDeUnCliente, type AmbitoDeUnCliente } from '../../../../lib/negocio/ambitoDelCliente.ts';
 import { resolverAccesoAGhl } from '../../../../lib/credenciales/resolver.ts';
 import { locationIdDelCuerpo } from '../../../../lib/ghl/avisos.ts';
 import { leerCuerpoAcotado } from '../../../../lib/http/cuerpoAcotado.ts';
@@ -146,15 +147,32 @@ export async function POST(peticion: Request): Promise<Response> {
     return rechazo('peticion_invalida');
   }
 
-  // ── 3 · LA EMPRESA, POR EL HASH DEL SECRETO ────────────────────────────────
-  const fila = await conIdentidad(async (db) =>
-    db
+  // ── 3 · LA EMPRESA Y SU CLIENTE, POR EL HASH DEL SECRETO ───────────────────
+  //
+  // Dos lugares, en este orden (el nivel 3, `091`): el secreto de la empresa —que es el de su cliente por omisión— y,
+  // si no, el de un cliente con su propia subcuenta. El segundo sólo de clientes ACTIVOS que no son el por omisión: la
+  // fila del por omisión en `cuentas_credenciales` puede tener una copia vieja del secreto de la empresa, y aceptarla
+  // dejaría entrar un secreto ya rotado.
+  const fila = await conIdentidad(async (db) => {
+    const hash = sha256(secreto);
+    const deLaEmpresa = await db
       .selectFrom('organizaciones_credenciales as c')
       .innerJoin('organizaciones as o', 'o.id', 'c.org_id')
-      .select(['c.org_id', 'c.aviso_secreto_hash', 'o.activa'])
-      .where('c.aviso_secreto_hash', '=', sha256(secreto))
-      .executeTakeFirst(),
-  );
+      .innerJoin('cuentas as k', (j) => j.onRef('k.org_id', '=', 'c.org_id').on('k.es_por_omision', '=', true))
+      .select(['c.org_id', 'c.aviso_secreto_hash', 'o.activa', 'k.id as cuenta_id', 'k.es_por_omision'])
+      .where('c.aviso_secreto_hash', '=', hash)
+      .executeTakeFirst();
+    if (deLaEmpresa) return deLaEmpresa;
+    return db
+      .selectFrom('cuentas_credenciales as c')
+      .innerJoin('cuentas as k', (j) => j.onRef('k.id', '=', 'c.cuenta_id').onRef('k.org_id', '=', 'c.org_id'))
+      .innerJoin('organizaciones as o', 'o.id', 'c.org_id')
+      .select(['c.org_id', 'c.aviso_secreto_hash', 'o.activa', 'k.id as cuenta_id', 'k.es_por_omision'])
+      .where('c.aviso_secreto_hash', '=', hash)
+      .where('k.es_por_omision', '=', false)
+      .where('k.estado', '=', 'activa')
+      .executeTakeFirst();
+  });
 
   /* Las tres respuestas de abajo son EL MISMO 403, byte por byte: hash desconocido, secreto que no
      coincide, y empresa desactivada. Si se distinguieran, esta ruta sería un enumerador de empresas
@@ -168,6 +186,9 @@ export async function POST(peticion: Request): Promise<Response> {
   if (!fila.activa) return rechazo('sin_permiso');
 
   const orgId = fila.org_id;
+  // El cliente del aviso: su registro, su contacto y sus mensajes van en su ámbito, y el puente pone su cuenta.
+  const ambito = ambitoDeUnCliente(orgId, fila.cuenta_id);
+  const cliente = { id: fila.cuenta_id, esPorOmision: fila.es_por_omision };
 
   // ── 4 · EL CUERPO Y LA ATRIBUCIÓN, que se COMPARA y no rutea ───────────────
   let cuerpo: Record<string, unknown> | null = null;
@@ -178,7 +199,7 @@ export async function POST(peticion: Request): Promise<Response> {
     cuerpo = null;
   }
 
-  const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, orgId));
+  const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, orgId, cliente));
   const location = locationIdDelCuerpo(cuerpo);
   const atribucion =
     cuerpo === null
@@ -194,8 +215,10 @@ export async function POST(peticion: Request): Promise<Response> {
 
   // ── 5 · LA CUARENTENA: se guarda CRUDO antes de interpretar ────────────────
   let guardado: { id: string; repeticiones: number } | undefined;
-  try {
-    guardado = await conOrganizacion(orgId, async () => {
+  /* Un 23505 se reintenta UNA vez: mientras conviven la clave vieja (org_id, huella) y la del cliente —de la `090` a la
+     `092`— la vieja no es árbitro, y dos entregas simultáneas del mismo cuerpo chocan en ella en vez de sumar una
+     repetición. En el segundo intento la fila ya está y el `on conflict` la encuentra. */
+  const guardar = () => conOrganizacion(ambito, async () => {
       // El tope por hora va DENTRO del contexto, o sea después de autenticar: acá ya sabemos de quién
       // es. El techo de lo no autenticado lo pone la pimienta del paso 1.
       const cuantos = await datos()
@@ -218,7 +241,8 @@ export async function POST(peticion: Request): Promise<Response> {
           atribucion,
         } as never)
         .onConflict((oc) =>
-          oc.columns(['org_id', 'huella']).doUpdateSet({
+          // La clave con el cliente (`090`): el mismo cuerpo que llega a dos clientes es de cada uno.
+          oc.columns(['org_id', 'cuenta_id', 'huella']).doUpdateSet({
             // `+ 1` en SQL y no leído-y-sumado: dos entregas simultáneas del mismo cuerpo sumarían
             // una sola vez si el valor se calculara en la aplicación.
             repeticiones: sql`avisos_del_crm.repeticiones + 1`,
@@ -229,6 +253,13 @@ export async function POST(peticion: Request): Promise<Response> {
         .execute();
       return filas[0] as { id: string; repeticiones: number } | undefined;
     });
+  try {
+    try {
+      guardado = await guardar();
+    } catch (e) {
+      if ((e as { code?: string }).code !== '23505') throw e;
+      guardado = await guardar();
+    }
   } catch (e) {
     // Nuestra base no respondió. 503 para que un proveedor que reintente pueda — y NUNCA el mensaje
     // del motor (`ADR-0704`), que puede llevar nombres de tabla.
@@ -247,16 +278,16 @@ export async function POST(peticion: Request): Promise<Response> {
 
   // Sin credencial del CRM no se puede refrescar el contacto. El aviso queda guardado para reprocesar.
   if (acceso.tipo !== 'listo') {
-    await anotarError(orgId, guardado.id, `sin credencial del CRM: ${acceso.que}`);
+    await anotarError(ambito, guardado.id, `sin credencial del CRM: ${acceso.que}`);
     return ok({ recibido: true, procesado: false, porque: 'sin_credencial' });
   }
 
   // ── 6 · INTERPRETAR ───────────────────────────────────────────────────────
   try {
-    const r = await interpretarAviso(orgId, acceso, evento, cuerpo);
+    const r = await interpretarAviso(ambito, acceso, evento, cuerpo);
 
     if (r.tipo === 'listo') {
-      await conOrganizacion(orgId, async () => {
+      await conOrganizacion(ambito, async () => {
         await datos()
           .updateTable('avisos_del_crm')
           .set({ procesado_el: new Date(), error: null } as never)
@@ -269,22 +300,22 @@ export async function POST(peticion: Request): Promise<Response> {
     }
 
     // No se interpretó, y no es un error de entrega. Queda con su motivo para que el monitor lo cuente.
-    await anotarError(orgId, guardado.id, r.tipo === 'desconocido' ? `evento desconocido: ${r.evento ?? '(sin parámetro)'}` : r.tipo);
+    await anotarError(ambito, guardado.id, r.tipo === 'desconocido' ? `evento desconocido: ${r.evento ?? '(sin parámetro)'}` : r.tipo);
     return ok({ recibido: true, procesado: false, porque: r.tipo });
   } catch (e) {
     /* El mapeo falló. El evento YA está guardado, así que se anota y se responde 200: reintentar no
        ayudaría —el problema es nuestro mapeo, no la entrega— y haría que GoHighLevel desactive el
        workflow por fallos repetidos. El mensaje va al registro, no al cuerpo. */
     console.error(`avisos/crm: ${evento ?? '(sin evento)'} falló`, e);
-    await anotarError(orgId, guardado.id, 'el mapeo no pudo completarse');
+    await anotarError(ambito, guardado.id, 'el mapeo no pudo completarse');
     return ok({ recibido: true, procesado: false, porque: 'fallo_de_mapeo' });
   }
 }
 
 /** Anota por qué un aviso no se procesó. Su lector es el monitor de frescura. */
-async function anotarError(orgId: string, id: string, motivo: string): Promise<void> {
+async function anotarError(ambito: AmbitoDeUnCliente, id: string, motivo: string): Promise<void> {
   try {
-    await conOrganizacion(orgId, async () => {
+    await conOrganizacion(ambito, async () => {
       await datos()
         .updateTable('avisos_del_crm')
         .set({ error: motivo.slice(0, 500) } as never)

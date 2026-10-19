@@ -90,7 +90,7 @@ el servidor ya filtró con la misma función que decide el menú (`components/vi
 
 | Pestaña | Sección · capacidad | Qué hace | Rutas |
 |---|---|---|---|
-| Credenciales | `credenciales` · `credenciales.ver` | Carga por campo los secretos y los identificadores de la empresa; muestra el estado y los últimos cuatro caracteres, nunca el valor. Debajo, «Probar conexión» con Meta y los topes del cerebro | `app/api/admin/credenciales/route.ts:126`, `:136`, `:284`; `app/api/admin/credenciales/meta/route.ts:22`; `app/api/admin/cerebro/route.ts:25`, `:44` |
+| Credenciales | `credenciales` · `credenciales.ver` | Carga por campo los secretos y los identificadores de la empresa; muestra el estado y los últimos cuatro caracteres, nunca el valor. Debajo, «Probar conexión» con Meta y los topes del cerebro | `app/api/admin/credenciales/route.ts:128`, `:136`, `:284`; `app/api/admin/credenciales/meta/route.ts:22`; `app/api/admin/cerebro/route.ts:25`, `:44` |
 | Empresas | `empresas` · `organizaciones.listar` | Alta, edición (nombre, zona horaria, activa) y baja de organizaciones; un alta no crea personas ni credenciales (`components/ajustes/Empresas.jsx:24-28`) | `app/api/admin/organizaciones/route.ts:80`, `:129`; `app/api/admin/organizaciones/[id]/route.ts:71`, `:197` |
 | Usuarios | `usuarios` · `usuarios.ver` | Alta con selector de empresa, rol, pestañas concedidas por departamento, contraseña temporal, desactivar, reactivar y borrar | `app/api/usuarios/route.ts:51`, `app/api/admin/roles/route.ts:45` y las seis de `app/api/admin/usuarios/`, que declaran `SIN_SECCION` |
 
@@ -236,8 +236,8 @@ sesión; no decide ningún permiso.
 (82 el 2026-09-28), **82** declaran `PANTALLA` y **29** están en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:522-656`):
 son exactamente, archivo por archivo, los que no la declaran (comparadas las dos listas con `diff`). No llaman a
 `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**, las mismas: `salud` y `login`, que son
-las públicas (`pruebas/apoyo/autorizados.ts:737-745`), y la sonda, el cron y el aviso del CRM, que van con secreto
-propio (`pruebas/apoyo/autorizados.ts:887-931`).
+las públicas (`pruebas/apoyo/autorizados.ts:742-750`), y la sonda, el cron y el aviso del CRM, que van con secreto
+propio (`pruebas/apoyo/autorizados.ts:892-936`).
 
 **Rechazos registrados.** En toda la historia de `identidad.auditoria_accesos`, 3 `permiso_denegado` y 0
 `seccion_denegada`; **ninguno** desde el 2026-09-28 (consulta del 2026-10-18 agrupada por `accion`).
@@ -281,7 +281,7 @@ restringe por sección, dársela sería dársela a todos los administradores (`d
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:739-744`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
+(`pruebas/apoyo/autorizados.ts:744-749`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
 origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con N=16384, r=8, p=1
 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login exitoso (`lib/autenticacion/freno.ts:85-96`).
 
@@ -308,22 +308,22 @@ Medido el 2026-10-18:
 ## 5 · Credenciales por organización
 
 **Una función, sin respaldo al entorno.** `resolverCredenciales` es la única entrada
-(`lib/credenciales/resolver.ts:198`), y la decisión está en el encabezado: no hay ninguna variable de entorno de
+(`lib/credenciales/resolver.ts:241`), y la decisión está en el encabezado: no hay ninguna variable de entorno de
 respaldo, «ni siquiera explícito», porque ese `??` ya costó una fuga entre clientes (`lib/credenciales/resolver.ts:6-36`).
-El origen es siempre `'organizacion'` (`lib/credenciales/resolver.ts:85`). En `lib/credenciales/` la única lectura de
+El origen es siempre `'organizacion'` (`lib/credenciales/resolver.ts:128`). En `lib/credenciales/` la única lectura de
 `process.env` es la clave maestra (`lib/credenciales/cifrado.ts:35-36`).
 
 **Cuatro estados, no dos:** `ausente`, `activa`, `vencida`, `revocada`, cada uno con su texto
-(`lib/credenciales/resolver.ts:51-56`). Una empresa sin fila es `ausente`, que es el caso más común.
+(`lib/credenciales/resolver.ts:94-99`). Una empresa sin fila es `ausente`, que es el caso más común.
 
 **Qué se guarda.** **Seis** secretos —token y refresco del CRM, llave de IA, clave de pagos, llave de tl;dv y, desde
 el 2026-09-29, **token de Meta**— que se cifran con AES-256-GCM al guardar y nunca salen
-(`app/api/admin/credenciales/route.ts:88-95`, `lib/credenciales/cifrado.ts:62`); **seis** identificadores que no son
+(`app/api/admin/credenciales/route.ts:90-97`, `lib/credenciales/cifrado.ts:62`); **seis** identificadores que no son
 secretos y viajan completos —la cuenta publicitaria de Meta, y cuenta, calendario, dominio de reservas y usuario del
-agente en el CRM, y comercio de pagos— (`app/api/admin/credenciales/route.ts:97-120`); y el secreto del aviso del CRM,
-que no se carga sino que se genera con el `POST` (`app/api/admin/credenciales/route.ts:284`), se guarda como hash,
-sale una sola vez al generarse, y del que el `GET` sólo dice si existe (`lib/credenciales/resolver.ts:273`). Cada campo
-se guarda solo y un `null` explícito lo borra (`app/api/admin/credenciales/route.ts:171`). Las dos columnas de Meta son
+agente en el CRM, y comercio de pagos— (`app/api/admin/credenciales/route.ts:99-122`); y el secreto del aviso del CRM,
+que no se carga sino que se genera con el `POST` (`app/api/admin/credenciales/route.ts:304`), se guarda como hash,
+sale una sola vez al generarse, y del que el `GET` sólo dice si existe (`lib/credenciales/resolver.ts:316`). Cada campo
+se guarda solo y un `null` explícito lo borra (`app/api/admin/credenciales/route.ts:173`). Las dos columnas de Meta son
 de la `064` (`db/migraciones/064_la_llave_de_meta.sql:28` y `:31`), aplicada el 2026-09-30 a las 16:15 UTC.
 
 **Meta, y «Probar conexión» (2026-10-15).** El token es el de un usuario del sistema del Business Manager, sólo de
@@ -332,7 +332,7 @@ hay un botón que lo prueba en tres pasos —el token, la cuenta publicitaria y 
 nada (`components/ajustes/ConexionConMeta.jsx:3-10`, `lib/meta/conexion.ts:37`). La ruta es un `POST` aunque no
 escribe, pide `credenciales.editar` y llama a Meta fuera de la transacción de identidad
 (`app/api/admin/credenciales/meta/route.ts:1-9`, `app/api/admin/credenciales/meta/route.ts:22-31`). Sin token o sin
-cuenta responde qué falta, con los textos de `TEXTO_DE_FALTA_META` (`lib/credenciales/resolver.ts:576-585`). Lo usa la
+cuenta responde qué falta, con los textos de `TEXTO_DE_FALTA_META` (`lib/credenciales/resolver.ts:693-702`). Lo usa la
 tarea horaria `activos` (ver [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 2) y su guía es
 `docs/creative/17-CONECTAR-META-PASO-A-PASO.md`. **Nadie lo cargó**: el 2026-10-18, 0 de 5 filas tienen token de Meta
 y 0 tienen la cuenta, y la tarea `activos` está `saltada` en las 11 empresas activas.
@@ -356,8 +356,8 @@ empresa está diagnosticado y dejado para después (`docs/OTROS/futuro/el-dia-de
 
 **Quién firma el cambio.** `actualizado_por` tiene una foránea compuesta que exige un usuario de la misma
 organización, así que bajo delegación va nulo (`lib/autorizacion/sesion.ts:453-454`,
-`app/api/admin/credenciales/route.ts:230`); el actor real queda en `identidad.auditoria_accesos` como
-`credenciales_cargadas` (`app/api/admin/credenciales/route.ts:246`). Los topes del cerebro siguen la misma regla
+`app/api/admin/credenciales/route.ts:250`); el actor real queda en `identidad.auditoria_accesos` como
+`credenciales_cargadas` (`app/api/admin/credenciales/route.ts:266`). Los topes del cerebro siguen la misma regla
 (`app/api/admin/cerebro/route.ts:59`).
 
 **Cargadas por proveedor** (`count(*) filter (where … is not null)` sobre `identidad.organizaciones_credenciales`):
@@ -443,7 +443,7 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 | Los topes y Meta | Los topes del cerebro en Ajustes; la prueba de conexión con Meta | `pruebas/base/218-los-topes-del-cerebro-en-ajustes.test.ts`, `pruebas/codigo/255-la-conexion-con-meta.test.ts` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` sigue vacía: no hay ninguna excepción viva
-(`pruebas/apoyo/autorizados.ts:847-854`).
+(`pruebas/apoyo/autorizados.ts:852-859`).
 
 **Un cruce que el código anuncia y no se encontró.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en las dos

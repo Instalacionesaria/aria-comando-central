@@ -359,9 +359,9 @@ tabla, 2026-10-18), así que «completo» ya son 67 días de pasado que una etiq
   días quedan **0** (14 el 2026-09-28), así que el aviso calla desde alrededor del 2026-10-10, como estaba
   previsto; en «completo» son 101 y no se apaga nunca.
 - **La pestaña Auditoría está vacía para 10 de las 11 empresas activas**, igual que el 2026-09-28. Por el motivo
-  que devolvería `resolverAccesoAlAuditor` (`lib/credenciales/resolver.ts:462`): **6 sin fila de credenciales**
-  —que se reporta como falta de llave (`lib/credenciales/resolver.ts:472`)—, **4 con llave y sin
-  `crm_agente_usuario_id`** (`lib/credenciales/resolver.ts:480`), 0 apagadas y **una sola que audita**.
+  que devolvería `resolverAccesoAlAuditor` (`lib/credenciales/resolver.ts:574`): **6 sin fila de credenciales**
+  —que se reporta como falta de llave (`lib/credenciales/resolver.ts:589`)—, **4 con llave y sin
+  `crm_agente_usuario_id`** (`lib/credenciales/resolver.ts:597`), 0 apagadas y **una sola que audita**.
 
 ```sql
 select analizado_el::date dia, count(*) from negocio.analisis_del_agente
@@ -882,11 +882,11 @@ mensaje del commit). Esas cuatro escrituras siguen fallando bajo delegación:
 - `resultados.registrado_por`, `notas.autor_id` y `tareas.creada_por`, las tres de Avanzar
   (`lib/negocio/avanzar.ts:189`, `lib/negocio/avanzar.ts:277`, `lib/negocio/avanzar.ts:347`).
 - `mensajes.autor_usuario_id`, al mandar un mensaje a mano
-  (`app/api/contactos/[id]/mensajes/route.ts:224`). **Éste es el caro**: el envío al CRM va antes
-  (`app/api/contactos/[id]/mensajes/route.ts:148`) y la escritura después, sin `catch`
-  (`app/api/contactos/[id]/mensajes/route.ts:207`). Bajo delegación el mensaje le llega al contacto
+  (`app/api/contactos/[id]/mensajes/route.ts:223`). **Éste es el caro**: el envío al CRM va antes
+  (`app/api/contactos/[id]/mensajes/route.ts:147`) y la escritura después, sin `catch`
+  (`app/api/contactos/[id]/mensajes/route.ts:206`). Bajo delegación el mensaje le llega al contacto
   y quien lo mandó recibe un 500, que es justo lo que el comentario de la misma ruta dice que hay
-  que evitar, porque «lo mandaría de nuevo» (`app/api/contactos/[id]/mensajes/route.ts:248-250`).
+  que evitar, porque «lo mandaría de nuevo» (`app/api/contactos/[id]/mensajes/route.ts:247-249`).
 
 Las cuatro foráneas son compuestas desde la `011`
 (`db/migraciones/011_negocio_closer_setter.sql:251`, `db/migraciones/011_negocio_closer_setter.sql:349`,

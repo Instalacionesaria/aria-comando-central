@@ -72,7 +72,7 @@ Cuántos workflows con acción Webhook existen, a qué URL apuntan (¿al sistema
 ## 3 · EL PLAN, EN ETAPAS NUMERADAS
 
 ### ETAPA 1 · UN SOLO ESCRITOR DE `negocio.mensajes`, CON DEDUPLICACIÓN POR GEMELO — **HOY, con lo que hay en disco**
-Va primero y no depende de nada porque **arregla un defecto que existe HOY sin ningún webhook**. Verificado: `app/api/contactos/[id]/mensajes/route.ts:183` escribe `ghl_mensaje_id: enviado.datos.mensajeId ?? \`propio:${id}:${ahora.getTime()}\`` con `id_fabricado: fabricado` y `origen: 'propio'`, sin pasar por `guardarMensajes`. Ese valor no puede colisionar nunca con el identificador real, así que cuando la ingesta trae el mismo mensaje quedan **DOS filas para un solo mensaje**, visibles en el chat, sin ningún error. Y el encabezado de `lib/negocio/ingesta.ts:1` («EL único escritor de `negocio.mensajes`») es hoy **falso**.
+Va primero y no depende de nada porque **arregla un defecto que existe HOY sin ningún webhook**. Verificado: `app/api/contactos/[id]/mensajes/route.ts:182` escribe `ghl_mensaje_id: enviado.datos.mensajeId ?? \`propio:${id}:${ahora.getTime()}\`` con `id_fabricado: fabricado` y `origen: 'propio'`, sin pasar por `guardarMensajes`. Ese valor no puede colisionar nunca con el identificador real, así que cuando la ingesta trae el mismo mensaje quedan **DOS filas para un solo mensaje**, visibles en el chat, sin ningún error. Y el encabezado de `lib/negocio/ingesta.ts:1` («EL único escritor de `negocio.mensajes`») es hoy **falso**.
 
 - **Archivos:** nuevo `lib/negocio/mensajes.ts` exportando `escribirMensajes(orgId, filas, { fijarPiso })`; se extrae de `lib/negocio/ingesta.ts:281-360`; pasan por él los DOS escritores de hoy (`ingesta.ts` y el POST del chat).
 - **Migración:** ninguna.
@@ -132,7 +132,7 @@ Verificado: contra cuerpos enormes este repositorio no hace **nada** a nivel glo
 - **La prueba que la cierra, y lo que atrapa:** alimentar `cuerpoAcotado` con un stream que entregue tope+1 en trozos y afirmar **dos cosas distintas** — que devuelve `demasiado_grande`, y que **lo acumulado nunca superó el tope más un trozo**. La segunda es la que importa: mata mover la comprobación al final del bucle (leer todo y después medir), que es la mutación que un tope «que funciona» no distingue. Más: `>` en vez de `>=` en el borde (exactamente el tope se ACEPTA), y que `rechazo('cuerpo_demasiado_grande')` no lleve `detalle` (ADR-0704: la ruta es alcanzable sin autenticar).
 
 ### ETAPA 4 · LA RUTA RECEPTORA, EN CUARENTENA — **depende de 2-B para el tope; el resto, HOY**
-`app/api/avisos/crm/route.ts`, un solo `POST`. El nombre no es «aviso» a secas: en este repositorio ya hay tres cosas llamadas así (`lib/deteccion/aviso.ts` es el canal de alertas, `avisarAlCrm` en `app/api/contactos/[id]/avanzar/route.ts:213` es saliente, y `db/migraciones/011:262` es el webhook de voz).
+`app/api/avisos/crm/route.ts`, un solo `POST`. El nombre no es «aviso» a secas: en este repositorio ya hay tres cosas llamadas así (`lib/deteccion/aviso.ts` es el canal de alertas, `avisarAlCrm` en `app/api/contactos/[id]/avanzar/route.ts:215` es saliente, y `db/migraciones/011:262` es el webhook de voz).
 
 **EL ORDEN DE LAS LÍNEAS ES LA DEFENSA, y va del más barato al más caro:**
 

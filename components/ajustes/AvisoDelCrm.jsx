@@ -55,7 +55,9 @@ function baseDeLaAplicacion() {
   return typeof window === 'undefined' ? '' : window.location.origin;
 }
 
-export default function AvisoDelCrm({ configurado, alGenerar }) {
+/* `ruta`: dónde se genera el secreto. La de la empresa por omisión; la conexión de un cliente (el nivel 3) pasa la
+   suya, y su secreto es de ese cliente. */
+export default function AvisoDelCrm({ configurado, alGenerar, ruta = '/api/admin/credenciales' }) {
   const [cabecera, setCabecera] = useState(null);
   const [pimientaFalta, setPimientaFalta] = useState(false);
   const [generando, setGenerando] = useState(false);
@@ -68,7 +70,7 @@ export default function AvisoDelCrm({ configurado, alGenerar }) {
     setConfirmandoRotacion(false);
     setGenerando(true);
     setAviso(null);
-    const r = await pedir('/api/admin/credenciales', { metodo: 'POST' });
+    const r = await pedir(ruta, { metodo: 'POST' });
     setGenerando(false);
 
     /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso no es «no se pudo»: con una
@@ -86,7 +88,7 @@ export default function AvisoDelCrm({ configurado, alGenerar }) {
     // Se recarga el estado de la pantalla: `avisoSecretoConfigurado` pasó a `true`, y quien rotó
     // tiene que ver que quedó.
     alGenerar?.();
-  }, [alGenerar]);
+  }, [alGenerar, ruta]);
 
   const copiar = useCallback(async (texto, cual) => {
     try {

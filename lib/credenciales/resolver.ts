@@ -38,6 +38,49 @@
 
 import { descifrar } from './cifrado.ts';
 import type { Trx } from '../datos/capa.ts';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL NIVEL 3 · DE QUIÉN ES CADA CREDENCIAL
+//
+// Cada cliente de una empresa (`identidad.cuentas`) puede tener su propia subcuenta del CRM y su propia cuenta de
+// Meta. El cliente POR OMISIÓN usa las de la empresa —`organizaciones_credenciales`, que es donde las carga Ajustes ›
+// Credenciales—; los demás, las suyas —`cuentas_credenciales`, más la subcuenta en `cuentas.crm_cuenta_id`, que
+// vincula la plataforma—.
+//
+// El cliente es OBLIGATORIO en cada resolvedor de algo del CRM o de Meta, y no hay una caída silenciosa a la
+// empresa: con el token de la empresa, el contacto de otro cliente no existe en su subcuenta, y un enlace de reservas
+// con el dominio de la empresa le llegaría al lead de otro negocio. Sin fila o sin token, el cliente «falta», con
+// el mismo motivo que una empresa sin cargar. `'la_de_la_empresa'` lo dice quien de verdad quiere la de la empresa
+// (las rutas manuales, el cron hasta el barrido por cliente). La llave de IA, tl;dv y los pagos son de la empresa.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** De qué cliente es la credencial que se pide. */
+export type ClienteDeLaCredencial = { id: string; esPorOmision: boolean } | 'la_de_la_empresa';
+
+/** `true` = se lee la de la empresa (el cliente por omisión, o quien la pide a propósito). */
+function esDeLaEmpresa(cliente: ClienteDeLaCredencial): cliente is 'la_de_la_empresa' | { id: string; esPorOmision: true } {
+  return cliente === 'la_de_la_empresa' || cliente.esPorOmision;
+}
+
+/** Las credenciales de un cliente que no es el por omisión, con su subcuenta. Siempre por (organización, cliente). */
+async function credencialesDelCliente(db: Trx, orgId: string, cuentaId: string) {
+  return db
+    .selectFrom('cuentas as c')
+    .leftJoin('cuentas_credenciales as cc', (j) => j.onRef('cc.cuenta_id', '=', 'c.id').onRef('cc.org_id', '=', 'c.org_id'))
+    .select([
+      'c.crm_cuenta_id',
+      'cc.crm_token_cifrado',
+      'cc.crm_estado',
+      'cc.crm_calendario_id',
+      'cc.crm_dominio_reservas',
+      'cc.crm_agente_usuario_id',
+      'cc.meta_token_cifrado',
+      'cc.meta_cuenta_id',
+    ])
+    .where('c.org_id', '=', orgId)
+    .where('c.id', '=', cuentaId)
+    .executeTakeFirst();
+}
 import { auditar } from '../autenticacion/auditoria.ts';
 
 /**
@@ -276,6 +319,75 @@ export async function resolverCredenciales(db: Trx, orgId: string): Promise<Cred
   };
 }
 
+
+/** Lo que se ve de la conexión de un cliente (el nivel 3). Como `Credenciales`: estados y vistas previas, nunca un valor. */
+export interface CredencialesDelCliente {
+  cuentaId: string;
+  /** El cliente principal usa las de la empresa: su conexión se ve y se carga en Ajustes › Credenciales. */
+  esPorOmision: boolean;
+  crm: CredencialVisible;
+  meta: CredencialVisible;
+  metaCuentaId: string | null;
+  /** La subcuenta del CRM. La vincula la plataforma; acá sólo se muestra. */
+  crmCuentaId: string | null;
+  crmCalendarioId: string | null;
+  crmDominioReservas: string | null;
+  crmAgenteUsuarioId: string | null;
+  /** Un booleano, nunca el hash: ver `Credenciales.avisoSecretoConfigurado`. */
+  avisoSecretoConfigurado: boolean;
+  actualizadoEl: Date | null;
+}
+
+/**
+ * La conexión de UN cliente de la organización, o `null` si no es suyo. **Con la `Trx` de identidad.** Emite
+ * `credencial_ilegible` igual que `resolverCredenciales`, en la misma transacción que la lectura (`ADR-0809`).
+ */
+export async function resolverCredencialesDelCliente(
+  db: Trx,
+  orgId: string,
+  cuentaId: string,
+): Promise<CredencialesDelCliente | null> {
+  const fila = await db
+    .selectFrom('cuentas as c')
+    .leftJoin('cuentas_credenciales as cc', (j) => j.onRef('cc.cuenta_id', '=', 'c.id').onRef('cc.org_id', '=', 'c.org_id'))
+    .select([
+      'c.id',
+      'c.es_por_omision',
+      'c.crm_cuenta_id',
+      'cc.crm_token_cifrado',
+      'cc.crm_estado',
+      'cc.meta_token_cifrado',
+      'cc.meta_cuenta_id',
+      'cc.crm_calendario_id',
+      'cc.crm_dominio_reservas',
+      'cc.crm_agente_usuario_id',
+      'cc.aviso_secreto_hash',
+      'cc.actualizado_el',
+    ])
+    .where('c.org_id', '=', orgId)
+    .where('c.id', '=', cuentaId)
+    .executeTakeFirst();
+  if (!fila) return null;
+
+  const crm = verCredencial(fila.crm_token_cifrado ?? null, fila.crm_estado ?? 'ausente');
+  const meta = verCredencial(fila.meta_token_cifrado ?? null, 'activa');
+  if (crm.estado === ILEGIBLE || meta.estado === ILEGIBLE) await auditar(db, { accion: 'credencial_ilegible', orgId });
+
+  return {
+    cuentaId: fila.id,
+    esPorOmision: fila.es_por_omision,
+    crm,
+    meta,
+    metaCuentaId: fila.meta_cuenta_id ?? null,
+    crmCuentaId: fila.crm_cuenta_id ?? null,
+    crmCalendarioId: fila.crm_calendario_id ?? null,
+    crmDominioReservas: fila.crm_dominio_reservas ?? null,
+    crmAgenteUsuarioId: fila.crm_agente_usuario_id ?? null,
+    avisoSecretoConfigurado: (fila.aviso_secreto_hash ?? null) !== null,
+    actualizadoEl: fila.actualizado_el ?? null,
+  };
+}
+
 /**
  * El estado visible de UNA credencial cifrada.
  *
@@ -459,12 +571,17 @@ export const TEXTO_DE_FALTA_AUDITOR: Readonly<Record<FaltaParaAuditar, string>> 
  * Y **corta antes de descifrar**: descifrar una llave que no se va a usar es trabajo criptográfico
  * por cada empresa apagada en cada corrida del cron.
  */
-export async function resolverAccesoAlAuditor(db: Trx, orgId: string): Promise<AccesoAlAuditor> {
-  const fila = await db
+export async function resolverAccesoAlAuditor(db: Trx, orgId: string, cliente: ClienteDeLaCredencial): Promise<AccesoAlAuditor> {
+  const deLaEmpresa = await db
     .selectFrom('organizaciones_credenciales')
     .select(['auditor_activo', 'ia_clave_cifrada', 'crm_agente_usuario_id'])
     .where('org_id', '=', orgId)
     .executeTakeFirst();
+  /* El agente del CRM es de la subcuenta (el nivel 3): el de otro cliente sale de SUS credenciales. La llave de IA y
+     el interruptor siguen siendo de la empresa. */
+  const fila = deLaEmpresa && !esDeLaEmpresa(cliente)
+    ? { ...deLaEmpresa, crm_agente_usuario_id: (await credencialesDelCliente(db, orgId, cliente.id))?.crm_agente_usuario_id ?? null }
+    : deLaEmpresa;
 
   /* Sin fila de credenciales, la falta que corresponde es la de la llave y no «apagado»: el
      interruptor nace ENCENDIDO (`default true`), así que una empresa sin fila no tiene el auditor
@@ -604,12 +721,14 @@ export function cuentaDeMeta(texto: string | null | undefined): string | null {
  * ése es el aviso que importa, y con el orden al revés se perdería entre las que nunca conectaron.
  * La presencia se mira antes de descifrar, como en `resolverAccesoAlAnalizador`.
  */
-export async function resolverAccesoAMeta(db: Trx, orgId: string): Promise<AccesoAMeta> {
-  const fila = await db
-    .selectFrom('organizaciones_credenciales')
-    .select(['meta_token_cifrado', 'meta_cuenta_id'])
-    .where('org_id', '=', orgId)
-    .executeTakeFirst();
+export async function resolverAccesoAMeta(db: Trx, orgId: string, cliente: ClienteDeLaCredencial): Promise<AccesoAMeta> {
+  const fila = esDeLaEmpresa(cliente)
+    ? await db
+        .selectFrom('organizaciones_credenciales')
+        .select(['meta_token_cifrado', 'meta_cuenta_id'])
+        .where('org_id', '=', orgId)
+        .executeTakeFirst()
+    : await credencialesDelCliente(db, orgId, cliente.id);
 
   if (!fila || !fila.meta_token_cifrado) return { tipo: 'falta', que: 'sin_token_de_meta' };
   const cuentaId = cuentaDeMeta(fila.meta_cuenta_id);
@@ -706,12 +825,14 @@ export type AccesoAGhl =
  * alguien con el Location ID puesto y el token ilegible recibiría "falta la subcuenta" y se
  * pondría a buscar un dato que ya tiene.
  */
-export async function resolverAccesoAGhl(db: Trx, orgId: string): Promise<AccesoAGhl> {
-  const fila = await db
-    .selectFrom('organizaciones_credenciales')
-    .select(['crm_token_cifrado', 'crm_estado', 'crm_cuenta_id'])
-    .where('org_id', '=', orgId)
-    .executeTakeFirst();
+export async function resolverAccesoAGhl(db: Trx, orgId: string, cliente: ClienteDeLaCredencial): Promise<AccesoAGhl> {
+  const fila = esDeLaEmpresa(cliente)
+    ? await db
+        .selectFrom('organizaciones_credenciales')
+        .select(['crm_token_cifrado', 'crm_estado', 'crm_cuenta_id'])
+        .where('org_id', '=', orgId)
+        .executeTakeFirst()
+    : await credencialesDelCliente(db, orgId, cliente.id);
 
   if (!fila || !fila.crm_token_cifrado) return { tipo: 'falta', que: 'sin_token' };
   if (fila.crm_estado === 'vencida') return { tipo: 'falta', que: 'token_vencido' };
@@ -749,12 +870,16 @@ export async function resolverAccesoAGhl(db: Trx, orgId: string): Promise<Acceso
 export async function dominioDeReservasDe(
   db: Trx,
   orgId: string,
+  // El del cliente del contacto (el nivel 3): el enlace de reservas de otro negocio no se le manda a nadie.
+  cliente: ClienteDeLaCredencial,
 ): Promise<string | null> {
-  const fila = await db
-    .selectFrom('organizaciones_credenciales')
-    .select('crm_dominio_reservas')
-    .where('org_id', '=', orgId)
-    .executeTakeFirst();
+  const fila = esDeLaEmpresa(cliente)
+    ? await db
+        .selectFrom('organizaciones_credenciales')
+        .select('crm_dominio_reservas')
+        .where('org_id', '=', orgId)
+        .executeTakeFirst()
+    : await credencialesDelCliente(db, orgId, cliente.id);
 
   const d = (fila?.crm_dominio_reservas ?? '').trim();
   return d === '' ? null : d;

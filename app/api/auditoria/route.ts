@@ -63,7 +63,7 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  const acceso = await conIdentidad((db) => resolverAccesoAlAuditor(db, contexto.orgEfectiva));
+  const acceso = await conIdentidad((db) => resolverAccesoAlAuditor(db, contexto.orgEfectiva, 'la_de_la_empresa'));
   const noAudita = porQueNoAudita(acceso);
 
   /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos

@@ -53,7 +53,7 @@ export async function POST(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['contactos.ver'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
-  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva));
+  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva, 'la_de_la_empresa'));
   if (acceso.tipo === 'falta') {
     return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);
   }

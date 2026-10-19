@@ -211,5 +211,5 @@ test('la tarea `activos`: sola en el minuto 37, cada hora, y su corte se lee en 
 
   const ruta = readFileSync(join(RAIZ, 'app/api/cron/route.ts'), 'utf8');
   assert.match(ruta, /const conLosActivos = tareasDelHorario\(horario\)\.tareas\.includes\('activos'\);/);
-  assert.match(ruta, /\.\.\.\(conLosActivos \? \{ meta: await resolverAccesoAMeta\(db, org\.id\) \} : \{\}\)/);
+  assert.match(ruta, /\.\.\.\(conLosActivos \? \{ meta: await resolverAccesoAMeta\(db, org\.id, 'la_de_la_empresa'\) \} : \{\}\)/);
 });

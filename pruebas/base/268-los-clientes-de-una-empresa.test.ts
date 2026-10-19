@@ -172,19 +172,22 @@ test('el cliente principal no se pausa; otro sí, y su baja lleva fecha', async 
 });
 
 test('vincular la subcuenta del CRM es sólo de ARIA, y una location tomada da 409', async () => {
+  // Dos clientes que no son el principal: la subcuenta del principal es la de la empresa y no se vincula acá (la 276).
+  const [uno, otro] = await Promise.all([0, 1].map((n) =>
+    unaFila<{ id: string }>(admin, `select id from identidad.cuentas where org_id = $1 and not es_por_omision order by id offset $2 limit 1`, [org, n]),
+  ));
+  assert.ok(uno && otro);
   const delAdmin = await leerRespuesta<{ codigo: string }>(
     await vincular(
-      pedirComo(`/api/admin/cuentas/${porOmision}/vinculo`, tokenAdmin, { metodo: 'PATCH', cuerpo: { crmCuentaId: 'loc268a' } }),
-      ctx(porOmision),
+      pedirComo(`/api/admin/cuentas/${uno.id}/vinculo`, tokenAdmin, { metodo: 'PATCH', cuerpo: { crmCuentaId: 'loc268a' } }),
+      ctx(uno.id),
     ),
   );
   assert.deepEqual({ estado: delAdmin.estado, codigo: delAdmin.cuerpo.codigo }, { estado: 403, codigo: 'sin_permiso' });
 
-  const otro = await unaFila<{ id: string }>(admin, `select id from identidad.cuentas where org_id = $1 and not es_por_omision limit 1`, [org]);
-  assert.ok(otro);
   const ok1 = await vincular(
-    pedirComo(`/api/admin/cuentas/${porOmision}/vinculo`, tokenAria, { metodo: 'PATCH', cuerpo: { orgId: org, crmCuentaId: 'loc268a' } }),
-    ctx(porOmision),
+    pedirComo(`/api/admin/cuentas/${uno.id}/vinculo`, tokenAria, { metodo: 'PATCH', cuerpo: { orgId: org, crmCuentaId: 'loc268a' } }),
+    ctx(uno.id),
   );
   assert.equal(ok1.status, 200, await ok1.clone().text());
   const tomada = await leerRespuesta<{ codigo: string; detalle?: string }>(

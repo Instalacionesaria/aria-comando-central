@@ -147,7 +147,7 @@ async function main() {
   );
 
   for (const org of orgs) {
-    const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, org.id));
+    const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, org.id, 'la_de_la_empresa'));
     if (acceso.tipo !== 'listo') continue;
 
     const cred = await conIdentidad(async (db) =>

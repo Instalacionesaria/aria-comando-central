@@ -52,7 +52,7 @@ export async function POST(peticion: Request): Promise<Response> {
   // El acceso se resuelve por IDENTIDAD: la tabla de credenciales es de ese dominio y el rol
   // del inquilino no tiene ni `select` sobre ella. El filtro por organización lo pone esta
   // llamada a mano, con `orgEfectiva`.
-  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva));
+  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva, 'la_de_la_empresa'));
 
   if (acceso.tipo === 'falta') {
     // CADA faltante con su código y su texto, sin colapsar. `ADR-0604`: la organización no

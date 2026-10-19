@@ -23,7 +23,7 @@ export async function POST(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['credenciales.editar'], PANTALLA);
   if (contexto instanceof Response) return contexto;
 
-  const acceso = await conIdentidad(async (db) => resolverAccesoAMeta(db, contexto.orgEfectiva));
+  const acceso = await conIdentidad(async (db) => resolverAccesoAMeta(db, contexto.orgEfectiva, 'la_de_la_empresa'));
   if (acceso.tipo !== 'listo') {
     return ok({ estado: 'sin_credencial', que: acceso.que, texto: TEXTO_DE_FALTA_META[acceso.que] });
   }

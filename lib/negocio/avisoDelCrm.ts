@@ -52,7 +52,7 @@
 import { createHash } from 'node:crypto';
 import type { AccesoAGhl } from '../credenciales/resolver.ts';
 import { contactIdDelCuerpo, esEventoConocido, textoDelMensaje } from '../ghl/avisos.ts';
-import { conOrganizacion, datos } from '../datos/contexto.ts';
+import { conOrganizacion, datos, type Ambito } from '../datos/contexto.ts';
 import { escribirMensajes } from './mensajes.ts';
 import { refrescarUnContacto } from './sincronizar.ts';
 
@@ -134,7 +134,9 @@ function idDelMensaje(contactId: string, cuando: Date, texto: string): string {
 export type LectorDeContacto = typeof refrescarUnContacto;
 
 export async function interpretarAviso(
-  orgId: string,
+  /* El cliente al que entró el aviso (el nivel 3): su contacto y sus mensajes. La ruta pasa su ámbito; las pruebas
+     de antes, la organización, que con un solo cliente es lo mismo. */
+  orgId: string | Ambito,
   acceso: AccesoAGhl & { tipo: 'listo' },
   evento: string | null,
   cuerpo: Record<string, unknown>,

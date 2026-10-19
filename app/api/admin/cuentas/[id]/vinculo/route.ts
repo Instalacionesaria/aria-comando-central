@@ -11,7 +11,9 @@
 // Las dos las escribe sólo ARIA: la capacidad `cuentas.vincular` no la tiene ningún rol de una empresa, y el
 // inquilino no tiene permiso sobre esas columnas (`086`). Por eso esta ruta escribe por identidad.
 //
-// Una subcuenta que ya es de otro cliente sale como `subcuenta_en_uso` (409), sin decir de quién.
+// Una subcuenta que ya es de otro cliente —o de una empresa, que es la de su cliente principal— sale como
+// `subcuenta_en_uso` (409), sin decir de quién. La del cliente principal es la de su empresa y se carga en Ajustes ›
+// Credenciales: acá es `cliente_principal` (409), para que no haya dos lugares donde escribirla.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../../../lib/autorizacion/portero.ts';
@@ -26,6 +28,7 @@ export const PANTALLA = 'clientes';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Una location de GoHighLevel: letras y números. No se interpreta, se guarda. */
 const LOCATION = /^[A-Za-z0-9_-]{1,100}$/;
+const DEL_PRINCIPAL = 'La subcuenta del cliente principal es la de la empresa: se carga en Ajustes › Credenciales.';
 
 export async function PATCH(peticion: Request, ctx: RouteContext<'/api/admin/cuentas/[id]/vinculo'>): Promise<Response> {
   const contexto = await exigir(peticion, ['cuentas.vincular'], PANTALLA);
@@ -58,14 +61,16 @@ export async function PATCH(peticion: Request, ctx: RouteContext<'/api/admin/cue
   if (Object.keys(cambios).length === 0) return rechazo('peticion_invalida', 'No hay ningún cambio que guardar.');
 
   return conIdentidad(async (db) => {
-    let encontrado: boolean;
+    let resultado: Awaited<ReturnType<typeof vincularCuenta>>;
     try {
-      encontrado = await vincularCuenta(db, orgId, id, cambios);
+      resultado = await vincularCuenta(db, orgId, id, cambios);
     } catch (e) {
       if ((e as { code?: string }).code === '23505') return rechazo('subcuenta_en_uso');
       throw e;
     }
-    if (!encontrado) return rechazo('no_encontrado');
+    if (resultado === 'no_encontrado') return rechazo('no_encontrado');
+    if (resultado === 'subcuenta_en_uso') return rechazo('subcuenta_en_uso');
+    if (resultado === 'cliente_principal') return rechazo('cliente_principal', DEL_PRINCIPAL);
     await auditarAdministracion(db, { accion: 'cuenta_vinculada', actor: contexto.usuarioId, objetivo: id, orgId });
     return ok({ vinculado: true });
   });

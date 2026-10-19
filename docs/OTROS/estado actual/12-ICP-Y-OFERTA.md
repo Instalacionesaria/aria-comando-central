@@ -160,7 +160,7 @@ que llama desde la propia ruta a la función de la base que copia el formulario
 | `POST` onboarding | `fundaciones.editar` (`app/api/fundaciones/onboarding/route.ts:35`) | nada | sin declarar |
 
 Las cuatro que gastan resuelven la llave con `resolverAccesoAFundaciones`
-(`lib/credenciales/resolver.ts:375-382`) y están en `ARCHIVOS_AUTORIZADOS` sólo por eso
+(`lib/credenciales/resolver.ts:487-494`) y están en `ARCHIVOS_AUTORIZADOS` sólo por eso
 (`pruebas/apoyo/autorizados.ts:200-219`); las demás abren `conOrganizacion(` como cualquier ruta.
 
 ### 2.3 · El Research y sus techos de tiempo
@@ -273,7 +273,7 @@ Eso fue cierto del 2026-08-23 al 2026-09-07. El commit `b0a983b` lo cortó:
 - el almacén lee y escribe `public.aria_cc_foundations`, una fila por organización, con RLS forzada
   y la política por `app.org_id` (`lib/fundaciones/almacen.ts:14-24`, `lib/fundaciones/almacen.ts:71`);
 - para generar hace falta la llave de IA y nada más: `sin_alumno_vinculado` desapareció
-  (`lib/credenciales/resolver.ts:337-344`);
+  (`lib/credenciales/resolver.ts:449-456`);
 - una prueba falla si el almacén vuelve a nombrar el hub
   (`pruebas/codigo/130-foundations-sin-hub.test.ts:25-31`), y `docs/OTROS/capa-base/ETAPA-9.md:340-345`
   da por superado todo lo que ese documento decía del almacén compartido;
@@ -509,9 +509,9 @@ del JSON no se traducen (`lib/fundaciones/estado.ts:11-17`).
 
 **2 · Leer no necesita la llave; generar la necesita, y sin respaldo al entorno.** Una
 `ANTHROPIC_API_KEY` global facturaría el consumo de todas a una
-(`lib/credenciales/resolver.ts:338-347`); sin llave se ve todo y no se genera
-(`lib/credenciales/resolver.ts:372-373`), y las dos faltas —`sin_llave_de_ia` y
-`llave_de_ia_ilegible`— se dicen por separado (`lib/credenciales/resolver.ts:401-418`).
+(`lib/credenciales/resolver.ts:450-459`); sin llave se ve todo y no se genera
+(`lib/credenciales/resolver.ts:484-485`), y las dos faltas —`sin_llave_de_ia` y
+`llave_de_ia_ilegible`— se dicen por separado (`lib/credenciales/resolver.ts:513-530`).
 
 **3 · Ver y editar son dos capacidades**, porque editar es gastar dinero de la organización
 (`docs/OTROS/capa-base/ETAPA-9.md:108-111`). Hoy no separan a nadie: los 15 usuarios activos tienen

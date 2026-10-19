@@ -38,6 +38,7 @@ import { mensajesDeLaFicha } from '../../../../../lib/negocio/ficha.ts';
 import { ventanaDeRespuesta } from '../../../../../lib/negocio/ventana.ts';
 import { escribirMensajes } from '../../../../../lib/negocio/mensajes.ts';
 import { sellarSiEsDelSetter } from '../../../../../lib/negocio/sello.ts';
+import { clienteDelContacto } from '../../../../../lib/negocio/clienteDelContacto.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -118,13 +119,11 @@ export async function POST(
   if (texto.length > TOPE) return rechazo('peticion_invalida', MOTIVOS.demasiado_largo);
 
   // ── PASO 1 · ¿existe, y se le puede escribir? Sin gastar ninguna llamada. ──
-  const previo = await conOrganizacion(contexto.orgEfectiva, async () =>
-    datos()
-      .selectFrom('contactos')
-      .select(['ghl_contact_id', 'ultimo_entrante_el'])
-      .where('id', '=', id)
-      .executeTakeFirst(),
-  );
+  const [previo, cliente] = await conOrganizacion(contexto.orgEfectiva, async () => [
+    await datos().selectFrom('contactos').select(['ghl_contact_id', 'ultimo_entrante_el']).where('id', '=', id).executeTakeFirst(),
+    // El cliente del contacto (el nivel 3): se le escribe desde SU subcuenta.
+    await clienteDelContacto(id),
+  ] as const);
   if (!previo) return rechazo('no_encontrado');
   if (!previo.ghl_contact_id) return rechazo('peticion_invalida', MOTIVOS.sin_crm);
 
@@ -138,7 +137,7 @@ export async function POST(
     return rechazo('ventana_cerrada', String(ventana.motivo));
   }
 
-  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva));
+  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva, cliente ?? 'la_de_la_empresa'));
   if (acceso.tipo === 'falta') {
     return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);
   }

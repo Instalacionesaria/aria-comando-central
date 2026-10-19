@@ -202,16 +202,36 @@ export async function editarCuenta(
 }
 
 /**
- * Vincula un cliente con su subcuenta del CRM, o lo marca de prueba. **Sólo la plataforma, por identidad.** Devuelve
- * si encontró el cliente en esa organización. Una subcuenta que ya es de otro cliente sale de la base como `23505`.
+ * Vincula un cliente con su subcuenta del CRM, o lo marca de prueba. **Sólo la plataforma, por identidad.**
+ *
+ * La subcuenta de un cliente que no es el principal no puede ser la de ninguna empresa: la del cliente principal es
+ * la de su empresa (`organizaciones_credenciales.crm_cuenta_id`, que se carga en Ajustes › Credenciales), y una
+ * location en los dos lados metería los datos de un negocio en otro. El cliente principal no se vincula acá. Una
+ * subcuenta que ya es de otro cliente sale de la base como `23505`, que quien llama traduce.
  */
 export async function vincularCuenta(
   db: Trx,
   orgId: string,
   id: string,
   cambios: { crmCuentaId?: string | null; esPrueba?: boolean },
-): Promise<boolean> {
-  const r = await db
+): Promise<'listo' | 'no_encontrado' | 'cliente_principal' | 'subcuenta_en_uso'> {
+  const cliente = await db
+    .selectFrom('cuentas')
+    .select('es_por_omision')
+    .where('org_id', '=', orgId)
+    .where('id', '=', id)
+    .executeTakeFirst();
+  if (!cliente) return 'no_encontrado';
+  if (cambios.crmCuentaId !== undefined && cliente.es_por_omision) return 'cliente_principal';
+  if (typeof cambios.crmCuentaId === 'string') {
+    const deUnaEmpresa = await db
+      .selectFrom('organizaciones_credenciales')
+      .select('org_id')
+      .where('crm_cuenta_id', '=', cambios.crmCuentaId)
+      .executeTakeFirst();
+    if (deUnaEmpresa) return 'subcuenta_en_uso';
+  }
+  await db
     .updateTable('cuentas')
     .set({
       ...(cambios.crmCuentaId !== undefined ? { crm_cuenta_id: cambios.crmCuentaId } : {}),
@@ -220,7 +240,7 @@ export async function vincularCuenta(
     .where('org_id', '=', orgId)
     .where('id', '=', id)
     .executeTakeFirst();
-  return r.numUpdatedRows > 0n;
+  return 'listo';
 }
 
 /** El catálogo que necesita el formulario de un cliente: nichos, modelos de negocio, países y monedas vigentes. */

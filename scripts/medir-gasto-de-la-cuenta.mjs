@@ -114,7 +114,7 @@ async function principal() {
     return;
   }
   const org = await conIdentidad((db) => db.selectFrom('organizaciones').select('id').where('es_principal', '=', true).executeTakeFirstOrThrow());
-  const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, org.id));
+  const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, org.id, 'la_de_la_empresa'));
   if (acceso.tipo !== 'listo') {
     console.log(`Sin acceso a GoHighLevel: ${acceso.tipo}`);
     return;

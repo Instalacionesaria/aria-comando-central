@@ -182,8 +182,8 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:44`, llamada en `lib/negocio/ba
 
 `POST /api/avisos/crm` es el webhook. La cabecera trae una pimienta global y el secreto de la empresa, y la global se
 compara antes de tocar la base (`app/api/avisos/crm/route.ts:17`, `:31`); el evento viaja en `?evento=`
-(`app/api/avisos/crm/route.ts:192`); responde **siempre 200** salvo que falle nuestra base
-(`app/api/avisos/crm/route.ts:61-70`); y tiene `maxDuration = 10` (`app/api/avisos/crm/route.ts:92`). Hay siete
+(`app/api/avisos/crm/route.ts:213`); responde **siempre 200** salvo que falle nuestra base
+(`app/api/avisos/crm/route.ts:61-70`); y tiene `maxDuration = 10` (`app/api/avisos/crm/route.ts:93`). Hay siete
 eventos declarados (`lib/ghl/avisos.ts:65`).
 
 Medido el 2026-10-18:
@@ -495,7 +495,7 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
    (`scripts/supabase.mjs:21-23`, `:71`). Los roles de la aplicación ven **cero filas sin error** fuera de
    `conOrganizacion`.
 9. **Un secreto se compara con `timingSafeEqual`, y nunca se autoriza por el user agent**
-   (`app/api/cron/route.ts:33-45`, `app/api/avisos/crm/route.ts:101-111`).
+   (`app/api/cron/route.ts:33-45`, `app/api/avisos/crm/route.ts:102-112`).
 10. **La suite corre de a un archivo, contra una sola base, sin nadie más usándola**; y en tres zonas antes de empujar,
     por práctica (§ 5.1).
 11. **Lo nuestro se distingue por el esquema.** Ninguna tabla nuestra vive en `public`; antes de cualquier DDL fuera de

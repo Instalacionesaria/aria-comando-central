@@ -59,7 +59,7 @@ export async function identidadDelCerebro(db: Trx, contexto: Contexto, completa:
   const llave = await resolverLlaveDeIa(db, contexto.orgEfectiva);
   if (!completa) return { llave, deLaRuta: { noAudita: null, integraciones: null } };
   const visibles = seccionesVisibles(contexto).map((s) => s.clave);
-  const noAudita = visibles.includes('conversation') ? porQueNoAudita(await resolverAccesoAlAuditor(db, contexto.orgEfectiva)) : null;
+  const noAudita = visibles.includes('conversation') ? porQueNoAudita(await resolverAccesoAlAuditor(db, contexto.orgEfectiva, 'la_de_la_empresa')) : null;
   let integraciones: DatosDeLaRuta['integraciones'] = null;
   if (contexto.permisos.has('credenciales.ver')) {
     const c = await resolverCredenciales(db, contexto.orgEfectiva);

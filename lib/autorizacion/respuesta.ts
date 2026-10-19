@@ -56,6 +56,9 @@ export const RECHAZOS = {
   sin_cuentas: 403,
   // El nivel 3 · la subcuenta del CRM ya es de otro cliente: es única en toda la plataforma. 409 y sin decir de quién.
   subcuenta_en_uso: 409,
+  // El nivel 3 · lo del cliente principal es de la empresa: su conexión se carga en Ajustes › Credenciales y su subcuenta
+  // es la de la empresa. Un CONFLICTO y no un permiso, igual que `sobre_si_mismo`: quien pide tiene la capacidad.
+  cliente_principal: 409,
   // 08 § 5.3. DECISIÓN: la especificación es el único lugar donde da un 403 SIN código de
   // cuerpo —"responder 403 'Origen no permitido'"—, y justo es el que el cliente no podría
   // distinguir de los otros cinco. Se le pone código.

@@ -170,7 +170,7 @@ export default function AjustesView({ activa }) {
             <Empresas sesion={sesion} alCambiarDeEmpresa={recargar} />
           ) : null}
           {activaAhora === 'usuarios' ? <Usuarios sesion={sesion} /> : null}
-          {activaAhora === 'clientes' ? <Clientes sesion={sesion} /> : null}
+          {activaAhora === 'clientes' ? <Clientes sesion={sesion} conConexion={puede('credenciales')} /> : null}
           {activaAhora === null ? (
             <div className="fd-aviso falta">
               <i>◍</i>
