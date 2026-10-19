@@ -25,6 +25,7 @@ import AnalizadoresView from './views/AnalizadoresView';
 import ToolsView from './views/ToolsView';
 import MonitoreoView from './views/MonitoreoView';
 import IncidentesView from './views/IncidentesView';
+import NegociosView from './views/NegociosView';
 import AjustesView from './views/AjustesView';
 import ClientOsView from './views/ClientOsView';
 
@@ -49,6 +50,7 @@ const VISTAS = {
   tools: ToolsView,
   monitoreo: MonitoreoView,
   incidentes: IncidentesView,
+  negocios: NegociosView,
   credenciales: AjustesView,
   clientos: ClientOsView,
 };

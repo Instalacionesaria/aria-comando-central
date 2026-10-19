@@ -114,6 +114,10 @@ export const CAPACIDADES = [
   // `soloDesdeLaPrincipal`, como la de Monitoreo.
   'incidentes.ver',
   'incidentes.revisar',
+  // El tablero de Negocios (el nivel 3): las empresas y sus clientes, de todas las empresas. Sólo el superadministrador,
+  // como Incidentes: `negocios.%` se les niega a mano a `usuario` y a `administrador`, y la sección es
+  // `soloDesdeLaPrincipal`.
+  'negocios.ver',
   // ── El nivel 3 · los clientes de una empresa (2026-10-18) ────────────────
   //
   // Cuatro, con el criterio del `03` § 2. Ver, crear y editar son de la empresa: su administrador los tiene, el

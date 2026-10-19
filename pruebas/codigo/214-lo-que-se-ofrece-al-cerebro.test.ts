@@ -49,6 +49,8 @@ const POR_SECCION: Record<string, string[]> = {
   icp: ['fundaciones'],
   credenciales: [],
   monitoreo: [],
+  // El tablero de Negocios (el nivel 3): el agente que lee su foto todavía no existe.
+  negocios: [],
 };
 
 for (const [seccion, esperadas] of Object.entries(POR_SECCION)) {

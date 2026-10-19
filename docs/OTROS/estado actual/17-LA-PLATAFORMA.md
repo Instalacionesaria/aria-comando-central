@@ -210,7 +210,7 @@ dentro de `/api/cron`, al minuto 3, y su encabezado todavía dice que «lo llama
 
 **`GET /api/control`**, de la Etapa 3, pide `NINGUNA` capacidad y `SIN_SECCION` (`app/api/control/route.ts:25-26`,
 `:35`), lee `control_aislamiento` con `conOrganizacion` (`app/api/control/route.ts:40-46`) y figura entre las rutas sin
-pantalla (`lib/autorizacion/secciones.ts:525`). Nada del repositorio llama al manejador (búsqueda del 2026-09-28, no
+pantalla (`lib/autorizacion/secciones.ts:536`). Nada del repositorio llama al manejador (búsqueda del 2026-09-28, no
 repetida); las pruebas arman peticiones con ese camino y se las pasan al portero (`pruebas/base/40-portero.test.ts:293`).
 Su encabezado dice ser «la sonda que la Etapa 8 necesita» (`app/api/control/route.ts:22-23`), y la sonda programada no
 pasa por ella (`lib/deteccion/sonda.ts:119-121`).

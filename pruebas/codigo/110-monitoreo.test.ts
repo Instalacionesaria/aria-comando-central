@@ -70,8 +70,9 @@ test('es la ÚNICA sección con `soloDesdeLaPrincipal`, y eso hay que decidirlo 
     SECCIONES.filter((s) => s.soloDesdeLaPrincipal).map((s) => s.clave),
     // `incidentes` desde el 2026-10-01, con su justificación en `secciones.ts`: mira los fallos de
     // todas las empresas, igual que este panel mira su consumo. Y `clientos` desde el 2026-10-08: la
-    // herramienta externa que ARIA prueba antes de dársela a nadie más (`245`).
-    ['monitoreo', 'incidentes', 'clientos'],
+    // herramienta externa que ARIA prueba antes de dársela a nadie más (`245`). Y `negocios` desde el 2026-10-18 (el
+    // nivel 3): mira las empresas y los clientes de todas (`272`, `273`).
+    ['monitoreo', 'incidentes', 'negocios', 'clientos'],
   );
 });
 

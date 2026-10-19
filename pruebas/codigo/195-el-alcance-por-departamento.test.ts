@@ -66,6 +66,8 @@ test('el orden es el de la barra: el Inicio, los departamentos, el engranaje y l
       ['Systems', ['acquisition', 'conversion', 'conversation']],
       ['Marketing', ['creative']],
       ['Sales', ['sales', 'contacts', 'setter', 'closer', 'analizadores']],
+      // Negocios (el nivel 3): sólo la tiene el superadministrador, que no se restringe; se ofrece como Incidentes.
+      ['Client Success', ['negocios']],
       ['Menú de la cuenta', ['credenciales', 'monitoreo', 'incidentes']],
       // Ajustes › Clientes (el nivel 3): la empresa administra a sus clientes, y la pestaña se puede conceder.
       ['Ajustes', ['usuarios', 'empresas', 'clientes']],

@@ -114,7 +114,7 @@ pestaña no se llama así: es «De GHL», dentro del grupo Leads del departament
 de prospección» y un «Todos» que todavía es «Próximamente» (`lib/autorizacion/departamentos.ts:104-107`). El 2026-09-28
 quedaba una sola sección sin operaciones, `executive`; la bajó el cerebro el 2026-10-04
 (`lib/autorizacion/secciones.ts:239`), y hoy la única es `clientos`, que nace así a propósito
-(`lib/autorizacion/secciones.ts:483`, `pruebas/codigo/90-fundaciones.test.ts:1266`).
+(`lib/autorizacion/secciones.ts:494`, `pruebas/codigo/90-fundaciones.test.ts:1266`).
 La vista es una envoltura que monta el panel (`components/views/ContactsView.jsx:33-45`), con una
 cabecera que dice qué se borró y por qué (`components/views/ContactsView.jsx:1-31`).
 

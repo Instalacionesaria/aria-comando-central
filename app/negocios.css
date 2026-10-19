@@ -1,0 +1,60 @@
+/* El tablero de Negocios (el nivel 3). NO viene del prototipo.
+   ==========================================================================
+
+   Reusa las clases del Panel de Monitoreo (`app/monitoreo.css`: tarjetas, bloque y tabla), los filtros del de
+   Incidentes y las etiquetas `.tagx` del prototipo. Acá sólo va lo propio. Ni un color a mano ni una sombra: lo
+   comprueban `pruebas/codigo/104-temas.test.ts` y `107-sin-sombras.test.ts`. */
+
+.neg-nichos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.neg-nicho {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-panel);
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+
+.neg-nicho b {
+  color: var(--txt);
+  font-weight: 600;
+}
+
+.neg-foto {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.neg-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.neg-abrir {
+  border: 0;
+  background: transparent;
+  color: var(--txt-dim);
+  cursor: pointer;
+  padding: 0 6px 0 0;
+  font-size: 12px;
+}
+
+.neg-abrir:disabled {
+  visibility: hidden;
+}
+
+.mon-tabla tr.neg-cliente td {
+  background: var(--bg-panel);
+}
+
+.mon-tabla tr.neg-cliente td:first-child {
+  padding-left: 28px;
+}

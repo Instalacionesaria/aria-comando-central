@@ -33,7 +33,7 @@ Inicio lo dice.
 >   (`lib/aios/index.js:30`).
 > - **2026-10-01 y 02 · `4742d74`, `b532a78`, `40f699a`, `624a941`** — E8 a E11: los cinco departamentos, la
 >   navegación en React, la barra lateral nueva y la cabecera de cada departamento. El Inicio queda fuera de los
->   departamentos (`lib/autorizacion/departamentos.ts:125-128`).
+>   departamentos (`lib/autorizacion/departamentos.ts:127-130`).
 > - **2026-10-02 · `2c6e2a0`** — el saludo pregunta por la empresa de la sesión (`components/views/ExecutiveView.jsx:60-62`).
 > - **2026-10-02 · `e5499d9`..`522c9bc`** — segunda edición F0 a F4: CONVERSACIONES y la caja del pie, como
 >   «Próximamente».
@@ -106,13 +106,13 @@ manda hoy es la tabla común de señales (§ 4).
 ### 2.1 · La sección
 
 `executive`, nombre «Inicio», capacidad `tablero.ver`, sin la bandera (`lib/autorizacion/secciones.ts:236-241`). No
-es de ningún departamento: la barra la abre con «Nueva conversación» (`lib/autorizacion/departamentos.ts:118-128`).
+es de ningún departamento: la barra la abre con «Nueva conversación» (`lib/autorizacion/departamentos.ts:120-130`).
 Los 15 usuarios activos de producción tienen `tablero.ver` y `cerebro.usar` por su rol (medido el 2026-10-18); quién
 ve la pestaña entre los de rol restringido no se volvió a medir.
 
 **El comentario de cabecera de `secciones.ts` mintió del 2026-10-08 al 2026-10-18.** Decía que la lista
 `SIN_OPERACIONES_TODAVIA` está vacía desde que `executive` bajó la bandera (`lib/autorizacion/secciones.ts:17-18`),
-pero Client OS entró ese día con la bandera puesta (`lib/autorizacion/secciones.ts:475-487`), y la prueba que la mira
+pero Client OS entró ese día con la bandera puesta (`lib/autorizacion/secciones.ts:486-498`), y la prueba que la mira
 espera exactamente `['clientos']` (`pruebas/codigo/90-fundaciones.test.ts:1266`). **Cerrado el 2026-10-18
 (`65669f4`)**: hoy dice que queda sólo `clientos`, que es externa, y lo mismo el de `executive` (`:230`).
 
@@ -161,7 +161,7 @@ conversación (`components/cerebro/ReunionDeHoy.jsx:46-52`), sin llamar al model
   abierta con el período que está mirando la pantalla, y contesta en un panel que sube
   (`components/ConsultaAlCerebro.jsx:3-25`, `components/cerebro/PanelDelCerebro.jsx:3-11`). En el teléfono no se
   dibuja (`components/ConsultaAlCerebro.jsx:24-25`). Va montada después de `<main>` en el armazón
-  (`components/CommandCenter.jsx:102-104`).
+  (`components/CommandCenter.jsx:104-106`).
 - **El comentario de la cabecera** de cada departamento, que sale de reglas sin modelo (`D-12`); en Closer, las citas
   sin registrar de quien mira (`lib/agentes/cabecera.ts:16-23`). Ver [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md).
 

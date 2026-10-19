@@ -56,7 +56,7 @@ sin revisar.
 & Oferta (`lib/autorizacion/secciones.ts:410-413`).
 
 **Desde la nueva estructura, Tools ya no es una pantalla con una barra: son seis entradas en tres departamentos.** La
-sección y sus permisos no cambiaron; lo que cambió es por dónde se entra (`lib/autorizacion/departamentos.ts:86-116`):
+sección y sus permisos no cambiaron; lo que cambió es por dónde se entra (`lib/autorizacion/departamentos.ts:86-118`):
 
 | departamento | entrada de la barra | sub-pestaña | pestaña de Tools |
 |---|---|---|---|
@@ -75,8 +75,8 @@ scraper» (`lib/autorizacion/secciones.ts:433-435`). Una sola capacidad, `monito
 (`lib/autorizacion/secciones.ts:462`). **El Panel de Incidentes** (2026-10-01) muestra los fallos del modelo de IA de
 todas las empresas, con `incidentes.ver` y la misma bandera (`lib/autorizacion/secciones.ts:467-474`). Los dos van en el
 grupo «Administración» del menú (`lib/autorizacion/secciones.ts:463`, `:464`) y, en la barra nueva, en el engranaje del pie
-junto a Ajustes (`lib/autorizacion/departamentos.ts:125-128`), con la ceja «MENÚ DE LA CUENTA»
-(`lib/autorizacion/departamentos.ts:140-143`).
+junto a Ajustes (`lib/autorizacion/departamentos.ts:127-130`), con la ceja «MENÚ DE LA CUENTA»
+(`lib/autorizacion/departamentos.ts:142-145`).
 
 **Ya no es la única sección con `soloDesdeLaPrincipal`.** Desde el 2026-10-01 la lleva Incidentes y desde el 2026-10-08
 Client OS (`lib/autorizacion/secciones.ts:472`, `:475`). El comentario de Monitoreo decía al corte «la única»
@@ -364,11 +364,11 @@ Si guardar el análisis del Espía falla, se entrega igual: ya se pagó (commit 
 
 **8 · El Panel de Monitoreo tiene tres mitades.** La capacidad `monitoreo.ver`, que `usuario` recibe por derivación; la
 pestaña concedida, porque `usuario` restringe por sección; y ser de la organización principal
-(`lib/autorizacion/secciones.ts:438-448`, `db/arranque/001_catalogo.sql:392-412`). La tercera se mide sobre la organización
+(`lib/autorizacion/secciones.ts:438-448`, `db/arranque/001_catalogo.sql:399-419`). La tercera se mide sobre la organización
 **propia**, no la que se está mirando (`lib/autorizacion/secciones.ts:112-119`). El formulario de Usuarios no ofrece la casilla
 fuera de la principal (`components/ajustes/Usuarios.jsx:145`). `administrador` no tiene la capacidad
-(`db/arranque/001_catalogo.sql:479-503`), y el catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
-(`db/arranque/001_catalogo.sql:766-801`). **El de Incidentes es más simple:** la capacidad es sólo del superadministrador
+(`db/arranque/001_catalogo.sql:487-512`), y el catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
+(`db/arranque/001_catalogo.sql:775-810`). **El de Incidentes es más simple:** la capacidad es sólo del superadministrador
 (`db/arranque/001_catalogo.sql:130-135`), así que conceder la pestaña a un `usuario` no le da el panel.
 
 **9 · Los paneles cruzan empresas con un bucle, no con una consulta.** Un `group by org_id` bajo RLS devuelve una fila
@@ -445,7 +445,7 @@ sigue verde. Las rutas de Tools y del panel siguen sin probarse contra una tabla
 `DELETE` sobre las tres (medido el 2026-09-28; no se volvió a medir).
 
 **Los dos paneles consultan todas las empresas al entrar a la aplicación, no al abrir la pestaña.** Todas las vistas visibles
-se montan juntas (`components/CommandCenter.jsx:87-99`) y los dos paneles cargan al montarse
+se montan juntas (`components/CommandCenter.jsx:89-101`) y los dos paneles cargan al montarse
 (`components/monitoreo/PanelDeMonitoreo.jsx:68-70`, `components/incidentes/PanelDeIncidentes.jsx:53-55`): son 11
 transacciones por panel en cada entrada de quien los ve, y crece con cada empresa. La franja del saldo ya no tiene ese
 problema desde E11: se monta en cada visita a Prospección o al Scraper (`components/views/ToolsView.jsx:106-111`).

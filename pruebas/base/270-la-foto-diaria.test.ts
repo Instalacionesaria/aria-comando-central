@@ -340,7 +340,7 @@ test('la lectura trae la última foto entera', async () => {
   const f = await conOrganizacion(principal, leerLaFoto);
   assert.equal(f.dia, hoy.dia);
   assert.equal(f.empresas.length, config.empresas.length);
-  assert.ok(f.empresas.every((e) => e.dia !== ayer.dia));
+  assert.ok(f.empresas.every((e) => e.dia === hoy.dia) && f.cuentas.every((c) => c.dia === hoy.dia), 'la lectura mezcló días');
   assert.equal(f.empresas[0]?.es_principal, true, 'la principal va primero');
   assert.equal(f.cuentas.filter((c) => c.organizacion_ref === gamma).length, 3);
 });

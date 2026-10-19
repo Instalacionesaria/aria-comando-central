@@ -606,7 +606,7 @@ sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
 - `lib/aios/shell.js:156-158@c4cf2a8` y `scripts/paridad.mjs:159-162@c4cf2a8`: § 10, cerradas.
 - **Nuevos, del 2026-10-08; cerrados el 2026-10-18 (`65669f4`).** `lib/autorizacion/secciones.ts:239` decía que no
   quedaba ninguna sección con la bandera `sinOperacionesTodavia`, y `pruebas/codigo/30-portero.test.ts:348-350` que la
-  lista estaba vacía; las dos lo eran hasta que Client OS entró con la bandera (`lib/autorizacion/secciones.ts:483`,
+  lista estaba vacía; las dos lo eran hasta que Client OS entró con la bandera (`lib/autorizacion/secciones.ts:494`,
   `82ba9e7`), y hoy dicen que queda sólo `clientos`. Y `lib/negocio/periodo.ts:76-77` decía que todas las ventanas son
   móviles, que dejó de ser cierto con los días cerrados de CV-1 (§ 13); hoy dice que esas pantallas pasaron a cerrados.
 

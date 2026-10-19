@@ -473,6 +473,17 @@ export const SECCIONES: readonly Seccion[] = [
     menu: { grupo: 'Administración', icono: '#i-incidentes' },
   },
   {
+    // El tablero de Negocios (el nivel 3, 2026-10-18): las empresas —los clientes de ARIA— y los clientes de cada una,
+    // con su configuración y sus cifras de la foto del día. La forma de Incidentes: una capacidad que en el catálogo
+    // tiene sólo el superadministrador, y sólo desde la principal, porque mira a todas las empresas. Es la primera
+    // entrada de Client Success. No tiene caja del cerebro: el agente que lee la foto todavía no existe.
+    clave: 'negocios',
+    nombre: 'Negocios',
+    capacidadRequerida: 'negocios.ver',
+    soloDesdeLaPrincipal: true,
+    menu: { grupo: 'Operación', icono: '#i-exec' },
+  },
+  {
     // Client OS (2026-10-08): una herramienta externa de seguimiento de clientes, embebida en un `iframe`,
     // que ARIA prueba antes de ofrecerla al resto. Sólo desde la principal, sin recorte por pestañas, y con
     // `tablero.ver`, que tienen los tres roles: la ve cualquier persona de ARIA. No llama a ninguna

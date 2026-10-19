@@ -35,10 +35,10 @@ decide en dos pasos, y cada uno tiene su código de rechazo:
 | 5 | ¿el rol tiene `tablero.ver`? | `sin_permiso`, 403, y queda auditado | `lib/autorizacion/portero.ts:248-275` |
 | 6 | ¿la sección `contacts` está en el alcance de la persona? | `seccion_no_concedida`, 403 | `lib/autorizacion/portero.ts:305-324`, `lib/autorizacion/respuesta.ts:51` |
 
-El paso 6 se comprueba **además** del 5, nunca en su lugar (`lib/autorizacion/secciones.ts:730-732`).
+El paso 6 se comprueba **además** del 5, nunca en su lugar (`lib/autorizacion/secciones.ts:741-743`).
 
 **No se crea una capacidad nueva.** Siete secciones comparten `tablero.ver` y ninguna combinación de
-capacidades puede separarlas (`lib/autorizacion/secciones.ts:724-728`); lo que separa a las
+capacidades puede separarlas (`lib/autorizacion/secciones.ts:735-739`); lo que separa a las
 personas es el alcance. Es lo mismo que decidieron Acquisition, Creative, Conversion y Sales
 (`docs/sales/12-QUIEN-VE-QUE.md:53-75`).
 
@@ -46,18 +46,18 @@ personas es el alcance. Es lo mismo que decidieron Acquisition, Creative, Conver
 
 | rol | ¿trae `tablero.ver`? | ¿restringido por sección? | ve la pestaña | rastro |
 |---|---|---|---|---|
-| superadministrador | sí: todas las capacidades | no | **siempre** | `db/arranque/001_catalogo.sql:361` |
-| administrador | sí | no | **siempre**, en su empresa | `db/arranque/001_catalogo.sql:488-492` |
-| usuario | sí | **sí** | **sólo con `contacts` concedida** | `db/arranque/001_catalogo.sql:403-407`, `:241-243`, `:291-293` |
+| superadministrador | sí: todas las capacidades | no | **siempre** | `db/arranque/001_catalogo.sql:368` |
+| administrador | sí | no | **siempre**, en su empresa | `db/arranque/001_catalogo.sql:496-500` |
+| usuario | sí | **sí** | **sólo con `contacts` concedida** | `db/arranque/001_catalogo.sql:410-414`, `:241-243`, `:291-293` |
 
 «Restringido» es la bandera `secciones_restringidas` del rol
 (`db/migraciones/017_alcance_de_secciones.sql:54`): con ella puesta, la persona ve sólo las
 secciones que tiene en `identidad.usuarios_secciones` (`db/migraciones/017_alcance_de_secciones.sql:64`),
-y cero filas son cero pestañas (`lib/autorizacion/secciones.ts:742-746`).
+y cero filas son cero pestañas (`lib/autorizacion/secciones.ts:753-757`).
 
 **Y ya no hay un rol de closer.** Los roles `closer` y `setter` salieron del catálogo
 (`db/arranque/003_retiro_de_roles.sql:13-14`): quien cierra hoy es un `usuario` con la pestaña Closer
-concedida, y `usuario` **trae `tablero.ver`** (`db/arranque/001_catalogo.sql:156-159`, `:352-355`).
+concedida, y `usuario` **trae `tablero.ver`** (`db/arranque/001_catalogo.sql:163-166`, `:352-355`).
 O sea que lo que deja a un closer fuera del Leads Portal es **sólo la concesión de la sección**, no
 la capacidad.
 
@@ -74,7 +74,7 @@ las descubra en producción:
   pasa nada: ARIA no tiene administradores activos (`LP12-03`) y las demás empresas no tienen
   contactos (`09-DE-DONDE-VIENE-CADA-DATO.md`, `LP09-13`).
 - **Un superadministrador puede mirar la pestaña de otra empresa**, porque es el único que puede
-  conmutar la organización que mira (`lib/autorizacion/secciones.ts:788-790`). Es la misma regla que
+  conmutar la organización que mira (`lib/autorizacion/secciones.ts:799-801`). Es la misma regla que
   en Closer.
 
 ---
@@ -130,7 +130,7 @@ select (select count(*) from identidad.usuarios u where u.org_id = (select id fr
 
 Y no es una casualidad de estas cuatro personas: de los tres roles que existen, **ninguno trae
 `tablero.ver` sin `contactos.ver`**. Los tres repartos se derivan del catálogo entero y ninguno
-excluye `contactos.%` (`db/arranque/001_catalogo.sql:361`, `:383-387`, `:462-466`).
+excluye `contactos.%` (`db/arranque/001_catalogo.sql:368`, `:383-387`, `:462-466`).
 
 **Conclusión, verificada:** el portal **no le abre un dato personal a nadie que no pudiera leerlo
 ya**.

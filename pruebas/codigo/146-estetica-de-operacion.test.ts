@@ -221,11 +221,12 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      Acquisition (docs/conversion/15, CV15-01). 10 el mismo día: salió Sales, por el mismo camino
      (docs/sales/15, S15-01). 9 desde el 2026-10-10: salió Conversation, por el mismo camino; sus modos Auditoría y
      Prompts llevan la estética en un contenedor del panel, no en la sección (docs/conversation/01, CN1-13).
-     8 desde el 2026-10-11: salió Creative, por el mismo camino (docs/creative/16, CF1-01). */
+     8 desde el 2026-10-11: salió Creative, por el mismo camino (docs/creative/16, CF1-01). 9 desde el 2026-10-18:
+     entró Negocios (el nivel 3), con el envoltorio de Monitoreo. */
   assert.equal(
     vistas.length,
-    8,
-    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 8: si entró una pantalla ` +
+    9,
+    `hay ${vistas.length} vistas con \`estetica-op\` y la cuenta dice 9: si entró una pantalla ` +
       'nueva, subí el número; si salió, decí por qué. No se toca para que la prueba pase',
   );
 

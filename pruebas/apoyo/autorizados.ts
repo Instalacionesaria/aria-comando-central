@@ -445,6 +445,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // empresas y para los NOMBRES de quienes vieron cada incidente; los incidentes salen por
   // `conOrganizacion(`, con la RLS de cada empresa.
   'app/api/incidentes/route.ts',
+  // El tablero de Negocios (el nivel 3). La misma escotilla que Incidentes: identidad para la configuración y los
+  // nombres de todas las empresas y sus clientes (`leerLaConfiguracion`, sólo presencias), y la foto por
+  // `conOrganizacion(` de la principal, que es su dueña. Lo acota `negocios.ver`, que sólo tiene el superadministrador,
+  // más `esDeLaPrincipal` antes de abrir identidad.
+  'app/api/negocios/route.ts',
   // ── El nivel 3 · vincular un cliente con su subcuenta del CRM ──────────────────
   //
   // Escribe `crm_cuenta_id` y `es_prueba` de una cuenta, que el inquilino no puede escribir a propósito (`086`): una
@@ -713,6 +718,9 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // de `conOrganizacion()`. **Qué queda a medias si la segunda mitad falla: nada, porque NO
   // ESCRIBE.** Las tres lecturas son independientes y una empresa que no se lee va en `ilegibles`.
   'app/api/incidentes/route.ts',
+  // El tablero de Negocios: identidad para la configuración, negocio para la foto de la principal. **Qué queda a medias
+  // si la segunda mitad falla: nada, porque NO ESCRIBE.** Son dos lecturas.
+  'app/api/negocios/route.ts',
 ];
 
 /**

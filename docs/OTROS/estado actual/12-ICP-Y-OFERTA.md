@@ -79,7 +79,7 @@ Es lo único que la pantalla dice de sí misma y no cumple; ver § 5.
 (`lib/autorizacion/secciones.ts:254-256`) dice que es «la única de las diez sin la bandera»
 `sinOperacionesTodavia`, y eso dejó de ser cierto hace mucho: `executive` la bajó el 2026-10-04
 (`lib/autorizacion/secciones.ts:239`), y la única que la lleva hoy es Client OS, desde el 2026-10-08
-(`lib/autorizacion/secciones.ts:483`).
+(`lib/autorizacion/secciones.ts:494`).
 
 **La vista.** `components/views/IcpView.jsx:21-45` monta `Fundaciones` con el catálogo
 `CATALOGO_ICP` (`components/fundaciones/Fundaciones.jsx:50-78`): siete herramientas, siete rutas y
@@ -88,7 +88,7 @@ proponiendo lo que la herramienta hereda (`components/fundaciones/Fundaciones.js
 primera vista con estado en React y salió a propósito de `npm run paridad`
 (`docs/OTROS/capa-base/ETAPA-9.md:181-195`).
 
-Se monta **al abrir la aplicación, esté activa o no**: `components/CommandCenter.jsx:88-100` dibuja
+Se monta **al abrir la aplicación, esté activa o no**: `components/CommandCenter.jsx:90-102` dibuja
 todas las secciones visibles de una vez, y `Fundaciones` pide su estado al montarse
 (`components/fundaciones/Fundaciones.jsx:202-204`). Cada entrada a Comando Central de alguien con la
 pestaña lee la fila de su organización, aunque nunca abra ICP & Oferta.

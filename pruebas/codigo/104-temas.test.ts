@@ -40,6 +40,7 @@ const HOJAS = [
   'app/operacion-estetica.css',
   'app/monitoreo.css',
   'app/incidentes.css',
+  'app/negocios.css',
   // Client OS, el marco de la herramienta en prueba, el día que nace.
   'app/client-os.css',
   'app/auditoria.css',

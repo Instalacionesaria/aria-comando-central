@@ -806,7 +806,7 @@ vigila que ninguna de las marcadas reciba una operación sin entrar al modelo de
 cuenta de 3 a 2 en `c109ebd`, Leads Portal de 2 a 1 en `3c361a1` (`app/api/leads-portal/route.ts:3-8`) y el Inicio
 de 1 a 0 con el cerebro (`ce8ff6e`, 2026-10-04, `lib/autorizacion/secciones.ts:239`), con pruebas de base que lo exigen
 (`pruebas/base/166-la-ruta-de-sales.test.ts:87`, `pruebas/base/177-la-ruta-del-leads-portal.test.ts:115`). El
-2026-10-08 entró Client OS con la bandera (`lib/autorizacion/secciones.ts:483`): es una herramienta externa en un
+2026-10-08 entró Client OS con la bandera (`lib/autorizacion/secciones.ts:494`): es una herramienta externa en un
 `iframe`, sin operaciones nuestras. El comentario de `pruebas/codigo/30-portero.test.ts:348-350` decía que la lista está vacía; dice `clientos` desde `65669f4`.
 
 **32 · El GET de una pantalla pide exactamente la capacidad que declara su sección.**
@@ -817,7 +817,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:839`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:847`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -1170,7 +1170,7 @@ uso desde el 2026-10-05 y **1** incidente.
 tiene su `app/api/<carpeta>/cerebro/route.ts` (`ce8ff6e` a `854a3da`, 2026-10-04 y 05). Tres reglas con su prueba: el
 modelo no se espera dentro de `conOrganizacion(` (`pruebas/codigo/207-el-cerebro-fuera-de-las-transacciones.test.ts:56`);
 lo que se ofrece es el permiso —quien ve una sección recibe exactamente sus herramientas
-(`pruebas/codigo/214-lo-que-se-ofrece-al-cerebro.test.ts:55`)—; y una cifra de la respuesta sin evidencia válida se
+(`pruebas/codigo/214-lo-que-se-ofrece-al-cerebro.test.ts:57`)—; y una cifra de la respuesta sin evidencia válida se
 quita y se dice (`pruebas/codigo/208-la-respuesta-del-cerebro.test.ts:47`). El tope del proveedor, 20 herramientas
 estrictas (`lib/agentes/llamada.ts:121-125`), lo encontró la primera evaluación real: al administrador se le ofrecían 31
 y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas-del-cerebro-son-estrictos.test.ts:59`.
@@ -1237,7 +1237,7 @@ cada «—» viaja con su motivo, y la pantalla es un tablero sin párrafos: los
 (`components/conversation/PanelDeConversation.jsx:30-31`). Es la regla 40 llevada a todas las pantallas.
 
 **52 · Toda ruta declara su `PANTALLA`, o dice por qué no.** Una operación nueva nace cerrada: cada manejador exporta
-`PANTALLA` o está en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:511`), y `pruebas/codigo/30-portero.test.ts:363-373`
+`PANTALLA` o está en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:522`), y `pruebas/codigo/30-portero.test.ts:363-373`
 lo exige (`433ca86`, 2026-08-21). Es lo que ata una ruta a la capacidad de su sección (reglas 31 y 32). Contado el
 2026-10-18: 111 archivos `route.ts` bajo `app/api/`, 82 con `PANTALLA` y 29 en la lista.
 

@@ -181,7 +181,7 @@ test('el orden es el de `NE-45`, y cada ceja la del documento', () => {
       ['Systems', ['Acquisition', 'Conversion', 'Conversation']],
       ['Marketing', ['Creative Insights', 'Copywriter (próximamente)', 'Funnel [Tu landing · Tu VSL]', 'Content Studio (próximamente)']],
       ['Sales', ['Closing', 'Leads [Todos (próximamente) · De GHL · De Radar · Plan de prospección]', 'Setter', 'Closer', 'Llamadas de venta']],
-      ['Client Success', ['Llamadas de onboarding', 'Client OS', 'Seguimiento de clientes (próximamente)']],
+      ['Client Success', ['Negocios', 'Llamadas de onboarding', 'Client OS', 'Seguimiento de clientes (próximamente)']],
     ],
     engranaje: ['Ajustes', 'Panel de Monitoreo', 'Incidentes'],
   });

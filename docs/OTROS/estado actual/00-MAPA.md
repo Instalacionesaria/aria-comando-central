@@ -50,8 +50,8 @@ barra**: si mide o inventa, sobre qué datos, con qué reglas y qué le falta.
 ## 1 · La barra: el Inicio, cinco departamentos y el engranaje
 
 La barra sale de dos listas: los cinco departamentos (`lib/autorizacion/departamentos.ts:50-56`) y sus entradas, cada
-una con su sección y, si la tiene, su pestaña (`lib/autorizacion/departamentos.ts:85-116`). El Inicio y los tres
-destinos del engranaje no son de ningún departamento (`lib/autorizacion/departamentos.ts:125-128`). Las secciones,
+una con su sección y, si la tiene, su pestaña (`lib/autorizacion/departamentos.ts:85-118`). El Inicio y los tres
+destinos del engranaje no son de ningún departamento (`lib/autorizacion/departamentos.ts:127-130`). Las secciones,
 sus claves, las capacidades y las rutas **no cambiaron** con la nueva estructura: lo que una persona ve sigue
 saliendo de su capacidad y su alcance, y la barra sólo ordena ([16-AJUSTES-Y-PERMISOS.md](16-AJUSTES-Y-PERMISOS.md)).
 

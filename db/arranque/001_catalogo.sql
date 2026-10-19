@@ -134,6 +134,13 @@ insert into identidad.permisos (clave, descripcion) values
   ('incidentes.ver',     'Ver el Panel de Incidentes: los fallos del modelo de IA de todas las empresas'),
   ('incidentes.revisar', 'Marcar un incidente como revisado en el Panel de Incidentes'),
 
+  -- ── El tablero de Negocios (el nivel 3, 2026-10-18) ──────────────────────────
+  --
+  -- Las empresas —los clientes de ARIA— y los clientes de cada una, con su configuración y sus cifras: mira a TODAS
+  -- las empresas, así que es sólo del superadministrador, como Incidentes. `negocios.%` se les niega a mano a
+  -- `usuario` y a `administrador` en el reparto de abajo, y la sección es `soloDesdeLaPrincipal`.
+  ('negocios.ver',       'Ver el tablero de Negocios: las empresas y sus clientes, de todas las empresas'),
+
   -- ── El nivel 3 · los clientes de una empresa (2026-10-18) ───────────────────
   --
   -- Ver, crear y editar son del administrador de la empresa; `usuario` no las tiene (`cuentas.%`, abajo). Vincular
@@ -416,6 +423,7 @@ begin
                       and clave not like 'roles.%'
                       and clave not like 'credenciales.%'
                       and clave not like 'incidentes.%'
+                      and clave not like 'negocios.%'
                       -- Los clientes de la empresa (el nivel 3) los administra el administrador, no el usuario.
                       and clave not like 'cuentas.%'
                       -- La validación ejecutiva y la firma de los umbrales son del Admin (`D-11`, AG-80): un
@@ -500,6 +508,7 @@ begin
                           where clave not like 'organizaciones.%'
                             and clave not like 'monitoreo.%'
                             and clave not like 'incidentes.%'
+                            and clave not like 'negocios.%'
                             and clave <> 'usuarios.borrar'
                             and clave <> 'roles.administrar'
                             -- La subcuenta del CRM y la marca de prueba de un cliente: sólo la plataforma.
