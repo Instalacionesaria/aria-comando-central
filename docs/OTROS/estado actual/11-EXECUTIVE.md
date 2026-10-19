@@ -146,7 +146,7 @@ en producción la tienen **5 de las 13 organizaciones** (medido el 2026-10-18).
 Una cinta con la hora de la pasada y hasta tres tarjetas, cada una con su etiqueta, su texto y su origen
 (`components/cerebro/ReunionDeHoy.jsx:26-57`); si la pasada corrió y no hay nada para esa persona, lo dice
 (`components/cerebro/ReunionDeHoy.jsx:32-33`). Los temas se filtran por las secciones que la persona ve **y recién
-después** se cortan en tres (`lib/agentes/reunion/temas.ts:238-242`). Tocar una tarjeta abre el tema como
+después** se cortan en tres (`lib/agentes/reunion/temas.ts:246-250`). Tocar una tarjeta abre el tema como
 conversación (`components/cerebro/ReunionDeHoy.jsx:46-52`), sin llamar al modelo y sin contar para el tope
 (`app/api/executive/reunion/route.ts:7-13`); sin `cerebro.usar` o bajo delegación se leen y no se abren
 (`components/views/ExecutiveView.jsx:215-216`). La barra lateral cuenta los temas de hoy
@@ -237,7 +237,7 @@ escribió, con su origen —Inicio, pie o Reunión— (`db/migraciones/071_las_c
    pantallas (`lib/agentes/reunion/temas.ts:80-85`).
 2. Cinco reglas medibles en el catálogo de umbrales: sin entrega, caída de la entrada, citas sin registrar, objeción
    frecuente y llamadas sin vínculo (`lib/agentes/reunion/reglas.ts:7-13`), cada una con su piso
-   (`lib/agentes/reunion/temas.ts:146-228`).
+   (`lib/agentes/reunion/temas.ts:146-236`).
 
 La calcula la tarea `senales` del cron, al minuto 23 de cada hora, para las empresas a las que les toca su mañana
 (`lib/negocio/barrido.ts:363-371`); la guarda por empresa y día local en `negocio.reuniones_del_dia`
@@ -269,7 +269,7 @@ El tema de las citas sin registrar es el hallazgo que la foto anterior decía qu
 Executive»: hoy se lo entrega. Su evidencia, día por día, bajó de **22 de 22** contactos con la cita ocurrida y sin
 registrar (2026-10-06) a **14 de 14** (2026-10-12 en adelante): no porque alguien registrara —los resultados siguen
 en 7, el último del 2026-09-09—, sino porque la ventana de 30 días rueda y entran menos citas
-(`lib/agentes/reunion/temas.ts:180-193`).
+(`lib/agentes/reunion/temas.ts:188-201`).
 
 ---
 
@@ -309,7 +309,7 @@ postergado, en `docs/OTROS/futuro/el-dia-de-la-empresa.md`.
 (`lib/agentes/executive/respuesta.ts:5-11`).
 
 **3 · Sólo lo de las pestañas que la persona ve**, en las herramientas (`lib/agentes/executive/herramientas.ts:10-13`)
-y en los temas de la Reunión (`lib/agentes/reunion/temas.ts:238-242`).
+y en los temas de la Reunión (`lib/agentes/reunion/temas.ts:246-250`).
 
 **4 · Bajo delegación el cerebro no responde**, y lo rechaza el servidor, no sólo la pantalla
 (`app/api/executive/route.ts:30`, `app/api/executive/reunion/route.ts:28-30`).

@@ -275,7 +275,7 @@ propio), y los `link clicks` de Meta no son lo mismo: uno es lo que Meta dice qu
 **Fórmula** · `agendados = Σ agendados(embudo)`
 **Unidad** · Contactos (entero).
 **Población** · Los contactos de la cohorte con **al menos una cita alcanzable** — el filtro
-`ghl_calendario_id is not null`, el mismo que ya usa `lib/negocio/atribucionDelLead.ts:132-135`.
+`ghl_calendario_id is not null`, el mismo que ya usa `lib/negocio/atribucionDelLead.ts:142-145`.
 **Subtítulo** · «volumen total» — la advertencia de que no es una tasa.
 **Rastro** · `lib/aios/acquisition.js:149`; la suma en `:117`.
 **Estado** · **Ya está en la base, y hay que elegir cuál de dos cifras es.** La foto del 2026-09-15
@@ -786,7 +786,7 @@ relanzados en la campaña nueva del 12 de septiembre. Agrupar por nombre **fusio
 borra el arranque de la campaña nueva**, que es precisamente lo que un media buyer necesita ver (regla 1 del § 6 de la
 foto del 2026-09-15; el 2026-09-28 son 79 anuncios con 32 nombres y la tabla agrupa por `meta_anuncio_id`:
 `01-ACQUISITION.md:355-357@972972e`). Dos reglas más de esa foto van con ésta: **normalizar la caja antes de agrupar y mostrar
-una variante tal cual vino** (regla 3, ya aplicada en `lib/negocio/atribucionDelLead.ts:124-127`), y **descartar las
+una variante tal cual vino** (regla 3, ya aplicada en `lib/negocio/atribucionDelLead.ts:132-137`), y **descartar las
 etiquetas sin renderizar**: dos contactos de la ventana traían literalmente `{{campaign.id}}` (regla 4).
 
 ### A2-50 · Las dimensiones que el prototipo insinúa y no implementa
@@ -815,7 +815,7 @@ distintas.
 **Población** · Los contactos de la cohorte sin identificador de anuncio.
 **Rastro** · El prototipo **no la tiene**: sus siete campañas cubren el 100 % de los contactos, y ni
 la tarjeta de embudo ni la tabla prevén una fila que se cuente y no compita. El criterio ya está
-escrito en el sistema: `lib/negocio/atribucionDelLead.ts:179-183`, con su motivo.
+escrito en el sistema: `lib/negocio/atribucionDelLead.ts:194-198`, con su motivo.
 **Estado** · **Es la regla más importante de este departamento y está medida.** Los **57 contactos sin
 `adId` agendan 47 veces, 82,5 %** — la tasa más alta de toda la tabla, contra el 44,0 % (48 de 109)
 del anuncio de mayor volumen. Dibujada como una barra al lado de las demás, esa fila dice que **el

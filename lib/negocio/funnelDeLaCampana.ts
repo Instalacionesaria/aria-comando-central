@@ -13,6 +13,9 @@
 // llamarse igual. Así que la asignación va al `meta_campana_id` (A1-10), y existe si GoHighLevel listó
 // esa campaña (`negocio.campanas`, `065`): la clave foránea de la `066` lo hace cumplir del lado de
 // la base, y `existeLaCampana` lo dice antes, con un 404 en vez de un `23503`.
+//
+// Y se guarda en el cliente de su campaña (el nivel 3, `094`): la campaña vive en la cuenta de UN cliente, y su
+// funnel también. La foránea de la `094` lo exige del lado de la base.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { datos } from '../datos/contexto.ts';
@@ -34,14 +37,19 @@ export interface FunnelDeCampana {
   actualizadoEl: string;
 }
 
-/** Si la campaña es de la empresa: GoHighLevel la listó (`065`). Bajo RLS, una ajena no existe. */
-export async function existeLaCampana(campana: string): Promise<boolean> {
+/** El cliente de la campaña, si GoHighLevel la listó (`065`); `null` si no está a la vista. Bajo RLS, una ajena no existe. */
+async function clienteDeLaCampana(campana: string): Promise<string | null> {
   const fila = await datos()
     .selectFrom('campanas')
-    .select('meta_campana_id')
+    .select('cuenta_id')
     .where('meta_campana_id', '=', campana)
     .executeTakeFirst();
-  return fila !== undefined;
+  return fila?.cuenta_id ?? null;
+}
+
+/** Si la campaña es de la empresa: GoHighLevel la listó (`065`). Bajo RLS, una ajena no existe. */
+export async function existeLaCampana(campana: string): Promise<boolean> {
+  return (await clienteDeLaCampana(campana)) !== null;
 }
 
 /**
@@ -86,12 +94,17 @@ export async function asignarFunnel(
 ): Promise<'funnel_invalido' | 'sin_campana' | null> {
   const funnel = funnelValido(asignacion.funnel);
   if (funnel === null) return 'funnel_invalido';
-  if (!(await existeLaCampana(asignacion.campana))) return 'sin_campana';
+  /* El funnel va en el cliente de SU campaña (el nivel 3). Sin `cuenta_id`, bajo la empresa entera y con dos clientes,
+     el puente (`085`) lo dejaba en el principal aunque la campaña fuera de otro; desde la `094` la base lo rechaza. Con
+     un solo cliente es la misma cuenta que ponía el puente. */
+  const cuenta = await clienteDeLaCampana(asignacion.campana);
+  if (cuenta === null) return 'sin_campana';
 
   const ahora = new Date();
   await datos()
     .insertInto('funnels_de_campana')
     .values({
+      cuenta_id: cuenta,
       meta_campana_id: asignacion.campana,
       funnel,
       actualizado_el: ahora,

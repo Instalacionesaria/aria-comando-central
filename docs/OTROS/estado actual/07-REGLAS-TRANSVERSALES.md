@@ -130,7 +130,7 @@ la derecha es historia**: desde CN-3 (2026-10-10) la pantalla ya no dibuja ningu
 | `lib/negocio/indicadoresDelLead.ts:126` | `avisoDelBooking` | `components/conversation/PanelDeConversation.jsx:516@6f3bdb5` |
 | `lib/negocio/indicadoresDelLead.ts:183` | `aviso` (Lead Flow) | **nadie**; desde AG6, el cerebro (ver abajo) |
 | `lib/negocio/indicadoresDelLead.ts:185` | `avisoDeLatencias` | `components/conversation/PanelDeConversation.jsx:933@6f3bdb5` |
-| `lib/negocio/atribucionDelLead.ts:69` | `aviso` | `components/conversation/PanelDeConversation.jsx:727@6f3bdb5` |
+| `lib/negocio/atribucionDelLead.ts:75` | `aviso` | `components/conversation/PanelDeConversation.jsx:727@6f3bdb5` |
 | `lib/negocio/consumoDelPrecall.ts:140` | `aviso` | `components/conversation/PanelDeConversation.jsx:803@6f3bdb5` |
 | `lib/auditor/sentimiento.ts:65` | `aviso` | `components/conversation/PanelDeConversation.jsx:827@6f3bdb5` y `:835@6f3bdb5` |
 | `lib/negocio/frescura.ts:58` y `:221` | `aviso` (frescura del barrido) | no re-verificado |
@@ -144,7 +144,7 @@ leía nadie: ni el panel ni otro módulo —en una ventana sin altas se perdía 
 ningún contacto nuevo al CRM en N días»* (`lib/negocio/indicadoresDelLead.ts:409`), mientras la pestaña dibujaba
 «Cada barra es sobre los 0 que entraron» (`components/conversation/PanelDeConversation.jsx:497@6f3bdb5`)—. **Desde
 AG6 (`13723a0`) lo lee el cerebro**: la herramienta `lead_flow` lo pasa entero, junto con los demás avisos del módulo
-(`lib/agentes/executive/adaptadores/conversation.ts:74-77`). Y desde CN-3 la pantalla no dibuja ningún aviso «sin
+(`lib/agentes/executive/adaptadores/conversation.ts:79-82`). Y desde CN-3 la pantalla no dibuja ningún aviso «sin
 párrafos»: viajan en la respuesta (`app/api/auditoria/route.ts:105-107`) y los da el agente cuando se le pregunta
 (`components/conversation/PanelDeConversation.jsx:30-31`). **El riesgo cambió de forma:** un aviso que sólo lee el
 cerebro se lee sólo si alguien pregunta. Un aviso sin lector es peor que uno siempre encendido —al segundo se lo
@@ -180,7 +180,7 @@ propio piso», y el motivo sigue escrito en `lib/negocio/indicadoresDeCitas.ts:3
 **Quién lo usa hoy.** Con `grep` sobre el árbol de este corte, **21 archivos de `lib/` nombran la constante** (15 el
 2026-09-28), y desde CN-1 las lecturas lo aplican a toda tasa (regla 51). Los de Conversation, re-verificados: la asistencia
 (`lib/negocio/indicadoresDeCitas.ts:473-476`), la confirmación (`:482-485`), los descartados
-(`:492-495`), las filas de atribución (`lib/negocio/atribucionDelLead.ts:174`), el consumo del precall
+(`:492-495`), las filas de atribución (`lib/negocio/atribucionDelLead.ts:189`), el consumo del precall
 y su desglose fino con las dos ramas sobre el piso (`lib/negocio/consumoDelPrecall.ts:242` y `:239`),
 y la proporción de molestos (`lib/auditor/sentimiento.ts:127`). Entre los nuevos, el commit `7d1bc8b`
 dejó escrita la variante que hay que evitar: el click-to-landing de Creative **no tenía piso** y el
@@ -188,7 +188,7 @@ comentario de arriba afirmaba que sí —8 de 24 piezas tenían menos de diez cl
 publicaba 100 %— y se arregló con `PISO_DE_UNA_TASA`, «no uno nuevo».
 
 **El piso funcionando, y la parte que no protege.** La atribución por fuente del primer toque, medida el 2026-10-18
-con el predicado de «agendó» del módulo (`tieneCitaAlcanzable`, `lib/negocio/atribucionDelLead.ts:151`) y agrupada
+con el predicado de «agendó» del módulo (`tieneCitaAlcanzable`, `lib/negocio/atribucionDelLead.ts:161`) y agrupada
 por el valor crudo de `sessionSource`:
 
 | Fuente | Cohorte 30 d | Agendaron | Tasa 30 d | Cohorte completo | Tasa completo |
@@ -329,7 +329,7 @@ Portal usan `tieneCitaAlcanzable`, que excluye a quien sólo tiene congeladas
 en «Completo» Lead Flow dice **303** agendados y las filas de la atribución suman **224** (2026-10-18; 279 y 200
 el 2026-09-28: la diferencia son los mismos 79). Y el comentario que
 debería impedirlo afirma lo contrario: «el mismo filtro de cita alcanzable que el booking rate»
-(`lib/negocio/atribucionDelLead.ts:148-150`). Es la regla 12 incumplida entre dos tarjetas vecinas.
+(`lib/negocio/atribucionDelLead.ts:158-160`). Es la regla 12 incumplida entre dos tarjetas vecinas.
 
 ---
 
@@ -1130,7 +1130,7 @@ código. Casos, todos medidos después de escritos:
 - `esquema.ts` decía que «nada calcula el score», y de ahí salió la decisión de protegerlo como dato
   nuestro (`e350a47`); el CRM lo calculaba (error A, fila 7).
 - El comentario del click-to-landing afirmaba un piso que no existía (`7d1bc8b`).
-- `lib/negocio/atribucionDelLead.ts:148-150` afirma usar «el mismo filtro de cita alcanzable que el
+- `lib/negocio/atribucionDelLead.ts:158-160` afirma usar «el mismo filtro de cita alcanzable que el
   booking rate», y desde el 2026-09-16 no es el mismo (§ 4). **Sigue abierto el 2026-10-18.**
 - `lib/negocio/periodo.ts:48` y `pruebas/codigo/155-el-periodo-de-conversation.test.ts:98` dicen que la
   fila más vieja del CRM es de 2026; `min(alta_en_el_crm)` es **2025-08-08** (medido otra vez el 2026-10-18).
@@ -1186,7 +1186,7 @@ y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas
 ventana— impide que una señal descartada renazca mientras su condición siga, la entidad es un id y no un nombre, y no
 hay texto libre de personas (`db/migraciones/072_las_senales.sql:15-26`); con menos de 10 no hay señal
 (`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:364-370`),
-y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:141` y
+y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:77` y
 `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:101`. **Y las dos excepciones con datos de personas tienen
 su regla:** el Brief del closer es el agente que manda al modelo datos de una persona (`lib/agentes/brief/entrada.ts:14`),
 sin teléfono ni correo (`pruebas/codigo/232-el-brief-cada-dato-con-su-fuente.test.ts:96`); y ninguna evaluación real
@@ -1279,7 +1279,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
 ## Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
 
 **Estado.** Los commits del 2026-10-18, `21556cd..18f61d6` y el Bloque C `00ccfee..ca5fcdc`, con las migraciones
-`085` a `093`, están encima de la Fase 0 y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
+`085` a `094` (la `094`, de C5 · G3, del 2026-10-19), están encima de la Fase 0 y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
 son tres: ARIA (la organización principal), las empresas (`identidad.organizaciones`) y los clientes de cada empresa
 (`identidad.cuentas`). En pantalla se dice «Empresa» y «Cliente»; la palabra «cuenta» no aparece.
 
@@ -1335,20 +1335,47 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/negocio/traerDeLosClientes.ts:168`). Al cliente sin credenciales se le dice dónde se cargan las suyas
   (`lib/credenciales/resolver.ts:919`). Lo exigen `pruebas/base/282-las-rutas-manuales-traen-a-cada-cliente.test.ts:331`
   y `pruebas/codigo/283-las-rutas-manuales-son-por-cliente.test.ts:68`.
+- **Acquisition, Conversation y los detectores del gasto, por cliente (C5 · G3, `094`).** La atribución por campaña
+  agrupa por (campaña, cliente) (`lib/negocio/atribucionDelLead.ts:176`), y cada fila dice su cliente cuando las
+  campañas de la ventana son de más de uno (`lib/negocio/atribucionDelLead.ts:213`); las campañas de Acquisition y de la
+  herramienta del cerebro, igual, con el cliente de sus anuncios, el que la listó o el de sus contactos
+  (`lib/negocio/embudosDeAcquisition.ts:698`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
+  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:661`)
+  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:884`); sólo uno con
+  métricas y sin serie frena lo que lee Meta —«sin entrega», la concentración y el costo por mil, con su anterior
+  aparte— (`lib/negocio/embudosDeAcquisition.ts:783`, `lib/negocio/embudosDeAcquisition.ts:869`): un cliente sin Meta no
+  apaga lo de los demás. Las vistas de Conversion no son la suma ni el cero de otro cliente
+  (`lib/negocio/pasosDeConversion.ts:512`), y no comparan con un cliente sin su gasto en ninguna de las dos ventanas
+  (`lib/negocio/pasosDeConversion.ts:585`, `lib/negocio/pasosDeConversion.ts:593`). En el detector, lo que es de una
+  cuenta publicitaria se mide dentro de su cliente (`lib/agentes/detectores/acquisition.ts:318`): la crítica de «sin
+  entrega» es del `cliente` cuyas campañas no entregan (`lib/agentes/detectores/acquisition.ts:371`), la entidad nueva
+  de la `094` (`db/migraciones/094_el_cliente_en_acquisition.sql:33`), que la pantalla nombra
+  (`lib/agentes/senales/lectura.ts:184`). El funnel se guarda en el cliente de su campaña
+  (`lib/negocio/funnelDeLaCampana.ts:100`) y la base lo exige (`db/migraciones/094_el_cliente_en_acquisition.sql:52`).
+  La serie atrasada y «métricas sin serie» miran sólo a los clientes activos (`lib/negocio/gastoDeLaCuenta.ts:316`): uno
+  en pausa dejaba la empresa atrasada para siempre. Lo exigen
+  `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:186`,
+  `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:289` y
+  `pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts:41`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): el vínculo de un
   closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; Creative junta en una
   pieza los anuncios de dos clientes que se llaman igual (la pieza, su fatiga, su enlace manual y el puente
-  nombre ↔ anuncio van sin cliente); la atribución por campaña de Conversation agrupa por el nombre de la campaña; las
-  reglas de los detectores que miran el gasto (sin entrega, concentración) suman las cuentas de Meta de todos los
-  clientes; la cobertura de la ventana de Acquisition se decide por empresa; asignar el funnel de una campaña de otro
-  cliente la guarda en el principal; las etiquetas cortas de los campos
+  nombre ↔ anuncio van sin cliente); en el detector de Acquisition, el ICP y la fuga entre etapas comparan contra el
+  promedio de un funnel que mezcla clientes, el monitor de atribución es una proporción de la empresa (un cliente chico
+  con la atribución rota queda tapado) y el cambio brusco del conjunto sigue con el freno de los costos; las señales no
+  llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); un `campaignId`
+  numérico de Google Ads cuenta como pauta sin Meta; las etiquetas cortas de los campos
   y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
   subcuenta con otros nombres no se reconoce); mandar un lead desde Tools usa las credenciales de la empresa
   (`app/api/tools/leads/enviar/route.ts:113`); los guiones de medición, salvo `scripts/medir-mensaje.mjs`, miden sólo
   al principal. Y uno que no es de una subcuenta sino de su ausencia: un cliente ACTIVO sin credenciales del CRM deja
   el aviso de la Agenda de la empresa prendido para siempre («Todavía no se leyó el calendario»: nunca tiene pulso), y
-  el botón sólo puede decir por qué. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene efecto; con
-  él, se mira su pantalla antes de activarlo, con su Conexión cargada.
+  el botón sólo puede decir por qué. Otro de la misma familia, y es una **decisión de producto**: un cliente activo que
+  pauta sin conectar Meta deja a la empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de
+  campaña (Meta es «recomendado, no requerido», así que puede durar), y el motivo que se dice es «Faltan días de gasto»,
+  sin uno propio; lo que sólo lee Meta no se frena. Las salidas: abrir Acquisition por cliente, como Leads y Sales, o
+  sacar de los costos a la gente de ese cliente. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene
+  efecto; con él, se mira su pantalla antes de activarlo, con su Conexión cargada.
 
 ---
 

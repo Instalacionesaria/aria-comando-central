@@ -37,8 +37,16 @@ Escritor único: `lib/agentes/senales/escritura.ts`. Migración `072`.
 
 `campana`, `conjunto` (ad set), `anuncio`, `pieza` (el creativo), `funnel`, `par_de_etapas`
 (`funnel:etapa>etapa`, A6-09), `familia_de_entrada` (Conversion), `patron` (Conversation), `agente` (el
-agente del CRM que audita Conversation), `closer`, `llamada`, `empresa`. La entidad es **siempre un
+agente del CRM que audita Conversation), `closer`, `llamada`, `empresa`, `cliente`. La entidad es **siempre un
 identificador, nunca un nombre** (A6-05): el nombre se resuelve al mostrar.
+
+`cliente` (el nivel 3, `094`) es un cliente de la empresa, por su id de `identidad.cuentas`: lo que es de toda una
+cuenta publicitaria —«sin entrega» de todas sus campañas, el gasto sin crecimiento agregado— cuando las campañas son
+de más de un cliente. Con uno solo, eso sigue siendo `empresa`, con la misma huella de siempre; la entidad cambia una
+vez, el día que aparece el segundo cliente con campañas, y la señal viva de la `empresa` se cierra sola. Una campaña
+medida dentro de su cliente (la concentración, la escala) sigue siendo `campana`, y su evidencia nombra el cliente
+(`cliente`); la pantalla la muestra «Campaña (Cliente)». La base tiene el mismo juego en su `check`
+(`senales_entidad_tipo_check`).
 
 ## AG-22 · La huella y la reconciliación diaria
 

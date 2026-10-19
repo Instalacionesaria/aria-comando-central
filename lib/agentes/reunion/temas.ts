@@ -145,18 +145,26 @@ export function temasDeLaReunion(m: MedidaDeLaReunion, umbral: Umbral): TemaDeLa
 
   if (m.sinEntrega.length >= umbral(REU.sinEntrega).valor) {
     const empresa = m.sinEntrega.find((s) => s.entidad.tipo === 'empresa');
+    // Con varios clientes (el nivel 3), la crítica es de un cliente: el que no entrega en ninguna de sus campañas.
+    const clientes = m.sinEntrega.filter((s) => s.entidad.tipo === 'cliente');
     const campanas = m.sinEntrega.filter((s) => s.entidad.tipo === 'campana');
+    const frases = [
+      clientes.length > 0
+        ? `${clientes.length === 1 ? 'Un cliente dejó' : `${clientes.length} clientes dejaron`} de entregar en todas sus campañas activas: ${clientes.map((c) => c.nombre ?? 'sin nombre').join(', ')}.`
+        : null,
+      campanas.length > 0 || clientes.length === 0
+        ? `${campanas.length === 1 ? 'Una campaña activa dejó' : `${campanas.length} campañas activas dejaron`} de entregar mientras otras siguen: ${campanas.map((c) => c.nombre ?? c.entidad.id).join(', ')}.`
+        : null,
+    ].filter((f): f is string => f !== null);
     temas.push({
       clave: REU.sinEntrega,
       regla: REU.sinEntrega,
       etiqueta: 'SIN DATOS NUEVOS',
       seccion: 'acquisition',
       origen: 'Systems · Acquisition',
-      gravedad: empresa ? empresa.gravedad : 'alta',
+      gravedad: empresa ? empresa.gravedad : clientes.length > 0 ? clientes[0]!.gravedad : 'alta',
       perdida: null,
-      texto: empresa
-        ? empresa.texto
-        : `${campanas.length === 1 ? 'Una campaña activa dejó' : `${campanas.length} campañas activas dejaron`} de entregar mientras otras siguen: ${campanas.map((c) => c.nombre ?? c.entidad.id).join(', ')}.`,
+      texto: empresa ? empresa.texto : frases.join(' '),
       evidencia: { senales: m.sinEntrega.map((s) => s.id) },
     });
   }

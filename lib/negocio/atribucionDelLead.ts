@@ -51,6 +51,12 @@ export interface FilaDeAtribucion {
   tasa: number | null;
   /** `true` en la fila que junta a todas las que no llegaban al piso. */
   esElResto: boolean;
+  /**
+   * El cliente de la campaña, por su nombre (el nivel 3). Sólo en `porCampana`, y sólo cuando las campañas de la ventana
+   * son de más de un cliente: una campaña vive en la cuenta de Meta de UN cliente y dos clientes pueden llamar igual a las
+   * suyas. Con un solo cliente, o con el foco en uno, no viaja: la fila es la de siempre.
+   */
+  cliente?: string;
 }
 
 export interface AtribucionDelLead {
@@ -92,9 +98,11 @@ const HASTA = 21;
  * Y un corte por `adId` acá tendría además un problema propio: la etiqueta sería un identificador de
  * dieciocho dígitos. Nombrarlo exige unir con `negocio.anuncios`, o sea exige ser `costoDelAnuncio`. */
 export async function atribucionDelLead(dias = DIAS_DE_LA_TASA): Promise<AtribucionDelLead> {
+  /* La fuente es una categoría —«Paid Social» de dos clientes es la misma pregunta de la empresa—; la campaña es una
+     cosa de un cliente (el nivel 3). */
   const [porFuente, porCampana, horario] = await Promise.all([
-    cortePor('sessionSource', dias),
-    cortePor('campaign', dias),
+    cortePor('sessionSource', dias, false),
+    cortePor('campaign', dias, true),
     fueraDeHorario(dias),
   ]);
 
@@ -122,8 +130,10 @@ export async function atribucionDelLead(dias = DIAS_DE_LA_TASA): Promise<Atribuc
  * Un contacto sin `campaign` entra igual, en la fila «sin campaña». Excluirlo haría que la suma de
  * las filas no diera la cohorte, y una tabla cuyas partes no suman el total es una en la que nadie
  * puede detectar que falta un pedazo.
+ *
+ * @param porCliente Si la clave es de un cliente —la campaña— y no una categoría de la empresa —la fuente—.
  */
-async function cortePor(clave: string, dias: number): Promise<FilaDeAtribucion[]> {
+async function cortePor(clave: string, dias: number, porCliente: boolean): Promise<FilaDeAtribucion[]> {
   const filas = await datos()
     .selectFrom('contactos')
     .select([
@@ -149,6 +159,10 @@ async function cortePor(clave: string, dias: number): Promise<FilaDeAtribucion[]
          el mismo o las filas de este corte no sumarían la cifra grande de al lado, y nadie tendría
          cómo darse cuenta de cuál de las dos está mal. */
       sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
+      /* ── LA CAMPAÑA ES DE UN CLIENTE (el nivel 3) ──
+         Con la empresa entera, agrupar sólo por el nombre juntaba en una fila dos campañas homónimas de dos clientes,
+         con una tasa que no es de ninguna. Dentro de un cliente se sigue juntando por la caja, como antes. */
+      (porCliente ? sql<string | null>`cuenta_id::text` : sql<string | null>`null::text`).as('cuenta'),
     ])
     .where(sql<boolean>`alta_en_el_crm >= now() - make_interval(days => ${dias})`)
     /* ── `group by 1` Y NO LA EXPRESIÓN REPETIDA ──────────────────────────
@@ -157,12 +171,13 @@ async function cortePor(clave: string, dias: number): Promise<FilaDeAtribucion[]
      * produce un segundo marcador de posición y PostgreSQL no reconoce las dos expresiones como la
      * misma: falla con *«column "contactos.atribucion_primera" must appear in the GROUP BY
      * clause»*. El ordinal apunta a la primera columna del `select`, que es exactamente la que se
-     * quiere agrupar, y no depende de que dos textos coincidan. */
-    .groupBy(sql`1`)
+     * quiere agrupar, y no depende de que dos textos coincidan. `cuenta_id` es una columna, no un
+     * parámetro: ése se puede nombrar. */
+    .groupBy(porCliente ? sql`1, cuenta_id` : sql`1`)
     .orderBy(sql`count(*) desc`)
     .execute();
 
-  const grandes: FilaDeAtribucion[] = [];
+  const grandes: (FilaDeAtribucion & { cuenta: string | null })[] = [];
   let restoCohorte = 0;
   let restoAgendaron = 0;
 
@@ -182,12 +197,26 @@ async function cortePor(clave: string, dias: number): Promise<FilaDeAtribucion[]
       agendaron,
       tasa: Math.round((agendaron / cohorte) * 1000) / 10,
       esElResto: false,
+      cuenta: f.cuenta,
     });
   }
 
-  if (restoCohorte === 0) return grandes;
+  /* Con campañas de más de un cliente en la ventana, cada fila dice de cuál es; con uno solo no viaja. El piso es por
+     (cliente, campaña): dos homónimas de seis contactos van a «Otras», que no lleva cliente porque junta varios. */
+  const clientes = new Set(filas.filter((f) => f.etiqueta !== null && f.cuenta !== null).map((f) => f.cuenta as string));
+  const nombres =
+    clientes.size > 1
+      ? new Map(
+          (await datos().selectFrom('cuentas').select(['id', 'nombre']).where('id', 'in', [...clientes]).execute()).map((c) => [c.id, c.nombre]),
+        )
+      : null;
+  const conCliente: FilaDeAtribucion[] = grandes.map(({ cuenta, ...g }) =>
+    nombres !== null && cuenta !== null ? { ...g, cliente: nombres.get(cuenta) ?? 'Cliente sin nombre' } : g,
+  );
+
+  if (restoCohorte === 0) return conCliente;
   return [
-    ...grandes,
+    ...conCliente,
     {
       etiqueta: 'Otras',
       cohorte: restoCohorte,

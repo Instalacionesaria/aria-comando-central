@@ -59,7 +59,7 @@ import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
 import { esCalificado, tieneCitaAlcanzable } from './citasAlcanzables.ts';
-import { bordesDelPeriodo } from './diasCerrados.ts';
+import { bordesDelPeriodo, type DiasDeCalendario } from './diasCerrados.ts';
 import { coberturaDelGasto, type MotivoDelGasto } from './gastoDeLaCuenta.ts';
 import { cohorteEntre } from './recorrido.ts';
 import { funnelsDeLasCampanas, FUNNELS, type Funnel } from './funnelDeLaCampana.ts';
@@ -230,6 +230,11 @@ export interface CampanaDeAcquisition {
   conContactos: boolean;
   funnel: Funnel | null;
   cifras: Grupo;
+  /**
+   * El cliente de la campaña, por su nombre (el nivel 3), sólo cuando las campañas son de más de un cliente: dos
+   * clientes pueden llamar igual a las suyas. Con un solo cliente, o con el foco en uno, no viaja.
+   */
+  cliente?: string;
 }
 
 /**
@@ -260,7 +265,8 @@ export interface EmbudosDeAcquisition {
    * El gasto de la ventana según la cuenta (`076`):
    *
    *   · `deLaCuenta`: lo que Meta cobró en toda la cuenta, que es la inversión del total. `null` si a algún día
-   *     de la ventana le falta el total de la cuenta: entonces el total suma lo leído por campaña;
+   *     de la ventana le falta el total de la cuenta, o si un cliente pautó en ella sin ningún día de su serie (el
+   *     nivel 3): entonces el total suma lo leído por campaña;
    *   · `motivo`: por qué el gasto no está entero, o `null`. `no_cuadra` es «falta gasto de algunas campañas»:
    *     la cuenta dice más de lo que se alcanzó a leer por campaña, y el relleno lo está buscando.
    */
@@ -413,6 +419,8 @@ export interface CampanaConocida {
   conocida: boolean;
   conContactos: boolean;
   funnel: Funnel | null;
+  /** El nombre de su cliente, sólo con campañas de más de un cliente (ver `CampanaDeAcquisition`). */
+  cliente?: string;
 }
 
 /**
@@ -495,7 +503,7 @@ export function armarEmbudos(entrada: {
     total,
     funnels,
     sinFunnel: grupo('sin_funnel', campanas.filter((c) => c.funnel === null)),
-    campanas: campanas.map(({ campana, nombre, estado, conocida, conContactos, funnel, cifras }) => ({
+    campanas: campanas.map(({ campana, nombre, estado, conocida, conContactos, funnel, cifras, cliente }) => ({
       campana,
       nombre,
       estado,
@@ -503,6 +511,7 @@ export function armarEmbudos(entrada: {
       conContactos,
       funnel,
       cifras,
+      ...(cliente === undefined ? {} : { cliente }),
     })),
     cobertura: entrada.cobertura,
   };
@@ -630,34 +639,109 @@ async function campanasConContactos(): Promise<Set<string>> {
 }
 
 /**
+ * Si algún cliente pautó en la ventana sin que se lea su gasto (el nivel 3). Cada cliente tiene su cuenta de Meta y su
+ * serie (`076`), y `coberturaDelGasto` cuadra la de cada uno; pero un cliente sin NINGÚN día de su serie en la ventana
+ * no entra en esa cuenta, mientras su gente sí entra a la cohorte: el costo por contacto de la empresa salía bajo,
+ * pagado por los otros.
+ *
+ *   · `sinSerie`: algún cliente tiene métricas o contactos de campaña dados de alta en la ventana, y ningún día de su
+ *     serie en ella. Frena los COSTOS: lo que divide el gasto por la gente de la empresa;
+ *   · `conMetricas`: alguno de ésos tiene métricas en la ventana —Meta conectado, sin serie—. Frena también lo que sólo
+ *     lee Meta (los detectores de entrega, concentración y costo por mil): sus anuncios entran a las cuentas sin que se
+ *     sepa si el día está entero;
+ *   · `sinMeta`: alguno de ésos no tiene métricas tampoco: pautó (sus contactos traen campaña) sin Meta conectado. A lo
+ *     que sólo lee Meta no le cambia nada, porque ese cliente no tiene anuncios que sumar; a las vistas de Conversion sí
+ *     (`pasosDeConversion.ts`): el cero que midió la cuenta de otro no es el suyo.
+ *
+ * Por la ventana y no «alguna vez»: los contactos de campaña de hace un año de un cliente sin Meta no están en la
+ * cohorte de hoy. Con un solo cliente no cambia ninguna cifra: lo que esto marca, la regla de siempre ya lo marcaba
+ * (sin ningún día de la serie en la ventana, la cuenta dice `dias_sin_leer`). Con `desde` después de `hasta` —«Hoy»
+ * antes del cierre— no hay filas y las tres dan `false`. Corre dentro de `conOrganizacion`.
+ */
+export async function pautaSinLeerEn(v: DiasDeCalendario): Promise<{ sinSerie: boolean; conMetricas: boolean; sinMeta: boolean }> {
+  const r = await sql<{ sin_serie: boolean; con_metricas: boolean; sin_meta: boolean }>`
+    with pauto as (
+      select distinct m.cuenta_id, true as con_metricas
+        from negocio.metricas_de_anuncio m
+       where m.fecha between ${v.desde}::date and ${v.hasta}::date
+      union
+      select distinct c.cuenta_id, false
+        from negocio.contactos c
+       where ${cohorteEntre('c', v)}
+         and c.atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}
+    ),
+    sin_serie as (
+      select p.cuenta_id, bool_or(p.con_metricas) as con_metricas
+        from pauto p
+       where not exists (select 1 from negocio.gasto_de_la_cuenta g
+                          where g.cuenta_id = p.cuenta_id
+                            and g.fecha between ${v.desde}::date and ${v.hasta}::date)
+       group by p.cuenta_id
+    )
+    select exists (select 1 from sin_serie) as sin_serie,
+           exists (select 1 from sin_serie where con_metricas) as con_metricas,
+           exists (select 1 from sin_serie where not con_metricas) as sin_meta`.execute(datos());
+  const f = r.rows[0]!;
+  return { sinSerie: f.sin_serie, conMetricas: f.con_metricas, sinMeta: f.sin_meta };
+}
+
+/**
  * Las campañas que la pantalla muestra: toda campaña con anuncios guardados, con contactos atribuidos
  * alguna vez, o con un funnel asignado. **No sólo las de la ventana**, y es a propósito: con la pauta
  * parada, una ventana de 7 días no tendría ninguna, y no habría a quién asignarle un funnel (A14-18).
+ *
+ * Y de qué cliente es cada una (el nivel 3): el de sus anuncios —la cuenta de Meta que los leyó—; sin anuncios, el que
+ * la listó en GoHighLevel (`065`); y si no, el de sus contactos o el de su funnel. `clienteDe` va VACÍO cuando son de
+ * un solo cliente, y entonces ninguna campaña lleva `cliente`: todo es de la empresa, como siempre. Se decide por los
+ * datos y no por cuántos clientes tiene la empresa: un segundo cliente sin campañas no cambia nada.
  */
-async function universoDeCampanas(): Promise<CampanaConocida[]> {
-  const filas = await sql<{ campana: string; nombre: string | null; estado: string | null; conocida: boolean }>`
+async function universoDeCampanas(): Promise<{ campanas: CampanaConocida[]; clienteDe: Map<string, string> }> {
+  const filas = await sql<{ campana: string; nombre: string | null; estado: string | null; conocida: boolean; cliente: string | null }>`
     with todas as (
-      select meta_campana_id as campana from negocio.anuncios where meta_campana_id is not null
+      select meta_campana_id as campana, cuenta_id, 1 as orden from negocio.anuncios where meta_campana_id is not null
       union
-      select atribucion_primera->>'campaignId' from negocio.contactos
+      select atribucion_primera->>'campaignId', cuenta_id, 2 from negocio.contactos
        where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}
       union
-      select meta_campana_id from negocio.funnels_de_campana
+      select meta_campana_id, cuenta_id, 3 from negocio.funnels_de_campana
+    ),
+    universo as (
+      select campana,
+             min(cuenta_id::text) filter (where orden = 1) as de_meta,
+             min(cuenta_id::text) filter (where orden = 2) as de_contactos,
+             min(cuenta_id::text) filter (where orden = 3) as de_funnel
+        from todas
+       group by campana
     )
-    select t.campana, k.nombre, k.estado, (k.meta_campana_id is not null) as conocida
-      from todas t
-      left join negocio.campanas k on k.meta_campana_id = t.campana`.execute(datos());
+    select u.campana, k.nombre, k.estado, (k.meta_campana_id is not null) as conocida,
+           coalesce(u.de_meta, k.cuenta_id::text, u.de_contactos, u.de_funnel) as cliente
+      from universo u
+      left join negocio.campanas k on k.meta_campana_id = u.campana`.execute(datos());
 
   const funnels = new Map((await funnelsDeLasCampanas()).map((f) => [f.campana, f.funnel]));
   const conContactos = await campanasConContactos();
-  return filas.rows.map((f) => ({
-    campana: f.campana,
-    nombre: f.nombre,
-    estado: f.estado,
-    conocida: f.conocida,
-    conContactos: conContactos.has(f.campana),
-    funnel: funnels.get(f.campana) ?? null,
-  }));
+  const clientes = new Set(filas.rows.map((f) => f.cliente).filter((c): c is string => c !== null));
+  const nombres =
+    clientes.size > 1
+      ? new Map(
+          (await datos().selectFrom('cuentas').select(['id', 'nombre']).where('id', 'in', [...clientes]).execute()).map((c) => [c.id, c.nombre]),
+        )
+      : null;
+  const clienteDe = new Map<string, string>();
+  const campanas = filas.rows.map((f): CampanaConocida => {
+    const base = {
+      campana: f.campana,
+      nombre: f.nombre,
+      estado: f.estado,
+      conocida: f.conocida,
+      conContactos: conContactos.has(f.campana),
+      funnel: funnels.get(f.campana) ?? null,
+    };
+    if (nombres === null || f.cliente === null) return base;
+    clienteDe.set(f.campana, f.cliente);
+    return { ...base, cliente: nombres.get(f.cliente) ?? 'Cliente sin nombre' };
+  });
+  return { campanas, clienteDe };
 }
 
 /**
@@ -675,6 +759,11 @@ async function universoDeCampanas(): Promise<CampanaConocida[]> {
  *     ver huecos; lo que sí se exige es que la historia empiece antes de la ventana.
  *   · **Los clics, por el comienzo del desglose**, que es posterior al del gasto (la `053`). Sin él, la
  *     ventana anterior tendría gasto sin clics y la flecha de los clics mentiría; ahí se apaga sólo esa.
+ *   · **Con varios clientes** (el nivel 3), uno que pautó en la ventana sin ningún día de su serie deja el gasto
+ *     incompleto aunque el de los demás cuadre (`pautaSinLeerEn`): `motivo` frena los costos. `motivoDeMeta` es el
+ *     freno de lo que sólo lee Meta —los detectores de entrega, concentración y costo por mil—: un cliente sin Meta no
+ *     tiene anuncios que sumar, y no lo apaga; uno con métricas y sin serie, sí. Con un solo cliente los dos son el
+ *     motivo de siempre.
  */
 async function coberturaDeLaVentana(desde: string, hasta: string, dias: number, zona: string) {
   const g = await coberturaDelGasto(desde, hasta, dias, zona);
@@ -685,11 +774,17 @@ async function coberturaDeLaVentana(desde: string, hasta: string, dias: number, 
            (select to_char(min(fecha), 'YYYY-MM-DD') from negocio.metricas_de_anuncio
              where acciones is not null) as desglose_desde`.execute(datos());
   const f = r.rows[0]!;
+  const pauta = await pautaSinLeerEn({ desde, hasta });
   const sinPautaNunca = !f.hay_gasto && f.contactos_desde === null;
-  const motivo: MotivoDelGasto | null = f.hay_gasto ? g.motivo : sinPautaNunca ? null : 'dias_sin_leer';
+  const deSiempre: MotivoDelGasto | null = f.hay_gasto ? g.motivo : sinPautaNunca ? null : 'dias_sin_leer';
+  /* Con un solo cliente la regla de siempre ya daba esto: sin ningún día de su serie en la ventana, la cuenta dice
+     `dias_sin_leer`; y sin gasto guardado, con contactos de campaña, también. */
+  const motivo: MotivoDelGasto | null = pauta.sinSerie ? 'dias_sin_leer' : deSiempre;
+  const motivoDeMeta: MotivoDelGasto | null = pauta.conMetricas ? 'dias_sin_leer' : deSiempre;
   return {
     gasto: motivo === null,
     motivo,
+    motivoDeMeta,
     contactos: f.contactos_desde === null || f.contactos_desde <= desde,
     clics: f.desglose_desde === null || f.desglose_desde <= desde,
   };
@@ -718,6 +813,22 @@ export interface LecturaDeAcquisition {
   actual: ReadonlyMap<string, Cifras>;
   /** `null` cuando no se compara (`embudos.sinComparacion`). Una campaña que no aparece tuvo cero. */
   previa: ReadonlyMap<string, Cifras> | null;
+  /**
+   * El cliente de cada campaña, por su id de `identidad.cuentas` (el nivel 3). VACÍO cuando las campañas son de un solo
+   * cliente: el detector mide la empresa entera, como siempre.
+   */
+  clienteDe: ReadonlyMap<string, string>;
+  /**
+   * El freno de lo que sólo lee Meta, en 7 y 30 días (el nivel 3): el colector atrasado, o a la ventana le falta algún
+   * día de Meta. Un cliente que pautó sin Meta frena los costos (`embudos.sinCostos`) pero no esto: no tiene anuncios
+   * que sumar. Con un solo cliente es `embudos.sinComparacion === 'faltan_dias'`.
+   */
+  faltanDiasDeMeta: boolean;
+  /**
+   * La ventana anterior contra la que compara lo que sólo lee Meta (el costo por mil), con el mismo freno. Con un solo
+   * cliente es `embudos.anterior`; con varios puede existir aunque los costos no comparen por un cliente sin Meta.
+   */
+  anteriorDeMeta: { desde: string; hasta: string } | null;
 }
 
 export async function lecturaDeAcquisition(
@@ -745,13 +856,19 @@ export async function lecturaDeAcquisition(
   let anterior: { desde: string; hasta: string } | null = null;
   let sinComparacion: SinComparacion | null = null;
   let clicsComparables = true;
+  /* Dos frenos (el nivel 3): el de los costos —`motivo`, con todo cliente que pautó— y el de lo que sólo lee Meta
+     —`motivoDeMeta`—. Con un solo cliente son el mismo, y `anteriorDeMeta` es `anterior`. */
+  const faltanDiasDeMeta = colectorAtrasado || actualEntera.motivoDeMeta !== null;
+  let anteriorDeMeta: { desde: string; hasta: string } | null = null;
   if (!cerrados) {
     sinComparacion = 'periodo';
-  } else if (colectorAtrasado || !actualEntera.gasto) {
+  } else if (faltanDiasDeMeta) {
     sinComparacion = 'faltan_dias';
   } else {
     const previaEntera = await coberturaDeLaVentana(b.anteriorCandidata.desde, b.anteriorCandidata.hasta, d, zona);
-    if (!previaEntera.gasto || !previaEntera.contactos) sinComparacion = 'sin_historia';
+    if (previaEntera.motivoDeMeta === null && previaEntera.contactos) anteriorDeMeta = b.anteriorCandidata;
+    if (!actualEntera.gasto) sinComparacion = 'faltan_dias';
+    else if (!previaEntera.gasto || !previaEntera.contactos) sinComparacion = 'sin_historia';
     else {
       anterior = b.anteriorCandidata;
       clicsComparables = previaEntera.clics;
@@ -761,8 +878,12 @@ export async function lecturaDeAcquisition(
     periodo.clave === 'hoy' ? 'hoy' : colectorAtrasado || !actualEntera.gasto ? 'gasto_incompleto' : null;
 
   /* Lo que la cuenta cobró en la ventana ENTERA —con hoy a medias en «Hoy» y en «Completo»—, que es la inversión
-     del total; y en la anterior, para su flecha. `null` si a algún día le falta el total de la cuenta. */
-  const deLaCuenta = (await coberturaDelGasto(ventana.desde, ventana.hasta, b.dias, zona)).deLaCuenta;
+     del total; y en la anterior, para su flecha. `null` si a algún día le falta el total de la cuenta, o si un cliente
+     pautó en la ventana sin ningún día de su serie (el nivel 3): la suma de las series de los otros no es lo que cobró
+     la empresa. */
+  const deLaCuenta = (await pautaSinLeerEn(ventana)).sinSerie
+    ? null
+    : (await coberturaDelGasto(ventana.desde, ventana.hasta, b.dias, zona)).deLaCuenta;
   const motivoDelGasto: MotivoDelGasto | null = colectorAtrasado ? 'colector_atrasado' : actualEntera.motivo;
 
   const cobertura = await sql<{ con_campana: string; sobre: string }>`
@@ -783,11 +904,12 @@ export async function lecturaDeAcquisition(
     if (!clicsComparables) for (const c of previa.values()) c.clics = null;
   }
 
+  const universo = await universoDeCampanas();
   const embudos = armarEmbudos({
     ventana,
     anterior,
     sinComparacion,
-    campanas: await universoDeCampanas(),
+    campanas: universo.campanas,
     actual,
     previa,
     cobertura: { conCampana: n(cobertura.rows[0]?.con_campana), sobre: n(cobertura.rows[0]?.sobre) },
@@ -799,5 +921,5 @@ export async function lecturaDeAcquisition(
       motivo: periodo.clave === 'hoy' ? null : motivoDelGasto,
     },
   });
-  return { embudos, actual, previa };
+  return { embudos, actual, previa, clienteDe: universo.clienteDe, faltanDiasDeMeta, anteriorDeMeta };
 }

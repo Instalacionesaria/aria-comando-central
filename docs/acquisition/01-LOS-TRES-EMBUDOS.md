@@ -153,7 +153,7 @@ cita, la tabla deja de mostrarla sin que nadie lo decida.
 
 **Estado:** existe. El 2026-09-15 había 163 citas alcanzables con `inicio_el` en la ventana de 14 días, sobre 149
 contactos, con `ghl_calendario_id is not null` —el mismo filtro de cita alcanzable que ya usa
-`lib/negocio/atribucionDelLead.ts:132-135`—: 82 con `adId` (50,3 %) y 133 con `campaignId` (81,6 %) (foto del
+`lib/negocio/atribucionDelLead.ts:142-145`—: 82 con `adId` (50,3 %) y 133 con `campaignId` (81,6 %) (foto del
 2026-09-15, línea 213). El 2026-09-28, a 30 días móviles, son 210 y 82 con anuncio (`01-ACQUISITION.md:273-275@972972e`).
 
 ### A1-06 · La clave de la etapa es interna y estable; la etiqueta es un atributo del recorrido
@@ -496,7 +496,7 @@ los contactos no trae `adId`** y el 2026-09-15 ese segmento tenía la tasa de ag
 de la campaña BOFU que entra por el widget de calendario, donde la campaña sobrevive y el anuncio se pierde (foto del 2026-09-15,
 línea 188, y regla 7 de su § 6, línea 292); el 2026-09-28 el calendario sigue en 0 de 47 con `adId` (`01-ACQUISITION.md:269-271@972972e`).
 
-El criterio ya está decidido en `lib/negocio/atribucionDelLead.ts:179-183` —el conteo va, para que las
+El criterio ya está decidido en `lib/negocio/atribucionDelLead.ts:194-198` —el conteo va, para que las
 filas sumen la cohorte; la tasa no va, porque junta categorías distintas— pero **el modelo de esta
 pantalla no tiene dónde ponerla**: ni la tarjeta de embudo ni la tabla prevén una fila que se cuente y
 no compita. Y hay una pregunta anterior: si esos contactos entran por el calendario, el recorrido al

@@ -178,7 +178,7 @@ descartados. **«Confirmaron» cuenta CONTACTOS** con cita en la ventana, descar
 los que respondieron el campo del CRM (`lib/negocio/lecturaDeConversation.ts:245-246`,
 `lib/negocio/indicadoresDeCitas.ts:245`): el conteo puede no cuadrar con el de las citas, y su barra no es una porción
 de ellas. «Asistieron» es sobre las citas con la asistencia marcada. La pantalla no lo dice; lo dice la herramienta
-del cerebro (`lib/agentes/executive/adaptadores/conversation.ts:134-136`).
+del cerebro (`lib/agentes/executive/adaptadores/conversation.ts:140-142`).
 
 **Cada «—» dice por qué, con una frase de una lista cerrada.** Doce motivos (`lib/negocio/lecturaDeConversation.ts:48-60`),
 cada uno con su frase (`components/conversation/comun.jsx:28-41`), más el «—» mismo, la de la mediana, la de la
@@ -199,7 +199,7 @@ porciones del ICP lo llevan sobre el total de quienes agendaron (`lib/negocio/le
 sentimiento sobre los juzgados (`lib/negocio/lecturaDeConversation.ts:155-164`). El piso se aplica en la lectura, no
 en las funciones, que comparten otras pantallas.
 
-**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:120`) con las
+**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:123`) con las
 señales que trae la ruta (`components/conversation/PanelDeConversation.jsx:141`): el plan de la pasada de la mañana,
 de 7 días con «7 días» y de 30 con los otros tres (`app/api/auditoria/route.ts:76`). El detector tiene una sola regla,
 `CONV-PATRON-ABIERTO` (`lib/agentes/detectores/conversation.ts:36-49`): traduce los hallazgos abiertos del auditor,
@@ -208,7 +208,7 @@ no mide. La tarjeta de señales sigue en el modo Auditoría.
 **El cerebro.** Seis herramientas en `lib/agentes/executive/adaptadores/conversation.ts` —`auditoria_de_agentes`,
 `lead_flow`, `atribucion_del_lead`, `consumo_del_precall`, `sentimiento_por_flujo` y `conversation_en_cifras`— y
 `cancelacion_de_citas`, que vive con las de Sales (`lib/agentes/executive/adaptadores/sales.ts:144`).
-**`conversation_en_cifras`** (`lib/agentes/executive/adaptadores/conversation.ts:127-154`) lee la misma lectura con el
+**`conversation_en_cifras`** (`lib/agentes/executive/adaptadores/conversation.ts:133-160`) lee la misma lectura con el
 «audita» que resolvió la ruta del cerebro y devuelve su `pantalla` entera, con el motivo de cada «—»; la compara con
 la de la ruta, en los cuatro períodos, `pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:145`. Las
 demás traen los avisos que la pantalla no dibuja. La frescura de las cinco tareas de las que vive la pantalla la da
@@ -309,7 +309,7 @@ bifurcación, 73 después de contestar y 66 sin contestar. El origen de la cita 
 
 **Lo guardado que la pantalla no usa**, del 2026-09-28 y no re-medido: el anuncio de primer toque en el 71,8 % de la
 cohorte (el corte por anuncio vive en `lib/negocio/costoDelAnuncio.ts`, por los motivos de
-`lib/negocio/atribucionDelLead.ts:76-93`); el ad set y las UTM de los dos toques; la zona horaria en 157 de 277, usada
+`lib/negocio/atribucionDelLead.ts:82-99`); el ad set y las UTM de los dos toques; la zona horaria en 157 de 277, usada
 sólo para fuera de horario; el autor de cada saliente —un tercio del agente de IA—; el formulario de la landing, que
 dejó de escribirse el 2026-08-31; el clic al precall en 20 contactos; el estado de entrega del mensaje; y el sello del
 barrido de las cinco tareas de esta pantalla, que la pantalla no lee (riesgo 22).
@@ -401,6 +401,13 @@ sale de `AGENTES` (`lib/auditor/veredicto.ts:52`). Nombrar un agente a mano est�
 
 **14 · La severidad del patrón es la del peor caso** (`lib/auditor/vista.ts:126-129`).
 
+**15 · La campaña es de un cliente (el nivel 3, C5 · G3).** La atribución por campaña agrupa por (campaña, cliente): dos
+campañas homónimas de dos clientes son dos filas, y cada fila dice su cliente cuando las de la ventana son de más de uno
+(`lib/negocio/atribucionDelLead.ts:176`, `lib/negocio/atribucionDelLead.ts:213`). La fuente es una categoría de la
+empresa y no lleva cliente. Con un solo cliente, o con el foco en uno, la fila y las claves del cerebro son las de
+siempre. Ninguna pantalla dibuja hoy esa tabla: viaja en el cuerpo de `GET /api/auditoria` y en la herramienta
+`atribucion_del_lead`. Lo exige `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:186`.
+
 ---
 
 ## 7 · Riesgos
@@ -442,7 +449,7 @@ nombrando a mano los tres valores sin rama (`lib/negocio/consumoDelPrecall.ts:28
 
 **10 · La comparación entre fuentes que el módulo prohíbe.** **Sin cambios desde el 2026-10-10**: la atribución por
 fuente y por campaña salió de la pantalla (CN1-12). Sigue en `atribucion_del_lead`
-(`lib/agentes/executive/adaptadores/conversation.ts:81-97`), con tasas nulas bajo el piso; el riesgo lo corre el agente
+(`lib/agentes/executive/adaptadores/conversation.ts:86-103`), con tasas nulas bajo el piso; el riesgo lo corre el agente
 al compararlas.
 
 **11 · La agrupación de campañas.** **Abierto**, y sólo en el cerebro: la misma campaña partida en dos filas y un
@@ -468,7 +475,7 @@ sin piso (`lib/negocio/indicadoresDeCitas.ts:449`), y Sales dibuja la cancelaci�
 
 **17 · La atribución y el booking rate dejaron de contar lo mismo.** **Abierto**: la atribución sigue con el filtro de
 cita alcanzable bajo un comentario que dice que es el mismo que el booking rate
-(`lib/negocio/atribucionDelLead.ts:148-151`). Ya no se ve en pantalla, pero sí en el cerebro: en «Completo», el
+(`lib/negocio/atribucionDelLead.ts:158-161`). Ya no se ve en pantalla, pero sí en el cerebro: en «Completo», el
 2026-09-28, las filas sumaban 200 agendados y el booking rate decía 279.
 
 **18 · Diez de las once empresas activas verían esta pantalla vacía.** **Abierto**: 1 de las 11 organizaciones

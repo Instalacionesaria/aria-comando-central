@@ -72,7 +72,7 @@ La regla que gobierna esto no es la del § 18.16: es la **regla 12** de
 
 ### C7-04 · El precedente ya está tomado en esta dirección
 
-**Rastro** · `lib/negocio/atribucionDelLead.ts:74-89` decidió **no** agregar un corte por anuncio en
+**Rastro** · `lib/negocio/atribucionDelLead.ts:80-95` decidió **no** agregar un corte por anuncio en
 Conversation, y escribió por qué: *«ya existe, y duplicarlo los haría discrepar.
 `lib/negocio/costoDelAnuncio.ts` entrega leads y agendamientos por anuncio… Usa EL MISMO `exists` con
 `ghl_calendario_id` que este archivo, que es lo que hace que las dos pantallas sumen igual.»*

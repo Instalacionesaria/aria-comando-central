@@ -54,7 +54,7 @@ Una sola ruta, `GET /api/auditoria` (`app/api/auditoria/route.ts:112-157@e1ccf44
 | bloque | de dónde sale |
 |---|---|
 | la cadena del lead | `lib/negocio/indicadoresDelLead.ts:196` |
-| la atribución | `lib/negocio/atribucionDelLead.ts:94` |
+| la atribución | `lib/negocio/atribucionDelLead.ts:100` |
 | las citas, la cancelación, el reagendamiento, la confirmación y la asistencia | `tasaDeCancelacion`, en `lib/negocio/indicadoresDeCitas.ts` |
 | el precall | `lib/negocio/consumoDelPrecall.ts:143` |
 | el sentimiento por flujo | `lib/auditor/sentimiento.ts:190` |

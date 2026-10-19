@@ -41,7 +41,7 @@ import { campoPorNombre, type CampoDelCrm } from './camposDelCrm.ts';
 import { esCalificado, tieneCitaAlcanzable, todasSusCitasCanceladas } from './citasAlcanzables.ts';
 import { bordesDelPeriodo, type DiasDeCalendario } from './diasCerrados.ts';
 import { embudoDelFormulario, type EmbudoDelFormulario } from './embudoDelFormulario.ts';
-import { type Sentido, tasa, type Variacion, variacion } from './embudosDeAcquisition.ts';
+import { pautaSinLeerEn, type Sentido, tasa, type Variacion, variacion } from './embudosDeAcquisition.ts';
 import { coberturaDelGasto, estadoDeLaSerie, type MotivoDelGasto } from './gastoDeLaCuenta.ts';
 import {
   CAMPO_DE_CONFIRMACION,
@@ -493,16 +493,23 @@ export async function vistasDeLaLanding(ventana: DiasDeCalendario): Promise<Vist
  *     `no_cuadra`. Sin la cuenta entera, no se sabe: «Hoy» antes de la pasada de las 06:17 UTC, un día que el colector
  *     no leyó, o una empresa que nunca pautó; ese motivo depende del período y de si la empresa pautó alguna vez, y lo
  *     decide `lecturaDeConversion`.
+ *
+ * @param sinMeta Un cliente pautó en la ventana sin Meta conectado (`pautaSinLeerEn`, el nivel 3).
  */
 async function vistasDeLaVentana(
   ventana: DiasDeCalendario,
   dias: number,
   zona: string,
+  sinMeta: boolean,
 ): Promise<{ valor: number | null; motivo: MotivoDeLasVistas | null }> {
   const g = await vistasDeLaLanding(ventana);
   if ((g.desgloseDesde !== null && g.desgloseDesde > ventana.desde) || g.sinDesglose > 0) {
     return { valor: null, motivo: 'sin_desglose' };
   }
+  /* Un cliente pautó en la ventana sin Meta (el nivel 3): sus vistas no las leyó nadie, y la suma —o el cero que midió
+     la cuenta de otro— sería la de los demás. Qué motivo se dice lo decide `lecturaDeConversion`, como siempre. Con un
+     solo cliente así tampoco había filas ni cuenta entera, y salía lo mismo: valor y motivo nulos. */
+  if (sinMeta) return { valor: null, motivo: null };
   if (g.filas > 0) return { valor: g.vistas, motivo: null };
   const cuenta = await coberturaDelGasto(ventana.desde, ventana.hasta, dias, zona);
   if (!cuenta.entero) return { valor: null, motivo: null };
@@ -563,7 +570,11 @@ export async function lecturaDeConversion(
      las personas no comparen: con 7 y 30 días, el gasto entero en las dos ventanas —un día que cuadra con la cuenta
      prueba que se leyeron todas las campañas que gastaron, y las acciones viven en esas mismas filas— y el desglose
      completo en la anterior. */
-  const va = await vistasDeLaVentana(b.ventana, b.dias, zona);
+  /* Un cliente que pautó en la ventana sin que se lea su gasto (el nivel 3, `pautaSinLeerEn`): sin Meta, sus vistas no
+     las leyó nadie; con métricas y sin serie, no se sabe si el día está entero. Con un solo cliente la cuenta ya lo
+     decía: sin ningún día de su serie en la ventana, `dias_sin_leer`. */
+  const pauta = await pautaSinLeerEn(b.ventana);
+  const va = await vistasDeLaVentana(b.ventana, b.dias, zona, pauta.sinMeta);
   const vistasActual = va.valor;
   let vistasAnterior: number | null = null;
   let motivo: MotivoDeLasVistas | null = va.motivo;
@@ -571,13 +582,20 @@ export async function lecturaDeConversion(
     const candidata = b.anteriorCandidata;
     if (b.colectorAtrasado) {
       motivo = 'colector_atrasado';
+    } else if (pauta.sinSerie) {
+      // La misma ventana que Acquisition declara sin leer no compara sus vistas.
+      motivo = 'dias_sin_leer';
     } else {
       const cuentaActual = await coberturaDelGasto(b.ventana.desde, b.ventana.hasta, b.dias, zona);
       const cuentaAnterior = await coberturaDelGasto(candidata.desde, candidata.hasta, b.dias, zona);
       if (cuentaActual.motivo !== null) motivo = cuentaActual.motivo;
       else if (cuentaAnterior.motivo !== null) motivo = cuentaAnterior.motivo;
-      else {
-        const vp = await vistasDeLaVentana(candidata, b.dias, zona);
+      else if ((await pautaSinLeerEn(candidata)).sinSerie) {
+        /* La anterior, con un cliente que pautó sin su gasto: sin esto sus vistas salían nulas y sin motivo, y la flecha
+           desaparecía sin decir por qué. */
+        motivo = 'dias_sin_leer';
+      } else {
+        const vp = await vistasDeLaVentana(candidata, b.dias, zona, false);
         if (vp.motivo !== null) motivo = vp.motivo;
         else vistasAnterior = vp.valor;
       }
@@ -587,7 +605,8 @@ export async function lecturaDeConversion(
        A una empresa que nunca pautó no le falta nada que leer, y no se le dice nada. */
     if (b.colectorAtrasado) motivo = 'colector_atrasado';
     else if ((await estadoDeLaSerie(zona)).hayDatos) {
-      motivo = (await coberturaDelGasto(b.ventana.desde, b.ventana.hasta, b.dias, zona)).motivo;
+      /* Con la cuenta entera, lo que dejó las vistas sin publicar es un cliente que pautó sin Meta (el nivel 3). */
+      motivo = (await coberturaDelGasto(b.ventana.desde, b.ventana.hasta, b.dias, zona)).motivo ?? (pauta.sinMeta ? 'dias_sin_leer' : null);
     }
   }
 

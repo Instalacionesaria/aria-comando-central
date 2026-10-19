@@ -56,9 +56,13 @@ export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
   switch (d.regla) {
     case ACQ.sinEntrega: {
       const n = (ev.campanas as unknown[] | undefined)?.length ?? 0;
-      return d.entidad.tipo === 'empresa'
-        ? `Ninguna de las ${numero(n)} campañas activas que entregaban en los últimos ${DIAS_DE_HISTORIA_DE_LA_ENTREGA} días entrega desde hace ${numero(d.valorActual)} días cerrados.`
-        : `No entrega desde hace ${numero(d.valorActual)} días cerrados; otras campañas activas sí.`;
+      if (d.entidad.tipo === 'empresa')
+        return `Ninguna de las ${numero(n)} campañas activas que entregaban en los últimos ${DIAS_DE_HISTORIA_DE_LA_ENTREGA} días entrega desde hace ${numero(d.valorActual)} días cerrados.`;
+      // Con varios clientes (el nivel 3), la crítica es de un cliente: su cuenta publicitaria entera.
+      if (d.entidad.tipo === 'cliente')
+        return `Ninguna de las ${numero(n)} campañas activas de este cliente que entregaban en los últimos ${DIAS_DE_HISTORIA_DE_LA_ENTREGA} días entrega desde hace ${numero(d.valorActual)} días cerrados.`;
+      // Con varios clientes sigue siendo cierto: la alta sale sólo si a su cliente le queda alguna campaña entregando.
+      return `No entrega desde hace ${numero(d.valorActual)} días cerrados; otras campañas activas sí.`;
     }
     case ACQ.cplSostenido:
       return `El costo por contacto subió ${porcentaje(d.cambioPct)} contra ${anteriores(ventana)}: de ${numero(d.lineaBase)} a ${numero(d.valorActual)}, sobre ${numero(d.muestra)} contactos.`;
@@ -68,11 +72,12 @@ export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
       return `La inversión subió ${porcentaje(d.cambioPct)} contra ${anteriores(ventana)} (de ${numero(d.lineaBase)} a ${numero(d.valorActual)}) y los contactos no subieron: ${numero(antes?.contactos)} antes y ${numero(ahora?.contactos)} ahora.`;
     }
     case ACQ.concentracion:
-      return `Se lleva el ${porcentaje(d.valorActual)} del gasto de la ventana, entre ${numero((ev.campanas as unknown[] | undefined)?.length)} campañas con gasto.`;
+      // Medida dentro de su cliente (el nivel 3), la evidencia lo nombra.
+      return `Se lleva el ${porcentaje(d.valorActual)} del gasto ${ev.cliente ? 'de su cliente en' : 'de'} la ventana, entre ${numero((ev.campanas as unknown[] | undefined)?.length)} campañas con gasto.`;
     case ACQ.icpEntreCampanas:
       return `Su ICP promedio está ${numero((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del de su funnel: ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} calificados con puntaje.`;
     case ACQ.escalaPorCalificado:
-      return `Su costo por calificado está ${porcentaje(d.cambioPct)} por debajo del de la empresa: ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} calificados.`;
+      return `Su costo por calificado está ${porcentaje(d.cambioPct)} por debajo del ${ev.cliente ? 'de su cliente' : 'de la empresa'}: ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} calificados.`;
     case ACQ.fugaEntreEtapas:
       return `El paso de contacto a agendado está ${puntos((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del de los otros funnels: ${porcentaje(d.valorActual)} contra ${porcentaje(d.lineaBase)}, sobre ${numero(d.muestra)} contactos.`;
     case ACQ.cpmAbrupto:

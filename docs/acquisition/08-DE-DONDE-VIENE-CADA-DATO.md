@@ -61,7 +61,7 @@ devuelve `current_user`—, así que son lecturas y no pueden escribir nada.
 
 **La ventana es de 14 días y la cohorte se arma con `alta_en_el_crm`**, que es cuándo entró el lead
 al CRM, no con `creado_el`, que es cuándo lo vio nuestro barrido. Es la regla 6 del § 6 de `01-ACQUISITION.md`
-(`01-ACQUISITION.md:376-378@972972e`) y la que respeta `lib/negocio/atribucionDelLead.ts:137`. Medido el 2026-09-16:
+(`01-ACQUISITION.md:376-378@972972e`) y la que respeta `lib/negocio/atribucionDelLead.ts:147`. Medido el 2026-09-16:
 **184 contactos con `alta_en_el_crm` y 206 con `creado_el`** — 22 de diferencia que son latencia de
 ingesta.
 

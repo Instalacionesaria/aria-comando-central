@@ -625,7 +625,10 @@ function Pie({ c, puedeAsignar, alCambiar }) {
   const [fallo, setFallo] = useState('');
 
   const enMeta = c.conocida ? `${c.estado ? `${ESTADOS[c.estado] ?? c.estado} · ` : ''}Meta` : FRASE.noFigura;
-  const estado = c.conContactos ? enMeta : `${enMeta} · ${FRASE.sinContactos}`;
+  const deMeta = c.conContactos ? enMeta : `${enMeta} · ${FRASE.sinContactos}`;
+  /* Con campañas de más de un cliente (el nivel 3), el pie dice de cuál es: dos clientes pueden llamar igual a las
+     suyas. Con uno solo no llega `cliente`, y el pie es el de siempre. */
+  const estado = c.cliente ? `${c.cliente} · ${deMeta}` : deMeta;
   if (!puedeAsignar || !c.conocida) return estado;
 
   async function elegir(valor) {

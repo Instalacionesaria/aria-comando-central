@@ -240,7 +240,7 @@ De los 233 contactos de la ventana del 2026-09-15, **57 no traían `adId`** y ag
 
 Si esa fila se arma con el gasto del anuncio, su gasto es 0 y **sus cuatro costos salen `$0`** — un cero técnicamente correcto (no hay gasto de anuncio que cargarle) que en pantalla se lee como el mejor rendimiento de la tabla.
 
-El requisito: **el costo de una fila sin atribución es desconocido, y desconocido se escribe con guion, no con `$0`.** Es la regla de los dos ceros (`07-REGLAS-TRANSVERSALES.md:211-215@972972e`) aplicada al dinero, y encaja con el criterio que el departamento ya tiene escrito para esa fila: el conteo va, la tasa no (`lib/negocio/atribucionDelLead.ts:179-183`).
+El requisito: **el costo de una fila sin atribución es desconocido, y desconocido se escribe con guion, no con `$0`.** Es la regla de los dos ceros (`07-REGLAS-TRANSVERSALES.md:211-215@972972e`) aplicada al dinero, y encaja con el criterio que el departamento ya tiene escrito para esa fila: el conteo va, la tasa no (`lib/negocio/atribucionDelLead.ts:194-198`).
 
 ### A3-21 · El denominador de «Clics a landing VSL» no lo trae Meta
 

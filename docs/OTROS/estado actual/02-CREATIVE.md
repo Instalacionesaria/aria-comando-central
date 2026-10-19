@@ -225,7 +225,7 @@ Acquisition y Conversion. Toda tasa sobre impresiones lleva el piso de 1000 (`li
 `lib/negocio/lecturaDeCreative.ts:166-172`); el click-to-landing, el de 10 clics al enlace de su módulo
 (`lib/negocio/lecturaDeCreative.ts:309-314`). La tira y la tarjeta no dibujan tasas sobre contactos.
 
-**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:120`) con las señales
+**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:123`) con las señales
 que trae la ruta (`components/creative/PanelDeCreative.jsx:125`): el plan de 7 días con «7 días» y el de 30 con «30 días»;
 con «Hoy» y «Completo» no hay plan (`app/api/creative/route.ts:67`). El detector tiene cuatro reglas —la caída del CTR,
 la concentración del gasto, la frecuencia alta y el ICP de la pieza contra su etapa—

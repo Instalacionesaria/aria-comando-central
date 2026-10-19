@@ -265,7 +265,7 @@ caja del pie** de ninguna sección (2026-10-18; ver [11-EXECUTIVE.md](11-EXECUTI
   (`components/views/CloserView.jsx:97-98`). Sin modelo. El Setter no tiene nada medible y calla
   (`lib/agentes/cabecera.ts:22-23`).
 - **La Reunión de hoy** del Inicio trae el tema «Sales · Closer»: contactos de la empresa entera, a 30 días, con una
-  cita ocurrida y sin registro (`lib/agentes/reunion/temas.ts:180-193`). Salió los 13 días con temas, del 2026-10-06 al
+  cita ocurrida y sin registro (`lib/agentes/reunion/temas.ts:188-201`). Salió los 13 días con temas, del 2026-10-06 al
   2026-10-18; su evidencia bajó de **22 de 22** contactos el 2026-10-06 a **14 de 14** desde el 2026-10-12, sin un solo
   registro en el medio: bajó porque la ventana rueda (medido el 2026-10-18). Ver [11-EXECUTIVE.md](11-EXECUTIVE.md).
 

@@ -21,7 +21,12 @@ import { consumoDelPrecall } from '../../../negocio/consumoDelPrecall.ts';
 import { lecturaDeConversation } from '../../../negocio/lecturaDeConversation.ts';
 import { ARGUMENTO_PERIODO, SIN_ARGUMENTOS, type DefinicionDeHerramienta, periodoPedido, primeras, tomar } from './comun.ts';
 
-const fila = (f: FilaDeAtribucion) => tomar(f, ['etiqueta', 'cohorte', 'agendaron', 'tasa', 'esElResto'] as const);
+/* El cliente viaja sólo cuando la campaña es de uno entre varios (el nivel 3): con un cliente, las cinco claves de siempre
+   (la 213 las mira con `Object.keys`, que ve también una clave con `undefined`). */
+const fila = (f: FilaDeAtribucion) => ({
+  ...tomar(f, ['etiqueta', 'cohorte', 'agendaron', 'tasa', 'esElResto'] as const),
+  ...(f.cliente === undefined ? {} : { cliente: f.cliente }),
+});
 
 export const HERRAMIENTAS_DE_CONVERSATION: readonly DefinicionDeHerramienta[] = [
   {
@@ -82,7 +87,8 @@ export const HERRAMIENTAS_DE_CONVERSATION: readonly DefinicionDeHerramienta[] = 
     nombre: 'atribucion_del_lead',
     descripcion:
       'Conversation: de dónde vinieron los contactos de la ventana y cuántos agendaron, por fuente y por campaña ' +
-      '(tasas nulas bajo el piso), y cuántos entraron fuera de horario.',
+      '(tasas nulas bajo el piso), y cuántos entraron fuera de horario. Con campañas de más de un cliente, cada fila ' +
+      'de campaña dice de qué cliente es (cliente).',
     secciones: ['conversation'],
     esquema: ARGUMENTO_PERIODO,
     async ejecutar(argumentos) {

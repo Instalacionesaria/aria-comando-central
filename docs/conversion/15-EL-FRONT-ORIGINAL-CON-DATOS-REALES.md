@@ -60,7 +60,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | lugar del prototipo | dato | fuente | medido |
 |---|---|---|---|
 | Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:116`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:110`) | — |
-| Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:120-127`) | sólo con 7 y 30 días |
+| Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:123-130`) | sólo con 7 y 30 días |
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
 | Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:99`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
@@ -81,7 +81,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | Cajón de Formulario | los tres estados y la contradicción con las citas, que hasta CV-4 fueron el segundo bloque | `embudoDelFormulario` | — |
 | Cajón de Agenda | agendados, calificados, tasa, confirmados, cancelaron y no calificados | CV15-18 | 63 · 35 · 56 % · 18 · 12 · 28 |
 | Alarma | las señales `critica` | `senales.lista` | ninguna: no hay reglas críticas |
-| Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:196`) | — |
+| Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:199`) | — |
 
 ### Lo que la medición del 2026-10-08 agregó
 
@@ -266,7 +266,7 @@ cosas que no son.
 ### CV15-07 · Las vistas de landing son una cifra de Meta, y no llevan tasa
 
 **Qué es** · La suma de `landingPageView` de la ventana, de **todas** las campañas de la cuenta: el mismo
-filtro `meta_campana_id is not null` que el detalle del gasto (`lib/negocio/gastoDeLaCuenta.ts:366`). Una
+filtro `meta_campana_id is not null` que el detalle del gasto (`lib/negocio/gastoDeLaCuenta.ts:377`). Una
 campaña de mensajes no trae la clave y suma cero, así que no hace falta filtrar por funnel.
 
 **Fórmula** · La de A14-05 de Acquisition, con dos diferencias, una para cada lado:
@@ -526,7 +526,7 @@ La cifra sobre la cohorte, construida el 2026-10-08 (CV-2): `personasDeLaCohorte
 | cualquier otra | ninguno: va sólo a la tarjeta |
 
 **La alarma** · `#cvAlarmWrap` se muestra sólo si hay alguna señal con gravedad `critica`
-(`lib/agentes/senales/tipos.ts:22`), y sólo con 7 o 30 días. **Hoy ninguna regla de Conversion es crítica**
+(`lib/agentes/senales/tipos.ts:28`), y sólo con 7 o 30 días. **Hoy ninguna regla de Conversion es crítica**
 —son media, info, media y media (`lib/agentes/detectores/conversion.ts:47-84`)—, así que no aparece hasta que
 exista una. Su `gsub` del prototipo, «rompe el funnel · no espera al ciclo diario», es falso: las señales
 las guarda la pasada de la mañana. Pasa a «detectada en la pasada de la mañana». Cada fila: `al-t` es el
@@ -581,7 +581,7 @@ la invariante. La ruta de Conversion corta con esa ventana desde el 2026-10-08 (
 `lib/negocio/embudosDeAcquisition.ts`:
 
 - **una pura**, probada sin base: `armarPasos`, `variacionEnPuntos` y `pasoDeLaSenal`. Importa `tasa` y
-  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:280-283` y `:307-316`), y no las copia;
+  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:286-289` y `:313-322`), y no las copia;
 - **una de lectura**, probada contra la base: una sola pasada por los contactos de la cohorte y la suma de
   las vistas. Compone `recorridoDelLead` y `embudoDelFormulario`, que reciben la ventana explícita, y no
   recalcula lo que ya calculan, con una excepción: en la ventana anterior, la pasada cuenta la cohorte junto con

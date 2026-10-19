@@ -22,7 +22,8 @@ export const HERRAMIENTAS_DE_ACQUISITION: readonly DefinicionDeHerramienta[] = [
       'igual al Administrador de anuncios); conGasto dice cuántas campañas gastaron, e inversionSinContactos cuánto ' +
       'gastaron las campañas sin contactos atribuidos, que no pagan el costo por contacto. Una campaña con ' +
       'conContactos falso no dice cuánta gente trajo: sus contactos en 0 no son un dato. Dice si la comparación o ' +
-      'los costos no se pueden dar, y por qué (gasto.motivo: colector_atrasado, dias_sin_leer, no_cuadra).',
+      'los costos no se pueden dar, y por qué (gasto.motivo: colector_atrasado, dias_sin_leer, no_cuadra). Con ' +
+      'campañas de más de un cliente, cada campaña dice de qué cliente es (cliente).',
     secciones: ['acquisition'],
     esquema: ARGUMENTO_PERIODO,
     async ejecutar(argumentos, contexto) {
@@ -43,6 +44,8 @@ export const HERRAMIENTAS_DE_ACQUISITION: readonly DefinicionDeHerramienta[] = [
           filas: campanas.filas.map((c) => ({
             ...tomar(c, ['campana', 'nombre', 'estado', 'funnel', 'conContactos'] as const),
             cifras: grupo(c.cifras),
+            // Sólo con campañas de más de un cliente (el nivel 3): con uno, las claves de siempre (la 213).
+            ...(c.cliente === undefined ? {} : { cliente: c.cliente }),
           })),
           total: campanas.total,
         },

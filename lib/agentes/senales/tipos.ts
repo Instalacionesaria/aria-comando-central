@@ -11,10 +11,16 @@ export type DepartamentoConSenales = (typeof DEPARTAMENTOS_CON_SENALES)[number];
 export const VENTANAS_DE_LAS_SENALES = ['7d', '30d'] as const;
 export type VentanaDeSenal = (typeof VENTANAS_DE_LAS_SENALES)[number];
 
-/** El juego cerrado de entidades (AG-21). La entidad es siempre un identificador, nunca un nombre. */
+/**
+ * El juego cerrado de entidades (AG-21). La entidad es siempre un identificador, nunca un nombre.
+ *
+ * `cliente`: un cliente de la empresa (el nivel 3), por su id de `identidad.cuentas`; lo que es de toda una cuenta
+ * publicitaria cuando la empresa tiene varios. Con uno solo, eso sigue siendo `empresa`. La base tiene el mismo juego
+ * en su `check` (`094`).
+ */
 export const ENTIDADES_DE_SENAL = [
   'campana', 'conjunto', 'anuncio', 'pieza', 'funnel', 'par_de_etapas', 'familia_de_entrada',
-  'patron', 'agente', 'closer', 'llamada', 'empresa',
+  'patron', 'agente', 'closer', 'llamada', 'empresa', 'cliente',
 ] as const;
 export type EntidadDeSenal = (typeof ENTIDADES_DE_SENAL)[number];
 

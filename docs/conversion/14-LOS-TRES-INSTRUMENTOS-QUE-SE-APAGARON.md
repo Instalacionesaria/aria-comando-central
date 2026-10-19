@@ -166,7 +166,7 @@ repositorio ya conoce ese caso (regla 4 de `docs/OTROS/estado actual/07-REGLAS-T
 
 **Consecuencia de diseño:** el agendamiento de Conversion sale del mismo `exists` con
 `ghl_calendario_id is not null` que usan `costoDelAnuncio.ts:350-353`, `calidadDelCreativo.ts:223-226`,
-`atribucionDelLead.ts:150-153` e `indicadoresDelLead.ts:243`. Si saliera del campo, esta pantalla
+`atribucionDelLead.ts:158-161` e `indicadoresDelLead.ts:243`. Si saliera del campo, esta pantalla
 diría 121 donde las otras dicen 47, y **nadie tendría cómo saber cuál de las dos está mal**.
 
 Lo que el campo sí aporta, y ninguna otra pantalla puede dar, es **el abandono del formulario**.

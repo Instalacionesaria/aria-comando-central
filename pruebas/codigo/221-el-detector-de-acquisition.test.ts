@@ -20,74 +20,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ACQ, detectarEnAcquisition, type MedidaDeAcquisition } from '../../lib/agentes/detectores/acquisition.ts';
-import type { PuntoDeAtribucion } from '../../lib/negocio/calidadDeLaAtribucion.ts';
 import { CATALOGO_DE_REGLAS, umbralVigente } from '../../lib/agentes/senales/umbrales.ts';
-import {
-  armarEmbudos,
-  CIFRAS_VACIAS,
-  type CampanaConocida,
-  type Cifras,
-  type SinComparacion,
-  type SinCostos,
-} from '../../lib/negocio/embudosDeAcquisition.ts';
-
-/** Por omisión la campaña trae contactos atribuidos: toda su inversión paga los costos de personas (A14-19). */
-const cifras = (c: Partial<Cifras>): Cifras => ({ ...CIFRAS_VACIAS, inversionConContactos: c.inversion ?? 0, ...c });
-const campana = (id: string, funnel: CampanaConocida['funnel'], estado = 'ACTIVE'): CampanaConocida => ({
-  campana: id,
-  nombre: `Nombre visible ${id}`,
-  estado,
-  conocida: true,
-  conContactos: true,
-  funnel,
-});
-
-function medida(e: {
-  campanas: CampanaConocida[];
-  actual: [string, Partial<Cifras>][];
-  previa?: [string, Partial<Cifras>][] | null;
-  entrega?: [string, number][];
-  sinComparacion?: SinComparacion | null;
-  sinCostos?: SinCostos | null;
-  ventana?: '7d' | '30d';
-  impresiones?: [string, { gasto: number; impresiones: number; gastoAntes: number; impresionesAntes: number }][];
-  conjuntos?: [string, { gasto: number; contactos: number; gastoAntes: number; contactosAntes: number }][];
-  /** Los puntos del monitor. Por omisión, todos con la cobertura entera: no publican nada. */
-  puntos?: Partial<Record<PuntoDeAtribucion['clave'], [number, number]>>;
-}): MedidaDeAcquisition {
-  const actual = new Map(e.actual.map(([id, c]) => [id, cifras(c)]));
-  const previa = e.previa === null ? null : new Map((e.previa ?? []).map(([id, c]) => [id, cifras(c)]));
-  const embudos = armarEmbudos({
-    ventana: { desde: '2026-09-05', hasta: '2026-10-04' },
-    anterior: previa ? { desde: '2026-08-06', hasta: '2026-09-04' } : null,
-    sinComparacion: e.sinComparacion ?? (previa ? null : 'sin_historia'),
-    campanas: e.campanas,
-    actual,
-    previa,
-    cobertura: { conCampana: 0, sobre: 0 },
-    sinCostos: e.sinCostos ?? null,
-  });
-  const claves: PuntoDeAtribucion['clave'][] = ['leads_con_anuncio', 'citas_con_anuncio', 'ventas_con_anuncio', 'utm_incompletas', 'sin_campana'];
-  return {
-    ventana: e.ventana ?? '30d',
-    embudos,
-    actual,
-    previa,
-    entrega: new Map((e.entrega ?? []).map(([id, dias]) => [id, { diasSinEntregar: dias, ultimaEntrega: '2026-09-19' }])),
-    impresiones: previa ? new Map(e.impresiones ?? []) : null,
-    conjuntos: previa && (e.ventana ?? '30d') === '7d' ? new Map(e.conjuntos ?? []) : null,
-    atribucion: {
-      dias: 30,
-      puntos: claves.map((clave) => {
-        // UTM cuenta lo roto: por omisión, ninguna incompleta.
-        const [cuantos, sobre] = e.puntos?.[clave] ?? (clave === 'utm_incompletas' ? [0, 100] : [100, 100]);
-        return { clave, titulo: `Título de ${clave}`, cuantos, sobre, proporcion: null, consecuencia: `consecuencia de ${clave}` };
-      }),
-      fueraDeAlcance: [],
-      aviso: null,
-    },
-  };
-}
+import type { Cifras } from '../../lib/negocio/embudosDeAcquisition.ts';
+// La medición armada a mano vive en `pruebas/apoyo/`: la comparte la 285 (los detectores por cliente).
+import { campana, medida } from '../apoyo/medida-de-acquisition.ts';
 
 const umbral = (codigo: string) => umbralVigente(CATALOGO_DE_REGLAS.find((r) => r.codigo === codigo)!, new Map());
 const detectar = (m: MedidaDeAcquisition) => detectarEnAcquisition(m, umbral);

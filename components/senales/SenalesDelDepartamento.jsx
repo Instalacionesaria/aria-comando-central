@@ -91,7 +91,8 @@ function fechaCorta(iso) {
 
 /**
  * El nombre de la entidad: el de la campaña o el anuncio si el proveedor lo mandó, el rótulo del funnel, el de
- * la pieza, o nada (la empresa entera). Un conjunto no tiene nombre guardado: se dibuja su identificador.
+ * la pieza, el del cliente (el nivel 3), o nada (la empresa entera). Un conjunto no tiene nombre guardado: se dibuja
+ * su identificador.
  */
 function nombreDe(entidad, nombres, funnels, delServidor = null) {
   if (entidad.tipo === 'empresa') return null;
@@ -107,6 +108,8 @@ function nombreDe(entidad, nombres, funnels, delServidor = null) {
   /* Lo mismo con una familia de entrada o el formulario (Conversion): la tarjeta los nombra con lo que resolvió el
      servidor; el plan, por la frase, que ya los trae. */
   if (entidad.tipo === 'familia_de_entrada' || (entidad.tipo === 'funnel' && entidad.id === 'formulario')) return null;
+  // Un cliente (el nivel 3): el nombre que resolvió el servidor; si no llegó, el rótulo y nunca el uuid.
+  if (entidad.tipo === 'cliente') return nombres.get(entidad.id) ?? 'Cliente';
   // Una pieza no tiene otro identificador que su nombre normalizado.
   return entidad.id;
 }

@@ -183,7 +183,7 @@ archivo, **ninguna de las dos se dispara nunca**. Eso las hace más interesantes
   sí puede acercarse a 100 %, y el trabajo es explicar por qué —qué categorías junta esa fila, qué
   hecho técnico la produce— no recortarla. El guardado que sí hace falta no es un tope: es un piso
   de denominador (`PISO_DE_UNA_TASA = 10`, `lib/negocio/indicadoresDeCitas.ts:329`) y una fila que
-  se cuenta pero no compite (`lib/negocio/atribucionDelLead.ts:179-183`).
+  se cuenta pero no compite (`lib/negocio/atribucionDelLead.ts:194-198`).
 
 ### A9-06 · El piso `Math.max(1, …)` en la etapa de entrada
 
@@ -630,7 +630,7 @@ prototipo se propagó**. La limpieza no es del archivo, es del grafo de archivos
 requisito que queda en pie es el de A9-07 y la regla 1 del § 6 de `01-ACQUISITION.md`
 (`01-ACQUISITION.md:355-357@972972e`): la fila se identifica por `adId`/`campaignId` y se **muestra** con el
 nombre que vino de la base, normalizando la caja para agrupar y mostrando una variante tal cual vino
-(`lib/negocio/atribucionDelLead.ts:124-127`), descartando las etiquetas `{{campaign.name}}` sin
+(`lib/negocio/atribucionDelLead.ts:132-137`), descartando las etiquetas `{{campaign.name}}` sin
 renderizar que dos contactos de la ventana traían de verdad (regla 4 de la foto del 2026-09-15).
 
 ---

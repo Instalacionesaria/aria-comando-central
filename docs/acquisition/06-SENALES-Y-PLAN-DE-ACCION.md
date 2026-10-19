@@ -71,7 +71,7 @@ detalle, no al abrir la evidencia: en la señal.
 - **Estado:** la regla ya existe y es del sistema, no de esta pantalla. `PISO_DE_UNA_TASA = 10` en
   `lib/negocio/indicadoresDeCitas.ts:329`, con su motivo escrito ahí mismo: *«una tasa sobre dos
   eventos no es una tasa — es un número que se mueve cincuenta puntos con el próximo registro»*.
-  La aplican `lib/negocio/atribucionDelLead.ts:158`, `lib/negocio/consumoDelPrecall.ts:242` y
+  La aplican `lib/negocio/atribucionDelLead.ts:172`, `lib/negocio/consumoDelPrecall.ts:242` y
   `lib/auditor/sentimiento.ts:127`.
 
 ### A6-02 · Por debajo de diez casos la señal se cuenta y no se publica
@@ -119,7 +119,7 @@ Ninguna señal compara una campaña o un anuncio contra el segmento sin atribuci
   tasa más alta de toda la tabla, contra el 44 % del anuncio de mayor volumen (regla 7 del § 6 de la foto del
   2026-09-15, línea 292). Una señal que compare tasas de agendamiento entre entidades declara ganador a «ninguno».
   Lo que hay detrás es el hecho técnico de que el widget de calendario no pasa el `adId`.
-- **Estado:** el criterio ya está escrito en `lib/negocio/atribucionDelLead.ts:179-183`. Se hereda
+- **Estado:** el criterio ya está escrito en `lib/negocio/atribucionDelLead.ts:194-198`. Se hereda
   tal cual: el conteo va, la tasa no.
 
 ### A6-05 · La entidad de una señal es un identificador, nunca un nombre

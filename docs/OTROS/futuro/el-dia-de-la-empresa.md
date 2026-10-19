@@ -24,7 +24,7 @@ Dónde, en `current_date`:
   `bordesDelPeriodo`), y el de Conversation en días UTC de JavaScript
   (`lib/agentes/detectores/conversation.ts:81`).
 - El último día cerrado de Acquisition, que desde la `076` se mide sobre la serie de la cuenta
-  (`lib/negocio/gastoDeLaCuenta.ts:313` y la cota de atraso de `:317`).
+  (`lib/negocio/gastoDeLaCuenta.ts:320` y la cota de atraso de `:325`).
 
 Y dos que se ven directo en pantalla, fuera de las ventanas:
 

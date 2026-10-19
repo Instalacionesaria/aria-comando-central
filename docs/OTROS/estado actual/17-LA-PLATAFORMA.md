@@ -620,6 +620,7 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | `742ffee` | C4 | `092`: el cron por cliente (una unidad por cliente activo) y las claves viejas cerradas |
 | `ca5fcdc` | — | `093` y los arreglos de dos revisiones del Bloque C: 19 hallazgos de la propia y 34 de los lectores que con dos clientes daban una cifra equivocada |
 | «Nivel 3 · C5 · las rutas manuales traen a cada cliente» | C5 · G4 | sin migración: la Agenda, el tic de la ingesta y «Traer de GoHighLevel» traen a cada cliente activo con su token y en su ámbito; `medir-mensaje` mide por cliente |
+| «Nivel 3 · C5 · Acquisition, Conversation y los detectores del gasto, por cliente (094)» | C5 · G3 | `094`: la entidad `cliente` de las señales y el funnel en la cuenta de su campaña. La atribución por campaña y las campañas de Acquisition dicen su cliente con varios; un cliente que pauta sin su serie frena los costos, y sólo uno con métricas sin serie frena lo que lee Meta; «sin entrega», la concentración, la escala y el gasto sin crecimiento, por cliente; la serie atrasada mira sólo a los activos |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
@@ -632,7 +633,9 @@ desplegar P9. Antes de la `086` hay que comprobar en producción que ningún esc
 rol del inquilino, y antes de la `087`, hacer un alta externa de humo. Después, el Bloque C: la `090` y C1; la `091`, la
 `093` y C3; la `092` **con C3 ya desplegado** (el aviso de C1 escribe con la clave vieja, y desde ahí no se vuelve a un
 despliegue anterior a C3); y C4. C5 · G4 (las rutas manuales por cliente) no tiene migración y sube con C4 o
-después.
+después. C5 · G3: la `094` después de la `093` y antes de desplegar su código (con un segundo cliente, el detector ya
+escribe la entidad `cliente`, que sin la `094` el `check` rechaza); con un solo cliente el código anda igual con o sin
+ella. La foránea de la `094` no puede fallar en producción: cada empresa tiene un solo cliente.
 
 **El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
 (`app/api/cron/route.ts:230`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los

@@ -113,7 +113,7 @@ la frase de la cabecera del departamento (`app/api/conversion/route.ts:48-51`). 
 usó (`app/api/conversion/route.ts:96-115`). El lector del navegador exige el período, sin valor por omisión
 (`lib/negocio/vistaDeConversion.ts:51`).
 
-**La lectura.** `lecturaDeConversion` (`lib/negocio/pasosDeConversion.ts:526`) compone lo que ya se medía y no
+**La lectura.** `lecturaDeConversion` (`lib/negocio/pasosDeConversion.ts:533`) compone lo que ya se medía y no
 lo recalcula:
 
 - la ventana, con `bordesDelPeriodo` (`lib/negocio/diasCerrados.ts:82`): «7 días» y «30 días» son días
@@ -124,7 +124,7 @@ lo recalcula:
 - el reparto, con `recorridoDelLead`, y el formulario, con `embudoDelFormulario`, sobre esa ventana;
 - una pasada por la cohorte —agendó, calificó, confirmó, canceló, la cohorte hasta el corte y las citas
   congeladas— (`lib/negocio/pasosDeConversion.ts:416`), y la de la ventana anterior a la misma edad;
-- las vistas de landing de Meta (`lib/negocio/pasosDeConversion.ts:497`).
+- las vistas de landing de Meta (`lib/negocio/pasosDeConversion.ts:499`).
 
 `armarPasos` (`lib/negocio/pasosDeConversion.ts:249`) arma con eso la tira y las cinco tarjetas, con sus
 variaciones y su lectura; todo viaja de 0 a 1. El cerebro (`pasos_de_conversion`, `recorrido_de_los_leads`,
@@ -418,6 +418,13 @@ confirmación no tienen fecha (`lib/negocio/pasosDeConversion.ts:249`, `CV15-20`
 hechas; el navegador sólo les da formato, multiplica por 100 en un solo lugar
 (`components/conversion/comun.jsx:74`) y elige la frase de la lista cerrada. La prueba
 `pruebas/codigo/247-la-pantalla-de-conversion.test.ts` lo vigila.
+
+**16. Con varios clientes (el nivel 3, C5 · G3), las vistas no son las de otro cliente.** Si un cliente pautó en la
+ventana sin Meta conectado, sus vistas no las leyó nadie: no se publica la suma de los demás ni el cero que midió la
+cuenta de otro, y la nota dice «Faltan días de gasto» (`lib/negocio/pasosDeConversion.ts:512`). Y con un cliente sin su
+gasto en la ventana o en la anterior, las vistas no comparan, diciendo por qué (`lib/negocio/pasosDeConversion.ts:585`,
+`lib/negocio/pasosDeConversion.ts:593`). Con un solo cliente, lo de siempre. Lo exige
+`pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts`.
 
 ---
 

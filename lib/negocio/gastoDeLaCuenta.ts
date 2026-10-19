@@ -293,7 +293,10 @@ export type MotivoDelGasto =
  * atrasada, porque sus métricas solas ya no dicen si el día está completo.
  *
  * Con varios clientes (el nivel 3), cada uno tiene su cuenta de Meta y su serie: el último día cerrado es el del
- * cliente más atrasado —el borde que valen TODOS—, y la serie está atrasada si la de alguno lo está.
+ * cliente más atrasado —el borde que valen TODOS—, y la serie está atrasada si la de alguno lo está, o si alguno tiene
+ * métricas y ninguna serie. **Sólo los clientes ACTIVOS**, como la frescura (el peor activo): uno en pausa o de baja
+ * deja de leerse, y su serie vieja dejaba a la empresa entera atrasada —y la ventana clavada en su último día— para
+ * siempre. Con un solo cliente es lo de siempre: el principal está siempre activo (`085`).
  */
 export async function estadoDeLaSerie(zona: string): Promise<{
   hayDatos: boolean;
@@ -305,15 +308,20 @@ export async function estadoDeLaSerie(zona: string): Promise<{
     hay_serie: boolean;
     hay_metricas: boolean;
     ultimo_cerrado: string | null;
-    atrasado: boolean;
+    serie_atrasada: boolean;
+    metricas_sin_serie: boolean;
     primer_dato: string | null;
   }>`
-    with por_cliente as (
+    with activos as (
+      select id from identidad.cuentas where estado = 'activa'
+    ),
+    por_cliente as (
       select cuenta_id,
              max(fecha) filter (where fecha < current_date
                                   and leido_el >= ((fecha + 1)::timestamp at time zone ${zona})) as ultimo_cerrado,
              max(leido_el) as ultima_lectura
         from negocio.gasto_de_la_cuenta
+       where cuenta_id in (select id from activos)
        group by cuenta_id
     )
     select exists (select 1 from negocio.gasto_de_la_cuenta) as hay_serie,
@@ -321,7 +329,10 @@ export async function estadoDeLaSerie(zona: string): Promise<{
            to_char((select min(ultimo_cerrado) from por_cliente), 'YYYY-MM-DD') as ultimo_cerrado,
            coalesce((select bool_or(ultima_lectura < now() - interval '26 hours'
                                     or coalesce(ultimo_cerrado < current_date - 3, false))
-                       from por_cliente), true) as atrasado,
+                       from por_cliente), false) as serie_atrasada,
+           exists (select 1 from activos a
+                    where exists (select 1 from negocio.metricas_de_anuncio m where m.cuenta_id = a.id)
+                      and not exists (select 1 from negocio.gasto_de_la_cuenta g where g.cuenta_id = a.id)) as metricas_sin_serie,
            to_char(least((select min(fecha) from negocio.gasto_de_la_cuenta),
                          (select min(fecha) from negocio.metricas_de_anuncio)), 'YYYY-MM-DD') as primer_dato`.execute(
     datos(),
@@ -331,7 +342,7 @@ export async function estadoDeLaSerie(zona: string): Promise<{
   return {
     hayDatos,
     ultimoCerrado: f.hay_serie ? f.ultimo_cerrado : null,
-    atrasado: hayDatos && (!f.hay_serie || f.atrasado),
+    atrasado: hayDatos && (f.serie_atrasada || f.metricas_sin_serie),
     primerDato: f.primer_dato,
   };
 }

@@ -188,8 +188,8 @@ nada que construir.
   `Trigger Link` vale **31 de 594** en `atribucion_ultima` y **0 de 594** en `atribucion_primera`
   (2026-09-28 22:04 UTC), y **31 de 624** y 0 de 624 el 2026-10-18: no entró ninguno nuevo. Las dos citas de
   `docs/conversion/` dan las cifras del 2026-09-28. Los 31 tienen cita. Nadie distingue el valor: Acquisition
-  corta por el `sessionSource` del primer toque (`lib/negocio/atribucionDelLead.ts:96`, leído en
-  `lib/negocio/atribucionDelLead.ts:143`), que nunca lo trae; la ficha de Leads Portal también lee
+  corta por el `sessionSource` del primer toque (`lib/negocio/atribucionDelLead.ts:104`, leído en
+  `lib/negocio/atribucionDelLead.ts:153`), que nunca lo trae; la ficha de Leads Portal también lee
   el primero (`lib/negocio/fichaDelLeadDelPortal.ts:151`); Conversion lee del último su `url`
   (`lib/negocio/recorrido.ts:127`) y si trae `sessionSource` o no (`lib/negocio/recorrido.ts:165`),
   nunca cuál. El valor aparece una sola vez en el código, en un comentario
@@ -312,7 +312,7 @@ pero viaja con la mediana y con un guardián que habla cuando la fecha describe 
 formateaba con `day` y `month` y nada más (`components/conversation/PanelDeConversation.jsx:399-404@6f3bdb5`), así que
 el 2025-08-08 salía «8 de agosto» al lado de un «24 de agosto» de 2026. **Cerrado el 2026-10-10 en CN-4
 (`89d8c19`)**: la fecha lleva el año cuando no es el de hoy (`components/conversation/comun.jsx:91-96`), y el aviso
-de la cola, que la pantalla ya no dibuja, lo recibe el cerebro (`lib/agentes/executive/adaptadores/conversation.ts:75`).
+de la cola, que la pantalla ya no dibuja, lo recibe el cerebro (`lib/agentes/executive/adaptadores/conversation.ts:80`).
 Medido el 2026-10-18: la mitad de los 600 contactos con alta entró después del 2026-08-28.
 La tarjeta dibuja ese «desde el …» debajo de «Contactos» y de «Citas totales»
 (`components/conversation/PanelDeConversation.jsx:300`, `:320`), y la regla general está en
@@ -530,7 +530,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   de `periodo.ts`, **cerrado el 2026-10-18 (`65669f4`)**; lo de Leads Portal sigue.
 - **El monitor de atribución contaba una clave que nadie trae. Cerrada el 2026-10-18 (`65669f4`).** Las cinco UTM
   incluyen `utmCampaign` (`lib/negocio/calidadDeLaAtribucion.ts:89`), que está en **0 de 624** contactos; GoHighLevel
-  manda `campaign` (273 en el primer toque, 2026-10-18), y la atribución ya lo usaba (`lib/negocio/atribucionDelLead.ts:97`).
+  manda `campaign` (273 en el primer toque, 2026-10-18), y la atribución ya lo usaba (`lib/negocio/atribucionDelLead.ts:105`).
   Como el `?&` de las cinco no se cumplía nunca, todo contacto con alguna UTM contaba como incompleto, y la señal
   `ACQ-ATRIBUCION-UTM` del detector, que volvió el 2026-10-05 tras dormir desde AQ-4, mandaba a arreglar enlaces que
   sí llevan la campaña ([01-ACQUISITION.md](01-ACQUISITION.md), riesgo 2). Hoy cada UTM se reconoce por cualquiera de

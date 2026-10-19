@@ -21,12 +21,20 @@
 // El costo por mil impresiones y el cambio brusco por conjunto piden impresiones y conjuntos, que la lectura
 // de la pantalla no necesita: se leen aparte, sobre las MISMAS dos ventanas que eligió la pantalla. El
 // monitor de atribución se lee con `calidadDeLaAtribucion` sobre los mismos días cerrados (F03, A11-06).
+//
+// ── CON VARIOS CLIENTES (el nivel 3) ─────────────────────────────────────────
+//
+// Cada cliente tiene su cuenta publicitaria. Lo que es de toda una cuenta —sin entrega, la concentración, la escala
+// por calificado y el gasto sin crecimiento agregado— se mide dentro de cada cliente (`clienteDe`), y lo que
+// era de la `empresa` pasa a ser de su `cliente`. Con un solo cliente el mapa va vacío y todo es como siempre. Y hay
+// dos frenos: un cliente que pautó sin Meta deja a la empresa sin costos (`sinCostos`), pero no apaga lo que sólo lee
+// Meta —sin entrega, la concentración y el costo por mil— de los demás (`faltanDiasDeMeta`, `anteriorDeMeta`).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
 import { datos } from '../../datos/contexto.ts';
 import { FUNNELS, type Funnel } from '../../negocio/funnelDeLaCampana.ts';
-import { lecturaDeAcquisition, type Cifras, type EmbudosDeAcquisition } from '../../negocio/embudosDeAcquisition.ts';
+import { costo, lecturaDeAcquisition, type Cifras, type EmbudosDeAcquisition } from '../../negocio/embudosDeAcquisition.ts';
 import { calidadDeLaAtribucion, type CalidadDeLaAtribucion, type PuntoDeAtribucion } from '../../negocio/calidadDeLaAtribucion.ts';
 import { PISO_DE_UNA_SENAL, type DebajoDelPiso, type Deteccion, type VentanaDeSenal } from '../senales/tipos.ts';
 import type { ReglaDelCatalogo } from '../senales/umbrales.ts';
@@ -76,7 +84,7 @@ export const REGLAS_DE_ACQUISITION: readonly ReglaDelCatalogo[] = [
     unidad: 'dias',
     denominador: null,
     gravedad: 'critica',
-    porque: 'Dos días cerrados seguidos sin entregar ya no es un bache del proveedor; con uno solo se avisaría cada pausa de un día. Crítica si no entrega ninguna campaña, alta si alguna sí.',
+    porque: 'Dos días cerrados seguidos sin entregar ya no es un bache del proveedor; con uno solo se avisaría cada pausa de un día. Crítica si no entrega ninguna campaña de la cuenta publicitaria (con varios clientes, la de cada uno), alta si alguna sí.',
   },
   {
     codigo: ACQ.cplSostenido,
@@ -103,7 +111,7 @@ export const REGLAS_DE_ACQUISITION: readonly ReglaDelCatalogo[] = [
     unidad: 'proporcion',
     denominador: null,
     gravedad: 'media',
-    porque: 'Con tres campañas o más, que una se lleve el 60 % del gasto deja a la cuenta dependiendo de un solo anuncio. Toca presupuesto: requiere validación ejecutiva.',
+    porque: 'Con tres campañas o más en una cuenta publicitaria (con varios clientes, la de cada uno), que una se lleve el 60 % de su gasto deja a la cuenta dependiendo de un solo anuncio. Toca presupuesto: requiere validación ejecutiva.',
   },
   {
     codigo: ACQ.icpEntreCampanas,
@@ -121,7 +129,7 @@ export const REGLAS_DE_ACQUISITION: readonly ReglaDelCatalogo[] = [
     unidad: 'proporcion',
     denominador: 'calificados',
     gravedad: 'info',
-    porque: 'Un calificado un 20 % más barato que el de la empresa es la única razón medida para escalar, y no el costo por contacto. Escalar es presupuesto: requiere validación ejecutiva.',
+    porque: 'Un calificado un 20 % más barato que el de su cuenta publicitaria (la empresa, o su cliente si hay varios) es la única razón medida para escalar, y no el costo por contacto. Escalar es presupuesto: requiere validación ejecutiva.',
   },
   {
     codigo: ACQ.fugaEntreEtapas,
@@ -183,12 +191,25 @@ export interface MedidaDeAcquisition {
   conjuntos: ReadonlyMap<string, { gasto: number; contactos: number; gastoAntes: number; contactosAntes: number }> | null;
   /** El monitor de atribución sobre los mismos días cerrados. */
   atribucion: CalidadDeLaAtribucion;
+  /**
+   * El cliente de cada campaña, por su id de `identidad.cuentas` (el nivel 3): el de sus anuncios —la cuenta de Meta que
+   * los leyó— y, sin anuncios, el que la listó o el de sus contactos (`lecturaDeAcquisition`). VACÍO cuando las campañas
+   * son de un solo cliente: las reglas miran la empresa entera, como siempre.
+   */
+  clienteDe: ReadonlyMap<string, string>;
+  /**
+   * El freno de lo que sólo lee Meta (`lecturaDeAcquisition`): sin entrega, la concentración y el costo por mil. Con un
+   * solo cliente es `embudos.sinComparacion === 'faltan_dias'`; con varios, un cliente sin Meta no lo prende.
+   */
+  faltanDiasDeMeta: boolean;
+  /** La anterior de lo que sólo lee Meta: la de las `impresiones`. Con un solo cliente, `embudos.anterior`. */
+  anteriorDeMeta: Ventana | null;
 }
 
 /** Corre dentro de `conOrganizacion`. */
 export async function medirAcquisition(ventana: VentanaDeSenal, zona: string): Promise<MedidaDeAcquisition> {
   const dias = ventana === '7d' ? 7 : 30;
-  const { embudos, actual, previa } = await lecturaDeAcquisition({ clave: ventana, dias }, zona);
+  const { embudos, actual, previa, clienteDe, faltanDiasDeMeta, anteriorDeMeta } = await lecturaDeAcquisition({ clave: ventana, dias }, zona);
   // El último día cerrado es el final de la ventana, en las dos: la pantalla lo eligió igual.
   const { hasta } = embudos.ventana;
   // Entregar es tener impresiones, como en la pantalla (`cifrasPorCampana`). El último día con entrega de cada campaña.
@@ -207,9 +228,13 @@ export async function medirAcquisition(ventana: VentanaDeSenal, zona: string): P
     actual,
     previa,
     entrega: entregaDe(filas.rows, hasta),
-    impresiones: anterior === null ? null : await impresionesPorCampana(embudos.ventana, anterior),
+    // El costo por mil sólo lee Meta: compara contra la anterior de Meta, que un cliente sin Meta no apaga.
+    impresiones: anteriorDeMeta === null ? null : await impresionesPorCampana(embudos.ventana, anteriorDeMeta),
     conjuntos: anterior === null || ventana !== '7d' ? null : await cifrasPorConjunto(embudos.ventana, anterior),
     atribucion: await calidadDeLaAtribucion(dias, embudos.ventana),
+    clienteDe,
+    faltanDiasDeMeta,
+    anteriorDeMeta,
   };
 }
 
@@ -286,6 +311,25 @@ type Umbral = (codigo: string) => { valor: number; provisional: boolean };
 
 const redondear = (x: number, decimales = 2) => Math.round(x * 10 ** decimales) / 10 ** decimales;
 
+/**
+ * Lo de cada campaña agrupado por su cliente (el nivel 3), en el orden en que llega. Con `clienteDe` vacío es un solo
+ * grupo, `null`: la empresa entera.
+ */
+function agruparPorCliente<T>(m: Pick<MedidaDeAcquisition, 'clienteDe'>, cosas: readonly T[], campanaDe: (t: T) => string): Map<string | null, T[]> {
+  const grupos = new Map<string | null, T[]>();
+  for (const t of cosas) {
+    const cliente = m.clienteDe.get(campanaDe(t)) ?? null;
+    const g = grupos.get(cliente);
+    if (g) g.push(t);
+    else grupos.set(cliente, [t]);
+  }
+  return grupos;
+}
+
+/** Lo que es de toda una cuenta publicitaria: de la empresa con un solo cliente, de su cliente con varios. */
+const entidadDeLaCuenta = (cliente: string | null): Deteccion['entidad'] =>
+  cliente === null ? { tipo: 'empresa', id: 'empresa' } : { tipo: 'cliente', id: cliente };
+
 export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): DeteccionesDeAcquisition {
   const salida: DeteccionesDeAcquisition = { detecciones: [], debajoDelPiso: [], sinMedicion: [] };
   const { embudos } = m;
@@ -305,8 +349,8 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
 
   // ── Sin entrega: entregaba y lleva N días cerrados sin entregar ──
   // Sólo con los días cerrados al día: con el colector atrasado o un día sin cerrar, «no entregó» sería
-  // «no se recolectó» (AG-35).
-  if (embudos.sinComparacion === 'faltan_dias') {
+  // «no se recolectó» (AG-35). Es el freno de Meta: un cliente que pauta sin Meta no apaga la de los demás.
+  if (m.faltanDiasDeMeta) {
     salida.sinMedicion.push(ACQ.sinEntrega);
   } else {
     const u = umbral(ACQ.sinEntrega);
@@ -315,47 +359,56 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
        (GoHighLevel no la listó): sin saber su estado, no entregar sigue siendo un hallazgo. */
     const estado = new Map(embudos.campanas.map((c) => [c.campana, c.estado]));
     const entregaban = [...m.entrega.keys()].filter((c) => (estado.get(c) ?? null) === null || estado.get(c) === 'ACTIVE');
-    const paradas = entregaban.filter((c) => sinEntregar(c) >= u.valor);
     const evidencia = (cuales: string[]) => ({
       ventana: m.ventana,
       ultimoDiaCerrado: periodo.hasta,
       campanas: cuales.map((c) => ({ campana: c, ultimaEntrega: m.entrega.get(c)!.ultimaEntrega, diasSinEntregar: sinEntregar(c) })),
     });
-    if (entregaban.length > 0 && paradas.length === entregaban.length) {
-      salida.detecciones.push({
-        ...base,
-        regla: ACQ.sinEntrega,
-        entidad: { tipo: 'empresa', id: 'empresa' },
-        metrica: 'dias_sin_entrega',
-        lineaBase: null,
-        valorActual: Math.min(...paradas.map(sinEntregar)),
-        cambioPct: null,
-        muestra: null,
-        gravedad: 'critica',
-        revisionRecomendada: 'Revisa en el Administrador de anuncios por qué ninguna campaña está entregando: pago, revisión o pausa.',
-        causasPosibles: ['puede deberse a un problema de pago de la cuenta', 'puede deberse a anuncios en revisión o rechazados', 'puede deberse a una pausa manual'],
-        perdidaContactos: null,
-        umbral: u,
-        evidencia: evidencia(paradas),
-      });
-    } else {
-      for (const c of paradas) {
+    /* Por cuenta publicitaria, que es por cliente (el nivel 3): crítica la del cliente que no entrega en ninguna de sus
+       campañas activas aunque otro cliente sí entregue —pago y revisión son de cada cuenta—; alta por campaña si a SU
+       cliente le queda alguna entregando. Con un solo cliente el grupo es la empresa, con la entidad y la huella de
+       siempre. Un grupo nunca está vacío, así que «todas paradas» es el `entregaban.length > 0 && …` de antes. */
+    for (const [cliente, suyas] of agruparPorCliente(m, entregaban, (c) => c)) {
+      const paradas = suyas.filter((c) => sinEntregar(c) >= u.valor);
+      if (paradas.length === suyas.length) {
         salida.detecciones.push({
           ...base,
           regla: ACQ.sinEntrega,
-          entidad: { tipo: 'campana', id: c },
+          entidad: entidadDeLaCuenta(cliente),
           metrica: 'dias_sin_entrega',
           lineaBase: null,
-          valorActual: sinEntregar(c),
+          valorActual: Math.min(...paradas.map(sinEntregar)),
           cambioPct: null,
           muestra: null,
-          gravedad: 'alta',
-          revisionRecomendada: 'Revisa en el Administrador de anuncios por qué esta campaña dejó de entregar.',
-          causasPosibles: ['puede deberse a anuncios en revisión o rechazados', 'puede deberse a una pausa manual', 'puede deberse a un presupuesto agotado'],
+          gravedad: 'critica',
+          revisionRecomendada:
+            cliente === null
+              ? 'Revisa en el Administrador de anuncios por qué ninguna campaña está entregando: pago, revisión o pausa.'
+              : 'Revisa en el Administrador de anuncios de este cliente por qué ninguna de sus campañas está entregando: pago, revisión o pausa.',
+          causasPosibles: ['puede deberse a un problema de pago de la cuenta', 'puede deberse a anuncios en revisión o rechazados', 'puede deberse a una pausa manual'],
           perdidaContactos: null,
           umbral: u,
-          evidencia: evidencia([c]),
+          evidencia: evidencia(paradas),
         });
+      } else {
+        for (const c of paradas) {
+          salida.detecciones.push({
+            ...base,
+            regla: ACQ.sinEntrega,
+            entidad: { tipo: 'campana', id: c },
+            metrica: 'dias_sin_entrega',
+            lineaBase: null,
+            valorActual: sinEntregar(c),
+            cambioPct: null,
+            muestra: null,
+            gravedad: 'alta',
+            revisionRecomendada: 'Revisa en el Administrador de anuncios por qué esta campaña dejó de entregar.',
+            causasPosibles: ['puede deberse a anuncios en revisión o rechazados', 'puede deberse a una pausa manual', 'puede deberse a un presupuesto agotado'],
+            perdidaContactos: null,
+            umbral: u,
+            evidencia: evidencia([c]),
+          });
+        }
       }
     }
   }
@@ -417,7 +470,13 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
         (s, c) => ({ inversion: s.inversion + c.inversionConContactos, contactos: s.contactos + c.contactos }),
         { inversion: 0, contactos: 0 },
       );
-    candidatas.push([{ tipo: 'empresa', id: 'empresa' }, suma(m.actual), suma(m.previa!)]);
+    /* El agregado es el de una cuenta publicitaria (el nivel 3): la empresa con un cliente, cada cliente con varios.
+       Sumadas, la cuenta de un cliente que gasta más sin traer a nadie quedaba tapada por la del otro. */
+    const todas = [...new Set([...m.actual.keys(), ...m.previa!.keys()])];
+    for (const cliente of agruparPorCliente(m, todas, (c) => c).keys()) {
+      const delCliente = (mapa: ReadonlyMap<string, Cifras>) => new Map([...mapa].filter(([c]) => (m.clienteDe.get(c) ?? null) === cliente));
+      candidatas.push([entidadDeLaCuenta(cliente), suma(delCliente(m.actual)), suma(delCliente(m.previa!))]);
+    }
     for (const [entidad, ahora, antes] of candidatas) {
       if (antes.inversion <= 0) continue;
       const subeElGasto = ahora.inversion / antes.inversion - 1;
@@ -447,14 +506,18 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
   }
 
   // ── Una campaña se lleva casi todo el gasto ──
-  if (!conCostos) {
+  // Sólo lee Meta: el freno es el de Meta, y un cliente que pauta sin Meta no la apaga para los demás.
+  if (m.faltanDiasDeMeta) {
     salida.sinMedicion.push(ACQ.concentracion);
   } else {
     const u = umbral(ACQ.concentracion);
     const conGasto = [...m.actual.entries()].filter(([, c]) => c.inversion > 0);
-    const total = conGasto.reduce((s, [, c]) => s + c.inversion, 0);
-    if (conGasto.length >= 3 && total > 0) {
-      for (const [campana, c] of conGasto) {
+    /* Sobre el gasto de SU cliente (el nivel 3): dos cuentas publicitarias son dos presupuestos, y la única campaña de
+       un cliente no «concentra» el gasto de otro. Con un solo cliente, el de la empresa. */
+    for (const [cliente, suyas] of agruparPorCliente(m, conGasto, ([c]) => c)) {
+      const total = suyas.reduce((s, [, c]) => s + c.inversion, 0);
+      if (suyas.length < 3 || total <= 0) continue;
+      for (const [campana, c] of suyas) {
         const parte = c.inversion / total;
         if (parte < u.valor) continue;
         salida.detecciones.push({
@@ -475,8 +538,9 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
           evidencia: {
             ventana: m.ventana,
             periodo,
+            ...(cliente === null ? {} : { cliente }),
             total: redondear(total),
-            campanas: conGasto.map(([id, x]) => ({ campana: id, inversion: redondear(x.inversion), parte: redondear(x.inversion / total, 4) })),
+            campanas: suyas.map(([id, x]) => ({ campana: id, inversion: redondear(x.inversion), parte: redondear(x.inversion / total, 4) })),
           },
         });
       }
@@ -521,9 +585,23 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
     salida.sinMedicion.push(ACQ.escalaPorCalificado);
   } else {
     const u = umbral(ACQ.escalaPorCalificado);
+    /* La base es el costo por calificado de SU cliente (el nivel 3): contra las dos cuentas juntas, una campaña barata
+       de un cliente caro parecía cara, y una cara de un cliente barato, barata. Con un cliente, la cifra de la pantalla,
+       sin volver a sumarla (una suma en otro orden podría mover un borde). */
+    const delCliente = new Map<string, number | null>();
+    for (const [cliente, suyas] of agruparPorCliente(m, [...m.actual.entries()], ([c]) => c)) {
+      if (cliente === null) continue;
+      const s = suyas.reduce(
+        (a, [, c]) => ({ inversion: a.inversion + c.inversionConContactos, calificados: a.calificados + c.calificados }),
+        { inversion: 0, calificados: 0 },
+      );
+      delCliente.set(cliente, costo(s.inversion, s.calificados));
+    }
     for (const c of embudos.campanas) {
+      const cliente = m.clienteDe.get(c.campana) ?? null;
+      const referencia = cliente === null ? costoDeLaEmpresa : (delCliente.get(cliente) ?? null);
       const propio = c.cifras.calificados.costo;
-      if (propio === null || propio > u.valor * costoDeLaEmpresa) continue;
+      if (propio === null || referencia === null || propio > u.valor * referencia) continue;
       const calificados = c.cifras.calificados.valor;
       if (calificados < PISO_DE_UNA_SENAL) {
         salida.debajoDelPiso.push({ regla: ACQ.escalaPorCalificado, entidad: { tipo: 'campana', id: c.campana }, muestra: calificados });
@@ -534,16 +612,19 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
         regla: ACQ.escalaPorCalificado,
         entidad: { tipo: 'campana', id: c.campana },
         metrica: 'costo_por_calificado',
-        lineaBase: redondear(costoDeLaEmpresa),
+        lineaBase: redondear(referencia),
         valorActual: redondear(propio),
-        cambioPct: redondear(propio / costoDeLaEmpresa - 1, 4),
+        cambioPct: redondear(propio / referencia - 1, 4),
         muestra: calificados,
         gravedad: 'info',
         revisionRecomendada: 'Si se decide escalar, que sea esta campaña y por su costo por calificado, no por su costo por contacto.',
         perdidaContactos: null,
         requiereValidacionEjecutiva: true,
         umbral: u,
-        evidencia: { ventana: m.ventana, periodo, campana: c.campana, costoPorCalificado: redondear(propio), costoDeLaEmpresa: redondear(costoDeLaEmpresa), calificados },
+        evidencia:
+          cliente === null
+            ? { ventana: m.ventana, periodo, campana: c.campana, costoPorCalificado: redondear(propio), costoDeLaEmpresa: redondear(referencia), calificados }
+            : { ventana: m.ventana, periodo, campana: c.campana, cliente, costoPorCalificado: redondear(propio), costoDelCliente: redondear(referencia), calificados },
       });
     }
   }
@@ -591,7 +672,9 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
   }
 
   // ── El costo por mil impresiones sube contra la anterior ──
-  if (!comparable || !conCostos || m.impresiones === null) {
+  /* Sólo lee Meta: compara contra la anterior de Meta (`impresiones` se lee con ella), y un cliente que pauta sin Meta
+     no la apaga para los demás. Con un solo cliente, `impresiones` existe justo cuando la pantalla compara. */
+  if (m.faltanDiasDeMeta || m.impresiones === null) {
     salida.sinMedicion.push(ACQ.cpmAbrupto);
   } else {
     const u = umbral(ACQ.cpmAbrupto);
@@ -620,7 +703,7 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
         causasPosibles: ['puede deberse a más competencia en la subasta', 'puede deberse a una audiencia más chica o más cara'],
         perdidaContactos: null,
         umbral: u,
-        evidencia: { ventana: m.ventana, periodo, anterior, campana, ...x },
+        evidencia: { ventana: m.ventana, periodo, anterior: m.anteriorDeMeta, campana, ...x },
       });
     }
   }
