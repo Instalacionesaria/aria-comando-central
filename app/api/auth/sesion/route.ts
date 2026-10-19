@@ -50,6 +50,7 @@ import {
 } from '../../../../lib/autorizacion/secciones.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { menuPorDepartamentos } from '../../../../lib/autorizacion/departamentos.ts';
+import { SECCIONES_DEL_CLIENTE } from '../../../../lib/autorizacion/cliente.ts';
 
 /**
  * ¿Quién soy? Responde 200 **siempre**, con o sin sesión.
@@ -159,6 +160,29 @@ export async function GET(peticion: Request): Promise<Response> {
     // pantalla, sacar una conclusión sobre 'los números' y estar viendo los de otro
     // cliente."
     mirandoOtraOrganizacion: contexto.mirandoOtraOrganizacion,
+    /**
+     * Los clientes de la empresa que ve esta persona (el nivel 3: las cuentas), y el que tiene enfocado. Los dibuja el
+     * selector de la barra y el rótulo de la cabecera (`lib/foco.ts`). Sin la subcuenta del CRM ni la zona: sólo lo
+     * que la pantalla dibuja.
+     */
+    cuentas: {
+      limitado: contexto.cuentas.limitado,
+      activa: contexto.cuentas.activa,
+      visibles: contexto.cuentas.visibles.map((c) => ({
+        id: c.id,
+        nombre: c.nombre,
+        estado: c.estado,
+        esPorOmision: c.esPorOmision,
+      })),
+    },
+    /** Las pantallas que el foco en un cliente filtra (`SECCIONES_DEL_CLIENTE`). En las demás, la cabecera dice
+     *  «Toda la empresa». Se mandan y no se repiten en el navegador: una segunda lista se desordena. */
+    pantallasDelCliente: [...SECCIONES_DEL_CLIENTE],
+    /** ¿Puede dar de alta, editar y vincular clientes? Con la capacidad EXACTA de cada operación de
+     *  `/api/admin/cuentas`, por el motivo de `puedeConfigurarComisiones`: un botón que va a recibir 403 no se ofrece. */
+    puedeCrearClientes: contexto.permisos.has('cuentas.crear'),
+    puedeEditarClientes: contexto.permisos.has('cuentas.editar'),
+    puedeVincularClientes: contexto.permisos.has('cuentas.vincular'),
   });
 }
 

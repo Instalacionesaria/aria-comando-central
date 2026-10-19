@@ -153,7 +153,7 @@ seis dígitos del id (`components/creative/FichaDelCreativo.jsx:160-178`), todav
 foco entra al abrirla, vuelve a la tarjeta al cerrarla, no sale del cajón con el tabulador, y Escape dentro del campo
 del link no cierra (`components/creative/FichaDelCreativo.jsx:49-72`). El editor del link se dibuja con
 `puedeConfigurarComisiones` (`components/creative/PanelDeCreative.jsx:179`), que la sesión arma con
-`credenciales.editar` (`app/api/auth/sesion/route.ts:141`), lo mismo que pide el servidor
+`credenciales.editar` (`app/api/auth/sesion/route.ts:142`), lo mismo que pide el servidor
 (`app/api/creative/enlace/route.ts:60`).
 
 **La miniatura, y de dónde sale** (CF1-11, CF1-12, C15-08). Por pieza manda **Meta**: la miniatura vigente y el post

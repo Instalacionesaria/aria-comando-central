@@ -141,6 +141,53 @@
   line-height: 1.4;
 }
 
+/* ── El selector de cliente (el nivel 3) ─────────────────────────────────────── */
+
+/* Debajo de la empresa, con la misma píldora, a lo ancho de la barra: un cliente se nombra largo. */
+.nb-cliente {
+  padding: 8px 8px 0;
+}
+.nb-cliente .acct-wrap {
+  max-width: none;
+}
+.nb-cliente .acct-wrap .menu-pop {
+  left: 0;
+  right: auto;
+  width: 100%;
+}
+.nb-cliente-ceja {
+  color: var(--txt-faint);
+}
+.nb-cliente .mp-item.nb-cliente-aqui {
+  color: var(--accent);
+}
+.nb-cliente-pausado {
+  color: var(--warn);
+  font-size: 11px;
+}
+.nb-cliente-causa {
+  color: var(--crit);
+}
+
+/* El rótulo del foco en la cabecera: de qué cliente son los números, o «Toda la empresa». */
+/* `fit-content` y `align-self`: el título es una columna flex, y sin esto el rótulo se estira a todo el ancho. */
+.cd-foco {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 2px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--txt-faint);
+}
+.cd-foco.de-un-cliente {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Las ventanas emergentes ──────────────────────────────────────────────── */
 
 /* El prototipo solo tenía paneles LATERALES —`.drawer`, `.cw`, `.lg`—, ninguna ventana centrada.

@@ -53,6 +53,11 @@ interface Sesion {
   secciones?: DatosDeSesion['secciones'];
   organizacion?: DatosDeSesion['organizacion'];
   mirandoOtraOrganizacion?: boolean;
+  cuentas?: DatosDeSesion['cuentas'];
+  pantallasDelCliente?: string[];
+  puedeCrearClientes?: boolean;
+  puedeEditarClientes?: boolean;
+  puedeVincularClientes?: boolean;
 }
 
 type Situacion = 'preguntando' | 'adentro' | 'sin_respuesta';
@@ -120,6 +125,13 @@ export default function Guardia({ children }: { children: React.ReactNode }) {
             esPrincipal: false,
           },
         mirandoOtraOrganizacion: r.datos.mirandoOtraOrganizacion ?? false,
+        // Sin el campo, ningún cliente y ninguno enfocado: no se ofrece el selector (el nivel 3).
+        cuentas: r.datos.cuentas ?? { limitado: true, activa: null, visibles: [] },
+        pantallasDelCliente: r.datos.pantallasDelCliente ?? [],
+        // `false` ante la duda: sin saberlo, no se ofrecen los botones de Ajustes › Clientes.
+        puedeCrearClientes: r.datos.puedeCrearClientes ?? false,
+        puedeEditarClientes: r.datos.puedeEditarClientes ?? false,
+        puedeVincularClientes: r.datos.puedeVincularClientes ?? false,
       });
       setSituacion('adentro');
       return;

@@ -46,6 +46,7 @@ import ConversacionesDeLaBarra from './cerebro/ConversacionesDeLaBarra.jsx';
 import ReunionDeLaBarra from './cerebro/ReunionDeLaBarra.jsx';
 import { pedirHiloDelInicio } from '../lib/agentes/traspaso.ts';
 import SelectorDeEmpresa from './SelectorDeEmpresa.jsx';
+import SelectorDeCliente from './SelectorDeCliente.jsx';
 import { leerTrabajosEnVuelo, pestanaQueLoRetoma } from '../lib/tools/scrapers.ts';
 import { CADENCIA, usarReloj } from '../lib/reloj.ts';
 
@@ -148,6 +149,8 @@ export default function Nav() {
           <img className="nb-logo" src="/brand/assets/logos/aria-wordmark-dark.svg" alt="ARIA" />
           <SelectorDeEmpresa sesion={sesion} />
         </div>
+        {/* El cliente que se mira (el nivel 3). Con uno solo, no se dibuja: `lib/foco.ts`. */}
+        <SelectorDeCliente sesion={sesion} />
 
         {inicio ? (
           <button

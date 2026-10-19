@@ -62,6 +62,7 @@ import { usarPestanaDibujada, usarUbicacion } from '../lib/vista.ts';
 import { entradaAbierta } from '../lib/autorizacion/departamentos.ts';
 import { usarComentario } from '../lib/agentes/comentario-de-la-cabecera.ts';
 import Mascota from './marca/Mascota.jsx';
+import RotuloDelFoco from './RotuloDelFoco.jsx';
 
 const SIN_NAVEGACION = { inicio: null, departamentos: [], engranaje: [] };
 
@@ -111,6 +112,8 @@ export default function CabeceraDeDepartamento() {
           <h1 className="cd-nombre" id="cdNombre">
             {nombre}
           </h1>
+          {/* Con un cliente enfocado, de quién son los números de esta pantalla (el nivel 3). */}
+          <RotuloDelFoco vista={vista} />
         </div>
         {conPestanas ? (
           <nav className="cd-pestanas" ref={fila} aria-label={`Pestañas de ${departamento.nombre}`}>

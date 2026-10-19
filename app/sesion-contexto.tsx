@@ -96,6 +96,21 @@ export interface DatosDeSesion {
   };
   /** El cartel permanente del `03` § 3. */
   mirandoOtraOrganizacion: boolean;
+  /**
+   * Los clientes de la empresa que ve esta persona (el nivel 3), y el enfocado. `limitado` = es un cliente final. Los
+   * dibujan el selector de la barra y el rótulo de la cabecera, con la regla de `lib/foco.ts`.
+   */
+  cuentas: {
+    limitado: boolean;
+    activa: string | null;
+    visibles: { id: string; nombre: string; estado: 'activa' | 'pausada'; esPorOmision: boolean }[];
+  };
+  /** Las pantallas que el foco en un cliente filtra. */
+  pantallasDelCliente: string[];
+  /** ¿Puede dar de alta, editar y vincular clientes? Con la capacidad exacta de cada operación. */
+  puedeCrearClientes: boolean;
+  puedeEditarClientes: boolean;
+  puedeVincularClientes: boolean;
 }
 
 const SesionContexto = createContext<DatosDeSesion | null>(null);
