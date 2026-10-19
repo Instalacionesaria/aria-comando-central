@@ -541,3 +541,22 @@ ingeniero. Lo que tocan de identidad y permisos, y su orden de subida, en [17-LA
 - **Tres roles nuevos sin login ni contraseña**: `ingestor`, `app_ingesta` y `app_analista`
   (`db/arranque/000_cluster.sql`). En la Fase 0 ningún servicio se conecta con ellos.
 - Ninguna capacidad nueva, ninguna sección nueva y ningún cambio en Ajustes.
+
+---
+
+## 10 · Construido en local, sin subir: el nivel 3 (los clientes de cada empresa)
+
+Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commits y orden de subida en
+[17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 12. Lo que toca de identidad y permisos:
+
+- **Cinco capacidades nuevas** (`db/arranque/001_catalogo.sql`): `cuentas.ver`, `cuentas.crear` y `cuentas.editar`
+  son del administrador de la empresa, no del `usuario`; `cuentas.vincular` —la subcuenta del CRM y la marca de
+  prueba— es sólo de la plataforma; y `negocios.ver`, sólo del superadministrador, como Incidentes.
+- **Dos secciones nuevas**: `clientes` (Ajustes › Clientes, sin entrada en el menú, como `empresas`) y `negocios`
+  (la primera entrada de Client Success, `soloDesdeLaPrincipal`). La `088` las suma al `check` de las pestañas.
+- **El cliente final**: una persona limitada a algunos clientes de su empresa (`usuarios.limitado_a_cuentas`, `087`).
+  Ve sólo Leads y Sales de esos clientes, con `tablero.ver` y nada más; sin clientes asignados, no ve ninguno. Se da de
+  alta en Ajustes › Usuarios con la casilla «Es un cliente final», y su rol sólo puede ser uno restringido por
+  pestañas: el alta y el cambio de rol lo rechazan con el mismo motivo, y la base lo exige en cada fila.
+- **El foco**: la empresa elige un cliente con el selector junto al de la empresa (`PATCH /api/auth/cliente`), y Leads
+  y Sales se filtran a ese cliente; las demás pantallas dicen «Toda la empresa». Cambiar de empresa vacía el foco.

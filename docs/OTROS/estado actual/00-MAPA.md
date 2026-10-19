@@ -69,6 +69,7 @@ saliendo de su capacidad y su alcance, y la barra sólo ordena ([16-AJUSTES-Y-PE
 | Sales | Leads: De GHL (`contacts`), De Radar y Plan de prospección (`tools`); «Todos», «Próximamente» | [10](10-LEADS-PORTAL.md), [15](15-TOOLS-Y-MONITOREO.md) | De GHL: 25 personas a 30 días, 19 agendaron; «Completo», 600 |
 | Sales | Setter y Closer (`setter`, `closer`) | [13](13-SETTER-Y-CLOSER.md) | 0 de 368 citas con la asistencia registrada y 0 Briefs generados; sólo 1 de los 3 closers entró desde el 2026-09-28 |
 | Sales | Llamadas de venta (`analizadores`, HT) | [14](14-ANALIZADORES.md) | 135 llamadas descubiertas en tl;dv, 41 de venta analizadas; las 89 objeciones tienen categoría. La última reunión descubierta es del 2026-10-12 |
+| Client Success | Negocios (`negocios`), construido en local y sin subir | [17](17-LA-PLATAFORMA.md) § 12 | Las empresas y los clientes de cada una, con su configuración y las cifras de la foto diaria; sólo el superadministrador, desde la principal. No existe en producción |
 | Client Success | Llamadas de onboarding (`analizadores`, OB) | [14](14-ANALIZADORES.md) | 13 de onboarding analizadas |
 | Client Success | Client OS (`clientos`); Seguimiento de clientes, «Próximamente» | [16](16-AJUSTES-Y-PERMISOS.md) | Una sección sin operaciones propias en Comando Central: es otra herramienta |
 | Engranaje | Ajustes (`credenciales`) | [16](16-AJUSTES-Y-PERMISOS.md) | 38 capacidades, 3 roles, 15 personas, ninguna con segundo factor. De 13 empresas: 1 con token del CRM, 5 con llave de IA, 1 con la de tl;dv, 0 con el de Meta |

@@ -24,6 +24,8 @@
 > - **2026-10-15 · `66d88de`, `cce2d56`, `972972e`** — Meta directo, listo y dormido (`078`). Es lo que corre producción.
 > - **2026-10-16 · `693a383`..`dc84cb2`** — el modelo de datos multiempresa, Fase 0 (`079` a `084`): construido en local,
 >   sin subir, pendiente de la aprobación de un ingeniero. Cambia la regla 23 y la 7 (sección «Construido en local»).
+> - **2026-10-18 · `21556cd`..`18f61d6`** — el nivel 3, los clientes de nuestros clientes (`085` a `089`), y la pestaña
+>   Negocios: construido en local encima de la Fase 0, sin subir. La regla 23 gana otra mitad (sección «el nivel 3»).
 > - Las cifras: la cancelación del negocio a treinta días pasa de 32,0 % a **35,0 %** (14 de 40, § 9); las congeladas
 >   salieron de la ventana de treinta días (**0**, § 4); entraron **25 contactos** en treinta días (§ 5).
 > - **Lo que la foto anterior dejó abierto, re-verificado el 2026-10-18:** el `aviso` de Lead Flow ya tiene lector —el
@@ -1269,6 +1271,40 @@ para la base de producción; sí para el código del árbol y para la suite loca
 - **Lo demás.** El idioma común compartido sin `org_id` (`079`), las cuentas (`080`), la bandeja de lo crudo con una
   sola puerta (`081`) y los eventos de sólo agregar, con particiones que nacen cerradas (`084`,
   `pruebas/base/257-el-modelo-fase-0.test.ts:649`).
+
+## Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
+
+**Estado.** Los commits del 2026-10-18, `21556cd..18f61d6`, con las migraciones `085` a `089`, están encima de la Fase 0
+y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
+son tres: ARIA (la organización principal), las empresas (`identidad.organizaciones`) y los clientes de cada empresa
+(`identidad.cuentas`). En pantalla se dice «Empresa» y «Cliente»; la palabra «cuenta» no aparece.
+
+- **El ámbito y la tercera variable.** `conOrganizacion` recibe la organización o un ámbito
+  (`lib/datos/contexto.ts:86`, `lib/datos/contexto.ts:156`) y pone tres variables: `app.org_id`, `app.cuentas` y
+  `app.toda_la_organizacion`. `'*'` sólo vale con `'si'` (`lib/datos/contexto.ts:98`), así que la regla 23 gana otra
+  mitad. Con `'no'` —el cliente final— la base le cierra lo de la organización, las filas sin cuenta y las personas
+  (`db/migraciones/086_la_organizacion_entera.sql:63`, `db/migraciones/086_la_organizacion_entera.sql:248`); la
+  excepción son los sellos del cron sin cuenta, que sólo lee, para saber si sus pantallas están al día
+  (`db/migraciones/086_la_organizacion_entera.sql:240`). Las pantallas del
+  cliente —Leads y Sales, con sus cajas del cerebro— abren su ámbito con `ambitoDe` (`lib/autorizacion/ambito.ts:22`):
+  con un cliente enfocado, la pantalla y el cerebro dan la misma cifra (regla 51). Lo exige
+  `pruebas/codigo/265-las-rutas-del-cliente-abren-su-ambito.test.ts:24`.
+- **La cuenta por omisión.** Una por empresa (`db/migraciones/085_la_cuenta_por_omision.sql:31`): recibe lo que entra
+  con las credenciales de la empresa, y el puente cae en ella cuando la empresa tiene dos o más clientes
+  (`db/migraciones/085_la_cuenta_por_omision.sql:59`). Dar de alta un segundo cliente no corta la ingesta.
+- **El cliente final.** `usuarios.limitado_a_cuentas` (`db/migraciones/087_el_cliente_final.sql:23`): sin filas en
+  `usuarios_cuentas` no ve **ninguna** cuenta, no todas. Sólo tiene roles restringidos y nada de la plataforma, y la
+  base lo mira en cada fila, no al confirmar (`db/migraciones/087_el_cliente_final.sql:87`). El portero lo deja sólo en
+  sus pantallas (`lib/autorizacion/portero.ts:227`, `lib/autorizacion/cliente.ts:23`).
+- **La foto de los negocios, con un solo escritor.** `negocio.foto_de_las_empresas` y `negocio.foto_de_las_cuentas`
+  viven bajo la principal, que un disparador exige (`db/migraciones/089_la_foto_de_los_negocios.sql:126`); no guardan
+  nombres, y nulo es «sin medir». Las escribe sólo `tomarLaFoto` (`lib/cartera/foto.ts:159`), en la tarea `foto` del
+  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:119`, horario en `lib/negocio/barrido.ts:361`).
+  Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:76`.
+- **El tablero de Negocios.** La primera entrada de Client Success, sólo del superadministrador y desde la principal
+  (`app/api/negocios/route.ts:33`): la configuración en vivo, leída de identidad como presencias
+  (`lib/cartera/configuracion.ts:70`), y las cifras de la foto (`lib/cartera/tablero.ts:296`). Las cifras de arriba no
+  cuentan a ARIA ni a los clientes de prueba, y nunca suman monedas distintas.
 
 ---
 

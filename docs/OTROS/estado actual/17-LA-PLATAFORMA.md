@@ -591,6 +591,38 @@ crea la `084`.
 cuatro tablas y una vista, aparecen tres esquemas nuestros (`catalogo`, `ingesta` y `sistema`) y tres roles. Mientras
 no suba, nada de esto existe en producción.
 
+## 12 · Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
+
+**Qué es.** Encima de la Fase 0, el back y el front para que cada empresa tenga sus propios clientes (las cuentas) y
+para que ARIA los vea a todos en un tablero. Las reglas que suma están en
+[07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md), sección «Construido en local, sin subir: el nivel 3».
+
+**Qué está construido**, en commits del 2026-10-18 sobre `main` local, **sin push y sin nada aplicado en producción**:
+
+| commit | paso | qué |
+|---|---|---|
+| `21556cd` | P0 | los tipos de la Fase 0 en `lib/datos/esquema.ts` |
+| `64af614` | P1 | `085`: la cuenta por omisión, una por empresa, y el puente que cae en ella con dos o más clientes |
+| `35a853f` | P2 | `conOrganizacion` con un ámbito y la tercera variable, `app.toda_la_organizacion` |
+| `143bd13` | P3 | `086`: lo de la organización sólo con la organización entera |
+| `35314d6` | P4 | `087`: el cliente final, la sesión con sus cuentas y el paso 3b del portero |
+| `0eeeae0` | P5 | las rutas de Leads y Sales, y sus cajas del cerebro, abren su ámbito |
+| `a584e6c`, `ba8c149` | P6 | `088`: Ajustes › Clientes en el back, el alta del cliente final y el foco de la sesión |
+| `2113dd8`, `a1ba556` | P7 | el selector de cliente, el rótulo del foco y Ajustes › Clientes en el front |
+| `0fe13c5` | P8 | `089`: la foto diaria de los negocios y su tarea `foto`, en el horario `29 11 * * *` |
+| `8aa321c` | — | los arreglos de una revisión de P0 a P7 (17 hallazgos, ninguno una fuga) |
+| `18f61d6` | P9 | la pestaña Negocios, primera de Client Success, sólo del superadministrador |
+
+**El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
+corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:119`). Su horario no descifra ninguna
+credencial (`app/api/cron/route.ts:175`), y su umbral de atraso es el de las tareas diarias, 2.940 minutos.
+
+**El orden de subida**, cuando la Fase 0 esté aprobada y cada paso con su OK: la `085` con la fase
+`cuenta-por-omision`; desplegar P0 a P2; la `086` con el humo de las pantallas y del cron; la `087` y desplegar P4 y P5;
+el catálogo (`cuentas.%` y `negocios.ver`) y desplegar P6 y P7; la `088` y la `089`, y desplegar P8 con el cron nuevo;
+desplegar P9. Antes de la `086` hay que comprobar en producción que ningún escritor externo escriba en `negocio` con el
+rol del inquilino, y antes de la `087`, hacer un alta externa de humo.
+
 ---
 
 ## Cómo se midió, y lo que no se pudo verificar
