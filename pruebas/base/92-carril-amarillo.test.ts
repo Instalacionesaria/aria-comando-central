@@ -60,6 +60,8 @@ const hace = (min: number): Date => new Date(AHORA.getTime() - min * 60_000);
 const EMPRESA = () => ({
   orgId: esc.org,
   ambito: enEsc,
+  // El cliente principal: el prompt cargado es el de su agente.
+  esPorOmision: true,
   zona: ZONA,
   claveIa: 'una-clave-que-nunca-se-usa',
   idDelAgente: AGENTE_CRM,

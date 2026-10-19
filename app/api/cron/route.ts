@@ -62,8 +62,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { timingSafeEqual } from 'node:crypto';
-import { conIdentidad } from '../../../lib/datos/capa.ts';
+import { conIdentidad, type Trx } from '../../../lib/datos/capa.ts';
 import { listarOrganizaciones } from '../../../lib/administracion/organizaciones.ts';
+import { clientesParaBarrer } from '../../../lib/administracion/cuentas.ts';
 import {
   resolverAccesoAGhl,
   resolverAccesoAlAnalizador,
@@ -73,9 +74,11 @@ import {
 } from '../../../lib/credenciales/resolver.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import {
+  TAREAS_DEL_CLIENTE,
   TAREAS_DE_LA_PLATAFORMA,
   barrerTodo,
   tareasDelHorario,
+  type ClienteParaBarrer,
   type EmpresaParaBarrer,
 } from '../../../lib/negocio/barrido.ts';
 import { leerLaConfiguracion, type ConfiguracionDeLosNegocios } from '../../../lib/cartera/configuracion.ts';
@@ -183,6 +186,10 @@ export async function GET(peticion: Request): Promise<Response> {
     return Promise.all(
       activas.map(async (org) => ({
         org,
+        /* Sus clientes activos, cada uno con SUS credenciales (el nivel 3): las tareas de un cliente corren una vez
+           por cliente, con su token. El principal lee las de la empresa. Sólo si el horario trae alguna tarea de un
+           cliente: el de los Analizadores no descifra ningún token del CRM. */
+        clientes: tareas.some((t) => TAREAS_DEL_CLIENTE.includes(t)) ? await credencialesDeLosClientes(db, org.id, conLosActivos) : [],
         acceso: await resolverAccesoAGhl(db, org.id, 'la_de_la_empresa'),
         /* El segundo acceso, en la MISMA transacción de identidad. Dos proveedores distintos con dos
            llaves distintas: hoy en producción solo una empresa de cinco tiene llave de IA, y todas las
@@ -211,6 +218,26 @@ export async function GET(peticion: Request): Promise<Response> {
    * invocaciones —las dos alertas de Vercel son por exceso—. Lo que sobrevive a la hora es el sello
    * de `negocio.tareas_programadas`, y ése es el que hay que mirar para saber si el cron corre. */
   return ok(r);
+}
+
+/**
+ * Los clientes activos de una empresa con sus credenciales (el nivel 3), en la transacción de identidad de la corrida.
+ *
+ * Una vez POR CLIENTE, con el mismo resolvedor que las rutas: la regla de arriba —nada de traer todas las credenciales
+ * de un tirón— vale igual para las de los clientes, que filtra `credencialesDelCliente` por (organización, cliente).
+ * En serie: es una sola transacción, y una conexión no corre dos consultas a la vez.
+ */
+async function credencialesDeLosClientes(db: Trx, orgId: string, conMeta: boolean): Promise<ClienteParaBarrer[]> {
+  const salida: ClienteParaBarrer[] = [];
+  for (const cuenta of await clientesParaBarrer(db, orgId)) {
+    salida.push({
+      cuenta,
+      acceso: await resolverAccesoAGhl(db, orgId, cuenta),
+      auditor: await resolverAccesoAlAuditor(db, orgId, cuenta),
+      ...(conMeta ? { meta: await resolverAccesoAMeta(db, orgId, cuenta) } : {}),
+    });
+  }
+  return salida;
 }
 
 /** La llave descifrada, o `null` si falta o no se puede leer: la pasada mide igual y redacta con plantillas. */

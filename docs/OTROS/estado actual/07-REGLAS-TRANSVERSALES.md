@@ -519,8 +519,8 @@ sin estar**: el 2026-10-18 `gh api …/branches/main` da `protected: false` ([17
 
 **La corrección que dejó la tercera.** No alcanza con preguntar qué LEE el arranque: hay que preguntar
 **qué TOCA la columna nueva, en cualquier sentido** —un `insert` que la nombra rompe igual que un
-`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:148`; el barrido de
-citas va a la hora y tres, `lib/negocio/barrido.ts:232`).
+`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:168`; el barrido de
+citas va a la hora y tres, `lib/negocio/barrido.ts:252`).
 
 **La comprobación de treinta segundos, antes de cada `git push`:**
 
@@ -1116,7 +1116,7 @@ revisión adversarial con dos escépticos por hallazgo, que ejecutaron la funci�
 2026-09-18): «una marca de agua no puede describir un conjunto con agujeros». La ventana ahora sale de
 lo que FALTA. **Y volvió con el gasto**: el colector pedía 13 de las 61 campañas de la cuenta, el sello decía `corrio`
 y una campaña de mensajes no entraba nunca; la `076` (`22ec755`, 2026-10-07) lee la serie de toda la cuenta y el
-sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:973-976`).
+sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:1109-1112`).
 
 ## M · Un comentario que afirma sin medir
 
@@ -1181,7 +1181,7 @@ y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas
 `d715b2a`, 2026-10-05) es una tabla común para los cuatro departamentos: la huella —departamento, regla, entidad,
 ventana— impide que una señal descartada renazca mientras su condición siga, la entidad es un id y no un nombre, y no
 hay texto libre de personas (`db/migraciones/072_las_senales.sql:15-26`); con menos de 10 no hay señal
-(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:344-350`),
+(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:364-370`),
 y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:141` y
 `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:101`. **Y las dos excepciones con datos de personas tienen
 su regla:** el Brief del closer es el agente que manda al modelo datos de una persona (`lib/agentes/brief/entrada.ts:14`),
@@ -1299,7 +1299,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **La foto de los negocios, con un solo escritor.** `negocio.foto_de_las_empresas` y `negocio.foto_de_las_cuentas`
   viven bajo la principal, que un disparador exige (`db/migraciones/089_la_foto_de_los_negocios.sql:126`); no guardan
   nombres, y nulo es «sin medir». Las escribe sólo `tomarLaFoto` (`lib/cartera/foto.ts:159`), en la tarea `foto` del
-  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:120`, horario en `lib/negocio/barrido.ts:362`).
+  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:120`, horario en `lib/negocio/barrido.ts:382`).
   Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:76`.
 - **El tablero de Negocios.** La primera entrada de Client Success, sólo del superadministrador y desde la principal
   (`app/api/negocios/route.ts:33`): la configuración en vivo, leída de identidad como presencias

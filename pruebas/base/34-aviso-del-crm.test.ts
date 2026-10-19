@@ -862,8 +862,9 @@ test('7f · el monitor VIAJA en la respuesta del chat, como campo hermano', asyn
      aviso inerte convive perfectamente con un chat lleno de mensajes. */
   const P = 'lib/negocio/ficha.ts';
   const fuente = await import('node:fs').then((fs) => fs.readFileSync(P, 'utf8'));
-  assert.match(fuente, /frescuraDelAviso\(\)/, '`ficha.ts` no llama al monitor: es código muerto');
-  assert.match(fuente, /aviso: await frescuraDelAviso\(\)/, 'el monitor no viaja como campo propio');
+  // Con el cliente del contacto (el nivel 3): cada cliente tiene su workflow y su secreto.
+  assert.match(fuente, /frescuraDelAviso\(cuenta\)/, '`ficha.ts` no llama al monitor: es código muerto');
+  assert.match(fuente, /aviso: await frescuraDelAviso\(cuenta\)/, 'el monitor no viaja como campo propio');
 
   const ruta = await import('node:fs').then((fs) =>
     fs.readFileSync('app/api/contactos/[id]/mensajes/route.ts', 'utf8'),

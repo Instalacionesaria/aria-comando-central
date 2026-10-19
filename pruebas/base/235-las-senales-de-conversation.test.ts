@@ -53,7 +53,7 @@ beforeEach(async () => {
   // La tarea del auditor, al día: sin esto la regla va a «sin medición».
   await esc.admin.query(
     `insert into negocio.tareas_programadas (org_id, tarea, ultima_corrida_el, ultimo_estado) values ($1, 'auditoria', now(), 'corrio')
-       on conflict (org_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
+       on conflict (org_id, cuenta_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
     [esc.org],
   );
 });

@@ -343,7 +343,9 @@ test('la tarea `contactos` pide las miniaturas después de sincronizar, y suma s
   const barrido = readFileSync(join(RAIZ, 'lib/negocio/barrido.ts'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
   const i = barrido.indexOf('async function releerContactos(');
   const cuerpo = barrido.slice(i, barrido.indexOf('\n}\n', i));
-  assert.ok(cuerpo.indexOf('sincronizarContactos(') < cuerpo.indexOf('await completarMiniaturas(ambito, acceso)'), 'las miniaturas no van después de sincronizar');
+  // Con el ámbito y el acceso del cliente, y desde el nivel 3 también con el fin de la corrida.
+  const miniaturas = cuerpo.indexOf('await completarMiniaturas(ambito, acceso,');
+  assert.ok(miniaturas > 0 && cuerpo.indexOf('sincronizarContactos(') < miniaturas, 'las miniaturas no van después de sincronizar');
   assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas \}/, 'el sello no lleva el resumen de las miniaturas');
   assert.match(cuerpo, /llamadas: r\.resumen\.llamadas \+ miniaturas\.pedidos/, 'las llamadas de las miniaturas no se cuentan');
 });

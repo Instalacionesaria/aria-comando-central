@@ -186,8 +186,10 @@ export async function recolectarActivos(
   ambito: AmbitoDeUnCliente,
   meta: { token: string; cuentaId: string },
   ahora: () => number = Date.now,
+  // El fin de la corrida del cron (el nivel 3): con varios clientes, el presupuesto de cada uno no puede pasarlo.
+  fin = Number.POSITIVE_INFINITY,
 ): Promise<{ corrio: true; resultado: ResultadoDeActivos; llamadas: number }> {
-  const hasta = ahora() + PRESUPUESTO_DE_ACTIVOS_MS;
+  const hasta = Math.min(ahora() + PRESUPUESTO_DE_ACTIVOS_MS, fin);
   const ids = await conOrganizacion(ambito, () => anunciosPorLeer());
   if (ids.length === 0) {
     return { corrio: true, resultado: { pedidos: 0, guardados: 0, conMiniatura: 0, corte: null }, llamadas: 0 };

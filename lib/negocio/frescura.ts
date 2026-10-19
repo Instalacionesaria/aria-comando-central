@@ -113,19 +113,10 @@ const NOMBRE: Record<Tarea, string> = {
  * instante en que empezó la transacción, así que las dos lecturas ven el mismo reloj. Con `Date.now()`
  * serían dos, y este archivo existe justamente para medir una diferencia de tiempos.
  */
-export async function frescuraDe(tarea: Tarea): Promise<Frescura> {
+export async function frescuraDe(tarea: Tarea, cuentaId?: string): Promise<Frescura> {
   const umbral = umbralDe(tarea);
 
-  const fila = await datos()
-    .selectFrom('tareas_programadas')
-    .select([
-      'ultimo_estado',
-      // La diferencia la calcula la BASE, no la aplicación: es la única forma de que el «ahora» sea
-      // el mismo reloj que escribió el sello.
-      sql<number>`greatest(0, floor(extract(epoch from (now() - ultima_corrida_el)) / 60))`.as('minutos'),
-    ])
-    .where('tarea', '=', tarea)
-    .executeTakeFirst();
+  const fila = await selloQueCuenta(tarea, cuentaId);
 
   // Sin tarea programada no hay nada que medir. Ver `umbralDe`.
   if (umbral === null) {
@@ -185,6 +176,63 @@ export async function frescuraDe(tarea: Tarea): Promise<Frescura> {
       `El último barrido automático es de hace ${enPalabras(minutos)}, y ${NOMBRE[tarea]} tendría ` +
       `que correr cada ${enPalabras(umbral - 60)} como mucho. Puede haber cosas sin traer.`,
   };
+}
+
+/**
+ * El sello que cuenta para la frescura (el nivel 3). **Corre dentro de `conOrganizacion(`.**
+ *
+ * Desde el barrido por cliente, una tarea de un cliente tiene un sello por cliente, y las de la empresa uno sin
+ * cuenta. Con un cliente pedido —la ficha de un contacto, que es de uno—, el suyo. Sin cliente —una pantalla de la
+ * empresa entera o con el foco en uno, que ya acota la RLS—, el PEOR de los clientes activos a la vista: uno que
+ * falla gana, y si no, el más viejo. Un promedio o el más nuevo dirían «al día» con un cliente sin traer nada. Sin
+ * sellos de clientes, el sin cuenta: las tareas de la empresa, y los sellos de antes del nivel 3.
+ *
+ * La diferencia la calcula la BASE, no la aplicación: es la única forma de que el «ahora» sea el mismo reloj que
+ * escribió el sello.
+ */
+async function selloQueCuenta(
+  tarea: Tarea,
+  cuentaId: string | undefined,
+): Promise<{ ultimo_estado: string; minutos: number } | undefined> {
+  const minutos = sql<number>`greatest(0, floor(extract(epoch from (now() - t.ultima_corrida_el)) / 60))`.as('minutos');
+  if (cuentaId !== undefined) {
+    /* El suyo. Y si no tiene y es el principal, el sin cuenta: los sellos de antes del barrido por cliente eran del
+       trabajo que entraba con las credenciales de la empresa, o sea del principal. Para otro cliente, sin sello es
+       «nunca», que es la verdad. */
+    return datos()
+      .selectFrom('tareas_programadas as t')
+      .select(['t.ultimo_estado', minutos])
+      .where('t.tarea', '=', tarea)
+      .where((w) =>
+        w.or([
+          w('t.cuenta_id', '=', cuentaId),
+          w.and([
+            w('t.cuenta_id', 'is', null),
+            w.exists(
+              w.selectFrom('cuentas as c').select('c.id').where('c.id', '=', cuentaId).where('c.es_por_omision', '=', true),
+            ),
+          ]),
+        ]),
+      )
+      .orderBy(sql`t.cuenta_id is null`)
+      .executeTakeFirst();
+  }
+  const elPeor = await datos()
+    .selectFrom('tareas_programadas as t')
+    .innerJoin('cuentas as c', (j) => j.onRef('c.id', '=', 't.cuenta_id').onRef('c.org_id', '=', 't.org_id'))
+    .select(['t.ultimo_estado', minutos])
+    .where('t.tarea', '=', tarea)
+    .where('c.estado', '=', 'activa')
+    .orderBy(sql`t.ultimo_estado = 'fallo' desc`)
+    .orderBy('t.ultima_corrida_el', 'asc')
+    .executeTakeFirst();
+  if (elPeor) return elPeor;
+  return datos()
+    .selectFrom('tareas_programadas as t')
+    .select(['t.ultimo_estado', minutos])
+    .where('t.tarea', '=', tarea)
+    .where('t.cuenta_id', 'is', null)
+    .executeTakeFirst();
 }
 
 /**
@@ -263,7 +311,11 @@ const UMBRAL_DEL_AVISO_MINUTOS = 120;
  * mismo reloj que escribió las filas.
  * ═══════════════════════════════════════════════════════════════════════════════
  */
-export async function frescuraDelAviso(): Promise<FrescuraDelAviso> {
+export async function frescuraDelAviso(
+  // El de UN cliente (el nivel 3): cada uno tiene su workflow y su secreto. Sin cliente, los de todos los que la RLS
+  // deja ver —la empresa entera, o el del foco—.
+  cuentaId?: string,
+): Promise<FrescuraDelAviso> {
   const fila = await datos()
     .selectFrom('avisos_del_crm')
     .select([
@@ -287,6 +339,7 @@ export async function frescuraDelAviso(): Promise<FrescuraDelAviso> {
       )`.as('sin_procesar'),
       sql<string>`count(*)`.as('total'),
     ])
+    .$if(cuentaId !== undefined, (q) => q.where('cuenta_id', '=', cuentaId as string))
     .executeTakeFirst();
 
   const total = Number(fila?.total ?? 0);

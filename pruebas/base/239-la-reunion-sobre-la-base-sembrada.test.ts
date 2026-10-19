@@ -117,7 +117,7 @@ test('el mismo día no vuelve a medirla; sin la fila, la rehace sin volver a med
   // Con el sello de hoy, ni entra.
   await admin.query(
     `insert into negocio.tareas_programadas (org_id, tarea, ultima_corrida_el, ultimo_estado) values ($1, 'senales', now(), 'corrio')
-     on conflict (org_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
+     on conflict (org_id, cuenta_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
     [e.conDatos],
   );
   assert.deepEqual(await correrLaPasada(org(), { ahora: new Date(`${hoy()}T18:00:00Z`) }), { tocaba: false, porque: 'ya corrió hoy' });

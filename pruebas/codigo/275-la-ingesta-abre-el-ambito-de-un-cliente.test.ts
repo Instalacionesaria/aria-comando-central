@@ -65,16 +65,16 @@ test('releer los contactos abre el ámbito del cliente, y el barrido despacha ca
   const i = barrido.indexOf('async function releerContactos(');
   const releer = barrido.slice(i, barrido.indexOf('\n}\n', i));
   assert.match(releer, /conOrganizacion\(ambito,/);
-  assert.match(releer, /completarMiniaturas\(ambito, acceso\)/);
+  assert.match(releer, /completarMiniaturas\(ambito, acceso,/);
   for (const llamada of [
-    /releerContactos\(await delCliente\(\)/,
-    /ingerirMensajes\(await delCliente\(\)/,
-    /recolectarAnuncios\(await delCliente\(\)/,
-    /rellenarAnuncios\(await delCliente\(\)/,
-    /recolectarActivos\(await delCliente\(\)/,
-    /barrerCitas\(await delCliente\(\)/,
-    /auditar\(org, await delCliente\(\)/,
-    /mejorar\(org, await delCliente\(\)/,
+    /releerContactos\(elAmbito\(\)/,
+    /ingerirMensajes\(elAmbito\(\)/,
+    /recolectarAnuncios\(elAmbito\(\)/,
+    /rellenarAnuncios\(elAmbito\(\)/,
+    /recolectarActivos\(elAmbito\(\)/,
+    /barrerCitas\(elAmbito\(\)/,
+    /auditar\(org, elAmbito\(\)/,
+    /mejorar\(org, elAmbito\(\)/,
   ]) {
     assert.match(barrido, llamada, `el barrido no despacha con el cliente: ${llamada}`);
   }

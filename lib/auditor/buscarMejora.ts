@@ -57,6 +57,8 @@ export interface ParaBuscarMejora {
   orgId: string;
   /** El cliente cuyo agente se mira (el nivel 3). El tope del día cuenta los hallazgos a la vista: los de ESTE cliente. */
   ambito: AmbitoDeUnCliente;
+  /** Si es el cliente principal: el prompt cargado es el de su agente (ver `ParaAuditar.esPorOmision`). */
+  esPorOmision: boolean;
   zona: string;
   claveIa: string;
   idDelAgente: string;
@@ -156,7 +158,7 @@ export async function buscarUnaMejora(
     const mensajes = await mensajesDelContacto(elegido.contactoId);
     const hechos = medirHechos(mensajes, e.idDelAgente, ahora);
     const transcript = armarTranscript(mensajes, e.zona, e.idDelAgente);
-    const prompt = await leerPromptDelAgente(elegido.agente);
+    const prompt = e.esPorOmision ? await leerPromptDelAgente(elegido.agente) : null;
     return {
       hechos,
       transcript: transcript.texto,

@@ -162,8 +162,10 @@ export async function completarMiniaturas(
   acceso: { token: string; locationId: string },
   tope = TOPE_POR_PASADA,
   ahora: () => number = Date.now,
+  // El fin de la corrida del cron (el nivel 3): con varios clientes, la pasada de cada uno tampoco puede pasarlo.
+  fin = Number.POSITIVE_INFINITY,
 ): Promise<ResumenDeMiniaturas> {
-  const hasta = ahora() + TIEMPO_DE_LA_PASADA_MS;
+  const hasta = Math.min(ahora() + TIEMPO_DE_LA_PASADA_MS, fin);
   const pendientes = await conOrganizacion(ambito, () => contactosPorPedir(tope));
   const { filas, resumen } = await pedirMiniaturas(acceso, pendientes, hasta, ahora);
   await conOrganizacion(ambito, () => guardarMiniaturas(filas));

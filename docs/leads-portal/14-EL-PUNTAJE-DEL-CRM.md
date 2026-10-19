@@ -47,7 +47,7 @@ un puntaje por contacto. No se cruzan en ninguna tabla
 
 Hasta el 2026-09-21 la columna estaba vacía: Acquisition la midió el 2026-09-16 con cero valores y
 el dato vivía sólo en el `jsonb` (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:399-401`). Hoy la leen el
-Perfil del closer y del setter (`lib/negocio/ficha.ts:493-502`) y la fila de sus listas
+Perfil del closer y del setter (`lib/negocio/ficha.ts:501-510`) y la fila de sus listas
 (`components/negocio/Fila.jsx:235-237`). **Esta pestaña es el primer lector que lo corta en tramos.**
 
 El documento funcional pide las dos cosas por separado —«ICP score» y «Segmento de ICP»

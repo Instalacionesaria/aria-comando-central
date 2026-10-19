@@ -240,7 +240,7 @@ escribió, con su origen —Inicio, pie o Reunión— (`db/migraciones/071_las_c
    (`lib/agentes/reunion/temas.ts:146-228`).
 
 La calcula la tarea `senales` del cron, al minuto 23 de cada hora, para las empresas a las que les toca su mañana
-(`lib/negocio/barrido.ts:343-351`); la guarda por empresa y día local en `negocio.reuniones_del_dia`
+(`lib/negocio/barrido.ts:363-371`); la guarda por empresa y día local en `negocio.reuniones_del_dia`
 (`db/migraciones/075_la_reunion_de_hoy.sql:18-26`), y con llave el modelo la redacta: la frase que no pasa se descarta
 y el tema conserva su plantilla (`lib/agentes/reunion/redaccion.ts:7-20`).
 

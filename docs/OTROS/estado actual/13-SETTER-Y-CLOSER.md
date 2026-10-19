@@ -129,7 +129,7 @@ servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDe
 (`app/api/closer/mi-dia/route.ts:5`); lo que sí corre, con la pestaña a la vista, es un reloj de 10 s
 que dispara la ingesta de mensajes y recarga las colas (`components/views/CloserView.jsx:173-186`,
 `lib/cadencia.ts:40`). Los contactos entran solos cada diez minutos por el cron
-(`lib/negocio/barrido.ts:220-224`).
+(`lib/negocio/barrido.ts:240-244`).
 
 ### 2.4 · Quién ve qué
 
@@ -177,11 +177,11 @@ UTC sobre toda la tabla (al pie, lo re-medido el 2026-10-18):
 
 | pestaña | qué muestra | de dónde lee | cuánto hay |
 |---|---|---|---|
-| Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:209-225`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
-| Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:342-349`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:122-124`) |
-| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:451-472`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
-| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:572-573`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:575-628`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
-| Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:397-399`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
+| Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:209-231`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
+| Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:350-357`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:122-124`) |
+| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:459-480`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
+| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:580-581`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:583-636`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
+| Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:405-407`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
 
 Re-medido el 2026-10-18: **6.478 mensajes**, de los que siguen siendo **2** los escritos desde el compositor (el último,
 el 2026-09-07); 368 citas; 7 notas, 4 de ellas desde la aplicación; 4 tareas; 7 resultados. Nadie escribió nada desde
@@ -300,7 +300,7 @@ que ya no es cierto o que nadie volvió a medir.
 
 `lib/negocio/inicio.ts:41-53` lo cuenta con la etiqueta `cita_agendada` y deja escrito que «el día que
 se lea el calendario» pasará a ser del mes. El calendario ya se barre cada hora
-(`lib/negocio/barrido.ts:232-236`) y `negocio.citas` tiene fecha en sus 333 filas, pero el indicador
+(`lib/negocio/barrido.ts:252-256`) y `negocio.citas` tiene fecha en sus 333 filas, pero el indicador
 sigue en la etiqueta: **88 contactos del territorio closer** la llevan, medido el 2026-09-28, sin
 decir de cuándo.
 
@@ -332,7 +332,7 @@ Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay
 - **«NO hay sincronización automática de contactos»** (`components/views/CloserView.jsx:395-401`).
   Hay: el comentario es del commit `28c6937` (2026-08-27 16:58, hora de Lima); `contactos` entró al
   barrido diario esa misma noche (`f6d09a0`, 21:42) y al horario de diez minutos
-  (`lib/negocio/barrido.ts:220-224`) con `2e8ce81`, el 2026-08-28.
+  (`lib/negocio/barrido.ts:240-244`) con `2e8ce81`, el 2026-08-28.
 - **«Las ÚNICAS dos con una capacidad de lectura propia»** (`lib/autorizacion/secciones.ts:352`).
   Analizadores pide `analizadores.ver` desde el 2026-09-23 (`lib/autorizacion/secciones.ts:383-389`).
 

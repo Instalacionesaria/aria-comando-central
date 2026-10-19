@@ -164,7 +164,7 @@ async function marcarPulso(campos: { atrasado?: boolean; corrida?: boolean }): P
   await admin.query(
     `insert into negocio.ingesta_pulso (org_id, clave, ultima_corrida_el, atrasado)
      values ($1, 'citas', case when $2 then now() else null end, $3)
-     on conflict (org_id, clave) do update
+     on conflict (org_id, cuenta_id, clave) do update
         set ultima_corrida_el = case when $2 then now() else null end, atrasado = $3`,
     [alfa, campos.corrida !== false, campos.atrasado === true],
   );

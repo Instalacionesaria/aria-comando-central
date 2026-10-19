@@ -103,6 +103,12 @@ export interface ParaAuditar {
    * subcuenta, así que se audita cliente por cliente.
    */
   ambito: AmbitoDeUnCliente;
+  /**
+   * Si es el cliente principal. Los prompts del agente (`prompts_del_agente`) son de la empresa, y el agente del CRM
+   * es por subcuenta: el prompt cargado es el del agente del principal. Con otro cliente se audita sin prompt —«el
+   * prompt no está cargado»— antes que contra el prompt de otro agente.
+   */
+  esPorOmision: boolean;
   /** La zona de la EMPRESA, para los sellos de tiempo del transcript. */
   zona: string;
   auditorActivo: boolean;
@@ -456,7 +462,7 @@ async function trabajar(
       }
 
       const transcript = armarTranscript(mensajes, e.zona, idDelAgente);
-      const prompt = await leerPromptDelAgente(agente);
+      const prompt = e.esPorOmision ? await leerPromptDelAgente(agente) : null;
       const patrones = await patronesDelAgente(agente);
       return {
         tipo: 'listo' as const,

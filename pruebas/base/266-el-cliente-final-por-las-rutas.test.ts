@@ -185,7 +185,7 @@ test('su Sales tiene los closers de su cuenta, con un rótulo en vez del nombre 
 test('su Leads sabe que el barrido corrió: los sellos de la organización se leen', async () => {
   await admin.query(
     `insert into negocio.tareas_programadas (org_id, tarea, ultima_corrida_el, ultimo_estado) values ($1, 'contactos', now(), 'corrio')
-     on conflict (org_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
+     on conflict (org_id, cuenta_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
     [org],
   );
   const r = await leerRespuesta<{ frescura: { contactos: { estado: string } } }>(

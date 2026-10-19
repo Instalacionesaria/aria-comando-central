@@ -32,7 +32,7 @@ días.
 >   · {N} por resolver» pasa a contar por código, como agrupa Auditoría. La foto anterior decía que faltaba CN-5: está
 >   hecha y subida.
 > - **2026-10-11 · `90439cf`** — CF-1 de Creative: la tarea `contactos`, una de las cinco de las que vive esta
->   pantalla, suma la pasada de miniaturas de los contactos (`lib/negocio/barrido.ts:909-910`). No cambia lo que
+>   pantalla, suma la pasada de miniaturas de los contactos (`lib/negocio/barrido.ts:1045-1046`). No cambia lo que
 >   cuenta Conversation; su sello puede llevar ahora el motivo de una pasada de miniaturas cortada.
 > - **2026-10-11 · `2415e25`** — CF-3 de Creative: `app/inteligencia-estetica.css` se borra entera, cuando Creative
 >   sale por el mismo camino que Conversation; la prueba 251 deja de mirarla.

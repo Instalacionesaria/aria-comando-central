@@ -229,7 +229,7 @@ test('la economía del mes: las ventas de Sales, la inversión del mes y, con ce
   );
   await admin.query(
     `insert into negocio.gasto_de_la_cuenta (org_id, fecha, gasto) values ($1, timezone($2, now())::date, 123.45)
-     on conflict (org_id, fecha) do update set gasto = excluded.gasto`,
+     on conflict (org_id, cuenta_id, fecha) do update set gasto = excluded.gasto`,
     [e.conDatos, ZONA_DE_LOS_CASOS],
   );
   const s = await pantalla(sales, '/api/sales?periodo=30d');

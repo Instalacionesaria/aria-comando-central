@@ -365,7 +365,7 @@ y lo natural es que sea **ICP bajo**. Es lo que obliga a que `tramoDelPuntaje` r
 `tramosDelIcp` garantiza el Leads Portal y nada más. Creative lee el puntaje del CRM **por su
 cuenta**, por nombre y sin pasar por `contactos.score` (`lib/negocio/calidadDelCreativo.ts:63`,
 `lib/negocio/calidadDelCreativo.ts:142`), y el Perfil del closer muestra `score` como «Calificación»
-(`lib/negocio/ficha.ts:502`). Si cambia la fuente, ¿cambian también ellas? Si no, el mismo lead va a
+(`lib/negocio/ficha.ts:510`). Si cambia la fuente, ¿cambian también ellas? Si no, el mismo lead va a
 tener un ICP en el portal y otro en Creative y en el Closer, y eso se tiene que decir en las tres.
 
 ### LPF-P07 · Los cortes
@@ -404,7 +404,7 @@ o solo un administrador. Cambiar un peso cambia el tramo de cientos de leads de 
 - **Los rótulos y los tramos de LP-1** —ICP alto, medio, bajo y «Sin calificar»— mientras
   `LPF-P05` y `LPF-P07` no digan otra cosa.
 - **La lista del portal no lleva respuestas del cuestionario**, igual que no lleva teléfono ni correo:
-  las respuestas se ven en la ficha, como hoy en el Perfil (`lib/negocio/ficha.ts:459`).
+  las respuestas se ven en la ficha, como hoy en el Perfil (`lib/negocio/ficha.ts:467`).
 - **El Perfil del closer y sus carpetas** (`lib/ghl/contrato.ts:318-330`), salvo lo que decida
   `LPF-P06`.
 

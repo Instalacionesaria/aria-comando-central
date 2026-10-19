@@ -429,7 +429,7 @@ async function alDiaElBarrido(): Promise<void> {
   await esc.admin.query(
     `insert into negocio.ingesta_pulso (org_id, clave, ultima_corrida_el, atrasado)
      values ($1, 'citas', now(), false)
-     on conflict (org_id, clave) do update set ultima_corrida_el = now(), atrasado = false`,
+     on conflict (org_id, cuenta_id, clave) do update set ultima_corrida_el = now(), atrasado = false`,
     [esc.org],
   );
 }

@@ -145,9 +145,9 @@ distintas y no se funden en una**, porque la del anuncio falta en 380 contactos 
 
 El grupo `calificacion` junta tres carpetas (`lib/ghl/contrato.ts:318-326`): la del formulario de la
 landing, la del formulario de Meta, y «Contact», que tiene el puntaje y dos URLs. `perfilDeLaFicha`
-(`lib/negocio/ficha.ts:459-538`) ya las agrupa **por significado y no por formulario**, que es lo que
+(`lib/negocio/ficha.ts:467-546`) ya las agrupa **por significado y no por formulario**, que es lo que
 el documento necesita: el lead pudo entrar por cualquiera de las dos puertas, y la misma pregunta
-existe en las dos (`lib/negocio/ficha.ts:437-443`).
+existe en las dos (`lib/negocio/ficha.ts:445-451`).
 
 El `§ 5.3:254` dice **«después de completarlo»**, y el estado del formulario dice que no todos lo
 completaron:

@@ -243,6 +243,24 @@ export async function vincularCuenta(
   return 'listo';
 }
 
+/**
+ * Los clientes ACTIVOS de una empresa, para el barrido (el nivel 3). **Por identidad**, con la organización en el
+ * `where`: el cron los lee junto con sus credenciales. El principal primero. Uno en pausa o de baja no se barre: nadie
+ * lo mira, y su subcuenta puede ya no ser nuestra.
+ */
+export async function clientesParaBarrer(db: Trx, orgId: string): Promise<{ id: string; esPorOmision: boolean }[]> {
+  const filas = await db
+    .selectFrom('cuentas')
+    .select(['id', 'es_por_omision'])
+    .where('org_id', '=', orgId)
+    .where('estado', '=', 'activa')
+    .orderBy('es_por_omision', 'desc')
+    .orderBy('alta_el')
+    .orderBy('id')
+    .execute();
+  return filas.map((f) => ({ id: f.id, esPorOmision: f.es_por_omision }));
+}
+
 /** El catálogo que necesita el formulario de un cliente: nichos, modelos de negocio, países y monedas vigentes. */
 export async function catalogoDelCliente() {
   // En serie: es una sola transacción, y una conexión no corre dos consultas a la vez.

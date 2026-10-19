@@ -209,6 +209,12 @@ const CANAL_EFECTIVO = sql<string | null>`coalesce(tipo_ghl, case when canal lik
 export async function mensajesDeLaFicha(
   contactoId: string,
 ): Promise<Pestana<MensajeDeFicha> & { frescura: Frescura; aviso: FrescuraDelAviso }> {
+  /* El cliente del contacto (el nivel 3): sus mensajes entran por SU ingesta y SU aviso. La frescura, el aviso y el
+     pulso de abajo son los suyos; los de la empresa entera dirían «al día» con este cliente sin traer nada, o al
+     revés. Sin contacto a la vista, `undefined`: los de todo lo que se ve. */
+  const cuenta =
+    (await datos().selectFrom('contactos').select('cuenta_id').where('id', '=', contactoId).executeTakeFirst())?.cuenta_id ??
+    undefined;
   const crudos = await datos()
     .selectFrom('mensajes')
     .select([
@@ -277,7 +283,7 @@ export async function mensajesDeLaFicha(
         falloDelCanal: m.fallo_del_canal,
       }))
       .reverse(),
-    falta: crudos.length > 0 ? null : await porQueNoHayMensajes(),
+    falta: crudos.length > 0 ? null : await porQueNoHayMensajes(cuenta),
     /* ── LA FRESCURA SE CALCULA SIEMPRE, HAYA O NO MENSAJES ──────────────────
      *
      * `falta` de arriba está condicionado a `crudos.length > 0`, y con razón: contesta «¿por qué no
@@ -286,13 +292,13 @@ export async function mensajesDeLaFicha(
      * ayer y su mensaje no está acá.
      *
      * Por eso es un campo hermano y no una rama más de `falta`. */
-    frescura: await frescuraDe('mensajes'),
+    frescura: await frescuraDe('mensajes', cuenta),
     /* Y cómo viene el AVISO, que es la otra vía. Son dos campos y no uno porque son dos hechos
        distintos: el sondeo puede estar al día y el aviso inerte —y ahí los mensajes entran, pero con
        hasta diez minutos de retraso— o al revés. Colapsarlos en uno obligaría a elegir cuál esconder.
        Va como campo HERMANO y nunca dentro de `falta`: `falta` existe solo cuando no hay datos, y un
        aviso inerte convive perfectamente con un chat lleno. */
-    aviso: await frescuraDelAviso(),
+    aviso: await frescuraDelAviso(cuenta),
   };
 }
 
@@ -308,11 +314,13 @@ export async function mensajesDeLaFicha(
  * Y son TRES estados y no dos, porque el del medio es el que dura más al principio: nunca corrió,
  * está a mitad de camino, o terminó.
  */
-async function porQueNoHayMensajes(): Promise<string | null> {
+async function porQueNoHayMensajes(cuenta: string | undefined): Promise<string | null> {
+  // El pulso del cliente del contacto: cada cliente camina su propia subcuenta (el nivel 3).
   const pulso = await datos()
     .selectFrom('ingesta_pulso')
     .select(['marca_el', 'atrasado'])
     .where('clave', '=', 'mensajes')
+    .$if(cuenta !== undefined, (q) => q.where('cuenta_id', '=', cuenta as string))
     .executeTakeFirst();
 
   if (!pulso || pulso.marca_el === null) return FALTA.mensajes;

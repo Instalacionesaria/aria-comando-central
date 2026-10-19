@@ -6,8 +6,9 @@
 // Lo que entra del CRM es de un cliente. Con una empresa de dos clientes activos (X, el por omisión, e Y):
 //
 //   · el cliente por omisión es X (`porOmisionDe`);
-//   · las claves nuevas con el cliente existen DE VERDAD y son únicas — la `090` las crea con `if not exists`, y un
-//     nombre ya tomado las saltearía en silencio (pasó: `<tabla>_por_cuenta` era de la `082`);
+//   · las claves con el cliente existen DE VERDAD y son únicas — la `090` las crea con `if not exists`, y un nombre
+//     ya tomado las saltearía en silencio (pasó: `<tabla>_por_cuenta` era de la `082`) — y las de la organización ya
+//     no existen (la `092` las cerró);
 //   · el pulso y el gasto que se escriben en el ámbito de X quedan en X;
 //   · sincronizar con la empresa entera y dos clientes se rechaza, y no congela a nadie — mutación: sacar
 //     `exigirUnSoloCliente`;
@@ -106,26 +107,33 @@ test('el cliente por omisión es el marcado, y el ámbito de un cliente no se ar
   assert.throws(() => ambitoDeUnCliente(org, ''), /hacen falta/);
 });
 
-test('las claves con el cliente existen y son únicas', async () => {
-  const indices = await filas<{ indice: string; unico: boolean; definicion: string }>(
+test('las claves son las del cliente, y las de la organización ya no existen', async () => {
+  // Las únicas de cada tabla, con sus columnas. La `092` cerró las de la organización: la clave primaria de
+  // `ingesta_pulso` y `gasto_de_la_cuenta` se armó con el índice de la `090`, y el sello quedó con su `id`.
+  const unicos = await filas<{ tabla: string; columnas: string; nulos: boolean }>(
     admin,
-    `select c.relname as indice, i.indisunique as unico, pg_get_indexdef(i.indexrelid) as definicion
-       from pg_index i join pg_class c on c.oid = i.indexrelid
-      where c.relname in ('ingesta_pulso_clave_por_cuenta', 'gasto_de_la_cuenta_dia_por_cuenta',
-                          'avisos_del_crm_huella_por_cuenta', 'tareas_programadas_sello_por_cuenta')
-      order by 1`,
+    `select t.relname as tabla,
+            (select string_agg(a.attname, ',' order by k.n)
+               from unnest(i.indkey) with ordinality as k(attnum, n)
+               join pg_attribute a on a.attrelid = i.indrelid and a.attnum = k.attnum) as columnas,
+            i.indnullsnotdistinct as nulos
+       from pg_index i join pg_class t on t.oid = i.indrelid join pg_namespace s on s.oid = t.relnamespace
+      where s.nspname = 'negocio' and i.indisunique
+        and t.relname in ('ingesta_pulso', 'gasto_de_la_cuenta', 'avisos_del_crm', 'tareas_programadas')
+      order by 1, 2`,
   );
   assert.deepEqual(
-    indices.map((i) => [i.indice, i.unico]),
+    unicos.map((u) => `${u.tabla}(${u.columnas})${u.nulos ? ' nulls not distinct' : ''}`),
     [
-      ['avisos_del_crm_huella_por_cuenta', true],
-      ['gasto_de_la_cuenta_dia_por_cuenta', true],
-      ['ingesta_pulso_clave_por_cuenta', true],
-      ['tareas_programadas_sello_por_cuenta', true],
+      'avisos_del_crm(org_id,cuenta_id,huella)',
+      'avisos_del_crm(org_id,id)',
+      'gasto_de_la_cuenta(org_id,cuenta_id,fecha)',
+      'ingesta_pulso(org_id,cuenta_id,clave)',
+      'tareas_programadas(org_id,cuenta_id,tarea) nulls not distinct',
+      'tareas_programadas(org_id,id)',
     ],
-    'falta una clave con el cliente, o no es única: ningún `on conflict` la encontraría',
+    'falta una clave con el cliente, o sigue una de la organización: dos clientes chocarían en ella',
   );
-  assert.match(indices.find((i) => i.indice === 'tareas_programadas_sello_por_cuenta')!.definicion, /NULLS NOT DISTINCT/);
 });
 
 test('el pulso y el gasto que se escriben en el ámbito de un cliente quedan en ese cliente', async () => {

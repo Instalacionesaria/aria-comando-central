@@ -164,6 +164,8 @@ export async function correrLaPasada(
       .selectFrom('tareas_programadas')
       .select(['ultima_corrida_el', 'ultimo_estado'])
       .where('tarea', '=', 'senales')
+      // Es una tarea de la empresa: su sello va sin cliente (el nivel 3).
+      .where('cuenta_id', 'is', null)
       .executeTakeFirst();
     return {
       hechos: new Set(planes.map((p) => `${p.departamento}·${p.ventana}`)),

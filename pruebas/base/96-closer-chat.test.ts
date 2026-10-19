@@ -141,7 +141,7 @@ async function selloReciente(): Promise<void> {
   await esc.admin.query(
     `insert into negocio.tareas_programadas (org_id, tarea, ultima_corrida_el, ultimo_estado)
        values ($1, 'mensajes', now(), 'corrio')
-     on conflict (org_id, tarea) do update
+     on conflict (org_id, cuenta_id, tarea) do update
         set ultima_corrida_el = excluded.ultima_corrida_el, ultimo_estado = excluded.ultimo_estado`,
     [esc.org],
   );

@@ -404,11 +404,14 @@ function avisoDeZona(zonaHoraria: string): string | null {
  * compartida sin mentir en una de las dos.
  */
 async function faltaDelBarrido(): Promise<string | null> {
-  const pulso = await datos()
+  /* Un pulso por cliente (el nivel 3): la agenda de la empresa entera —o la del foco, que acota la RLS— mira el PEOR.
+     Con el de un solo cliente, uno al día escondería a otro que nunca se leyó. */
+  const pulsos = await datos()
     .selectFrom('ingesta_pulso')
     .select(['ultima_corrida_el', 'atrasado'])
     .where('clave', '=', 'citas')
-    .executeTakeFirst();
+    .execute();
+  const pulso = pulsos.find((p) => p.ultima_corrida_el === null) ?? pulsos.find((p) => p.atrasado) ?? pulsos[0];
 
   if (!pulso || pulso.ultima_corrida_el === null) {
     return (

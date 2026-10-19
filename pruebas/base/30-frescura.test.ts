@@ -66,7 +66,7 @@ async function sello(tarea: Tarea, haceMinutos: number, estado = 'corrio'): Prom
   await admin.query(
     `insert into negocio.tareas_programadas (org_id, tarea, ultima_corrida_el, ultimo_estado)
      values ($1, $2, now() - ($3 || ' minutes')::interval, $4)
-     on conflict (org_id, tarea) do update
+     on conflict (org_id, cuenta_id, tarea) do update
         set ultima_corrida_el = excluded.ultima_corrida_el, ultimo_estado = excluded.ultimo_estado`,
     [alfa, tarea, String(haceMinutos), estado],
   );
@@ -182,7 +182,7 @@ test('la AGENDA lleva la frescura, y NO la mete en `falta`', async () => {
   // se puede comprobar que las dos cosas conviven en vez de pisarse.
   await admin.query(
     `insert into negocio.ingesta_pulso (org_id, clave, ultima_corrida_el) values ($1,'citas',now())
-     on conflict (org_id, clave) do update set ultima_corrida_el = now()`,
+     on conflict (org_id, cuenta_id, clave) do update set ultima_corrida_el = now()`,
     [alfa],
   );
 

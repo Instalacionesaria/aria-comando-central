@@ -67,7 +67,7 @@ async function cita(contactoId: string, inicioEl: Date, o: { asistio?: boolean; 
 async function sellar(tarea: 'citas' | 'analizadores'): Promise<void> {
   await esc.admin.query(
     `insert into negocio.tareas_programadas (org_id, tarea, ultima_corrida_el, ultimo_estado) values ($1, $2, now(), 'corrio')
-     on conflict (org_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
+     on conflict (org_id, cuenta_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
     [esc.org, tarea],
   );
 }

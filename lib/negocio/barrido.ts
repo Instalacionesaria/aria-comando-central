@@ -43,7 +43,7 @@ import { recolectarAnuncios } from './recolectarAnuncios.ts';
 import { rellenarAnuncios } from './rellenarAnuncios.ts';
 import { recolectarActivos } from './recolectarActivos.ts';
 import { barrerCitas } from './citas.ts';
-import { porOmisionDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
+import { ambitoDeUnCliente, cuentaDe, porOmisionDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 import type { ConfiguracionDeLosNegocios } from '../cartera/configuracion.ts';
 import { tomarLaFoto, type ResumenDeLaFoto } from '../cartera/foto.ts';
@@ -119,6 +119,26 @@ export const TAREAS = [
  */
 export const TAREAS_DE_LA_PLATAFORMA: readonly Tarea[] = ['sonda', 'foto'];
 const esDeLaPlataforma = (t: Tarea): boolean => TAREAS_DE_LA_PLATAFORMA.includes(t);
+
+/**
+ * Las tareas de un CLIENTE (el nivel 3): le hablan a SU subcuenta del CRM o a SU cuenta de Meta, o miran SUS
+ * conversaciones. Corren una vez por cliente activo, en su ámbito y con sus credenciales, y su sello lleva su cuenta.
+ *
+ * Las que no son de la plataforma ni de un cliente son de la EMPRESA —los Analizadores, su reintento y los
+ * detectores, que miran la empresa entera—: corren una vez, y su sello va sin cuenta. Una prueba exige que las tres
+ * listas cubran `TAREAS` sin repetir ninguna.
+ */
+export const TAREAS_DEL_CLIENTE: readonly Tarea[] = [
+  'contactos',
+  'mensajes',
+  'auditoria',
+  'citas',
+  'mejora',
+  'anuncios',
+  'anuncios_relleno',
+  'activos',
+];
+const esDelCliente = (t: Tarea): boolean => TAREAS_DEL_CLIENTE.includes(t);
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
 export type EstadoDeTarea = 'corrio' | 'saltada' | 'frenada' | 'sin_tiempo' | 'fallo';
@@ -423,9 +443,11 @@ function conToken(acceso: AccesoAGhl): { token: string; locationId: string } {
   return acceso;
 }
 
-/** Qué pasó con un par (empresa, tarea). Es la unidad del reporte. */
+/** Qué pasó con un par (empresa, tarea) —o (cliente, tarea), en las de un cliente—. Es la unidad del reporte. */
 export interface RenglonDelBarrido {
   slug: string;
+  /** El cliente, en las tareas de un cliente (el nivel 3). Ausente en las de la empresa, o si no se supo cuál. */
+  cuentaId?: string;
   tarea: Tarea;
   estado: EstadoDeTarea;
   /** Por qué, cuando el estado no es `corrio`. Nunca se colapsan dos motivos distintos. */
@@ -474,6 +496,67 @@ export interface EmpresaParaBarrer {
    * (AG-35): en las demás corridas no hace falta descifrarla. Ausente o `null`, el plan queda con plantillas.
    */
   llaveDeIa?: string | null;
+  /**
+   * Sus clientes ACTIVOS, cada uno con SUS credenciales (el nivel 3): las tareas de un cliente corren una vez por
+   * cliente. Los resuelve la ruta en la misma transacción de identidad que las de la empresa.
+   *
+   * Sin la lista —las pruebas de antes del nivel 3— hay un solo cliente: el por omisión, con las credenciales de la
+   * empresa (`acceso`, `auditor`, `meta`), que se busca la primera vez que hace falta. Con la lista, esas tres sólo
+   * quedan para ese modo.
+   */
+  clientes?: readonly ClienteParaBarrer[];
+}
+
+/** Un cliente de la empresa y sus credenciales: el principal, las de la empresa; los demás, las suyas. */
+export interface ClienteParaBarrer {
+  cuenta: { id: string; esPorOmision: boolean };
+  acceso: AccesoAGhl;
+  auditor: AccesoAlAuditor;
+  /** El de Meta, sólo en el horario de los activos, como el de la empresa. */
+  meta?: AccesoAMeta;
+}
+
+/**
+ * Una unidad del barrido: un cliente con sus tareas, o la empresa con las suyas (`cliente: null`).
+ *
+ * `cuenta()` es perezosa por el modo de antes, donde el cliente es el por omisión y hay que buscarlo; con la lista de
+ * clientes ya viene resuelta. Si no se puede saber —una empresa que no existe—, cada tarea del cliente falla en su
+ * try, igual que antes del nivel 3, y no se sella: no se sabe de quién sería el sello.
+ */
+interface Unidad {
+  empresa: EmpresaParaBarrer;
+  cliente: {
+    cuenta: () => Promise<string>;
+    esPorOmision: boolean;
+    acceso: AccesoAGhl;
+    auditor: AccesoAlAuditor;
+    meta?: AccesoAMeta;
+  } | null;
+  tareas: readonly Tarea[];
+  sello: number | null;
+}
+
+/** Los clientes de una empresa como unidades: los de la lista, o —en el modo de antes— el por omisión. */
+function clientesDe(e: EmpresaParaBarrer): NonNullable<Unidad['cliente']>[] {
+  if (e.clientes) {
+    return e.clientes.map((c) => ({
+      cuenta: () => Promise.resolve(c.cuenta.id),
+      esPorOmision: c.cuenta.esPorOmision,
+      acceso: c.acceso,
+      auditor: c.auditor,
+      ...(c.meta ? { meta: c.meta } : {}),
+    }));
+  }
+  let id: Promise<string> | null = null;
+  return [
+    {
+      cuenta: () => (id ??= porOmisionDe(e.org.id).then(cuentaDe)),
+      esPorOmision: true,
+      acceso: e.acceso,
+      auditor: e.auditor,
+      ...(e.meta ? { meta: e.meta } : {}),
+    },
+  ];
 }
 
 /**
@@ -542,35 +625,82 @@ export async function barrerTodo(
   // Es lo que convierte una corrida perdida en un problema que se arregla solo. Ordenar por nombre
   // haría que la última empresa de la lista fuera siempre la que se queda sin tiempo — para siempre,
   // y sin que nada lo dijera.
-  const conSello = await Promise.all(
-    empresas.map(async (e) => ({ ...e, sello: await selloMasViejo(e.org.id, tareas) })),
+  //
+  // ── Y CON EL NIVEL 3, POR UNIDAD ─────────────────────────────────────────
+  //
+  // Cada cliente activo es una unidad con las tareas de un cliente y su propio sello; la empresa es otra, con las
+  // suyas. Adentro de la empresa, sus clientes van por su sello y la unidad de la empresa al final —los detectores
+  // leen lo que las tareas de los clientes trajeron—. Y las empresas van por el sello más viejo de cualquiera de sus
+  // unidades: un cliente que se quedó sin tiempo adelanta a su empresa entera la vez siguiente, y adentro va primero.
+  const delCliente = tareas.filter(esDelCliente);
+  const deLaEmpresa = tareas.filter((t) => !esDeLaPlataforma(t) && !esDelCliente(t));
+  const porEmpresa = await Promise.all(
+    empresas.map(async (empresa) => {
+      const unidades: Unidad[] = [];
+      if (delCliente.length > 0) {
+        for (const cliente of clientesDe(empresa)) {
+          unidades.push({ empresa, cliente, tareas: delCliente, sello: await selloMasViejo(empresa.org.id, cliente.cuenta, delCliente) });
+        }
+      }
+      if (deLaEmpresa.length > 0) {
+        unidades.push({ empresa, cliente: null, tareas: deLaEmpresa, sello: await selloMasViejo(empresa.org.id, null, deLaEmpresa) });
+      }
+      return unidades;
+    }),
   );
-  conSello.sort((a, b) => {
-    if (a.sello === null && b.sello === null) return 0;
-    if (a.sello === null) return -1; // sin sello = nunca se barrió = primero
-    if (b.sello === null) return 1;
-    return a.sello - b.sello;
-  });
+  const antes = (a: number | null, b: number | null): number =>
+    a === null && b === null ? 0 : a === null ? -1 : b === null ? 1 : a - b; // sin sello = nunca se barrió = primero
+  const elMasViejo = (us: readonly Unidad[]): number | null =>
+    us.some((u) => u.sello === null) ? null : Math.min(...us.map((u) => u.sello as number));
+  for (const unidades of porEmpresa) {
+    unidades.sort((a, b) => Number(a.cliente === null) - Number(b.cliente === null) || antes(a.sello, b.sello));
+  }
+  porEmpresa.sort((a, b) => antes(elMasViejo(a), elMasViejo(b)));
 
-  for (const { org, acceso, auditor, analizador, llaveDeIa, meta } of conSello) {
-    /* El cliente de las tareas de cliente (el nivel 3). Hasta el barrido por cliente, el por omisión: el que trae lo
-       que entra con las credenciales de la empresa. Se busca una vez por empresa y sólo si una tarea lo pide; si
-       falla, falla esa tarea, adentro de su try. */
-    let cliente: Promise<AmbitoDeUnCliente> | null = null;
-    const delCliente = (): Promise<AmbitoDeUnCliente> => (cliente ??= porOmisionDe(org.id));
-    // El guardia del presupuesto, antes de empezar la empresa. Ver `PRESUPUESTO_MS`.
+  for (const { empresa, cliente, tareas: tareasDeLaUnidad } of porEmpresa.flat()) {
+    const { org, analizador, llaveDeIa } = empresa;
+    // Las credenciales de la unidad: las del cliente. La de la empresa no usa ninguna de las tres.
+    const acceso = cliente?.acceso ?? empresa.acceso;
+    const auditor = cliente?.auditor ?? empresa.auditor;
+    const meta = cliente ? cliente.meta : empresa.meta;
+    const esPorOmision = cliente?.esPorOmision === true;
+    /* El cliente de la unidad, una vez: su cuenta va en cada renglón, en cada sello y en el ámbito de cada tarea. Si
+       no se puede saber —el modo de antes con una empresa que no existe—, cada tarea falla en su try, como antes del
+       nivel 3, y no se sella. */
+    let cuentaId: string | null = null;
+    let sinCliente: unknown = null;
+    if (cliente) {
+      try {
+        cuentaId = await cliente.cuenta();
+      } catch (e) {
+        sinCliente = e;
+      }
+    }
+    const elAmbito = (): AmbitoDeUnCliente => {
+      if (cuentaId === null) throw sinCliente ?? new Error('barrido: la tarea no es de un cliente');
+      return ambitoDeUnCliente(org.id, cuentaId);
+    };
+    const renglon = (r: Omit<RenglonDelBarrido, 'slug' | 'cuentaId'>): void => {
+      renglones.push({ slug: org.slug, ...(cuentaId === null ? {} : { cuentaId }), ...r });
+    };
+    const sellarAca = async (tarea: Tarea, estado: EstadoDeTarea, motivo: string | null, llamadas: number | null) => {
+      if (cliente && cuentaId === null) {
+        console.error(`cron: ${tarea} de ${org.slug} no se sella: no se supo de qué cliente es`);
+        return;
+      }
+      await sellar(org.id, cuentaId, tarea, estado, motivo, llamadas);
+    };
+
+    // El guardia del presupuesto, antes de empezar CADA unidad. Ver `PRESUPUESTO_MS`.
     if (ahora() - arranque > PRESUPUESTO_MS) {
-      for (const tarea of tareas) {
-        if (esDeLaPlataforma(tarea)) continue;
-        renglones.push({ slug: org.slug, tarea, estado: 'sin_tiempo' });
-        await sellar(org.id, tarea, 'sin_tiempo', 'se agotó el presupuesto de la corrida', null);
+      for (const tarea of tareasDeLaUnidad) {
+        renglon({ tarea, estado: 'sin_tiempo' });
+        await sellarAca(tarea, 'sin_tiempo', 'se agotó el presupuesto de la corrida', null);
       }
       continue;
     }
 
-    for (const tarea of tareas) {
-      if (esDeLaPlataforma(tarea)) continue; // no es por empresa
-
+    for (const tarea of tareasDeLaUnidad) {
       // ── LA CREDENCIAL AUSENTE NO ES UN FALLO, Y SU MOTIVO NO SE COLAPSA ───
       //
       // Una empresa sin token cargado es el caso NORMAL de una empresa recién creada. Y las cinco
@@ -594,15 +724,15 @@ export async function barrerTodo(
         tarea !== 'activos' &&
         acceso.tipo !== 'listo'
       ) {
-        renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
-        await sellar(org.id, tarea, 'saltada', acceso.que, 0);
+        renglon({ tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
+        await sellarAca(tarea, 'saltada', acceso.que, 0);
         continue;
       }
       // Y su propia falta, con su propio texto: cuatro motivos que llevan a cuatro acciones distintas.
       if ((tarea === 'auditoria' || tarea === 'mejora') && auditor.tipo !== 'listo') {
         const que = TEXTO_DE_FALTA_AUDITOR[auditor.que];
-        renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
-        await sellar(org.id, tarea, 'saltada', que, 0);
+        renglon({ tarea, estado: 'saltada', porque: que, llamadas: 0 });
+        await sellarAca(tarea, 'saltada', que, 0);
         continue;
       }
       /* Los Analizadores tampoco le hablan al CRM: piden la llave de tl;dv y la de IA. Sin tl;dv es
@@ -612,14 +742,14 @@ export async function barrerTodo(
          saltada con su texto: la pantalla de monitoreo dice qué falta y dónde se carga. */
       if (tarea === 'activos' && meta?.tipo !== 'listo') {
         const que = TEXTO_DE_FALTA_META[meta?.tipo === 'falta' ? meta.que : 'sin_token_de_meta'];
-        renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
-        await sellar(org.id, tarea, 'saltada', que, 0);
+        renglon({ tarea, estado: 'saltada', porque: que, llamadas: 0 });
+        await sellarAca(tarea, 'saltada', que, 0);
         continue;
       }
       if ((tarea === 'analizadores' || tarea === 'reintentos') && analizador.tipo !== 'listo') {
         const que = TEXTO_DE_FALTA_ANALIZADOR[analizador.que];
-        renglones.push({ slug: org.slug, tarea, estado: 'saltada', porque: que, llamadas: 0 });
-        await sellar(org.id, tarea, 'saltada', que, 0);
+        renglon({ tarea, estado: 'saltada', porque: que, llamadas: 0 });
+        await sellarAca(tarea, 'saltada', que, 0);
         continue;
       }
 
@@ -631,37 +761,37 @@ export async function barrerTodo(
       try {
         const r =
           tarea === 'contactos'
-            ? await releerContactos(await delCliente(), conToken(acceso))
+            ? await releerContactos(elAmbito(), conToken(acceso), arranque + FIN_PARA_LOS_ANALIZADORES_MS, ahora)
             : tarea === 'mensajes'
-              ? await ingerirMensajes(await delCliente(), conToken(acceso))
+              ? await ingerirMensajes(elAmbito(), conToken(acceso))
               : tarea === 'auditoria'
-                ? await auditar(org, await delCliente(), auditor, acceso, arranque, ahora)
+                ? await auditar(org, elAmbito(), esPorOmision, auditor, acceso, arranque, ahora)
                 : tarea === 'mejora'
-                  ? await mejorar(org, await delCliente(), auditor)
+                  ? await mejorar(org, elAmbito(), esPorOmision, auditor)
                   : tarea === 'anuncios'
-                    ? await recolectarAnuncios(await delCliente(), conToken(acceso))
+                    ? await recolectarAnuncios(elAmbito(), conToken(acceso))
                     : tarea === 'anuncios_relleno'
-                      ? await rellenarAnuncios(await delCliente(), conToken(acceso), arranque, ahora)
+                      ? await rellenarAnuncios(elAmbito(), conToken(acceso), arranque, ahora)
                       : tarea === 'activos' && meta?.tipo === 'listo'
-                        ? await recolectarActivos(await delCliente(), meta, ahora)
+                        // Acotada también al fin de la corrida: con varios clientes, su presupuesto propio no alcanza.
+                        ? await recolectarActivos(elAmbito(), meta, ahora, arranque + FIN_PARA_LOS_ANALIZADORES_MS)
                       : tarea === 'analizadores'
                         ? await analizar(org, analizador, arranque, ahora)
                         : tarea === 'reintentos'
                           ? await reintentar(org, analizador, arranque, ahora)
                           : tarea === 'senales'
                             ? await pasarLosDetectores(org, llaveDeIa ?? null, arranque, ahora)
-                            : await barrerCitas(await delCliente(), conToken(acceso));
+                            : await barrerCitas(elAmbito(), conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
           // candado en un generador de tráfico: reintentar lo que frenó a propósito.
-          renglones.push({ slug: org.slug, tarea, estado: 'frenada', porque: r.porque, llamadas: 0 });
+          renglon({ tarea, estado: 'frenada', porque: r.porque, llamadas: 0 });
           // Salvo la pasada de los detectores cuando no le tocaba: ésa no se sella. Ver `pasarLosDetectores`.
-          if (!('sinSello' in r)) await sellar(org.id, tarea, 'frenada', r.porque, 0);
+          if (!('sinSello' in r)) await sellarAca(tarea, 'frenada', r.porque, 0);
           continue;
         }
-        renglones.push({
-          slug: org.slug,
+        renglon({
           tarea,
           estado: 'corrio',
           llamadas: r.llamadas,
@@ -678,18 +808,17 @@ export async function barrerTodo(
          * de la pasada de miniaturas—. `motivoDeLoIncompleto` devuelve nulo para las demás, así
          * que ninguna cambia de comportamiento — y el día que otra tarea empiece a truncarse, el
          * lugar donde decirlo ya existe. */
-        await sellar(org.id, tarea, 'corrio', motivoDeLoIncompleto(r.resultado), r.llamadas);
+        await sellarAca(tarea, 'corrio', motivoDeLoIncompleto(r.resultado), r.llamadas);
       } catch (e) {
         // El mensaje de la excepción va al REGISTRO y no al cuerpo (`ADR-0704`): puede llevar
         // nombres de tabla o fragmentos de consulta.
-        console.error(`cron: falló ${tarea} de ${org.slug}`, e);
-        renglones.push({
-          slug: org.slug,
+        console.error(`cron: falló ${tarea} de ${org.slug}${cuentaId === null ? '' : ` (cliente ${cuentaId})`}`, e);
+        renglon({
           tarea,
           estado: 'fallo',
           porque: 'la tarea no pudo completarse',
         });
-        await sellar(org.id, tarea, 'fallo', 'la tarea no pudo completarse', null);
+        await sellarAca(tarea, 'fallo', 'la tarea no pudo completarse', null);
       }
     }
   }
@@ -747,6 +876,7 @@ export async function barrerTodo(
 async function auditar(
   org: OrganizacionListada,
   ambito: AmbitoDeUnCliente,
+  esPorOmision: boolean,
   auditor: AccesoAlAuditor,
   acceso: AccesoAGhl,
   arranque: number,
@@ -760,6 +890,7 @@ async function auditar(
     {
       orgId: org.id,
       ambito,
+      esPorOmision,
       zona: org.zonaHoraria,
       // El interruptor y las dos faltas ya las resolvió `resolverAccesoAlAuditor`.
       auditorActivo: true,
@@ -857,6 +988,7 @@ async function reintentar(
 async function mejorar(
   org: OrganizacionListada,
   ambito: AmbitoDeUnCliente,
+  esPorOmision: boolean,
   auditor: AccesoAlAuditor,
 ): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
   // El bucle ya garantizó que está `listo`. Ver el mismo criterio en `auditar(`.
@@ -865,6 +997,7 @@ async function mejorar(
   const r = await buscarUnaMejora({
     orgId: org.id,
     ambito,
+    esPorOmision,
     zona: org.zonaHoraria,
     claveIa: auditor.claveIa,
     idDelAgente: auditor.idDelAgente,
@@ -896,6 +1029,9 @@ async function mejorar(
 async function releerContactos(
   ambito: AmbitoDeUnCliente,
   acceso: { token: string; locationId: string },
+  // El fin de la corrida (el nivel 3): con varios clientes, la pasada de miniaturas de cada uno no puede pasarlo.
+  fin: number,
+  ahora: () => number,
 ): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
   // En el ámbito del cliente: la resta de la sincronización congela sólo a los suyos (`exigirUnSoloCliente`).
   const r = await conOrganizacion(ambito, () =>
@@ -906,7 +1042,7 @@ async function releerContactos(
   /* La miniatura del anuncio de cada contacto, que la búsqueda no trae (CF1-11 de docs/creative/16): hasta 50
      pedidos por pasada, una sola vez por contacto. Va después de sincronizar para pedir también los que acaban de
      entrar, y sus llamadas se suman a las de la tarea. */
-  const miniaturas = await completarMiniaturas(ambito, acceso);
+  const miniaturas = await completarMiniaturas(ambito, acceso, undefined, ahora, fin);
   return { corrio: true, resultado: { ...r.resumen, miniaturas }, llamadas: r.resumen.llamadas + miniaturas.pedidos };
 }
 
@@ -1056,16 +1192,16 @@ async function sacarLaFoto(
   if (!configuracion) return { estado: 'fallo', porque: 'no llegó la configuración de los negocios' };
   const principal = configuracion.principal.id;
   if (ahora() - arranque > PRESUPUESTO_MS) {
-    await sellar(principal, 'foto', 'sin_tiempo', 'se agotó el presupuesto de la corrida', null);
+    await sellar(principal, null, 'foto', 'sin_tiempo', 'se agotó el presupuesto de la corrida', null);
     return { estado: 'sin_tiempo', porque: 'se agotó el presupuesto de la corrida' };
   }
   try {
     const r = await tomarLaFoto(configuracion, ahora());
-    await sellar(principal, 'foto', 'corrio', r.sinMedir > 0 ? `${r.sinMedir} empresa(s) sin medir` : null, 0);
+    await sellar(principal, null, 'foto', 'corrio', r.sinMedir > 0 ? `${r.sinMedir} empresa(s) sin medir` : null, 0);
     return { estado: 'corrio', ...r };
   } catch (e) {
     console.error('cron: falló la foto de los negocios', e);
-    await sellar(principal, 'foto', 'fallo', 'la foto no pudo completarse', null);
+    await sellar(principal, null, 'foto', 'fallo', 'la foto no pudo completarse', null);
     return { estado: 'fallo', porque: 'la foto no pudo completarse' };
   }
 }
@@ -1075,16 +1211,32 @@ async function sacarLaFoto(
  *
  * Se mira solo las tareas del horario: si el horario de hoy es solo `mensajes`, un sello viejo de
  * `citas` no tiene por qué adelantar a esta empresa en la fila.
+ *
+ * Y sólo los de la unidad (el nivel 3): los de un cliente con su cuenta, los de la empresa sin cuenta. Un cliente
+ * que no se sabe cuál es va primero, como el que nunca corrió: su tarea va a fallar y tiene que decirse pronto.
  */
-async function selloMasViejo(orgId: string, tareas: readonly Tarea[]): Promise<number | null> {
+async function selloMasViejo(
+  orgId: string,
+  cuenta: (() => Promise<string>) | null,
+  tareas: readonly Tarea[],
+): Promise<number | null> {
   const delTrabajo = tareas.filter((t) => !esDeLaPlataforma(t));
   if (delTrabajo.length === 0) return null;
+  let cuentaId: string | null = null;
+  if (cuenta) {
+    try {
+      cuentaId = await cuenta();
+    } catch {
+      return null;
+    }
+  }
 
   return conOrganizacion(orgId, async () => {
     const filas = await datos()
       .selectFrom('tareas_programadas')
       .select(['tarea', 'ultima_corrida_el', 'ultimo_estado'])
       .where('tarea', 'in', delTrabajo)
+      .where('cuenta_id', cuentaId === null ? 'is' : '=', cuentaId)
       .execute();
 
     // Falta alguna → nunca se barrió esa tarea acá, y eso va primero.
@@ -1128,6 +1280,9 @@ async function selloMasViejo(orgId: string, tareas: readonly Tarea[]): Promise<n
  */
 async function sellar(
   orgId: string,
+  // El cliente de la tarea (el nivel 3), o `null` en las de la empresa y la plataforma. Va explícito: la tabla es
+  // opcional, y el puente deja sin cuenta lo que no la trae.
+  cuentaId: string | null,
   tarea: Tarea,
   estado: EstadoDeTarea,
   motivo: string | null,
@@ -1138,6 +1293,7 @@ async function sellar(
       await datos()
         .insertInto('tareas_programadas')
         .values({
+          cuenta_id: cuentaId,
           tarea,
           ultima_corrida_el: new Date(),
           ultimo_estado: estado,
