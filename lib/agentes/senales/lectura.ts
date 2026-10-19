@@ -2,15 +2,16 @@
 // AG-34). **Corre dentro de `conOrganizacion(`.** Sólo lee: «vista» la marca un POST aparte (AG-24).
 //
 // La entidad viaja como identificador y el nombre de una campaña o de un anuncio se resuelve acá, al mostrar
-// (A6-05), por `negocio.campanas` y `negocio.anuncios`; el de un cliente (el nivel 3), por `identidad.cuentas`. Una
-// campaña medida dentro de su cliente —la evidencia lo nombra— se muestra «Campaña (Cliente)». Una pieza no tiene
-// otro identificador que su nombre normalizado (`lib/negocio/creativo.ts`), así que ése es su nombre. El rótulo de
-// un funnel lo pone la pantalla,
-// que ya lo tiene. Lo que no tiene nombre —un conjunto, una campaña que GoHighLevel no listó— viaja sin él y la
-// pantalla dibuja el identificador.
+// (A6-05), por `negocio.campanas` y `negocio.anuncios`; el de un cliente (el nivel 3), por `identidad.cuentas`. Con
+// campañas de más de un cliente, una campaña se muestra «Campaña (Cliente)»: el de la evidencia si se midió dentro de
+// su cliente, y si no el suyo. Una pieza no tiene otro identificador que su nombre normalizado
+// (`lib/negocio/creativo.ts`), así que ése es su nombre. El rótulo de un funnel lo pone la pantalla, que ya lo tiene.
+// Lo que no tiene nombre —un conjunto, una campaña que GoHighLevel no listó— viaja sin él y la pantalla dibuja el
+// identificador.
 
 import { datos } from '../../datos/contexto.ts';
 import { NOMBRE_DEL_AGENTE } from '../../auditor/vista.ts';
+import { clienteDeCadaCampana } from '../../negocio/embudosDeAcquisition.ts';
 import { ROTULOS, type Familia } from '../../negocio/recorrido.ts';
 import { CATALOGO_DE_REGLAS, umbralesFirmados, umbralVigente } from './umbrales.ts';
 import type { DepartamentoConSenales, Deteccion, Gravedad, VentanaDeSenal } from './tipos.ts';
@@ -59,12 +60,16 @@ export async function senalesDeLaPantalla(
   const anuncios = filas.some((f) => f.entidad_tipo === 'anuncio')
     ? new Map((await datos().selectFrom('anuncios').select(['meta_anuncio_id', 'nombre']).execute()).map((a) => [a.meta_anuncio_id, a.nombre]))
     : new Map<string, string | null>();
-  /* Los clientes (el nivel 3): la entidad de lo que es de toda una cuenta publicitaria con varios, y el de la campaña
-     cuya regla se midió dentro de su cliente (`evidencia.cliente`). Las pantallas de señales abren la empresa entera,
-     así que se ven todos. */
-  const clientes = filas.some((f) => f.entidad_tipo === 'cliente' || clienteDeLaEvidencia(f.evidencia) !== null)
-    ? new Map((await datos().selectFrom('cuentas').select(['id', 'nombre']).execute()).map((c) => [c.id, c.nombre]))
-    : new Map<string, string>();
+  /* El cliente de cada campaña cuando son de más de uno (el nivel 3), con el criterio de la pantalla de Acquisition:
+     TODA señal de campaña se nombra «Campaña (Cliente)» —sin entrega, el costo por lead, el ICP—, no sólo la que se
+     midió dentro de su cliente; dos campañas homónimas de dos clientes no se distinguen por el nombre. Con uno, vacío. */
+  const clienteDeLaCampana = filas.some((f) => f.entidad_tipo === 'campana') ? await clienteDeCadaCampana() : new Map<string, string>();
+  /* Los clientes (el nivel 3): la entidad de lo que es de toda una cuenta publicitaria con varios, y el de cada campaña.
+     Las pantallas de señales abren la empresa entera, así que se ven todos. */
+  const clientes =
+    clienteDeLaCampana.size > 0 || filas.some((f) => f.entidad_tipo === 'cliente' || clienteDeLaEvidencia(f.evidencia) !== null)
+      ? new Map((await datos().selectFrom('cuentas').select(['id', 'nombre']).execute()).map((c) => [c.id, c.nombre]))
+      : new Map<string, string>();
 
   const salida = filas.map((f): SenalParaMostrar => {
     const deteccion: Deteccion = {
@@ -92,7 +97,7 @@ export async function senalesDeLaPantalla(
       id: f.id,
       regla: f.regla,
       entidad: deteccion.entidad,
-      nombre: nombreDe(deteccion.entidad, campanas, anuncios, clientes, clienteDeLaEvidencia(f.evidencia)),
+      nombre: nombreDe(deteccion.entidad, campanas, anuncios, clientes, clienteDeLaEvidencia(f.evidencia) ?? clienteDeLaCampana.get(f.entidad_id) ?? null),
       gravedad: f.gravedad,
       confianza: f.confianza,
       estado: f.estado as SenalParaMostrar['estado'],
@@ -171,14 +176,17 @@ function nombreDe(
   campanas: ReadonlyMap<string, string | null>,
   anuncios: ReadonlyMap<string, string | null>,
   clientes: ReadonlyMap<string, string>,
-  /** El cliente de la evidencia: una campaña medida dentro de su cliente se nombra «Campaña (Cliente)». */
-  deLaEvidencia: string | null,
+  /**
+   * El cliente de una campaña: el de la evidencia, si se midió dentro de su cliente, o el suyo cuando las campañas son
+   * de más de uno. Una campaña con cliente se nombra «Campaña (Cliente)».
+   */
+  delCliente: string | null,
 ): string | null {
   switch (entidad.tipo) {
     case 'campana': {
       const nombre = campanas.get(entidad.id) ?? null;
-      const cliente = deLaEvidencia === null ? undefined : clientes.get(deLaEvidencia);
-      // Sin cliente en la evidencia —con un solo cliente siempre—, el nombre de siempre.
+      const cliente = delCliente === null ? undefined : clientes.get(delCliente);
+      // Sin cliente —con un solo cliente siempre—, el nombre de siempre.
       return cliente === undefined ? nombre : `${nombre ?? `Campaña ${entidad.id}`} (${cliente})`;
     }
     case 'cliente':

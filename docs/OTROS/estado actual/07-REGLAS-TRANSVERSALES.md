@@ -1341,21 +1341,27 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   herramienta del cerebro, igual, con el cliente de sus anuncios, el que la listó o el de sus contactos
   (`lib/negocio/embudosDeAcquisition.ts:698`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
   frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:661`)
-  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:884`); sólo uno con
+  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:905`); sólo uno con
   métricas y sin serie frena lo que lee Meta —«sin entrega», la concentración y el costo por mil, con su anterior
-  aparte— (`lib/negocio/embudosDeAcquisition.ts:783`, `lib/negocio/embudosDeAcquisition.ts:869`): un cliente sin Meta no
+  aparte— (`lib/negocio/embudosDeAcquisition.ts:804`, `lib/negocio/embudosDeAcquisition.ts:890`): un cliente sin Meta no
   apaga lo de los demás. Las vistas de Conversion no son la suma ni el cero de otro cliente
   (`lib/negocio/pasosDeConversion.ts:512`), y no comparan con un cliente sin su gasto en ninguna de las dos ventanas
   (`lib/negocio/pasosDeConversion.ts:585`, `lib/negocio/pasosDeConversion.ts:593`). En el detector, lo que es de una
   cuenta publicitaria se mide dentro de su cliente (`lib/agentes/detectores/acquisition.ts:318`): la crítica de «sin
   entrega» es del `cliente` cuyas campañas no entregan (`lib/agentes/detectores/acquisition.ts:371`), la entidad nueva
   de la `094` (`db/migraciones/094_el_cliente_en_acquisition.sql:33`), que la pantalla nombra
-  (`lib/agentes/senales/lectura.ts:184`). El funnel se guarda en el cliente de su campaña
+  (`lib/agentes/senales/lectura.ts:192`); y toda señal de campaña dice su cliente con varios, «Campaña (Cliente)», con
+  el cliente de la pantalla (`lib/agentes/senales/lectura.ts:100`). El funnel se guarda en el cliente de su campaña
   (`lib/negocio/funnelDeLaCampana.ts:100`) y la base lo exige (`db/migraciones/094_el_cliente_en_acquisition.sql:52`).
   La serie atrasada y «métricas sin serie» miran sólo a los clientes activos (`lib/negocio/gastoDeLaCuenta.ts:316`): uno
-  en pausa dejaba la empresa atrasada para siempre. Lo exigen
-  `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:186`,
-  `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:289` y
+  en pausa dejaba la empresa atrasada para siempre. Y la cobertura de la ventana le pide a uno en pausa su serie sólo
+  hasta su último día cerrado (`lib/negocio/gastoDeLaCuenta.ts:398`): cortada a mitad de la ventana, dejaba a la empresa
+  sin costos ni flechas, y lo que sólo lee Meta sin medir, hasta que la ventana dejara atrás ese día. Con un solo
+  cliente, el freno de Meta y su anterior son los de siempre. Lo exigen
+  `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:206`,
+  `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:313`,
+  `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:449`,
+  `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:519` y
   `pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts:41`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): el vínculo de un
   closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; Creative junta en una
@@ -1374,7 +1380,9 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   pauta sin conectar Meta deja a la empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de
   campaña (Meta es «recomendado, no requerido», así que puede durar), y el motivo que se dice es «Faltan días de gasto»,
   sin uno propio; lo que sólo lee Meta no se frena. Las salidas: abrir Acquisition por cliente, como Leads y Sales, o
-  sacar de los costos a la gente de ese cliente. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene
+  sacar de los costos a la gente de ese cliente. Y de la misma familia: si el único cliente con Meta queda en pausa,
+  cuando la ventana deja atrás su último día cerrado nadie tiene serie en ella y la empresa queda en «Faltan días de
+  gasto», como una cuya serie dejó de leerse. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene
   efecto; con él, se mira su pantalla antes de activarlo, con su Conexión cargada.
 
 ---

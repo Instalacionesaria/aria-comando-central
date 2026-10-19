@@ -696,6 +696,51 @@ export async function pautaSinLeerEn(v: DiasDeCalendario): Promise<{ sinSerie: b
  * datos y no por cuántos clientes tiene la empresa: un segundo cliente sin campañas no cambia nada.
  */
 async function universoDeCampanas(): Promise<{ campanas: CampanaConocida[]; clienteDe: Map<string, string> }> {
+  const filas = await filasDelUniverso();
+  const funnels = new Map((await funnelsDeLasCampanas()).map((f) => [f.campana, f.funnel]));
+  const conContactos = await campanasConContactos();
+  const clienteDe = deVariosClientes(filas);
+  const ids = [...new Set(clienteDe.values())];
+  const nombres =
+    ids.length > 0
+      ? new Map((await datos().selectFrom('cuentas').select(['id', 'nombre']).where('id', 'in', ids).execute()).map((c) => [c.id, c.nombre]))
+      : null;
+  const campanas = filas.map((f): CampanaConocida => {
+    const base = {
+      campana: f.campana,
+      nombre: f.nombre,
+      estado: f.estado,
+      conocida: f.conocida,
+      conContactos: conContactos.has(f.campana),
+      funnel: funnels.get(f.campana) ?? null,
+    };
+    const cliente = clienteDe.get(f.campana);
+    if (nombres === null || cliente === undefined) return base;
+    return { ...base, cliente: nombres.get(cliente) ?? 'Cliente sin nombre' };
+  });
+  return { campanas, clienteDe };
+}
+
+/**
+ * El cliente de cada campaña cuando las campañas son de más de uno (el nivel 3), con el criterio de la pantalla
+ * (`universoDeCampanas`): por su id de `identidad.cuentas`. VACÍO con uno. Lo usa `lib/agentes/senales/lectura.ts` para
+ * nombrar «Campaña (Cliente)» toda señal de campaña: dos campañas homónimas de dos clientes no se distinguen por el
+ * nombre. Corre dentro de `conOrganizacion`.
+ */
+export async function clienteDeCadaCampana(): Promise<Map<string, string>> {
+  return deVariosClientes(await filasDelUniverso());
+}
+
+/** De las filas del universo, el cliente de cada campaña; vacío si todas son de un mismo cliente. */
+function deVariosClientes(filas: readonly { campana: string; cliente: string | null }[]): Map<string, string> {
+  const clientes = new Set(filas.map((f) => f.cliente).filter((c): c is string => c !== null));
+  return clientes.size > 1
+    ? new Map(filas.filter((f): f is { campana: string; cliente: string } => f.cliente !== null).map((f) => [f.campana, f.cliente]))
+    : new Map();
+}
+
+/** Las campañas del universo, con su nombre y estado de `negocio.campanas` y su cliente (ver `universoDeCampanas`). */
+async function filasDelUniverso() {
   const filas = await sql<{ campana: string; nombre: string | null; estado: string | null; conocida: boolean; cliente: string | null }>`
     with todas as (
       select meta_campana_id as campana, cuenta_id, 1 as orden from negocio.anuncios where meta_campana_id is not null
@@ -717,31 +762,7 @@ async function universoDeCampanas(): Promise<{ campanas: CampanaConocida[]; clie
            coalesce(u.de_meta, k.cuenta_id::text, u.de_contactos, u.de_funnel) as cliente
       from universo u
       left join negocio.campanas k on k.meta_campana_id = u.campana`.execute(datos());
-
-  const funnels = new Map((await funnelsDeLasCampanas()).map((f) => [f.campana, f.funnel]));
-  const conContactos = await campanasConContactos();
-  const clientes = new Set(filas.rows.map((f) => f.cliente).filter((c): c is string => c !== null));
-  const nombres =
-    clientes.size > 1
-      ? new Map(
-          (await datos().selectFrom('cuentas').select(['id', 'nombre']).where('id', 'in', [...clientes]).execute()).map((c) => [c.id, c.nombre]),
-        )
-      : null;
-  const clienteDe = new Map<string, string>();
-  const campanas = filas.rows.map((f): CampanaConocida => {
-    const base = {
-      campana: f.campana,
-      nombre: f.nombre,
-      estado: f.estado,
-      conocida: f.conocida,
-      conContactos: conContactos.has(f.campana),
-      funnel: funnels.get(f.campana) ?? null,
-    };
-    if (nombres === null || f.cliente === null) return base;
-    clienteDe.set(f.campana, f.cliente);
-    return { ...base, cliente: nombres.get(f.cliente) ?? 'Cliente sin nombre' };
-  });
-  return { campanas, clienteDe };
+  return filas.rows;
 }
 
 /**

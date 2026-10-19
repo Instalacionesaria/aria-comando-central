@@ -406,7 +406,7 @@ campañas homónimas de dos clientes son dos filas, y cada fila dice su cliente 
 (`lib/negocio/atribucionDelLead.ts:176`, `lib/negocio/atribucionDelLead.ts:213`). La fuente es una categoría de la
 empresa y no lleva cliente. Con un solo cliente, o con el foco en uno, la fila y las claves del cerebro son las de
 siempre. Ninguna pantalla dibuja hoy esa tabla: viaja en el cuerpo de `GET /api/auditoria` y en la herramienta
-`atribucion_del_lead`. Lo exige `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:186`.
+`atribucion_del_lead`. Lo exige `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:206`.
 
 ---
 

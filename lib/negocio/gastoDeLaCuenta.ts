@@ -361,6 +361,13 @@ export async function estadoDeLaSerie(zona: string): Promise<{
  * Con varios clientes (el nivel 3), todo es POR CLIENTE: su serie se cuadra con el detalle de SUS anuncios, y la
  * ventana está entera cuando lo está la de cada cliente con serie. Cruzado sólo por fecha, el total de un cliente se
  * comparaba con el detalle de todos y ningún día cuadraba nunca.
+ *
+ * A un cliente que ya no está ACTIVO —en pausa o de baja: deja de leerse, como en `estadoDeLaSerie`— se le pide la
+ * serie sólo hasta su último día cerrado: lo que tenga después —el día de la pausa, leído a medias— se suma a
+ * `deLaCuenta`, como lo suman sus campañas, pero no se le exige. Si no, la serie que se corta a mitad de la ventana
+ * dejaba a la empresa sin el gasto entero —sin costos ni flechas, y lo que sólo lee Meta sin medir— hasta que la
+ * ventana dejara atrás ese día: una semana en «7 días», un mes en «30 días». Con un solo cliente es lo de siempre: el
+ * principal está siempre activo (`085`).
  */
 export async function coberturaDelGasto(
   desde: string,
@@ -368,7 +375,7 @@ export async function coberturaDelGasto(
   dias: number,
   zona: string,
 ): Promise<{ entero: boolean; motivo: MotivoDelGasto | null; deLaCuenta: number | null }> {
-  const r = await sql<{ con_serie: string; cerrados: string; enteros: string; de_la_cuenta: string | null }>`
+  const r = await sql<{ con_serie: boolean; faltan_filas: boolean; faltan_cerrados: boolean; faltan_enteros: boolean; de_la_cuenta: string | null }>`
     with detalle as (
       select m.cuenta_id, m.fecha, sum(m.gasto) as detalle
         from negocio.metricas_de_anuncio m
@@ -386,33 +393,50 @@ export async function coberturaDelGasto(
         left join detalle d on d.cuenta_id = s.cuenta_id and d.fecha = s.fecha
        where s.fecha between ${desde}::date and ${hasta}::date
     ),
+    /* Hasta dónde se le pide la serie a cada cliente: a uno activo, la ventana entera; a uno que ya no lo está, hasta
+       su último día cerrado (de toda su serie, no sólo de la ventana). */
+    tope as (
+      select g.cuenta_id, coalesce(c.estado, 'activa') = 'activa' as activo,
+             case when coalesce(c.estado, 'activa') = 'activa' then ${hasta}::date
+                  else least(${hasta}::date,
+                             max(g.fecha) filter (where g.leido_el >= ((g.fecha + 1)::timestamp at time zone ${zona})))
+             end as hasta
+        from negocio.gasto_de_la_cuenta g
+        left join identidad.cuentas c on c.id = g.cuenta_id
+       where g.cuenta_id in (select cuenta_id from serie)
+       group by g.cuenta_id, c.estado
+    ),
     por_cliente as (
-      select count(*) as con_serie,
-             count(*) filter (where cerrado) as cerrados,
-             count(*) filter (where cerrado and (cuadra or residuo_el is not null)) as enteros,
-             sum(gasto) as gasto
-        from serie
-       group by cuenta_id
+      select count(*) filter (where s.fecha <= t.hasta) as con_serie,
+             count(*) filter (where s.fecha <= t.hasta and cerrado) as cerrados,
+             count(*) filter (where s.fecha <= t.hasta and cerrado and (cuadra or residuo_el is not null)) as enteros,
+             sum(gasto) as gasto,
+             -- Los días que se le piden: todos a uno activo; a uno que ya no lo está, del primero de la ventana a su tope.
+             case when t.activo then ${dias}::int
+                  else least(${dias}::int, greatest(0, coalesce(t.hasta - ${desde}::date + 1, 0))) end as pedidos
+        from serie s
+        join tope t on t.cuenta_id = s.cuenta_id
+       group by s.cuenta_id, t.activo, t.hasta
     )
-    select coalesce(min(con_serie), 0) as con_serie,
-           coalesce(min(cerrados), 0) as cerrados,
-           coalesce(min(enteros), 0) as enteros,
+    select count(*) > 0 as con_serie,
+           coalesce(bool_or(con_serie < pedidos), false) as faltan_filas,
+           coalesce(bool_or(cerrados < pedidos), false) as faltan_cerrados,
+           coalesce(bool_or(enteros < pedidos), false) as faltan_enteros,
            sum(gasto) as de_la_cuenta
       from por_cliente`.execute(datos());
   const f = r.rows[0]!;
-  const conSerie = Number(f.con_serie);
   /* `dias > 0`: una ventana de cero días —«Completo» con el primer dato de hoy, que todavía no tiene ningún día
-     cerrado— daría cero de cero y pasaría sin haber mirado nada. */
+     cerrado— daría cero de cero y pasaría sin haber mirado nada. Sin ninguna fila en la ventana, falta todo. */
   const motivo: MotivoDelGasto | null =
-    dias <= 0 || conSerie < dias || Number(f.cerrados) < dias
+    dias <= 0 || !f.con_serie || f.faltan_filas || f.faltan_cerrados
       ? 'dias_sin_leer'
-      : Number(f.enteros) < dias
+      : f.faltan_enteros
         ? 'no_cuadra'
         : null;
   return {
     entero: motivo === null,
     motivo,
-    deLaCuenta: dias > 0 && conSerie === dias ? Math.round(Number(f.de_la_cuenta ?? 0) * 100) / 100 : null,
+    deLaCuenta: dias > 0 && f.con_serie && !f.faltan_filas ? Math.round(Number(f.de_la_cuenta ?? 0) * 100) / 100 : null,
   };
 }
 

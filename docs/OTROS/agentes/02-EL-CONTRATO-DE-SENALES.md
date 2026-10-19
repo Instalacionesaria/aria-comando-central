@@ -45,8 +45,9 @@ cuenta publicitaria —«sin entrega» de todas sus campañas, el gasto sin crec
 de más de un cliente. Con uno solo, eso sigue siendo `empresa`, con la misma huella de siempre; la entidad cambia una
 vez, el día que aparece el segundo cliente con campañas, y la señal viva de la `empresa` se cierra sola. Una campaña
 medida dentro de su cliente (la concentración, la escala) sigue siendo `campana`, y su evidencia nombra el cliente
-(`cliente`); la pantalla la muestra «Campaña (Cliente)». La base tiene el mismo juego en su `check`
-(`senales_entidad_tipo_check`).
+(`cliente`). Con campañas de más de un cliente, la pantalla muestra toda señal de campaña «Campaña (Cliente)»: el de la
+evidencia, y si no viene, el de la campaña, con el criterio de la pantalla de Acquisition. La base tiene el mismo juego
+en su `check` (`senales_entidad_tipo_check`).
 
 ## AG-22 · La huella y la reconciliación diaria
 
