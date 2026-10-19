@@ -53,6 +53,7 @@ import Credenciales from '../ajustes/Credenciales.jsx';
 import TopesDelCerebro from '../ajustes/TopesDelCerebro.jsx';
 import Empresas from '../ajustes/Empresas.jsx';
 import Usuarios from '../ajustes/Usuarios.jsx';
+import Clientes from '../ajustes/Clientes.jsx';
 
 export default function AjustesView({ activa }) {
   const sesion = useSesion();
@@ -83,6 +84,8 @@ export default function AjustesView({ activa }) {
     { clave: 'credenciales', nombre: 'Credenciales', icono: '#i-ajustes', visible: puede('credenciales') },
     { clave: 'empresas', nombre: 'Empresas', icono: '#i-exec', visible: puede('empresas') },
     { clave: 'usuarios', nombre: 'Usuarios', icono: '#i-leads', visible: puede('usuarios') },
+    // Los clientes de la empresa (el nivel 3): los negocios, una subcuenta del CRM cada uno.
+    { clave: 'clientes', nombre: 'Clientes', icono: '#i-exec', visible: puede('clientes') },
     /* ── COMISIONES SE FUE DE ACÁ, Y NO ES UN BORRADO ────────────────────────
      *
      * Era la cuarta pestaña. Ahora vive detrás de un botón al lado del anillo de comisión, en
@@ -167,6 +170,7 @@ export default function AjustesView({ activa }) {
             <Empresas sesion={sesion} alCambiarDeEmpresa={recargar} />
           ) : null}
           {activaAhora === 'usuarios' ? <Usuarios sesion={sesion} /> : null}
+          {activaAhora === 'clientes' ? <Clientes sesion={sesion} /> : null}
           {activaAhora === null ? (
             <div className="fd-aviso falta">
               <i>◍</i>

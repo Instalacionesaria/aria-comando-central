@@ -34,13 +34,13 @@ function codigo(fuente: string): string {
     .replace(/^\s*\/\/.*$/gm, '');
 }
 
-test('Ajustes tiene EXACTAMENTE tres pestañas, y ninguna es Comisiones', () => {
+test('Ajustes tiene EXACTAMENTE cuatro pestañas, y ninguna es Comisiones', () => {
   // Lo que se pidió, y el criterio que lo sostiene: Ajustes configura la EMPRESA —sus credenciales,
   // sus empresas, su gente—. Los porcentajes configuran a las personas de un equipo, así que se
-  // fueron con el equipo.
+  // fueron con el equipo. La cuarta, Clientes, es de la empresa también: sus negocios (el nivel 3, 2026-10-18).
   const vista = leer('components/views/AjustesView.jsx');
   const claves = [...codigo(vista).matchAll(/\{\s*clave:\s*'([a-z]+)'/g)].map((m) => m[1]!);
-  assert.deepEqual(claves, ['credenciales', 'empresas', 'usuarios'], 'las pestañas de Ajustes cambiaron');
+  assert.deepEqual(claves, ['credenciales', 'empresas', 'usuarios', 'clientes'], 'las pestañas de Ajustes cambiaron');
   assert.ok(!codigo(vista).includes('Comisiones'), 'Ajustes volvió a dibujar Comisiones');
 });
 

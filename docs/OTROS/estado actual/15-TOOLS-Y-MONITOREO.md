@@ -366,7 +366,7 @@ Si guardar el análisis del Espía falla, se entrega igual: ya se pagó (commit 
 pestaña concedida, porque `usuario` restringe por sección; y ser de la organización principal
 (`lib/autorizacion/secciones.ts:438-448`, `db/arranque/001_catalogo.sql:392-412`). La tercera se mide sobre la organización
 **propia**, no la que se está mirando (`lib/autorizacion/secciones.ts:112-119`). El formulario de Usuarios no ofrece la casilla
-fuera de la principal (`components/ajustes/Usuarios.jsx:144`). `administrador` no tiene la capacidad
+fuera de la principal (`components/ajustes/Usuarios.jsx:145`). `administrador` no tiene la capacidad
 (`db/arranque/001_catalogo.sql:479-503`), y el catálogo aborta si `usuario` pierde la capacidad o deja de restringirse
 (`db/arranque/001_catalogo.sql:766-801`). **El de Incidentes es más simple:** la capacidad es sólo del superadministrador
 (`db/arranque/001_catalogo.sql:130-135`), así que conceder la pestaña a un `usuario` no le da el panel.

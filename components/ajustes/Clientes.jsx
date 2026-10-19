@@ -1,0 +1,259 @@
+'use client';
+
+/* Ajustes › Clientes — los clientes de la empresa (el nivel 3). NO viene del prototipo.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * QUÉ ES UN CLIENTE, Y QUÉ SE HACE ACÁ
+ *
+ * Un cliente es una cuenta de la empresa: una subcuenta del CRM, un negocio (una clínica, una inmobiliaria). La
+ * empresa lo da de alta, le pone su nicho, su país y su zona, y lo pausa o lo da de baja. El primero —el «principal»—
+ * nació con la empresa y recibe lo que entra con sus credenciales: no se pausa ni se da de baja.
+ *
+ * Vincular un cliente con su subcuenta del CRM, o marcarlo de prueba, lo hace sólo ARIA (`puedeVincularClientes`): la
+ * subcuenta es única en toda la plataforma, y la marca de prueba saca al cliente de las comparaciones.
+ *
+ * Los botones salen de lo que el servidor responde en la sesión (`puedeCrearClientes`, `puedeEditarClientes`), con la
+ * capacidad exacta de cada operación: un botón que va a recibir 403 no se ofrece.
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+import { useCallback, useState } from 'react';
+import { pedir } from '../../lib/http/cliente.ts';
+import { usarLectura } from '../../lib/usarLectura.ts';
+import Ventana from '../Ventana.jsx';
+import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
+import FormularioDeCliente, { cuerpoDe, valoresDe } from './FormularioDeCliente.jsx';
+
+const MOTIVOS = {
+  sin_permiso: 'Tu usuario no puede hacer esto con los clientes.',
+  no_encontrado: 'Ese cliente ya no existe, o no es de esta empresa.',
+  subcuenta_en_uso: 'Esa subcuenta de GoHighLevel ya es de otro cliente.',
+};
+
+const ESTADOS = { activa: 'Activo', pausada: 'Pausado', baja: 'De baja' };
+
+/** El texto de un rechazo, con el detalle del servidor si lo trae. */
+function porQue(r) {
+  if (r.tipo === 'sin_respuesta') return 'No llegó al servidor. No se cambió nada.';
+  if (r.tipo === 'rechazado') return r.detalle ?? MOTIVOS[r.codigo] ?? `Rechazado (${r.estado}).`;
+  return 'No se pudo.';
+}
+
+export default function Clientes({ sesion }) {
+  const { datos, situacion, causa, refrescar } = usarLectura('/api/admin/cuentas', {
+    sinRespuesta: 'No se pudo contactar al servidor.',
+    motivos: MOTIVOS,
+  });
+  const lista = datos?.clientes ?? null;
+  const catalogo = datos?.catalogo ?? null;
+  const [aviso, setAviso] = useState(null);
+  const [alta, setAlta] = useState(null);
+  const [editando, setEditando] = useState(null);
+  const [valores, setValores] = useState(valoresDe(null));
+  const [vinculo, setVinculo] = useState({ crmCuentaId: '', esPrueba: false });
+  const [ocupado, setOcupado] = useState(false);
+
+  const nombreDelNicho = (clave) => catalogo?.nichos.find((n) => n.clave === clave)?.nombre ?? clave;
+
+  const guardar = useCallback(async () => {
+    setOcupado(true);
+    setAviso(null);
+    const r = editando
+      ? await pedir(`/api/admin/cuentas/${editando.id}`, { metodo: 'PATCH', cuerpo: cuerpoDe(valores) })
+      : await pedir('/api/admin/cuentas', { metodo: 'POST', cuerpo: cuerpoDe(valores) });
+    setOcupado(false);
+    if (r.tipo !== 'datos') {
+      setAviso({ mal: true, texto: porQue(r) });
+      return;
+    }
+    setAviso({ mal: false, texto: editando ? 'Cliente guardado.' : `«${valores.nombre.trim()}» agregado.` });
+    setAlta(null);
+    setEditando(null);
+    await refrescar();
+  }, [editando, valores, refrescar]);
+
+  const cambiarEstado = useCallback(
+    async (cliente, estado) => {
+      setAviso(null);
+      const r = await pedir(`/api/admin/cuentas/${cliente.id}`, { metodo: 'PATCH', cuerpo: { estado } });
+      setAviso(r.tipo === 'datos' ? { mal: false, texto: `«${cliente.nombre}»: ${ESTADOS[estado].toLowerCase()}.` } : { mal: true, texto: porQue(r) });
+      await refrescar();
+    },
+    [refrescar],
+  );
+
+  const vincular = useCallback(async () => {
+    setOcupado(true);
+    setAviso(null);
+    const r = await pedir(`/api/admin/cuentas/${editando.id}/vinculo`, {
+      metodo: 'PATCH',
+      // Vacío es «no la toques», no «desvincular»: un formulario que se guarda por la marca de prueba no puede borrar la
+      // subcuenta de paso.
+      cuerpo: vinculo.crmCuentaId.trim() === ''
+        ? { esPrueba: vinculo.esPrueba }
+        : { crmCuentaId: vinculo.crmCuentaId.trim(), esPrueba: vinculo.esPrueba },
+    });
+    setOcupado(false);
+    setAviso(r.tipo === 'datos' ? { mal: false, texto: 'Vinculación guardada.' } : { mal: true, texto: porQue(r) });
+    if (r.tipo === 'datos') await refrescar();
+  }, [editando, vinculo, refrescar]);
+
+  if (lista === null) {
+    return situacion === 'rechazado' || situacion === 'sin_respuesta' ? (
+      <div className="fd-aviso mal" role="status">
+        <i>⚠</i>
+        <span>{causa ?? 'No se pudieron leer los clientes.'}</span>
+      </div>
+    ) : (
+      <p className="aj-intro">Leyendo los clientes…</p>
+    );
+  }
+
+  const elAviso = aviso ? (
+    <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
+      <i>{aviso.mal ? '⚠' : '✓'}</i>
+      <span>{aviso.texto}</span>
+    </div>
+  ) : null;
+  const puedeGuardar = valores.nombre.trim().length > 0 && !ocupado;
+
+  return (
+    <>
+      <AvisoDesactualizado causa={causa} alReintentar={refrescar} />
+      <p className="aj-intro">
+        Cada cliente es <b>un negocio de la empresa</b>, con su propia subcuenta de GoHighLevel. Con un cliente elegido
+        arriba, Leads y Sales muestran sólo ese cliente.
+      </p>
+      {alta || editando ? null : elAviso}
+
+      <div className="card">
+        <div className="card-head">
+          Clientes <span className="hint">{lista.length}</span>
+          {sesion?.puedeCrearClientes ? (
+            <button
+              type="button"
+              className="fd-btn aj-alta"
+              onClick={() => {
+                setAviso(null);
+                setValores(valoresDe(null));
+                setAlta(true);
+              }}
+            >
+              Agregar cliente
+            </button>
+          ) : null}
+        </div>
+        <div className="rows">
+          {lista.map((c) => (
+            <div className="row-i" key={c.id} style={{ gridTemplateColumns: '1.6fr 1.2fr 1fr auto' }}>
+              <div>
+                <div className="rn">
+                  {c.nombre}
+                  {c.esPorOmision ? <span className="tagx ag aj-tag">Principal</span> : null}
+                  {c.estado !== 'activa' ? <span className="tagx no aj-tag">{ESTADOS[c.estado]}</span> : null}
+                  {c.esPrueba ? <span className="tagx seg aj-tag">De prueba</span> : null}
+                </div>
+                <div className="rs">
+                  {c.pais ?? 'sin país'} · {c.zonaHoraria}
+                </div>
+              </div>
+              <div>
+                {/* El nicho sin confirmar se dice: no entra a las comparaciones entre negocios. */}
+                {c.nicho ? (
+                  <span>
+                    {nombreDelNicho(c.nicho)}
+                    {c.nichoConfirmado ? null : <span className="rs"> · sin confirmar</span>}
+                  </span>
+                ) : (
+                  <span className="rs">sin nicho</span>
+                )}
+              </div>
+              <div>
+                <span className={`chip ${c.crmVinculado ? 'ok' : 'warn'}`}>{c.crmVinculado ? 'Vinculado' : 'Sin vincular'}</span>
+              </div>
+              <div className="num aj-acciones">
+                {sesion?.puedeEditarClientes ? (
+                  <>
+                    <button
+                      type="button"
+                      className="fd-btn sec"
+                      onClick={() => {
+                        setAviso(null);
+                        setValores(valoresDe(c));
+                        setVinculo({ crmCuentaId: '', esPrueba: c.esPrueba });
+                        setEditando(c);
+                      }}
+                    >
+                      Editar
+                    </button>
+                    {c.esPorOmision ? null : (
+                      <button
+                        type="button"
+                        className="fd-btn sec"
+                        onClick={() => void cambiarEstado(c, c.estado === 'activa' ? 'pausada' : 'activa')}
+                      >
+                        {c.estado === 'activa' ? 'Pausar' : 'Activar'}
+                      </button>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {alta || editando ? (
+        <Ventana
+          titulo={editando ? editando.nombre : 'Agregar un cliente'}
+          subtitulo={
+            editando?.esPorOmision
+              ? 'Es el cliente principal de la empresa: recibe lo que entra con sus credenciales.'
+              : 'Un negocio de la empresa, con su propia subcuenta de GoHighLevel.'
+          }
+          alCerrar={() => {
+            setAlta(null);
+            setEditando(null);
+          }}
+        >
+          <FormularioDeCliente valores={valores} alCambiar={setValores} catalogo={catalogo} prefijo={editando ? 'ed-cli' : 'cli'} />
+          {elAviso}
+          <div className="aj-fila">
+            <button type="button" className="fd-btn" disabled={!puedeGuardar} onClick={() => void guardar()}>
+              {ocupado ? 'Guardando…' : editando ? 'Guardar' : 'Agregar cliente'}
+            </button>
+            {editando && !editando.esPorOmision && editando.estado !== 'baja' ? (
+              <button type="button" className="fd-btn sec" disabled={ocupado} onClick={() => void cambiarEstado(editando, 'baja')}>
+                Dar de baja
+              </button>
+            ) : null}
+          </div>
+
+          {/* Sólo ARIA: la subcuenta del CRM y la marca de prueba. */}
+          {editando && sesion?.puedeVincularClientes ? (
+            <div className="aj-bloque">
+              <div className="fd-campo">
+                <label htmlFor="ed-cli-subcuenta">Subcuenta de GoHighLevel</label>
+                <input
+                  id="ed-cli-subcuenta"
+                  type="text"
+                  value={vinculo.crmCuentaId}
+                  placeholder={editando.crmVinculado ? 'Vinculada: escribe otra para cambiarla' : 'El identificador de la location'}
+                  onChange={(e) => setVinculo({ ...vinculo, crmCuentaId: e.target.value })}
+                />
+              </div>
+              <label className="aj-casilla">
+                <input type="checkbox" checked={vinculo.esPrueba} onChange={(e) => setVinculo({ ...vinculo, esPrueba: e.target.checked })} />
+                <span>Es un cliente de prueba: no entra a ninguna cifra agregada.</span>
+              </label>
+              <div className="aj-fila">
+                <button type="button" className="fd-btn sec" disabled={ocupado} onClick={() => void vincular()}>
+                  Guardar la vinculación
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </Ventana>
+      ) : null}
+    </>
+  );
+}

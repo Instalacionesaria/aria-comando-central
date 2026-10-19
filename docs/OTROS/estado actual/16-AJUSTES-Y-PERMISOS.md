@@ -83,10 +83,10 @@ de Monitoreo e Incidentes van en el engranaje del pie de la barra lateral, que m
 (`components/Nav.jsx:128@b532a78`). En la segunda edición, el mismo día, las tres pantallas llevan la cabecera con la
 ceja «MENÚ DE LA CUENTA» y el menú dice debajo de cada destino «TOKENS E INTEGRACIONES» o «SOLO {la organización
 principal}» (`docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`, `NE-49`). Quien llega desde el «Ir a Ajustes» del
-cerebro cae en Credenciales (`components/views/AjustesView.jsx:107`).
+cerebro cae en Credenciales (`components/views/AjustesView.jsx:110`).
 
-**Las tres pestañas** (`components/views/AjustesView.jsx:82-85`), cada una visible si la sesión trae su sección, que
-el servidor ya filtró con la misma función que decide el menú (`components/views/AjustesView.jsx:65-67`):
+**Las tres pestañas** (`components/views/AjustesView.jsx:83-86`), cada una visible si la sesión trae su sección, que
+el servidor ya filtró con la misma función que decide el menú (`components/views/AjustesView.jsx:66-68`):
 
 | Pestaña | Sección · capacidad | Qué hace | Rutas |
 |---|---|---|---|
@@ -95,7 +95,7 @@ el servidor ya filtró con la misma función que decide el menú (`components/vi
 | Usuarios | `usuarios` · `usuarios.ver` | Alta con selector de empresa, rol, pestañas concedidas por departamento, contraseña temporal, desactivar, reactivar y borrar | `app/api/usuarios/route.ts:51`, `app/api/admin/roles/route.ts:45` y las seis de `app/api/admin/usuarios/`, que declaran `SIN_SECCION` |
 
 La configuración de comisiones fue una cuarta pestaña y se mudó a Closer → Inicio sin cambiar su autorización: sigue
-declarando `PANTALLA = 'credenciales'` (`components/views/AjustesView.jsx:86-102`, `app/api/admin/comisiones/route.ts:45`).
+declarando `PANTALLA = 'credenciales'` (`components/views/AjustesView.jsx:89-105`, `app/api/admin/comisiones/route.ts:45`).
 Lo mismo quién es el closer, la lista de usuarios del CRM para elegirlo, el tramo del setter y los enlaces rápidos:
 `app/api/admin/closer/route.ts:50`, `app/api/admin/closer/usuarios-crm/route.ts:33`, `app/api/admin/setter/route.ts:51`,
 `app/api/admin/enlaces-rapidos/route.ts:44`. Con la de credenciales, la de Meta y la de los topes, la sección
@@ -199,7 +199,7 @@ intersección, y es la única forma de separar las pantallas que comparten `tabl
   empresa que no es la principal no ofrece Monitoreo (`lib/autorizacion/secciones.ts:449-451`). **Desde E12
   (2026-10-02)** las agrupa por departamento con `alcancePorDepartamento` (`lib/autorizacion/departamentos.ts:328`,
   llamado en `app/api/admin/roles/route.ts:119`), sin una sección de más ni de menos, y cada casilla que abre más de
-  una entrada —o una que la barra llama de otra forma— lo dice debajo con «abre …» (`components/ajustes/Usuarios.jsx:76-80`,
+  una entrada —o una que la barra llama de otra forma— lo dice debajo con «abre …» (`components/ajustes/Usuarios.jsx:77-81`,
   `lib/autorizacion/departamentos.ts:373`).
 
 ### 3.4 · El cuarto eje: la organización principal
@@ -339,7 +339,7 @@ y 0 tienen la cuenta, y la tarea `activos` está `saltada` en las 11 empresas ac
 
 **Los topes del cerebro (2026-10-05).** Debajo de Credenciales, cuántas preguntas por día admite el cerebro, por
 persona y por empresa, y lo usado hoy (`components/ajustes/TopesDelCerebro.jsx:3-8`, montado en
-`components/views/AjustesView.jsx:165`). La ruta pide `credenciales.ver` para leer y `credenciales.editar` para
+`components/views/AjustesView.jsx:168`). La ruta pide `credenciales.ver` para leer y `credenciales.editar` para
 fijarlos; los dos topes van siempre juntos, entre 1 y 5 000, y el de una persona no puede pasar al de la empresa
 (`app/api/admin/cerebro/route.ts:20-22`, `app/api/admin/cerebro/route.ts:54-57`). Por omisión, 50 y 300
 (`lib/agentes/executive/topes.ts:33`). El «día» es el de la zona de la empresa (`app/api/admin/cerebro/route.ts:30`).

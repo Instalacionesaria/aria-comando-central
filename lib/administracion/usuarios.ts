@@ -35,6 +35,10 @@ export interface PersonaListada {
    * y la otra mitad no es peor que una donde no lo dice ninguna.
    */
   organizacion: { id: string; nombre: string; esPrincipal: boolean };
+  /** Es un cliente final (el nivel 3): sólo ve las cuentas de `cuentas`. */
+  limitadoACuentas: boolean;
+  /** Sus cuentas, si es un cliente final. **Nunca `null`**: sin cuentas, lista vacía. */
+  cuentas: string[];
 }
 
 /**
@@ -91,6 +95,7 @@ export async function personasQuePuedeAdministrar(
       'u.email',
       'u.activo',
       'u.es_admin_principal',
+      'u.limitado_a_cuentas',
       'u.org_id as org_id',
       'o.nombre as org_nombre',
       'o.es_principal as org_es_principal',
@@ -120,6 +125,12 @@ export async function personasQuePuedeAdministrar(
         .whereRef('us.usuario_id', '=', 'u.id')
         .select(({ fn, ref }) => fn.agg<string[]>('array_agg', [ref('us.seccion')]).as('claves'))
         .as('secciones'),
+      // Las cuentas del cliente final (el nivel 3), por lo mismo que las pestañas: el `PUT` reemplaza el conjunto.
+      eb
+        .selectFrom('usuarios_cuentas as uc')
+        .whereRef('uc.usuario_id', '=', 'u.id')
+        .select(({ fn, ref }) => fn.agg<string[]>('array_agg', [ref('uc.cuenta_id')]).as('claves'))
+        .as('cuentas'),
     ])
     .execute();
 
@@ -135,5 +146,7 @@ export async function personasQuePuedeAdministrar(
     roles: f.roles ?? [],
     secciones: f.secciones ?? [],
     organizacion: { id: f.org_id, nombre: f.org_nombre, esPrincipal: f.org_es_principal },
+    limitadoACuentas: f.limitado_a_cuentas,
+    cuentas: f.cuentas ?? [],
   }));
 }

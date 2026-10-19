@@ -212,3 +212,9 @@
 /* El tamaño propio de la casilla, contra `.fd-campo input { width:100% }`. */
 .aj-casilla input[type='checkbox'] { width:15px; height:15px; min-width:15px; padding:0; margin:0;
   accent-color:var(--accent); cursor:pointer; }
+
+/* ── Ajustes › Clientes (el nivel 3) ─────────────────────────────────────────── */
+.aj-tag { margin-left: 8px; }
+.aj-acciones { display: flex; gap: 6px; justify-content: flex-end; }
+/* La vinculación con el CRM, sólo de ARIA: separada del resto del formulario, porque es de la plataforma. */
+.aj-bloque { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }

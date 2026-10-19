@@ -47,6 +47,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { diceLoQueAbre } from '../../lib/autorizacion/departamentos.ts';
 import Ventana from '../Ventana.jsx';
+import ClientesDeLaPersona from './ClientesDeLaPersona.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede administrar personas en esta empresa.',
@@ -146,6 +147,14 @@ function ofrecibles(grupos, desdeLaPrincipal) {
     .filter((g) => g.secciones.length > 0);
 }
 
+/** Las pestañas de un rol, sólo las del cliente: lo único que puede ver un cliente final (el nivel 3). */
+function soloDelCliente(grupos, pantallasDelCliente) {
+  const delCliente = new Set(pantallasDelCliente ?? []);
+  return (grupos ?? [])
+    .map((g) => ({ ...g, secciones: g.secciones.filter((s) => delCliente.has(s.clave)) }))
+    .filter((g) => g.secciones.length > 0);
+}
+
 /** Agregar o quitar una clave de un `Set`, sin tocar el original. */
 function conmutar(antes, clave, puesta) {
   const ahora = new Set(antes);
@@ -180,6 +189,9 @@ export default function Usuarios({ sesion }) {
      «¿está?», y con un arreglo habría que cuidarse de los duplicados en cada clic. */
   const [seccionesNuevas, setSeccionesNuevas] = useState(() => new Set());
   const [orgNueva, setOrgNueva] = useState('');
+  /* El cliente final (el nivel 3): una persona limitada a algunos clientes de la empresa. */
+  const [clienteFinal, setClienteFinal] = useState(false);
+  const [cuentasNuevas, setCuentasNuevas] = useState(() => new Set());
   const [creando, setCreando] = useState(false);
 
   // ── La edición ──
@@ -190,6 +202,9 @@ export default function Usuarios({ sesion }) {
   /* Las pestañas de quien se está editando. Arrancan con las que YA tiene: el `POST` reemplaza el
      conjunto, así que abrir el panel con las casillas vacías y guardar sería quitárselas todas. */
   const [edSecciones, setEdSecciones] = useState(() => new Set());
+  /* Los clientes de quien se edita, si es un cliente final. Arrancan con los que YA tiene, por lo mismo que las
+     pestañas: el `PUT` reemplaza el conjunto. */
+  const [edCuentas, setEdCuentas] = useState(() => new Set());
   /* El rol elegido en la edición, con sus datos del catálogo. Se declara ACÁ ARRIBA y no junto al
      resto de los derivados, y no es estilo: `guardar` lo nombra en su lista de dependencias, y esa
      lista se evalúa al renderizar. Declarado más abajo, la pantalla queda EN BLANCO con «Cannot
@@ -356,6 +371,8 @@ export default function Usuarios({ sesion }) {
            Mandarlas siempre dejaría filas para roles que las ignoran — filas que resucitarían el
            día que ese rol pase a restringir. */
         ...(elRol?.restringePorSeccion ? { secciones: [...seccionesNuevas] } : {}),
+        // Un cliente final nace con sus clientes, en la misma transacción.
+        ...(clienteFinal ? { cuentas: [...cuentasNuevas] } : {}),
       },
     });
     setCreando(false);
@@ -381,8 +398,10 @@ export default function Usuarios({ sesion }) {
        ningún error** — y `orgNueva`, que ya estaba así, se agrega acá por lo mismo. */
     setSeccionesNuevas(new Set());
     setOrgNueva('');
+    setClienteFinal(false);
+    setCuentasNuevas(new Set());
     await recargar();
-  }, [nombre, email, orgNueva, rolNuevo, seccionesNuevas, elRol, empresas, recargar]);
+  }, [nombre, email, orgNueva, rolNuevo, seccionesNuevas, elRol, empresas, recargar, clienteFinal, cuentasNuevas]);
 
   // ─── La edición y las tres acciones ───────────────────────────────────────
 
@@ -395,6 +414,7 @@ export default function Usuarios({ sesion }) {
     setEdEmail(u.email ?? '');
     setEdRol(u.roles?.[0] ?? '');
     setEdSecciones(new Set(u.secciones ?? []));
+    setEdCuentas(new Set(u.cuentas ?? []));
   };
 
   const cerrarEdicion = () => {
@@ -553,6 +573,8 @@ export default function Usuarios({ sesion }) {
        opción «sin rol todavía», escrito abajo en el selector: *el camino más corto del formulario
        creaba una persona que puede entrar y no ve ninguna pantalla*. */
     (!elRol?.restringePorSeccion || seccionesNuevas.size > 0) &&
+    // Un cliente final sin clientes no vería nada: al menos uno.
+    (!clienteFinal || cuentasNuevas.size > 0) &&
     !creando;
   /* ── QUÉ ROLES SE OFRECEN, Y POR QUÉ EL DE PLATAFORMA AHORA SÍ ──────────────
    *
@@ -866,12 +888,38 @@ export default function Usuarios({ sesion }) {
 
                   Y lo que se ofrece es el TECHO del rol: `usuario` no alcanza Ajustes, así que esa
                   casilla no aparece. Ofrecerla sería un control que se ve y no puede cumplir. */}
+              {/* ── EL CLIENTE FINAL (el nivel 3) ──────────────────────────────────
+                  Una persona de un cliente de la empresa: sólo ve los clientes que se elijan, y sólo en
+                  Leads y Sales. Se ofrece con un rol restringido por pestañas, que es el único que puede
+                  tener; el servidor y la base lo exigen igual. */}
+              {elRol?.restringePorSeccion && !creandoPlataforma ? (
+                <div className="fd-campo">
+                  <label className="aj-casilla">
+                    <input
+                      type="checkbox"
+                      checked={clienteFinal}
+                      onChange={(e) => {
+                        setClienteFinal(e.target.checked);
+                        // Sus pestañas sólo pueden ser las del cliente: las demás se quitan al marcarlo.
+                        if (e.target.checked) {
+                          const delCliente = new Set(sesion?.pantallasDelCliente ?? []);
+                          setSeccionesNuevas((antes) => new Set([...antes].filter((s) => delCliente.has(s))));
+                        }
+                      }}
+                    />
+                    <span>Es un cliente final: sólo ve los clientes que elijas, en Leads y Sales.</span>
+                  </label>
+                  {clienteFinal ? (
+                    <ClientesDeLaPersona orgId={orgNueva || orgId} elegidos={cuentasNuevas} alCambiar={setCuentasNuevas} />
+                  ) : null}
+                </div>
+              ) : null}
               {elRol?.restringePorSeccion ? (
                 <div className="fd-campo">
                   <label htmlFor="alta-secciones">Pestañas que va a ver</label>
                   <CasillasDeSecciones
                     id="alta-secciones"
-                    grupos={elRol.alcance}
+                    grupos={clienteFinal ? soloDelCliente(elRol.alcance, sesion?.pantallasDelCliente) : elRol.alcance}
                     desdeLaPrincipal={destinoEsPrincipal}
                     elegidas={seccionesNuevas}
                     alCambiar={(clave, puesta) =>
@@ -1050,6 +1098,20 @@ export default function Usuarios({ sesion }) {
                     Al menos una. Se guarda el conjunto <b>completo</b>: lo que destildes se le
                     quita.
                   </div>
+                </div>
+              ) : null}
+
+              {/* Los clientes de un cliente final (el nivel 3). Se guardan aparte: es otra operación. */}
+              {editando?.limitadoACuentas ? (
+                <div className="fd-campo">
+                  <label>Sus clientes</label>
+                  <ClientesDeLaPersona
+                    orgId={editando.organizacion?.id}
+                    personaId={editando.id}
+                    elegidos={edCuentas}
+                    alCambiar={setEdCuentas}
+                    alGuardar={recargar}
+                  />
                 </div>
               ) : null}
 
