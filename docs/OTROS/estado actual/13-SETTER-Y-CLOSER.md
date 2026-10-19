@@ -115,7 +115,7 @@ dos que nacieron después del corte: `brief` (§ 2.6) y `cerebro` (§ 2.7). Las 
 `mi-dia` (colas + cockpit + comisión, y desde AG12 y AG15 las marcas del Brief y el comentario de la cabecera,
 `app/api/closer/mi-dia/route.ts:50-184`, `app/api/closer/mi-dia/route.ts:124-133`), `agenda`, `pipeline`,
 `meta` (PATCH), `agenda/refrescar` (POST, con `maxDuration = 300`,
-`app/api/closer/agenda/refrescar/route.ts:51`) y `contactos`. **Esta última no la llama ninguna
+`app/api/closer/agenda/refrescar/route.ts:65`) y `contactos`. **Esta última no la llama ninguna
 pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pestaña Contactos; un
 `grep` de `closer/contactos` fuera de `app/api` sólo la encuentra en un comentario
 (`components/negocio/ListaDeContactos.jsx:9`) y en tres pruebas.
@@ -157,9 +157,9 @@ panel lateral que se superpone y no navega, y un solo componente para toda la ap
 una sexta pestaña, **Brief**, que va primera y se abre sola (`components/negocio/Ficha.jsx:102-104`,
 `components/negocio/Ficha.jsx:487-488`, `components/negocio/Ficha.jsx:498`); ver § 2.6. Se abre desde seis lugares, todos de estas dos pestañas: Mi
 Día, Pipeline y Agenda del closer (`components/closer/MiDia.jsx:440`,
-`components/closer/Pipeline.jsx:313`, `components/closer/Agenda.jsx:554`), y el mismo Mi Día, el
+`components/closer/Pipeline.jsx:313`, `components/closer/Agenda.jsx:566`), y el mismo Mi Día, el
 mismo Pipeline y la lista de Contactos del setter (`components/views/SetterView.jsx:33-39`,
-`components/negocio/ListaDeContactos.jsx:424`). **No se abre desde Conversation ni desde la
+`components/negocio/ListaDeContactos.jsx:433`). **No se abre desde Conversation ni desde la
 auditoría**, aunque tres comentarios digan que sí (`components/negocio/Ficha.jsx:13-14`,
 `lib/autorizacion/secciones.ts:610-611`, `lib/autorizacion/secciones.ts:624-625`): ningún archivo
 de `components/conversation/` ni de `components/auditoria/` la importa, y la lista de la auditoría

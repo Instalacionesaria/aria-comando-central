@@ -290,7 +290,16 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
      * conexiones. Acá no. */
     const d = r.datos;
     const guardados = (d.guardados?.closer ?? 0) + (d.guardados?.setter ?? 0);
-    const corta = Boolean(d.salteados?.length || d.truncado);
+    /* Con varios clientes (el nivel 3) vienen sumados, y `clientes` dice qué pasó con cada uno. El que falló o no
+       alcanzó el tiempo deja la lista corta, y se nombra: reintentar lo trae. Al que le falta una credencial no lo
+       arregla reintentar, así que no cuenta como corta: se dice dónde se configura. Con un cliente no viene. */
+    const clientes = d.clientes ?? [];
+    const faltan = clientes.filter((c) => c.estado === 'fallo' || c.estado === 'sin_tiempo');
+    const sinConexion = clientes.filter((c) => c.estado === 'saltada');
+    const corta = Boolean(d.salteados?.length || d.truncado || faltan.length);
+    const yQuienFalta =
+      (faltan.length > 0 ? ` Sin traer: ${faltan.map((c) => c.nombre).join(', ')}.` : '') +
+      sinConexion.map((c) => ` ${c.nombre}: ${c.porque}`).join('');
 
     /* LOS QUE SALIERON se dicen, y no son un detalle técnico: son contactos que estaban en esta
        lista y ya no van a estar. Sin la frase, la cartera baja de 157 a 152 entre dos clics y no
@@ -305,11 +314,11 @@ export default function ListaDeContactos({ camino, zona, pulso = 0 }) {
 
     let texto;
     if (guardados === 0) {
-      texto = 'No entró ningún contacto. Revisá la conexión en Ajustes.';
+      texto = `No entró ningún contacto. Revisá la conexión en Ajustes.${yQuienFalta}`;
     } else if (corta) {
-      texto = `${guardados} contacto(s). Puede faltar gente: volvé a traer en un rato.`;
+      texto = `${guardados} contacto(s). Puede faltar gente: volvé a traer en un rato.${yQuienFalta}`;
     } else {
-      texto = `${guardados} contacto(s) al día.${yQueSalieron}`;
+      texto = `${guardados} contacto(s) al día.${yQueSalieron}${yQuienFalta}`;
     }
 
     setResultado({ mal: guardados === 0 || corta, texto });

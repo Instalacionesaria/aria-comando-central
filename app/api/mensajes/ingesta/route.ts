@@ -17,22 +17,37 @@
 //
 // Sin `llamadas`, «cuesta una llamada por ciclo» es una intención. Con él es una medición que se
 // puede mirar en producción sin instrumentar nada.
+//
+// ── CON VARIOS CLIENTES (el nivel 3, G4) ─────────────────────────────────────
+//
+// El ciclo es POR CLIENTE activo, cada uno con su subcuenta. `corrio: true` significa «corrió al menos
+// uno», con las cifras sumadas, y `clientes` dice qué pasó con cada uno. Un tic de diez segundos no
+// empieza un cliente después de su cadencia (`PRESUPUESTO_DEL_TIC_MS`): el siguiente tic sigue por el
+// que lleva más sin traerse, y el cron de diez minutos los cubre a todos.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { SIN_SECCION } from '../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
+import { clientesQueTrae } from '../../../../lib/autorizacion/ambito.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
-import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../lib/credenciales/resolver.ts';
+import { resolverAccesoAGhl } from '../../../../lib/credenciales/resolver.ts';
 import { ingerirMensajes } from '../../../../lib/negocio/ingesta.ts';
-import { porOmisionDe } from '../../../../lib/negocio/ambitoDelCliente.ts';
+import {
+  desenlaceDeLaTraida,
+  PRESUPUESTO_DEL_TIC_MS,
+  sumarIngestas,
+  traerDeCadaCliente,
+  type ClienteConAcceso,
+} from '../../../../lib/negocio/traerDeLosClientes.ts';
 
 // ── NO CRUZA LOS DOS DOMINIOS, Y ESO NO ES UN ACCIDENTE ────────────────────
 //
-// Acá se lee la credencial —dominio de identidad, **solo lectura**— y la escritura de mensajes
-// vive entera en `lib/negocio/ingesta.ts`, que abre `conOrganizacion(` para cada una de sus
-// transacciones cortas. Entre dominios no hay atomicidad, así que la pregunta obligatoria es qué
-// queda a medias si la segunda mitad falla: **nada**, porque la primera no escribe.
+// Acá se leen las credenciales de cada cliente —dominio de identidad, **solo lectura**— y la
+// escritura de mensajes vive entera en `lib/negocio/ingesta.ts`, que abre `conOrganizacion(` para
+// cada una de sus transacciones cortas, en el ámbito de SU cliente. Entre dominios no hay atomicidad,
+// así que la pregunta obligatoria es qué queda a medias si la segunda mitad falla: **nada**, porque
+// la primera no escribe.
 //
 // Y si falla la segunda a la mitad, tampoco queda nada raro: el alta de mensajes es idempotente
 // y la marca de agua **solo avanza sobre conversaciones terminadas**, así que el ciclo siguiente
@@ -53,38 +68,45 @@ export async function POST(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['contactos.ver'], SIN_SECCION);
   if (contexto instanceof Response) return contexto;
 
-  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva, 'la_de_la_empresa'));
-  if (acceso.tipo === 'falta') {
-    return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);
-  }
-
-  let r;
-  try {
-    // Con las credenciales de la empresa se trae al cliente por omisión (el nivel 3), que es de quien son.
-    r = await ingerirMensajes(await porOmisionDe(contexto.orgEfectiva), {
-      token: acceso.token,
-      locationId: acceso.locationId,
-    });
-  } catch (e) {
-    // `conElPulso` ya dejó anotado el fallo en la fila del pulso antes de relanzar. Acá solo se
-    // traduce: quien pregunta no puede hacer nada con el detalle, y `ADR-0704` prohíbe devolverlo.
-    console.error('ingesta de mensajes:', e);
-    return rechazo(
-      'servicio_externo_no_disponible',
-      'No se pudo completar la ingesta de mensajes. Quedó anotado y se reintenta en el próximo ciclo.',
-    );
-  }
-
-  if (!r.corrio) {
-    // 200 con `corrio: false`. Ver arriba.
-    return ok({ corrio: false, porque: r.porque });
-  }
-
-  return ok({
-    corrio: true,
-    llamadas: r.llamadas,
-    // El resumen entero, incluido `atrasado`. Un `{ok:true}` acá sería un éxito reportado sin
-    // verificar: un ciclo que agotó un tope y dejó trabajo sin hacer se ve igual que uno completo.
-    ...r.resultado,
+  /* Los clientes activos de la empresa —el chat del Closer y del Setter es de la empresa entera, aunque haya foco—,
+     cada uno con las credenciales de SU subcuenta (el principal, las de la empresa). Por identidad y SOLO LECTURA. */
+  const clientes = await conIdentidad(async (db) => {
+    const salida: ClienteConAcceso[] = [];
+    for (const c of clientesQueTrae(contexto, SIN_SECCION)) {
+      salida.push({ ...c, acceso: await resolverAccesoAGhl(db, contexto.orgEfectiva, c) });
+    }
+    return salida;
   });
+
+  const renglones = await traerDeCadaCliente(
+    contexto.orgEfectiva,
+    clientes,
+    async (ambito, acceso) => {
+      const r = await ingerirMensajes(ambito, acceso);
+      // `corrio: false` es 200 y no un error. Ver arriba.
+      return r.corrio ? { estado: 'corrio', resultado: r.resultado, llamadas: r.llamadas } : { estado: 'frenada', porque: r.porque };
+    },
+    {
+      presupuestoMs: PRESUPUESTO_DEL_TIC_MS,
+      pulso: 'mensajes',
+      /* `conElPulso` ya dejó anotado el fallo en la fila del pulso antes de relanzar. Acá solo se traduce: quien
+         pregunta no puede hacer nada con el detalle, y `ADR-0704` prohíbe devolverlo. */
+      siLanza: {
+        codigo: 'servicio_externo_no_disponible',
+        porque: 'No se pudo completar la ingesta de mensajes. Quedó anotado y se reintenta en el próximo ciclo.',
+      },
+    },
+  );
+
+  // El resumen entero, incluido `atrasado`. Un `{ok:true}` acá sería un éxito reportado sin
+  // verificar: un ciclo que agotó un tope y dejó trabajo sin hacer se ve igual que uno completo.
+  const d = desenlaceDeLaTraida(renglones, {
+    deUno: (r, llamadas) => ({ corrio: true, llamadas, ...r }),
+    deVarios: (rs) => ({
+      corrio: true,
+      llamadas: rs.reduce((n, x) => n + x.llamadas, 0),
+      ...sumarIngestas(rs.map((x) => x.resultado)),
+    }),
+  });
+  return d.tipo === 'ok' ? ok(d.cuerpo) : rechazo(d.codigo, d.detalle);
 }

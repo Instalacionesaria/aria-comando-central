@@ -12,7 +12,8 @@
 //   · el cron lee los contactos y los mensajes de cada cliente con SU token, y cada fila queda en SU cliente;
 //   · cada cliente tiene su pulso y sus sellos, y los de los dos dicen `corrio`;
 //   · ningún pedido cruzó tokens: si uno lo hubiera hecho, el GoHighLevel falso lo habría rechazado y el sello lo diría;
-//   · la sincronización manual (Leads › sincronizar) es del principal: trae los suyos y no congela los de Y.
+//   · la sincronización manual (Setter › Contactos, «Traer de GoHighLevel») trae a cada cliente con SU token, y la
+//     resta de uno no congela al otro (G4).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -228,7 +229,7 @@ test('cada cliente tiene su pulso y sus sellos, y los dos corrieron', async () =
   );
 });
 
-test('la sincronización manual es del principal: trae los suyos y no congela los de Y', async () => {
+test('la sincronización manual trae a cada cliente con SU token, y la resta de uno no congela al otro', async () => {
   // Desde la última corrida, la subcuenta de P ya no tiene a c280p1 y tiene a c280p2.
   contactosDe = { p: ['c280p2'], y: ['c280y1'] };
   const u = await unaFila<{ id: string }>(admin, `insert into identidad.usuarios (org_id, nombre) values ($1, 'Admin 280') returning id`, [org]);
@@ -240,7 +241,12 @@ test('la sincronización manual es del principal: trae los suyos y no congela lo
   vistos.length = 0;
   const r = await sincronizar(pedirComo('/api/contactos/sincronizar', await sesionDe(u.id), { metodo: 'POST' }));
   assert.equal(r.status, 200, await r.clone().text());
-  assert.deepEqual([...new Set(vistos.map((v) => v.token))], [TOKEN.p], 'la sincronización manual usó otro token que el del principal');
+  assert.deepEqual([...new Set(vistos.map((v) => v.token))].sort(), [TOKEN.p, TOKEN.y].sort(), 'la sincronización manual no trajo a cada cliente con su token');
+  assert.deepEqual(vistos.filter((v) => v.rechazo !== null), [], 'un pedido usó el token de un cliente con la subcuenta de otro');
+  const cuerpo = (await r.json()) as { clientes: { estado: string }[]; guardados: { closer: number }; congelados: number | null };
+  assert.deepEqual(cuerpo.clientes.map((c) => c.estado), ['corrio', 'corrio']);
+  assert.equal(cuerpo.guardados.closer, 2);
+  assert.equal(cuerpo.congelados, 1, 'la resta de un cliente no se sumó, o congeló a los del otro');
 
   const territorios = await filas<{ ghl: string; territorio: string | null; cuenta: string }>(
     admin,
@@ -250,6 +256,6 @@ test('la sincronización manual es del principal: trae los suyos y no congela lo
   assert.deepEqual(
     territorios.map((t) => `${t.ghl}:${deCuenta(t.cuenta)}:${t.territorio ?? 'congelado'}`),
     ['c280p1:P:congelado', 'c280p2:P:closer', 'c280y1:Y:closer'],
-    'la sincronización del principal congeló a un contacto de Y, que se busca con otro token',
+    'la sincronización de un cliente congeló a un contacto del otro, que se busca con otro token',
   );
 });

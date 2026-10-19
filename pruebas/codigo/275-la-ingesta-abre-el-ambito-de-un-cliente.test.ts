@@ -10,8 +10,8 @@
 //
 //   · en los módulos de la ingesta, el primer argumento de `conOrganizacion(` y de `conElPulso(` no es nunca una
 //     organización (`orgId`, `org.id`, `e.orgId`, `contexto.orgEfectiva`) — mutación: volver a abrir con `orgId`;
-//   · el barrido despacha cada tarea de cliente con el cliente (`delCliente()`), y las rutas manuales con el por
-//     omisión;
+//   · el barrido despacha cada tarea de cliente con el cliente (`delCliente()`), y las rutas manuales con cada
+//     cliente que su pantalla lee (`clientesQueTrae`, G4) — mutación: volver a `porOmisionDe`;
 //   · la sincronización exige un solo cliente antes de buscar nada.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -35,6 +35,8 @@ const DE_UN_CLIENTE = [
   'lib/negocio/recolectarActivos.ts',
   'lib/auditor/analisis.ts',
   'lib/auditor/buscarMejora.ts',
+  // El bucle de las rutas manuales: no abre nada, y si algún día abre algo con `orgId`, esto lo marca.
+  'lib/negocio/traerDeLosClientes.ts',
 ];
 
 /** Una organización, sea cual sea la variable: `orgId`, `e.orgId`, `ambito.orgId`, `org.id`, `contexto.orgEfectiva`. */
@@ -80,10 +82,19 @@ test('releer los contactos abre el ámbito del cliente, y el barrido despacha ca
   }
 });
 
-test('las rutas manuales traen al cliente por omisión, y la sincronización exige un solo cliente', () => {
+test('las rutas manuales traen a cada cliente que su pantalla lee, y la sincronización exige un solo cliente', () => {
   for (const ruta of ['app/api/mensajes/ingesta/route.ts', 'app/api/closer/agenda/refrescar/route.ts', 'app/api/contactos/sincronizar/route.ts']) {
-    assert.match(leer(ruta), /await porOmisionDe\(contexto\.orgEfectiva\)/, `${ruta} no abre el cliente por omisión`);
+    const fuente = leer(ruta);
+    assert.doesNotMatch(fuente, /porOmisionDe\(|'la_de_la_empresa'/, `${ruta} trae sólo al principal, con las credenciales de la empresa`);
+    assert.match(fuente, /clientesQueTrae\(contexto, (PANTALLA|SIN_SECCION)\)/, `${ruta} no trae a los clientes que su pantalla lee`);
+    assert.match(fuente, /resolverAccesoAGhl\(db, contexto\.orgEfectiva, c\)/, `${ruta} no resuelve las credenciales de cada cliente`);
+    assert.match(fuente, /traerDeCadaCliente\(\s*contexto\.orgEfectiva,/, `${ruta} no trae a cada cliente en su ámbito`);
   }
+  assert.match(
+    leer('app/api/contactos/sincronizar/route.ts'),
+    /conOrganizacion\(ambito, \(\) => sincronizarContactos\(/,
+    'la sincronización no abre el ámbito de SU cliente: la resta congelaría a los contactos de los demás',
+  );
   const sincronizar = leer('lib/negocio/sincronizar.ts');
   const i = sincronizar.indexOf('export async function sincronizarContactos(');
   const cuerpo = sincronizar.slice(i, sincronizar.indexOf('\n}\n', i));

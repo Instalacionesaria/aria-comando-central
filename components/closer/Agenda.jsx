@@ -192,15 +192,26 @@ export default function Agenda({ zonaHoraria, verComo = null }) {
       });
       return;
     }
+    /* Con varios clientes (el nivel 3) la respuesta trae `clientes`, y los que no se leyeron se nombran: un total que
+       se ve completo con un cliente sin leer es el defecto de siempre. Los frenados se leyeron hace segundos. Al que le
+       falta una credencial no lo arregla reintentar: se dice dónde se configura, sin pintar el aviso de fallo. Con un
+       cliente no viene `clientes`, y el aviso es el de siempre. */
+    const clientes = r.datos.clientes ?? [];
+    const sinLeer = clientes.filter((c) => c.estado === 'fallo' || c.estado === 'sin_tiempo');
+    const sinConexion = clientes.filter((c) => c.estado === 'saltada');
+    const yLosQueFaltan =
+      (sinLeer.length > 0
+        ? ` Quedó sin leer el calendario de ${sinLeer.map((c) => `${c.nombre} (${String(c.porque).replace(/\.$/, '')})`).join('; ')}.`
+        : '') + sinConexion.map((c) => ` ${c.nombre}: ${c.porque}`).join('');
     if (r.datos.corrio === false) {
-      setAviso({ mal: false, texto: r.datos.porque });
+      setAviso({ mal: sinLeer.length > 0, texto: r.datos.porque + yLosQueFaltan });
       return;
     }
     /* El resumen COMPLETO, con lo que NO se guardó. Un «listo» esconde el caso que importa: se
        vieron 132 citas y se guardaron 43 porque las otras 89 son de contactos que no tenemos. */
     const d = r.datos;
     setAviso({
-      mal: false,
+      mal: sinLeer.length > 0,
       texto:
         `Se leyeron ${d.calendarios} calendario(s) en ${d.llamadas} llamadas: ${d.vistas} cita(s), ` +
         `${d.nuestras} de contactos nuestros, ${d.guardadas} guardada(s)` +
@@ -208,7 +219,8 @@ export default function Agenda({ zonaHoraria, verComo = null }) {
         (d.vistas > d.nuestras
           ? `. Las otras ${d.vistas - d.nuestras} son de contactos que no están traídos de GoHighLevel.`
           : '.') +
-        (d.atrasado ? ' Algún calendario falló: la lista puede estar incompleta.' : ''),
+        (d.atrasado ? ' Algún calendario falló: la lista puede estar incompleta.' : '') +
+        yLosQueFaltan,
     });
     /* Y se invalida lo guardado: el barrido acaba de escribir citas en nuestra base, así que
        respetar la ventana de frescura mostraría la agenda de antes de haberlas traído. */

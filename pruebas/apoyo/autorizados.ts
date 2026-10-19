@@ -42,8 +42,9 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'scripts/medir-cita.mjs',
   // Hermano del de arriba, y con el mismo argumento: mide contra la subcuenta real si el
   // identificador de usuario del CRM alcanza para saber que un mensaje lo escribió el agente, o si
-  // hace falta guardar `source`. Necesita la lista de organizaciones y sus credenciales —identidad—
-  // y después trabaja de una en una. Sólo `GET`, y no imprime ningún mensaje de nadie.
+  // hace falta guardar `source`. Necesita la lista de organizaciones, sus clientes activos y las
+  // credenciales de cada uno —identidad— y después trabaja de a un cliente (el nivel 3). Sólo `GET`, y
+  // no imprime ningún mensaje de nadie.
   'scripts/medir-mensaje.mjs',
   // El tercero de la familia, con el mismo argumento: mide si el CRM manda la atribución del
   // anuncio —`attributionSource`, las UTM, el `fbclid`— que el documento de arquitectura pide y que
@@ -219,9 +220,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'app/api/fundaciones/mercado/preparar/route.ts',
   // ── Etapa 11 ─────────────────────────────────────────────────────────────────
   // Traer los contactos de GoHighLevel. Usa la escotilla para UNA cosa: leer el token y el
-  // Location ID de la organización, que viven en `identidad.organizaciones_credenciales` — una
-  // tabla de identidad sobre la que el rol del inquilino no tiene ni `select`, y con razón:
-  // guarda los secretos de todas las organizaciones.
+  // Location ID de cada cliente activo (el nivel 3: el del principal en
+  // `identidad.organizaciones_credenciales`, el de los demás en `cuentas_credenciales` y `cuentas`) —
+  // tablas de identidad sobre las que el rol del inquilino no tiene ni `select`, y con razón:
+  // guardan los secretos de todas las organizaciones.
   //
   // El filtro por organización lo pone esa llamada A MANO, con `contexto.orgEfectiva`, igual
   // que `app/api/fundaciones/estado/route.ts`. Todo lo que ESCRIBE va por el otro camino
@@ -355,10 +357,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
    *
    * Las dos son de solo lectura y las dos van ANTES de escribir nada. */
   'app/api/avisos/crm/route.ts',
-  // Traer las citas del calendario. Mismo motivo para el token, y **no llama a `conOrganizacion(`
-  // en el manejador**: es una cáscara que delega en `lib/negocio/citas.ts`, que lo abre para cada
-  // una de sus escrituras. Estar acá lo exime también de `ADR-0202`, así que queda dicho dónde vive
-  // el contexto: en `barrerCitas(`, que recibe la organización por parámetro y nunca la deduce.
+  // Traer las citas del calendario. Mismo motivo para el token —el de cada cliente activo, con su
+  // subcuenta—, y **no llama a `conOrganizacion(` en el manejador**: es una cáscara que delega en
+  // `lib/negocio/citas.ts`, que lo abre para cada una de sus escrituras. Estar acá lo exime también
+  // de `ADR-0202`, así que queda dicho dónde vive el contexto: en `barrerCitas(`, que recibe el ámbito
+  // de UN cliente por parámetro (`traerDeCadaCliente`) y nunca lo deduce.
   //
   // La cáscara existe por lo mismo que la de la ingesta: el barrido hace diez llamadas contra un
   // servicio ajeno, y sostener una transacción mientras tanto retendría una conexión del agrupador
@@ -379,11 +382,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // organización lo pone una consulta escrita a mano — y olvidarse un `where` ahí entrega el token de
   // una empresa a otra sin ningún error.
   'app/api/cron/route.ts',
-  // El ciclo de ingesta. Mismo motivo para el token, y **no llama a `conOrganizacion(` en el
-  // manejador**: es una cáscara que delega en `lib/negocio/ingesta.ts`, que lo abre para cada una
-  // de sus tres transacciones cortas. Está acá por el token, y estar acá lo exime también de
-  // `ADR-0202` — así que queda dicho dónde vive el contexto: en `ingerirMensajes(`, que recibe la
-  // organización por parámetro y nunca la deduce.
+  // El ciclo de ingesta. Mismo motivo para el token —el de cada cliente activo—, y **no llama a
+  // `conOrganizacion(` en el manejador**: es una cáscara que delega en `lib/negocio/ingesta.ts`, que
+  // lo abre para cada una de sus tres transacciones cortas. Está acá por el token, y estar acá lo
+  // exime también de `ADR-0202` — así que queda dicho dónde vive el contexto: en `ingerirMensajes(`,
+  // que recibe el ámbito de UN cliente por parámetro (`traerDeCadaCliente`) y nunca lo deduce.
   //
   // La cáscara existe porque el candado NO puede vivir en una sola transacción: un ciclo hace
   // hasta trece llamadas contra un servicio ajeno, y sostener la transacción mientras tanto
@@ -488,9 +491,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
 export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   /* La medición de `source` contra el CRM. **Qué queda a medias si la segunda mitad falla: NADA, y
      es el caso más benigno posible de esta lista** — más que el de n8n, que al menos escribe afuera.
-     Acá NO SE ESCRIBE EN NINGUNA PARTE: de identidad se leen las organizaciones, sus credenciales y
-     el identificador del agente; de negocio se leen nuestros mensajes salientes; y contra el CRM
-     sólo se hace `GET`. No hay confirmación parcial que pueda existir.
+     Acá NO SE ESCRIBE EN NINGUNA PARTE: de identidad se leen las organizaciones, sus clientes activos
+     y, de cada uno, la credencial y el identificador del agente; de negocio se leen los mensajes
+     salientes de ese cliente; y contra el CRM sólo se hace `GET`. No hay confirmación parcial que
+     pueda existir.
 
      Cruza los dos dominios porque la pregunta lo exige: el identificador del agente vive en
      identidad y las filas cuya atribución está en disputa viven en negocio, y la medición consiste
@@ -604,14 +608,16 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // —idempotente por organización y por mitad—, y no hay datos de nadie que perder.
   'db/controles/sonda.ts',
   // ── Etapa 11 ─────────────────────────────────────────────────────────────────
-  // Traer los contactos de GoHighLevel: LEE identidad (el token y el Location ID de la
-  // organización) y ESCRIBE por el inquilino (`negocio.contactos`).
+  // Traer los contactos de GoHighLevel: LEE identidad (el token y el Location ID de cada
+  // cliente activo) y ESCRIBE por el inquilino (`negocio.contactos`), en el ámbito de cada cliente
+  // (`conOrganizacion(ambito, …)`, una transacción por cliente).
   //
   // ── QUÉ PASA SI LA SEGUNDA MITAD FALLA ──
   //
   // La mitad de identidad **no escribe en el camino de éxito**. `resolverAccesoAGhl` solo lee;
   // su única escritura posible es la fila de auditoría `credencial_ilegible`, y ésa ocurre
-  // exactamente en la rama que devuelve `falta` — donde la segunda mitad NUNCA corre. Así que
+  // exactamente en la rama que devuelve `falta` — donde la segunda mitad de ESE cliente NUNCA
+  // corre. Así que
   // el defecto del 09 § 6 —una mitad confirmada y la otra fallida produciendo un éxito
   // reportado— no se puede dar acá: hace falta que las dos escriban, y una no escribe.
   //
@@ -625,6 +631,10 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   //   · el manejador responde el FALLO, no un éxito parcial disfrazado — y cuando sí termina,
   //     devuelve el resumen con los salteados y el aviso de truncado, que son los dos casos en
   //     que la lista queda corta y parece completa.
+  //
+  // Y con varios clientes (el nivel 3, G4), en serie y cada uno en su transacción: si falla el
+  // segundo, lo del primero ya quedó confirmado, A PROPÓSITO, y la respuesta lo dice cliente por
+  // cliente (`clientes`, con el estado de cada uno), así que no hay un éxito parcial callado.
   'app/api/contactos/sincronizar/route.ts',
   // La ficha: lee la credencial por identidad y escribe el contacto refrescado por el inquilino.
   //

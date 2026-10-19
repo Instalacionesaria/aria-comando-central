@@ -5,7 +5,7 @@
 //
 // Con dos clientes, el token de la empresa no ve la subcuenta del otro: un contacto de Y pedido con el token de X
 // «no existe», y un enlace de reservas armado con el dominio de X le llega al lead de Y. Por eso el cliente es
-// OBLIGATORIO en los cuatro resolvedores, y quien de verdad quiere la de la empresa lo escribe (`'la_de_la_empresa'`).
+// OBLIGATORIO en los cinco resolvedores, y quien de verdad quiere la de la empresa lo escribe (`'la_de_la_empresa'`).
 // tsc lo exige en los `.ts`; esta prueba lo exige donde tsc no mira —los `.mjs` de `scripts/`— y en las rutas, donde
 // la de la empresa sería un error que compila:
 //
@@ -27,7 +27,7 @@ import { RAIZ, archivosFuente, sinComentarios } from '../apoyo/fuente.ts';
 
 const leer = (ruta: string) => sinComentarios(readFileSync(join(RAIZ, ruta), 'utf8'));
 
-const RESOLVEDORES = ['resolverAccesoAGhl', 'resolverAccesoAMeta', 'resolverAccesoAlAuditor', 'dominioDeReservasDe'];
+const RESOLVEDORES = ['resolverAccesoAGhl', 'resolverAccesoAMeta', 'resolverAccesoAlAuditor', 'dominioDeReservasDe', 'agenteDelCrmDe'];
 
 /** Los argumentos de cada llamada a `funcion(` en la fuente, partidos por las comas de primer nivel. */
 function llamadas(fuente: string, funcion: string): string[][] {
@@ -56,7 +56,7 @@ function llamadas(fuente: string, funcion: string): string[][] {
   return salida;
 }
 
-test('los cuatro resolvedores piden el cliente, sin opcional ni valor por omisión', () => {
+test('los cinco resolvedores piden el cliente, sin opcional ni valor por omisión', () => {
   const fuente = leer('lib/credenciales/resolver.ts');
   for (const r of RESOLVEDORES) {
     const firma = new RegExp(`export async function ${r}\\(([^)]*)\\)`).exec(fuente);

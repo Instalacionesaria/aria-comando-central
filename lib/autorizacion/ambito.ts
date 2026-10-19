@@ -46,3 +46,35 @@ export function zonaDe(contexto: Contexto, pantalla: Pantalla): string {
   }
   return contexto.organizacion.zonaHoraria;
 }
+
+/** Un cliente que una ruta manual trae del CRM: uno de los que la sesión ve. */
+export interface ClienteQueSeTrae {
+  id: string;
+  nombre: string;
+  esPorOmision: boolean;
+}
+
+/**
+ * Los clientes que una ruta manual trae del CRM (el nivel 3, G4): los ACTIVOS que la pantalla de la ruta LEE, en el
+ * orden de la sesión (el principal primero). Va acá y no en `lib/negocio` porque, como `ambitoDe`, sale de la sesión y
+ * de la pantalla.
+ *
+ * Lo que la pantalla lee lo decide `ambitoDe`, así que el foco sólo cuenta en las pantallas del cliente: el Closer y el
+ * Setter son de la empresa entera aunque haya foco, y traer sólo al enfocado dejaría el aviso de la agenda prendido
+ * por los demás. Uno en pausa no se trae: el cron tampoco lo barre. Con el foco en uno en pausa (o un cliente final
+ * con todos los suyos en pausa) la lista sale VACÍA, y lo responde la ruta.
+ *
+ * El cliente final no llega a las rutas de hoy (paso 3b del portero); si llegara por una pantalla suya, `ambitoDe` lo
+ * acota a sus cuentas.
+ */
+export function clientesQueTrae(contexto: Contexto, pantalla: Pantalla): ClienteQueSeTrae[] {
+  const { cuentas } = ambitoDe(contexto, pantalla);
+  const lista = contexto.cuentas.visibles
+    .filter((c) => c.estado === 'activa' && (cuentas === '*' || cuentas.includes(c.id)))
+    .map(({ id, nombre, esPorOmision }) => ({ id, nombre, esPorOmision }));
+  // Con la empresa entera, el principal está siempre a la vista y activo (la 085): sin él, un invariante roto.
+  if (cuentas === '*' && !lista.some((c) => c.esPorOmision)) {
+    throw new Error(`clientesQueTrae: la empresa ${contexto.orgEfectiva} no tiene su principal activo a la vista`);
+  }
+  return lista;
+}

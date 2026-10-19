@@ -73,7 +73,9 @@
 
 import { conIdentidad, cerrarClientes } from '../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../lib/datos/contexto.ts';
-import { resolverAccesoAGhl } from '../lib/credenciales/resolver.ts';
+import { clientesParaBarrer } from '../lib/administracion/cuentas.ts';
+import { agenteDelCrmDe, resolverAccesoAGhl } from '../lib/credenciales/resolver.ts';
+import { ambitoDeUnCliente } from '../lib/negocio/ambitoDelCliente.ts';
 import { pedirExterno } from '../lib/http/cliente.ts';
 
 /** Cuántas conversaciones nuestras se piden. Se imprime siempre cuántas quedaron afuera. */
@@ -147,231 +149,258 @@ async function main() {
   );
 
   for (const org of orgs) {
-    const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, org.id, 'la_de_la_empresa'));
-    if (acceso.tipo !== 'listo') continue;
-
-    const cred = await conIdentidad(async (db) =>
-      db
-        .selectFrom('organizaciones_credenciales')
-        .select(['crm_agente_usuario_id'])
-        .where('org_id', '=', org.id)
-        .executeTakeFirst(),
-    );
-    const idDelAgente = (cred?.crm_agente_usuario_id ?? '').trim() || null;
-
-    console.log(`\n═══ ${org.nombre} ═══`);
-    if (!idDelAgente) {
-      console.log('  SIN VEREDICTO — no hay identificador de agente configurado: el freno está puesto');
-      continue;
-    }
-
-    const nuestros = await conOrganizacion(org.id, async () =>
-      datos()
-        .selectFrom('mensajes')
-        .select(['ghl_mensaje_id', 'ghl_conversacion_id', 'autor', 'autor_ghl_usuario_id', 'enviado_el'])
-        .where('direccion', '=', 'saliente')
-        .where('id_fabricado', '=', false)
-        .where('ghl_conversacion_id', 'is not', null)
-        .execute(),
-    );
-
-    if (nuestros.length === 0) {
-      console.log('  SIN VEREDICTO — no hay salientes nuestros con conversación conocida');
-      continue;
-    }
-
-    const porId = new Map(nuestros.map((m) => [String(m.ghl_mensaje_id), m]));
-    const conversaciones = [...new Set(nuestros.map((m) => m.ghl_conversacion_id))];
-    const instantes = nuestros
-      .map((m) => m.enviado_el)
-      .filter(Boolean)
-      .map((d) => new Date(d).getTime());
-    const rango = instantes.length
-      ? `${new Date(Math.min(...instantes)).toISOString().slice(0, 10)} → ${new Date(Math.max(...instantes)).toISOString().slice(0, 10)}`
-      : '(sin fechas)';
-
-    const conIdEnLaBase = nuestros.filter((m) => m.autor_ghl_usuario_id === idDelAgente).length;
-    console.log(`  salientes nuestros:            ${nuestros.length}  (enviados entre ${rango})`);
-    console.log(`  de ésos, con el ID DEL AGENTE: ${conIdEnLaBase}`);
-    console.log(
-      `  conversaciones a pedir:        ${conversaciones.length}` +
-        (conversaciones.length > TOPE_DE_CONVERSACIONES
-          ? `  → RECORTADO a ${TOPE_DE_CONVERSACIONES} por el tope`
-          : ''),
-    );
-
-    const aPedir = conversaciones.slice(0, TOPE_DE_CONVERSACIONES);
-
-    const claves = new Set();
-    const fuentesCrudas = new Map();
-    const tiposCrudos = new Map();
-    const fallosPorTipo = new Map();
-    /** Las claves de los registros de llamada, y de cuántos vienen. */
-    const clavesDeLlamada = new Map();
-    const valoresDeLlamada = new Map();
-    let llamadas = 0;
-    const usuarios = new Map();
-    /** El `source` del CRM para NUESTRAS filas, agrupado por de quién es el identificador guardado. */
-    const porDuenio = new Map([
-      ['ID DEL AGENTE', new Map()],
-      ['otro usuario', new Map()],
-      ['sin identificador', new Map()],
-    ]);
-    let emparejados = 0;
-    let recortadas = 0;
-    let frenado = null;
-
-    for (const convId of aPedir) {
-      const r = await pedirExterno(
-        `${BASE}/conversations/${encodeURIComponent(convId)}/messages?limit=${POR_PAGINA}`,
-        { cabeceras: cabeceras(acceso.token) },
+    /* Sus clientes ACTIVOS (el nivel 3), cada uno con SU token, SU agente y SU ámbito: una conversación sólo existe en
+       la subcuenta de su cliente, y pedirla con el token de otro da 403, que acá significa FRENAR. Con el token del
+       principal para todos, el segundo cliente frenaba la medición de la empresa entera. */
+    const clientes = await conIdentidad(async (db) => {
+      const nombres = new Map(
+        (await db.selectFrom('cuentas').select(['id', 'nombre']).where('org_id', '=', org.id).execute()).map((c) => [
+          c.id,
+          c.nombre,
+        ]),
       );
-      if (r.tipo !== 'datos') {
-        sumar(fallosPorTipo, porQueFallo(r));
-        if (hayQueFrenar(r)) {
-          frenado = porQueFallo(r);
-          break;
-        }
-        continue;
+      const salida = [];
+      for (const cuenta of await clientesParaBarrer(db, org.id)) {
+        salida.push({
+          cuenta,
+          nombre: nombres.get(cuenta.id) ?? cuenta.id,
+          acceso: await resolverAccesoAGhl(db, org.id, cuenta),
+          idDelAgente: await agenteDelCrmDe(db, org.id, cuenta),
+        });
       }
-      const interno = sobreDeLaLista(r.datos);
-      const lista = Array.isArray(interno.messages) ? interno.messages : [];
-      /* Una conversación con más de cien mensajes vuelve recortada, y hay que decirlo: si la página
-         fuera la de los más VIEJOS, la medición hablaría de antes del agente sin avisar. */
-      if (interno.nextPage === true) recortadas++;
+      return salida;
+    });
+    const varios = clientes.length > 1;
+    for (const c of clientes) await medirUnCliente(org, c, varios);
+  }
+}
 
-      for (const m of lista) {
-        const o = m ?? {};
-        for (const k of Object.keys(o)) claves.add(k);
-        sumar(fuentesCrudas, o.source);
-        sumar(tiposCrudos, o.messageType);
-        const uid = typeof o.userId === 'string' && o.userId !== '' ? o.userId : null;
-        if (uid) sumar(usuarios, uid);
+/**
+ * La medición de UN cliente de una empresa: sus salientes, pedidos al CRM con SU token. Con un solo cliente, la cabecera
+ * es la de la empresa, como antes. Cada `return` corta a este cliente y no a los demás; los `continue` de adentro
+ * saltean una conversación que falló sin frenar, o un mensaje que no es nuestro.
+ */
+async function medirUnCliente(org, { cuenta, nombre, acceso, idDelAgente }, varios) {
+  const titulo = varios ? `${org.nombre} · ${nombre}` : org.nombre;
+  if (acceso.tipo !== 'listo') {
+    // Con un cliente se calla, como antes: una empresa sin token no es noticia. Con varios, el que falta se nombra.
+    if (varios) console.log(`\n═══ ${titulo} ═══\n  SIN VEREDICTO — sin token del CRM (${acceso.que})`);
+    return;
+  }
 
-        /* El registro de llamada, aparte. Se cuentan sus claves presentes —no ausentes— y se miran
-           los valores SÓLO de los campos que no pueden ser de nadie: números, booleanos y los tres
-           campos de clasificación. Un registro de llamada puede traer una URL de grabación, y eso no
-           se imprime ni reducido. */
-        if (o.messageType === 'TYPE_CUSTOM_CALL') {
-          llamadas++;
-          for (const [k, v] of Object.entries(o)) {
-            if (v === null || v === undefined || v === '') continue;
-            sumar(clavesDeLlamada, k);
-            if (typeof v === 'number' || typeof v === 'boolean') sumar(valoresDeLlamada, `${k} = ${v}`);
-            else if (k === 'status' || k === 'direction' || k === 'source') sumar(valoresDeLlamada, `${k} = ${v}`);
-            else if (typeof v === 'object') {
-              sumar(valoresDeLlamada, `${k} = {${Object.keys(v).sort().join(',')}}`);
-              /* Un nivel MÁS adentro, que es donde estos proveedores esconden la duración. Sólo
-                 nombres de campo y valores numéricos o booleanos: una URL de grabación no se
-                 imprime ni reducida. */
-              for (const [k2, v2] of Object.entries(v)) {
-                if (v2 === null || v2 === undefined || v2 === '') continue;
-                const tipo = Array.isArray(v2) ? 'array' : typeof v2;
-                if (tipo === 'object') sumar(valoresDeLlamada, `  ${k}.${k2} = {${Object.keys(v2).sort().join(',')}}`);
-                else if (tipo === 'number' || tipo === 'boolean') sumar(valoresDeLlamada, `  ${k}.${k2} = ${v2}`);
-                else sumar(valoresDeLlamada, `  ${k}.${k2} : ${tipo}`);
-              }
+  console.log(`\n═══ ${titulo} ═══`);
+  if (!idDelAgente) {
+    console.log('  SIN VEREDICTO — no hay identificador de agente configurado: el freno está puesto');
+    return;
+  }
+
+  // Los salientes de ESTE cliente: los de otro están en otra subcuenta, y este token no los ve.
+  const nuestros = await conOrganizacion(ambitoDeUnCliente(org.id, cuenta.id), async () =>
+    datos()
+      .selectFrom('mensajes')
+      .select(['ghl_mensaje_id', 'ghl_conversacion_id', 'autor', 'autor_ghl_usuario_id', 'enviado_el'])
+      .where('direccion', '=', 'saliente')
+      .where('id_fabricado', '=', false)
+      .where('ghl_conversacion_id', 'is not', null)
+      .execute(),
+  );
+
+  if (nuestros.length === 0) {
+    console.log('  SIN VEREDICTO — no hay salientes nuestros con conversación conocida');
+    return;
+  }
+
+  const porId = new Map(nuestros.map((m) => [String(m.ghl_mensaje_id), m]));
+  const conversaciones = [...new Set(nuestros.map((m) => m.ghl_conversacion_id))];
+  const instantes = nuestros
+    .map((m) => m.enviado_el)
+    .filter(Boolean)
+    .map((d) => new Date(d).getTime());
+  const rango = instantes.length
+    ? `${new Date(Math.min(...instantes)).toISOString().slice(0, 10)} → ${new Date(Math.max(...instantes)).toISOString().slice(0, 10)}`
+    : '(sin fechas)';
+
+  const conIdEnLaBase = nuestros.filter((m) => m.autor_ghl_usuario_id === idDelAgente).length;
+  console.log(`  salientes nuestros:            ${nuestros.length}  (enviados entre ${rango})`);
+  console.log(`  de ésos, con el ID DEL AGENTE: ${conIdEnLaBase}`);
+  console.log(
+    `  conversaciones a pedir:        ${conversaciones.length}` +
+      (conversaciones.length > TOPE_DE_CONVERSACIONES
+        ? `  → RECORTADO a ${TOPE_DE_CONVERSACIONES} por el tope`
+        : ''),
+  );
+
+  const aPedir = conversaciones.slice(0, TOPE_DE_CONVERSACIONES);
+
+  const claves = new Set();
+  const fuentesCrudas = new Map();
+  const tiposCrudos = new Map();
+  const fallosPorTipo = new Map();
+  /** Las claves de los registros de llamada, y de cuántos vienen. */
+  const clavesDeLlamada = new Map();
+  const valoresDeLlamada = new Map();
+  let llamadas = 0;
+  const usuarios = new Map();
+  /** El `source` del CRM para NUESTRAS filas, agrupado por de quién es el identificador guardado. */
+  const porDuenio = new Map([
+    ['ID DEL AGENTE', new Map()],
+    ['otro usuario', new Map()],
+    ['sin identificador', new Map()],
+  ]);
+  let emparejados = 0;
+  let recortadas = 0;
+  let frenado = null;
+
+  for (const convId of aPedir) {
+    const r = await pedirExterno(
+      `${BASE}/conversations/${encodeURIComponent(convId)}/messages?limit=${POR_PAGINA}`,
+      { cabeceras: cabeceras(acceso.token) },
+    );
+    if (r.tipo !== 'datos') {
+      sumar(fallosPorTipo, porQueFallo(r));
+      if (hayQueFrenar(r)) {
+        frenado = porQueFallo(r);
+        break;
+      }
+      continue;
+    }
+    const interno = sobreDeLaLista(r.datos);
+    const lista = Array.isArray(interno.messages) ? interno.messages : [];
+    /* Una conversación con más de cien mensajes vuelve recortada, y hay que decirlo: si la página
+       fuera la de los más VIEJOS, la medición hablaría de antes del agente sin avisar. */
+    if (interno.nextPage === true) recortadas++;
+
+    for (const m of lista) {
+      const o = m ?? {};
+      for (const k of Object.keys(o)) claves.add(k);
+      sumar(fuentesCrudas, o.source);
+      sumar(tiposCrudos, o.messageType);
+      const uid = typeof o.userId === 'string' && o.userId !== '' ? o.userId : null;
+      if (uid) sumar(usuarios, uid);
+
+      /* El registro de llamada, aparte. Se cuentan sus claves presentes —no ausentes— y se miran
+         los valores SÓLO de los campos que no pueden ser de nadie: números, booleanos y los tres
+         campos de clasificación. Un registro de llamada puede traer una URL de grabación, y eso no
+         se imprime ni reducido. */
+      if (o.messageType === 'TYPE_CUSTOM_CALL') {
+        llamadas++;
+        for (const [k, v] of Object.entries(o)) {
+          if (v === null || v === undefined || v === '') continue;
+          sumar(clavesDeLlamada, k);
+          if (typeof v === 'number' || typeof v === 'boolean') sumar(valoresDeLlamada, `${k} = ${v}`);
+          else if (k === 'status' || k === 'direction' || k === 'source') sumar(valoresDeLlamada, `${k} = ${v}`);
+          else if (typeof v === 'object') {
+            sumar(valoresDeLlamada, `${k} = {${Object.keys(v).sort().join(',')}}`);
+            /* Un nivel MÁS adentro, que es donde estos proveedores esconden la duración. Sólo
+               nombres de campo y valores numéricos o booleanos: una URL de grabación no se
+               imprime ni reducida. */
+            for (const [k2, v2] of Object.entries(v)) {
+              if (v2 === null || v2 === undefined || v2 === '') continue;
+              const tipo = Array.isArray(v2) ? 'array' : typeof v2;
+              if (tipo === 'object') sumar(valoresDeLlamada, `  ${k}.${k2} = {${Object.keys(v2).sort().join(',')}}`);
+              else if (tipo === 'number' || tipo === 'boolean') sumar(valoresDeLlamada, `  ${k}.${k2} = ${v2}`);
+              else sumar(valoresDeLlamada, `  ${k}.${k2} : ${tipo}`);
             }
           }
         }
-
-        /* El emparejamiento, que es el punto entero: el `source` que manda el CRM, puesto contra la
-           fila que NOSOTROS guardamos con ese mismo identificador. */
-        const fila = porId.get(String(o.id ?? ''));
-        if (!fila) continue;
-        emparejados++;
-        const duenio =
-          fila.autor_ghl_usuario_id === null || fila.autor_ghl_usuario_id === ''
-            ? 'sin identificador'
-            : fila.autor_ghl_usuario_id === idDelAgente
-              ? 'ID DEL AGENTE'
-              : 'otro usuario';
-        sumar(porDuenio.get(duenio), o.source);
       }
-    }
 
-    if (frenado) console.log(`\n  FRENADO por «${frenado}»: la corrida quedó incompleta.`);
+      /* El emparejamiento, que es el punto entero: el `source` que manda el CRM, puesto contra la
+         fila que NOSOTROS guardamos con ese mismo identificador. */
+      const fila = porId.get(String(o.id ?? ''));
+      if (!fila) continue;
+      emparejados++;
+      const duenio =
+        fila.autor_ghl_usuario_id === null || fila.autor_ghl_usuario_id === ''
+          ? 'sin identificador'
+          : fila.autor_ghl_usuario_id === idDelAgente
+            ? 'ID DEL AGENTE'
+            : 'otro usuario';
+      sumar(porDuenio.get(duenio), o.source);
+    }
+  }
+
+  if (frenado) console.log(`\n  FRENADO por «${frenado}»: la corrida quedó incompleta.`);
+  console.log(
+    `\n  conversaciones pedidas: ${aPedir.length}` +
+      (recortadas > 0 ? `  ·  ${recortadas} con más de ${POR_PAGINA} mensajes (recortadas)` : ''),
+  );
+  console.log(`  filas nuestras emparejadas con el CRM: ${emparejados} de ${nuestros.length}`);
+
+  console.log(`\n  TODAS las claves que trae un mensaje (${claves.size}):`);
+  console.log('    ' + [...claves].sort().join(', '));
+  imprimirCenso('`source`, censo crudo de todo lo que devolvió el CRM:', fuentesCrudas, totalDe(fuentesCrudas));
+  imprimirCenso('`messageType` (para ver si llegan registros de llamada):', tiposCrudos, totalDe(tiposCrudos));
+  if (fallosPorTipo.size > 0) imprimirCenso('conversaciones que fallaron:', fallosPorTipo, aPedir.length);
+
+  // ── LA SEGUNDA PREGUNTA: ¿SE PUEDE LLENAR `negocio.llamadas`? ──────────
+  console.log(`\n  ┌─ REGISTROS DE LLAMADA (\`TYPE_CUSTOM_CALL\`): ${llamadas} ─────────────`);
+  if (llamadas === 0) {
+    console.log('  │  ninguno en esta muestra — la pregunta queda SIN CONTESTAR.');
+  } else {
+    imprimirCenso('claves presentes (sobre los registros de llamada):', clavesDeLlamada, llamadas, '  │    ');
+    imprimirCenso('valores, sólo los que no pueden ser de nadie:', valoresDeLlamada, llamadas, '  │    ');
+    console.log('  │');
+    console.log('  │  `negocio.llamadas` necesita: externa_id, contacto_id, contestada, inicio_el,');
+    console.log('  │  duracion_segundos, resumen. Lo que no aparezca arriba, no se puede llenar.');
+  }
+  console.log('  └──────────────────────────────────────────────────────────────────');
+
+  console.log(`\n  usuarios distintos que sellan mensajes: ${usuarios.size}`);
+  let i = 0;
+  for (const [uid, n] of [...usuarios.entries()].sort((a, b) => b[1] - a[1])) {
+    i++;
+    console.log(`    ${(uid === idDelAgente ? `u${i} <AGENTE>` : `u${i}`).padEnd(16)} ${String(n).padStart(5)}`);
+  }
+
+  // ── LA TABLA QUE DECIDE ────────────────────────────────────────────────
+  console.log('\n  ┌─ EL `source` DE NUESTRAS PROPIAS FILAS ───────────────────────────');
+  for (const [duenio, mapa] of porDuenio) {
+    const sub = totalDe(mapa);
+    console.log(`  │\n  │  ${duenio} — ${sub} fila(s)`);
+    imprimirCenso('', mapa, sub, '  │    ');
+  }
+  console.log('  └──────────────────────────────────────────────────────────────────');
+
+  // ── EL VEREDICTO, CON SU DENOMINADOR A LA VISTA ────────────────────────
+  const delAgente = porDuenio.get('ID DEL AGENTE');
+  const nAgente = totalDe(delAgente);
+  console.log('\n  VEREDICTO');
+  if (nAgente === 0) {
+    console.log('    SIN VEREDICTO — no se emparejó ni una fila sellada con el identificador del');
+    console.log('    agente. La tabla de arriba NO contesta la pregunta: revisar el tope y los fallos.');
+    return;
+  }
+  const automaticos = [...delAgente.entries()].filter(([k]) => AUTOMATICOS.has(k));
+  const nAuto = automaticos.reduce((a, [, n]) => a + n, 0);
+  console.log(`    sobre ${nAgente} fila(s) con el identificador del agente, ${delAgente.size} valor(es) de \`source\`.`);
+  if (nAuto > 0) {
+    console.log(`    **HACE FALTA LA COLUMNA.** ${nAuto} (${((nAuto / nAgente) * 100).toFixed(1)} %) salieron de un`);
+    console.log(`    flujo de la cuenta —${automaticos.map(([k, n]) => `${k}: ${n}`).join(', ')}—, sellados con`);
+    console.log('    este usuario como DUEÑO y no como remitente. Filtrar por identificador mezcla al');
+    console.log('    agente con las automatizaciones, y ninguna cifra por agente se sostiene sin `source`.');
+  } else if (delAgente.size === 1) {
+    console.log('    El identificador DISCRIMINA: un solo valor, y ninguno es de un flujo de la cuenta.');
+    console.log('    Guardar `source` no agregaría nada que el identificador no diga ya.');
+  } else {
+    console.log('    Ningún flujo de la cuenta, pero más de un valor. La mezcla no está probada y la');
+    console.log('    columna no es urgente: hay que mirar la tabla de arriba antes de decidir.');
+  }
+
+  /* La otra fila que también manda. Se declara de antemano qué significa cada resultado, para que
+     el número no se interprete después de verlo. */
+  const sinId = porDuenio.get('sin identificador');
+  const nSinId = totalDe(sinId);
+  if (nSinId > 0) {
+    const nAutoSinId = [...sinId.entries()]
+      .filter(([k]) => AUTOMATICOS.has(k))
+      .reduce((a, [, n]) => a + n, 0);
+    console.log(`\n    Y las ${nSinId} sin identificador, que hoy \`atribuir()\` manda a AUTOMATIZACIÓN:`);
     console.log(
-      `\n  conversaciones pedidas: ${aPedir.length}` +
-        (recortadas > 0 ? `  ·  ${recortadas} con más de ${POR_PAGINA} mensajes (recortadas)` : ''),
+      nAutoSinId / nSinId >= 0.5
+        ? '    predominan los flujos de la cuenta — esa regla está bien y no hay nada que hacer.'
+        : '    NO predominan los flujos: hay salientes sin sellar que la regla descarta mal.',
     );
-    console.log(`  filas nuestras emparejadas con el CRM: ${emparejados} de ${nuestros.length}`);
-
-    console.log(`\n  TODAS las claves que trae un mensaje (${claves.size}):`);
-    console.log('    ' + [...claves].sort().join(', '));
-    imprimirCenso('`source`, censo crudo de todo lo que devolvió el CRM:', fuentesCrudas, totalDe(fuentesCrudas));
-    imprimirCenso('`messageType` (para ver si llegan registros de llamada):', tiposCrudos, totalDe(tiposCrudos));
-    if (fallosPorTipo.size > 0) imprimirCenso('conversaciones que fallaron:', fallosPorTipo, aPedir.length);
-
-    // ── LA SEGUNDA PREGUNTA: ¿SE PUEDE LLENAR `negocio.llamadas`? ──────────
-    console.log(`\n  ┌─ REGISTROS DE LLAMADA (\`TYPE_CUSTOM_CALL\`): ${llamadas} ─────────────`);
-    if (llamadas === 0) {
-      console.log('  │  ninguno en esta muestra — la pregunta queda SIN CONTESTAR.');
-    } else {
-      imprimirCenso('claves presentes (sobre los registros de llamada):', clavesDeLlamada, llamadas, '  │    ');
-      imprimirCenso('valores, sólo los que no pueden ser de nadie:', valoresDeLlamada, llamadas, '  │    ');
-      console.log('  │');
-      console.log('  │  `negocio.llamadas` necesita: externa_id, contacto_id, contestada, inicio_el,');
-      console.log('  │  duracion_segundos, resumen. Lo que no aparezca arriba, no se puede llenar.');
-    }
-    console.log('  └──────────────────────────────────────────────────────────────────');
-
-    console.log(`\n  usuarios distintos que sellan mensajes: ${usuarios.size}`);
-    let i = 0;
-    for (const [uid, n] of [...usuarios.entries()].sort((a, b) => b[1] - a[1])) {
-      i++;
-      console.log(`    ${(uid === idDelAgente ? `u${i} <AGENTE>` : `u${i}`).padEnd(16)} ${String(n).padStart(5)}`);
-    }
-
-    // ── LA TABLA QUE DECIDE ────────────────────────────────────────────────
-    console.log('\n  ┌─ EL `source` DE NUESTRAS PROPIAS FILAS ───────────────────────────');
-    for (const [duenio, mapa] of porDuenio) {
-      const sub = totalDe(mapa);
-      console.log(`  │\n  │  ${duenio} — ${sub} fila(s)`);
-      imprimirCenso('', mapa, sub, '  │    ');
-    }
-    console.log('  └──────────────────────────────────────────────────────────────────');
-
-    // ── EL VEREDICTO, CON SU DENOMINADOR A LA VISTA ────────────────────────
-    const delAgente = porDuenio.get('ID DEL AGENTE');
-    const nAgente = totalDe(delAgente);
-    console.log('\n  VEREDICTO');
-    if (nAgente === 0) {
-      console.log('    SIN VEREDICTO — no se emparejó ni una fila sellada con el identificador del');
-      console.log('    agente. La tabla de arriba NO contesta la pregunta: revisar el tope y los fallos.');
-      continue;
-    }
-    const automaticos = [...delAgente.entries()].filter(([k]) => AUTOMATICOS.has(k));
-    const nAuto = automaticos.reduce((a, [, n]) => a + n, 0);
-    console.log(`    sobre ${nAgente} fila(s) con el identificador del agente, ${delAgente.size} valor(es) de \`source\`.`);
-    if (nAuto > 0) {
-      console.log(`    **HACE FALTA LA COLUMNA.** ${nAuto} (${((nAuto / nAgente) * 100).toFixed(1)} %) salieron de un`);
-      console.log(`    flujo de la cuenta —${automaticos.map(([k, n]) => `${k}: ${n}`).join(', ')}—, sellados con`);
-      console.log('    este usuario como DUEÑO y no como remitente. Filtrar por identificador mezcla al');
-      console.log('    agente con las automatizaciones, y ninguna cifra por agente se sostiene sin `source`.');
-    } else if (delAgente.size === 1) {
-      console.log('    El identificador DISCRIMINA: un solo valor, y ninguno es de un flujo de la cuenta.');
-      console.log('    Guardar `source` no agregaría nada que el identificador no diga ya.');
-    } else {
-      console.log('    Ningún flujo de la cuenta, pero más de un valor. La mezcla no está probada y la');
-      console.log('    columna no es urgente: hay que mirar la tabla de arriba antes de decidir.');
-    }
-
-    /* La otra fila que también manda. Se declara de antemano qué significa cada resultado, para que
-       el número no se interprete después de verlo. */
-    const sinId = porDuenio.get('sin identificador');
-    const nSinId = totalDe(sinId);
-    if (nSinId > 0) {
-      const nAutoSinId = [...sinId.entries()]
-        .filter(([k]) => AUTOMATICOS.has(k))
-        .reduce((a, [, n]) => a + n, 0);
-      console.log(`\n    Y las ${nSinId} sin identificador, que hoy \`atribuir()\` manda a AUTOMATIZACIÓN:`);
-      console.log(
-        nAutoSinId / nSinId >= 0.5
-          ? '    predominan los flujos de la cuenta — esa regla está bien y no hay nada que hacer.'
-          : '    NO predominan los flujos: hay salientes sin sellar que la regla descarta mal.',
-      );
-    }
   }
 }
 

@@ -51,7 +51,7 @@ import type { Trx } from '../datos/capa.ts';
 // empresa: con el token de la empresa, el contacto de otro cliente no existe en su subcuenta, y un enlace de reservas
 // con el dominio de la empresa le llegaría al lead de otro negocio. Sin fila o sin token, el cliente «falta», con
 // el mismo motivo que una empresa sin cargar. `'la_de_la_empresa'` lo dice quien de verdad quiere la de la empresa
-// (las rutas manuales, el cron hasta el barrido por cliente). La llave de IA, tl;dv y los pagos son de la empresa.
+// (el cron, en las tareas de la empresa; los guiones de medición). La llave de IA, tl;dv y los pagos son de la empresa.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** De qué cliente es la credencial que se pide. */
@@ -908,4 +908,45 @@ export async function dominioDeReservasDe(
 
   const d = (fila?.crm_dominio_reservas ?? '').trim();
   return d === '' ? null : d;
+}
+
+/**
+ * El mismo faltante, dicho para un cliente que NO es el principal (el nivel 3). `TEXTO_DE_FALTA_GHL` manda a Ajustes,
+ * que para la empresa es Ajustes › Credenciales; lo de otro cliente se carga en su Conexión, y su subcuenta no la
+ * carga nadie de la empresa: la vincula la plataforma. Con el texto de la empresa, quien lee iría a cargar el token
+ * del cliente en el lugar de las credenciales de la empresa, o a buscar «tu subcuenta» donde no se puede tocar.
+ */
+export const TEXTO_DE_FALTA_GHL_DEL_CLIENTE: Readonly<Record<FaltaParaGhl, string>> = {
+  sin_token:
+    'Falta el token de GoHighLevel de este cliente. Se carga en Ajustes › Clientes › Conexión.',
+  token_ilegible:
+    'El token de este cliente está cargado y el servidor no puede leerlo. Hay que volver a cargarlo en Ajustes › ' +
+    'Clientes › Conexión.',
+  token_vencido:
+    'La conexión de este cliente con GoHighLevel venció. Hay que volver a autorizarla y cargar el token en Ajustes › ' +
+    'Clientes › Conexión.',
+  token_revocado:
+    'El acceso de este cliente fue revocado desde el panel de GoHighLevel. Hay que volver a autorizarlo ahí y cargar ' +
+    'el token nuevo en Ajustes › Clientes › Conexión.',
+  sin_subcuenta:
+    'Este cliente todavía no tiene su subcuenta de GoHighLevel vinculada. La vincula la plataforma, no se carga en ' +
+    'Ajustes: sin ella no se sabe de qué cuenta traer.',
+};
+
+/**
+ * El identificador del agente de IA en la subcuenta de ese cliente, o `null`. Sin descifrar nada, como
+ * `dominioDeReservasDe`: el del principal está en las credenciales de la empresa, el de otro cliente en las suyas. Es
+ * el mismo reparto que `resolverAccesoAlAuditor`, que además pide la llave de IA y el interruptor.
+ */
+export async function agenteDelCrmDe(db: Trx, orgId: string, cliente: ClienteDeLaCredencial): Promise<string | null> {
+  const fila = esDeLaEmpresa(cliente)
+    ? await db
+        .selectFrom('organizaciones_credenciales')
+        .select('crm_agente_usuario_id')
+        .where('org_id', '=', orgId)
+        .executeTakeFirst()
+    : await credencialesDelCliente(db, orgId, cliente.id);
+
+  const id = (fila?.crm_agente_usuario_id ?? '').trim();
+  return id === '' ? null : id;
 }

@@ -28,6 +28,8 @@
 >   Negocios: construido en local encima de la Fase 0, sin subir. La regla 23 gana otra mitad (sección «el nivel 3»).
 > - **2026-10-18 · `00ccfee`..`ca5fcdc`** — el Bloque C del nivel 3: la ingesta, las credenciales y el cron por cliente
 >   (`090` a `093`), en local y sin subir (sección «el nivel 3»).
+> - **2026-10-19 · C5 · G4** — las rutas manuales (la Agenda, el tic de la ingesta y «Traer de GoHighLevel») traen a
+>   cada cliente activo con lo suyo, sin migración, en local y sin subir (sección «el nivel 3»).
 > - Las cifras: la cancelación del negocio a treinta días pasa de 32,0 % a **35,0 %** (14 de 40, § 9); las congeladas
 >   salieron de la ventana de treinta días (**0**, § 4); entraron **25 contactos** en treinta días (§ 5).
 > - **Lo que la foto anterior dejó abierto, re-verificado el 2026-10-18:** el `aviso` de Lead Flow ya tiene lector —el
@@ -821,7 +823,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:852`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:862`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -1309,8 +1311,9 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   cuentan a ARIA ni a los clientes de prueba, y nunca suman monedas distintas.
 - **La ingesta es de UN cliente (Bloque C).** Todo lo que entra del CRM o de Meta se escribe en el ámbito de su
   cliente, con un tipo que lo exige (`AmbitoDeUnCliente`, `lib/negocio/ambitoDelCliente.ts:26`): con la empresa entera
-  y dos clientes, el puente lo dejaba en el principal. Las rutas manuales abren el principal
-  (`lib/negocio/ambitoDelCliente.ts:48`). Las claves de `ingesta_pulso`, `gasto_de_la_cuenta`, `avisos_del_crm` y
+  y dos clientes, el puente lo dejaba en el principal. Las rutas manuales traen a cada cliente (G4, más abajo); el
+  principal solo lo abre el barrido de una empresa sin su lista de clientes (`lib/negocio/ambitoDelCliente.ts:48`).
+  Las claves de `ingesta_pulso`, `gasto_de_la_cuenta`, `avisos_del_crm` y
   `tareas_programadas` llevan el cliente (`db/migraciones/090_las_claves_con_cuenta.sql`, cerradas en la `092`).
 - **Cada credencial dice de qué cliente es.** Los resolvedores del CRM y de Meta piden el cliente, sin opcional
   (`lib/credenciales/resolver.ts:58`): el principal lee las de la empresa; los demás, las suyas, siempre por
@@ -1322,16 +1325,30 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:656`), con el presupuesto mirado antes de
   cada una (`lib/negocio/barrido.ts:695`), y cada sello con su cliente. La frescura de una pantalla es la de su
   cliente, o la del peor activo a la vista (`lib/negocio/frescura.ts:200`).
+- **Las rutas manuales traen a cada cliente (C5 · G4).** «Traer del calendario», el tic de la ingesta y «Traer de
+  GoHighLevel» traen a los clientes ACTIVOS que su pantalla lee (`lib/autorizacion/ambito.ts:70`): las tres leen la
+  empresa entera, así que el foco no cambia a quién traen, y el cliente final no llega a ninguna (paso 3b). Cada
+  cliente en serie, con las credenciales de SU subcuenta y en SU ámbito, con el presupuesto mirado antes de cada uno
+  salvo el primero (`lib/negocio/traerDeLosClientes.ts:92`); el calendario y la ingesta rotan por el sello del pulso,
+  sin prioridad al atrasado, para que uno lento no deje sin traer a los demás (`lib/negocio/traerDeLosClientes.ts:145`).
+  Con un cliente, la respuesta de siempre; con varios, las cifras sumadas y `clientes`, con el nombre delante
+  (`lib/negocio/traerDeLosClientes.ts:168`). Al cliente sin credenciales se le dice dónde se cargan las suyas
+  (`lib/credenciales/resolver.ts:919`). Lo exigen `pruebas/base/282-las-rutas-manuales-traen-a-cada-cliente.test.ts:327`
+  y `pruebas/codigo/283-las-rutas-manuales-son-por-cliente.test.ts:65`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): el vínculo de un
   closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; Creative junta en una
   pieza los anuncios de dos clientes que se llaman igual (la pieza, su fatiga, su enlace manual y el puente
   nombre ↔ anuncio van sin cliente); la atribución por campaña de Conversation agrupa por el nombre de la campaña; las
   reglas de los detectores que miran el gasto (sin entrega, concentración) suman las cuentas de Meta de todos los
   clientes; la cobertura de la ventana de Acquisition se decide por empresa; asignar el funnel de una campaña de otro
-  cliente la guarda en el principal; «Traer del calendario» relee sólo al principal; las etiquetas cortas de los campos
+  cliente la guarda en el principal; las etiquetas cortas de los campos
   y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
-  subcuenta con otros nombres no se reconoce). Hasta el primer cliente con subcuenta propia, ninguna de estas tiene
-  efecto; con él, se mira su pantalla antes de activarlo.
+  subcuenta con otros nombres no se reconoce); mandar un lead desde Tools usa las credenciales de la empresa
+  (`app/api/tools/leads/enviar/route.ts:113`); los guiones de medición, salvo `scripts/medir-mensaje.mjs`, miden sólo
+  al principal. Y uno que no es de una subcuenta sino de su ausencia: un cliente ACTIVO sin credenciales del CRM deja
+  el aviso de la Agenda de la empresa prendido para siempre («Todavía no se leyó el calendario»: nunca tiene pulso), y
+  el botón sólo puede decir por qué. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene efecto; con
+  él, se mira su pantalla antes de activarlo, con su Conexión cargada.
 
 ---
 

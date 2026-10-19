@@ -32,11 +32,20 @@
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { SIN_SECCION } from '../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
+import { clientesQueTrae } from '../../../../lib/autorizacion/ambito.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
-import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../lib/credenciales/resolver.ts';
+import { resolverAccesoAGhl } from '../../../../lib/credenciales/resolver.ts';
+import type { FalloDeGhl } from '../../../../lib/ghl/cliente.ts';
 import { sincronizarContactos } from '../../../../lib/negocio/sincronizar.ts';
-import { porOmisionDe } from '../../../../lib/negocio/ambitoDelCliente.ts';
+import {
+  desenlaceDeLaTraida,
+  juntarResumenes,
+  PRESUPUESTO_DE_LA_TRAIDA_MS,
+  traerDeCadaCliente,
+  type ClienteConAcceso,
+  type CodigoDeLaTraida,
+} from '../../../../lib/negocio/traerDeLosClientes.ts';
 
 /**
  * Traer cientos de contactos son varias páginas contra un servicio externo. El valor por
@@ -51,53 +60,77 @@ export async function POST(peticion: Request): Promise<Response> {
 
   // El acceso se resuelve por IDENTIDAD: la tabla de credenciales es de ese dominio y el rol
   // del inquilino no tiene ni `select` sobre ella. El filtro por organización lo pone esta
-  // llamada a mano, con `orgEfectiva`.
-  const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva, 'la_de_la_empresa'));
+  // llamada a mano, con `orgEfectiva`. Uno por cliente activo (el nivel 3, G4): cada uno con las
+  // credenciales de SU subcuenta (el principal, las de la empresa). La lista de contactos es de la
+  // empresa entera aunque haya foco, así que se traen todos.
+  //
+  // CADA faltante con su código y su texto, sin colapsar. `ADR-0604`: la organización no opera
+  // **y lo dice**. Un "no se pudo conectar" genérico mandaría a cinco personas con cinco problemas
+  // distintos al mismo lugar equivocado. Con varios clientes, el que no tiene se saltea y se dice.
+  const clientes = await conIdentidad(async (db) => {
+    const salida: ClienteConAcceso[] = [];
+    for (const c of clientesQueTrae(contexto, SIN_SECCION)) {
+      salida.push({ ...c, acceso: await resolverAccesoAGhl(db, contexto.orgEfectiva, c) });
+    }
+    return salida;
+  });
 
-  if (acceso.tipo === 'falta') {
-    // CADA faltante con su código y su texto, sin colapsar. `ADR-0604`: la organización no
-    // opera **y lo dice**. Un "no se pudo conectar" genérico mandaría a cinco personas con
-    // cinco problemas distintos al mismo lugar equivocado.
-    return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);
-  }
-
-  /* Con las credenciales de la empresa se sincroniza al cliente por omisión (el nivel 3), en SU ámbito: la resta
-     congela a quien la búsqueda no trajo, y con la empresa entera congelaría a los contactos de los demás clientes. */
-  const r = await conOrganizacion(await porOmisionDe(contexto.orgEfectiva), async () =>
-    sincronizarContactos({ token: acceso.token, locationId: acceso.locationId }),
+  const renglones = await traerDeCadaCliente(
+    contexto.orgEfectiva,
+    clientes,
+    async (ambito, acceso) => {
+      /* En el ámbito de SU cliente: la resta congela a quien la búsqueda de SU subcuenta no trajo, y con la empresa
+         entera congelaría a los contactos de los demás clientes. */
+      const r = await conOrganizacion(ambito, () => sincronizarContactos(acceso));
+      return r.tipo === 'listo'
+        ? { estado: 'corrio', resultado: r.resumen, llamadas: r.resumen.llamadas }
+        : { estado: 'fallo', ...rechazoDelFallo(r.fallo) };
+    },
+    {
+      // Sin pulso: el principal primero.
+      presupuestoMs: PRESUPUESTO_DE_LA_TRAIDA_MS,
+      siLanza: {
+        codigo: 'servicio_externo_no_disponible',
+        porque: 'No se pudo completar la traída de contactos. Se puede reintentar.',
+        relanzarSiEsElUnico: true,
+      },
+    },
   );
-
-  if (r.tipo === 'fallo') {
-    const f = r.fallo;
-    if (f.tipo === 'no_autorizado') {
-      return rechazo(
-        'credencial_rechazada',
-        'GoHighLevel rechazó el token. Puede estar vencido, revocado, o ser de agencia en vez ' +
-          'de subcuenta: esta operación necesita un token de subcuenta con el permiso ' +
-          '`contacts.readonly`.',
-      );
-    }
-    if (f.tipo === 'demasiadas_peticiones') {
-      return rechazo(
-        'servicio_externo_saturado',
-        'GoHighLevel está limitando las peticiones. Esperá un minuto y probá de nuevo.',
-      );
-    }
-    if (f.tipo === 'sin_respuesta') {
-      // NO se dice "no hay contactos". No se pudo preguntar, que es otra cosa.
-      return rechazo(
-        'servicio_externo_no_disponible',
-        'No se pudo contactar a GoHighLevel. No es que no tengas contactos: no llegó la pregunta.',
-      );
-    }
-    return rechazo(
-      'servicio_externo_no_disponible',
-      `GoHighLevel respondió ${f.estado}. No se guardó nada.`,
-    );
-  }
 
   // Se devuelve el resumen COMPLETO, con los salteados y el aviso de truncado. Un `{ok:true}`
   // acá sería un éxito reportado sin verificar: la lista puede haber quedado corta por un
   // contacto sin nombre o por el tope de páginas, y las dos cosas se ven igual que un éxito.
-  return ok({ sincronizado: true, ...r.resumen });
+  // Con varios clientes, juntado, y `clientes` dice qué pasó con cada uno.
+  const d = desenlaceDeLaTraida(renglones, {
+    deUno: (r) => ({ sincronizado: true, ...r }),
+    deVarios: (rs) => ({ sincronizado: true, ...juntarResumenes(rs.map((x) => x.resultado)) }),
+  });
+  return d.tipo === 'ok' ? ok(d.cuerpo) : rechazo(d.codigo, d.detalle);
+}
+
+/** Un fallo de GoHighLevel, con su código y su texto. */
+function rechazoDelFallo(f: FalloDeGhl): { codigo: CodigoDeLaTraida; porque: string } {
+  if (f.tipo === 'no_autorizado') {
+    return {
+      codigo: 'credencial_rechazada',
+      porque:
+        'GoHighLevel rechazó el token. Puede estar vencido, revocado, o ser de agencia en vez ' +
+        'de subcuenta: esta operación necesita un token de subcuenta con el permiso ' +
+        '`contacts.readonly`.',
+    };
+  }
+  if (f.tipo === 'demasiadas_peticiones') {
+    return {
+      codigo: 'servicio_externo_saturado',
+      porque: 'GoHighLevel está limitando las peticiones. Esperá un minuto y probá de nuevo.',
+    };
+  }
+  if (f.tipo === 'sin_respuesta') {
+    // NO se dice "no hay contactos". No se pudo preguntar, que es otra cosa.
+    return {
+      codigo: 'servicio_externo_no_disponible',
+      porque: 'No se pudo contactar a GoHighLevel. No es que no tengas contactos: no llegó la pregunta.',
+    };
+  }
+  return { codigo: 'servicio_externo_no_disponible', porque: `GoHighLevel respondió ${f.estado}. No se guardó nada.` };
 }

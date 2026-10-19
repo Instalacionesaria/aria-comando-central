@@ -197,11 +197,13 @@ Medido el 2026-10-18:
 
 El Closer y el Setter piden la ingesta desde el navegador, cada 10 s mientras la pestaña está a la vista
 (`components/views/CloserView.jsx:176`; `components/views/SetterView.jsx:237`, `:242` →
-`app/api/mensajes/ingesta/route.ts:64`), la Agenda tiene su botón de refresco (`components/closer/Agenda.jsx:173` →
-`app/api/closer/agenda/refrescar/route.ts:65`) y la lista de contactos el suyo
-(`components/negocio/ListaDeContactos.jsx:234` → `app/api/contactos/sincronizar/route.ts:67`). Lo que impide que
+`app/api/mensajes/ingesta/route.ts:85`), la Agenda tiene su botón de refresco (`components/closer/Agenda.jsx:173` →
+`app/api/closer/agenda/refrescar/route.ts:86`) y la lista de contactos el suyo
+(`components/negocio/ListaDeContactos.jsx:234` → `app/api/contactos/sincronizar/route.ts:84`). Lo que impide que
 pestañas y cron se pisen es el pulso: un candado `.forUpdate().skipLocked()` para el reclamo y un alquiler de 10 s
-para todo lo demás (`lib/negocio/pulso.ts:12-25`, `:113`; `lib/cadencia.ts:40`).
+para todo lo demás (`lib/negocio/pulso.ts:12-25`, `:113`; `lib/cadencia.ts:40`). Con varios clientes (el nivel 3,
+G4), cada una trae a los clientes activos que su pantalla lee, de a uno, con su token y en su ámbito, con el
+presupuesto mirado antes de cada uno y el turno por el sello del pulso (`lib/negocio/traerDeLosClientes.ts:92`).
 
 La cuarta es `POST /api/sonda`, con su propio secreto, `SONDA_TOKEN`, comparado con `timingSafeEqual`
 (`app/api/sonda/route.ts:16-17`, `:46-47`). Ninguna entrada de `vercel.json` la llama: la sonda programada corre
@@ -616,6 +618,7 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | `69a40fb` | C3 | `091`: cada credencial dice de qué cliente es; el aviso por cliente; Ajustes › Clientes › «Conexión» |
 | `742ffee` | C4 | `092`: el cron por cliente (una unidad por cliente activo) y las claves viejas cerradas |
 | `ca5fcdc` | — | `093` y los arreglos de dos revisiones del Bloque C: 19 hallazgos de la propia y 34 de los lectores que con dos clientes daban una cifra equivocada |
+| «Nivel 3 · C5 · las rutas manuales traen a cada cliente» | C5 · G4 | sin migración: la Agenda, el tic de la ingesta y «Traer de GoHighLevel» traen a cada cliente activo con su token y en su ámbito; `medir-mensaje` mide por cliente |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
@@ -627,7 +630,8 @@ el catálogo (`cuentas.%` y `negocios.ver`) y desplegar P6 y P7; la `088` y la `
 desplegar P9. Antes de la `086` hay que comprobar en producción que ningún escritor externo escriba en `negocio` con el
 rol del inquilino, y antes de la `087`, hacer un alta externa de humo. Después, el Bloque C: la `090` y C1; la `091`, la
 `093` y C3; la `092` **con C3 ya desplegado** (el aviso de C1 escribe con la clave vieja, y desde ahí no se vuelve a un
-despliegue anterior a C3); y C4.
+despliegue anterior a C3); y C4. C5 · G4 (las rutas manuales por cliente) no tiene migración y sube con C4 o
+después.
 
 **El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
 (`app/api/cron/route.ts:230`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los

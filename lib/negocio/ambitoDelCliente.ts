@@ -41,9 +41,9 @@ export function cuentaDe(ambito: AmbitoDeUnCliente): string {
 }
 
 /**
- * El cliente POR OMISIÓN de una empresa: el que trae lo que entra con las credenciales de la empresa. Es lo que
- * usan los puntos de entrada que hoy son de la empresa —las rutas manuales, los scripts, el aviso del CRM de la
- * empresa— y, hasta el barrido por cliente, el cron.
+ * El cliente POR OMISIÓN de una empresa: el que trae lo que entra con las credenciales de la empresa. Lo usa el
+ * barrido de una empresa sin su lista de clientes (el modo de antes); las rutas manuales y medir-mensaje ya recorren
+ * los clientes activos, cada uno con lo suyo (G4).
  */
 export async function porOmisionDe(orgId: string): Promise<AmbitoDeUnCliente> {
   const fila = await conOrganizacion(orgId, async () =>
