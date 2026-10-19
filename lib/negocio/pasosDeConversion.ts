@@ -37,7 +37,7 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { campoPorNombre } from './camposDelCrm.ts';
+import { campoPorNombre, type CampoDelCrm } from './camposDelCrm.ts';
 import { esCalificado, tieneCitaAlcanzable, todasSusCitasCanceladas } from './citasAlcanzables.ts';
 import { bordesDelPeriodo, type DiasDeCalendario } from './diasCerrados.ts';
 import { embudoDelFormulario, type EmbudoDelFormulario } from './embudoDelFormulario.ts';
@@ -417,7 +417,7 @@ export async function personasDeLaCohorte(
   ventana: DiasDeCalendario,
   edad: number | null,
   corte: string | null,
-  campoDeConfirmacion: string | null,
+  campoDeConfirmacion: CampoDelCrm | null,
 ): Promise<PersonasDeLaCohorte> {
   const calificado = esCalificado('c', edad);
   const respondio = campoDeConfirmacion === null ? sql<boolean>`false` : respondioLaConfirmacion('c', campoDeConfirmacion);

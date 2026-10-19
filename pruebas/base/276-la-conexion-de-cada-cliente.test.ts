@@ -33,6 +33,7 @@ import {
   dominioDeReservasDe,
   resolverAccesoAGhl,
   resolverAccesoAlAuditor,
+  resolverAccesoAlAuditorDeLaEmpresa,
   resolverAccesoAMeta,
   TEXTO_DE_FALTA_GHL,
 } from '../../lib/credenciales/resolver.ts';
@@ -279,6 +280,14 @@ test('la ruta de la Conexión: el principal es 409, otra empresa es 404, sin la 
   const delPrincipal = await unaFila<{ n: number }>(admin, `select count(*)::int as n from identidad.cuentas_credenciales where cuenta_id = $1 and crm_token_cifrado is not null and actualizado_el > now() - interval '1 minute'`, [p]);
   assert.equal(delPrincipal?.n, 0, 'se escribió una conexión para el cliente principal');
 
+  // Y el secreto del aviso del principal tampoco se genera acá: es el de la empresa.
+  const avisoDelPrincipal = await leerRespuesta<{ codigo: string }>(
+    await generarAviso(pedirComo(`/api/admin/cuentas/${p}/conexion`, tokenAdmin, { metodo: 'POST' }), ctx(p)),
+  );
+  assert.deepEqual({ estado: avisoDelPrincipal.estado, codigo: avisoDelPrincipal.cuerpo.codigo }, { estado: 409, codigo: 'cliente_principal' });
+  const hashDelPrincipal = await unaFila<{ n: number }>(admin, `select count(*)::int as n from identidad.cuentas_credenciales where cuenta_id = $1 and aviso_secreto_hash is not null`, [p]);
+  assert.equal(hashDelPrincipal?.n, 0, 'se generó un secreto del aviso para el cliente principal');
+
   const ajena = await verConexion(pedirComo(`/api/admin/cuentas/${deBeta}/conexion`, tokenAdmin), ctx(deBeta));
   assert.equal(ajena.status, 404, 'se vio la conexión de un cliente de otra empresa');
   const sinCapacidad = await leerRespuesta<{ codigo: string }>(await verConexion(pedirComo(`/api/admin/cuentas/${x}/conexion`, tokenUsuario), ctx(x)));
@@ -382,8 +391,43 @@ test('Ajustes › Credenciales no toma la location de otro cliente', async () =>
   assert.equal(sinForma.status, 400);
   const fila = await unaFila<{ loc: string }>(admin, `select crm_cuenta_id as loc from identidad.organizaciones_credenciales where org_id = $1`, [org]);
   assert.equal(fila?.loc, EMPRESA.crmCuentaId, 'un rechazo cambió la subcuenta de la empresa');
+  // La misma de antes: es la de su principal, que la copia tiene, y no es «de otro cliente».
+  const principal = await unaFila<{ loc: string | null }>(admin, `select crm_cuenta_id as loc from identidad.cuentas where id = $1`, [p]);
+  assert.equal(principal?.loc, EMPRESA.crmCuentaId, 'la subcuenta de la empresa no se copió a su cliente principal');
   const misma = await cargarDeLaEmpresa(pedirComo('/api/admin/credenciales', tokenAdmin, { metodo: 'PUT', cuerpo: { crmCuentaId: EMPRESA.crmCuentaId } }));
   assert.equal(misma.status, 200, await misma.clone().text());
+});
+
+test('Ajustes › Credenciales no toma la location de otra empresa, y cambiar de subcuenta libera la vieja', async () => {
+  // Otra empresa con su location cargada sólo en sus credenciales (como las de antes de la copia).
+  const previa = await unaFila<{ loc: string | null }>(admin, `select crm_cuenta_id as loc from identidad.organizaciones_credenciales where org_id = $1`, [beta]);
+  await admin.query(
+    `insert into identidad.organizaciones_credenciales (org_id, crm_cuenta_id) values ($1, 'locbeta276')
+     on conflict (org_id) do update set crm_cuenta_id = excluded.crm_cuenta_id`,
+    [beta],
+  );
+  try {
+    const deOtra = await leerRespuesta<{ codigo: string }>(
+      await cargarDeLaEmpresa(pedirComo('/api/admin/credenciales', tokenAdmin, { metodo: 'PUT', cuerpo: { crmCuentaId: 'locbeta276' } })),
+    );
+    assert.deepEqual({ estado: deOtra.estado, codigo: deOtra.cuerpo.codigo }, { estado: 409, codigo: 'subcuenta_en_uso' }, 'una empresa tomó la location de otra');
+  } finally {
+    if (previa) await admin.query(`update identidad.organizaciones_credenciales set crm_cuenta_id = $2 where org_id = $1`, [beta, previa.loc]);
+    else await admin.query(`delete from identidad.organizaciones_credenciales where org_id = $1`, [beta]);
+  }
+
+  // La empresa cambia de subcuenta: la vieja queda libre para un cliente.
+  const cambio = await cargarDeLaEmpresa(pedirComo('/api/admin/credenciales', tokenAdmin, { metodo: 'PUT', cuerpo: { crmCuentaId: 'locnueva276' } }));
+  assert.equal(cambio.status, 200, await cambio.clone().text());
+  const libre = await vincular(
+    pedirComo(`/api/admin/cuentas/${z}/vinculo`, tokenAria, { metodo: 'PATCH', cuerpo: { orgId: org, crmCuentaId: EMPRESA.crmCuentaId } }),
+    ctx(z),
+  );
+  assert.equal(libre.status, 200, 'la subcuenta vieja de la empresa quedó ocupada por su principal');
+  // Se deja como estaba.
+  await admin.query(`update identidad.cuentas set crm_cuenta_id = null where id = $1`, [z]);
+  const vuelta = await cargarDeLaEmpresa(pedirComo('/api/admin/credenciales', tokenAdmin, { metodo: 'PUT', cuerpo: { crmCuentaId: EMPRESA.crmCuentaId } }));
+  assert.equal(vuelta.status, 200);
 });
 
 test('las rutas de un contacto usan la conexión del cliente del contacto', async () => {
@@ -426,4 +470,19 @@ test('la lista de usuarios del CRM de un cliente usa su conexión, y uno de otra
   assert.equal(deLaEmpresa.cuerpo.agenteId, EMPRESA.crmAgenteUsuarioId);
   const ajena = await usuariosDelCrm(pedirComo(`/api/admin/closer/usuarios-crm?cuenta=${deBeta}`, tokenAdmin));
   assert.equal(ajena.status, 404);
+});
+
+test('«audita» la empresa si audita cada cliente activo: al que le falta, lo dice', async () => {
+  // P y X tienen su agente; Z, ninguno: la empresa no audita a Z, y la pantalla lo tiene que decir.
+  assert.deepEqual(
+    await conIdentidad((db) => resolverAccesoAlAuditorDeLaEmpresa(db, org)),
+    { tipo: 'falta', que: 'sin_id_del_agente' },
+    'la pantalla decía que audita con un cliente sin auditar',
+  );
+  await admin.query(`update identidad.cuentas set estado = 'pausada' where id = $1`, [z]);
+  try {
+    assert.equal((await conIdentidad((db) => resolverAccesoAlAuditorDeLaEmpresa(db, org))).tipo, 'listo', 'un cliente en pausa decidió que no audita');
+  } finally {
+    await admin.query(`update identidad.cuentas set estado = 'activa' where id = $1`, [z]);
+  }
 });

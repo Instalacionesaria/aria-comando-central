@@ -22,7 +22,7 @@ import { ok, rechazo } from '../../autorizacion/respuesta.ts';
 import { esDeLaPrincipal, seccionesConAlcance } from '../../autorizacion/secciones.ts';
 import type { Contexto } from '../../autorizacion/sesion.ts';
 import type { Trx } from '../../datos/capa.ts';
-import { type LlaveDeIa, resolverAccesoAlAuditor, resolverCredenciales, resolverLlaveDeIa } from '../../credenciales/resolver.ts';
+import { type LlaveDeIa, resolverAccesoAlAuditorDeLaEmpresa, resolverCredenciales, resolverLlaveDeIa } from '../../credenciales/resolver.ts';
 import { periodoDe } from '../../negocio/periodo.ts';
 import type { DatosDeLaRuta } from './adaptadores/comun.ts';
 import { listarHilos, leerHilo, type HiloListado, type MensajeDelHilo } from './conversaciones.ts';
@@ -59,7 +59,7 @@ export async function identidadDelCerebro(db: Trx, contexto: Contexto, completa:
   const llave = await resolverLlaveDeIa(db, contexto.orgEfectiva);
   if (!completa) return { llave, deLaRuta: { noAudita: null, integraciones: null } };
   const visibles = seccionesVisibles(contexto).map((s) => s.clave);
-  const noAudita = visibles.includes('conversation') ? porQueNoAudita(await resolverAccesoAlAuditor(db, contexto.orgEfectiva, 'la_de_la_empresa')) : null;
+  const noAudita = visibles.includes('conversation') ? porQueNoAudita(await resolverAccesoAlAuditorDeLaEmpresa(db, contexto.orgEfectiva)) : null;
   let integraciones: DatosDeLaRuta['integraciones'] = null;
   if (contexto.permisos.has('credenciales.ver')) {
     const c = await resolverCredenciales(db, contexto.orgEfectiva);

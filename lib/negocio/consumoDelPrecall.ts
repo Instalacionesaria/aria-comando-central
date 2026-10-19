@@ -54,7 +54,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
-import { campoPorNombre } from './camposDelCrm.ts';
+import { campoPorNombre, valorDelCampo } from './camposDelCrm.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 
 /**
@@ -170,7 +170,7 @@ export async function consumoDelPrecall(dias = DIAS_DE_LA_TASA): Promise<Consumo
   const filas = await datos()
     .selectFrom('contactos as ct')
     .select([
-      sql<string | null>`ct.campos_del_crm ->> ${campoId}`.as('valor'),
+      valorDelCampo(sql`ct.campos_del_crm`, campoId).as('valor'),
       sql<number>`count(*)`.as('n'),
     ])
     /* ── LA POBLACIÓN, Y LAS TRES CONDICIONES SON TODAS NECESARIAS ─────────

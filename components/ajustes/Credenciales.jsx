@@ -160,6 +160,8 @@ const CAMPOS = [
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede ver ni cambiar los ajustes de esta organización.',
   organizacion_inactiva: 'Esta organización está desactivada.',
+  // El nivel 3: la subcuenta ya es de un cliente (de esta empresa o de otra) o de otra empresa.
+  subcuenta_en_uso: 'Esa subcuenta de GoHighLevel ya es de otro cliente o de otra empresa.',
 };
 
 /* La píldora de estado, con la clase del diseño original.

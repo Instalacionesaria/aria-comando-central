@@ -128,11 +128,11 @@ motivo, `sin_token`). Y en `activos`, la tarea de Meta, salen `saltada` **las 11
 **1 · El censo de etiquetas NO es el catálogo de la subcuenta.** `negocio.contactos` sólo contiene
 contactos que tienen —o tuvieron— `zona_closer` o `zona_setter`. La llamada que lee el catálogo real
 (`GET /locations/{loc}/tags`, `lib/ghl/cliente.ts:450`) sólo se dispara **cuando la búsqueda no trae
-ningún contacto** (`lib/negocio/sincronizar.ts:233-237`), y trae contactos siempre. Las 63 etiquetas
+ningún contacto** (`lib/negocio/sincronizar.ts:234-238`), y trae contactos siempre. Las 63 etiquetas
 medidas son **un piso**, no el inventario del CRM.
 
 **2 · Nuestra foto de etiquetas está vencida para los contactos congelados.** El congelamiento pone
-`territorio` en nulo y **a propósito no toca `etiquetas`** (`lib/negocio/sincronizar.ts:277-279`).
+`territorio` en nulo y **a propósito no toca `etiquetas`** (`lib/negocio/sincronizar.ts:278-280`).
 Medido: de los 25 congelados, **21 siguen cargando una etiqueta de zona** que el CRM ya les sacó (eran
 20 de 25). El censo sobrecuenta `zona_closer`/`zona_setter` hasta en 21.
 
@@ -225,7 +225,7 @@ en ninguna tabla nuestra.
 **`POST /contacts/search`.** El sobre: sólo `contacts` y `total`. De cada contacto, `ContactoDeGhl`
 declara 19 claves (`lib/ghl/cliente.ts:59-161`) y la fila escribe 15 columnas con datos del
 contacto, más el sello `sincronizado_el`; dos de ellas son derivadas: `territorio`, de las
-etiquetas, y desde el 2026-09-21 `score`, de los campos (§ 6) (`lib/negocio/sincronizar.ts:371-469`).
+etiquetas, y desde el 2026-09-21 `score`, de los campos (§ 6) (`lib/negocio/sincronizar.ts:374-472`).
 `locationId` se declara y no se usa. Todo lo que
 GoHighLevel mande y la interfaz no declare **se cae ahí mismo, sin error** — el defecto que costó la
 atribución hasta la `048` y, un nivel más adentro, el desglose de acciones de Meta hasta la `053`.
@@ -291,11 +291,11 @@ La columna `ultimas_llamadas` de `negocio.tareas_programadas` guarda lo que cost
 
 | Tarea | Horario (`vercel.json`) | Última corrida (UTC) | Llamadas medidas | Contra quién | Dónde |
 |---|---|---|---|---|---|
-| `contactos` | `*/10 * * * *` | 15:30 | **8** (7) | GoHighLevel: la búsqueda **y la pasada de miniaturas** | `lib/negocio/barrido.ts:1029-1047` |
+| `contactos` | `*/10 * * * *` | 15:30 | **8** (7) | GoHighLevel: la búsqueda **y la pasada de miniaturas** | `lib/negocio/barrido.ts:1030-1048` |
 | `mensajes` | `*/10 * * * *` | 15:30 | **1** (1) | GoHighLevel | `lib/negocio/barrido.ts:240-244` |
 | `auditoria` | `*/10 * * * *` | 15:30 | 0 (0) | el modelo | ídem |
 | `citas` | `3 * * * *` | 15:03 | **11** (10) | GoHighLevel: 1 + un calendario más | `lib/negocio/barrido.ts:252-256` |
-| `sonda` | `3 * * * *` | — (no deja sello) | 0 | nadie | `lib/negocio/barrido.ts:832-842` |
+| `sonda` | `3 * * * *` | — (no deja sello) | 0 | nadie | `lib/negocio/barrido.ts:833-843` |
 | `mejora` | `17 6 * * *` | 06:17 | 1 (1) | el modelo | `lib/negocio/barrido.ts:289-293` |
 | **`anuncios`** | `17 6 * * *` | 06:18 | **8** (40) | GoHighLevel | `lib/negocio/barrido.ts:276-293` |
 | `analizadores` | `41 * * * *` | 14:41 | 2 (4) | tl;dv y el modelo | `lib/negocio/barrido.ts:308-312` |
@@ -305,9 +305,9 @@ La columna `ultimas_llamadas` de `negocio.tareas_programadas` guarda lo que cost
 | **`activos`** (nueva, `078`) | `37 * * * *` | 14:37 | **0**: `saltada` en las 11, sin token | **Meta** | `lib/negocio/barrido.ts:342-355` |
 
 Las tareas que no le hablan al CRM —`auditoria`, `mejora`, `analizadores`, `reintentos`, `senales` y `activos`— no se
-saltean por falta del token de GoHighLevel (`lib/negocio/barrido.ts:717-730`); `activos` se saltea por falta del de Meta,
-con su texto (`lib/negocio/barrido.ts:741-748`). Una tarea que corrió y dejó trabajo sin hacer lo dice en el motivo del
-sello (`lib/negocio/barrido.ts:1059-1178`): el 2026-10-18 las diez tareas que corrieron para la empresa conectada tenían el
+saltean por falta del token de GoHighLevel (`lib/negocio/barrido.ts:718-731`); `activos` se saltea por falta del de Meta,
+con su texto (`lib/negocio/barrido.ts:742-749`). Una tarea que corrió y dejó trabajo sin hacer lo dice en el motivo del
+sello (`lib/negocio/barrido.ts:1060-1179`): el 2026-10-18 las diez tareas que corrieron para la empresa conectada tenían el
 motivo **vacío**, o sea completas (consulta: `ultimo_motivo is null`; los textos no se leyeron).
 
 **Piso diario sólo por el cron, contra GoHighLevel: (8 + 1) × 144 + 11 × 24 + 8 = 1.568 llamadas** (el 2026-09-28 eran
@@ -332,7 +332,7 @@ solo en su horario y con su propio fin de reloj, 250 s (`lib/negocio/barrido.ts:
 (`lib/negocio/rellenarAnuncios.ts:280-282`). El 2026-10-18 corrió con 0 llamadas.
 
 **La miniatura de cada contacto cuesta una llamada, una sola vez.** Va dentro de `contactos`, después de sincronizar
-(`lib/negocio/barrido.ts:1042-1046`): hasta 50 contactos por pasada, sólo los que llegaron con `adId`, con 15 s por pedido y
+(`lib/negocio/barrido.ts:1043-1047`): hasta 50 contactos por pasada, sólo los que llegaron con `adId`, con 15 s por pedido y
 60 s por pasada (`lib/negocio/miniaturaDelContacto.ts:44-50`, `:74-93`). Al 2026-10-18 había 526 contactos pedidos, el
 último el 2026-10-11 22:40 UTC, y 215 contactos con `adId`: la cola está vacía y la pasada sólo pide los nuevos.
 
@@ -374,7 +374,7 @@ de leads de Tools y «Probar conexión» de Meta.
   `Retry-After` sigue sin leerse (`lib/ghl/anuncios.ts:150-152`). Las otras catorce operaciones siguen
   sin red. La pasada de miniaturas **no reintenta el 429: corta** y deja lo que falta para la siguiente
   (`lib/negocio/miniaturaDelContacto.ts:26-29`), y Meta tampoco reintenta: un cupo agotado corta la pasada de activos y
-  la hora siguiente sigue (`lib/negocio/barrido.ts:1131-1146`).
+  la hora siguiente sigue (`lib/negocio/barrido.ts:1132-1147`).
 
 El comparador que el proyecto guarda: la plataforma anterior corrió a ~7 peticiones por minuto y por
 pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:209-212`). Estamos un orden de
@@ -465,7 +465,7 @@ confianza, y tres están declaradas `pendiente` justamente porque todavía no se
 
 | Etiqueta | Confianza declarada | Lectura |
 |---|---|---|
-| `setter_nuevo`, `setter_en_calificacion`, `setter_calificado` | `pendiente` | **No existen y no se mandan.** `sePuedeMandar` las filtra (`lib/ghl/contrato.ts:561-575`). La fuente de verdad de la etapa es nuestra base (`lib/ghl/contrato.ts:459-477`). |
+| `setter_nuevo`, `setter_en_calificacion`, `setter_calificado` | `pendiente` | **No existen y no se mandan.** `sePuedeMandar` las filtra (`lib/ghl/contrato.ts:575-589`). La fuente de verdad de la etapa es nuestra base (`lib/ghl/contrato.ts:473-491`). |
 | `seguimiento_terminado` | `sin_confirmar` | Existe según el contrato; nadie confirmó qué significa. Sólo lectura. |
 | `adelanto_ganado` | `confirmado` | Existe y **nunca se escribió**: de 7 resultados registrados, ninguno fue acuerdo sin pago. |
 | `bot_activado`, `bot_apagado_manual`, `bot_desactivado_leadflow` | `confirmado` | Declaradas verificadas en la subcuenta, sin uso en nuestros contactos. |
@@ -518,7 +518,7 @@ contacto. El catálogo no borra lo que desapareció, a propósito (`lib/negocio/
 
 Un campo se dibuja en el Perfil sólo si su carpeta tiene `grupo` (`lib/negocio/camposDelCrm.ts:256`).
 El grupo se pone **una sola vez, al descubrir la carpeta**, desde `CARPETAS_DEL_PERFIL`
-(`lib/ghl/contrato.ts:318-330`), que lista cuatro.
+(`lib/ghl/contrato.ts:332-344`), que lista cuatro.
 
 | Clase | Carpetas | Campos | Con algún valor | Valores guardados |
 |---|---|---|---|---|
@@ -528,14 +528,14 @@ El grupo se pone **una sola vez, al descubrir la carpeta**, desde `CARPETAS_DEL_
 O sea: **el 60,4 % de los valores que guardamos de GoHighLevel no se dibuja en el Perfil** (era el
 60,6 %: 4.939 de 8.144). Dentro de las cuatro con grupo hubo un movimiento que el código registra a
 medias: «Contact» pasó de 1 campo a 3 —eso sí quedó escrito, el 2026-09-21, en
-`lib/ghl/contrato.ts:319-321`— y «📁 Score | ICP Lead Form (Meta)» de 9 a 7, que no. Son los dos
+`lib/ghl/contrato.ts:333-335`— y «📁 Score | ICP Lead Form (Meta)» de 9 a 7, que no. Son los dos
 campos de URL que `ETIQUETAS_CORTAS` rotula «Redes» y «Web»: hoy su carpeta es «Contact» (consulta
-sobre `campos_del_crm` por esos dos identificadores). `lib/ghl/contrato.ts:325` todavía dice
-«9 campos», y `lib/ghl/contrato.ts:341`, que los siete rotulados son «todos de la carpeta de Meta».
+sobre `campos_del_crm` por esos dos identificadores). `lib/ghl/contrato.ts:339` todavía dice
+«9 campos», y `lib/ghl/contrato.ts:355`, que los siete rotulados son «todos de la carpeta de Meta».
 
 «Inalcanzable» tiene dos sentidos, y hay que separarlos. Para la **pantalla del Perfil**, los 174
 están fuera y no hay forma de traerlos sin cambiar `carpetas_del_crm.grupo`. Para el **código de
-negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:307`) resuelve un campo
+negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:315`) resuelve un campo
 por su nombre **saltándose el filtro de carpetas**. El 2026-09-15 la usaban dos módulos; hoy seis:
 `lib/negocio/consumoDelPrecall.ts:159`, `lib/negocio/indicadoresDeCitas.ts:248`,
 `lib/negocio/calidadDelCreativo.ts:142`, `lib/negocio/embudoDelFormulario.ts:178`,
@@ -648,7 +648,7 @@ podía guardarlo: era `char(1)` con `check` de letras
 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:6-16`). Desde `e350a47`
 (2026-09-21) la columna es `smallint` entre 0 y 100
 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:70-76`) y la
-sincronización la pisa en cada pasada (`lib/negocio/sincronizar.ts:438`). El mismo commit borró dos columnas que
+sincronización la pisa en cada pasada (`lib/negocio/sincronizar.ts:441`). El mismo commit borró dos columnas que
 nunca tuvieron escritor, `responsable_id` y `responsable_rol`
 (`db/migraciones/054_las_dos_columnas_que_nadie_escribio.sql:54-55`).
 
@@ -659,7 +659,7 @@ los 2 de diferencia                 los dos son congelados: no se releen
 ```
 
 Cero llamadas nuevas: se deriva de la misma respuesta. El campo está designado a mano en
-`lib/ghl/contrato.ts:305` porque no se puede deducir: el grupo `calificacion` tiene 17 campos y uno
+`lib/ghl/contrato.ts:313` porque no se puede deducir: el grupo `calificacion` tiene 17 campos y uno
 solo es el puntaje.
 
 ---
@@ -905,7 +905,7 @@ Hoy hay uno.
 **El vínculo con Meta ya deja rastro, y es una compuerta.** El 2026-09-28 el colector lo preguntaba cada día y no lo guardaba
 en ningún lado. Desde la `076`, sin `connected` la pasada no escribe nada —un vacío guardado como cero sería permanente—
 (`lib/negocio/recolectarAnuncios.ts:551-558`), y el sello lo dice: «Meta no está vinculado en GoHighLevel: no se leyó el
-gasto» (`lib/negocio/barrido.ts:1106-1112`). El 2026-10-18 la tarea `anuncios` de la empresa conectada corrió a las 06:18 UTC
+gasto» (`lib/negocio/barrido.ts:1107-1113`). El 2026-10-18 la tarea `anuncios` de la empresa conectada corrió a las 06:18 UTC
 con el motivo vacío, o sea que **el vínculo estaba `connected`** (deducido del motivo vacío; el texto no se leyó).
 
 ### El embudo por anuncio, con su costo (del 2026-09-29, no re-medido)
@@ -977,7 +977,7 @@ El orden que proponía la foto del 2026-09-15, y en qué quedó cada paso al 202
 Cada uno es un hueco medido, no una suposición.
 
 1. **El catálogo real de etiquetas de la subcuenta nunca se leyó.** `GET /locations/{loc}/tags` sólo
-   se llama si la búsqueda trae cero contactos (`lib/negocio/sincronizar.ts:233-237`). Las 80
+   se llama si la búsqueda trae cero contactos (`lib/negocio/sincronizar.ts:234-238`). Las 80
    etiquetas medidas el 2026-10-18 son las que cargan nuestros 624 contactos: **un piso**. Una sola llamada
    manual lo cerraría.
 
@@ -1014,7 +1014,7 @@ Cada uno es un hueco medido, no una suposición.
    informe no lo llamó. Si alcanza, el `opportunity_id` del § 5.4 está a una llamada de distancia.
 
 6. ~~**Si Meta sigue vinculado hoy.**~~ **Cerrado por deducción el 2026-10-18.** Desde la `076` el sello de `anuncios`
-   dice cuando el vínculo no está `connected` (`lib/negocio/barrido.ts:1106-1112`), y el de ese día estaba vacío (§ 9).
+   dice cuando el vínculo no está `connected` (`lib/negocio/barrido.ts:1107-1113`), y el de ese día estaba vacío (§ 9).
 
 7. ~~**Por qué no hay gasto desde el 2026-09-14.**~~ **Era falso: hubo** (703,38 hasta el 2026-10-18, § 9). Las 13
    campañas que se pedían sí estaban sin entregar; otra, de mensajes, gastaba y no se pedía. Lo que sigue abierto es
@@ -1053,8 +1053,8 @@ Para distinguir los motivos hace falta el código numérico del error, que `pedi
 
 **La credencial.** Dos columnas de `identidad.organizaciones_credenciales`, desde la `064` (2026-09-29): el token cifrado y
 la cuenta publicitaria `act_…`. `resolverAccesoAMeta` distingue tres faltas —sin token, token ilegible, sin cuenta— y pide
-el token primero (`lib/credenciales/resolver.ts:687-702`, `:599-627`); la cuenta se acepta con o sin el prefijo y se
-normaliza (`lib/credenciales/resolver.ts:711-714`). **Medido el 2026-10-18: 0 de 13 empresas tienen el token, y 0 la
+el token primero (`lib/credenciales/resolver.ts:712-727`, `:599-627`); la cuenta se acepta con o sin el prefijo y se
+normaliza (`lib/credenciales/resolver.ts:736-739`). **Medido el 2026-10-18: 0 de 13 empresas tienen el token, y 0 la
 cuenta.**
 
 **Las dos operaciones que lo usan:**
@@ -1076,8 +1076,8 @@ entregaron hace menos, hasta 200 por pasada y con 90 s de presupuesto (`lib/nego
 (`lib/negocio/recolectarActivos.ts:144-173`). Un anuncio de otra cuenta que el token alcance a ver se descarta
 (`lib/negocio/recolectarActivos.ts:73-93`). Guarda en `negocio.activos_de_anuncio`, una fila por anuncio leído, también sin
 miniatura, con su motivo (`db/migraciones/078_el_activo_del_anuncio.sql:21-49`). Sin token se sella `saltada` con su texto,
-sin llamar a nadie (`lib/negocio/barrido.ts:741-748`); un token rechazado, un permiso que falta o el cupo cortan la pasada
-y el sello dice qué hacer (`lib/negocio/barrido.ts:1131-1146`). Creative toma la miniatura y el post de Meta antes que los
+sin llamar a nadie (`lib/negocio/barrido.ts:742-749`); un token rechazado, un permiso que falta o el cupo cortan la pasada
+y el sello dice qué hacer (`lib/negocio/barrido.ts:1132-1147`). Creative toma la miniatura y el post de Meta antes que los
 del contacto (`lib/negocio/lecturaDeCreative.ts:456-457`).
 
 **Medido el 2026-10-18:** `negocio.activos_de_anuncio` tiene **0 filas**, y la tarea `activos` está `saltada` en las 11

@@ -39,7 +39,7 @@
 
 import { type RawBuilder, sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
-import { campoPorNombre } from './camposDelCrm.ts';
+import { campoPorNombre, tieneElCampo, valorDelCampo, type CampoDelCrm } from './camposDelCrm.ts';
 /* `ESTADOS_CANCELADOS` y `ETIQUETAS_DE_DESCARTE` se dejaron de importar acá: los dos vocabularios
    los usa ahora `citasAlcanzables.ts`, que es quien arma los predicados. Dejar las importaciones
    «por si acaso» las vuelve invisibles: nadie que lea este archivo sabría que no se usan.
@@ -221,13 +221,13 @@ const CONFIRMO = 'Si';
  * @param campoId El identificador del campo en el CRM (`campoPorNombre(CAMPO_DE_CONFIRMACION)`). Sin él no
  *   hay pregunta que hacer, y quien llama tiene que decirlo en vez de contar cero.
  */
-export function confirmoElAgendamiento(alias: string, campoId: string): RawBuilder<boolean> {
-  return sql<boolean>`coalesce(${sql.raw(alias)}.campos_del_crm ->> ${campoId} = ${CONFIRMO}, false)`;
+export function confirmoElAgendamiento(alias: string, campoId: string | CampoDelCrm): RawBuilder<boolean> {
+  return sql<boolean>`coalesce(${valorDelCampo(sql.raw(`${alias}.campos_del_crm`), campoId)} = ${CONFIRMO}, false)`;
 }
 
 /** **¿Esta PERSONA tiene respondido el campo de confirmación?**, con un valor u otro. El denominador de la tasa. */
-export function respondioLaConfirmacion(alias: string, campoId: string): RawBuilder<boolean> {
-  return sql<boolean>`(${sql.raw(alias)}.campos_del_crm ? ${campoId})`;
+export function respondioLaConfirmacion(alias: string, campoId: string | CampoDelCrm): RawBuilder<boolean> {
+  return tieneElCampo(sql.raw(`${alias}.campos_del_crm`), campoId);
 }
 
 /**

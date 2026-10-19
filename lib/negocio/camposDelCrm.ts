@@ -50,10 +50,10 @@
 // contado en `db/migraciones/039_campos_del_crm.sql`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { sql } from 'kysely';
+import { sql, type RawBuilder } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { camposPersonalizados, nombreDeCarpeta } from '../ghl/cliente.ts';
-import { CARPETAS_DEL_PERFIL, ETIQUETAS_CORTAS } from '../ghl/contrato.ts';
+import { CAMPO_DEL_PUNTAJE, CARPETAS_DEL_PERFIL, ETIQUETAS_CORTAS, NOMBRE_DEL_PUNTAJE, type CarpetaDelPerfil } from '../ghl/contrato.ts';
 
 /**
  * Cuánto vale el catálogo antes de releerlo. **Un día.**
@@ -144,7 +144,7 @@ export async function refrescarCatalogoDeCampos(acceso: {
       .values({
         carpeta_id: carpetaId,
         nombre,
-        grupo: CARPETAS_DEL_PERFIL.find((c) => c.id === carpetaId)?.grupo ?? null,
+        grupo: grupoDeLaCarpeta(carpetaId, nombre),
         visto_el: sql<Date>`now()`,
       } as never)
       .onConflict((oc) =>
@@ -302,27 +302,89 @@ export async function camposQueSeMuestran(): Promise<CampoMostrable[]> {
  * Comparación exacta y no `ilike`: dos campos que difieran sólo en mayúsculas son dos campos, y
  * elegir el equivocado daría una cifra plausible sobre la pregunta equivocada.
  *
+ * ── UNO POR SUBCUENTA (el nivel 3) ─────────────────────────────────────────
+ *
+ * El identificador es de la SUBCUENTA: el mismo campo, en la subcuenta de otro cliente, tiene otro. Con la empresa
+ * entera a la vista vuelven todos —uno por cliente—, y los lectores toman el que el contacto tiene
+ * (`valorDelCampo`, `tieneElCampo`): los ids no se repiten entre subcuentas, así que en los campos de un contacto
+ * sólo puede estar el de la suya. Con uno solo elegido, los contactos de los demás clientes contaban como «sin
+ * responder» y el aviso callaba, porque el campo «estaba».
+ *
  * Se corre dentro de `conOrganizacion(`.
  */
-export async function campoPorNombre(nombre: string): Promise<string | null> {
-  const f = await datos()
+export async function campoPorNombre(nombre: string): Promise<CampoDelCrm | null> {
+  const filas = await datos()
     .selectFrom('campos_del_crm')
-    .select('campo_id')
+    .select(['cuenta_id', 'campo_id'])
     .where('nombre', '=', nombre)
-    /* El desempate estable. Dos campos con el mismo nombre en carpetas distintas son posibles —el
-       CRM no lo impide— y sin orden la cifra tomaría uno u otro según cómo devolviera el motor,
+    /* El desempate estable, dentro de cada subcuenta. Dos campos con el mismo nombre en carpetas distintas son
+       posibles —el CRM no lo impide— y sin orden la cifra tomaría uno u otro según cómo devolviera el motor,
        cambiando de denominador entre corridas sin que nada falle. */
+    .orderBy('cuenta_id')
     .orderBy('campo_id')
-    .limit(1)
-    .executeTakeFirst();
-  return f?.campo_id ?? null;
+    .execute();
+  const porCliente = new Map<string, string>();
+  for (const f of filas) if (!porCliente.has(f.cuenta_id)) porCliente.set(f.cuenta_id, f.campo_id);
+  const ids = [...porCliente.values()];
+  return ids.length === 0 ? null : (ids as unknown as CampoDelCrm);
 }
 
-/** Cuántas definiciones tiene el catálogo. `0` = nunca se leyó. */
-export async function hayCatalogo(): Promise<boolean> {
+/** Los identificadores de UN campo del CRM: uno por subcuenta a la vista. Nunca vacío. */
+export type CampoDelCrm = readonly [string, ...string[]];
+
+const losIds = (campo: string | CampoDelCrm): readonly string[] => (typeof campo === 'string' ? [campo] : campo);
+
+/** El valor del campo en un `campos_del_crm`, con el id de la subcuenta del contacto. */
+export function valorDelCampo(json: RawBuilder<unknown>, campo: string | CampoDelCrm): RawBuilder<string | null> {
+  const ids = losIds(campo);
+  return ids.length === 1
+    ? sql<string | null>`${json} ->> ${ids[0]}`
+    : sql<string | null>`coalesce(${sql.join(ids.map((id) => sql`${json} ->> ${id}`))})`;
+}
+
+/** Si un `campos_del_crm` tiene el campo, con el id de la subcuenta del contacto. */
+export function tieneElCampo(json: RawBuilder<unknown>, campo: string | CampoDelCrm): RawBuilder<boolean> {
+  const ids = losIds(campo);
+  return ids.length === 1 ? sql<boolean>`(${json} ? ${ids[0]})` : sql<boolean>`(${json} ?| ${[...ids]}::text[])`;
+}
+
+/** Lo mismo en memoria, sobre los campos de UN contacto: el id de los suyos que tenga, o `null`. */
+export function idEn(valores: Record<string, unknown>, campo: string | CampoDelCrm | null): string | null {
+  if (campo === null) return null;
+  return losIds(campo).find((id) => Object.hasOwn(valores, id)) ?? null;
+}
+
+/**
+ * El grupo del Perfil de una carpeta que se descubre: por su id —las de la subcuenta de ARIA— o, en la subcuenta de
+ * otro cliente (el nivel 3), por su nombre exacto. Los clientes nacen del mismo snapshot: la carpeta se llama igual y
+ * tiene otro id, y sin esto ninguna tenía grupo y el Perfil de sus leads salía vacío.
+ */
+export function grupoDeLaCarpeta(carpetaId: string, nombre: string | null): CarpetaDelPerfil['grupo'] | null {
+  return (
+    CARPETAS_DEL_PERFIL.find((c) => c.id === carpetaId)?.grupo ??
+    (nombre === null ? null : (CARPETAS_DEL_PERFIL.find((c) => c.nombre === nombre)?.grupo ?? null))
+  );
+}
+
+/**
+ * Los ids del campo del puntaje: el de la subcuenta de ARIA y, desde el nivel 3, el de cada subcuenta a la vista
+ * por su nombre exacto (ver `CAMPO_DEL_PUNTAJE`). Los campos de un contacto sólo traen los de su subcuenta, así que
+ * vale el primero de éstos que tenga. Corre dentro de `conOrganizacion(`.
+ */
+export async function camposDelPuntaje(): Promise<readonly string[]> {
+  const porNombre = (await campoPorNombre(NOMBRE_DEL_PUNTAJE)) ?? [];
+  return [...new Set([CAMPO_DEL_PUNTAJE, ...porNombre])];
+}
+
+/**
+ * Cuántas definiciones tiene el catálogo. `0` = nunca se leyó. Con un cliente (el nivel 3), el de SU subcuenta: con
+ * el de otro, «no se leyó su catálogo» se decía «no completó los formularios».
+ */
+export async function hayCatalogo(cuentaId?: string): Promise<boolean> {
   const r = await datos()
     .selectFrom('campos_del_crm')
     .select(({ fn }) => fn.countAll().as('n'))
+    .$if(cuentaId !== undefined, (q) => q.where('cuenta_id', '=', cuentaId as string))
     .executeTakeFirst();
   return Number(r?.n ?? 0) > 0;
 }

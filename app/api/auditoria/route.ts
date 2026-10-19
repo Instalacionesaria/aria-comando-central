@@ -32,7 +32,7 @@ import { exigir } from '../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../lib/datos/contexto.ts';
-import { resolverAccesoAlAuditor } from '../../../lib/credenciales/resolver.ts';
+import { resolverAccesoAlAuditorDeLaEmpresa } from '../../../lib/credenciales/resolver.ts';
 import { laPantallaDelTecnico, porQueNoAudita } from '../../../lib/auditor/pantalla.ts';
 import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ultimoPlan } from '../../../lib/agentes/senales/lectura.ts';
 import { textoDeConversation } from '../../../lib/agentes/plan/conversation.ts';
@@ -63,7 +63,7 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  const acceso = await conIdentidad((db) => resolverAccesoAlAuditor(db, contexto.orgEfectiva, 'la_de_la_empresa'));
+  const acceso = await conIdentidad((db) => resolverAccesoAlAuditorDeLaEmpresa(db, contexto.orgEfectiva));
   const noAudita = porQueNoAudita(acceso);
 
   /* La cancelación viaja en la MISMA transacción que la pantalla. No es una optimización: son dos

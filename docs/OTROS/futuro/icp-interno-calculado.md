@@ -13,13 +13,13 @@
 
 Hoy el tramo de ICP de un lead sale de **«Puntaje | ICP»**, un número de 0 a 100 que calcula un
 workflow de GoHighLevel y que Comando Central solo copia: `sincronizar.ts` lo deriva de los campos
-del contacto y lo guarda en `contactos.score` (`lib/negocio/sincronizar.ts:438`,
-`lib/negocio/sincronizar.ts:541-547`), con el campo designado a mano en `CAMPO_DEL_PUNTAJE`
-(`lib/ghl/contrato.ts:305`). La fórmula no está escrita en ningún archivo de este repositorio.
+del contacto y lo guarda en `contactos.score` (`lib/negocio/sincronizar.ts:441`,
+`lib/negocio/sincronizar.ts:544-553`), con el campo designado a mano en `CAMPO_DEL_PUNTAJE`
+(`lib/ghl/contrato.ts:313`). La fórmula no está escrita en ningún archivo de este repositorio.
 
 La idea es que **el puntaje lo calcule Comando Central**, a partir de las mismas respuestas del
 cuestionario de calificación que ya se guardan en `contactos.campos_del_crm`
-(`lib/negocio/sincronizar.ts:409-411`), con reglas escritas por la empresa: esta respuesta a esta
+(`lib/negocio/sincronizar.ts:412-414`), con reglas escritas por la empresa: esta respuesta a esta
 pregunta vale tantos puntos. Así el número tiene autor, fórmula a la vista y versión, y no depende de
 que un workflow ajeno siga corriendo.
 
@@ -80,7 +80,7 @@ que este documento discute es **de quién depende**, no si hoy anda.
 **47 de los 471 puntajes valen exactamente 0**, y no están repartidos: por semana de alta son 3
 (17-ago), 23 (24-ago) y 21 (31-ago), y **ninguno en los últimos 14 días**. El código ya lo dejó
 escrito: *«No se sabe si el CRM calculó cero o si su workflow no corrió: el proveedor no dice la
-diferencia»* (`lib/negocio/sincronizar.ts:431-437`). El primer registro del patrón, con los ceros
+diferencia»* (`lib/negocio/sincronizar.ts:434-440`). El primer registro del patrón, con los ceros
 terminándose de golpe el 2026-09-03, está en `docs/acquisition/04-CALIDAD-DEL-LEAD.md:403-421`.
 
 De las dos semanas que concentran 44 de los 47 ceros, la del 31-ago es la misma en que la ruta de
@@ -91,7 +91,7 @@ La base no dice si hay relación.
 
 La consecuencia ya está en el producto: el Leads Portal va a contar esos ceros como «sin calificar»
 (decisión del 2026-09-26), mientras Creative los **promedia** en su ICP por pieza
-(`lib/negocio/calidadDelCreativo.ts:225`). Son dos lecturas del mismo número del CRM, y las dos son
+(`lib/negocio/calidadDelCreativo.ts:226`). Son dos lecturas del mismo número del CRM, y las dos son
 defendibles porque el número no dice cuál es la correcta. Un puntaje propio no tiene ese problema:
 **si Comando Central no lo calculó, vale `null`; si lo calculó, el 0 es un 0.**
 
@@ -99,19 +99,19 @@ defendibles porque el número no dice cuál es la correcta. Un puntaje propio no
 
 El grupo `calificacion` tiene **17 campos en 3 carpetas** (`lib/ghl/contrato.ts:288-291`; la
 medición de hoy da los mismos 17 y las mismas 3). La carpeta `Contact` trae el puntaje y dos URL, la de
-la web y la de las redes (`lib/ghl/contrato.ts:319-321`). Las cuentas no cierran: los comentarios de
-cada carpeta suman 19 (3 + 7 + 9, `lib/ghl/contrato.ts:319-326`, el 3 escrito el 2026-09-21 y el 7 y
+la web y la de las redes (`lib/ghl/contrato.ts:333-335`). Las cuentas no cierran: los comentarios de
+cada carpeta suman 19 (3 + 7 + 9, `lib/ghl/contrato.ts:333-340`, el 3 escrito el 2026-09-21 y el 7 y
 el 9 el 2026-09-07), y `lib/ghl/contrato.ts:289` cuenta como «preguntas del cuestionario» a los
 dieciséis que no son el puntaje, URL incluidas. Cuántos campos hay hoy en cada carpeta no está medido
 (queda en `LPF-08`). Las otras dos carpetas son el cuestionario, **en dos voces**:
 
-- `📁 Score | ICP Nuevo`, el formulario de calificación vigente (`lib/ghl/contrato.ts:323-324`);
+- `📁 Score | ICP Nuevo`, el formulario de calificación vigente (`lib/ghl/contrato.ts:337-338`);
 - `📁 Score | ICP Lead Form (Meta)`, *«el mismo cuestionario para quien entra por el formulario de
-  Meta»* (`lib/ghl/contrato.ts:325-326`), con el nombre de cada campo escrito como pregunta entera
-  (`lib/ghl/contrato.ts:337-339`).
+  Meta»* (`lib/ghl/contrato.ts:339-340`), con el nombre de cada campo escrito como pregunta entera
+  (`lib/ghl/contrato.ts:351-353`).
 
 Y hay contactos que contestaron los dos: *«Medido: 5 contactos tienen los DOS formularios
-contestados»* (`lib/ghl/contrato.ts:350-352`; medido al escribir el comentario, en el commit del
+contestados»* (`lib/ghl/contrato.ts:364-366`; medido al escribir el comentario, en el commit del
 2026-09-07, y la medición de hoy no lo repitió). Desde la base no se sabe si el puntuador del CRM pesa
 igual las dos voces, ni cuál gana cuando están las dos.
 
@@ -138,7 +138,7 @@ LP-7 no necesitan ninguna.
 Tres cosas que salen de lo medido:
 
 - **Solo preguntas de opción cerrada.** «A quién ayuda y qué entrega» es texto libre —el formulario
-  de Meta le agrega *«Se especifico o sera rechazado»* (`lib/ghl/contrato.ts:358-359`)— y pesarlo
+  de Meta le agrega *«Se especifico o sera rechazado»* (`lib/ghl/contrato.ts:372-373`)— y pesarlo
   exigiría un modelo, que es gastar. Las URL tampoco entran. El tipo de cada campo está en
   `negocio.campos_del_crm.tipo` (`lib/datos/esquema.ts:513`), y es lo primero que se mira.
 - **Las opciones no están en el catálogo**: `TablaCamposDelCrm` no las guarda
@@ -154,7 +154,7 @@ Tres cosas que salen de lo medido:
 ### LPF-02 · Los campos se nombran, y se resuelven con `campoPorNombre`
 
 Las reglas guardan el nombre del campo y lo resuelven a su identificador con `campoPorNombre`
-(`lib/negocio/camposDelCrm.ts:307`), el mismo mecanismo que ya usan Creative, el precall, el
+(`lib/negocio/camposDelCrm.ts:315`), el mismo mecanismo que ya usan Creative, el precall, el
 formulario y la confirmación. Es lo que una persona puede leer y verificar en una pantalla, y la
 comparación es exacta (`lib/negocio/camposDelCrm.ts:302-303`).
 
@@ -163,7 +163,7 @@ El precio es el que el archivo declara: *«si alguien renombra ese campo en el C
 **sin campo** y se dice en el aviso; no que el lead pierde esos puntos en silencio.
 
 Y un detalle que obliga a algo más: cuando dos campos tienen el mismo nombre, `campoPorNombre`
-desempata por identificador y toma uno (`lib/negocio/camposDelCrm.ts:312-316`). Para una cifra es
+desempata por identificador y toma uno (`lib/negocio/camposDelCrm.ts:319-325`). Para una cifra es
 correcto; para una regla escrita a mano, no, porque el catálogo tiene una versión vieja del mismo
 cuestionario. **Un nombre que casa con más de un campo se rechaza al guardar la regla**, en vez de
 dejar que el desempate elija.
@@ -355,7 +355,7 @@ servidor, nunca a la lista—.
 ### LPF-P05 · Qué es un 0 interno
 
 Con el CRM, 0 es «sin calificar» porque no se sabe si puntuó o no corrió
-(`lib/negocio/sincronizar.ts:431-437`; Acquisition dejó la misma pregunta abierta en
+(`lib/negocio/sincronizar.ts:434-440`; Acquisition dejó la misma pregunta abierta en
 `docs/acquisition/04-CALIDAD-DEL-LEAD.md:594-597`). Con el interno esa ambigüedad no existe: si no
 hay respuestas, el resultado es `null`. Un 0 interno sería un lead que contestó todo y no sumó nada,
 y lo natural es que sea **ICP bajo**. Es lo que obliga a que `tramoDelPuntaje` reciba la fuente.
@@ -365,7 +365,7 @@ y lo natural es que sea **ICP bajo**. Es lo que obliga a que `tramoDelPuntaje` r
 `tramosDelIcp` garantiza el Leads Portal y nada más. Creative lee el puntaje del CRM **por su
 cuenta**, por nombre y sin pasar por `contactos.score` (`lib/negocio/calidadDelCreativo.ts:63`,
 `lib/negocio/calidadDelCreativo.ts:142`), y el Perfil del closer muestra `score` como «Calificación»
-(`lib/negocio/ficha.ts:510`). Si cambia la fuente, ¿cambian también ellas? Si no, el mismo lead va a
+(`lib/negocio/ficha.ts:511`). Si cambia la fuente, ¿cambian también ellas? Si no, el mismo lead va a
 tener un ICP en el portal y otro en Creative y en el Closer, y eso se tiene que decir en las tres.
 
 ### LPF-P07 · Los cortes
@@ -395,7 +395,7 @@ o solo un administrador. Cambiar un peso cambia el tramo de cientos de leads de 
 ## Lo que NO cambia
 
 - **`contactos.score` se sigue guardando igual**, con el 0 como 0 y la ausencia como `null`
-  (`lib/negocio/sincronizar.ts:541-547`). El interno nunca lo pisa: sin los dos no hay comparación ni
+  (`lib/negocio/sincronizar.ts:544-553`). El interno nunca lo pisa: sin los dos no hay comparación ni
   vuelta atrás.
 - **El descarte sigue siendo del CRM.** `ETIQUETAS_DE_DESCARTE` (`lib/ghl/contrato.ts:231-238`) sigue
   marcando quién está descartado, y el interno no descarta a nadie.
@@ -405,7 +405,7 @@ o solo un administrador. Cambiar un peso cambia el tramo de cientos de leads de 
   `LPF-P05` y `LPF-P07` no digan otra cosa.
 - **La lista del portal no lleva respuestas del cuestionario**, igual que no lleva teléfono ni correo:
   las respuestas se ven en la ficha, como hoy en el Perfil (`lib/negocio/ficha.ts:467`).
-- **El Perfil del closer y sus carpetas** (`lib/ghl/contrato.ts:318-330`), salvo lo que decida
+- **El Perfil del closer y sus carpetas** (`lib/ghl/contrato.ts:332-344`), salvo lo que decida
   `LPF-P06`.
 
 ## Pruebas que va a necesitar

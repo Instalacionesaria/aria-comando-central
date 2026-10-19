@@ -56,8 +56,9 @@ function baseDeLaAplicacion() {
 }
 
 /* `ruta`: dónde se genera el secreto. La de la empresa por omisión; la conexión de un cliente (el nivel 3) pasa la
-   suya, y su secreto es de ese cliente. */
-export default function AvisoDelCrm({ configurado, alGenerar, ruta = '/api/admin/credenciales' }) {
+   suya, y su secreto es de ese cliente. `alMostrarCabecera`: avisa que hay una cabecera a la vista, que no se vuelve a
+   mostrar, para que quien monta esto dentro de una ventana no la deje cerrar con un Escape (`cerrablePorFuera`). */
+export default function AvisoDelCrm({ configurado, alGenerar, alMostrarCabecera, ruta = '/api/admin/credenciales' }) {
   const [cabecera, setCabecera] = useState(null);
   const [pimientaFalta, setPimientaFalta] = useState(false);
   const [generando, setGenerando] = useState(false);
@@ -84,11 +85,12 @@ export default function AvisoDelCrm({ configurado, alGenerar, ruta = '/api/admin
       return;
     }
     setCabecera(r.datos.avisoCabecera ?? null);
+    if (r.datos.avisoCabecera) alMostrarCabecera?.(true);
     setPimientaFalta(r.datos.avisoPimientaConfigurada === false);
     // Se recarga el estado de la pantalla: `avisoSecretoConfigurado` pasó a `true`, y quien rotó
     // tiene que ver que quedó.
     alGenerar?.();
-  }, [alGenerar, ruta]);
+  }, [alGenerar, alMostrarCabecera, ruta]);
 
   const copiar = useCallback(async (texto, cual) => {
     try {
@@ -99,7 +101,7 @@ export default function AvisoDelCrm({ configurado, alGenerar, ruta = '/api/admin
     } catch {
       // Sin portapapeles —contexto no seguro, permiso denegado— el texto está a la vista igual, así
       // que no se inventa un error: se dice que hay que copiarlo a mano.
-      setAviso('El navegador no dejó copiar. El texto está acá arriba: seleccionalo y copialo.');
+      setAviso('El navegador no dejó copiar. El texto está acá arriba: selecciónalo y cópialo.');
     }
   }, []);
 
@@ -140,7 +142,7 @@ export default function AvisoDelCrm({ configurado, alGenerar, ruta = '/api/admin
             <div className="fd-aviso falta">
               <i>◍</i>
               <span>
-                Copiala ahora: <b>no se vuelve a mostrar</b>. Si la perdés, generás otra — y la
+                Cópiala ahora: <b>no se vuelve a mostrar</b>. Si la pierdes, generas otra — y la
                 anterior deja de funcionar en el momento, así que hay que actualizar los workflows.
               </span>
             </div>
@@ -159,7 +161,7 @@ export default function AvisoDelCrm({ configurado, alGenerar, ruta = '/api/admin
           <>
             <span className="aj-ayuda">
               {configurado
-                ? 'Ya hay un secreto configurado, y no se puede volver a mostrar. Si lo perdiste, generá otro: el anterior deja de funcionar en el momento.'
+                ? 'Ya hay un secreto configurado, y no se puede volver a mostrar. Si lo perdiste, genera otro: el anterior deja de funcionar en el momento.'
                 : 'Todavía no hay secreto, así que el aviso no puede autenticarse y GoHighLevel va a recibir un rechazo en cada entrega.'}
             </span>
             {/* ── ROTAR PIDE CONFIRMACIÓN; LA PRIMERA VEZ NO ────────────────────

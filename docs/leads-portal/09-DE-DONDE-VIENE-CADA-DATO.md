@@ -131,7 +131,7 @@ fila de la lista, y de dónde sale:
 
 | dato | en la maqueta | de dónde sale | cobertura (2026-09-27) |
 |---|---|---|---|
-| Nombre | `aios-command-center_1.html:4761` | `contactos.nombre`, `not null` (`db/migraciones/011_negocio_closer_setter.sql:69`); un contacto sin nombre no entra (`lib/negocio/sincronizar.ts:365-368`) | 593 de 593, por construcción |
+| Nombre | `aios-command-center_1.html:4761` | `contactos.nombre`, `not null` (`db/migraciones/011_negocio_closer_setter.sql:69`); un contacto sin nombre no entra (`lib/negocio/sincronizar.ts:368-371`) | 593 de 593, por construcción |
 | Campaña | `aios-command-center_1.html:4762`, primera mitad | `atribucion_primera->>'campaign'` | **271** de 593 |
 | Creativo | `aios-command-center_1.html:4762`, segunda mitad | `atribucion_primera->>'utmContent'`, que es la llave del creativo de Creative (`lib/negocio/calidadDelCreativo.ts:21-24`) | **505** de 593 |
 | Puntaje | `aios-command-center_1.html:4764-4767` | `contactos.score`, entero de 0 a 100 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:70-76`) | **471** con valor; 47 de ellos en 0 |
@@ -183,11 +183,11 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 
 | dato | en la maqueta | de dónde sale | cobertura |
 |---|---|---|---|
-| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:467-546`) | `LP09-09` |
+| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:467-548`) | `LP09-09` |
 | «8/8 campos» y «Formulario completado» | `aios-command-center_1.html:4823`, `:4858` | no hay conteo de campos; lo más cercano es el estado «Form Landing VSL» (`lib/negocio/recorrido.ts:231-238`) | `LP09-09` |
 | ICP Score | `aios-command-center_1.html:4857` | `contactos.score` | 471 |
 | Fit score, Intent score | `aios-command-center_1.html:4857` | **no existen** | hueco |
-| Video precall | `aios-command-center_1.html:4832` | «Video Pre-Call», del grupo `interacciones` (`lib/ghl/contrato.ts:327-329`) | `LP09-09` |
+| Video precall | `aios-command-center_1.html:4832` | «Video Pre-Call», del grupo `interacciones` (`lib/ghl/contrato.ts:341-343`) | `LP09-09` |
 
 **Interacciones** (`aios-command-center_1.html:4840-4844`, y el relleno de `:4680-4682`)
 
@@ -221,10 +221,10 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 
 ### LP09-06 · El puntaje, los tramos y los ceros
 
-`contactos.score` lo escribe la sincronización (`lib/negocio/sincronizar.ts:438`) desde el campo que
-`CAMPO_DEL_PUNTAJE` designa (`lib/ghl/contrato.ts:305`), con `puntajeDelCrm`
-(`lib/negocio/sincronizar.ts:541-547`): un valor fuera de 0-100 o no entero entra como nulo. **El
-cero no se colapsa a nulo** (`lib/negocio/sincronizar.ts:429-437`): los dos ceros se guardan
+`contactos.score` lo escribe la sincronización (`lib/negocio/sincronizar.ts:441`) desde el campo que
+`CAMPO_DEL_PUNTAJE` designa (`lib/ghl/contrato.ts:313`), con `puntajeDelCrm`
+(`lib/negocio/sincronizar.ts:544-553`): un valor fuera de 0-100 o no entero entra como nulo. **El
+cero no se colapsa a nulo** (`lib/negocio/sincronizar.ts:432-440`): los dos ceros se guardan
 distintos y la decisión de contarlos juntos es nuestra, en la pantalla.
 
 | tramo | todo el universo | 30 días |
@@ -292,7 +292,7 @@ select jsonb_object_agg(t, n) from (
   `enCero` (47). Y viaja `cerosRecientes`, que hoy vale 0: si aparece un cero en los últimos 14 días,
   la pantalla avisa, porque entonces el grupo dejó de ser el lote cerrado de agosto.
 - La divergencia con Creative **se declara**: su ICP promedio por pieza sí promedia los ceros
-  (`lib/negocio/calidadDelCreativo.ts:225`). Las dos cifras están bien por separado y miden cosas
+  (`lib/negocio/calidadDelCreativo.ts:226`). Las dos cifras están bien por separado y miden cosas
   distintas; lo que no puede pasar es que alguien las compare sin saberlo. El detalle, en
   `14-EL-PUNTAJE-DEL-CRM.md`.
 
@@ -463,13 +463,13 @@ select (select jsonb_object_agg(coalesce(grupo, 'sin_grupo'), n)
 -- {sin_grupo 21, calificacion 3, interacciones 1} · {sin_grupo 174, calificacion 17, interacciones 4}
 ```
 
-Las tres carpetas de `calificacion` son las de `lib/ghl/contrato.ts:318-326`: «Contact», con el
+Las tres carpetas de `calificacion` son las de `lib/ghl/contrato.ts:332-340`: «Contact», con el
 puntaje y dos URLs; «📁 Score | ICP Nuevo», el formulario de la landing; y «📁 Score | ICP Lead
 Form (Meta)», el mismo cuestionario para quien entra por el formulario de Meta.
 
 **Contactos con alguna respuesta del grupo `calificacion`: 475.** Pero esa cifra **cuenta al propio
 puntaje como una respuesta**, porque «Puntaje | ICP» vive en la carpeta «Contact», que es del mismo
-grupo (`lib/ghl/contrato.ts:319-322`). Con 471 puntajes, el 475 dice casi nada sobre el cuestionario.
+grupo (`lib/ghl/contrato.ts:333-336`). Con 471 puntajes, el 475 dice casi nada sobre el cuestionario.
 La cobertura de las preguntas propiamente dichas se midió en LP-3: **336**, en `LP09-P02`.
 
 ```sql
@@ -530,13 +530,13 @@ Conversation: «el CRM no registró reproducción».
 **Requisitos que salen de acá:**
 
 - De `campos_del_crm` a la ficha van **sólo** tres cosas: los campos del grupo `calificacion` —por
-  `perfilDeLaFicha`, que ya descarta lo vacío (`lib/negocio/ficha.ts:489-495`)—; el «Video Pre-Call»
+  `perfilDeLaFicha`, que ya descarta lo vacío (`lib/negocio/ficha.ts:490-496`)—; el «Video Pre-Call»
   del grupo `interacciones` (`LP05-11`; los otros tres campos de ese grupo son `LP05-P01`); y el
   estado del formulario. **Los 174 sin grupo no viajan**, salvo esa última: ahí están la atribución
   de campañas y los enlaces del sistema (`lib/ghl/contrato.ts:243-245`).
 - **La excepción, dicha:** «Form Landing VSL» vive en la carpeta «📁 Score | ICP», que no tiene
   grupo (`docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:823`; no está en
-  `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:318-330`), y se lee **por nombre**, con
+  `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:332-344`), y se lee **por nombre**, con
   `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`, `:258`). Es el único campo sin grupo que
   viaja, y viaja nombrado, no por pertenecer a una carpeta. La prueba de LP-3 «un campo sin grupo no
   aparece» tiene que dejarlo pasar a él y a ningún otro: un segundo campo sin grupo en la ficha es

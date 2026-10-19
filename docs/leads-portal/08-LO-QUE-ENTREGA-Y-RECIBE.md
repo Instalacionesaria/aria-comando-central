@@ -30,9 +30,9 @@ campos del CRM (`:402`), el alta (`:416`), la atribución del primer toque (`:42
 (`:445`). Las siete tablas de las que sale todo están en `LP09-01`.
 
 **Requisito** · **Sin sincronización nueva y sin columnas nuevas** (decisión del 2026-09-26). El
-puntaje ya llega: lo deriva `lib/negocio/sincronizar.ts:438` del mismo mapa de campos que el barrido
+puntaje ya llega: lo deriva `lib/negocio/sincronizar.ts:441` del mismo mapa de campos que el barrido
 normaliza en la línea de arriba, sin una llamada más al proveedor, y **guarda el cero como cero y la
-ausencia como nulo** (`lib/negocio/sincronizar.ts:429-437`). Esta pestaña hereda esa distinción y no
+ausencia como nulo** (`lib/negocio/sincronizar.ts:432-440`). Esta pestaña hereda esa distinción y no
 la colapsa: el cero cuenta como «Sin calificar» con su motivo (`LP02-09`), no se reescribe.
 
 **Y la ficha no refresca.** La ficha que ya existe, la de las pestañas de operación, refresca el
@@ -131,12 +131,12 @@ pestaña publica tramos por persona. **Las dos cifras no se reconcilian, y ningu
 
 | | Creative | Leads Portal |
 |---|---|---|
-| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:216`) y entra al `avg` (`:225`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
-| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:63`, `:142`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:305`) |
-| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:238`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
+| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:217`) y entra al `avg` (`:225`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
+| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:63`, `:142`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:313`) |
+| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:239`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
 
 Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:60` y la
-constante de `lib/ghl/contrato.ts:305` nombran el mismo identificador—. **El día que alguien renombre
+constante de `lib/ghl/contrato.ts:313` nombran el mismo identificador—. **El día que alguien renombre
 «Puntaje | ICP» en el CRM, Creative pierde el ICP y esta pestaña no**, y ninguna de las dos falla.
 
 **Requisito** · Esta pestaña no publica un «ICP promedio». Si algún día reparte los tramos por

@@ -410,11 +410,18 @@ async function ventanaGuardada(dias: number): Promise<{ primero: string | null; 
    * `fecha > (current_date - make_interval(days => N))`, copiado, en el mismo archivo que exporta la función.
    * Estas dos fechas son las que la pantalla imprime como el período de las cifras: si las dos definiciones se
    * separaran, el encabezado describiría una ventana y los números otra. */
+  /* ── Y POR CLIENTE (el nivel 3) ───────────────────────────────────────────
+   *
+   * Cada cliente tiene su cuenta de Meta: el último día es el que alcanzaron TODOS —el mínimo de los últimos de cada
+   * cliente con datos—. Con el máximo de todos, un cliente cuyo token se cortó hace seis días quedaba tapado por el
+   * que está al día: sin aviso, y con el encabezado diciendo que el gasto llega hasta ayer. */
   const f = await sql<{ primero: string | null; ultimo: string | null }>`
-    select to_char(min(fecha), 'YYYY-MM-DD') as primero, to_char(max(fecha), 'YYYY-MM-DD') as ultimo
-      from (select m.fecha from negocio.metricas_de_anuncio m where ${ventanaDeMetricas('m', dias)}
-            union all
-            select g.fecha from negocio.gasto_de_la_cuenta g where ${ventanaDeMetricas('g', dias)}) as x`.execute(datos());
+    select to_char(min(primero), 'YYYY-MM-DD') as primero, to_char(min(ultimo), 'YYYY-MM-DD') as ultimo
+      from (select cuenta_id, min(fecha) as primero, max(fecha) as ultimo
+              from (select m.cuenta_id, m.fecha from negocio.metricas_de_anuncio m where ${ventanaDeMetricas('m', dias)}
+                    union all
+                    select g.cuenta_id, g.fecha from negocio.gasto_de_la_cuenta g where ${ventanaDeMetricas('g', dias)}) as x
+             group by cuenta_id) as por_cliente`.execute(datos());
   return { primero: f.rows[0]?.primero ?? null, ultimo: f.rows[0]?.ultimo ?? null };
 }
 

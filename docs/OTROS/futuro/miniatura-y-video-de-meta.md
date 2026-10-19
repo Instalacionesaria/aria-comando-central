@@ -53,13 +53,13 @@ CF1-11 y CF1-12). Lo que este plan sigue sumando es el video y la miniatura de l
 | CR-0 | `7a7eb17` | los requisitos `C15-`, la medición de GoHighLevel y su sonda de sólo lectura | `docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, `scripts/medir-activos-en-ghl.mjs` |
 | CR-1 | `1159c43` | el link manual por pieza: tabla `negocio.enlaces_de_pieza` (migración 063), validador de hosts, ruta `PUT`/`DELETE` con `credenciales.editar` y auditoría | `lib/negocio/urlExterna.ts:89`, `lib/negocio/enlaceDeLaPieza.ts:54`, `app/api/creative/enlace/route.ts` |
 | CR-2 | `8fd0afd` | el cajón de la pieza con sus anuncios, ordenados por impresiones | `components/creative/FichaDelCreativo.jsx`, `lib/negocio/rendimientoDelCreativo.ts:263` |
-| CR-3 | `ecfbc26` | la credencial de Meta en Ajustes (migración 064): el token cifrado y la cuenta `act_…` | `lib/credenciales/resolver.ts:724` |
+| CR-3 | `ecfbc26` | la credencial de Meta en Ajustes (migración 064): el token cifrado y la cuenta `act_…` | `lib/credenciales/resolver.ts:749` |
 
 Las migraciones 063 y 064 **ya están en producción** desde el 2026-09-29. Las piezas que CR-4 en
 adelante van a usar sin tocarlas:
 
-- `resolverAccesoAMeta` (`lib/credenciales/resolver.ts:724`) devuelve el token descifrado y la cuenta
-  normalizada, o qué falta, con su texto en `TEXTO_DE_FALTA_META` (`lib/credenciales/resolver.ts:693`).
+- `resolverAccesoAMeta` (`lib/credenciales/resolver.ts:749`) devuelve el token descifrado y la cuenta
+  normalizada, o qué falta, con su texto en `TEXTO_DE_FALTA_META` (`lib/credenciales/resolver.ts:718`).
 - `medioPermitido` (`lib/negocio/urlExterna.ts:97`) es la lista blanca de hosts de medios
   (`.fbcdn.net`, `.cdninstagram.com`); `enlaceDePublicacion` (`lib/negocio/urlExterna.ts:89`), la de
   publicaciones.
@@ -123,7 +123,7 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
   o en uno de cada hora si la compuerta B lo pide —el plan de Vercel es Pro, así que un horario de
   cada hora se acepta; si es uno nuevo, va también a `vercel.json`—. Sin credencial, la tarea queda `saltada` con el
   texto de `TEXTO_DE_FALTA_META`, igual que los Analizadores sin tl;dv
-  (`lib/negocio/barrido.ts:749-753`); y se suma al despacho (`lib/negocio/barrido.ts:775-777`).
+  (`lib/negocio/barrido.ts:750-754`); y se suma al despacho (`lib/negocio/barrido.ts:776-778`).
 - **Las traducciones de las claves foráneas nuevas** en `QUE_LO_IMPIDE`
   (`lib/administracion/borrado.ts:40`): sin eso, la suite falla en la prueba que las exige.
 - **Prueba**: `pruebas/codigo/99-cron.test.ts` ya exige que toda tarea de `HORARIOS` esté en `TAREAS`

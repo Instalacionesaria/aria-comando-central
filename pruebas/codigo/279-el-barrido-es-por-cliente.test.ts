@@ -50,7 +50,8 @@ test('el bucle sella cada tarea con su unidad, nunca por fuera', () => {
   assert.match(cuerpo, /await sellar\(org\.id, cuentaId, tarea, estado, motivo, llamadas\)/);
   assert.ok((cuerpo.match(/\bsellarAca\(/g) ?? []).length >= 7, 'faltan sellos de la unidad');
   // Y el presupuesto se mira adentro del bucle de las unidades, no una vez por empresa.
-  const bucle = cuerpo.slice(cuerpo.indexOf('of porEmpresa.flat()'));
+  const bucle = cuerpo.slice(cuerpo.indexOf('of enOrden)'));
+  assert.ok(bucle.length < cuerpo.length, 'no encontré el bucle de las unidades');
   assert.match(bucle, /if \(ahora\(\) - arranque > PRESUPUESTO_MS\)/);
 });
 

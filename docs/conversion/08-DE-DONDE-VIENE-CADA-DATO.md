@@ -71,7 +71,7 @@
 
 ### CV8-13 · `campoPorNombre()` es la única vía, y devuelve `null`
 
-**Rastro** · `lib/negocio/camposDelCrm.ts:307-320`.
+**Rastro** · `lib/negocio/camposDelCrm.ts:315-330`.
 **Estado** · Compara por **nombre exacto, no por `ilike`** (`:302-303`); desempata por `campo_id`
 para que el denominador no cambie entre corridas (`:313-315`); y **`null` es un retorno legítimo**:
 quien lo use *«tiene que poder decir "no sé" en vez de "cero"»* (`:298-300`).

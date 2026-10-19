@@ -55,7 +55,7 @@ acciones y siete secciones:
 ### LP05-03 · La ficha sólo lee: no refresca contra el CRM ni escribe
 
 - **Rastro:** la ficha del closer sí refresca: su ruta llama a `refrescarUnContacto`, que es *«la
-  llamada que cuesta abrir la ficha»* (`lib/negocio/sincronizar.ts:549-579`).
+  llamada que cuesta abrir la ficha»* (`lib/negocio/sincronizar.ts:555-585`).
 - **Qué pide:** `fichaDelLeadDelPortal` sólo lee. No gasta presupuesto del proveedor ni reescribe el
   territorio. La prueba de LP-3 comprueba que la ficha no escribe. Por eso la ficha muestra cuándo se
   sincronizó el contacto por última vez (`LP05-05`).
@@ -161,16 +161,16 @@ acciones y siete secciones:
 - **Qué pide:**
   - **el grupo `calificacion` de `perfilDeLaFicha`** (`lib/negocio/ficha.ts:467`), agrupado por
     significado y no por formulario (`lib/negocio/ficha.ts:442-452`). Sus carpetas son tres
-    (`lib/ghl/contrato.ts:318-326`): la del puntaje, «Score | ICP Nuevo» y «Score | ICP Lead Form
+    (`lib/ghl/contrato.ts:332-340`): la del puntaje, «Score | ICP Nuevo» y «Score | ICP Lead Form
     (Meta)». Así entran las dos cosas que el § 5.3 pide por separado: las respuestas de Meta Lead Ads
     y las de la landing (`§ 5.3:253-254`);
-  - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:489-495`);
+  - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:490-496`);
   - **sin «N de M».** Son dos formularios con preguntas distintas y casi nadie contesta los dos —6
     personas, medido en LP-3—: un «5 de 17» diría que faltan doce respuestas que la persona nunca tuvo
     delante;
   - **el puntaje aparece una sola vez**, en la sección de calificación. Hoy saldría dos veces: como
-    «Calificación» (`lib/negocio/ficha.ts:510`) y como el propio campo del CRM, que vive en una de las
-    carpetas del grupo (`lib/ghl/contrato.ts:319-322`);
+    «Calificación» (`lib/negocio/ficha.ts:511`) y como el propio campo del CRM, que vive en una de las
+    carpetas del grupo (`lib/ghl/contrato.ts:333-336`);
   - **un campo sin grupo no aparece.** Es la prueba de LP-3. Medido: **174** campos del catálogo no
     tienen grupo, contra **17** del grupo `calificacion` en **3** carpetas;
   - los valores se muestran como texto (`LP05-04`).
@@ -186,7 +186,7 @@ acciones y siete secciones:
   vocabulario cerrado de tres valores (`lib/negocio/recorrido.ts:234-238`). **No está en el grupo
   `calificacion`:** vive en la carpeta vieja «Score | ICP», que quedó fuera del perfil a propósito
   (`lib/ghl/contrato.ts:262-265`). Se lee por nombre con `campoPorNombre`
-  (`lib/negocio/camposDelCrm.ts:307-319`), como ya hace Conversion
+  (`lib/negocio/camposDelCrm.ts:315-330`), como ya hace Conversion
   (`lib/negocio/recorrido.ts:257-268`).
 - **Medido:** Agendado **121** · Form incompleto sin agendar **87** · Form completo sin agendar **39**
   · vacío **346**. **No se escribe desde el 2026-08-31**
@@ -231,7 +231,7 @@ acciones y siete secciones:
 - **Rastro:** la maqueta lo pone como porcentaje dentro del bloque del VSL
   (`aios-command-center_1.html:4832`) y otra vez en interacciones (`aios-command-center_1.html:4681`).
 - **Dónde está el dato:** en `Video Pre-Call` (`lib/negocio/consumoDelPrecall.ts:64`), dentro de la
-  carpeta «Interacciones», que es del grupo `interacciones` (`lib/ghl/contrato.ts:327-329`).
+  carpeta «Interacciones», que es del grupo `interacciones` (`lib/ghl/contrato.ts:341-343`).
 - **Medido:** **222** contactos con valor y **371** vacíos. Por valor: Sin abrir (0%) 130 · Nada 50 ·
   76–100% 12 · 1–25% 11 · -20% 6 · 51–75% 4 · Accede: sin reproducir 3 · 26–50% 2 · 40-60% 2 · Clic a
   link 2.
@@ -333,7 +333,7 @@ acciones y siete secciones:
   (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304`) porque habla de la pieza: el formato y el
   *Creative Profile*, que no llegan de ningún lado. Lo que esta ficha muestra en «Creative» es el
   nombre que viene en `utmContent`, que A8-07 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`)
-  llama anuncio y que Creative usa como llave (`lib/negocio/calidadDelCreativo.ts:205`). El rótulo
+  llama anuncio y que Creative usa como llave (`lib/negocio/calidadDelCreativo.ts:206`). El rótulo
   no promete más que eso.
 
   Los huecos salen de `huecosDelLeadsPortal.ts` con su fecha: el VSL, fit e intent, ubicación,
@@ -349,11 +349,11 @@ acciones y siete secciones:
   (`aios-command-center_1.html:4856-4859`). Fit e intent son números inventados para cada contacto; a los
   que no tienen puntaje la maqueta les pone 0 (`aios-command-center_1.html:4651`).
 - **Qué pide:**
-  - **el puntaje**, que es «Puntaje | ICP» del CRM (`lib/ghl/contrato.ts:268-305`), con su tramo;
+  - **el puntaje**, que es «Puntaje | ICP» del CRM (`lib/ghl/contrato.ts:268-313`), con su tramo;
   - **quién lo calcula:** el rótulo dice que lo calcula el CRM, no Comando Central. El ICP calculado
     por Comando Central es futuro (`docs/OTROS/futuro/icp-interno-calculado.md`);
   - **el 0**, con su motivo: *«No se sabe si el CRM calculó cero o si su workflow no corrió»*
-    (`lib/negocio/sincronizar.ts:429-437`);
+    (`lib/negocio/sincronizar.ts:432-440`);
   - **la etiqueta de descarte**, si la tiene. Medido con `icp_rechazado`: bajo 45 · medio 22 · sin
     calificar 1 · alto 0;
   - **«Formulario completado»** pasa a ser el estado del `Form Landing VSL` (`LP05-09`);
@@ -392,7 +392,7 @@ acciones y siete secciones:
 ### LP05-P01 · ¿Se muestran los otros tres campos del grupo `interacciones`?
 
 La carpeta «Interacciones» tiene cuatro campos: la confirmación de asistencia, el video precall y las
-dos preguntas de la llamada (`lib/ghl/contrato.ts:327-329`). Medido: el grupo tiene **4** campos en
+dos preguntas de la llamada (`lib/ghl/contrato.ts:341-343`). Medido: el grupo tiene **4** campos en
 **1** carpeta. `LP05-11` toma el precall. Los otros tres ya se muestran en la ficha del closer. En el
 portal completarían el recorrido: la confirmación de asistencia es justo lo que le falta al paso
 «Asistió». Pero LP-0 no midió su cobertura, y el plan de LP-3 no los nombra.
@@ -410,7 +410,7 @@ contesta una sola vez.
 
 ### LP05-P03 · ¿La ficha muestra las etiquetas crudas del CRM?
 
-`perfilDeLaFicha` las pone en el grupo «origen» (`lib/negocio/ficha.ts:511-513`). Esta ficha sólo
+`perfilDeLaFicha` las pone en el grupo «origen» (`lib/negocio/ficha.ts:512-514`). Esta ficha sólo
 muestra la de descarte (`LP05-05`). Las crudas explican casos raros, como por qué alguien está donde
 está. Pero son vocabulario interno del CRM, y en una pestaña que ve más gente que el closer quizás no
 corresponde.

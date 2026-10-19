@@ -158,7 +158,7 @@ que se mira (`:131`), y el comentario de la cabecera se publica desde la respues
 
 **Ventanas.** «7 días» y «30 días» son días **cerrados**: terminan en el último día cuyo total de la cuenta se
 releyó después de la medianoche de la empresa (`lib/negocio/diasCerrados.ts:14-26`,
-`lib/negocio/gastoDeLaCuenta.ts:295-331`). «Hoy» es hoy, sin costos ni flechas; «Completo» empieza en el dato más
+`lib/negocio/gastoDeLaCuenta.ts:298-338`). «Hoy» es hoy, sin costos ni flechas; «Completo» empieza en el dato más
 viejo —gasto o contacto con campaña— y termina hoy (`lib/negocio/embudosDeAcquisition.ts:43-47`). La ventana
 anterior se compara sólo si está entera (`:748-759`), y sus agendados se cuentan a la misma edad (`:780-781`). Un
 día está entero cuando su total de la cuenta se releyó después de terminar y el detalle por campaña cuadra con él,
@@ -176,9 +176,9 @@ costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcqu
   —la anterior también fue cero—, Clics 2, «0 de 1 leads traen campaña».
 - **«Completo»** empieza el 2026-08-11, el alta del primer contacto con campaña, una semana antes del primer día de
   gasto guardado (2026-08-18). A la ventana le faltan esos siete días de la serie, así que **nunca publica costos**
-  y la nota dice «Faltan días de gasto.» (`lib/negocio/gastoDeLaCuenta.ts:376-381`,
+  y la nota dice «Faltan días de gasto.» (`lib/negocio/gastoDeLaCuenta.ts:395-400`,
   `lib/negocio/embudosDeAcquisition.ts:760-761`): riesgo 3. Su Inversión es la suma por campaña, 7.100,17, porque
-  sin todos los días no hay total de la cuenta (`lib/negocio/gastoDeLaCuenta.ts:385`).
+  sin todos los días no hay total de la cuenta (`lib/negocio/gastoDeLaCuenta.ts:404`).
 - **«Sin funnel»** lista **29 campañas**: las 28 con anuncios guardados y una con contactos y sin anuncios. 13
   tienen contactos atribuidos; las 16 restantes dibujan «—» en sus personas.
 
@@ -413,7 +413,7 @@ contra la versión del 2026-09-15: con ésta caen en otro texto.
 
 **10 · Comentarios del código que no decían la verdad. Cerrado el 2026-10-18 (`65669f4`).**
 `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea `anuncios` «del cron de las 17:06 UTC», y es
-a las 06:17 (`lib/negocio/barrido.ts:289`); `lib/negocio/costoDelAnuncio.ts:451` decía que «el colector pide hoy y los
+a las 06:17 (`lib/negocio/barrido.ts:289`); `lib/negocio/costoDelAnuncio.ts:458` decía que «el colector pide hoy y los
 tres anteriores», y pide hoy y los dos anteriores (`lib/negocio/recolectarAnuncios.ts:62`). Los dos seguían igual que
 el 2026-09-28 al corte; ese mismo día se corrigieron, y hoy dicen 06:17 UTC y «hoy y los dos anteriores». Antes ya
 se habían cerrado el de las «52 llamadas» de `barrido.ts` (hoy `lib/negocio/barrido.ts:285-288`, con el costo de la `076`) y el de

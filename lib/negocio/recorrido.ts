@@ -43,7 +43,7 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { campoPorNombre } from './camposDelCrm.ts';
+import { campoPorNombre, tieneElCampo } from './camposDelCrm.ts';
 import type { DiasDeCalendario } from './diasCerrados.ts';
 
 /**
@@ -261,7 +261,7 @@ export async function ultimoDiaDelFormulario(): Promise<string | null> {
   const f = await datos()
     .selectFrom('contactos')
     .select(sql<string | null>`to_char(max(alta_en_el_crm)::date, 'YYYY-MM-DD')`.as('ultimo'))
-    .where(sql<boolean>`campos_del_crm ? ${campo}`)
+    .where(tieneElCampo(sql`campos_del_crm`, campo))
     .executeTakeFirst();
 
   return f?.ultimo ?? null;

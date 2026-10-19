@@ -301,14 +301,28 @@ export const ETIQUETAS_DE_DESCARTE: readonly string[] = [
  * proveedor. El día que haya una segunda subcuenta esto se muda a
  * `identidad.organizaciones_credenciales`, como `crm_agente_usuario_id`, y **este párrafo es el que
  * dice cuándo dejó de alcanzar una constante**.
+ *
+ * ── Y LA SEGUNDA SUBCUENTA LLEGÓ (el nivel 3, 2026-10-18) ──────────────────
+ *
+ * Los clientes de una empresa nacen del mismo snapshot: el campo se llama igual y tiene otro id. Hasta que la
+ * Conexión de cada cliente lo pueda configurar, en las otras subcuentas se busca por su nombre EXACTO
+ * (`NOMBRE_DEL_PUNTAJE`) en su catálogo (`camposDelPuntaje`), y este id sigue siendo el de la de ARIA. El nombre
+ * exacto no es el problema de arriba —los nueve que dicen «score» o «puntaje»—: es uno solo, el mismo que Creative
+ * ya busca así (`CAMPO_DE_ICP`).
  */
 export const CAMPO_DEL_PUNTAJE = '9HXxl5DW6aayQgKUPiOS';
+
+/** El nombre exacto del campo del puntaje: con él se encuentra en la subcuenta de cada cliente. */
+export const NOMBRE_DEL_PUNTAJE = 'Puntaje | ICP';
 
 /** Una carpeta de campos personalizados, y a qué grupo del Perfil van sus campos. */
 export interface CarpetaDelPerfil {
   /** El `parentId` que traen los campos de esa carpeta. */
   id: string;
-  /** Cómo se llama en GoHighLevel. **Solo para poder leer esta lista** — no se usa para filtrar. */
+  /**
+   * Cómo se llama en GoHighLevel. Para leer esta lista y, desde el nivel 3, para reconocerla en la subcuenta de otro
+   * cliente: nace del mismo snapshot, con el mismo nombre y otro id (`grupoDeLaCarpeta`).
+   */
   nombre: string;
   /** El grupo de `CampoDePerfil` donde caen sus campos. */
   grupo: 'detalles' | 'origen' | 'calificacion' | 'interacciones';

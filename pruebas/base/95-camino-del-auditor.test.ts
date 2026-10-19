@@ -459,6 +459,22 @@ test('el prompt guardado llega VERBATIM a las instrucciones que recibe el modelo
   await esc.admin.query('delete from negocio.prompts_del_agente');
 });
 
+test('con un cliente que no es el principal, el prompt de la empresa NO llega al modelo (el nivel 3)', async () => {
+  await limpio();
+  /* Los prompts del agente son de la empresa, y el agente del CRM es de cada subcuenta: el cargado es el del agente
+     del principal. Auditar a otro cliente contra ese prompt sería juzgarlo por las reglas de otro agente. */
+  const frase = 'REGLA 7: jamás menciones el pimentón dulce de La Vera antes del minuto tres.';
+  await conOrganizacion(esc.org, () => guardarPromptDelAgente('chat_post_agenda', frase, null));
+  await unaConversacion();
+
+  const m = siempre(verde());
+  await auditarEmpresa({ ...EMPRESA(), esPorOmision: false }, { ahora: AHORA, pedir: m.pedir });
+
+  assert.equal(m.llamadas(), 1);
+  assert.ok(!m.vistos[0]?.instrucciones.includes(frase), 'el prompt de la empresa llegó al auditor de otro cliente');
+  await esc.admin.query('delete from negocio.prompts_del_agente');
+});
+
 test('los patrones ya detectados llegan al modelo, y son los DE SU AGENTE', async () => {
   await limpio();
   /* Ofrecerle al auditor de post-agenda los códigos de pre-agenda invita al mismo cruce que el esquema

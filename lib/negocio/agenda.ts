@@ -404,12 +404,16 @@ function avisoDeZona(zonaHoraria: string): string | null {
  * compartida sin mentir en una de las dos.
  */
 async function faltaDelBarrido(): Promise<string | null> {
-  /* Un pulso por cliente (el nivel 3): la agenda de la empresa entera —o la del foco, que acota la RLS— mira el PEOR.
-     Con el de un solo cliente, uno al día escondería a otro que nunca se leyó. */
+  /* Un pulso por cliente (el nivel 3): la agenda de la empresa entera —o la del foco, que acota la RLS— mira el PEOR
+     de los clientes ACTIVOS. Con el de un solo cliente, uno al día escondería a otro que nunca se leyó; y uno en pausa
+     no se barre, así que su pulso viejo no puede decir nada de hoy. Un activo sin pulso es «no se leyó». */
   const pulsos = await datos()
-    .selectFrom('ingesta_pulso')
-    .select(['ultima_corrida_el', 'atrasado'])
-    .where('clave', '=', 'citas')
+    .selectFrom('cuentas as c')
+    .leftJoin('ingesta_pulso as p', (j) =>
+      j.onRef('p.org_id', '=', 'c.org_id').onRef('p.cuenta_id', '=', 'c.id').on('p.clave', '=', 'citas'),
+    )
+    .select(['p.ultima_corrida_el', 'p.atrasado'])
+    .where('c.estado', '=', 'activa')
     .execute();
   const pulso = pulsos.find((p) => p.ultima_corrida_el === null) ?? pulsos.find((p) => p.atrasado) ?? pulsos[0];
 

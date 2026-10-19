@@ -128,29 +128,29 @@ frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:172-
 - **Es reconciliación, no una cola** (`lib/negocio/barrido.ts:15-24`).
 - **La sonda va primero**, en su propio `try/catch` (`lib/negocio/barrido.ts:603-621`).
 - **Las empresas van por sello más viejo**, y las que nunca corrieron o quedaron `sin_tiempo`, antes que todas
-  (`lib/negocio/barrido.ts:623-658`, `lib/negocio/barrido.ts:1265`).
+  (`lib/negocio/barrido.ts:623-659`, `lib/negocio/barrido.ts:1266`).
 - **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:416`). Es un guardia
   parcial: una sola llamada colgada puede esperar 240 s y Vercel corta la función a los 300
   (`lib/negocio/barrido.ts:403-414`). Los Analizadores y la pasada de los detectores, que corren solos, tienen hasta
-  285 s (`lib/negocio/barrido.ts:428`, `lib/negocio/barrido.ts:948-952`).
+  285 s (`lib/negocio/barrido.ts:428`, `lib/negocio/barrido.ts:949-953`).
 - **Qué credencial pide cada tarea.** `auditoria`, `mejora`, `analizadores`, `reintentos`, `senales` y `activos` no
-  piden el token del CRM (`lib/negocio/barrido.ts:717-725`); cada una se saltea con su propio texto si le falta lo suyo
-  (`lib/negocio/barrido.ts:732-754`).
+  piden el token del CRM (`lib/negocio/barrido.ts:718-726`); cada una se saltea con su propio texto si le falta lo suyo
+  (`lib/negocio/barrido.ts:733-755`).
 - **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca un `+1`
-  (`lib/negocio/barrido.ts:1281-1322`). Los estados son `corrio`, `saltada`, `frenada`, `sin_tiempo` y `fallo`
+  (`lib/negocio/barrido.ts:1282-1323`). Los estados son `corrio`, `saltada`, `frenada`, `sin_tiempo` y `fallo`
   (`lib/negocio/barrido.ts:143-144`). La pasada de los detectores es la excepción: a la empresa a la que no le tocaba,
-  no la sella (`lib/negocio/barrido.ts:934-953`).
+  no la sella (`lib/negocio/barrido.ts:935-954`).
 
 **Cuánto dura una corrida** se midió el 2026-09-28 (horario `*/10`, 93 s de los 180 del presupuesto, ~75 de la única
 empresa con token). **No se volvió a medir**; desde el 2026-10-11 esa misma corrida suma la pasada de hasta 50
-miniaturas (`lib/negocio/miniaturaDelContacto.ts:44`, llamada en `lib/negocio/barrido.ts:1042-1046`).
+miniaturas (`lib/negocio/miniaturaDelContacto.ts:44`, llamada en `lib/negocio/barrido.ts:1043-1047`).
 
 ### 2.4 · Las doce tareas
 
 | tarea | módulo | qué hace | llamadas en el último sello de `aria`, 2026-10-18 |
 |---|---|---|---|
 | `sonda` | `lib/deteccion/sonda.ts:103` | busca filas de una organización de control vistas desde la otra | 0 al proveedor; **no deja sello** |
-| `contactos` | `lib/negocio/sincronizar.ts:157` y `lib/negocio/miniaturaDelContacto.ts:158` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
+| `contactos` | `lib/negocio/sincronizar.ts:156` y `lib/negocio/miniaturaDelContacto.ts:158` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
 | `mensajes` | `lib/negocio/ingesta.ts:108` | camina las conversaciones por marca de agua | 1 |
 | `auditoria` | `lib/auditor/analisis.ts:332` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
 | `citas` | `lib/negocio/citas.ts:147` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:75`, `:80`) | 11 |
@@ -227,7 +227,7 @@ pasa por ella (`lib/deteccion/sonda.ts:119-121`).
 el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fallo` se avisa antes de mirar el umbral
 (`lib/negocio/frescura.ts:156`); `saltada`, `frenada` y `sin_tiempo` no se avisan (`lib/negocio/frescura.ts:153-154`).
 `frescuraDelAviso()` hace lo mismo con el webhook, con `llega_sin_procesar` y un umbral de 120 minutos
-(`lib/negocio/frescura.ts:259-265`, `:231`, `:258`).
+(`lib/negocio/frescura.ts:260-266`, `:231`, `:258`).
 
 **Quién la lee** (búsqueda de `frescuraDe(` en `lib/`, `app/` y `components/`, 2026-10-18): la Agenda del Closer
 (`lib/negocio/agenda.ts:352`), el chat de la ficha (`lib/negocio/ficha.ts:295`, `:295`), Leads Portal
@@ -455,7 +455,7 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 
 - **La protección de rama en `main`** con `verificar` requerido (§ 5.2).
 - **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a propósito
-  (`lib/negocio/barrido.ts:1223`, `lib/negocio/barrido.ts:832-842`), así que su resultado vive sólo en la respuesta
+  (`lib/negocio/barrido.ts:1224`, `lib/negocio/barrido.ts:833-843`), así que su resultado vive sólo en la respuesta
   del cron. `negocio.control_aislamiento` tiene sus dos filas de control.
 - **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente (`docs/OTROS/produccion/DESPLIEGUE.md:241-243`,
   `:444`); sin él, la sonda que detecte una fuga sale como `fallo` en la respuesta del cron
@@ -468,7 +468,7 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 - **Las tres zonas en la CI**, y el arreglo de las pruebas que dependen de la hora (§ 5.1).
 - **La espera externa corta para el camino del cron** (`lib/negocio/barrido.ts:411-414`).
 - **Los contactos congelados siguen afirmando una frescura que no tienen, y crecen.** `congelarLosQueYaNoEstan` pone
-  `territorio = null` sin tocar `sincronizado_el` (`lib/negocio/sincronizar.ts:306-314`): medido el 2026-10-18, **36 de
+  `territorio = null` sin tocar `sincronizado_el` (`lib/negocio/sincronizar.ts:307-315`): medido el 2026-10-18, **36 de
   624** sin territorio y sin releer, con sellos entre el 2026-08-24 y el 2026-10-09 (25 de 594 el 2026-09-28).
 - **Ocho tablas sin una fila**: las tres de siempre (`llamadas`, `prompts_del_agente`, `versiones_del_prompt`) y cinco
   nuevas que esperan su primer uso —`activos_de_anuncio` (Meta), `briefs_del_closer`, `enlaces_de_pieza`,
@@ -481,7 +481,7 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 ## 9 · Reglas de la plataforma
 
 1. **Reconciliación, no cola** (`lib/negocio/barrido.ts:22-24`, `lib/negocio/recolectarAnuncios.ts:11-19`).
-2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`** (`lib/negocio/barrido.ts:1271-1322`).
+2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`** (`lib/negocio/barrido.ts:1272-1323`).
 3. **Un horario desconocido corre todo y lo dice** (`lib/negocio/barrido.ts:563-568`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`
    (`lib/negocio/barrido.ts:151-166`).

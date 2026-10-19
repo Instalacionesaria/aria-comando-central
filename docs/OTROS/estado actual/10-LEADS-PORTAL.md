@@ -512,7 +512,7 @@ terminaba en «Probá una ventana más larga.» (`lib/negocio/leadsDelPortal.ts:
 «Hoy». La única prueba de voseo miraba Tools y el prompt del Espía (`pruebas/codigo/202-tools-no-vosea.test.ts:10-11`),
 así que nada fallaba. Hoy dice «Prueba una ventana más larga.», y `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts`
 mira `components/`, `lib/` y `app/` enteros, fuera de Fundaciones. Lo que queda: 38 archivos que todavía vosean,
-contados en su lista `TODAVIA_VOSEAN` (`pruebas/codigo/258-la-aplicacion-no-vosea.test.ts:27-66`), ninguno de
+contados en su lista `TODAVIA_VOSEAN` (`pruebas/codigo/258-la-aplicacion-no-vosea.test.ts:27-65`), ninguno de
 `components/leads-portal/`.
 
 **El calendario ya marca asistencias, y nadie las lee.** 3 citas con `showed` (§ 4) mientras «Asistieron» cuenta

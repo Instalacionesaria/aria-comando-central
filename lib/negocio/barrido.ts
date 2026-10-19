@@ -626,12 +626,14 @@ export async function barrerTodo(
   // haría que la última empresa de la lista fuera siempre la que se queda sin tiempo — para siempre,
   // y sin que nada lo dijera.
   //
-  // ── Y CON EL NIVEL 3, POR UNIDAD ─────────────────────────────────────────
+  // ── Y CON EL NIVEL 3, POR UNIDAD, EN UN SOLO ORDEN GLOBAL ─────────────────
   //
   // Cada cliente activo es una unidad con las tareas de un cliente y su propio sello; la empresa es otra, con las
-  // suyas. Adentro de la empresa, sus clientes van por su sello y la unidad de la empresa al final —los detectores
-  // leen lo que las tareas de los clientes trajeron—. Y las empresas van por el sello más viejo de cualquiera de sus
-  // unidades: un cliente que se quedó sin tiempo adelanta a su empresa entera la vez siguiente, y adentro va primero.
+  // suyas. Todas las de los clientes —de todas las empresas— van en UN orden, por su propio sello: con un orden por
+  // empresa, una empresa con un cliente sin tiempo empataba con la que no corrió nada, ganaba por su lugar en la
+  // lista y volvía a correr a los clientes que ya habían corrido; con suficientes clientes, las demás empresas no
+  // corrían nunca. Las de las empresas van después: los detectores leen lo que las tareas de los clientes trajeron.
+  // Fuera del horario desconocido, un horario trae unas u otras, no las dos.
   const delCliente = tareas.filter(esDelCliente);
   const deLaEmpresa = tareas.filter((t) => !esDeLaPlataforma(t) && !esDelCliente(t));
   const porEmpresa = await Promise.all(
@@ -648,16 +650,15 @@ export async function barrerTodo(
       return unidades;
     }),
   );
-  const antes = (a: number | null, b: number | null): number =>
-    a === null && b === null ? 0 : a === null ? -1 : b === null ? 1 : a - b; // sin sello = nunca se barrió = primero
-  const elMasViejo = (us: readonly Unidad[]): number | null =>
-    us.some((u) => u.sello === null) ? null : Math.min(...us.map((u) => u.sello as number));
-  for (const unidades of porEmpresa) {
-    unidades.sort((a, b) => Number(a.cliente === null) - Number(b.cliente === null) || antes(a.sello, b.sello));
-  }
-  porEmpresa.sort((a, b) => antes(elMasViejo(a), elMasViejo(b)));
+  const antes = (a: Unidad, b: Unidad): number =>
+    a.sello === null && b.sello === null ? 0 : a.sello === null ? -1 : b.sello === null ? 1 : a.sello - b.sello; // sin sello = nunca se barrió = primero
+  const unidades = porEmpresa.flat();
+  const enOrden = [
+    ...unidades.filter((u) => u.cliente !== null).sort(antes),
+    ...unidades.filter((u) => u.cliente === null).sort(antes),
+  ];
 
-  for (const { empresa, cliente, tareas: tareasDeLaUnidad } of porEmpresa.flat()) {
+  for (const { empresa, cliente, tareas: tareasDeLaUnidad } of enOrden) {
     const { org, analizador, llaveDeIa } = empresa;
     // Las credenciales de la unidad: las del cliente. La de la empresa no usa ninguna de las tres.
     const acceso = cliente?.acceso ?? empresa.acceso;

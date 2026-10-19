@@ -760,7 +760,7 @@ da error. No hace nada» (`:13`).
 dicen cuándo se mudan a una columna de la organización.
 
 **27 · Leer el catálogo no cambia lo que se muestra.** `campoPorNombre`
-(`lib/negocio/camposDelCrm.ts:307`) existe para que agregar un indicador no cambie lo que el closer ve.
+(`lib/negocio/camposDelCrm.ts:315`) existe para que agregar un indicador no cambie lo que el closer ve.
 
 **28 · Un módulo que comparten el servidor y el navegador no puede importar nada que toque la base.**
 `lib/negocio/periodo.ts:25-34`, forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:244`.
@@ -1116,7 +1116,7 @@ revisión adversarial con dos escépticos por hallazgo, que ejecutaron la funci�
 2026-09-18): «una marca de agua no puede describir un conjunto con agujeros». La ventana ahora sale de
 lo que FALTA. **Y volvió con el gasto**: el colector pedía 13 de las 61 campañas de la cuenta, el sello decía `corrio`
 y una campaña de mensajes no entraba nunca; la `076` (`22ec755`, 2026-10-07) lee la serie de toda la cuenta y el
-sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:1109-1112`).
+sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:1110-1113`).
 
 ## M · Un comentario que afirma sin medir
 
@@ -1209,7 +1209,7 @@ pantalla, no una regla gramatical (`:3`), y `pruebas/codigo/202-tools-no-vosea.t
 `components/tools`, `lib/tools` y `app/api/tools` (`:40-44`, `5d60371`, 2026-10-04). Mira sólo Tools, y al corte los
 textos de la conexión con Meta (`lib/meta/graph.ts:68`, `:74`; `components/ajustes/ConexionConMeta.jsx:36`) voseaban
 sin que nada fallara. **Desde el 2026-10-18 (`65669f4`)** esos textos hablan de tú y la regla la vigila también
-`pruebas/codigo/258-la-aplicacion-no-vosea.test.ts:80-90` en `components/`, `lib/` y `app/` enteros, sin comentarios y
+`pruebas/codigo/258-la-aplicacion-no-vosea.test.ts:79-89` en `components/`, `lib/` y `app/` enteros, sin comentarios y
 fuera de Fundaciones, que es de la rama `feature/icp-oferta-v2` (`:16`). No exige todavía que toda la aplicación hable de tú: exige
 que nada vosee fuera de `TODAVIA_VOSEAN` (`:27-66`), los 38 archivos que vosean hoy, y que la lista no tenga entradas muertas
 (`:92-96`), así que sólo puede achicarse. El voseo del resto de la aplicación quedó contado y vigilado, no corregido
@@ -1344,7 +1344,7 @@ cierta; el hecho con el que se justifica, no. **Sigue igual.**
 **Encontrado de paso — dos agujeros de integridad que ninguna de estas reglas cubre:**
 
 1. **36 contactos con `territorio` nulo**, medido el 2026-10-18 (25 el 2026-09-28). `congelarLosQueYaNoEstan`
-   (`lib/negocio/sincronizar.ts:306`) pone el territorio en nulo y el barrido no vuelve a esas filas. **24 no tienen
+   (`lib/negocio/sincronizar.ts:307`) pone el territorio en nulo y el barrido no vuelve a esas filas. **24 no tienen
    `alta_en_el_crm`** —los mismos 24 viejos—, así que son invisibles para todas las cohortes sin ningún aviso; los otros
    12 tienen alta y se congelaron desde el 2026-09-17; 11 de los 36 tienen una cita alcanzable.
 2. **Las citas no tienen resta.** No hay equivalente de `congelarLosQueYaNoEstan` en `lib/negocio/citas.ts`, que no

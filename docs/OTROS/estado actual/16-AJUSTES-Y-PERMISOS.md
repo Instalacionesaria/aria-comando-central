@@ -321,7 +321,7 @@ el 2026-09-29, **token de Meta**— que se cifran con AES-256-GCM al guardar y n
 (`app/api/admin/credenciales/route.ts:90-97`, `lib/credenciales/cifrado.ts:62`); **seis** identificadores que no son
 secretos y viajan completos —la cuenta publicitaria de Meta, y cuenta, calendario, dominio de reservas y usuario del
 agente en el CRM, y comercio de pagos— (`app/api/admin/credenciales/route.ts:99-122`); y el secreto del aviso del CRM,
-que no se carga sino que se genera con el `POST` (`app/api/admin/credenciales/route.ts:304`), se guarda como hash,
+que no se carga sino que se genera con el `POST` (`app/api/admin/credenciales/route.ts:330`), se guarda como hash,
 sale una sola vez al generarse, y del que el `GET` sólo dice si existe (`lib/credenciales/resolver.ts:316`). Cada campo
 se guarda solo y un `null` explícito lo borra (`app/api/admin/credenciales/route.ts:173`). Las dos columnas de Meta son
 de la `064` (`db/migraciones/064_la_llave_de_meta.sql:28` y `:31`), aplicada el 2026-09-30 a las 16:15 UTC.
@@ -332,7 +332,7 @@ hay un botón que lo prueba en tres pasos —el token, la cuenta publicitaria y 
 nada (`components/ajustes/ConexionConMeta.jsx:3-10`, `lib/meta/conexion.ts:37`). La ruta es un `POST` aunque no
 escribe, pide `credenciales.editar` y llama a Meta fuera de la transacción de identidad
 (`app/api/admin/credenciales/meta/route.ts:1-9`, `app/api/admin/credenciales/meta/route.ts:22-31`). Sin token o sin
-cuenta responde qué falta, con los textos de `TEXTO_DE_FALTA_META` (`lib/credenciales/resolver.ts:693-702`). Lo usa la
+cuenta responde qué falta, con los textos de `TEXTO_DE_FALTA_META` (`lib/credenciales/resolver.ts:718-727`). Lo usa la
 tarea horaria `activos` (ver [17-LA-PLATAFORMA.md](17-LA-PLATAFORMA.md) § 2) y su guía es
 `docs/creative/17-CONECTAR-META-PASO-A-PASO.md`. **Nadie lo cargó**: el 2026-10-18, 0 de 5 filas tienen token de Meta
 y 0 tienen la cuenta, y la tarea `activos` está `saltada` en las 11 empresas activas.
@@ -356,8 +356,8 @@ empresa está diagnosticado y dejado para después (`docs/OTROS/futuro/el-dia-de
 
 **Quién firma el cambio.** `actualizado_por` tiene una foránea compuesta que exige un usuario de la misma
 organización, así que bajo delegación va nulo (`lib/autorizacion/sesion.ts:453-454`,
-`app/api/admin/credenciales/route.ts:250`); el actor real queda en `identidad.auditoria_accesos` como
-`credenciales_cargadas` (`app/api/admin/credenciales/route.ts:266`). Los topes del cerebro siguen la misma regla
+`app/api/admin/credenciales/route.ts:259`); el actor real queda en `identidad.auditoria_accesos` como
+`credenciales_cargadas` (`app/api/admin/credenciales/route.ts:287`). Los topes del cerebro siguen la misma regla
 (`app/api/admin/cerebro/route.ts:59`).
 
 **Cargadas por proveedor** (`count(*) filter (where … is not null)` sobre `identidad.organizaciones_credenciales`):

@@ -44,7 +44,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
-import { HORARIOS, type Tarea } from './barrido.ts';
+import { HORARIOS, TAREAS_DEL_CLIENTE, type Tarea } from './barrido.ts';
 
 /** Qué tan fresco está el barrido de una tarea. `null` en `estado` = al día. */
 export interface Frescura {
@@ -182,10 +182,17 @@ export async function frescuraDe(tarea: Tarea, cuentaId?: string): Promise<Fresc
  * El sello que cuenta para la frescura (el nivel 3). **Corre dentro de `conOrganizacion(`.**
  *
  * Desde el barrido por cliente, una tarea de un cliente tiene un sello por cliente, y las de la empresa uno sin
- * cuenta. Con un cliente pedido —la ficha de un contacto, que es de uno—, el suyo. Sin cliente —una pantalla de la
- * empresa entera o con el foco en uno, que ya acota la RLS—, el PEOR de los clientes activos a la vista: uno que
- * falla gana, y si no, el más viejo. Un promedio o el más nuevo dirían «al día» con un cliente sin traer nada. Sin
- * sellos de clientes, el sin cuenta: las tareas de la empresa, y los sellos de antes del nivel 3.
+ * cuenta. Las reglas, en orden:
+ *
+ *   · una tarea de la EMPRESA (o de la plataforma): su sello, sin cuenta;
+ *   · la de UN cliente —pedido, como la ficha de un contacto, o el único a la vista, como el foco o el cliente final—:
+ *     el suyo, aunque esté en pausa. Si no tiene y es el principal, el sin cuenta: los sellos de antes del barrido
+ *     por cliente eran del trabajo que entraba con las credenciales de la empresa, o sea del principal. Para otro
+ *     cliente, sin sello es «nunca», que es la verdad: el sello viejo del principal no es suyo;
+ *   · con VARIOS clientes a la vista —la empresa entera—, el PEOR de los activos que ya tienen sello: uno que falla
+ *     gana, y si no, el más viejo. Un promedio o el más nuevo dirían «al día» con un cliente sin traer nada. Un
+ *     cliente recién dado de alta, que el cron todavía no barrió, no cuenta hasta su primera pasada: con él, toda la
+ *     empresa diría «nunca corrió» durante un día entero en las tareas diarias.
  *
  * La diferencia la calcula la BASE, no la aplicación: es la única forma de que el «ahora» sea el mismo reloj que
  * escribió el sello.
@@ -194,45 +201,39 @@ async function selloQueCuenta(
   tarea: Tarea,
   cuentaId: string | undefined,
 ): Promise<{ ultimo_estado: string; minutos: number } | undefined> {
-  const minutos = sql<number>`greatest(0, floor(extract(epoch from (now() - t.ultima_corrida_el)) / 60))`.as('minutos');
+  const sellos = await datos()
+    .selectFrom('tareas_programadas as t')
+    .select([
+      't.cuenta_id',
+      't.ultimo_estado',
+      't.ultima_corrida_el',
+      sql<number>`greatest(0, floor(extract(epoch from (now() - t.ultima_corrida_el)) / 60))`.as('minutos'),
+    ])
+    .where('t.tarea', '=', tarea)
+    .execute();
+  const sinCuenta = sellos.find((s) => s.cuenta_id === null);
+  if (!TAREAS_DEL_CLIENTE.includes(tarea)) return sinCuenta;
+
+  const clientes = await datos().selectFrom('cuentas').select(['id', 'es_por_omision', 'estado']).execute();
+  const deUno = (c: { id: string; es_por_omision: boolean }) =>
+    sellos.find((s) => s.cuenta_id === c.id) ?? (c.es_por_omision ? sinCuenta : undefined);
+
   if (cuentaId !== undefined) {
-    /* El suyo. Y si no tiene y es el principal, el sin cuenta: los sellos de antes del barrido por cliente eran del
-       trabajo que entraba con las credenciales de la empresa, o sea del principal. Para otro cliente, sin sello es
-       «nunca», que es la verdad. */
-    return datos()
-      .selectFrom('tareas_programadas as t')
-      .select(['t.ultimo_estado', minutos])
-      .where('t.tarea', '=', tarea)
-      .where((w) =>
-        w.or([
-          w('t.cuenta_id', '=', cuentaId),
-          w.and([
-            w('t.cuenta_id', 'is', null),
-            w.exists(
-              w.selectFrom('cuentas as c').select('c.id').where('c.id', '=', cuentaId).where('c.es_por_omision', '=', true),
-            ),
-          ]),
-        ]),
-      )
-      .orderBy(sql`t.cuenta_id is null`)
-      .executeTakeFirst();
+    const pedido = clientes.find((c) => c.id === cuentaId);
+    return pedido ? deUno(pedido) : sellos.find((s) => s.cuenta_id === cuentaId);
   }
-  const elPeor = await datos()
-    .selectFrom('tareas_programadas as t')
-    .innerJoin('cuentas as c', (j) => j.onRef('c.id', '=', 't.cuenta_id').onRef('c.org_id', '=', 't.org_id'))
-    .select(['t.ultimo_estado', minutos])
-    .where('t.tarea', '=', tarea)
-    .where('c.estado', '=', 'activa')
-    .orderBy(sql`t.ultimo_estado = 'fallo' desc`)
-    .orderBy('t.ultima_corrida_el', 'asc')
-    .executeTakeFirst();
-  if (elPeor) return elPeor;
-  return datos()
-    .selectFrom('tareas_programadas as t')
-    .select(['t.ultimo_estado', minutos])
-    .where('t.tarea', '=', tarea)
-    .where('t.cuenta_id', 'is', null)
-    .executeTakeFirst();
+  if (clientes.length === 0) return sinCuenta;
+  if (clientes.length === 1) return deUno(clientes[0]!);
+  const candidatos = clientes
+    .filter((c) => c.estado === 'activa')
+    .map(deUno)
+    .filter((s): s is (typeof sellos)[number] => s !== undefined);
+  candidatos.sort(
+    (a, b) =>
+      Number(b.ultimo_estado === 'fallo') - Number(a.ultimo_estado === 'fallo') ||
+      a.ultima_corrida_el.getTime() - b.ultima_corrida_el.getTime(),
+  );
+  return candidatos[0];
 }
 
 /**

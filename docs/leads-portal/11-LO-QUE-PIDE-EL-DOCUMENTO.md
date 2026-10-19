@@ -48,8 +48,8 @@ documento da un techo, no un piso.
 | `:250` | Campaña, ad set, anuncio y creativo de origen | `campaign` · `utmMedium` y `utmTerm` · `adId` · `utmContent` | 271 · 507 y 273 · 213 · 505 | **a medias** (`LP11-05`) |
 | `:251` | First-touch attribution | `contactos.atribucion_primera` (`db/migraciones/048_de_donde_vino_el_lead.sql:100-101`) | por clave, en `09 § LP09-08` | **sí**, por lista blanca |
 | `:252` | Last-touch attribution | `contactos.atribucion_ultima` (`db/migraciones/048_de_donde_vino_el_lead.sql:103-104`) | sin medir en LP-0 | **sólo como «Llegó por»** (`LP11-05`, `LP11-P01`) |
-| `:253` | Respuestas de Meta Lead Ads, cuando aplique | carpeta «📁 Score \| ICP Lead Form (Meta)» (`lib/ghl/contrato.ts:325-326`) | respuestas: **123**, medido en LP-3 (`09 § LP09-P02`) | **el campo sí, y 123 personas con respuestas** (`LP11-06`) |
-| `:254` | Respuestas del formulario de la landing, después de completarlo | carpeta «📁 Score \| ICP Nuevo» (`lib/ghl/contrato.ts:323-324`) y el estado «Form Landing VSL» | estado: 121 · 87 · 39 · 346 vacío; respuestas: **219**, medido en LP-3 sin el puntaje (`09 § LP09-P02`) | **el campo sí, con corte; 219 personas con respuestas** (`LP11-06`) |
+| `:253` | Respuestas de Meta Lead Ads, cuando aplique | carpeta «📁 Score \| ICP Lead Form (Meta)» (`lib/ghl/contrato.ts:339-340`) | respuestas: **123**, medido en LP-3 (`09 § LP09-P02`) | **el campo sí, y 123 personas con respuestas** (`LP11-06`) |
+| `:254` | Respuestas del formulario de la landing, después de completarlo | carpeta «📁 Score \| ICP Nuevo» (`lib/ghl/contrato.ts:337-338`) y el estado «Form Landing VSL» | estado: 121 · 87 · 39 · 346 vacío; respuestas: **219**, medido en LP-3 sin el puntaje (`09 § LP09-P02`) | **el campo sí, con corte; 219 personas con respuestas** (`LP11-06`) |
 | `:255` | ICP score | `contactos.score` | 471, y 47 de ellos en 0 | **sí** |
 | `:256` | Segmento de ICP | el tramo, derivado del puntaje con 75 y 50 | 108 · 158 · 158 · 169 sin calificar | **sí**, por decisión (`LP11-07`) |
 | `:257` | Estado del funnel | no hay columna: se deriva | — | **derivado** (`LP11-08`) |
@@ -143,9 +143,9 @@ distintas y no se funden en una**, porque la del anuncio falta en 380 contactos 
 
 ### LP11-06 · Las respuestas (`§ 5.3:253-254`)
 
-El grupo `calificacion` junta tres carpetas (`lib/ghl/contrato.ts:318-326`): la del formulario de la
+El grupo `calificacion` junta tres carpetas (`lib/ghl/contrato.ts:332-340`): la del formulario de la
 landing, la del formulario de Meta, y «Contact», que tiene el puntaje y dos URLs. `perfilDeLaFicha`
-(`lib/negocio/ficha.ts:467-546`) ya las agrupa **por significado y no por formulario**, que es lo que
+(`lib/negocio/ficha.ts:467-548`) ya las agrupa **por significado y no por formulario**, que es lo que
 el documento necesita: el lead pudo entrar por cualquiera de las dos puertas, y la misma pregunta
 existe en las dos (`lib/negocio/ficha.ts:445-451`).
 
@@ -171,7 +171,7 @@ LP-0 cuenta al puntaje como una respuesta (`09 § LP09-P02`).
 ### LP11-07 · ICP score y segmento (`§ 5.3:255-256`)
 
 El puntaje lo calcula el CRM —«Puntaje | ICP», 0 a 100— y llega a `contactos.score` por la
-sincronización (`lib/negocio/sincronizar.ts:438`). El documento no dice quién lo calcula: dice que
+sincronización (`lib/negocio/sincronizar.ts:441`). El documento no dice quién lo calcula: dice que
 existe. Que el sistema lo calcule por su cuenta, con las respuestas del formulario, **queda a
 futuro** y se documenta en `docs/OTROS/futuro/icp-interno-calculado.md`.
 
@@ -243,7 +243,7 @@ conservarse su historial y exponer un resumen en el perfil.»*
 
 **Hoy se guarda exactamente como el documento dice que no.** El VSL y el precall viven dentro de
 `contactos.campos_del_crm`, que la sincronización **reescribe entero** en cada pasada
-(`lib/negocio/sincronizar.ts:409-411`). No hay tabla de eventos de reproducción, ni una fila por
+(`lib/negocio/sincronizar.ts:412-414`). No hay tabla de eventos de reproducción, ni una fila por
 visionado, ni una fecha. Lo que la ficha puede mostrar del precall es la última foto.
 
 **No se arregla en esta pestaña.** Conservar la historia es una tabla nueva y un escritor nuevo, y

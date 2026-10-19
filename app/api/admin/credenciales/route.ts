@@ -225,54 +225,80 @@ export async function PUT(peticion: Request): Promise<Response> {
     cambios['crm_expira_el'] = null;
   }
 
-  return conIdentidad(async (db) => {
-    /* La subcuenta de la empresa es la de su cliente principal. Si ya es la de otro cliente —de esta empresa o de
-       otra—, los datos de ese negocio entrarían en éste: 409, sin decir de quién, como el vínculo. */
-    if (typeof location === 'string') {
-      const deOtroCliente = await db
-        .selectFrom('cuentas')
-        .select('id')
-        .where('crm_cuenta_id', '=', location)
-        .where((w) => w.or([w('org_id', '<>', contexto.orgEfectiva), w('es_por_omision', '=', false)]))
-        .executeTakeFirst();
-      if (deOtroCliente) return rechazo('subcuenta_en_uso');
-    }
+  try {
+    return await conIdentidad(async (db) => {
+      /* La subcuenta de la empresa es la de su cliente principal. Si ya es la de otro cliente —de esta empresa o de
+         otra— o la de otra empresa, los datos de ese negocio entrarían en éste: 409, sin decir de quién, como el
+         vínculo. Se miran los dos lugares: `cuentas` (los clientes, y el principal desde que esta ruta lo copia) y
+         `organizaciones_credenciales` (las empresas que la cargaron antes de la copia). */
+      if (typeof location === 'string') {
+        const deOtroCliente = await db
+          .selectFrom('cuentas')
+          .select('id')
+          .where('crm_cuenta_id', '=', location)
+          .where((w) => w.or([w('org_id', '<>', contexto.orgEfectiva), w('es_por_omision', '=', false)]))
+          .executeTakeFirst();
+        const deOtraEmpresa = await db
+          .selectFrom('organizaciones_credenciales')
+          .select('org_id')
+          .where('crm_cuenta_id', '=', location)
+          .where('org_id', '<>', contexto.orgEfectiva)
+          .executeTakeFirst();
+        if (deOtroCliente || deOtraEmpresa) return rechazo('subcuenta_en_uso');
+      }
 
-    // La fila puede no existir: una organización nueva nace sin ninguna (05 § 2). `on conflict` es
-    // lo que hace que cargar la primera credencial y rotar una existente sean el mismo camino.
-    //
-    // Y en la rama de conflicto se escriben SOLO las columnas de `cambios`, que es la propiedad
-    // que hace que esto no borre nada que no se le pidió borrar.
-    await db
-      .insertInto('organizaciones_credenciales')
-      .values({
-        org_id: contexto.orgEfectiva,
-        actualizado_por: autorDelCambio(contexto),
-        actualizado_el: new Date(),
-        ...cambios,
-      } as never)
-      .onConflict((oc) =>
-        oc.column('org_id').doUpdateSet({
+      // La fila puede no existir: una organización nueva nace sin ninguna (05 § 2). `on conflict` es
+      // lo que hace que cargar la primera credencial y rotar una existente sean el mismo camino.
+      //
+      // Y en la rama de conflicto se escriben SOLO las columnas de `cambios`, que es la propiedad
+      // que hace que esto no borre nada que no se le pidió borrar.
+      await db
+        .insertInto('organizaciones_credenciales')
+        .values({
+          org_id: contexto.orgEfectiva,
           actualizado_por: autorDelCambio(contexto),
           actualizado_el: new Date(),
           ...cambios,
-        } as never),
-      )
-      .execute();
+        } as never)
+        .onConflict((oc) =>
+          oc.column('org_id').doUpdateSet({
+            actualizado_por: autorDelCambio(contexto),
+            actualizado_el: new Date(),
+            ...cambios,
+          } as never),
+        )
+        .execute();
 
-    // El tipo `Detalle` de la auditoría no tiene campo donde quepa un token, así que esto no
-    // depende de que nadie se olvide: la credencial no puede quedar registrada aunque se quiera.
-    await auditarAdministracion(db, {
-      accion: 'credenciales_cargadas',
-      actor: contexto.usuarioId,
-      objetivo: contexto.orgEfectiva,
-      orgId: contexto.orgEfectiva,
+      /* La misma subcuenta, en el cliente principal (el nivel 3), en la misma transacción. Así el único
+         `(crm, crm_cuenta_id)` de las cuentas cubre también a las empresas —dos no pueden tener la misma—, y cambiar de
+         subcuenta libera la vieja: sin la copia, la que dejó la fase `cuentas` quedaba ocupada para siempre. */
+      if (Object.hasOwn(cambios, 'crm_cuenta_id')) {
+        await db
+          .updateTable('cuentas')
+          .set({ crm_cuenta_id: location ?? null })
+          .where('org_id', '=', contexto.orgEfectiva)
+          .where('es_por_omision', '=', true)
+          .execute();
+      }
+
+      // El tipo `Detalle` de la auditoría no tiene campo donde quepa un token, así que esto no
+      // depende de que nadie se olvide: la credencial no puede quedar registrada aunque se quiera.
+      await auditarAdministracion(db, {
+        accion: 'credenciales_cargadas',
+        actor: contexto.usuarioId,
+        objetivo: contexto.orgEfectiva,
+        orgId: contexto.orgEfectiva,
+      });
+
+      // Se devuelve el estado resuelto, no un `{ ok: true }`: quien la cargó tiene que ver que quedó
+      // activa y con qué vista previa, o el "se guardó" es un éxito reportado sin verificar.
+      return ok(await resolverCredenciales(db, contexto.orgEfectiva));
     });
-
-    // Se devuelve el estado resuelto, no un `{ ok: true }`: quien la cargó tiene que ver que quedó
-    // activa y con qué vista previa, o el "se guardó" es un éxito reportado sin verificar.
-    return ok(await resolverCredenciales(db, contexto.orgEfectiva));
-  });
+  } catch (e) {
+    // Dos pedidos a la vez por la misma subcuenta: el único de las cuentas lo frena, y es el mismo 409.
+    if ((e as { code?: string }).code === '23505') return rechazo('subcuenta_en_uso');
+    throw e;
+  }
 }
 
 

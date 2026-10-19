@@ -107,7 +107,7 @@ puede heredar.
   - **«campaña · creativo»**, del **primer toque**: `atribucion_primera ->> 'campaign'` y
     `->> 'utmContent'`. «Creativo» es `utmContent` porque es la llave de pieza que usa Creative: la
     llave es el nombre del creativo (`lib/negocio/calidadDelCreativo.ts:21`), y se arma sobre
-    `utmContent` (`lib/negocio/calidadDelCreativo.ts:205`). En la tarjeta se muestra el texto tal como llega; la
+    `utmContent` (`lib/negocio/calidadDelCreativo.ts:206`). En la tarjeta se muestra el texto tal como llega; la
     normalización de Creative es para agrupar, no para mostrar. Una mitad vacía se dibuja «—».
     **Nunca se inventa un origen**, como el «Orgánico» de la maqueta (`aios-command-center_1.html:4632`).
   - **El puntaje y su tramo.** El número, **0 incluido**, más el rótulo de `TRAMOS`: «ICP alto»,

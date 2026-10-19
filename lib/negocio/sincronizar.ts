@@ -71,8 +71,7 @@ import {
   type ContactoDeGhl,
   type FalloDeGhl,
 } from '../ghl/cliente.ts';
-import { CAMPO_DEL_PUNTAJE } from '../ghl/contrato.ts';
-import { refrescarCatalogoDeCampos, type ResumenDelCatalogo } from './camposDelCrm.ts';
+import { camposDelPuntaje, refrescarCatalogoDeCampos, type ResumenDelCatalogo } from './camposDelCrm.ts';
 
 /**
  * Las etiquetas de GoHighLevel, y a qué territorio corresponde cada una.
@@ -173,6 +172,8 @@ export async function sincronizarContactos(acceso: {
   // Se recorren las etiquetas en orden de precedencia y se queda el PRIMER territorio que le
   // toque a cada contacto. `vistos` es lo que hace que el closer gane sobre el setter.
   const vistos = new Set<string>();
+  // El campo del puntaje en la subcuenta de este cliente (el nivel 3), una vez por pasada.
+  const puntaje = await camposDelPuntaje();
 
   for (const { etiqueta, territorio } of ETIQUETAS) {
     const r = await todosLosContactosPorEtiqueta(acceso, etiqueta);
@@ -186,7 +187,7 @@ export async function sincronizarContactos(acceso: {
       if (vistos.has(c.id)) continue;
       vistos.add(c.id);
 
-      const guardado = await guardar(c, territorio);
+      const guardado = await guardar(c, territorio, puntaje);
       if (guardado === true) resumen.guardados[territorio] += 1;
       else resumen.salteados.push({ id: c.id, porque: guardado });
     }
@@ -361,6 +362,8 @@ async function guardar(
    * agendar. El modulo del setter habria quedado inerte sin que nada fallara.
    */
   territorio: Territorio | null,
+  // Los ids del campo del puntaje, uno por subcuenta (`camposDelPuntaje`): se buscan una vez por pasada.
+  puntaje: readonly string[],
 ): Promise<true | string> {
   const nombre = nombreDe(c);
   // La columna `nombre` es obligatoria. Un contacto sin nombre se saltea CON MOTIVO en vez de
@@ -435,7 +438,7 @@ async function guardar(
      *
      * Así que `0` se guarda como `0` y la ausencia como `null`, que son los dos ceros que este
      * proyecto separa en todas partes. Colapsarlos acá sería decidir por el CRM. */
-    ...(c.customFields === undefined ? {} : { score: puntajeDelCrm(c) }),
+    ...(c.customFields === undefined ? {} : { score: puntajeDelCrm(c, puntaje) }),
     /* ── DE DÓNDE VINO EL LEAD Y CUÁNDO ENTRÓ ─────────────────────────────
      *
      * Las cinco llegan en esta misma respuesta y hasta la migración `048` se descartaban al
@@ -538,8 +541,11 @@ async function guardar(
  * septiembre, ninguno reciente—. No se sabe si el CRM calculó cero o si su workflow no corrió: el
  * proveedor no dice la diferencia, así que el cero se guarda como cero.
  */
-function puntajeDelCrm(c: ContactoDeGhl): number | null {
-  const crudo = camposDelContacto(c)[CAMPO_DEL_PUNTAJE];
+function puntajeDelCrm(c: ContactoDeGhl, puntaje: readonly string[]): number | null {
+  // El id de la subcuenta del contacto (el nivel 3): sus campos sólo traen los de la suya. Ver `camposDelPuntaje`.
+  const campos = camposDelContacto(c);
+  const id = puntaje.find((p) => campos[p] !== undefined);
+  const crudo = id === undefined ? undefined : campos[id];
   if (crudo === undefined) return null;
   const n = Number(crudo);
   if (!Number.isInteger(n) || n < 0 || n > 100) return null;
@@ -591,7 +597,7 @@ export async function refrescarUnContacto(
   const etiquetas = r.datos.tags ?? [];
   const territorio = ETIQUETAS.find((e) => etiquetas.includes(e.etiqueta))?.territorio ?? null;
 
-  const guardado = await guardar(r.datos, territorio);
+  const guardado = await guardar(r.datos, territorio, await camposDelPuntaje());
   if (guardado !== true) return { tipo: 'salteado', motivo: guardado };
   return { tipo: 'listo', territorio };
 }

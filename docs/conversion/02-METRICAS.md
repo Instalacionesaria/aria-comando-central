@@ -57,7 +57,7 @@ nada falle.
 6. **El piso es del denominador**, no del total: `PISO_DE_UNA_TASA = 10`
    (`lib/negocio/indicadoresDeCitas.ts:329`). Y acá hay que subirlo — ver `CV5-05`.
 7. **Ningún identificador de GoHighLevel escrito a mano.** `campoPorNombre()`
-   (`lib/negocio/camposDelCrm.ts:307-320`) es la única puerta, y devuelve `null` —no cero— si alguien
+   (`lib/negocio/camposDelCrm.ts:315-330`) es la única puerta, y devuelve `null` —no cero— si alguien
    renombra el campo (`03-CONVERSION.md:437-443@b3ca9ad`).
 8. **El agendamiento sale de `negocio.citas`**, con el mismo `exists` sobre `ghl_calendario_id` que
    usan los otros cuatro módulos, o las pantallas no suman igual. Ver `CV2-09`.
@@ -126,7 +126,7 @@ el mismo hueco que `CV11-03` declara.
 **Unidad** · Los **dos términos**, siempre, no sólo la proporción.
 **Población** · La cohorte entera.
 **Rastro** · `§ 18.5:1247` del documento funcional; el patrón `puente` de
-`lib/negocio/calidadDelCreativo.ts:302-328`.
+`lib/negocio/calidadDelCreativo.ts:303-329`.
 **Estado** · **Construible hoy**: 475 de 590 (80,5 %). **No es una muestra al azar** — ver `CV1-P01`.
 
 ---

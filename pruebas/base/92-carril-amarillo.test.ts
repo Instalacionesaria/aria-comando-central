@@ -601,6 +601,18 @@ test('el prompt del agente llega VERBATIM a las instrucciones', async () => {
   assert.ok(m.vistos[0]?.includes(frase));
 });
 
+test('con un cliente que no es el principal, el prompt de la empresa NO llega a la mejora (el nivel 3)', async () => {
+  await limpio();
+  const frase = 'REGLA 7: jamás menciones el pimentón dulce de La Vera antes del minuto tres.';
+  await conOrganizacion(esc.org, () => guardarPromptDelAgente('chat_post_agenda', frase, null));
+  await unaConversacion();
+
+  const m = unModelo({ peldano: 'leyo_y_respondio' });
+  await buscarUnaMejora({ ...EMPRESA(), esPorOmision: false }, AHORA, m.pedir);
+  assert.ok(m.vistos.length > 0, 'no se llamó al modelo: la prueba no midió nada');
+  assert.ok(!m.vistos[0]?.includes(frase), 'el prompt de la empresa llegó a la mejora de otro cliente');
+});
+
 test('las instrucciones llevan LA REGLA DE IMPUTACIÓN, la misma que el carril rojo', async () => {
   await limpio();
   /* Es la única que no puede divergir entre los dos carriles: es la que decide a quién se le imputa

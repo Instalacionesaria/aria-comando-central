@@ -291,6 +291,9 @@ export type MotivoDelGasto =
  *
  * Una empresa con métricas guardadas y sin serie es una que todavía no corrió la pasada nueva: cuenta como
  * atrasada, porque sus métricas solas ya no dicen si el día está completo.
+ *
+ * Con varios clientes (el nivel 3), cada uno tiene su cuenta de Meta y su serie: el último día cerrado es el del
+ * cliente más atrasado —el borde que valen TODOS—, y la serie está atrasada si la de alguno lo está.
  */
 export async function estadoDeLaSerie(zona: string): Promise<{
   hayDatos: boolean;
@@ -305,16 +308,20 @@ export async function estadoDeLaSerie(zona: string): Promise<{
     atrasado: boolean;
     primer_dato: string | null;
   }>`
-    with cerrados as (
-      select fecha from negocio.gasto_de_la_cuenta
-       where fecha < current_date
-         and leido_el >= ((fecha + 1)::timestamp at time zone ${zona})
+    with por_cliente as (
+      select cuenta_id,
+             max(fecha) filter (where fecha < current_date
+                                  and leido_el >= ((fecha + 1)::timestamp at time zone ${zona})) as ultimo_cerrado,
+             max(leido_el) as ultima_lectura
+        from negocio.gasto_de_la_cuenta
+       group by cuenta_id
     )
     select exists (select 1 from negocio.gasto_de_la_cuenta) as hay_serie,
            exists (select 1 from negocio.metricas_de_anuncio) as hay_metricas,
-           to_char((select max(fecha) from cerrados), 'YYYY-MM-DD') as ultimo_cerrado,
-           coalesce((select max(leido_el) from negocio.gasto_de_la_cuenta) < now() - interval '26 hours', true)
-             or coalesce((select max(fecha) from cerrados) < current_date - 3, false) as atrasado,
+           to_char((select min(ultimo_cerrado) from por_cliente), 'YYYY-MM-DD') as ultimo_cerrado,
+           coalesce((select bool_or(ultima_lectura < now() - interval '26 hours'
+                                    or coalesce(ultimo_cerrado < current_date - 3, false))
+                       from por_cliente), true) as atrasado,
            to_char(least((select min(fecha) from negocio.gasto_de_la_cuenta),
                          (select min(fecha) from negocio.metricas_de_anuncio)), 'YYYY-MM-DD') as primer_dato`.execute(
     datos(),
@@ -339,6 +346,10 @@ export async function estadoDeLaSerie(zona: string): Promise<{
  *
  * `deLaCuenta` es la suma de la serie cuando TODOS los días tienen fila, aunque alguno no esté cerrado o no
  * cuadre: es lo que Meta cobró, y es mejor cifra que la suma de lo que se alcanzó a leer por campaña.
+ *
+ * Con varios clientes (el nivel 3), todo es POR CLIENTE: su serie se cuadra con el detalle de SUS anuncios, y la
+ * ventana está entera cuando lo está la de cada cliente con serie. Cruzado sólo por fecha, el total de un cliente se
+ * comparaba con el detalle de todos y ningún día cuadraba nunca.
  */
 export async function coberturaDelGasto(
   desde: string,
@@ -348,27 +359,35 @@ export async function coberturaDelGasto(
 ): Promise<{ entero: boolean; motivo: MotivoDelGasto | null; deLaCuenta: number | null }> {
   const r = await sql<{ con_serie: string; cerrados: string; enteros: string; de_la_cuenta: string | null }>`
     with detalle as (
-      select m.fecha, sum(m.gasto) as detalle
+      select m.cuenta_id, m.fecha, sum(m.gasto) as detalle
         from negocio.metricas_de_anuncio m
         join negocio.anuncios a on a.org_id = m.org_id and a.meta_anuncio_id = m.meta_anuncio_id
        where m.fecha between ${desde}::date and ${hasta}::date
          and a.meta_campana_id is not null
-       group by m.fecha
+       group by m.cuenta_id, m.fecha
     ),
     serie as (
-      select s.fecha, s.gasto, s.residuo_el,
+      select s.cuenta_id, s.fecha, s.gasto, s.residuo_el,
              s.leido_el >= ((s.fecha + 1)::timestamp at time zone ${zona}) as cerrado,
              abs(round(coalesce(s.gasto, 0) * 100) - round(coalesce(d.detalle, 0) * 100))
                <= ${Math.round(TOLERANCIA_DEL_CUADRE * 100)} as cuadra
         from negocio.gasto_de_la_cuenta s
-        left join detalle d on d.fecha = s.fecha
+        left join detalle d on d.cuenta_id = s.cuenta_id and d.fecha = s.fecha
        where s.fecha between ${desde}::date and ${hasta}::date
+    ),
+    por_cliente as (
+      select count(*) as con_serie,
+             count(*) filter (where cerrado) as cerrados,
+             count(*) filter (where cerrado and (cuadra or residuo_el is not null)) as enteros,
+             sum(gasto) as gasto
+        from serie
+       group by cuenta_id
     )
-    select count(*) as con_serie,
-           count(*) filter (where cerrado) as cerrados,
-           count(*) filter (where cerrado and (cuadra or residuo_el is not null)) as enteros,
+    select coalesce(min(con_serie), 0) as con_serie,
+           coalesce(min(cerrados), 0) as cerrados,
+           coalesce(min(enteros), 0) as enteros,
            sum(gasto) as de_la_cuenta
-      from serie`.execute(datos());
+      from por_cliente`.execute(datos());
   const f = r.rows[0]!;
   const conSerie = Number(f.con_serie);
   /* `dias > 0`: una ventana de cero días —«Completo» con el primer dato de hoy, que todavía no tiene ningún día
@@ -393,20 +412,23 @@ export async function coberturaDelGasto(
  * podría separarse de la que imprime su encabezado.
  *
  * Un día sin total no cuenta: de él no se puede decir que no cuadre. Lo dice el aviso de la ventana incompleta.
+ *
+ * Por cliente (el nivel 3): cada serie con el detalle de sus anuncios, y un día cuenta una vez aunque no cuadre en
+ * dos clientes.
  */
 export async function diasSinCuadrar(enLaVentana: (alias: string) => RawBuilder<boolean>): Promise<number> {
   const r = await sql<{ n: string }>`
     with detalle as (
-      select m.fecha, sum(m.gasto) as detalle
+      select m.cuenta_id, m.fecha, sum(m.gasto) as detalle
         from negocio.metricas_de_anuncio m
         join negocio.anuncios a on a.org_id = m.org_id and a.meta_anuncio_id = m.meta_anuncio_id
        where ${enLaVentana('m')}
          and a.meta_campana_id is not null
-       group by m.fecha
+       group by m.cuenta_id, m.fecha
     )
-    select count(*) as n
+    select count(distinct g.fecha) as n
       from negocio.gasto_de_la_cuenta g
-      left join detalle d on d.fecha = g.fecha
+      left join detalle d on d.cuenta_id = g.cuenta_id and d.fecha = g.fecha
      where ${enLaVentana('g')}
        and g.residuo_el is null
        and abs(round(coalesce(g.gasto, 0) * 100) - round(coalesce(d.detalle, 0) * 100))

@@ -82,15 +82,28 @@ export async function economiaDelNegocio(zona: string): Promise<EconomiaDelNegoc
 
   /* La serie de la cuenta: la suma del mes, el último día leído, cuántos días anteriores a hoy tienen total, y si
      la serie está al día. Las mismas filas para las tres cosas, así `gastoHasta` no puede tener fecha junto a una
-     inversión que no la incluye. */
+     inversión que no la incluye.
+
+     Por cliente (el nivel 3): cada uno tiene su cuenta de Meta y su serie. La suma es la de todos; el último día es
+     el que alcanzaron TODOS; los días con total, los del cliente que menos tiene; y está atrasada si la de alguno lo
+     está. Con `count(*)` sobre las filas de dos clientes, los días se contaban dos veces y nunca daba entero. */
   const gasto = await sql<{ suma: string | null; dia: string | null; dias_con_total: string; dias_previos: number; atrasado: boolean }>`
-    select sum(g.gasto) as suma,
-           to_char(max(g.fecha), 'YYYY-MM-DD') as dia,
-           count(*) filter (where g.fecha < ${hasta}::date) as dias_con_total,
+    with por_cliente as (
+      select g.cuenta_id,
+             sum(g.gasto) as suma,
+             max(g.fecha) as dia,
+             count(*) filter (where g.fecha < ${hasta}::date) as dias_con_total
+        from negocio.gasto_de_la_cuenta g
+       where g.fecha between ${desde}::date and ${hasta}::date
+       group by g.cuenta_id
+    )
+    select sum(suma) as suma,
+           to_char(min(dia), 'YYYY-MM-DD') as dia,
+           coalesce(min(dias_con_total), 0) as dias_con_total,
            (${hasta}::date - ${desde}::date) as dias_previos,
-           coalesce((select max(leido_el) from negocio.gasto_de_la_cuenta) < now() - interval '26 hours', true) as atrasado
-      from negocio.gasto_de_la_cuenta g
-     where g.fecha between ${desde}::date and ${hasta}::date`.execute(datos());
+           coalesce((select bool_or(ultima < now() - interval '26 hours')
+                       from (select max(leido_el) as ultima from negocio.gasto_de_la_cuenta group by cuenta_id) x), true) as atrasado
+      from por_cliente`.execute(datos());
   const g = gasto.rows[0]!;
   const gastoHasta = g.dia;
   const inversionTotal = redondear(Number(g.suma ?? 0));

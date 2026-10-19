@@ -41,7 +41,7 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { campoPorNombre } from './camposDelCrm.ts';
+import { campoPorNombre, valorDelCampo } from './camposDelCrm.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import {
   CAMPO_DEL_FORMULARIO,
@@ -201,7 +201,7 @@ export async function embudoDelFormulario(
     };
   }
 
-  const valor = sql<string | null>`nullif(btrim(contactos.campos_del_crm ->> ${campo}), '')`;
+  const valor = sql<string | null>`nullif(btrim(${valorDelCampo(sql`contactos.campos_del_crm`, campo)}), '')`;
 
   const f = await datos()
     .selectFrom('contactos')

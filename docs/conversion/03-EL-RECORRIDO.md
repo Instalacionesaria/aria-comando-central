@@ -119,7 +119,7 @@ esperado»` **sólo cuando cae por debajo**.
 **Estado** · **Requisito, y es la regla del silencio bien aplicada**: el sufijo aparece sólo cuando
 hay algo que decir. Y publicar el conteo al lado del porcentaje es el par `{con, sobre}` que este
 repositorio exige en todas partes —*«una proporción sola se lee como precisión y el par dice de
-cuántos habla»* (`lib/negocio/calidadDelCreativo.ts:326-327`)—.
+cuántos habla»* (`lib/negocio/calidadDelCreativo.ts:327-328`)—.
 
 ---
 

@@ -610,6 +610,31 @@ export async function resolverAccesoAlAuditor(db: Trx, orgId: string, cliente: C
 }
 
 /**
+ * Si el auditor puede auditar a la EMPRESA entera (el nivel 3): el de cada cliente activo, y vale el PEOR —el primer
+ * cliente al que le falta algo, con su falta—. Cada cliente se audita con el agente de SU subcuenta: con el del
+ * principal solo, la pantalla decía «no audita» con otro cliente auditándose, o «audita» con uno sin auditar.
+ * Sin clientes a la vista, el de la empresa.
+ */
+export async function resolverAccesoAlAuditorDeLaEmpresa(db: Trx, orgId: string): Promise<AccesoAlAuditor> {
+  const clientes = await db
+    .selectFrom('cuentas')
+    .select(['id', 'es_por_omision'])
+    .where('org_id', '=', orgId)
+    .where('estado', '=', 'activa')
+    .orderBy('es_por_omision', 'desc')
+    .orderBy('id')
+    .execute();
+  if (clientes.length === 0) return resolverAccesoAlAuditor(db, orgId, 'la_de_la_empresa');
+  let primero: AccesoAlAuditor | null = null;
+  for (const c of clientes) {
+    const acceso = await resolverAccesoAlAuditor(db, orgId, { id: c.id, esPorOmision: c.es_por_omision });
+    if (acceso.tipo === 'falta') return acceso;
+    primero ??= acceso;
+  }
+  return primero!;
+}
+
+/**
  * Lo que le falta a una empresa para que los Analizadores DESCUBRAN reuniones en tl;dv.
  *
  * Analizar una transcripción pegada a mano no pasa por acá: eso pide solo la llave de IA, y para eso

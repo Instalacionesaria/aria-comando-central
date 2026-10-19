@@ -229,7 +229,7 @@ cifra más valiosa del departamento y no depende de ninguna credencial nueva.
 ### C2-17 · El campo de ICP se resuelve por nombre, y hay diez candidatos
 
 **Qué es** · `contactos.campos_del_crm` está indexado por **id de GoHighLevel**, no por nombre.
-**Fórmula** · `campoPorNombre('Puntaje | ICP')` de `lib/negocio/camposDelCrm.ts:307`, que ya existe.
+**Fórmula** · `campoPorNombre('Puntaje | ICP')` de `lib/negocio/camposDelCrm.ts:315`, que ya existe.
 **Estado** · Medido: el id vigente es `9HXxl5DW6aayQgKUPiOS`, el campo más poblado de la cohorte (344
 contactos en 30 días). **Y hay diez campos con nombre parecido** en el catálogo del CRM:
 `Pre-Score | ICP`, `Puntaje | Meta Lead Ads`, `Pre-Score | Meta Lead Ads`, `Puntaje Final`,

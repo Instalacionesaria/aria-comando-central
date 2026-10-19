@@ -127,15 +127,15 @@ la pantalla nueva no puede heredar sin querer.
   - **47 en cero**, todos de tres semanas de alta (la del 17-ago 3, la del 24-ago 23, la del 31-ago
     21) y **ninguno en los últimos 14 días**. `sincronizar.ts` guarda el cero como cero porque no se
     sabe si el CRM calculó cero o si su workflow no corrió
-    (`lib/negocio/sincronizar.ts:429-437`).
+    (`lib/negocio/sincronizar.ts:432-440`).
 - **Qué pide:** el pie de la tarjeta muestra los dos términos: «sin puntaje N · en 0 N». La
   respuesta los trae como `sinCalificar.sinPuntaje` y `sinCalificar.enCero`.
 - **El guardián:** `sinCalificar.cerosRecientes` cuenta los ceros con alta en los últimos 14 días.
   Si deja de valer 0, la pantalla lo avisa. Un cero nuevo querría decir que el CRM volvió a fallar,
   y esa falla se escondería dentro de una tarjeta que ya tiene gente. **Medido: 0.**
 - **La divergencia que hay que declarar:** el ICP promedio de Creative **sí** promedia los ceros. Su
-  filtro de «parece un número» (`lib/negocio/calidadDelCreativo.ts:216`) deja pasar el `0`, y el
-  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:225`). Las dos pantallas pueden
+  filtro de «parece un número» (`lib/negocio/calidadDelCreativo.ts:217`) deja pasar el `0`, y el
+  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:226`). Las dos pantallas pueden
   mostrar a los mismos contactos de forma distinta. Esta carpeta no lo arregla: lo dice en el matiz
   de la tarjeta y lo registra `14-EL-PUNTAJE-DEL-CRM.md`.
 

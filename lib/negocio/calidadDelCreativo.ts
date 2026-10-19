@@ -42,7 +42,7 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { campoPorNombre } from './camposDelCrm.ts';
+import { campoPorNombre, valorDelCampo, type CampoDelCrm } from './camposDelCrm.ts';
 import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
@@ -155,8 +155,9 @@ export async function calidadDelCreativo(
     filas,
     congeladas,
     puente,
-    campoDeIcp,
-    aviso: avisoDe({ filas, congeladas, campoDeIcp, puente }),
+    // Viaja el de la primera subcuenta: lo que se lee de acá es si el campo está, no su id (uno por cliente).
+    campoDeIcp: campoDeIcp?.[0] ?? null,
+    aviso: avisoDe({ filas, congeladas, campoDeIcp: campoDeIcp?.[0] ?? null, puente }),
   };
 }
 
@@ -201,7 +202,7 @@ async function anunciosPorNombre(): Promise<Map<string, number>> {
   return new Map(filas.map((f) => [f.n, Number(f.c ?? 0)]));
 }
 
-async function porCreativo(dias: number, campoDeIcp: string | null): Promise<FilaDeCreativo[]> {
+async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promise<FilaDeCreativo[]> {
   const llave = llaveOSinCreativo("contactos.atribucion_primera ->> 'utmContent'");
   const anuncios = await anunciosPorNombre();
 
@@ -210,7 +211,7 @@ async function porCreativo(dias: number, campoDeIcp: string | null): Promise<Fil
      una empresa en blanco por un dato raro de un contacto. El guard es del mismo tipo que el que la
      `053` puso en el escritor del desglose, por el mismo motivo. */
   const puntaje = campoDeIcp
-    ? sql<number | null>`nullif(contactos.campos_del_crm ->> ${campoDeIcp}, '')`
+    ? sql<number | null>`nullif(${valorDelCampo(sql`contactos.campos_del_crm`, campoDeIcp)}, '')`
     : sql<number | null>`null::text`;
 
   const numerico = sql<boolean>`${puntaje} ~ '^[0-9]+([.][0-9]+)?$'`;

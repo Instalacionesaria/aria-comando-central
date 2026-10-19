@@ -476,6 +476,7 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
       'score',
       'campos_del_crm',
       'sincronizado_el',
+      'cuenta_id',
     ])
     .where('id', '=', contactoId)
     .executeTakeFirst();
@@ -541,7 +542,8 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
     // `mostrables` vacío no distingue «nadie leyó el catálogo» de «se leyó y ninguna carpeta está
     // elegida»: las dos son estados del sistema y las dos mandan al mismo lado. Por eso la
     // pregunta que se hace es si HAY catálogo.
-    falta: (await hayCatalogo()) ? FALTA.perfilSinRespuestas : FALTA.perfilSinCatalogo,
+    // El catálogo de la subcuenta del contacto (el nivel 3), no el de cualquier cliente.
+    falta: (await hayCatalogo(c.cuenta_id)) ? FALTA.perfilSinRespuestas : FALTA.perfilSinCatalogo,
   };
 }
 

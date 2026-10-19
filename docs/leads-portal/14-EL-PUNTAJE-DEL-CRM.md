@@ -30,24 +30,24 @@ un puntaje por contacto. No se cruzan en ninguna tabla
 
 - **Quién lo calcula:** GoHighLevel, en el campo personalizado **«Puntaje | ICP»**, de tipo
   numérico. Vive en la carpeta «Contact», que es del grupo `calificacion`
-  (`lib/ghl/contrato.ts:319-322`). Qué reglas usa el CRM para calcularlo **no está en este
+  (`lib/ghl/contrato.ts:333-336`). Qué reglas usa el CRM para calcularlo **no está en este
   repositorio**: nosotros recibimos el resultado.
 - **Cómo llega:** en la misma respuesta de contactos que ya trae todo lo demás. Se guarda crudo en
   `contactos.campos_del_crm` desde la migración `039`, y desde el 2026-09-21 la sincronización lo
-  deriva a `contactos.score` sin ninguna llamada nueva (`lib/negocio/sincronizar.ts:412-420`).
+  deriva a `contactos.score` sin ninguna llamada nueva (`lib/negocio/sincronizar.ts:415-423`).
 - **Cuál campo es:** está designado a mano por identificador en `CAMPO_DEL_PUNTAJE`
-  (`lib/ghl/contrato.ts:305`), porque no se puede deducir: el grupo `calificacion` tiene 17 campos y
+  (`lib/ghl/contrato.ts:313`), porque no se puede deducir: el grupo `calificacion` tiene 17 campos y
   cualquiera de las preguntas del cuestionario daría un «puntaje» plausible y falso
   (`lib/ghl/contrato.ts:288-291`).
 - **Qué se acepta:** un entero de 0 a 100; cualquier otra cosa se guarda como `null`
-  (`lib/negocio/sincronizar.ts:541-547`), y la columna es `smallint` con `check between 0 and 100`
+  (`lib/negocio/sincronizar.ts:544-553`), y la columna es `smallint` con `check between 0 and 100`
   desde la migración `055` (`lib/datos/esquema.ts:376`).
 - **Qué significa el nulo:** que el CRM no lo trae para ese contacto. **No es un cero**
   (`lib/datos/esquema.ts:379-380`).
 
 Hasta el 2026-09-21 la columna estaba vacía: Acquisition la midió el 2026-09-16 con cero valores y
 el dato vivía sólo en el `jsonb` (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:399-401`). Hoy la leen el
-Perfil del closer y del setter (`lib/negocio/ficha.ts:501-510`) y la fila de sus listas
+Perfil del closer y del setter (`lib/negocio/ficha.ts:502-511`) y la fila de sus listas
 (`components/negocio/Fila.jsx:235-237`). **Esta pestaña es el primer lector que lo corta en tramos.**
 
 El documento funcional pide las dos cosas por separado —«ICP score» y «Segmento de ICP»
@@ -62,7 +62,7 @@ cuestionario (`lib/datos/esquema.ts:364-367`). Dos consecuencias:
    los últimos 30 días **y hoy** tienen 75 o más. El reparto de una misma ventana puede cambiar sin
    que entre nadie. Se declara en la pantalla (`LP06-14`).
 2. **Los congelados no se refrescan** —se ven y no cuestan llamadas
-   (`lib/negocio/sincronizar.ts:558-564`)—, así que su puntaje es el del último día que tuvieron
+   (`lib/negocio/sincronizar.ts:564-570`)—, así que su puntaje es el del último día que tuvieron
    etiqueta de zona. Son 25, y 24 no tienen alta (medido el 2026-09-27), así que casi no entran en
    ninguna ventana
    (`LP06-07`). La ficha muestra `sincronizadoEl` para que se vea.
@@ -77,10 +77,10 @@ Hay dos caminos para leer el puntaje, y hoy dan lo mismo:
 
 | quién | de dónde | cómo encuentra el campo | qué acepta |
 |---|---|---|---|
-| sincronización → `contactos.score` | la columna | por identificador (`lib/ghl/contrato.ts:305`) | entero 0-100 (`lib/negocio/sincronizar.ts:541-547`) |
-| Creative | el `jsonb` | por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:63`, `:142`) | cualquier número, decimales incluidos (`lib/negocio/calidadDelCreativo.ts:212-216`) |
+| sincronización → `contactos.score` | la columna | por identificador (`lib/ghl/contrato.ts:313`) | entero 0-100 (`lib/negocio/sincronizar.ts:544-553`) |
+| Creative | el `jsonb` | por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:63`, `:142`) | cualquier número, decimales incluidos (`lib/negocio/calidadDelCreativo.ts:213-217`) |
 
-Coinciden porque la columna, que sólo acepta enteros de 0 a 100 (`lib/negocio/sincronizar.ts:541-547`),
+Coinciden porque la columna, que sólo acepta enteros de 0 a 100 (`lib/negocio/sincronizar.ts:544-553`),
 tenía el 2026-09-27 los mismos 471 valores que el `jsonb` tenía el 2026-09-21
 (`lib/ghl/contrato.ts:278-279`). Pero divergen en dos casos que no fallan en ninguna parte: si alguien **renombra** el
 campo en el CRM, Creative apaga su columna y la de acá sigue; si llega un **decimal**, Creative lo
@@ -118,7 +118,7 @@ Medido el 2026-09-27, con los tramos de LP14-05:
 
 La cobertura del grupo `calificacion` **no sirve para validar esto**: 475 contactos tienen alguna
 respuesta en ese grupo, pero el grupo incluye la carpeta del propio puntaje
-(`lib/ghl/contrato.ts:319-322`), así que la cifra no separa «respondió el cuestionario» de «tiene
+(`lib/ghl/contrato.ts:333-336`), así que la cifra no separa «respondió el cuestionario» de «tiene
 puntaje».
 
 ---
@@ -196,7 +196,7 @@ La maqueta rotula las tarjetas «Calificado alto», «Calificado medio» y **«N
 | **60** | el techo del rechazo: el 2026-09-16 la casa no rechazaba por ICP a nadie de 60 o más (0 de 67), y el máximo rechazado era 59 | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:525-541` |
 | **75** | donde saltaba el agendamiento: 75,7 % en el tramo alto contra ~51-53 % en medio y bajo | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:543-555` |
 | **80** | una frase inventada del Plan de acción: «Prioriza el contacto inmediato con ICP sobre 80» | `aios-command-center_1.html:5722` |
-| ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:225` |
+| ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:226` |
 
 El de 80 no es un requisito: es una de las frases del Plan de acción, cuyo censo está en
 `07-EL-PLAN-DE-ACCION.md`. La frase de al lado —«el ICP alto es el 22 % del volumen pero produce el
@@ -221,7 +221,7 @@ días.
 
 Es el mismo grupo que la sincronización describe —todos entre el 21 de agosto y el 3 de septiembre,
 con menos etiquetas que el resto, ninguno reciente— y **el CRM no dice si calculó cero o si su
-proceso no corrió** (`lib/negocio/sincronizar.ts:429-437`). Acquisition lo leyó el 2026-09-16 como
+proceso no corrió** (`lib/negocio/sincronizar.ts:432-440`). Acquisition lo leyó el 2026-09-16 como
 un cambio de régimen: los ceros se terminan de golpe el 3 de septiembre, y el cero de este campo es
 «sin puntuar», no «puntuó cero» (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:403-421`).
 
@@ -232,7 +232,7 @@ cuarto estado (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:594-597`).
 **Lo que la decisión NO hace:**
 
 - **No toca la columna.** El 0 sigue guardado como 0 y el nulo como nulo
-  (`lib/negocio/sincronizar.ts:436-437`). La clasificación es nuestra y vive en `tramoDelPuntaje`.
+  (`lib/negocio/sincronizar.ts:439-440`). La clasificación es nuestra y vive en `tramoDelPuntaje`.
 - **No junta los dos ceros en la respuesta.** `sinPuntaje` y `enCero` viajan separados, y suman el
   tramo (`LP02-09`).
 - **No borra el número en la ficha.** El plan pide mostrar el 0 como «0, se cuenta como sin
@@ -296,7 +296,7 @@ Tres lecturas, las tres requisitos:
 ### LP14-12 · Creative promedia el cero; esta pestaña lo aparta
 
 Creative publica un **ICP promedio por pieza** que promedia todos los valores numéricos, **ceros
-incluidos** (`lib/negocio/calidadDelCreativo.ts:224-225`), y hasta el 2026-10-11 dibujaba al lado el `n` de los que
+incluidos** (`lib/negocio/calidadDelCreativo.ts:225-226`), y hasta el 2026-10-11 dibujaba al lado el `n` de los que
 tienen puntaje, que también los incluye (`components/creative/PanelDeCreative.jsx:390-391@1971ab2`); desde ese día ese
 promedio no se dibuja, y lo da el agente. Esta pestaña no
 promedia: clasifica, y el 0 va a «Sin calificar».
@@ -340,7 +340,7 @@ pasaba de **41,5 a 53,0** al sacarlos y cambiaba de lugar en la tabla
 ### LP14-P01 · ¿Qué produce un 0 en el CRM?
 
 La sincronización lo dice sin vueltas: el proveedor no distingue entre «calculó cero» y «el proceso
-no corrió» (`lib/negocio/sincronizar.ts:433-434`). La regla de esta pestaña se apoya en que los 47
+no corrió» (`lib/negocio/sincronizar.ts:436-437`). La regla de esta pestaña se apoya en que los 47
 son del segundo tipo, y lo que la sostiene es la fecha: todos entre el 21 de agosto y el 3 de
 septiembre, ninguno después. Quien administra el cálculo en GoHighLevel puede contestarlo de una
 vez; hasta entonces, el guardián de LP14-10 es lo único que avisa si deja de ser cierto.

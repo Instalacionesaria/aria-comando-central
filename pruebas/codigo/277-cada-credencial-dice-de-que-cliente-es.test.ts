@@ -123,7 +123,10 @@ test('la Conexión de un cliente no desmonta el aviso al recargar', () => {
   const cargar = /const cargar = useCallback\([\s\S]*?\}, \[ruta\]\);/.exec(fuente)?.[0] ?? '';
   assert.ok(cargar, 'no encontré `cargar`');
   assert.doesNotMatch(cargar, /setDatos\(null\)/, 'recargar vacía los datos y desmonta `AvisoDelCrm`');
-  assert.match(fuente, /<AvisoDelCrm ruta=\{ruta\}/, 'el secreto del aviso no se genera en la ruta del cliente');
+  assert.match(fuente, /<AvisoDelCrm\s+ruta=\{ruta\}/, 'el secreto del aviso no se genera en la ruta del cliente');
   // Un componente por cliente: sin `key`, cambiar de cliente mostraría la conexión del anterior.
-  assert.match(leer('components/ajustes/Clientes.jsx'), /<ConexionDelCliente key=\{editando\.id\}/);
+  assert.match(leer('components/ajustes/Clientes.jsx'), /<ConexionDelCliente\s+key=\{editando\.id\}/);
+  // Y mientras la cabecera del aviso está a la vista, la ventana no se cierra con Escape ni con el fondo.
+  assert.match(leer('components/ajustes/Clientes.jsx'), /cerrablePorFuera=\{!cabeceraVisible\}/);
+  assert.match(fuente, /alMostrarCabecera=\{alMostrarCabecera\}/);
 });

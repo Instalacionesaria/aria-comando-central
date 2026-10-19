@@ -29,7 +29,12 @@ import { clientesParaBarrer } from '../../lib/administracion/cuentas.ts';
 import { frescuraDe, frescuraDelAviso } from '../../lib/negocio/frescura.ts';
 import { mensajesDeLaFicha } from '../../lib/negocio/ficha.ts';
 import { agendaDelCloser } from '../../lib/negocio/agenda.ts';
-import type { AccesoAlAnalizador, AccesoAlAuditor } from '../../lib/credenciales/resolver.ts';
+import {
+  TEXTO_DE_FALTA_AUDITOR,
+  TEXTO_DE_FALTA_META,
+  type AccesoAlAnalizador,
+  type AccesoAlAuditor,
+} from '../../lib/credenciales/resolver.ts';
 import type { OrganizacionListada } from '../../lib/administracion/organizaciones.ts';
 
 const SLUG = 'gamma-278';
@@ -43,6 +48,7 @@ let org: string;
 let p: string;
 let y: string;
 let z: string;
+let beta: string;
 
 async function limpiar(): Promise<void> {
   const o = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = $1`, [SLUG]);
@@ -69,17 +75,30 @@ function laOrg(): OrganizacionListada {
   };
 }
 
-/** La empresa con P e Y, cada uno con una falta DISTINTA del CRM: así se ve de quién es la credencial usada. */
+/**
+ * La empresa con P e Y, y cada uno con faltas DISTINTAS del CRM, del auditor y de Meta: así cada motivo dice de quién
+ * es la credencial que se usó. Si una tarea de un cliente usara las de la empresa, diría `token_revocado`, el auditor
+ * apagado o la cuenta de Meta que falta.
+ */
 function conSusClientes(): EmpresaParaBarrer {
   return {
     org: laOrg(),
-    // Las de la empresa: si alguna tarea de un cliente las usara, su motivo diría `token_revocado`.
     acceso: { tipo: 'falta', que: 'token_revocado' },
-    auditor: SIN_AUDITOR,
+    auditor: { tipo: 'falta', que: 'auditor_apagado' },
     analizador: SIN_ANALIZADOR,
+    meta: { tipo: 'falta', que: 'sin_cuenta_de_meta' },
     clientes: [
-      { cuenta: { id: p, esPorOmision: true }, acceso: { tipo: 'falta', que: 'token_vencido' }, auditor: SIN_AUDITOR },
-      { cuenta: { id: y, esPorOmision: false }, acceso: { tipo: 'falta', que: 'sin_token' }, auditor: SIN_AUDITOR },
+      {
+        cuenta: { id: p, esPorOmision: true },
+        acceso: { tipo: 'falta', que: 'token_vencido' },
+        auditor: SIN_AUDITOR,
+        meta: { tipo: 'falta', que: 'token_de_meta_ilegible' },
+      },
+      {
+        cuenta: { id: y, esPorOmision: false },
+        acceso: { tipo: 'falta', que: 'sin_token' },
+        auditor: { tipo: 'falta', que: 'sin_id_del_agente' },
+      },
     ],
   };
 }
@@ -130,6 +149,9 @@ before(async () => {
   assert.ok(segunda && pausada);
   y = segunda.id;
   z = pausada.id;
+  const b = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = 'beta'`);
+  assert.ok(b);
+  beta = b.id;
 });
 
 after(async () => {
@@ -157,14 +179,29 @@ test('cada tarea de un cliente usa SUS credenciales y se sella con SU cuenta; la
     [
       'P:contactos:saltada:token_vencido',
       'P:mensajes:saltada:token_vencido',
-      `P:auditoria:saltada:${r.renglones[2]!.porque}`,
+      `P:auditoria:saltada:${TEXTO_DE_FALTA_AUDITOR.sin_llave_de_ia}`,
       'Y:contactos:saltada:sin_token',
       'Y:mensajes:saltada:sin_token',
-      `Y:auditoria:saltada:${r.renglones[5]!.porque}`,
+      `Y:auditoria:saltada:${TEXTO_DE_FALTA_AUDITOR.sin_id_del_agente}`,
     ],
     'una tarea de un cliente se despachó con credenciales que no son las suyas',
   );
-  assert.match(String(r.renglones[2]!.porque), /llave de IA/);
+  // La mejora (con la llave del auditor) y los activos (con la de Meta), también con las de cada cliente.
+  const diario = await barrerTodo('17 6 * * *', [conSusClientes()], DE_DIA);
+  const activos = await barrerTodo('37 * * * *', [conSusClientes()], DE_DIA);
+  assert.deepEqual(
+    [...diario.renglones, ...activos.renglones]
+      .filter((x) => x.tarea !== 'anuncios')
+      .map((x) => `${x.cuentaId === p ? 'P' : 'Y'}:${x.tarea}:${x.porque}`),
+    [
+      `P:mejora:${TEXTO_DE_FALTA_AUDITOR.sin_llave_de_ia}`,
+      `Y:mejora:${TEXTO_DE_FALTA_AUDITOR.sin_id_del_agente}`,
+      `P:activos:${TEXTO_DE_FALTA_META.token_de_meta_ilegible}`,
+      `Y:activos:${TEXTO_DE_FALTA_META.sin_token_de_meta}`,
+    ],
+    'la mejora o los activos de un cliente usaron las credenciales de la empresa o de otro cliente',
+  );
+  await admin.query(`delete from negocio.tareas_programadas where org_id = $1 and tarea in ('mejora', 'anuncios', 'activos')`, [org]);
 
   // Las de la empresa: una vez, sin cuenta.
   await barrerTodo('41 * * * *', [conSusClientes()], DE_DIA);
@@ -198,6 +235,27 @@ test('el presupuesto se mira antes de CADA cliente, y el que se quedó sin tiemp
 
   const otra = await barrerTodo('*/10 * * * *', [conSusClientes()], DE_DIA);
   assert.equal(otra.renglones[0]!.cuentaId, y, 'el cliente que se quedó sin tiempo no fue primero');
+});
+
+test('el orden es global por cliente: una empresa con un cliente sin tiempo no le gana a otra que no corrió', async () => {
+  await admin.query(`delete from negocio.tareas_programadas where org_id in ($1, $2)`, [org, beta]);
+  // La otra empresa, en el modo de antes: su principal, sin token.
+  const otra: EmpresaParaBarrer = {
+    org: { ...laOrg(), id: beta, slug: 'beta', nombre: 'Beta' },
+    acceso: { tipo: 'falta', que: 'sin_token' },
+    auditor: SIN_AUDITOR,
+    analizador: SIN_ANALIZADOR,
+  };
+  // Corrida 1: P entra; para Y y para la otra empresa ya no hay tiempo.
+  const T0 = DE_DIA();
+  let llamadas = 0;
+  const reloj = () => (++llamadas <= 2 ? T0 : T0 + 181_000);
+  await barrerTodo('*/10 * * * *', [conSusClientes(), otra], reloj);
+  // Corrida 2: Y y la otra empresa no tienen un sello que los diga servidos; P sí. P va al final.
+  const r = await barrerTodo('*/10 * * * *', [conSusClientes(), otra], DE_DIA);
+  const orden = [...new Set(r.renglones.map((x) => (x.cuentaId === p ? 'P' : x.cuentaId === y ? 'Y' : x.slug)))];
+  assert.deepEqual(orden, ['Y', 'beta', 'P'], 'la empresa con un cliente sin tiempo volvió a correr a su cliente servido antes que la otra empresa');
+  await admin.query(`delete from negocio.tareas_programadas where org_id = $1`, [beta]);
 });
 
 test('sin la lista de clientes, el principal, con su cuenta en el sello', async () => {
@@ -235,6 +293,17 @@ test('la frescura: la de un cliente es la suya; la de la empresa, la del peor ac
   assert.equal((await conOrganizacion(org, () => frescuraDe('citas'))).estado, 'fallando');
   assert.equal((await conOrganizacion(org, () => frescuraDe('citas', p))).estado, 'fallando');
   assert.equal((await conOrganizacion(org, () => frescuraDe('citas', y))).estado, 'nunca');
+  // Con el foco en Y, el sello viejo del principal no es suyo: «nunca», no el fallo de otro.
+  const focoY = { orgId: org, todaLaOrganizacion: true, cuentas: [y] } as const;
+  assert.equal((await conOrganizacion(focoY, () => frescuraDe('citas'))).estado, 'nunca', 'el foco en Y tomó el sello viejo del principal');
+  // Y con el foco en un cliente en pausa, su propio sello, aunque esté en pausa.
+  await sellar(z, 'citas', 'corrio', 1);
+  const focoZ = { orgId: org, todaLaOrganizacion: true, cuentas: [z] } as const;
+  assert.equal((await conOrganizacion(focoZ, () => frescuraDe('citas'))).estado, 'al_dia', 'el foco en un cliente en pausa no vio su sello');
+  // El principal con su sello Y el viejo sin cuenta a la vez (el estado de producción después de C4): el suyo gana.
+  await sellar(null, 'mensajes', 'fallo', 600);
+  assert.equal((await conOrganizacion(org, () => frescuraDe('mensajes', p))).estado, 'al_dia', 'el principal tomó su sello viejo');
+  assert.equal((await conOrganizacion(foco, () => frescuraDe('mensajes'))).estado, 'al_dia');
 });
 
 test('la ficha y el aviso de un contacto son los de su cliente', async () => {
@@ -264,6 +333,15 @@ test('la ficha y el aviso de un contacto son los de su cliente', async () => {
   assert.equal((await conOrganizacion(org, () => frescuraDelAviso(y))).estado, 'llega_sin_procesar');
   assert.equal((await conOrganizacion(org, () => mensajesDeLaFicha(deP))).aviso.estado, 'al_dia', 'la ficha de P vio el aviso de Y');
   assert.equal((await conOrganizacion(org, () => mensajesDeLaFicha(deY))).aviso.estado, 'llega_sin_procesar');
+
+  // El cero de mensajes, con el pulso de su cliente: P dio la vuelta entera; Y nunca leyó nada.
+  await admin.query(
+    `insert into negocio.ingesta_pulso (org_id, cuenta_id, clave, marca_el, ultima_corrida_el, atrasado)
+     values ($1, $2, 'mensajes', now(), now(), false), ($1, $3, 'mensajes', null, null, false)`,
+    [org, p, y],
+  );
+  assert.equal((await conOrganizacion(org, () => mensajesDeLaFicha(deP))).falta, null, 'el cero de P se explicó con el pulso de Y');
+  assert.ok((await conOrganizacion(org, () => mensajesDeLaFicha(deY))).falta, 'el cero de Y se dio por medido con el pulso de P');
 });
 
 test('el vacío de la agenda mira el peor pulso de los clientes', async () => {
@@ -281,4 +359,15 @@ test('el vacío de la agenda mira el peor pulso de los clientes', async () => {
   const foco = { orgId: org, todaLaOrganizacion: true, cuentas: [p] } as const;
   const deP = await conOrganizacion(foco, () => agendaDelCloser('closer', 'America/Lima', { dias: 3 }));
   assert.doesNotMatch(String(deP.falta), /quedó incompleto/);
+  // Un cliente ACTIVO sin pulso no se leyó nunca: no hay cero medido. Y uno en pausa no cuenta.
+  await admin.query(`delete from negocio.ingesta_pulso where org_id = $1 and cuenta_id = $2`, [org, y]);
+  const sinY = await conOrganizacion(org, () => agendaDelCloser('closer', 'America/Lima', { dias: 3 }));
+  assert.match(String(sinY.falta), /Todavía no se leyó el calendario/, 'un cliente activo sin pulso dio el cero por medido');
+  await admin.query(`update identidad.cuentas set estado = 'pausada' where id = $1`, [y]);
+  try {
+    const conYPausado = await conOrganizacion(org, () => agendaDelCloser('closer', 'America/Lima', { dias: 3 }));
+    assert.doesNotMatch(String(conYPausado.falta), /Todavía no se leyó|quedó incompleto/, 'un cliente en pausa decidió el vacío de la agenda');
+  } finally {
+    await admin.query(`update identidad.cuentas set estado = 'activa' where id = $1`, [y]);
+  }
 });

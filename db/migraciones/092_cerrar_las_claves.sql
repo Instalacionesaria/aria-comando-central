@@ -4,9 +4,14 @@
 -- POR QUÉ (el nivel 3, Bloque C, 2026-10-18)
 --
 -- La `090` EXPANDIÓ: agregó, junto a cada clave por organización, la misma clave con el cliente (`cuenta_id`), y el
--- código pasó a escribir con la nueva (C1). Mientras convivieron, la vieja seguía siendo única: dos clientes de una
--- empresa no podían tener el mismo pulso, el mismo día de gasto, el mismo sello ni el mismo aviso. Esta migración
--- CIERRA: la clave vieja deja de existir y la del cliente pasa a ser la clave.
+-- código pasó a escribir con la nueva: el pulso, el gasto y los sellos en C1, y el aviso del CRM recién en C3. Mientras
+-- convivieron, la vieja seguía siendo única: dos clientes de una empresa no podían tener el mismo pulso, el mismo día
+-- de gasto, el mismo sello ni el mismo aviso. Esta migración CIERRA: la clave vieja deja de existir y la del cliente
+-- pasa a ser la clave.
+--
+-- **Va después de C3 desplegado, no de C1**: el aviso de C1 escribe todavía con `on conflict (org_id, huella)`, y sin
+-- ese único cada aviso sería un 42P10 y un 503. Por lo mismo, una vez aplicada no se vuelve a un despliegue anterior a
+-- C3, ni con un rollback de Vercel.
 --
 --   · `ingesta_pulso`      — la clave primaria pasa de (org_id, clave) a (org_id, cuenta_id, clave);
 --   · `gasto_de_la_cuenta` — de (org_id, fecha) a (org_id, cuenta_id, fecha);

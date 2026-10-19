@@ -179,8 +179,8 @@ UTC sobre toda la tabla (al pie, lo re-medido el 2026-10-18):
 |---|---|---|---|
 | Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:209-231`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
 | Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:350-357`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:122-124`) |
-| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:459-480`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
-| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:580-581`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:583-636`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
+| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:459-481`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
+| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:582-583`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:585-638`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
 | Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:405-407`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
 
 Re-medido el 2026-10-18: **6.478 mensajes**, de los que siguen siendo **2** los escritos desde el compositor (el último,
@@ -316,12 +316,12 @@ su fecha.
 
 Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay cinco familias:
 
-- **«Seis de sus siete salidas».** Lo dicen `lib/ghl/contrato.ts:414`,
+- **«Seis de sus siete salidas».** Lo dicen `lib/ghl/contrato.ts:428`,
   `lib/negocio/salidasDelSetter.ts:18`, `app/api/contactos/[id]/avanzar/route.ts:464-465` y
   `app/api/contactos/[id]/avanzar/route.ts:479` («sus siete declaran etiqueta»). El catálogo tiene
   **seis** salidas (`lib/negocio/salidas.ts:69`) y **cinco** apagan el agente, como dice la propia
-  tabla (`lib/ghl/contrato.ts:385-387`, `lib/ghl/contrato.ts:396-403`).
-- **«Todavía no se escriben: Avanzar es el paso siguiente»** (`lib/ghl/contrato.ts:382`), sobre las
+  tabla (`lib/ghl/contrato.ts:399-401`, `lib/ghl/contrato.ts:410-417`).
+- **«Todavía no se escriben: Avanzar es el paso siguiente»** (`lib/ghl/contrato.ts:396`), sobre las
   etiquetas que Avanzar manda desde el 2026-08-26 (commit `39bade3`). Y en el cockpit, «mientras
   Avanzar no exista» (`lib/negocio/inicio.ts:110-111`).
 - **«`closer_asignado` tiene `org_id` como clave primaria entera»**, o sea un closer por empresa, en

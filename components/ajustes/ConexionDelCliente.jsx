@@ -42,7 +42,16 @@ function porQue(r) {
   return r.detalle ?? MOTIVOS[r.codigo] ?? `Rechazado (${r.estado}).`;
 }
 
-export default function ConexionDelCliente({ cliente }) {
+/** Un fallo al LEER no es uno al guardar: lo que ya estaba guardado sigue guardado. */
+function porQueNoSeLeyo(r) {
+  if (r.tipo === 'sin_respuesta') return 'No se pudo leer la conexión: no llegó al servidor. Lo guardado sigue guardado.';
+  return r.detalle ?? MOTIVOS[r.codigo] ?? `No se pudo leer la conexión (${r.estado}).`;
+}
+
+/* `relectura`: un número que quien la monta sube cuando cambió algo de afuera —la subcuenta, al vincularla— para que
+   se vuelva a leer sin desmontarla. `alMostrarCabecera`: avisa que hay una cabecera del aviso a la vista, que no se
+   vuelve a mostrar, para que la ventana no se cierre con un Escape. */
+export default function ConexionDelCliente({ cliente, relectura = 0, alMostrarCabecera }) {
   const ruta = `/api/admin/cuentas/${cliente.id}/conexion`;
   const [datos, setDatos] = useState(null);
   const [causa, setCausa] = useState(null);
@@ -55,18 +64,20 @@ export default function ConexionDelCliente({ cliente }) {
     if (!yaHayDatos.current) setCausa(null);
     const r = await pedir(ruta);
     if (r.tipo !== 'datos') {
-      setCausa(porQue(r));
+      setCausa(porQueNoSeLeyo(r));
       return;
     }
     setDatos(r.datos);
+    setCausa(null);
     yaHayDatos.current = true;
   }, [ruta]);
 
   // Un componente por cliente: quien lo monta le pone `key={cliente.id}`, así que cambiar de cliente empieza de cero.
+  // Y vuelve a leer cuando sube `relectura`, sin desmontarse: la cabecera del aviso no se pierde.
   useEffect(() => {
     if (cliente.esPorOmision) return;
     void cargar();
-  }, [cliente.esPorOmision, cargar]);
+  }, [cliente.esPorOmision, cargar, relectura]);
 
   const guardar = useCallback(
     async (campo, valor) => {
@@ -103,10 +114,17 @@ export default function ConexionDelCliente({ cliente }) {
       <div className="aj-bloque">
         <div className="dw-sec-t">Conexión</div>
         {causa ? (
-          <div className="fd-aviso mal" role="status">
-            <i>⚠</i>
-            <span>{causa}</span>
-          </div>
+          <>
+            <div className="fd-aviso mal" role="status">
+              <i>⚠</i>
+              <span>{causa}</span>
+            </div>
+            <div className="aj-fila">
+              <button type="button" className="fd-btn sec" onClick={() => void cargar()}>
+                Reintentar
+              </button>
+            </div>
+          </>
         ) : (
           <p className="aj-ayuda">Leyendo la conexión…</p>
         )}
@@ -185,7 +203,12 @@ export default function ConexionDelCliente({ cliente }) {
         </div>
       ) : null}
       {CAMPOS.map(fila)}
-      <AvisoDelCrm ruta={ruta} configurado={datos.avisoSecretoConfigurado === true} alGenerar={() => void cargar()} />
+      <AvisoDelCrm
+        ruta={ruta}
+        configurado={datos.avisoSecretoConfigurado === true}
+        alGenerar={() => void cargar()}
+        alMostrarCabecera={alMostrarCabecera}
+      />
     </div>
   );
 }

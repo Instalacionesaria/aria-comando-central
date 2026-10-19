@@ -23,9 +23,9 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { CAMPO_DEL_PUNTAJE, ETIQUETAS_DE_DESCARTE } from '../ghl/contrato.ts';
+import { ETIQUETAS_DE_DESCARTE } from '../ghl/contrato.ts';
 import { closersDeLaEmpresa } from './alcanceDelCloser.ts';
-import { camposQueSeMuestran, campoPorNombre } from './camposDelCrm.ts';
+import { camposDelPuntaje, camposQueSeMuestran, campoPorNombre, idEn, type CampoDelCrm } from './camposDelCrm.ts';
 import { cancelada, alcanzable } from './citasAlcanzables.ts';
 import { CAMPO_DEL_PRECALL, ramaDelPrecall } from './consumoDelPrecall.ts';
 import { HUECOS, MEDIDO_EL, type HuecoDelPortal } from './huecosDelLeadsPortal.ts';
@@ -186,7 +186,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
 
   if (!c) return null;
 
-  const [citas, resultados, mensajes, mostrables, campoFormulario, corte, campoPrecall, closers] =
+  const [citas, resultados, mensajes, mostrables, campoFormulario, corte, campoPrecall, closers, puntaje] =
     await Promise.all([
       datos()
         .selectFrom('citas')
@@ -213,12 +213,16 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
       ultimoDiaDelFormulario(),
       campoPorNombre(CAMPO_DEL_PRECALL),
       closersDeLaEmpresa(),
+      // El campo del puntaje de cada subcuenta (el nivel 3): va arriba, no en el cuestionario.
+      camposDelPuntaje(),
     ]);
 
   const valores = c.campos_del_crm ?? {};
-  const textoDe = (campo: string | null): string | null => {
-    if (campo === null) return null;
-    const v = valores[campo];
+  // El campo con el id de la subcuenta de este contacto (el nivel 3): uno por cliente.
+  const textoDe = (campo: string | CampoDelCrm | null): string | null => {
+    const id = idEn(valores, campo);
+    if (id === null) return null;
+    const v = valores[id];
     return v === undefined || v === null || String(v).trim() === '' ? null : String(v);
   };
 
@@ -230,7 +234,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
    * «Calificación» y deja el campo del puntaje adentro, y la ficha lo mostraría dos veces: el puntaje
    * va una sola vez, arriba, con su tramo. */
   const cuestionario = mostrables
-    .filter((m) => m.grupo === 'calificacion' && m.campoId !== CAMPO_DEL_PUNTAJE)
+    .filter((m) => m.grupo === 'calificacion' && !puntaje.includes(m.campoId))
     .map((m) => ({ etiqueta: m.etiqueta, valor: textoDe(m.campoId) }))
     .filter((x): x is { etiqueta: string; valor: string } => x.valor !== null);
 

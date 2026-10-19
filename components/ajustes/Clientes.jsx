@@ -55,6 +55,11 @@ export default function Clientes({ sesion, conConexion = false }) {
   const [valores, setValores] = useState(valoresDe(null));
   const [vinculo, setVinculo] = useState({ crmCuentaId: '', esPrueba: false });
   const [ocupado, setOcupado] = useState(false);
+  /* La Conexión del cliente: cuántas veces hay que releerla (sube al vincular la subcuenta) y si tiene una cabecera
+     del aviso a la vista. Esa cabecera no se vuelve a mostrar: mientras está, la ventana no se cierra con Escape ni
+     con el fondo, y guardar no la cierra. */
+  const [relectura, setRelectura] = useState(0);
+  const [cabeceraVisible, setCabeceraVisible] = useState(false);
 
   const nombreDelNicho = (clave) => catalogo?.nichos.find((n) => n.clave === clave)?.nombre ?? clave;
 
@@ -70,10 +75,12 @@ export default function Clientes({ sesion, conConexion = false }) {
       return;
     }
     setAviso({ mal: false, texto: editando ? 'Cliente guardado.' : `«${valores.nombre.trim()}» agregado.` });
-    setAlta(null);
-    setEditando(null);
+    if (!cabeceraVisible) {
+      setAlta(null);
+      setEditando(null);
+    }
     await refrescar();
-  }, [editando, valores, refrescar]);
+  }, [editando, valores, refrescar, cabeceraVisible]);
 
   const cambiarEstado = useCallback(
     async (cliente, estado) => {
@@ -98,7 +105,10 @@ export default function Clientes({ sesion, conConexion = false }) {
     });
     setOcupado(false);
     setAviso(r.tipo === 'datos' ? { mal: false, texto: 'Vinculación guardada.' } : { mal: true, texto: porQue(r) });
-    if (r.tipo === 'datos') await refrescar();
+    if (r.tipo === 'datos') {
+      setRelectura((n) => n + 1);
+      await refrescar();
+    }
   }, [editando, vinculo, refrescar]);
 
   if (lista === null) {
@@ -184,6 +194,7 @@ export default function Clientes({ sesion, conConexion = false }) {
                         setAviso(null);
                         setValores(valoresDe(c));
                         setVinculo({ crmCuentaId: '', esPrueba: c.esPrueba });
+                        setCabeceraVisible(false);
                         setEditando(c);
                       }}
                     >
@@ -214,9 +225,11 @@ export default function Clientes({ sesion, conConexion = false }) {
               ? 'Es el cliente principal de la empresa: recibe lo que entra con sus credenciales.'
               : 'Un negocio de la empresa, con su propia subcuenta de GoHighLevel.'
           }
+          cerrablePorFuera={!cabeceraVisible}
           alCerrar={() => {
             setAlta(null);
             setEditando(null);
+            setCabeceraVisible(false);
           }}
         >
           <FormularioDeCliente valores={valores} alCambiar={setValores} catalogo={catalogo} prefijo={editando ? 'ed-cli' : 'cli'} />
@@ -261,7 +274,14 @@ export default function Clientes({ sesion, conConexion = false }) {
           ) : null}
 
           {/* La conexión propia del cliente: su GoHighLevel, su Meta y su aviso. Una por cliente (`key`). */}
-          {editando && conConexion ? <ConexionDelCliente key={editando.id} cliente={editando} /> : null}
+          {editando && conConexion ? (
+            <ConexionDelCliente
+              key={editando.id}
+              cliente={editando}
+              relectura={relectura}
+              alMostrarCabecera={setCabeceraVisible}
+            />
+          ) : null}
         </Ventana>
       ) : null}
     </>

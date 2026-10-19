@@ -36,7 +36,6 @@ const TODAVIA_VOSEAN = [
   'app/api/contactos/sincronizar/route.ts',
   'app/entrar/page.tsx',
   'components/MenuDeUsuario.jsx',
-  'components/ajustes/AvisoDelCrm.jsx',
   'components/ajustes/Empresas.jsx',
   'components/ajustes/Usuarios.jsx',
   'components/analizadores/PanelDeAnalizadores.jsx',
