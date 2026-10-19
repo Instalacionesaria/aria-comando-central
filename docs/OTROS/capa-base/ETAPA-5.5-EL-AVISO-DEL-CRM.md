@@ -16,7 +16,7 @@
           la vista y ya son 0 con la pestaña cerrada. Lo que el aviso compra es LATENCIA: de hasta 24
           horas a segundos fuera del horario en que alguien mira.
        3. Y hay un competidor mucho mas barato para ese mismo problema: si el plan de Vercel es Pro,
-          descomentar dos renglones de `lib/negocio/barrido.ts:99-100` baja las 24 horas a 10 minutos,
+          descomentar dos renglones de `lib/negocio/barrido.ts:100-101` baja las 24 horas a 10 minutos,
           gratis y sin superficie de ataque nueva. Es el punto 2-A, y es una mirada al panel.
 -->
 
@@ -35,7 +35,7 @@ No es «no hacerlo todavía», pero tampoco es «el webhook es el ahorro». El a
 La lista de las tres propuestas tiene siete a diez ítems y **bloquea de más**. Verifiqué en disco cuáles ya están contestados. Queda esto, y es corto.
 
 ### A · ¿El plan de Vercel es Hobby o Pro? — UNA MIRADA AL PANEL. **BLOQUEA LA DECISIÓN, NO EL CÓDIGO.**
-Es el ítem que ninguna de las tres puso primero y es el que decide si esta etapa es necesaria o conveniente. `lib/negocio/barrido.ts:90-94` dice que no se pudo medir (el token lee proyectos, da 403 sobre facturación) y `:89-90` tiene las dos entradas comentadas listas. **Si el plan es Pro, descomentar dos renglones baja el retraso de 24 horas a 10 minutos, gratis, sin una línea de código nuevo y sin una superficie de ataque nueva** — y el aviso pasa de «única vía fuera de horario» a «optimización de latencia de 10 min a 2 s». No cambia el plan de abajo (las etapas 1 a 3 valen igual), pero cambia la urgencia de las etapas 4 a 7 y hay que saberlo antes de gastar la semana.
+Es el ítem que ninguna de las tres puso primero y es el que decide si esta etapa es necesaria o conveniente. `lib/negocio/barrido.ts:91-95` dice que no se pudo medir (el token lee proyectos, da 403 sobre facturación) y `:89-90` tiene las dos entradas comentadas listas. **Si el plan es Pro, descomentar dos renglones baja el retraso de 24 horas a 10 minutos, gratis, sin una línea de código nuevo y sin una superficie de ataque nueva** — y el aviso pasa de «única vía fuera de horario» a «optimización de latencia de 10 min a 2 s». No cambia el plan de abajo (las etapas 1 a 3 valen igual), pero cambia la urgencia de las etapas 4 a 7 y hay que saberlo antes de gastar la semana.
 Fuente: panel de Vercel → Settings → Billing. Cinco segundos.
 
 ### B · Cosechar los payloads reales del inbox de la plataforma anterior — UNA CONSULTA SQL. **BLOQUEA LA ETAPA 6.**
@@ -74,7 +74,7 @@ Cuántos workflows con acción Webhook existen, a qué URL apuntan (¿al sistema
 ### ETAPA 1 · UN SOLO ESCRITOR DE `negocio.mensajes`, CON DEDUPLICACIÓN POR GEMELO — **HOY, con lo que hay en disco**
 Va primero y no depende de nada porque **arregla un defecto que existe HOY sin ningún webhook**. Verificado: `app/api/contactos/[id]/mensajes/route.ts:183` escribe `ghl_mensaje_id: enviado.datos.mensajeId ?? \`propio:${id}:${ahora.getTime()}\`` con `id_fabricado: fabricado` y `origen: 'propio'`, sin pasar por `guardarMensajes`. Ese valor no puede colisionar nunca con el identificador real, así que cuando la ingesta trae el mismo mensaje quedan **DOS filas para un solo mensaje**, visibles en el chat, sin ningún error. Y el encabezado de `lib/negocio/ingesta.ts:1` («EL único escritor de `negocio.mensajes`») es hoy **falso**.
 
-- **Archivos:** nuevo `lib/negocio/mensajes.ts` exportando `escribirMensajes(orgId, filas, { fijarPiso })`; se extrae de `lib/negocio/ingesta.ts:278-357`; pasan por él los DOS escritores de hoy (`ingesta.ts` y el POST del chat).
+- **Archivos:** nuevo `lib/negocio/mensajes.ts` exportando `escribirMensajes(orgId, filas, { fijarPiso })`; se extrae de `lib/negocio/ingesta.ts:281-360`; pasan por él los DOS escritores de hoy (`ingesta.ts` y el POST del chat).
 - **Migración:** ninguna.
 - **Regla asimétrica, copiada de la referencia porque está medida:** ventana de gemelo de 10 min; un fabricado NO se inserta si su real ya está; un real al insertarse BORRA los fabricados equivalentes; **nunca real↔real**. Tres mejoras: el fabricado se reconoce por `id_fabricado = true` y no por prefijo (el motivo está escrito en `db/migraciones/013_ingesta_de_mensajes.sql:96-99`); al reemplazar, el real HEREDA `origen`, `autor` y `autor_usuario_id`; el `insert` del real va ANTES del `delete`.
 - **`fijarPiso` existe por un peligro real:** `mensajes_desde_el` se escribe con `coalesce` (verificado, `ingesta.ts:350`), o sea una sola vez; si el aviso lo fijara con su único mensaje, la ficha afirmaría tener una historia que no tiene. La ingesta pasa `true`, el aviso pasará `false`.
@@ -195,7 +195,7 @@ Es la mitad del trabajo que consiste en no hacer nada, y hay que hacerla explíc
 ## 4 · LO QUE SE DEJA AFUERA A PROPÓSITO
 
 1. **Bajar el sondeo de 10 s. NO se toca en esta etapa, y es la decisión de alcance más importante.** El 360 → 6 es la 5.6 y va **condicionado por empresa a que el monitor de la Etapa 5 demuestre que el aviso se PROCESA**, no que llega. Bajarlo antes es desplegar una regresión de latencia de 60x **antes** de su propio detector: mientras el workflow no esté configurado —o sea, para todas las empresas el día uno— la única vía es la red de vigilancia, y un closer conversando en vivo vería la respuesta hasta 10 minutos tarde. La 3ª propuesta lo puso en el paso 7 y el monitor en el 8, y ése es el orden equivocado.
-2. **El «timbre» que dispara un ciclo escribiendo en la fila del pulso.** Es la idea central de la 3ª propuesta y **es insegura tal como está**: `anotarAviso` haría un `UPDATE` sobre la fila `(org_id,'mensajes')` que el reclamo lee con `.forUpdate().skipLocked()` (verificado, `lib/negocio/pulso.ts:170-179`), y una ráfaga sostenida mantiene la fila bloqueada → el reclamo devuelve cero filas → `ocupado` → **ningún ciclo corre, ni el del aviso ni el de la red**, y `skipLocked`, que existe para no formar cola, se convierte en inanición. No se adopta.
+2. **El «timbre» que dispara un ciclo escribiendo en la fila del pulso.** Es la idea central de la 3ª propuesta y **es insegura tal como está**: `anotarAviso` haría un `UPDATE` sobre la fila `(org_id,'mensajes')` que el reclamo lee con `.forUpdate().skipLocked()` (verificado, `lib/negocio/pulso.ts:171-186`), y una ráfaga sostenida mantiene la fila bloqueada → el reclamo devuelve cero filas → `ocupado` → **ningún ciclo corre, ni el del aviso ni el de la red**, y `skipLocked`, que existe para no formar cola, se convierte en inanición. No se adopta.
 3. **`identidad.avisos_sin_empresa`.** No se crea. La atribución por el secreto elimina el caso. **Y corrijo un dato del juez que la atacó:** dijo que una tabla en `identidad` cae fuera de toda prueba estructural. Es cierto de `pruebas/base/31-forma-de-las-tablas.test.ts` (verificado: `where n.nspname = 'negocio'`), pero **falso de `pruebas/base/10-migraciones.test.ts`**, que consulta `where n.nspname in ('identidad','negocio')` y tiene un roster explícito `ONCE_TABLAS_DE_IDENTIDAD` con `assert.deepEqual` más RLS activada/forzada/con-política sobre cada una. Agregar una tabla ahí pone la suite roja hasta que alguien edite un roster cuyo propio comentario dice que el número en el nombre existe para forzar la lectura. O sea: la tabla no sería invisible. La objeción tenía razón en la sustancia (texto sin techo controlado por el atacante, sin dedupe, sin tasa) y no en el agravante. La borro igual, porque la mejor forma de cerrar esa superficie es no tenerla.
 4. **El auditor de IA.** Es lo más importante que queda afuera, porque es la única pieza que depende del aviso en exclusiva: «colgarlo de un intervalo convertiría cada ciclo con actividad en una llamada al modelo. Va por evento, y solo por evento». No existe en este repositorio (verificado por grep: los aciertos de «auditor» son la auditoría de accesos). Cuando exista, se engancha en las dos ramas de mensaje de `lib/negocio/avisoDelCrm.ts`, y **su coste hay que declararlo aparte porque no son llamadas al CRM sino inferencias** (la referencia las cifra en ~$0,02 cada una). No se deja un hueco falso.
 5. **`serie.toque` y `serie.agotada`.** Piden el módulo de seguimientos. Caen en «desconocido», se guardan, responden 200 — y ahora el monitor los cuenta.
@@ -226,7 +226,7 @@ Es la mitad del trabajo que consiste en no hacer nada, y hay que hacerla explíc
 
 ## 6 · LA TABLA DE COSTO
 
-Todo por **empresa y por hora**. Verificado en `pruebas/codigo/109-consumo.test.ts:6-8`, `lib/cadencia.ts:40`, `lib/negocio/pulso.ts:102`, `components/views/CloserView.jsx:153`, `vercel.json`.
+Todo por **empresa y por hora**. Verificado en `pruebas/codigo/109-consumo.test.ts:6-8`, `lib/cadencia.ts:40`, `lib/negocio/pulso.ts:103`, `components/views/CloserView.jsx:153`, `vercel.json`.
 
 | Escenario | Pedidos a Vercel/hora | Llamadas al CRM/hora | Latencia de un entrante |
 |---|---|---|---|

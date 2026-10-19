@@ -158,6 +158,7 @@ export async function sincronizarContactos(acceso: {
   token: string;
   locationId: string;
 }): Promise<ResultadoDeSincronizar> {
+  await exigirUnSoloCliente();
   const resumen: Resumen = {
     traidos: {},
     guardados: { closer: 0, setter: 0 },
@@ -281,6 +282,22 @@ export async function sincronizarContactos(acceso: {
  * transacción. Este archivo no lo nombra ni una vez, que es la propiedad que se busca.
  * ═══════════════════════════════════════════════════════════════════════════════
  */
+/**
+ * La sincronización es de UN cliente (el nivel 3). La resta congela a todo contacto con territorio que la búsqueda no
+ * trajo, y la búsqueda es de una subcuenta: con varios clientes a la vista, congelaría los de los demás, que se buscan
+ * con otro token. Así que corre en el ámbito de un cliente (el barrido y la ruta manual lo abren), o con la empresa
+ * entera sólo si tiene un único cliente activo. Si no, se lanza: congelar a otro cliente no da ningún error.
+ */
+async function exigirUnSoloCliente(): Promise<void> {
+  const r = await sql<{ todas: boolean; activas: number }>`
+    select current_setting('app.cuentas', true) = '*' as todas,
+           (select count(*)::int from identidad.cuentas where estado = 'activa') as activas`.execute(datos());
+  const f = r.rows[0];
+  if (f?.todas && f.activas > 1) {
+    throw new Error('sincronizarContactos: la empresa tiene varios clientes activos; hace falta el ámbito de uno');
+  }
+}
+
 /* El congelamiento queda ARCHIVADO, y no hay una línea acá que lo haga: lo hace el disparador de la
    migración `047` sobre `negocio.contactos`. Es el hecho con menos sustitutos de todo el módulo —acá
    se pone el territorio en nulo y **no se tocan las etiquetas**, así que sin esa tabla no queda rastro

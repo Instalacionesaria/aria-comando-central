@@ -10,7 +10,7 @@
 //      (`lib/ghl/conversaciones.ts:406`). La ruta entonces fabrica uno, `propio:<id>:<epoch>`, y lo
 //      marca `id_fabricado: true`.
 //   2. La ingesta después trae esa conversación, y trae **también los salientes**
-//      (`lib/negocio/ingesta.ts:309`), con el identificador REAL.
+//      (`lib/negocio/ingesta.ts:312`), con el identificador REAL.
 //   3. `unique (org_id, ghl_mensaje_id)` no salta: un fabricado no puede colisionar con un real.
 //   4. → **dos filas para un mensaje**, las dos dibujadas en el chat.
 //

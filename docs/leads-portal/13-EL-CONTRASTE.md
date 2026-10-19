@@ -73,7 +73,7 @@ fuentes.
 
 | hallazgo | medido | qué hace la pestaña |
 |---|---|---|
-| Los 47 puntajes en 0 son un lote cerrado de tres semanas de alta, de fines de agosto y comienzos de septiembre | 3 · 23 · 21 por semana de alta (las que empiezan el 17, el 24 y el 31 de agosto: del 17 de agosto al 6 de septiembre), **0** en los últimos 14 días; la sincronización los ubica entre el 21 de agosto y el 3 de septiembre (`lib/negocio/sincronizar.ts:414-416`) | los cuenta como «sin calificar», los separa en `enCero` y los vigila con `cerosRecientes` (`LP14-09`, `LP14-10`) |
+| Los 47 puntajes en 0 son un lote cerrado de tres semanas de alta, de fines de agosto y comienzos de septiembre | 3 · 23 · 21 por semana de alta (las que empiezan el 17, el 24 y el 31 de agosto: del 17 de agosto al 6 de septiembre), **0** en los últimos 14 días; la sincronización los ubica entre el 21 de agosto y el 3 de septiembre (`lib/negocio/sincronizar.ts:431-433`) | los cuenta como «sin calificar», los separa en `enCero` y los vigila con `cerosRecientes` (`LP14-09`, `LP14-10`) |
 | Hay contactos que ninguna ventana alcanza | **24** de 593 sin alta, los 24 congelados | los declara en `sinAlta` (`LP02-10`) |
 | La entrada de gente se cortó el 14 de septiembre | 117, 90, 53, 175 y 89 altas por semana del 10 de agosto al 7 de septiembre, y 4 y 3 desde entonces (censo del 2026-09-26); cohorte de 7 días: **3** | distingue «no hay tráfico» de «el barrido no pasa» con la frescura y `ultimaAlta` (`LP06-08`), y sabe que «30 días» se va a vaciar (`LP06-09`) |
 | La mitad de quienes tuvieron cita sólo tienen canceladas | **146** de 292, con `'cancelled'` como única grafía y sobre todas sus citas: una aproximación | cuentan como agendados, como en todo el sistema; si se marcan aparte es `LP02-P03` |

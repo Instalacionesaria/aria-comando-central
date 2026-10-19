@@ -24,6 +24,7 @@
 
 import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
+import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import {
   integracionDeAnuncios,
   metricasPorAnuncio,
@@ -203,7 +204,8 @@ function diasEntre(desde: string, hasta: string): string[] {
  * @param ahora El reloj del barrido.
  */
 export async function rellenarAnuncios(
-  orgId: string,
+  // UN cliente (el nivel 3), como `recolectarAnuncios`.
+  ambito: AmbitoDeUnCliente,
   acceso: { token: string; locationId: string },
   arranque: number,
   ahora: () => number,
@@ -212,7 +214,7 @@ export async function rellenarAnuncios(
   const reloj = piezas.reloj ?? ahora;
   const instante = piezas.ahora ?? ahora();
   const hasta = sumarDias(diaUtc(instante), -DIAS_QUE_SE_RELEEN);
-  const enOrg = <T>(f: () => Promise<T>) => conOrganizacion(orgId, f);
+  const enOrg = <T>(f: () => Promise<T>) => conOrganizacion(ambito, f);
   // La foto de la base siembra antes las lecturas del colector viejo, una sola vez (ver la función).
   const leerFoto =
     piezas.foto ??

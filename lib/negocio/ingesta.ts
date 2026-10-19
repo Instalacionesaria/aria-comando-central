@@ -60,6 +60,7 @@ import {
 import { esDeUnCanalDelChat, esUnMensaje, familiaDeEntrega } from '../ghl/entrega.ts';
 import { revisarEntregas } from './entregas.ts';
 import { conElPulso, type Cierre, type ResultadoDelPulso } from './pulso.ts';
+import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 
 /**
  * Los dos topes. Juntos acotan el peor ciclo en **13 llamadas**, y por eso son dos y no uno: un
@@ -101,17 +102,19 @@ interface ContactoConocido {
 }
 
 /**
- * Un ciclo de ingesta. Devuelve `corrio: false` cuando no le tocaba, y eso **no es un fallo**.
+ * Un ciclo de ingesta de UN cliente (el nivel 3): su subcuenta, sus contactos, su marca de agua. Devuelve
+ * `corrio: false` cuando no le tocaba, y eso **no es un fallo**.
  */
 export async function ingerirMensajes(
-  orgId: string,
+  ambito: AmbitoDeUnCliente,
   acceso: { token: string; locationId: string },
 ): Promise<ResultadoDelPulso<ResultadoDeIngesta>> {
-  return conElPulso(orgId, 'mensajes', async (pulso) => {
+  return conElPulso(ambito, 'mensajes', async (pulso) => {
     // UNA consulta, y de acá sale todo el filtro por territorio. Son cientos de filas: cabe en
     // memoria de sobra, y la alternativa —preguntarle al proveedor conversación por conversación—
     // es la que cuesta 159 llamadas.
-    const conocidos = await conOrganizacion(orgId, async () => {
+    // Los del cliente, y sólo ésos: una conversación de otra subcuenta es ajena.
+    const conocidos = await conOrganizacion(ambito, async () => {
       const filas = await datos()
         .selectFrom('contactos')
         .select(['id', 'ghl_contact_id', 'mensajes_desde_el'])
@@ -192,7 +195,7 @@ export async function ingerirMensajes(
           break paginas;
         }
 
-        const escrito = await guardarMensajes(orgId, contacto, conv, m.datos.mensajes);
+        const escrito = await guardarMensajes(ambito, contacto, conv, m.datos.mensajes);
         mensajesNuevos += escrito.nuevos;
         sinFecha += escrito.sinFecha;
         marca = conv.ultimaEl ?? marca;
@@ -208,7 +211,7 @@ export async function ingerirMensajes(
     // Comparte el alquiler y la contabilidad de la ingesta a propósito: dos candados separados
     // serían dos cosas que mantener, y esto no necesita el suyo — corre exactamente cuando corre
     // el ciclo, ni más ni menos.
-    const revision = await revisarEntregas(orgId, acceso);
+    const revision = await revisarEntregas(ambito, acceso);
     llamadas += revision.llamadas;
 
     return {
@@ -273,7 +276,7 @@ function describir(f: { tipo: string; estado?: number; causa?: string }): string
  * cien filas y dispararía cien recálculos para no cambiar nada.
  */
 async function guardarMensajes(
-  orgId: string,
+  ambito: AmbitoDeUnCliente,
   contacto: ContactoConocido,
   conv: ConversacionDeGhl,
   crudos: readonly MensajeDeGhl[],
@@ -370,7 +373,7 @@ async function guardarMensajes(
    * perder: `contactos.mensajes_desde_el` significa *«desde acá hacia adelante la conversación está
    * completa»*, y se escribe con `coalesce`, o sea una vez y para siempre. La ingesta lo puede
    * afirmar porque caminó la conversación entera hacia atrás. Un escritor de un mensaje suelto no. */
-  const { escritas } = await escribirMensajes(orgId, filas, { fijarPiso: true });
+  const { escritas } = await escribirMensajes(ambito, filas, { fijarPiso: true });
 
   return { nuevos: escritas, sinFecha };
 }

@@ -46,8 +46,11 @@ import {
 import { buscarUnaMejora } from '../../lib/auditor/buscarMejora.ts';
 import { guardarPromptDelAgente } from '../../lib/auditor/prompts.ts';
 import type { pedirVeredicto } from '../../lib/auditor/modelo.ts';
+import { porOmisionDe, type AmbitoDeUnCliente } from '../../lib/negocio/ambitoDelCliente.ts';
 
 let esc: Escenario;
+// El cliente por omisión de la empresa del escenario (el nivel 3): el auditor mira un cliente.
+let enEsc: AmbitoDeUnCliente;
 
 const AGENTE_CRM = '0peGoq7VvFqnDGA7gxtX';
 const ZONA = 'America/Lima';
@@ -56,6 +59,7 @@ const hace = (min: number): Date => new Date(AHORA.getTime() - min * 60_000);
 
 const EMPRESA = () => ({
   orgId: esc.org,
+  ambito: enEsc,
   zona: ZONA,
   claveIa: 'una-clave-que-nunca-se-usa',
   idDelAgente: AGENTE_CRM,
@@ -63,6 +67,7 @@ const EMPRESA = () => ({
 
 before(async () => {
   esc = await montar('Mejora');
+  enEsc = await porOmisionDe(esc.org);
 });
 after(async () => {
   await limpio();

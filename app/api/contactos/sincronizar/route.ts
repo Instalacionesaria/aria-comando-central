@@ -36,6 +36,7 @@ import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../lib/credenciales/resolver.ts';
 import { sincronizarContactos } from '../../../../lib/negocio/sincronizar.ts';
+import { porOmisionDe } from '../../../../lib/negocio/ambitoDelCliente.ts';
 
 /**
  * Traer cientos de contactos son varias páginas contra un servicio externo. El valor por
@@ -60,7 +61,9 @@ export async function POST(peticion: Request): Promise<Response> {
     return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);
   }
 
-  const r = await conOrganizacion(contexto.orgEfectiva, async () =>
+  /* Con las credenciales de la empresa se sincroniza al cliente por omisión (el nivel 3), en SU ámbito: la resta
+     congela a quien la búsqueda no trajo, y con la empresa entera congelaría a los contactos de los demás clientes. */
+  const r = await conOrganizacion(await porOmisionDe(contexto.orgEfectiva), async () =>
     sincronizarContactos({ token: acceso.token, locationId: acceso.locationId }),
   );
 

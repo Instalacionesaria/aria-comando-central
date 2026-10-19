@@ -127,7 +127,7 @@ la pantalla nueva no puede heredar sin querer.
   - **47 en cero**, todos de tres semanas de alta (la del 17-ago 3, la del 24-ago 23, la del 31-ago
     21) y **ninguno en los últimos 14 días**. `sincronizar.ts` guarda el cero como cero porque no se
     sabe si el CRM calculó cero o si su workflow no corrió
-    (`lib/negocio/sincronizar.ts:412-420`).
+    (`lib/negocio/sincronizar.ts:429-437`).
 - **Qué pide:** el pie de la tarjeta muestra los dos términos: «sin puntaje N · en 0 N». La
   respuesta los trae como `sinCalificar.sinPuntaje` y `sinCalificar.enCero`.
 - **El guardián:** `sinCalificar.cerosRecientes` cuenta los ceros con alta en los últimos 14 días.
@@ -260,7 +260,7 @@ la pantalla nueva no puede heredar sin querer.
   comentario de `comision.ts` describe ese mismo defecto (`lib/negocio/comision.ts:26-27`).
 - **El formato de la maqueta es andamiaje:** `'$'+n.toLocaleString('en-US')`
   (`aios-command-center_1.html:4587`). La tabla de resultados guarda el monto y ninguna moneda
-  (`lib/datos/esquema.ts:856-869`).
+  (`lib/datos/esquema.ts:859-872`).
 
 ### LP03-14 · Las tarjetas no emiten `data-leads`
 

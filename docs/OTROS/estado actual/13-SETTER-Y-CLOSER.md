@@ -115,7 +115,7 @@ dos que nacieron después del corte: `brief` (§ 2.6) y `cerebro` (§ 2.7). Las 
 `mi-dia` (colas + cockpit + comisión, y desde AG12 y AG15 las marcas del Brief y el comentario de la cabecera,
 `app/api/closer/mi-dia/route.ts:50-184`, `app/api/closer/mi-dia/route.ts:124-133`), `agenda`, `pipeline`,
 `meta` (PATCH), `agenda/refrescar` (POST, con `maxDuration = 300`,
-`app/api/closer/agenda/refrescar/route.ts:50`) y `contactos`. **Esta última no la llama ninguna
+`app/api/closer/agenda/refrescar/route.ts:51`) y `contactos`. **Esta última no la llama ninguna
 pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pestaña Contactos; un
 `grep` de `closer/contactos` fuera de `app/api` sólo la encuentra en un comentario
 (`components/negocio/ListaDeContactos.jsx:9`) y en tres pruebas.
@@ -129,7 +129,7 @@ servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDe
 (`app/api/closer/mi-dia/route.ts:5`); lo que sí corre, con la pestaña a la vista, es un reloj de 10 s
 que dispara la ingesta de mensajes y recarga las colas (`components/views/CloserView.jsx:173-186`,
 `lib/cadencia.ts:40`). Los contactos entran solos cada diez minutos por el cron
-(`lib/negocio/barrido.ts:219-223`).
+(`lib/negocio/barrido.ts:220-224`).
 
 ### 2.4 · Quién ve qué
 
@@ -300,7 +300,7 @@ que ya no es cierto o que nadie volvió a medir.
 
 `lib/negocio/inicio.ts:41-53` lo cuenta con la etiqueta `cita_agendada` y deja escrito que «el día que
 se lea el calendario» pasará a ser del mes. El calendario ya se barre cada hora
-(`lib/negocio/barrido.ts:231-235`) y `negocio.citas` tiene fecha en sus 333 filas, pero el indicador
+(`lib/negocio/barrido.ts:232-236`) y `negocio.citas` tiene fecha en sus 333 filas, pero el indicador
 sigue en la etiqueta: **88 contactos del territorio closer** la llevan, medido el 2026-09-28, sin
 decir de cuándo.
 
@@ -332,7 +332,7 @@ Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay
 - **«NO hay sincronización automática de contactos»** (`components/views/CloserView.jsx:395-401`).
   Hay: el comentario es del commit `28c6937` (2026-08-27 16:58, hora de Lima); `contactos` entró al
   barrido diario esa misma noche (`f6d09a0`, 21:42) y al horario de diez minutos
-  (`lib/negocio/barrido.ts:219-223`) con `2e8ce81`, el 2026-08-28.
+  (`lib/negocio/barrido.ts:220-224`) con `2e8ce81`, el 2026-08-28.
 - **«Las ÚNICAS dos con una capacidad de lectura propia»** (`lib/autorizacion/secciones.ts:352`).
   Analizadores pide `analizadores.ver` desde el 2026-09-23 (`lib/autorizacion/secciones.ts:383-389`).
 
@@ -649,7 +649,7 @@ son dos fuentes y sólo una es nuestra (`lib/negocio/citasAlcanzables.ts:105-110
 
 **4 · `asistio` no entra en el `do update` del barrido.** Es la única columna de `citas` que no viene
 del CRM; si entrara, cada pasada horaria la volvería a nulo sin error
-(`lib/negocio/citas.ts:417-422`).
+(`lib/negocio/citas.ts:419-424`).
 
 **5 · Venta, acuerdo sin pago y venta chica son tres hechos.** Cada catálogo manda sus salidas a sus
 columnas (`lib/negocio/etapas.ts:76-94`), y lo cobrado suma sólo `venta`

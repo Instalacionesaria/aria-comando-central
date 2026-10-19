@@ -43,6 +43,7 @@ import { recolectarAnuncios } from './recolectarAnuncios.ts';
 import { rellenarAnuncios } from './rellenarAnuncios.ts';
 import { recolectarActivos } from './recolectarActivos.ts';
 import { barrerCitas } from './citas.ts';
+import { porOmisionDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 import type { ConfiguracionDeLosNegocios } from '../cartera/configuracion.ts';
 import { tomarLaFoto, type ResumenDeLaFoto } from '../cartera/foto.ts';
@@ -552,6 +553,11 @@ export async function barrerTodo(
   });
 
   for (const { org, acceso, auditor, analizador, llaveDeIa, meta } of conSello) {
+    /* El cliente de las tareas de cliente (el nivel 3). Hasta el barrido por cliente, el por omisión: el que trae lo
+       que entra con las credenciales de la empresa. Se busca una vez por empresa y sólo si una tarea lo pide; si
+       falla, falla esa tarea, adentro de su try. */
+    let cliente: Promise<AmbitoDeUnCliente> | null = null;
+    const delCliente = (): Promise<AmbitoDeUnCliente> => (cliente ??= porOmisionDe(org.id));
     // El guardia del presupuesto, antes de empezar la empresa. Ver `PRESUPUESTO_MS`.
     if (ahora() - arranque > PRESUPUESTO_MS) {
       for (const tarea of tareas) {
@@ -625,26 +631,26 @@ export async function barrerTodo(
       try {
         const r =
           tarea === 'contactos'
-            ? await releerContactos(org.id, conToken(acceso))
+            ? await releerContactos(await delCliente(), conToken(acceso))
             : tarea === 'mensajes'
-              ? await ingerirMensajes(org.id, conToken(acceso))
+              ? await ingerirMensajes(await delCliente(), conToken(acceso))
               : tarea === 'auditoria'
-                ? await auditar(org, auditor, acceso, arranque, ahora)
+                ? await auditar(org, await delCliente(), auditor, acceso, arranque, ahora)
                 : tarea === 'mejora'
-                  ? await mejorar(org, auditor)
+                  ? await mejorar(org, await delCliente(), auditor)
                   : tarea === 'anuncios'
-                    ? await recolectarAnuncios(org.id, conToken(acceso))
+                    ? await recolectarAnuncios(await delCliente(), conToken(acceso))
                     : tarea === 'anuncios_relleno'
-                      ? await rellenarAnuncios(org.id, conToken(acceso), arranque, ahora)
+                      ? await rellenarAnuncios(await delCliente(), conToken(acceso), arranque, ahora)
                       : tarea === 'activos' && meta?.tipo === 'listo'
-                        ? await recolectarActivos(org.id, meta, ahora)
+                        ? await recolectarActivos(await delCliente(), meta, ahora)
                       : tarea === 'analizadores'
                         ? await analizar(org, analizador, arranque, ahora)
                         : tarea === 'reintentos'
                           ? await reintentar(org, analizador, arranque, ahora)
                           : tarea === 'senales'
                             ? await pasarLosDetectores(org, llaveDeIa ?? null, arranque, ahora)
-                            : await barrerCitas(org.id, conToken(acceso));
+                            : await barrerCitas(await delCliente(), conToken(acceso));
 
         if (r.corrio === false) {
           // El antirrebote o el candado. **No es un error**, y tratarlo como uno convertiría el
@@ -740,6 +746,7 @@ export async function barrerTodo(
  */
 async function auditar(
   org: OrganizacionListada,
+  ambito: AmbitoDeUnCliente,
   auditor: AccesoAlAuditor,
   acceso: AccesoAGhl,
   arranque: number,
@@ -752,6 +759,7 @@ async function auditar(
   const r = await auditarEmpresa(
     {
       orgId: org.id,
+      ambito,
       zona: org.zonaHoraria,
       // El interruptor y las dos faltas ya las resolvió `resolverAccesoAlAuditor`.
       auditorActivo: true,
@@ -848,6 +856,7 @@ async function reintentar(
  */
 async function mejorar(
   org: OrganizacionListada,
+  ambito: AmbitoDeUnCliente,
   auditor: AccesoAlAuditor,
 ): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
   // El bucle ya garantizó que está `listo`. Ver el mismo criterio en `auditar(`.
@@ -855,6 +864,7 @@ async function mejorar(
 
   const r = await buscarUnaMejora({
     orgId: org.id,
+    ambito,
     zona: org.zonaHoraria,
     claveIa: auditor.claveIa,
     idDelAgente: auditor.idDelAgente,
@@ -884,10 +894,11 @@ async function mejorar(
  * «no le tocaba» —que **no es un error**— y un token rechazado por el CRM sí lo es.
  */
 async function releerContactos(
-  orgId: string,
+  ambito: AmbitoDeUnCliente,
   acceso: { token: string; locationId: string },
 ): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
-  const r = await conOrganizacion(orgId, () =>
+  // En el ámbito del cliente: la resta de la sincronización congela sólo a los suyos (`exigirUnSoloCliente`).
+  const r = await conOrganizacion(ambito, () =>
     sincronizarContactos({ token: acceso.token, locationId: acceso.locationId }),
   );
   // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle pone el texto genérico.
@@ -895,7 +906,7 @@ async function releerContactos(
   /* La miniatura del anuncio de cada contacto, que la búsqueda no trae (CF1-11 de docs/creative/16): hasta 50
      pedidos por pasada, una sola vez por contacto. Va después de sincronizar para pedir también los que acaban de
      entrar, y sus llamadas se suman a las de la tarea. */
-  const miniaturas = await completarMiniaturas(orgId, acceso);
+  const miniaturas = await completarMiniaturas(ambito, acceso);
   return { corrio: true, resultado: { ...r.resumen, miniaturas }, llamadas: r.resumen.llamadas + miniaturas.pedidos };
 }
 
@@ -1134,7 +1145,10 @@ async function sellar(
           ultimas_llamadas: llamadas,
         } as never)
         .onConflict((oc) =>
-          oc.columns(['org_id', 'tarea']).doUpdateSet({
+          /* La clave con el cliente (el nivel 3, `090`), única con los nulos iguales: el sello de una tarea de la
+             empresa va sin cuenta, y el de una tarea de un cliente, con la suya. Con los nulos distintos, dos sellos
+             sin cuenta de la misma tarea no chocarían y cada corrida agregaría una fila. */
+          oc.columns(['org_id', 'cuenta_id', 'tarea']).doUpdateSet({
             ultima_corrida_el: new Date(),
             ultimo_estado: estado,
             ultimo_motivo: motivo,

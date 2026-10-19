@@ -333,7 +333,7 @@ en 0; y si apareció un 0 reciente que obligue a revisar la regla.
 **Unidad** · Conteos.
 **Población** · Las dos primeras, la cohorte; la tercera, la empresa entera.
 **Rastro** · `aios-command-center_1.html:4648-4659` (los «nc» de la maqueta son los de `icp:null`) y
-`:4717-4718` («Aún sin formulario · califican al agendar»); `lib/negocio/sincronizar.ts:412-420` (el
+`:4717-4718` («Aún sin formulario · califican al agendar»); `lib/negocio/sincronizar.ts:429-437` (el
 cero no se colapsa a nulo); `docs/acquisition/04-CALIDAD-DEL-LEAD.md:594-597` (la pregunta P-6,
 que esta pestaña contesta).
 **Estado** · **Construible hoy.** Medido el 2026-09-27 sobre los 593: **169 sin calificar = 122

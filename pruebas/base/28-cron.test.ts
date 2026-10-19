@@ -247,10 +247,11 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
          empresa sin contactos no tenía ninguna. Era ese mismo universo el que dejaba afuera a la campaña
          de mensajes. */
       ['anuncios', 'fallo'],
-      /* `anuncios_relleno` sale CORRIÓ: lee la base primero, y una empresa sin serie de la cuenta ni
-         métricas —la RLS devuelve cero filas de un identificador que no existe— no tiene nada que
-         rellenar ni a quién preguntarle. Cero llamadas, que es lo que hace con una empresa sin Meta. */
-      ['anuncios_relleno', 'corrio'],
+      /* `anuncios_relleno` sale FALLO desde el nivel 3: toda tarea de un cliente abre primero el ámbito de su
+         cliente (`porOmisionDe`), y una empresa que no existe no tiene cliente por omisión. Antes salía CORRIÓ:
+         leía la base con la RLS, cero filas, y no tenía nada que rellenar. Que falle es lo honesto: no se sabe
+         de quién es lo que se rellenaría. */
+      ['anuncios_relleno', 'fallo'],
       ['auditoria', 'saltada'],
       ['citas', 'fallo'],
       ['contactos', 'fallo'],

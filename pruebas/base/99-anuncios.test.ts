@@ -31,6 +31,7 @@ import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
 import { recolectarAnuncios } from '../../lib/negocio/recolectarAnuncios.ts';
 import type { MetricaDeAnuncio } from '../../lib/ghl/anuncios.ts';
+import { porOmisionDe } from '../../lib/negocio/ambitoDelCliente.ts';
 
 let esc: Escenario;
 
@@ -129,7 +130,7 @@ const DIA = '2026-09-14';
  * suite entera en verde, porque el `on conflict` del día siguiente reponía el valor correcto.
  */
 async function unaPasada(metricas: readonly MetricaDeAnuncio[]) {
-  return recolectarAnuncios(esc.org, ACCESO, {
+  return recolectarAnuncios(await porOmisionDe(esc.org), ACCESO, {
     ...SIN_RED,
     ...SOLO_ESTA,
     ahora: AHORA,
@@ -316,7 +317,7 @@ test('un día SIN entrega no borra el conjunto de anuncios que ya se sabía', as
    * Acá se siembra exactamente esa secuencia: primero el día bueno, después uno sin conjunto. */
   const id = `${MARCA}06`;
 
-  await recolectarAnuncios(esc.org, ACCESO, {
+  await recolectarAnuncios(await porOmisionDe(esc.org), ACCESO, {
     ...SIN_RED,
     ...SOLO_ESTA,
     ahora: AHORA,
@@ -350,7 +351,7 @@ test('un día SIN entrega no borra el conjunto de anuncios que ya se sabía', as
 
 /** Una pasada que no escribe métricas y lee estas campañas. */
 async function pasadaConCampanas(lista: readonly { id: string; nombre: string | null; estado: string | null }[]) {
-  return recolectarAnuncios(esc.org, ACCESO, {
+  return recolectarAnuncios(await porOmisionDe(esc.org), ACCESO, {
     ...SIN_RED,
     ...SOLO_ESTA,
     ahora: AHORA,
@@ -591,11 +592,11 @@ test('la primera pasada pasa a lecturas los pares que el colector viejo ya leyó
      viejos se volverían a pedir), o sembrar en cada pasada (un redescubrimiento se desharía solo). Y sin el plan
      inyectado: con él la siembra no corría, y un `insert` sin `org_id` que la RLS rechazaba pasó sin verse. */
   await metricaVieja();
-  await recolectarAnuncios(esc.org, ACCESO, { ...SIN_RED, ahora: AHORA, pedir: async () => ({ tipo: 'datos', datos: [] }) });
+  await recolectarAnuncios(await porOmisionDe(esc.org), ACCESO, { ...SIN_RED, ahora: AHORA, pedir: async () => ({ tipo: 'datos', datos: [] }) });
   assert.deepEqual(await lecturaDe(CAMPANA, VIEJO), [{ gasto: '69.5900', por_rango: false }]);
 
   await esc.admin.query(`delete from negocio.lecturas_de_gasto where org_id = $1 and fecha = $2`, [esc.org, VIEJO]);
-  await recolectarAnuncios(esc.org, ACCESO, {
+  await recolectarAnuncios(await porOmisionDe(esc.org), ACCESO, {
     ...SIN_RED,
     ahora: AHORA,
     pedir: async () => ({ tipo: 'datos', datos: [] }),
@@ -609,7 +610,7 @@ test('el relleno también siembra las lecturas viejas antes de buscar: si corre 
   await metricaVieja();
   const { rellenarAnuncios } = await import('../../lib/negocio/rellenarAnuncios.ts');
   const nada = async () => {};
-  await rellenarAnuncios(esc.org, ACCESO, Date.now(), Date.now, {
+  await rellenarAnuncios(await porOmisionDe(esc.org), ACCESO, Date.now(), Date.now, {
     vinculo: SIN_RED.vinculo,
     serie: SIN_RED.serie,
     escribirSerie: nada,
@@ -643,7 +644,7 @@ test('el plan de la pasada: las campañas ACTIVE y las que gastaron en la últim
       [esc.org, pausadaAyer],
     );
     const pedidas = new Set<string>();
-    await recolectarAnuncios(esc.org, ACCESO, {
+    await recolectarAnuncios(await porOmisionDe(esc.org), ACCESO, {
       ...SIN_RED,
       ahora: AHORA,
       pedir: async (_a, campana) => {

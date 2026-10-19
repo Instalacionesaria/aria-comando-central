@@ -32,6 +32,7 @@ import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { archivosFuente, RAIZ } from '../apoyo/fuente.ts';
 import { completarMiniaturas, contactosPorPedir, guardarMiniaturas, pedirMiniaturas } from '../../lib/negocio/miniaturaDelContacto.ts';
 import { motivoDeLoIncompleto } from '../../lib/negocio/barrido.ts';
+import { porOmisionDe } from '../../lib/negocio/ambitoDelCliente.ts';
 
 let esc: Escenario;
 const CONTACTO = 'miniatura-cf1-';
@@ -106,7 +107,7 @@ test('se piden sólo los que llegaron por un anuncio, una vez, de los más recie
   // Uno ya pedido no se vuelve a pedir, aunque no haya tenido nada.
   const sim = simular({ [nuevo]: { estado: 200, atribucion: {} } });
   try {
-    await completarMiniaturas(esc.org, ACCESO, 1);
+    await completarMiniaturas(await porOmisionDe(esc.org), ACCESO, 1);
   } finally {
     sim.restaurar();
   }
@@ -129,7 +130,7 @@ test('se guardan las cuatro claves y el 404; un fallo no se guarda y se vuelve a
   });
   let resumen;
   try {
-    resumen = await completarMiniaturas(esc.org, ACCESO);
+    resumen = await completarMiniaturas(await porOmisionDe(esc.org), ACCESO);
   } finally {
     sim.restaurar();
   }
@@ -156,7 +157,7 @@ for (const [estado, corte, frase] of [
     const sim = simular({ [primero]: { estado } });
     let resumen;
     try {
-      resumen = await completarMiniaturas(esc.org, ACCESO);
+      resumen = await completarMiniaturas(await porOmisionDe(esc.org), ACCESO);
     } finally {
       sim.restaurar();
     }
@@ -180,7 +181,7 @@ test('el rechazo de UN contacto —un 403, un 400— se guarda y la pasada sigue
   const sim = simular({ [prohibido]: { estado: 403 }, [invalido]: { estado: 400 }, [bueno]: { estado: 200, atribucion: {} } });
   let resumen;
   try {
-    resumen = await completarMiniaturas(esc.org, ACCESO);
+    resumen = await completarMiniaturas(await porOmisionDe(esc.org), ACCESO);
   } finally {
     sim.restaurar();
   }
@@ -210,7 +211,7 @@ test('una URL más larga que la tabla no se guarda, y lo ya guardado no se pisa'
   const ghl = await unContacto({ adId: '1' }, 1);
   const sim = simular({ [ghl]: { estado: 200, atribucion: { videoUrl: `https://www.facebook.com/ads/image/?d=${'x'.repeat(2001)}`, photoUrl: 'https://scontent.xx.fbcdn.net/f.jpg' } } });
   try {
-    await completarMiniaturas(esc.org, ACCESO);
+    await completarMiniaturas(await porOmisionDe(esc.org), ACCESO);
   } finally {
     sim.restaurar();
   }

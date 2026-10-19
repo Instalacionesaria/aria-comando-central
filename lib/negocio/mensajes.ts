@@ -56,7 +56,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
-import { conOrganizacion, datos } from '../datos/contexto.ts';
+import { conOrganizacion, datos, type Ambito } from '../datos/contexto.ts';
 
 /**
  * La ventana del gemelo.
@@ -175,7 +175,9 @@ const cerca = (a: Date, b: Date): boolean =>
  *   que no tiene, sin forma de corregirlo después.
  */
 export async function escribirMensajes(
-  orgId: string,
+  /* La ingesta pasa el ámbito de su cliente; las rutas y el aviso, la organización. Las dos sirven: cada mensaje
+     lleva su contacto, y el puente le pone la cuenta del contacto (085). */
+  donde: string | Ambito,
   filas: readonly FilaDeMensaje[],
   opciones: { fijarPiso: boolean },
 ): Promise<Escritura> {
@@ -188,7 +190,7 @@ export async function escribirMensajes(
     throw new Error('escribirMensajes: todas las filas tienen que ser del mismo contacto');
   }
 
-  return conOrganizacion(orgId, async () => {
+  return conOrganizacion(donde, async () => {
     /* ── LOS CANDIDATOS A GEMELO, EN UNA SOLA CONSULTA ───────────────────────
      *
      * Se traen las filas del contacto en la ventana del lote ensanchada por los dos lados, y se

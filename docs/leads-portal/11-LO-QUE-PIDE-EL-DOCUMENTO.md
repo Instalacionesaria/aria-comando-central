@@ -171,7 +171,7 @@ LP-0 cuenta al puntaje como una respuesta (`09 § LP09-P02`).
 ### LP11-07 · ICP score y segmento (`§ 5.3:255-256`)
 
 El puntaje lo calcula el CRM —«Puntaje | ICP», 0 a 100— y llega a `contactos.score` por la
-sincronización (`lib/negocio/sincronizar.ts:421`). El documento no dice quién lo calcula: dice que
+sincronización (`lib/negocio/sincronizar.ts:438`). El documento no dice quién lo calcula: dice que
 existe. Que el sistema lo calcule por su cuenta, con las respuestas del formulario, **queda a
 futuro** y se documenta en `docs/OTROS/futuro/icp-interno-calculado.md`.
 
@@ -243,7 +243,7 @@ conservarse su historial y exponer un resumen en el perfil.»*
 
 **Hoy se guarda exactamente como el documento dice que no.** El VSL y el precall viven dentro de
 `contactos.campos_del_crm`, que la sincronización **reescribe entero** en cada pasada
-(`lib/negocio/sincronizar.ts:392-394`). No hay tabla de eventos de reproducción, ni una fila por
+(`lib/negocio/sincronizar.ts:409-411`). No hay tabla de eventos de reproducción, ni una fila por
 visionado, ni una fecha. Lo que la ficha puede mostrar del precall es la última foto.
 
 **No se arregla en esta pestaña.** Conservar la historia es una tabla nueva y un escritor nuevo, y

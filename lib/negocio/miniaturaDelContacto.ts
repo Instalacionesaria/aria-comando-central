@@ -35,6 +35,7 @@
 import { sql } from 'kysely';
 
 import { conOrganizacion, datos } from '../datos/contexto.ts';
+import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { atribucionDelContacto, contactoPorId } from '../ghl/cliente.ts';
 import { llaveDelCreativo } from './creativo.ts';
 import { LARGO_MAXIMO_DE_MINIATURA, enlaceDePublicacion, medioPermitido } from './urlExterna.ts';
@@ -155,15 +156,17 @@ export async function pedirMiniaturas(
  * (`lib/negocio/barrido.ts`), después de sincronizar.
  */
 export async function completarMiniaturas(
-  orgId: string,
+  // Los contactos de UN cliente, pedidos con el token de su subcuenta: uno de otro cliente se pediría con un token que
+  // no lo conoce y quedaría «sin miniatura» para siempre.
+  ambito: AmbitoDeUnCliente,
   acceso: { token: string; locationId: string },
   tope = TOPE_POR_PASADA,
   ahora: () => number = Date.now,
 ): Promise<ResumenDeMiniaturas> {
   const hasta = ahora() + TIEMPO_DE_LA_PASADA_MS;
-  const pendientes = await conOrganizacion(orgId, () => contactosPorPedir(tope));
+  const pendientes = await conOrganizacion(ambito, () => contactosPorPedir(tope));
   const { filas, resumen } = await pedirMiniaturas(acceso, pendientes, hasta, ahora);
-  await conOrganizacion(orgId, () => guardarMiniaturas(filas));
+  await conOrganizacion(ambito, () => guardarMiniaturas(filas));
   return resumen;
 }
 

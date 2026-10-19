@@ -48,6 +48,7 @@
 import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
 import { CADENCIA } from '../cadencia.ts';
+import { cuentaDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 
 /**
  * Qué se está ingiriendo. Cada clave tiene su propio candado, su propia marca y su propio coste.
@@ -157,31 +158,40 @@ export const NO_CORRIO = {
 } as const;
 
 /**
- * Corre `trabajo` como mucho una vez por ciclo y por empresa.
+ * Corre `trabajo` como mucho una vez por ciclo y por CLIENTE (el nivel 3: la fila es de (empresa, cliente, clave)).
  *
  * Devuelve `corrio: false` cuando no le tocaba — **y eso no es un fallo**: es la respuesta correcta
  * a «otro ya se está encargando». Quien llame no tiene que reintentar ni avisar de nada.
  */
 export async function conElPulso<T>(
-  orgId: string,
+  ambito: AmbitoDeUnCliente,
   clave: ClaveDePulso,
   trabajo: (pulso: Pulso) => Promise<{ cierre: Cierre; resultado: T }>,
 ): Promise<ResultadoDelPulso<T>> {
   // ── PASO 1 · reclamar. Transacción corta, sin nada de red adentro. ────────
-  const reclamo = await conOrganizacion(orgId, async () => {
+  const cuenta = cuentaDe(ambito);
+  const reclamo = await conOrganizacion(ambito, async () => {
     // Se asegura la fila antes de bloquearla. Sin esto, `skipLocked` devolvería cero filas en dos
     // situaciones distintas —«está tomada» y «no existe»— y no habría forma de distinguirlas: la
     // primera corrida de una empresa nueva se leería como «ocupado» **para siempre**.
+    //
+    // El `cuenta_id` lo pone el puente: la única cuenta activa a la vista es la del ámbito. Y el
+    // `on conflict` va SIN destino: mientras conviven la clave vieja (org_id, clave) y la nueva
+    // (org_id, cuenta_id, clave) —de la `090` a la `092`—, con un destino la otra clave no sería
+    // árbitro y dos reclamos simultáneos de la primera fila darían 23505 en vez de «ya existe».
     await datos()
       .insertInto('ingesta_pulso')
       .values({ clave } as never)
-      .onConflict((oc) => oc.columns(['org_id', 'clave']).doNothing())
+      .onConflict((oc) => oc.doNothing())
       .execute();
 
+    // La cuenta también en el `where`, aunque el ámbito ya la filtre: es un cinturón por si un día
+    // alguien abre este reclamo con más de un cliente a la vista.
     const fila = await datos()
       .selectFrom('ingesta_pulso')
       .select(['marca_el', 'marca_desde_el', 'ultima_corrida_el', 'corridas'])
       .where('clave', '=', clave)
+      .where('cuenta_id', '=', cuenta)
       .forUpdate()
       .skipLocked()
       .executeTakeFirst();
@@ -202,6 +212,7 @@ export async function conElPulso<T>(
       .updateTable('ingesta_pulso')
       .set({ ultima_corrida_el: new Date() })
       .where('clave', '=', clave)
+      .where('cuenta_id', '=', cuenta)
       .execute();
 
     return {
@@ -228,7 +239,7 @@ export async function conElPulso<T>(
     // Lo que se rompió se anota igual, y con las llamadas que alcanzó a gastar en cero porque no se
     // pueden saber. **La marca no se toca**: si avanzara sobre un ciclo que falló, el trabajo que
     // quedó en el medio no se volvería a mirar nunca — y nada lo señalaría.
-    await anotar(orgId, clave, {
+    await anotar(ambito, clave, {
       marcaEl: null,
       llamadas: 0,
       atrasado: true,
@@ -238,13 +249,13 @@ export async function conElPulso<T>(
   }
 
   // ── PASO 3 · anotar. Otra transacción corta. ──────────────────────────────
-  await anotar(orgId, clave, cierre);
+  await anotar(ambito, clave, cierre);
   return { corrio: true, resultado, llamadas: cierre.llamadas };
 }
 
 /** Escribe el cierre. Aparte, porque el camino del fallo también lo necesita. */
-async function anotar(orgId: string, clave: ClaveDePulso, cierre: Cierre): Promise<void> {
-  await conOrganizacion(orgId, async () => {
+async function anotar(ambito: AmbitoDeUnCliente, clave: ClaveDePulso, cierre: Cierre): Promise<void> {
+  await conOrganizacion(ambito, async () => {
     await datos()
       .updateTable('ingesta_pulso')
       .set({
@@ -282,17 +293,19 @@ async function anotar(orgId: string, clave: ClaveDePulso, cierre: Cierre): Promi
         ultimo_fallo_el: cierre.fallo === null ? sql`ultimo_fallo_el` : new Date(),
       } as never)
       .where('clave', '=', clave)
+      .where('cuenta_id', '=', cuentaDe(ambito))
       .execute();
   });
 }
 
 /** El pulso tal como está, para mostrarlo. No toca nada. */
-export async function leerPulso(orgId: string, clave: ClaveDePulso) {
-  return conOrganizacion(orgId, async () =>
+export async function leerPulso(ambito: AmbitoDeUnCliente, clave: ClaveDePulso) {
+  return conOrganizacion(ambito, async () =>
     datos()
       .selectFrom('ingesta_pulso')
       .selectAll()
       .where('clave', '=', clave)
+      .where('cuenta_id', '=', cuentaDe(ambito))
       .executeTakeFirst(),
   );
 }

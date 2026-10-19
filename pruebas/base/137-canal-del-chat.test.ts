@@ -59,6 +59,7 @@ import {
   esUnMensaje,
 } from '../../lib/ghl/entrega.ts';
 import { TIPO_DEL_CANAL, type CanalDeEnvio } from '../../lib/ghl/conversaciones.ts';
+import { porOmisionDe } from '../../lib/negocio/ambitoDelCliente.ts';
 
 let admin: Client;
 let alfa: string;
@@ -347,7 +348,7 @@ test('la INGESTA no escribe el correo, y sí escribe el WhatsApp y el SMS', asyn
 
   try {
     const { ingerirMensajes } = await import('../../lib/negocio/ingesta.ts');
-    const r = await ingerirMensajes(alfa, { token: 'x', locationId: 'loc' });
+    const r = await ingerirMensajes(await porOmisionDe(alfa), { token: 'x', locationId: 'loc' });
     assert.notEqual(r, NO_CORRIO, 'el candado no dejó correr el ciclo: la prueba no midió nada');
     assert.equal(pidioMensajes, 1, 'no se pidieron los mensajes de la conversación');
 

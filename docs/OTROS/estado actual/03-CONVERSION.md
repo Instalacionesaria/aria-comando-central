@@ -264,7 +264,7 @@ están en § 2.
 la `048` (`db/migraciones/048_de_donde_vino_el_lead.sql:100-110`); el 2026-10-18 `atribucion_primera` estaba no
 vacía en 580 de 624 y `atribucion_ultima` en 597 (553 y 567 de 594 el 2026-09-28, cuando en 279 los dos toques eran
 distintos; eso no se re-midió). El barrido reescribe las dos cada vez que el CRM las devuelve
-(`lib/negocio/sincronizar.ts:443-448`) y ninguna de sus claves es una fecha, así que no se puede detectar un primer
+(`lib/negocio/sincronizar.ts:460-465`) y ninguna de sus claves es una fecha, así que no se puede detectar un primer
 toque sobrescrito (`lib/negocio/calidadDeLaAtribucion.ts:26-29`). La clasificación de Conversion lee el último
 (`lib/negocio/recorrido.ts:126-128`).
 

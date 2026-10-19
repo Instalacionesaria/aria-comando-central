@@ -31,8 +31,11 @@ import { guardarPromptDelAgente } from '../../lib/auditor/prompts.ts';
 import type { VeredictoDelModelo } from '../../lib/auditor/esquema.ts';
 import { nucleoDeColas, SIN_MOTIVO } from '../../lib/negocio/colas.ts';
 import { UMBRAL_DEL_DEBOUNCE } from '../../lib/auditor/portones.ts';
+import { porOmisionDe, type AmbitoDeUnCliente } from '../../lib/negocio/ambitoDelCliente.ts';
 
 let esc: Escenario;
+// El cliente por omisión de la empresa del escenario (el nivel 3): el auditor mira un cliente.
+let enEsc: AmbitoDeUnCliente;
 
 /** El identificador del agente en el CRM, con la forma real de GoHighLevel. */
 const AGENTE_CRM = '0peGoq7VvFqnDGA7gxtX';
@@ -42,6 +45,7 @@ const hace = (min: number): Date => new Date(AHORA.getTime() - min * 60_000);
 /** La empresa, resuelta. */
 const EMPRESA = () => ({
   orgId: esc.org,
+  ambito: enEsc,
   zona: 'America/Lima',
   auditorActivo: true,
   claveIa: 'una-clave-que-nunca-se-usa',
@@ -53,6 +57,7 @@ const EMPRESA = () => ({
 
 before(async () => {
   esc = await montar('Camino');
+  enEsc = await porOmisionDe(esc.org);
 });
 after(async () => {
   await limpio();

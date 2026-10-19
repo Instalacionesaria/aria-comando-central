@@ -190,7 +190,7 @@ export async function POST(
      Insertaba directo, con este identificador cuando el proveedor no devolvía el suyo:
      `propio:<contactoId>:<epoch>`. Un valor así **no puede colisionar nunca** con el real, así que
      `unique (org_id, ghl_mensaje_id)` no salta — y cuando la ingesta trae de vuelta ese mismo mensaje
-     con su identificador de verdad (trae los salientes también, `lib/negocio/ingesta.ts:309`) quedan
+     con su identificador de verdad (trae los salientes también, `lib/negocio/ingesta.ts:312`) quedan
      **DOS filas para UN mensaje**, las dos dibujadas en el chat.
 
      Ahora las dos vías pasan por `escribirMensajes`, que tiene la regla asimétrica del gemelo. La

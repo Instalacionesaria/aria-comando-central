@@ -33,6 +33,7 @@ import { barrerCitas, type LectoresDelCalendario } from '../../lib/negocio/citas
 import { filasDeTerritorio } from '../../lib/negocio/fila.ts';
 import { colasDelDia } from '../../lib/negocio/miDia.ts';
 import { enlacesDeLaCita } from '../../lib/negocio/enlacesDeLaCita.ts';
+import { porOmisionDe } from '../../lib/negocio/ambitoDelCliente.ts';
 
 const ZONA = 'America/Lima';
 const ACCESO = { token: 'no-se-usa', locationId: 'loc1' };
@@ -397,7 +398,7 @@ test('el barrido cuesta 1 + N llamadas: una por calendario, y no crece con las c
   const tres = [calendario('a'), calendario('b'), calendario('c')];
 
   const r = await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores(
       tres,
@@ -426,7 +427,7 @@ test('una cita de un contacto que no tenemos se CUENTA y no se guarda', async ()
   const enUnaHora = new Date(Date.now() + 3_600_000);
 
   const r = await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores([calendario('a')], {
       a: [delCrm('e1', marca, enUnaHora), delCrm('e2', 'de-otro-mundo', enUnaHora)],
@@ -454,7 +455,7 @@ test('una cita BORRADA por el CRM no se guarda, y se cuenta aparte', async () =>
   const enUnaHora = new Date(Date.now() + 3_600_000);
 
   const r = await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores([calendario('a')], {
       a: [
@@ -476,7 +477,7 @@ test('una cita SIN HORA no se guarda, y se cuenta: un descarte silencioso vuelve
   await contacto(marca);
 
   const r = await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores([calendario('a')], { a: [delCrm('e1', marca, null)] }),
   );
@@ -495,7 +496,7 @@ test('las CANCELADAS sí se guardan, y se cuentan', async () => {
   const enUnaHora = new Date(Date.now() + 3_600_000);
 
   const r = await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores([calendario('a')], {
       a: [
@@ -521,7 +522,7 @@ test('un calendario que falla marca ATRASADO y no se lleva a los otros', async (
   const enUnaHora = new Date(Date.now() + 3_600_000);
 
   const r = await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores([calendario('a'), calendario('b')], {
       a: 'falla',
@@ -537,7 +538,7 @@ test('un calendario que falla marca ATRASADO y no se lleva a los otros', async (
 test('si falla el LISTADO de calendarios no se barre nada, y queda atrasado', async () => {
   // Es el paso 1 obligatorio: sin la lista no hay a quién preguntarle.
   await limpiar();
-  const r = await barrerCitas(alfa, ACCESO, {
+  const r = await barrerCitas(await porOmisionDe(alfa), ACCESO, {
     listar: async () => falloDe<CalendarioDeGhl[]>(),
     citas: async () => {
       throw new Error('no se tiene que llegar acá: sin lista no hay a quién preguntar');
@@ -560,11 +561,11 @@ test('el segundo barrido ACTUALIZA la misma cita y NO pisa el contacto', async (
   const eventoFijo = 'ev-fijo-1';
 
   const cal = [calendario('a')];
-  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm(eventoFijo, marca, enUnaHora)] }));
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm(eventoFijo, marca, enUnaHora)] }));
   await liberarPulso();
   const enDosHoras = new Date(Date.now() + 7_200_000);
   const r2 = await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores(cal, {
       a: [delCrm(eventoFijo, marca, enDosHoras, { estado: 'cancelled', titulo: 'Reagendada' })],
@@ -593,11 +594,11 @@ test('el segundo barrido seguido devuelve `corrio: false` y NO cuesta llamadas',
   const cuenta = { llamadas: 0 };
   const l = lectores([calendario('a')], { a: [] }, cuenta);
 
-  const uno = await barrerCitas(alfa, ACCESO, l);
+  const uno = await barrerCitas(await porOmisionDe(alfa), ACCESO, l);
   assert.equal(uno.corrio, true);
   const gasto = cuenta.llamadas;
 
-  const dos = await barrerCitas(alfa, ACCESO, l);
+  const dos = await barrerCitas(await porOmisionDe(alfa), ACCESO, l);
   assert.equal(dos.corrio, false, 'el segundo seguido no le tocaba');
   assert.equal(cuenta.llamadas, gasto, 'y sobre todo: no gastó ninguna llamada');
 });
@@ -1033,7 +1034,7 @@ test('lo que el CRM dice de la cita se GUARDA, en vez de morir en el upsert', as
   const reservadaEl = new Date(Date.now() - 30 * 86_400_000);
 
   await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores([calendario('a')], {
       a: [
@@ -1083,7 +1084,7 @@ test('el barrido NO pisa `asistio`: es lo único de la cita que no viene del CRM
   const cal = [calendario('a')];
 
   // 1 · El barrido crea la cita.
-  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-asistio', marca, cuando)] }));
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('ev-asistio', marca, cuando)] }));
 
   // 2 · Alguien responde en Avanzar.
   await conOrganizacion(alfa, () =>
@@ -1102,7 +1103,7 @@ test('el barrido NO pisa `asistio`: es lo único de la cita que no viene del CRM
          fila idéntica, un `set` que incluyera `asistio` podría pasar igual por casualidad. */
   await liberarPulso();
   await barrerCitas(
-    alfa,
+    await porOmisionDe(alfa),
     ACCESO,
     lectores(cal, { a: [delCrm('ev-asistio', marca, new Date(cuando.getTime() + 900_000))] }),
   );
@@ -1145,12 +1146,12 @@ test('un barrido sin la marca de reagendamiento NO borra la que ya teníamos', a
   const movidaEl = new Date(Date.now() - 86_400_000);
   const cal = [calendario('a')];
 
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-coalesce', marca, cuando, { reagendadaEl: movidaEl })],
   }));
   await liberarPulso();
   // La misma cita, misma hora, pero el CRM ya no manda la marca.
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-coalesce', marca, cuando, { reagendadaEl: null })],
   }));
 
@@ -1175,9 +1176,9 @@ test('reagendar deja rastro: queda la hora nueva Y la que tenía antes', async (
   const movidaEl = new Date(Date.now() - 60_000);
   const cal = [calendario('a')];
 
-  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-mueve', marca, antes)] }));
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('ev-mueve', marca, antes)] }));
   await liberarPulso();
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-mueve', marca, despues, { reagendadaEl: movidaEl })],
   }));
 
@@ -1203,10 +1204,10 @@ test('un barrido que NO mueve nada no inventa un reagendamiento', async () => {
   const cuando = new Date(Date.now() + 3_600_000);
   const cal = [calendario('a')];
 
-  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-quieta', marca, cuando)] }));
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('ev-quieta', marca, cuando)] }));
   await liberarPulso();
   // Exactamente la misma cita, otra vez. Es lo que hace el cron cada hora.
-  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-quieta', marca, cuando)] }));
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('ev-quieta', marca, cuando)] }));
 
   const f = await comoQuedo('ev-quieta');
   assert.equal(
@@ -1226,11 +1227,11 @@ test('desasignar la cita en el CRM se ve: el nulo gana', async () => {
   const cuando = new Date(Date.now() + 3_600_000);
   const cal = [calendario('a')];
 
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-dueno', marca, cuando, { usuarioAsignadoId: 'u9' })],
   }));
   await liberarPulso();
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-dueno', marca, cuando, { usuarioAsignadoId: null })],
   }));
 
@@ -1254,11 +1255,11 @@ test('un barrido sin la fecha de reserva NO borra la que ya teníamos', async ()
   const reservadaEl = new Date(Date.now() - 30 * 86_400_000);
   const cal = [calendario('a')];
 
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-reserva', marca, cuando, { reservadaEl })],
   }));
   await liberarPulso();
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-reserva', marca, cuando, { reservadaEl: null })],
   }));
 
@@ -1283,7 +1284,7 @@ test('cancelar una cita deja CUÁNDO se canceló y qué era antes', async () => 
   const cuando = new Date(Date.now() + 3_600_000);
   const cal = [calendario('a')];
 
-  await barrerCitas(alfa, ACCESO, lectores(cal, { a: [delCrm('ev-estado', marca, cuando)] }));
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('ev-estado', marca, cuando)] }));
   assert.equal(
     (await comoQuedo('ev-estado'))?.estado_cambiado_el,
     null,
@@ -1291,7 +1292,7 @@ test('cancelar una cita deja CUÁNDO se canceló y qué era antes', async () => 
   );
 
   await liberarPulso();
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-estado', marca, cuando, { estado: 'cancelled' })],
   }));
 
@@ -1310,12 +1311,12 @@ test('un barrido que NO cambia el estado no inventa un cambio', async () => {
   const cuando = new Date(Date.now() + 3_600_000);
   const cal = [calendario('a')];
 
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-quieto', marca, cuando, { estado: 'cancelled' })],
   }));
   await liberarPulso();
   // Exactamente la misma cita, otra vez. Es lo que hace el cron cada hora.
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-quieto', marca, cuando, { estado: 'cancelled' })],
   }));
 
@@ -1337,11 +1338,11 @@ test('la transición desde SIN ESTADO también se registra', async () => {
   const cuando = new Date(Date.now() + 3_600_000);
   const cal = [calendario('a')];
 
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-nulo', marca, cuando, { estado: null })],
   }));
   await liberarPulso();
-  await barrerCitas(alfa, ACCESO, lectores(cal, {
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, {
     a: [delCrm('ev-nulo', marca, cuando, { estado: 'cancelled' })],
   }));
 

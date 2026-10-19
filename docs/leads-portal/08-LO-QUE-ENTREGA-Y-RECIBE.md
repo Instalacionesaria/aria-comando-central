@@ -30,9 +30,9 @@ campos del CRM (`:402`), el alta (`:416`), la atribución del primer toque (`:42
 (`:445`). Las siete tablas de las que sale todo están en `LP09-01`.
 
 **Requisito** · **Sin sincronización nueva y sin columnas nuevas** (decisión del 2026-09-26). El
-puntaje ya llega: lo deriva `lib/negocio/sincronizar.ts:421` del mismo mapa de campos que el barrido
+puntaje ya llega: lo deriva `lib/negocio/sincronizar.ts:438` del mismo mapa de campos que el barrido
 normaliza en la línea de arriba, sin una llamada más al proveedor, y **guarda el cero como cero y la
-ausencia como nulo** (`lib/negocio/sincronizar.ts:412-420`). Esta pestaña hereda esa distinción y no
+ausencia como nulo** (`lib/negocio/sincronizar.ts:429-437`). Esta pestaña hereda esa distinción y no
 la colapsa: el cero cuenta como «Sin calificar» con su motivo (`LP02-09`), no se reescribe.
 
 **Y la ficha no refresca.** La ficha que ya existe, la de las pestañas de operación, refresca el
@@ -46,7 +46,7 @@ proveedor ni escribe en la base.
 ### LP08-02 · La frescura viaja con la cifra, porque la caída del 14 de septiembre es real
 
 **Rastro** · `frescuraDe` (`lib/negocio/frescura.ts:116`) sobre las tareas `'contactos'` y `'citas'`
-(`lib/negocio/barrido.ts:62-66`).
+(`lib/negocio/barrido.ts:63-67`).
 
 **Estado** · Las altas por semana fueron 117, 90, 53, 175 y 89 en las semanas que empiezan del 10 de
 agosto al 7 de septiembre, y **4 y 3 desde la del 14** (censo del 2026-09-26). Es real: se pausaron

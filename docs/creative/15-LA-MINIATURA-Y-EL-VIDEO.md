@@ -66,7 +66,7 @@ app sólo maneja su propia cuenta, el acceso estándar a `ads_read` alcanza, **s
 **Fórmula** · De los anuncios de la pieza, **el de más impresiones en toda la historia guardada** que tenga una
 miniatura vigente. Empate: el `meta_anuncio_id` menor. El post se elige igual y por separado: el anuncio más visto
 puede no tener post y otro sí. Si Meta no tiene miniatura vigente para la pieza, la de sus contactos (CF1-12).
-**Estado** · **Construido el 2026-10-15** (M-3), en `activosDeLasPiezas` (`lib/negocio/recolectarActivos.ts:149`) y
+**Estado** · **Construido el 2026-10-15** (M-3), en `activosDeLasPiezas` (`lib/negocio/recolectarActivos.ts:150`) y
 en la tarjeta (`lib/negocio/lecturaDeCreative.ts:277`). **Desvío**: sin ventana. La pantalla nueva no tiene «la
 tabla de la subasta» y la miniatura de los contactos tampoco depende del período (CF1-12); con ventana, la imagen de
 una pieza cambiaría al cambiar de «7 días» a «30 días» sin que la pieza cambie. Diseñado el 2026-09-29 como «Planificado (CR-7)». **Por qué una regla y no «la primera»**: con seis anuncios por
@@ -107,7 +107,7 @@ video a un almacenamiento propio obligaría, según los términos de Meta, a una
 **Qué es** · A diferencia del video, la miniatura se lee una vez por pasada y se guarda con
 `leido_el` y `miniatura_caduca_el` (lo que dice la firma `oe=` de la URL, si la trae). Una miniatura
 vencida **no se dibuja rota**: no viaja, y la pantalla muestra el hueco.
-**Estado** · **Construido el 2026-10-15** (M-2): el vencimiento sale del `oe` (`lib/negocio/recolectarActivos.ts:50`)
+**Estado** · **Construido el 2026-10-15** (M-2): el vencimiento sale del `oe` (`lib/negocio/recolectarActivos.ts:51`)
 y, sin `oe`, vale un día. Cuánto dura una URL sigue sin medirse (`C15-P02`), y por eso no se adivinó: la tarea corre
 **cada hora** y vuelve a pedir la miniatura que vence en las próximas seis, así que cualquier duración mayor a unas
 siete horas se cubre sola. CR-4 dirá cuántas llamadas cuesta.
@@ -164,7 +164,7 @@ pidiendo al menos cuatro huecos.
 **Qué es** · El token puede ver más de una cuenta publicitaria. Cada anuncio que devuelve Meta se
 compara contra la cuenta guardada en Ajustes (`meta_cuenta_id`), y si no coincide se descarta con el
 motivo `cuenta_ajena`. Es el mismo razonamiento que el del token del CRM sin Location ID.
-**Estado** · **Construido el 2026-10-15** (M-2), en `filaDelActivo` (`lib/negocio/recolectarActivos.ts:76`). Si Meta
+**Estado** · **Construido el 2026-10-15** (M-2), en `filaDelActivo` (`lib/negocio/recolectarActivos.ts:77`). Si Meta
 omite el `account_id`, el anuncio se acepta: vino de la cuenta cargada.
 
 ### C15-12 · Una sola tabla nueva, con su propio escritor
@@ -194,7 +194,7 @@ producción antes del push. Las etapas postergadas están detalladas, paso por p
 | CR-3 | La credencial de Meta en Ajustes: `meta_token_cifrado` y `meta_cuenta_id`, con el molde de `db/migraciones/057_llave_de_tldv.sql:1-29` y `resolverAccesoAlAnalizador`; quedó en `resolverAccesoAMeta` (`lib/credenciales/resolver.ts:607`), migración 064 | nada | hecho, 2026-09-29 |
 | M-1 | «Probar conexión» en Ajustes: el cliente de lectura `pedirAMeta` (`lib/meta/graph.ts:82`) y la prueba de tres pasos `probarConexionConMeta` (`lib/meta/conexion.ts:37`), por `POST /api/admin/credenciales/meta` con `credenciales.editar` | CR-3 | hecho, 2026-10-15 (`cce2d56`) |
 | CR-4 | Medir contra Meta con el token ya cargado: qué campos llegan, si `source` se entrega, cuánto dura una URL | **el token, cargado por la persona del equipo** | esperando el token; «Probar conexión» ya mide si sirve |
-| CR-5 + CR-6 = M-2 | La tabla `negocio.activos_de_anuncio` (`078`), la lectura por lotes `leerCreativos` (`lib/meta/anuncios.ts:101`), el escritor único `recolectarActivos` (`lib/negocio/recolectarActivos.ts:183`) y la tarea horaria `activos` (`lib/negocio/barrido.ts:330`), `saltada` sin token (`lib/negocio/barrido.ts:607`) | CR-3 | hecho, 2026-10-15, sin medir: se diseñó para no depender de lo que CR-4 conteste |
+| CR-5 + CR-6 = M-2 | La tabla `negocio.activos_de_anuncio` (`078`), la lectura por lotes `leerCreativos` (`lib/meta/anuncios.ts:101`), el escritor único `recolectarActivos` (`lib/negocio/recolectarActivos.ts:184`) y la tarea horaria `activos` (`lib/negocio/barrido.ts:331`), `saltada` sin token (`lib/negocio/barrido.ts:613`) | CR-3 | hecho, 2026-10-15, sin medir: se diseñó para no depender de lo que CR-4 conteste |
 | CR-7 = M-3 | La miniatura y el post de Meta en la tarjeta y la ficha de Creative, antes que los de los contactos. Falta la miniatura de cada anuncio dentro del cajón y «N activos distintos» (`C15-09`) | M-2 | hecho en parte, 2026-10-15 |
 | CR-8 | La ruta del click, `app/api/creative/anuncios/[id]/route.ts`, y el reproductor | CR-6 | postergado el 2026-09-30 |
 | CR-9 | Los huecos dinámicos y los documentos al día | todo | postergado el 2026-09-30 |

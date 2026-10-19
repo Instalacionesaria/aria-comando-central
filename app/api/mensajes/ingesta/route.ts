@@ -25,6 +25,7 @@ import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../lib/credenciales/resolver.ts';
 import { ingerirMensajes } from '../../../../lib/negocio/ingesta.ts';
+import { porOmisionDe } from '../../../../lib/negocio/ambitoDelCliente.ts';
 
 // ── NO CRUZA LOS DOS DOMINIOS, Y ESO NO ES UN ACCIDENTE ────────────────────
 //
@@ -59,7 +60,8 @@ export async function POST(peticion: Request): Promise<Response> {
 
   let r;
   try {
-    r = await ingerirMensajes(contexto.orgEfectiva, {
+    // Con las credenciales de la empresa se trae al cliente por omisión (el nivel 3), que es de quien son.
+    r = await ingerirMensajes(await porOmisionDe(contexto.orgEfectiva), {
       token: acceso.token,
       locationId: acceso.locationId,
     });

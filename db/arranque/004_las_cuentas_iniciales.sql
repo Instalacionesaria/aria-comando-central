@@ -52,7 +52,11 @@ begin
          cr.meta_cuenta_id, cr.meta_token_cifrado, cr.actualizado_el, cr.actualizado_por
     from identidad.organizaciones_credenciales cr
     join identidad.cuentas c on c.org_id = cr.org_id
-   where not exists (select 1 from identidad.cuentas_credenciales x where x.cuenta_id = c.id);
+   where not exists (select 1 from identidad.cuentas_credenciales x where x.cuenta_id = c.id)
+     -- Sólo con UNA cuenta (el nivel 3): volver a correr la fase cuando una empresa ya tiene un segundo cliente le
+     -- copiaba a ése el token y el secreto del aviso de la empresa, y se leerían como suyos. Vale antes y después de
+     -- la 085, que trae `es_por_omision`.
+     and (select count(*) from identidad.cuentas y where y.org_id = c.org_id) = 1;
   get diagnostics v_credenciales = row_count;
 
   raise notice '% cuenta(s) creada(s), % juego(s) de credenciales copiado(s)', v_cuentas, v_credenciales;

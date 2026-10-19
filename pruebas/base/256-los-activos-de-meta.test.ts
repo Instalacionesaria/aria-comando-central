@@ -23,6 +23,7 @@ import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { activosDeLasPiezas, anunciosPorLeer, guardarActivos, recolectarActivos } from '../../lib/negocio/recolectarActivos.ts';
+import { porOmisionDe } from '../../lib/negocio/ambitoDelCliente.ts';
 
 let esc: Escenario;
 const MARCA = '25600';
@@ -176,7 +177,7 @@ test('la pasada entera: guarda la miniatura con su vencimiento, marca la cuenta 
     });
   }) as typeof globalThis.fetch;
   try {
-    const primera = await recolectarActivos(esc.org, { token: 't', cuentaId: 'act_123' });
+    const primera = await recolectarActivos(await porOmisionDe(esc.org), { token: 't', cuentaId: 'act_123' });
     assert.equal(primera.resultado.corte, null);
     assert.deepEqual(marcados(pedidosDeAnuncios).sort(), [id(1), id(2), id(3)], 'se pidió un anuncio de la otra empresa, o faltó uno');
 
@@ -194,7 +195,7 @@ test('la pasada entera: guarda la miniatura con su vencimiento, marca la cuenta 
 
     // La segunda pasada: sólo la miniatura que vence en una hora.
     pedidosDeAnuncios.length = 0;
-    await recolectarActivos(esc.org, { token: 't', cuentaId: 'act_123' });
+    await recolectarActivos(await porOmisionDe(esc.org), { token: 't', cuentaId: 'act_123' });
     assert.deepEqual(marcados(pedidosDeAnuncios), [id(1)], 'la segunda pasada volvió a pedir lo que estaba al día');
   } finally {
     globalThis.fetch = original;

@@ -349,7 +349,7 @@ Medido el 2026-10-18: `negocio.topes_del_executive` tiene **1 fila**, con 50 y 3
 (`app/api/admin/organizaciones/[id]/route.ts:114-115`), y la lista marca «Sin zona horaria» a toda empresa en `UTC`,
 el valor por omisión de la columna (`components/ajustes/Empresas.jsx:332-344`). Desde los agentes pesa más: el día de
 los topes, el de la pasada de los detectores, que corre a cada empresa después de las 6:00 de su zona
-(`lib/negocio/barrido.ts:336-345`), y el de la Reunión. Medido el 2026-10-18: de las 11 activas, **9 en `UTC`**, 1 en
+(`lib/negocio/barrido.ts:337-346`), y el de la Reunión. Medido el 2026-10-18: de las 11 activas, **9 en `UTC`**, 1 en
 `America/Lima` y 1 en `America/Santo_Domingo`; las 2 inactivas, en `UTC`. Desde el 2026-09-28 no hubo ningún
 `organizacion_editada`. Las 9 en `UTC` no tienen datos de negocio; el plan para llevar las ventanas al día de la
 empresa está diagnosticado y dejado para después (`docs/OTROS/futuro/el-dia-de-la-empresa.md`).

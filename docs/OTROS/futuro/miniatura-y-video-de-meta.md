@@ -119,11 +119,11 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
     `db/migraciones/062_reintentos_de_los_analizadores.sql:19-23`: se hace `drop` y se vuelve a
     crear con la lista completa más `activos`.
 - **`lib/negocio/barrido.ts`**: `activos` en el tipo `Tarea`, en `TAREAS` después de `anuncios`
-  (`lib/negocio/barrido.ts:98-122`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:268-272`),
+  (`lib/negocio/barrido.ts:99-123`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:269-273`),
   o en uno de cada hora si la compuerta B lo pide —el plan de Vercel es Pro, así que un horario de
   cada hora se acepta; si es uno nuevo, va también a `vercel.json`—. Sin credencial, la tarea queda `saltada` con el
   texto de `TEXTO_DE_FALTA_META`, igual que los Analizadores sin tl;dv
-  (`lib/negocio/barrido.ts:613-617`); y se suma al despacho (`lib/negocio/barrido.ts:635-636`).
+  (`lib/negocio/barrido.ts:619-623`); y se suma al despacho (`lib/negocio/barrido.ts:645-646`).
 - **Las traducciones de las claves foráneas nuevas** en `QUE_LO_IMPIDE`
   (`lib/administracion/borrado.ts:40`): sin eso, la suite falla en la prueba que las exige.
 - **Prueba**: `pruebas/codigo/99-cron.test.ts` ya exige que toda tarea de `HORARIOS` esté en `TAREAS`
@@ -141,7 +141,7 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
   - un anuncio cuyo `account_id` no es la cuenta cargada se descarta (`cuenta_ajena`, `C15-11`):
     `negocio.anuncios` no guarda la cuenta, así que la comparación es contra `meta_cuenta_id`;
   - toda URL pasa por `medioPermitido` antes de escribirse; la que no pasa, no se guarda;
-  - presupuesto de tiempo como `PRESUPUESTO_MS` (`lib/negocio/recolectarAnuncios.ts:106`), y la marca
+  - presupuesto de tiempo como `PRESUPUESTO_MS` (`lib/negocio/recolectarAnuncios.ts:107`), y la marca
     de «incompleto» si no alcanza.
 - **Pruebas, cada una con su mutación**: una miniatura ausente es `null` y no `''`; la segunda pasada
   reescribe; un 500 en un anuncio no tumba a los demás; un host fuera de la lista no se escribe; la

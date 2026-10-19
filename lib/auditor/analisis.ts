@@ -45,6 +45,7 @@ import { registrarUso } from '../agentes/uso.ts';
 import { clasificarFallo } from '../fundaciones/fallo-del-modelo.ts';
 import { type IncidentesAgrupados, agruparIncidentes } from '../incidentes/agrupados.ts';
 import { conElPulso } from '../negocio/pulso.ts';
+import type { AmbitoDeUnCliente } from '../negocio/ambitoDelCliente.ts';
 import { candidatosDecididos } from './candidatos.ts';
 import { escribirAnalisis } from './escritura.ts';
 import { marcarLaIntervencion, type LoMarcado } from './intervencion.ts';
@@ -95,7 +96,13 @@ export const TOPE_DE_FALLOS = 3;
 
 /** Lo que hace falta saber de la empresa para auditarla. */
 export interface ParaAuditar {
+  /** La empresa: lo que es suyo (los incidentes, el uso de la IA) va con ella. */
   orgId: string;
+  /**
+   * El cliente que se audita (el nivel 3): sus conversaciones, su pulso, sus hallazgos. El agente del CRM es por
+   * subcuenta, así que se audita cliente por cliente.
+   */
+  ambito: AmbitoDeUnCliente;
   /** La zona de la EMPRESA, para los sellos de tiempo del transcript. */
   zona: string;
   auditorActivo: boolean;
@@ -339,7 +346,7 @@ export async function auditarEmpresa(
   const idDelAgente = e.idDelAgente as string;
 
   // ── 1 · EL CANDADO, ANTES DE GASTAR ──────────────────────────────────────
-  const conPulso = await conElPulso(e.orgId, 'auditoria', async () => {
+  const conPulso = await conElPulso(e.ambito, 'auditoria', async () => {
     /* Los fallos del modelo de esta corrida, UNO por situación: con el proveedor caído, uno por
        conversación llenaría el Panel de Incidentes cada diez minutos (`lib/incidentes/agrupados.ts`). El
        primero de cada situación se escribe en el acto; el `finally` sólo le pone cuántos fueron, también
@@ -396,7 +403,7 @@ async function trabajar(
 ): Promise<Omit<ResultadoDeLaAuditoria, 'frenoDeLaEmpresa'>> {
   const reloj = o.reloj ?? Date.now;
   const hasta = o.hasta ?? Number.POSITIVE_INFINITY;
-  const { decididos, hayMas } = await conOrganizacion(e.orgId, () => candidatosDecididos(ahora));
+  const { decididos, hayMas } = await conOrganizacion(e.ambito, () => candidatosDecididos(ahora));
 
   const renglones: RenglonDelAnalisis[] = [];
   let llamadas = 0;
@@ -424,7 +431,7 @@ async function trabajar(
      * revertiría los seis análisis anteriores — seis inferencias pagadas y tiradas. Y una transacción
      * abierta mientras se habla con el proveedor retiene una conexión del agrupador durante todas las
      * llamadas, que es justo lo que el encabezado de `pulso.ts` prohíbe. */
-    const preparado = await conOrganizacion(e.orgId, async () => {
+    const preparado = await conOrganizacion(e.ambito, async () => {
       const mensajes = await mensajesDelContacto(candidato.contactoId);
       /* Va en la MISMA transacción que los mensajes y con el MISMO `ahora`: con dos relojes, «el
          agente no escribió hace 90 minutos» y «se registró la venta hace 0 días» podrían describir
@@ -514,7 +521,7 @@ async function trabajar(
     }
 
     // ── 3f · LA ESCRITURA, en su propia transacción. ─────────────────────
-    const escrito = await conOrganizacion(e.orgId, () =>
+    const escrito = await conOrganizacion(e.ambito, () =>
       escribirAnalisis({
         tipo: 'veredicto',
         contactoId: candidato.contactoId,

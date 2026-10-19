@@ -66,6 +66,7 @@ import {
   type CitaDeGhl,
 } from '../ghl/calendarios.ts';
 import { conElPulso, type Cierre, type ResultadoDelPulso } from './pulso.ts';
+import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 
 /**
  * La ventana. Hacia atrás lo que la Agenda necesita para marcar vencidas; hacia adelante lo que
@@ -135,7 +136,7 @@ export interface ResultadoDelBarrido {
  * sin pisar `contacto_id`. Nada de eso se puede ejercitar contra la subcuenta real —no se puede
  * pedirle que una cita venga borrada—, y sin la costura quedaría probado por inspección.
  *
- * Es la misma forma que `revisarEntregas(orgId, acceso, preguntar)`: el valor por omisión es la
+ * Es la misma forma que `revisarEntregas(ambito, acceso, preguntar)`: el valor por omisión es la
  * implementación de verdad, así que el camino de producción no cambia.
  */
 export interface LectoresDelCalendario {
@@ -144,15 +145,16 @@ export interface LectoresDelCalendario {
 }
 
 export async function barrerCitas(
-  orgId: string,
+  // Las citas de UN cliente (el nivel 3), con el token de su subcuenta.
+  ambito: AmbitoDeUnCliente,
   acceso: { token: string; locationId: string },
   lectores: LectoresDelCalendario = { listar: listarCalendarios, citas: citasDelCalendario },
 ): Promise<ResultadoDelPulso<ResultadoDelBarrido>> {
-  return conElPulso(orgId, 'citas', async () => {
+  return conElPulso(ambito, 'citas', async () => {
     // UNA consulta, y de acá sale el filtro por territorio. Igual que la ingesta de mensajes: las
     // citas que no son de un contacto nuestro no se pueden guardar —la clave foránea compuesta lo
     // impide— y preguntarle al CRM contacto por contacto costaría 239 llamadas.
-    const conocidos = await conOrganizacion(orgId, async () => {
+    const conocidos = await conOrganizacion(ambito, async () => {
       const filas = await datos().selectFrom('contactos').select(['id', 'ghl_contact_id']).execute();
       return new Map(filas.map((f) => [f.ghl_contact_id, f.id]));
     });
@@ -233,7 +235,7 @@ export async function barrerCitas(
         // Se guarda el estado crudo, sin traducir: los valores son del proveedor.
         if (estaCancelada(cita.estado)) canceladas++;
 
-        if (await guardar(orgId, contactoId, cita)) guardadas++;
+        if (await guardar(ambito, contactoId, cita)) guardadas++;
       }
     }
 
@@ -314,7 +316,7 @@ function describir(f: { tipo: string; estado?: number; causa?: string }): string
  * `on conflict do update`, toda referencia a `citas.x` es la fila VIEJA, sin importar el orden de
  * las asignaciones. No hace falta un `select` de más.
  */
-async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Promise<boolean> {
+async function guardar(ambito: AmbitoDeUnCliente, contactoId: string, cita: CitaDeGhl): Promise<boolean> {
   const valores = {
     ghl_evento_id: cita.id,
     contacto_id: contactoId,
@@ -334,7 +336,7 @@ async function guardar(orgId: string, contactoId: string, cita: CitaDeGhl): Prom
     sincronizado_el: new Date(),
   };
 
-  const r = await conOrganizacion(orgId, async () =>
+  const r = await conOrganizacion(ambito, async () =>
     datos()
       .insertInto('citas')
       .values(valores as never)

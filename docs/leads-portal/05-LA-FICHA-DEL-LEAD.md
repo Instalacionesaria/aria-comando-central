@@ -55,7 +55,7 @@ acciones y siete secciones:
 ### LP05-03 · La ficha sólo lee: no refresca contra el CRM ni escribe
 
 - **Rastro:** la ficha del closer sí refresca: su ruta llama a `refrescarUnContacto`, que es *«la
-  llamada que cuesta abrir la ficha»* (`lib/negocio/sincronizar.ts:532-562`).
+  llamada que cuesta abrir la ficha»* (`lib/negocio/sincronizar.ts:549-579`).
 - **Qué pide:** `fichaDelLeadDelPortal` sólo lee. No gasta presupuesto del proveedor ni reescribe el
   territorio. La prueba de LP-3 comprueba que la ficha no escribe. Por eso la ficha muestra cuándo se
   sincronizó el contacto por última vez (`LP05-05`).
@@ -297,8 +297,8 @@ acciones y siete secciones:
   Notas sobre la tabla:
   - `utmMedium` es un nombre, no un id, y un renombre en Meta parte la serie. Acquisition pide
     decirlo en pantalla (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`);
-  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1004`);
-  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1001-1012`). **Medido: 213 de 213
+  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1007`);
+  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1004-1015`). **Medido: 213 de 213
     cruzan.**
 - **Sólo el host.** **286** direcciones traen un token: un JWT, un `fbclid` o un `token=`. Es lo que
   pide A8-18 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:239`). Hosts medidos:
@@ -322,10 +322,10 @@ acciones y siete secciones:
   | campo de la maqueta | qué es hoy | rastro |
   |---|---|---|
   | Ubicación · Posición | **hueco**: el placement no llega de ningún lado | A8-29, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304` |
-  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1102-1110`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
+  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1105-1113`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
   | Dispositivo · Ciudad | **hueco**: están dentro de `userAgent` e `ip`, que no se muestran. Acquisition pide derivarlos y no mostrarlos (A8-17). La maqueta elige el dispositivo por la paridad del puntaje (`aios-command-center_1.html:4673`) | `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:238` |
   | Plataforma | **no es un dato aparte**: lo dice `sessionSource`. No se inventa «Meta» | — |
-  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1009-1010`). Ver `LP05-P02` | — |
+  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1012-1013`). Ver `LP05-P02` | — |
   | Punto de captura | **se reemplaza** por el host de `url` y por «Llegó por» (`LP05-07`) | A8-18 |
   | Conjunto · Creative · UTM | **dato real**, por la lista blanca (`LP05-13`); «Creative» es el **nombre** del anuncio, no la pieza (ver la nota) | A8-07, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93` |
 
@@ -353,7 +353,7 @@ acciones y siete secciones:
   - **quién lo calcula:** el rótulo dice que lo calcula el CRM, no Comando Central. El ICP calculado
     por Comando Central es futuro (`docs/OTROS/futuro/icp-interno-calculado.md`);
   - **el 0**, con su motivo: *«No se sabe si el CRM calculó cero o si su workflow no corrió»*
-    (`lib/negocio/sincronizar.ts:412-420`);
+    (`lib/negocio/sincronizar.ts:429-437`);
   - **la etiqueta de descarte**, si la tiene. Medido con `icp_rechazado`: bajo 45 · medio 22 · sin
     calificar 1 · alto 0;
   - **«Formulario completado»** pasa a ser el estado del `Form Landing VSL` (`LP05-09`);
@@ -401,9 +401,9 @@ portal completarían el recorrido: la confirmación de asistencia es justo lo qu
 
 Ninguno es un dato personal. `medium` está en 552 contactos y `campaignId` en 358. El objetivo existe
 para los 213 contactos cuyo `adId` cruza con `negocio.anuncios`; cuántos lo traen cargado no se midió,
-y la columna puede ser nula (`lib/datos/esquema.ts:1009-1010`). Quedaron afuera porque la lista del plan
+y la columna puede ser nula (`lib/datos/esquema.ts:1012-1013`). Quedaron afuera porque la lista del plan
 es la mínima que llena la ficha de la maqueta. `campaignId` sólo serviría para cruzar, y hoy
-`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1001-1012`).
+`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1004-1015`).
 `medium` y el objetivo sí llenarían dos filas que la maqueta tiene: «Plataforma» y «Objetivo».
 Para el objetivo, es la misma pregunta que `LP09-P04` (`09-DE-DONDE-VIENE-CADA-DATO.md`), y se
 contesta una sola vez.

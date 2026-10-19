@@ -34,8 +34,11 @@ declare
     'enlaces_de_pieza', 'activos_de_anuncio'];
   v_opcionales text[] := array[
     'analizador_llamadas', 'analizador_transcripciones', 'analizador_analisis', 'analizador_fichas', 'analizador_prospectos', 'analizador_lapidas',
-    'objeciones_clasificadas', 'senales', 'planes_de_accion', 'reuniones_del_dia', 'tareas_programadas', 'uso_de_ia',
+    'objeciones_clasificadas', 'senales', 'planes_de_accion', 'reuniones_del_dia', 'uso_de_ia',
     'incidentes'];
+  -- `tareas_programadas` NO (el nivel 3): los sellos del cron que existen son de la empresa y quedan sin cuenta. Si se
+  -- etiquetaran con la única cuenta, el sello de la empresa (sin cuenta) que escribe el cron desde la 090 no los
+  -- encontraría, y la clave vieja (org_id, tarea) lo rechazaría: los sellos quedarían congelados.
   v_org     uuid := nullif(btrim(current_setting('app.org_id', true)), '')::uuid;
   v_cuenta  uuid;
   v_cuantas int;

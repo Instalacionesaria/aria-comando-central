@@ -759,6 +759,9 @@ export interface TablaCloserAsignado {
 
 export interface TablaTareasProgramadas {
   org_id: ColumnaInquilino;
+  /** El identificador del sello (`090`); la clave primaria desde la `092`. */
+  id: Generated<string>;
+  /** Nulo = un sello de la empresa; con valor = el de una tarea de ese cliente (el nivel 3). */
   cuenta_id: ColumnaCuentaOpcional;
   tarea: string;
   /** Cuándo PASÓ el cron, no cuándo hizo trabajo. Lo segundo lo dice `ultimo_estado`. */

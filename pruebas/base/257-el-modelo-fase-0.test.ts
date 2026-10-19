@@ -405,7 +405,12 @@ test('las listas de tablas de los SQL de la cuenta son las de los regímenes', (
     const sql = readFileSync(join(RAIZ, archivo), 'utf8');
     const rellenadas = DE_UNA_CUENTA.filter((t) => !(NACIERON_CON_CUENTA as readonly string[]).includes(t));
     assert.deepEqual(ordenar(listaDelSql(sql, 'v_obligatorias')), ordenar(rellenadas), `${archivo}: las obligatorias`);
-    assert.deepEqual(ordenar(listaDelSql(sql, 'v_opcionales')), ordenar(DE_UNA_CUENTA_O_DE_LA_ORGANIZACION), `${archivo}: las opcionales`);
+    /* La fase 005 deja los sellos del cron sin cuenta (el nivel 3, `090`): son de la empresa. La 082 sí los lista,
+       porque su política es la de las opcionales. */
+    const opcionales = archivo.includes('005_')
+      ? DE_UNA_CUENTA_O_DE_LA_ORGANIZACION.filter((t) => t !== 'tareas_programadas')
+      : DE_UNA_CUENTA_O_DE_LA_ORGANIZACION;
+    assert.deepEqual(ordenar(listaDelSql(sql, 'v_opcionales')), ordenar(opcionales), `${archivo}: las opcionales`);
   }
   // La 086 (el nivel 3) rehace la política de las TRES listas, con las que nacieron con cuenta.
   const sql = readFileSync(join(RAIZ, 'db/migraciones/086_la_organizacion_entera.sql'), 'utf8');

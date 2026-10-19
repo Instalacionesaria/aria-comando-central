@@ -31,6 +31,7 @@ import { conectar, cerrarTodo, filas } from '../apoyo/conexiones.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { NO_CORRIO } from '../../lib/negocio/pulso.ts';
+import { porOmisionDe } from '../../lib/negocio/ambitoDelCliente.ts';
 
 let admin: Client;
 let alfa: string;
@@ -123,7 +124,7 @@ async function ingerir(mensajes: unknown[]): Promise<void> {
 
   try {
     const { ingerirMensajes } = await import('../../lib/negocio/ingesta.ts');
-    const r = await ingerirMensajes(alfa, { token: 'x', locationId: 'loc' });
+    const r = await ingerirMensajes(await porOmisionDe(alfa), { token: 'x', locationId: 'loc' });
     assert.notEqual(r, NO_CORRIO, 'el candado no dejó correr el ciclo: la prueba no midió nada');
   } finally {
     globalThis.fetch = original;

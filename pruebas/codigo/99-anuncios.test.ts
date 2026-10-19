@@ -43,6 +43,7 @@ import {
   type LecturaDeGasto,
 } from '../../lib/negocio/gastoDeLaCuenta.ts';
 import type { MetricaDeAnuncio } from '../../lib/ghl/anuncios.ts';
+import { ambitoDeUnCliente } from '../../lib/negocio/ambitoDelCliente.ts';
 
 /** Un instante fijo, para que la suite dé lo mismo en las tres zonas. */
 const AHORA = Date.parse('2026-10-07T06:17:00Z');
@@ -52,6 +53,8 @@ const ACCESO = { token: 'no-se-usa', locationId: 'no-se-usa' };
 /* Un uuid cualquiera, y tiene que SER un uuid: los escritores corren dentro de `conOrganizacion`, que valida la
    forma antes de abrir contexto. No se conecta a nada porque todos los escritores están inyectados. */
 const ORG = '00000000-0000-4000-8000-000000000000';
+/** Un cliente cualquiera de esa organización (el nivel 3). Puro: estas pruebas no tocan la base. */
+const CLIENTE = ambitoDeUnCliente(ORG, '00000000-0000-4000-8000-000000000001');
 
 const VINCULO_OK = async () => ({
   tipo: 'datos' as const,
@@ -295,7 +298,7 @@ test('se piden las campañas ACTIVE y las que gastaron hace poco, aunque no trai
      las que gastaron hace poco (una pausada ayer gastó ayer). */
   const pedidas = new Set<string>();
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       plan: plan(['mensajes'], ['pausada-ayer']),
@@ -316,7 +319,7 @@ test('sin Meta vinculado no se pide ni se escribe NADA', async () => {
      permanente. Mutación: sacar la compuerta. */
   let despues = 0;
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       vinculo: async () => ({ tipo: 'datos' as const, datos: { estado: 'disconnected', cuentaId: null, paginas: 0 } }),
@@ -342,7 +345,7 @@ test('sin Meta vinculado no se pide ni se escribe NADA', async () => {
 
 test('si no se puede preguntar por el vínculo, la tarea FALLA', async () => {
   // Es el token o el proveedor: devolver éxito dejaría el sello en verde sobre una pasada que no hizo nada.
-  await assert.rejects(() => recolectarAnuncios(ORG, ACCESO, piezas({ vinculo: async () => FALLA })), /vínculo con Meta/);
+  await assert.rejects(() => recolectarAnuncios(CLIENTE, ACCESO, piezas({ vinculo: async () => FALLA })), /vínculo con Meta/);
 });
 
 test('la serie de la cuenta se pide desde el primer día guardado, y como mucho sesenta días', async () => {
@@ -352,9 +355,9 @@ test('la serie de la cuenta se pide desde el primer día guardado, y como mucho 
     pedidas.push(`${desde}..${hasta}`);
     return { tipo: 'datos' as const, datos: [], llamadas: 3 };
   };
-  await recolectarAnuncios(ORG, ACCESO, piezas({ serie, plan: plan([], [], '2026-08-18') }));
-  await recolectarAnuncios(ORG, ACCESO, piezas({ serie, plan: plan([], [], '2026-01-01') }));
-  await recolectarAnuncios(ORG, ACCESO, piezas({ serie, plan: plan([], [], null) }));
+  await recolectarAnuncios(CLIENTE, ACCESO, piezas({ serie, plan: plan([], [], '2026-08-18') }));
+  await recolectarAnuncios(CLIENTE, ACCESO, piezas({ serie, plan: plan([], [], '2026-01-01') }));
+  await recolectarAnuncios(CLIENTE, ACCESO, piezas({ serie, plan: plan([], [], null) }));
   assert.deepEqual(pedidas, [
     `2026-08-18..${HOY}`,
     `${sumarDias(HOY, -(DIAS_DE_LA_SERIE_QUE_SE_RELEEN - 1))}..${HOY}`,
@@ -365,7 +368,7 @@ test('la serie de la cuenta se pide desde el primer día guardado, y como mucho 
 test('una serie que falla se anota y la pasada sigue con las campañas', async () => {
   let escrita = false;
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       serie: async () => ({ ...FALLA, llamadas: 1 }),
@@ -385,7 +388,7 @@ test('una lectura que FALLA nunca se escribe; una que vuelve vacía, sí (es un 
      probado: el relleno daría por leída una campaña que nadie pudo leer. */
   const escritas: string[] = [];
   await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       plan: plan(['rota', 'vacia']),
@@ -402,7 +405,7 @@ test('una lectura que FALLA nunca se escribe; una que vuelve vacía, sí (es un 
 test('una campaña que devuelve 500 NO aborta la pasada, y se informa UNA vez', async () => {
   const pedidas: string[] = [];
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       plan: plan(['podrida', 'buena']),
@@ -419,14 +422,14 @@ test('una campaña que devuelve 500 NO aborta la pasada, y se informa UNA vez', 
 test('si no anda NADA —ni la serie ni ningún par—, la tarea LANZA', async () => {
   await assert.rejects(
     () =>
-      recolectarAnuncios(ORG, ACCESO, piezas({ serie: async () => ({ ...FALLA, llamadas: 1 }), plan: plan(['a', 'b']), pedir: async () => FALLA })),
+      recolectarAnuncios(CLIENTE, ACCESO, piezas({ serie: async () => ({ ...FALLA, llamadas: 1 }), plan: plan(['a', 'b']), pedir: async () => FALLA })),
     /no devolvió la serie de la cuenta ni ninguna de las 2 campañas/,
   );
 });
 
 test('con la serie leída, que fallen todos los pares no tumba la tarea: quedan huecos', async () => {
   // La serie es lo que dice si falta gasto; lo que no se pudo leer lo busca el relleno.
-  const r = await recolectarAnuncios(ORG, ACCESO, piezas({ plan: plan(['a']), pedir: async () => FALLA }));
+  const r = await recolectarAnuncios(CLIENTE, ACCESO, piezas({ plan: plan(['a']), pedir: async () => FALLA }));
   assert.equal(r.resultado.huecos.length, DIAS_QUE_SE_RELEEN + 1);
 });
 
@@ -438,7 +441,7 @@ test('la pasada CORTA entre pares cuando se le acaba el tiempo, y lo DICE', asyn
   let pedidas = 0;
   const candidatas = Array.from({ length: 13 }, (_, i) => `c${i}`);
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       plan: plan(candidatas),
@@ -455,7 +458,7 @@ test('la pasada CORTA entre pares cuando se le acaba el tiempo, y lo DICE', asyn
 });
 
 test('una pasada que ENTRA en el presupuesto no se declara atrasada', async () => {
-  const r = await recolectarAnuncios(ORG, ACCESO, piezas({ plan: plan(['a']) }));
+  const r = await recolectarAnuncios(CLIENTE, ACCESO, piezas({ plan: plan(['a']) }));
   assert.equal(r.resultado.atrasado, false);
   assert.deepEqual(r.resultado.huecos, []);
 });
@@ -463,7 +466,7 @@ test('una pasada que ENTRA en el presupuesto no se declara atrasada', async () =
 test('un par que falla se REINTENTA una vez; lo que falla dos veces queda como hueco', async () => {
   const vistas = new Map<string, number>();
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       plan: plan(['transitoria', 'podrida']),
@@ -488,7 +491,7 @@ test('un reintento que no entra en el presupuesto NO enciende `atrasado`', async
   let t = 0;
   let pedidas = 0;
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       plan: plan(['podrida', 'buena']),
@@ -506,7 +509,7 @@ test('un reintento que no entra en el presupuesto NO enciende `atrasado`', async
 
 test('el resumen cuenta ANUNCIOS DISTINTOS, no filas', async () => {
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({ plan: plan(['a']), pedir: async () => ({ tipo: 'datos', datos: [metrica('120249633901580467')] }) }),
   );
@@ -515,7 +518,7 @@ test('el resumen cuenta ANUNCIOS DISTINTOS, no filas', async () => {
 });
 
 test('el resumen cuenta las filas que el proveedor mandó y no se pudieron leer', async () => {
-  const r = await recolectarAnuncios(ORG, ACCESO, piezas({ plan: plan(['a']), pedir: async () => ({ tipo: 'datos', datos: [], ilegibles: 3 }) }));
+  const r = await recolectarAnuncios(CLIENTE, ACCESO, piezas({ plan: plan(['a']), pedir: async () => ({ tipo: 'datos', datos: [], ilegibles: 3 }) }));
   assert.equal(r.resultado.ilegibles, 3 * (DIAS_QUE_SE_RELEEN + 1));
 });
 
@@ -530,7 +533,7 @@ test('las campañas se leen y se escriben ANTES de pedir nada más: son el unive
   // Mutación: leerlas al final (una campaña nueva no entraría en las candidatas de su primer día).
   const orden: string[] = [];
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       listarCampanas: async () => {
@@ -559,11 +562,11 @@ test('las campañas se leen y se escriben ANTES de pedir nada más: son el unive
 
 test('una lista de campañas vacía no llama al escritor; una recortada lo dice', async () => {
   let escritas = 0;
-  const vacia = await recolectarAnuncios(ORG, ACCESO, piezas({ escribirCampanas: async () => void (escritas += 1) }));
+  const vacia = await recolectarAnuncios(CLIENTE, ACCESO, piezas({ escribirCampanas: async () => void (escritas += 1) }));
   assert.equal(escritas, 0);
   assert.deepEqual(vacia.resultado.nombres, { tipo: 'leidas', campanas: 0, corto: false });
   const recortada = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({ listarCampanas: async () => ({ tipo: 'datos', datos: DOS_CAMPANAS, corto: true, paginas: 20 }), escribirCampanas: async () => {} }),
   );
@@ -572,7 +575,7 @@ test('una lista de campañas vacía no llama al escritor; una recortada lo dice'
 
 test('si las campañas FALLAN, la pasada sigue y cuenta las páginas pedidas', async () => {
   const r = await recolectarAnuncios(
-    ORG,
+    CLIENTE,
     ACCESO,
     piezas({
       listarCampanas: async () => ({ ...FALLA, paginas: 3 }),
@@ -590,7 +593,7 @@ test('un fallo al ESCRIBIR las campañas NO se atrapa: es un defecto nuestro', a
   await assert.rejects(
     () =>
       recolectarAnuncios(
-        ORG,
+        CLIENTE,
         ACCESO,
         piezas({
           listarCampanas: async () => ({ tipo: 'datos', datos: DOS_CAMPANAS, corto: false, paginas: 1 }),
@@ -652,7 +655,7 @@ function dias(desde: string, hasta: string): string[] {
 test('sin serie todavía, el relleno no hace NINGUNA llamada', async () => {
   // Una empresa sin Meta: preguntar por el vínculo cada hora serían 24 llamadas por día para nada.
   const { p, registro } = piezasDelRelleno(foto(['a'], {}, {}));
-  const r = await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  const r = await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p);
   assert.deepEqual(registro.llamadas, []);
   assert.equal(r.llamadas, 0);
 });
@@ -661,7 +664,7 @@ test('con gasto del colector viejo y sin serie, el relleno pide la serie desde e
   /* La transición de la `076`: sin esto, desde el despliegue hasta la pasada de las 06:17 UTC Acquisition diría
      que el colector está atrasado. Mutación: tomar el primer día sólo de la serie. */
   const { p, registro } = piezasDelRelleno({ ...foto(['a'], {}, {}), inicio: '2026-09-20' });
-  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p);
   assert.deepEqual(registro.llamadas, ['vinculo', 'serie 2026-09-20..2026-10-05']);
 });
 
@@ -669,7 +672,7 @@ test('con todo cuadrado, el relleno no hace NINGUNA llamada', async () => {
   const todos = dias('2026-09-01', '2026-10-05');
   const f = foto(['a', 'b'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10)])), Object.fromEntries(todos.map((d) => [d, 10])));
   const { p, registro } = piezasDelRelleno(f);
-  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p);
   assert.deepEqual(registro.llamadas, []);
 });
 
@@ -684,7 +687,7 @@ for (const [hora, hoyUtc] of [
     const todos = dias('2026-09-28', hoyUtc);
     const f = foto(['a'], Object.fromEntries(todos.map((d) => [d, diaDeLaSerie(10, { leidoEl: instante })])), {});
     const { p, registro } = piezasDelRelleno(f, { ahora: instante });
-    await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+    await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p);
     const tope = sumarDias(hoyUtc, -2);
     const pedidos = registro.llamadas.filter((l) => l.startsWith('rango')).map((l) => l.split('..')[1]!);
     assert.ok(pedidos.length > 0, 'el armado de la prueba no pidió nada');
@@ -702,7 +705,7 @@ test('un rango en cero deja ceros, y NUNCA se escribe como métrica diaria', asy
       return { tipo: 'datos', datos: { gasto: campana === 'a' ? 0 : 160, anuncios: 2 } };
     },
   });
-  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p);
   assert.equal(registro.ceros.filter((c) => c.startsWith('a ')).length, todos.length, 'la que no gastó no quedó en cero');
   assert.ok(!registro.ceros.some((c) => c.startsWith('b ')), 'se anotó un cero a una campaña que gastó');
   assert.ok(registro.escritas.every((e) => e.startsWith('b ')), 'un rango se escribió como métrica');
@@ -724,7 +727,7 @@ test('una campaña que gastó baja del rango a las semanas y de las semanas a lo
       return { tipo: 'datos', datos: [metrica('anuncio', 30)] };
     },
   });
-  const r = await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  const r = await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p);
   const pedidosPorDia = registro.llamadas.filter((l) => l.startsWith('dia')).map((l) => l.split(' ')[2]!).sort();
   // Los días de la semana que gastó que no gastaron también se piden: la semana sólo dice que gastó algo.
   assert.ok([...gastaEn].every((d) => pedidosPorDia.includes(d)), 'faltó pedir un día que gastó');
@@ -742,7 +745,7 @@ test('un rango que FALLA no deja ceros: los días siguen pendientes', async () =
       return FALLA;
     },
   });
-  await assert.rejects(() => rellenarAnuncios(ORG, ACCESO, 0, () => 0, p), /rechazó/);
+  await assert.rejects(() => rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p), /rechazó/);
   assert.deepEqual(registro.ceros, []);
 });
 
@@ -755,7 +758,7 @@ test('sin Meta vinculado, el relleno no busca nada', async () => {
       return { tipo: 'datos' as const, datos: { estado: 'disconnected', cuentaId: null, paginas: 0 } };
     },
   });
-  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p);
   assert.deepEqual(registro.llamadas, ['vinculo']);
   assert.deepEqual(registro.ceros, []);
 });
@@ -766,7 +769,7 @@ test('los días sin total de la cuenta se piden primero, en una sola serie', asy
   delete serie['2026-09-25'];
   delete serie['2026-09-27'];
   const { p, registro } = piezasDelRelleno(foto(['a'], serie, Object.fromEntries(todos.map((d) => [d, 10]))));
-  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, p);
+  await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, p);
   assert.deepEqual(registro.llamadas, ['vinculo', 'serie 2026-09-25..2026-09-27']);
 });
 
@@ -778,14 +781,14 @@ test('un día con todo leído que no cuadra se REDESCUBRE una vez, y después es
   // Los días siguientes, hasta hoy−2, sin gasto y cuadrados: el único que no cuadra es `d`.
   const resto = Object.fromEntries(dias('2026-10-02', '2026-10-05').map((x) => [x, diaDeLaSerie(0)]));
   const primera = piezasDelRelleno(foto(['a', 'b'], { [d]: diaDeLaSerie(50), ...resto }, { [d]: 30 }, lecturas));
-  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, primera.p);
+  await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, primera.p);
   assert.deepEqual(primera.registro.redescubiertos, [d]);
   assert.deepEqual(primera.registro.residuos, []);
 
   const segunda = piezasDelRelleno(
     foto(['a', 'b'], { [d]: diaDeLaSerie(50, { redescubiertoEl: LEIDA }), ...resto }, { [d]: 30 }, lecturas),
   );
-  await rellenarAnuncios(ORG, ACCESO, 0, () => 0, segunda.p);
+  await rellenarAnuncios(CLIENTE, ACCESO, 0, () => 0, segunda.p);
   assert.deepEqual(segunda.registro.redescubiertos, []);
   assert.deepEqual(segunda.registro.residuos, [d]);
   assert.deepEqual(segunda.registro.llamadas, [], 'un residuo no se busca');
@@ -803,7 +806,7 @@ test('el relleno corta cuando se le acaba el tiempo, y lo DICE', async () => {
       return { tipo: 'datos', datos: { gasto: 0, anuncios: 0 } };
     },
   });
-  const r = await rellenarAnuncios(ORG, ACCESO, 0, () => t, p);
+  const r = await rellenarAnuncios(CLIENTE, ACCESO, 0, () => t, p);
   assert.equal(r.resultado.atrasado, true);
   assert.equal(registro.llamadas.filter((l) => l.startsWith('rango')).length, 1, 'siguió llamando pasado el fin');
 });

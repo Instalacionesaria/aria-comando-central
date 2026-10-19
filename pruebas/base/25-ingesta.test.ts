@@ -41,10 +41,14 @@ import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { ANTIRREBOTE_MS, conElPulso, leerPulso, NO_CORRIO } from '../../lib/negocio/pulso.ts';
 import { pendientesDeRevision, revisarEntregas } from '../../lib/negocio/entregas.ts';
+import { porOmisionDe, type AmbitoDeUnCliente } from '../../lib/negocio/ambitoDelCliente.ts';
 
 let admin: Client;
 let alfa: string;
 let beta: string;
+// El cliente por omisión de cada una (el nivel 3): el pulso y las entregas son de un cliente.
+let enAlfa: AmbitoDeUnCliente;
+let enBeta: AmbitoDeUnCliente;
 
 before(async () => {
   admin = await conectar('admin');
@@ -55,6 +59,8 @@ before(async () => {
   assert.equal(orgs.length, 2, 'hacen falta las dos organizaciones cliente del sembrado');
   alfa = orgs[0]!.id;
   beta = orgs[1]!.id;
+  enAlfa = await porOmisionDe(alfa);
+  enBeta = await porOmisionDe(beta);
   await limpiar();
 });
 
@@ -96,14 +102,14 @@ async function envejecerCorrida(org: string): Promise<void> {
 test('el primer ciclo corre, y arranca sin marca: se empieza por el principio', async () => {
   await limpiar();
   let vioLaMarca: unknown = 'no corrió';
-  const r = await conElPulso(alfa, 'mensajes', async (pulso) => {
+  const r = await conElPulso(enAlfa, 'mensajes', async (pulso) => {
     vioLaMarca = pulso.marcaEl;
     return { cierre: cierre(T('2025-01-01T00:00:00Z')), resultado: 'listo' };
   });
 
   assert.equal(r.corrio, true);
   assert.equal(vioLaMarca, null, 'la primera corrida no puede recibir una marca inventada');
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(p?.marca_el?.toISOString(), '2025-01-01T00:00:00.000Z');
   assert.equal(Number(p?.corridas), 1);
 });
@@ -125,7 +131,7 @@ test('un ciclo que arrancó ya cortó el paso al siguiente, aunque siga trabajan
     primeroEntro = res;
   });
 
-  const primero = conElPulso(alfa, 'mensajes', async () => {
+  const primero = conElPulso(enAlfa, 'mensajes', async () => {
     primeroEntro();
     await trabajando;
     return { cierre: cierre(T('2025-02-01T00:00:00Z')), resultado: 'primero' };
@@ -133,7 +139,7 @@ test('un ciclo que arrancó ya cortó el paso al siguiente, aunque siga trabajan
 
   await entro;
   const segundo = await Promise.race([
-    conElPulso(alfa, 'mensajes', async () => ({
+    conElPulso(enAlfa, 'mensajes', async () => ({
       cierre: cierre(T('2025-03-01T00:00:00Z')),
       resultado: 'segundo',
     })),
@@ -144,7 +150,7 @@ test('un ciclo que arrancó ya cortó el paso al siguiente, aunque siga trabajan
   await primero;
 
   assert.deepEqual(segundo, { corrio: false, porque: NO_CORRIO.reciente });
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(Number(p?.corridas), 1, 'el segundo no tenía que llegar a contarse');
 });
 
@@ -157,7 +163,7 @@ test('EL CANDADO: con la fila tomada por otra transacción, el ciclo se va en ve
   // los milisegundos de su reclamo. El tiempo de espera es lo que distingue *irse* de *encolarse*:
   // con `.forUpdate()` a secas esto se quedaría esperando y la prueba fallaría por tiempo.
   await limpiar();
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-06-01T00:00:00Z')),
     resultado: 'para que exista la fila',
   }));
@@ -176,7 +182,7 @@ test('EL CANDADO: con la fila tomada por otra transacción, el ciclo se va en ve
     );
 
     const r = await Promise.race([
-      conElPulso(alfa, 'mensajes', async () => ({
+      conElPulso(enAlfa, 'mensajes', async () => ({
         cierre: cierre(T('2025-09-09T00:00:00Z')),
         resultado: 'no tendría que llegar acá',
       })),
@@ -190,13 +196,13 @@ test('EL CANDADO: con la fila tomada por otra transacción, el ciclo se va en ve
 
   // Y lo más importante: no escribió nada. Un ciclo rechazado que igual toca la marca sería peor
   // que no tener candado, porque parecería que lo hay.
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(p?.marca_el?.toISOString(), '2025-06-01T00:00:00.000Z');
 });
 
 test('el segundo ciclo SEGUIDO también se va: el candado no cubre las corridas consecutivas', async () => {
   await limpiar();
-  const a = await conElPulso(alfa, 'mensajes', async () => ({
+  const a = await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-02-01T00:00:00Z')),
     resultado: 'a',
   }));
@@ -204,30 +210,30 @@ test('el segundo ciclo SEGUIDO también se va: el candado no cubre las corridas 
 
   // Ya no hay nadie adentro: el candado está libre. Lo único que puede impedir el segundo ciclo
   // es el antirrebote.
-  const b = await conElPulso(alfa, 'mensajes', async () => ({
+  const b = await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-03-01T00:00:00Z')),
     resultado: 'b',
   }));
   assert.deepEqual(b, { corrio: false, porque: NO_CORRIO.reciente });
 
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(Number(p?.corridas), 1, 'el segundo ciclo no tenía que contarse');
 });
 
 test('pasado el antirrebote sí corre de nuevo', async () => {
   await limpiar();
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-02-01T00:00:00Z')),
     resultado: 'a',
   }));
   await envejecerCorrida(alfa);
 
-  const b = await conElPulso(alfa, 'mensajes', async () => ({
+  const b = await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-03-01T00:00:00Z')),
     resultado: 'b',
   }));
   assert.equal(b.corrio, true);
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(Number(p?.corridas), 2);
 });
 
@@ -235,11 +241,11 @@ test('el candado es POR EMPRESA: una no le pisa el ciclo a la otra', async () =>
   // Sin esto, una organización activa dejaría a las demás sin ingesta, y el síntoma sería
   // *"a algunos clientes no les llegan los mensajes"* sin ningún error en ningún lado.
   await limpiar();
-  const a = await conElPulso(alfa, 'mensajes', async () => ({
+  const a = await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-02-01T00:00:00Z')),
     resultado: 'a',
   }));
-  const b = await conElPulso(beta, 'mensajes', async () => ({
+  const b = await conElPulso(enBeta, 'mensajes', async () => ({
     cierre: cierre(T('2025-02-01T00:00:00Z')),
     resultado: 'b',
   }));
@@ -254,17 +260,17 @@ test('la marca NUNCA retrocede, aunque un ciclo la cierre más atrás', async ()
   // del rápido, las conversaciones del medio quedan por debajo de la marca y **nadie las vuelve a
   // mirar**. Es una pérdida de datos silenciosa, y es la razón de que el `update` use `greatest`.
   await limpiar();
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-06-01T00:00:00Z')),
     resultado: 'rápido',
   }));
   await envejecerCorrida(alfa);
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-01-01T00:00:00Z')),
     resultado: 'lento',
   }));
 
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(p?.marca_el?.toISOString(), '2025-06-01T00:00:00.000Z');
 });
 
@@ -272,36 +278,36 @@ test('un ciclo que no completó nada deja la marca donde estaba', async () => {
   // `marcaEl: null` significa «no terminé ninguna conversación», no «volvé al principio». Si esto
   // borrara la marca, un solo ciclo sin trabajo reingeriría la cuenta entera.
   await limpiar();
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-06-01T00:00:00Z')),
     resultado: 'a',
   }));
   await envejecerCorrida(alfa);
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(null),
     resultado: 'sin trabajo',
   }));
 
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(p?.marca_el?.toISOString(), '2025-06-01T00:00:00.000Z');
 });
 
 test('un ciclo que LANZA no mueve la marca, y deja el fallo anotado', async () => {
   await limpiar();
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-06-01T00:00:00Z')),
     resultado: 'a',
   }));
   await envejecerCorrida(alfa);
 
   await assert.rejects(
-    conElPulso(alfa, 'mensajes', async () => {
+    conElPulso(enAlfa, 'mensajes', async () => {
       throw new Error('el proveedor se cayó');
     }),
     /el proveedor se cayó/,
   );
 
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(p?.marca_el?.toISOString(), '2025-06-01T00:00:00.000Z');
   assert.equal(p?.ultimo_fallo, 'el proveedor se cayó');
   assert.ok(p?.ultimo_fallo_el, 'un fallo sin fecha no se puede ordenar ni descartar por viejo');
@@ -314,17 +320,17 @@ test('el piso se escribe UNA vez y no se mueve', async () => {
   // dice cosas distintas según cuál sea, y decirlo mal manda a alguien a llamar a un cliente
   // creyendo que nunca contestó.
   await limpiar();
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-06-01T00:00:00Z'), { marcaDesdeEl: T('2024-01-01T00:00:00Z') }),
     resultado: 'a',
   }));
   await envejecerCorrida(alfa);
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-07-01T00:00:00Z'), { marcaDesdeEl: T('2025-05-05T00:00:00Z') }),
     resultado: 'b',
   }));
 
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(p?.marca_desde_el?.toISOString(), '2024-01-01T00:00:00.000Z');
 });
 
@@ -332,17 +338,17 @@ test('el piso se escribe UNA vez y no se mueve', async () => {
 
 test('las llamadas se acumulan: el presupuesto es una medición y no una intención', async () => {
   await limpiar();
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-06-01T00:00:00Z'), { llamadas: 1 }),
     resultado: 'a',
   }));
   await envejecerCorrida(alfa);
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-07-01T00:00:00Z'), { llamadas: 7 }),
     resultado: 'b',
   }));
 
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(Number(p?.llamadas_acumuladas), 8);
   assert.equal(p?.ultima_corrida_llamadas, 7, 'la última tiene que ser la última, no la suma');
   assert.equal(Number(p?.corridas), 2);
@@ -353,17 +359,17 @@ test('un ciclo limpio BORRA el fallo anterior', async () => {
   // es como se aprende a ignorar un indicador.
   await limpiar();
   await assert.rejects(
-    conElPulso(alfa, 'mensajes', async () => {
+    conElPulso(enAlfa, 'mensajes', async () => {
       throw new Error('caída pasajera');
     }),
   );
   await envejecerCorrida(alfa);
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-06-01T00:00:00Z')),
     resultado: 'ok',
   }));
 
-  const p = await leerPulso(alfa, 'mensajes');
+  const p = await leerPulso(enAlfa, 'mensajes');
   assert.equal(p?.ultimo_fallo, null);
   assert.equal(p?.atrasado, false);
 });
@@ -375,13 +381,13 @@ test('el pulso de una empresa no se ve desde la otra', async () => {
   // Se mide igual: es la clase de garantía que se rompe al agregar una columna o una vista y no
   // avisa de ninguna manera.
   await limpiar();
-  await conElPulso(alfa, 'mensajes', async () => ({
+  await conElPulso(enAlfa, 'mensajes', async () => ({
     cierre: cierre(T('2025-06-01T00:00:00Z')),
     resultado: 'a',
   }));
 
-  assert.ok(await leerPulso(alfa, 'mensajes'), 'alfa tiene que ver el suyo');
-  assert.equal(await leerPulso(beta, 'mensajes'), undefined, 'beta no puede ver el de alfa');
+  assert.ok(await leerPulso(enAlfa, 'mensajes'), 'alfa tiene que ver el suyo');
+  assert.equal(await leerPulso(enBeta, 'mensajes'), undefined, 'beta no puede ver el de alfa');
 });
 
 // ═══ 5 · La cola de la tercera pasada ═══════════════════════════════════════
@@ -450,7 +456,7 @@ test('un identificador FABRICADO no entra nunca en la cola', async () => {
   // Sin este recorte son dos llamadas por ciclo, indefinidamente, y la cola no se vacía nunca.
   await limpiarMensajes();
   await mensajeSaliente(alfa, { id_fabricado: true });
-  const cola = await pendientesDeRevision(alfa);
+  const cola = await pendientesDeRevision(enAlfa);
   assert.deepEqual(cola, [], 'un id fabricado en la cola es una factura que crece sola');
 });
 
@@ -463,7 +469,7 @@ test('solo los EN CURSO: lo resuelto no se vuelve a preguntar', async () => {
   // valor que no entendemos es gastar llamadas para siempre.
   await mensajeSaliente(alfa, { estado_entrega_familia: 'desconocido' });
 
-  const cola = await pendientesDeRevision(alfa);
+  const cola = await pendientesDeRevision(enAlfa);
   assert.deepEqual(
     cola.map((m) => m.id),
     [enCurso],
@@ -473,7 +479,7 @@ test('solo los EN CURSO: lo resuelto no se vuelve a preguntar', async () => {
 test('un ENTRANTE no se revisa: no hay nada que entregar', async () => {
   await limpiarMensajes();
   await mensajeSaliente(alfa, { direccion: 'entrante', autor: 'contacto' });
-  assert.deepEqual(await pendientesDeRevision(alfa), []);
+  assert.deepEqual(await pendientesDeRevision(enAlfa), []);
 });
 
 test('pasada la ventana de una hora se deja de preguntar', async () => {
@@ -487,7 +493,7 @@ test('pasada la ventana de una hora se deja de preguntar', async () => {
   });
   await mensajeSaliente(alfa, { enviado_el: new Date(ahora.getTime() - 90 * 60_000) });
 
-  const cola = await pendientesDeRevision(alfa, ahora);
+  const cola = await pendientesDeRevision(enAlfa, ahora);
   assert.deepEqual(
     cola.map((m) => m.id),
     [reciente],
@@ -516,7 +522,7 @@ test('primero los NUNCA revisados, y después el más viejo', async () => {
     estado_entrega_revisado_el: new Date(ahora.getTime() - 60_000),
   });
 
-  const cola = await pendientesDeRevision(alfa, ahora);
+  const cola = await pendientesDeRevision(enAlfa, ahora);
   // Dos por ciclo, y en este orden: el que nunca se miró primero, después el mirado hace más rato.
   assert.deepEqual(
     cola.map((m) => m.id),
@@ -528,14 +534,14 @@ test('primero los NUNCA revisados, y después el más viejo', async () => {
 test('la cola se corta en dos por ciclo', async () => {
   await limpiarMensajes();
   for (let i = 0; i < 5; i++) await mensajeSaliente(alfa, {});
-  assert.equal((await pendientesDeRevision(alfa)).length, 2);
+  assert.equal((await pendientesDeRevision(enAlfa)).length, 2);
 });
 
 test('la cola de una empresa no ve los mensajes de la otra', async () => {
   await limpiarMensajes();
   await mensajeSaliente(alfa, {});
-  assert.equal((await pendientesDeRevision(alfa)).length, 1);
-  assert.deepEqual(await pendientesDeRevision(beta), []);
+  assert.equal((await pendientesDeRevision(enAlfa)).length, 1);
+  assert.deepEqual(await pendientesDeRevision(enBeta), []);
 });
 
 // ═══ 6 · El bucle de revisión, con un proveedor de mentira ══════════════════
@@ -591,7 +597,7 @@ test('un saliente que el canal RECHAZÓ queda en rojo, con el motivo', async () 
   const id = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-1' });
   const crm = crmQueResponde({ 'ghl-1': conEstado('failed') });
 
-  const r = await revisarEntregas(alfa, { token: 't' }, crm.fn);
+  const r = await revisarEntregas(enAlfa, { token: 't' }, crm.fn);
 
   assert.deepEqual(crm.preguntados, ['ghl-1']);
   assert.equal(r.resueltos, 1);
@@ -605,12 +611,12 @@ test('un saliente que el canal RECHAZÓ queda en rojo, con el motivo', async () 
 test('y uno entregado sale de la cola', async () => {
   await limpiarMensajes();
   const id = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-2' });
-  await revisarEntregas(alfa, { token: 't' }, crmQueResponde({ 'ghl-2': conEstado('delivered') }).fn);
+  await revisarEntregas(enAlfa, { token: 't' }, crmQueResponde({ 'ghl-2': conEstado('delivered') }).fn);
 
   const m = await estadoDe(id);
   assert.equal(m?.estado_entrega_familia, 'entregado');
   assert.equal(m?.fallo_del_canal, null, 'un entregado no puede quedar con un motivo de fallo');
-  assert.deepEqual(await pendientesDeRevision(alfa), []);
+  assert.deepEqual(await pendientesDeRevision(enAlfa), []);
 });
 
 test('EL SELLO SE ESTAMPA AUNQUE NADA CAMBIE: es lo único que hace avanzar la cola', async () => {
@@ -629,14 +635,14 @@ test('EL SELLO SE ESTAMPA AUNQUE NADA CAMBIE: es lo único que hace avanzar la c
     'ghl-c': conEstado('sent'),
   });
 
-  const r1 = await revisarEntregas(alfa, { token: 't' }, crm.fn);
+  const r1 = await revisarEntregas(enAlfa, { token: 't' }, crm.fn);
   assert.equal(r1.resueltos, 0, 'nada se resolvió, que es justo el caso que importa');
 
   /* Los dos primeros quedaron sellados, así que el ciclo siguiente ARRANCA POR EL TERCERO.
      Se afirma el primero y no la lista entera: los tres siguen sin resolverse —el CRM contestó
      `sent`, que es `en_curso`— así que la cola de dos sigue trayendo dos. Lo que tiene que haber
      cambiado es POR CUÁL empieza. */
-  const cola = await pendientesDeRevision(alfa);
+  const cola = await pendientesDeRevision(enAlfa);
   assert.equal(
     cola[0]?.id,
     c,
@@ -653,11 +659,11 @@ test('un identificador que el CRM no reconoce sale de la cola, no se reintenta',
   // en cada ciclo, indefinidamente, por una respuesta que ya se sabe.
   await limpiarMensajes();
   const id = await mensajeSaliente(alfa, { ghl_mensaje_id: 'ghl-fantasma' });
-  const r = await revisarEntregas(alfa, { token: 't' }, crmQueResponde({}).fn);
+  const r = await revisarEntregas(enAlfa, { token: 't' }, crmQueResponde({}).fn);
 
   assert.equal(r.desconocidos, 1);
   assert.equal((await estadoDe(id))?.estado_entrega_familia, 'desconocido');
-  assert.deepEqual(await pendientesDeRevision(alfa), []);
+  assert.deepEqual(await pendientesDeRevision(enAlfa), []);
 });
 
 test('si el proveedor falla, se corta el ciclo y NO se sella al que no se pudo preguntar', async () => {
@@ -671,7 +677,7 @@ test('si el proveedor falla, se corta el ciclo y NO se sella al que no se pudo p
     'ghl-x': { tipo: 'fallo', fallo: { tipo: 'sin_respuesta', causa: 'se cayó' } },
     'ghl-y': conEstado('delivered'),
   });
-  const r = await revisarEntregas(alfa, { token: 't' }, crm.fn);
+  const r = await revisarEntregas(enAlfa, { token: 't' }, crm.fn);
 
   assert.equal(r.llamadas, 1, 'se cortó en el primero en vez de insistir');
   assert.deepEqual(crm.preguntados, ['ghl-x'], 'no se preguntó por el segundo');
@@ -686,7 +692,7 @@ test('la revisión no toca los mensajes de otra empresa', async () => {
   await limpiarMensajes();
   await mensajeSaliente(beta, { ghl_mensaje_id: 'ghl-de-beta' });
   const crm = crmQueResponde({ 'ghl-de-beta': conEstado('failed') });
-  const r = await revisarEntregas(alfa, { token: 't' }, crm.fn);
+  const r = await revisarEntregas(enAlfa, { token: 't' }, crm.fn);
   assert.equal(r.llamadas, 0);
   assert.deepEqual(crm.preguntados, []);
 });

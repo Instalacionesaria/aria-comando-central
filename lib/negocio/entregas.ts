@@ -41,6 +41,7 @@
 
 import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
+import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { estadoDeMensaje } from '../ghl/conversaciones.ts';
 import { familiaDeEntrega } from '../ghl/entrega.ts';
 
@@ -70,7 +71,9 @@ export interface ResultadoDeRevision {
 export type PreguntarEstado = typeof estadoDeMensaje;
 
 export async function revisarEntregas(
-  orgId: string,
+  // El cliente de la ingesta: sus mensajes se preguntan con SU token. Con la empresa entera, un mensaje de otro
+  // cliente se preguntaría con un token que no lo conoce y quedaría `desconocido` para siempre.
+  ambito: AmbitoDeUnCliente,
   acceso: { token: string },
   /**
    * Cómo se pregunta. Se inyecta **para poder probar el bucle sin red**, y lo que hay que probar es
@@ -80,7 +83,7 @@ export async function revisarEntregas(
    */
   preguntar: PreguntarEstado = estadoDeMensaje,
 ): Promise<ResultadoDeRevision> {
-  const pendientes = await pendientesDeRevision(orgId);
+  const pendientes = await pendientesDeRevision(ambito);
 
   let llamadas = 0;
   let resueltos = 0;
@@ -101,7 +104,7 @@ export async function revisarEntregas(
       // El CRM no conoce ese identificador. Es un HECHO, no un fallo, y no se puede resolver
       // preguntando de nuevo: se saca de la cola marcándolo `desconocido`. Dejarlo `en_curso` lo
       // haría volver en cada ciclo, para siempre, por una respuesta que no va a cambiar.
-      await marcar(orgId, m.id, {
+      await marcar(ambito, m.id, {
         estado_entrega: null,
         estado_entrega_familia: 'desconocido',
         fallo_del_canal: 'GoHighLevel no reconoce este mensaje.',
@@ -111,7 +114,7 @@ export async function revisarEntregas(
     }
 
     const familia = familiaDeEntrega(r.datos.estado);
-    await marcar(orgId, m.id, {
+    await marcar(ambito, m.id, {
       estado_entrega: r.datos.estado,
       estado_entrega_familia: familia,
       // El texto del canal cuando rechazó. Es lo ÚNICO que explica por qué no llegó, y sin él la
@@ -131,8 +134,8 @@ export async function revisarEntregas(
  * archivo: los tres recortes del encabezado viven acá, y equivocarse en cualquiera de ellos no da
  * error — da una cola que no se vacía nunca y una factura que crece sola.
  */
-export async function pendientesDeRevision(orgId: string, ahora: Date = new Date()) {
-  return conOrganizacion(orgId, async () =>
+export async function pendientesDeRevision(ambito: AmbitoDeUnCliente, ahora: Date = new Date()) {
+  return conOrganizacion(ambito, async () =>
     datos()
       .selectFrom('mensajes')
       .select(['id', 'ghl_mensaje_id', 'estado_entrega_familia'])
@@ -158,7 +161,7 @@ export async function pendientesDeRevision(orgId: string, ahora: Date = new Date
  * llegó, y eso es la mitad del defecto original todavía en pie.
  */
 async function marcar(
-  orgId: string,
+  ambito: AmbitoDeUnCliente,
   id: string,
   campos: {
     estado_entrega: string | null;
@@ -166,7 +169,7 @@ async function marcar(
     fallo_del_canal: string | null;
   },
 ): Promise<void> {
-  await conOrganizacion(orgId, async () => {
+  await conOrganizacion(ambito, async () => {
     await datos()
       .updateTable('mensajes')
       .set({

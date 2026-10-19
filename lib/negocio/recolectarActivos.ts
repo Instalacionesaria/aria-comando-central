@@ -15,6 +15,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
+import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { leerCreativos, type CreativoDeMeta } from '../meta/anuncios.ts';
 import { llaveOSinCreativo } from './creativo.ts';
 import type { FallaDeMeta } from '../meta/graph.ts';
@@ -181,12 +182,13 @@ export interface ResultadoDeActivos {
 
 /** Una pasada para una empresa con su acceso a Meta ya resuelto (`resolverAccesoAMeta` = `listo`). */
 export async function recolectarActivos(
-  orgId: string,
+  // UN cliente (el nivel 3): sus anuncios, leídos con el token de SU cuenta de Meta.
+  ambito: AmbitoDeUnCliente,
   meta: { token: string; cuentaId: string },
   ahora: () => number = Date.now,
 ): Promise<{ corrio: true; resultado: ResultadoDeActivos; llamadas: number }> {
   const hasta = ahora() + PRESUPUESTO_DE_ACTIVOS_MS;
-  const ids = await conOrganizacion(orgId, () => anunciosPorLeer());
+  const ids = await conOrganizacion(ambito, () => anunciosPorLeer());
   if (ids.length === 0) {
     return { corrio: true, resultado: { pedidos: 0, guardados: 0, conMiniatura: 0, corte: null }, llamadas: 0 };
   }
@@ -196,7 +198,7 @@ export async function recolectarActivos(
   }
   const momento = ahora();
   const filas = [...lectura.anuncios].map(([anuncio, leido]) => filaDelActivo(anuncio, leido, meta.cuentaId, momento));
-  await conOrganizacion(orgId, () => guardarActivos(filas));
+  await conOrganizacion(ambito, () => guardarActivos(filas));
   return {
     corrio: true,
     resultado: {

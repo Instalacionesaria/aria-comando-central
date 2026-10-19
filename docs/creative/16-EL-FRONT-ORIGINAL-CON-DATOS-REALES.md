@@ -67,7 +67,7 @@ Con tres llamadas `GET` a GoHighLevel, también con el OK del usuario, que impri
   `igSid`, `campaign`, `adId` y `mediumId`. El contacto de la campaña de mensajes no las trae.
 - **`POST /contacts/search`, que es lo que usa la sincronización** (`lib/ghl/cliente.ts:288`), no las devuelve. Por eso
   la ingesta, que guarda toda clave escalar sin lista blanca (`lib/ghl/cliente.ts:215-225`,
-  `lib/negocio/sincronizar.ts:443-448`), no tiene nada que guardar. No es la primera diferencia entre las dos
+  `lib/negocio/sincronizar.ts:460-465`), no tiene nada que guardar. No es la primera diferencia entre las dos
   respuestas: en los campos del CRM, la búsqueda trae 24 valores y el pedido por contacto 27 (`lib/ghl/cliente.ts:147-148`).
 
 **Consecuencia:** la miniatura necesita una pasada que complete la atribución con `GET /contacts/{id}`

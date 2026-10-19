@@ -41,6 +41,7 @@
 
 import { sql } from 'kysely';
 import { datos, conOrganizacion } from '../datos/contexto.ts';
+import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import {
   estructuraDeAnuncios,
   integracionDeAnuncios,
@@ -356,8 +357,10 @@ export async function guardarSerie(dias: readonly DiaDeLaCuenta[]): Promise<void
         leido_el: new Date(),
       } as never)
       .onConflict((oc) =>
-        // Las DOS columnas de la clave primaria, como en `anuncios`: con una sola, `42P10`.
-        oc.columns(['org_id', 'fecha']).doUpdateSet({
+        /* La clave con el cliente (el nivel 3, `090`): el gasto es de la cuenta publicitaria de UN cliente, y el
+           puente pone su `cuenta_id` antes de que se mire el conflicto. Con la clave vieja (org_id, fecha), el gasto
+           de un cliente pisaría el de otro el mismo día. */
+        oc.columns(['org_id', 'cuenta_id', 'fecha']).doUpdateSet({
           gasto: sql`excluded.gasto`,
           impresiones: sql`excluded.impresiones`,
           clics: sql`excluded.clics`,
@@ -506,7 +509,8 @@ function elMasNuevo(a: string, b: string): string {
  * devolverlo como éxito dejaría el sello en verde sobre una pasada que no escribió nada.
  */
 export async function recolectarAnuncios(
-  orgId: string,
+  // UN cliente (el nivel 3): su subcuenta, sus campañas, su gasto. Cada escritura de abajo abre su ámbito.
+  ambito: AmbitoDeUnCliente,
   acceso: { token: string; locationId: string },
   piezas: PiezasDelColector = {},
 ): Promise<{ corrio: true; resultado: ResumenDeAnuncios; llamadas: number }> {
@@ -518,12 +522,12 @@ export async function recolectarAnuncios(
   const listarCampanas =
     piezas.listarCampanas ?? ((a: { token: string; locationId: string }) => estructuraDeAnuncios(a, 'CAMPAIGN'));
   const escribirCampanas =
-    piezas.escribirCampanas ?? ((lista: readonly EntidadDeAnuncio[]) => conOrganizacion(orgId, () => guardarCampanas(lista)));
+    piezas.escribirCampanas ?? ((lista: readonly EntidadDeAnuncio[]) => conOrganizacion(ambito, () => guardarCampanas(lista)));
   const pedirSerie = piezas.serie ?? serieDeLaCuenta;
-  const escribirSerie = piezas.escribirSerie ?? ((d: readonly DiaDeLaCuenta[]) => conOrganizacion(orgId, () => guardarSerie(d)));
+  const escribirSerie = piezas.escribirSerie ?? ((d: readonly DiaDeLaCuenta[]) => conOrganizacion(ambito, () => guardarSerie(d)));
   const escribir =
     piezas.escribir ??
-    ((c: string, d: string, m: readonly MetricaDeAnuncio[]) => conOrganizacion(orgId, () => guardar(c, d, m)));
+    ((c: string, d: string, m: readonly MetricaDeAnuncio[]) => conOrganizacion(ambito, () => guardar(c, d, m)));
 
   const resumen: ResumenDeAnuncios = {
     dias: DIAS_QUE_SE_RELEEN + 1,
@@ -567,7 +571,7 @@ export async function recolectarAnuncios(
     resumen.nombres = { tipo: 'fallo', porque: n.fallo.tipo };
   }
 
-  const plan = piezas.plan ?? (await conOrganizacion(orgId, () => prepararElPlanDelDia(hoy)));
+  const plan = piezas.plan ?? (await conOrganizacion(ambito, () => prepararElPlanDelDia(hoy)));
 
   /* ── 3 · LA SERIE DE LA CUENTA ──────────────────────────────────────────────
      Desde el primer día guardado, o los últimos `DIAS_DE_RELLENO` si no hay nada, y como mucho los últimos

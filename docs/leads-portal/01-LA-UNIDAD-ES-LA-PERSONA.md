@@ -156,7 +156,7 @@ cargó.
 escrita: nulo es *«nadie lo dijo todavía»*, `false` es «no se presentó», *«y son distintos»*
 (`db/migraciones/049_si_se_presento_a_la_cita.sql:43-45`). Y la sincronización guarda el puntaje 0
 como 0 y no como nulo porque **no se sabe** si el CRM calculó cero o si su proceso no corrió
-(`lib/negocio/sincronizar.ts:414-420`). Esta pestaña lleva esa misma distinción a cada predicado.
+(`lib/negocio/sincronizar.ts:431-437`). Esta pestaña lleva esa misma distinción a cada predicado.
 
 ### LP01-07 · La tabla de los tres valores
 
@@ -220,7 +220,7 @@ El puntaje no es sí o no: es un número. Su «no se sabe» son dos cosas distin
 
 - **el nulo**: el CRM no mandó el campo. Medido el 2026-09-27: **122**;
 - **el 0**: el CRM no dice si calculó cero o si su proceso no corrió
-  (`lib/negocio/sincronizar.ts:414-417`). Medido: **47**, todos de tres semanas de alta —3 en la del
+  (`lib/negocio/sincronizar.ts:431-434`). Medido: **47**, todos de tres semanas de alta —3 en la del
   17 de agosto, 23 en la del 24, 21 en la del 31— y **ninguno en los últimos 14 días**.
 
 Leer ese 0 como un puntaje bajo es colapsar el tercer valor en el segundo, y es lo que hacía el

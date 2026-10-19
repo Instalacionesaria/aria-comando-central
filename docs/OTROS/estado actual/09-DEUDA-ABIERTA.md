@@ -63,13 +63,13 @@ Siguen siendo los más caros porque **no fallan**: producen cifras plausibles so
 
 ### 2.1 · Treinta y seis contactos congelados, y un archivo que dice cuándo
 
-`congelarLosQueYaNoEstan` (`lib/negocio/sincronizar.ts:289`) hace lo mismo que el 2026-09-15: pone
-`territorio = null` (`lib/negocio/sincronizar.ts:297`) y **no toca `sincronizado_el`**. Como la
+`congelarLosQueYaNoEstan` (`lib/negocio/sincronizar.ts:306`) hace lo mismo que el 2026-09-15: pone
+`territorio = null` (`lib/negocio/sincronizar.ts:314`) y **no toca `sincronizado_el`**. Como la
 búsqueda del barrido es POR ETIQUETA, `guardar()` no vuelve a pasar por esa fila nunca más.
 
 Lo que cambió no es el código sino lo que se sabe. El disparador de la migración `047` archiva cada
 cambio de zona en `negocio.cambios_de_territorio` —el comentario lo dice en
-`lib/negocio/sincronizar.ts:284-288`—, y la tabla tiene su primera fila el 2026-09-15. Medido el
+`lib/negocio/sincronizar.ts:301-305`—, y la tabla tiene su primera fila el 2026-09-15. Medido el
 2026-10-18 a las 15:39 UTC: **52 filas, 40 altas, 11 congelados, 1 descongelado y 0 traspasos**; los
 congelados van del 2026-09-17 al 2026-10-09. Hoy hay **36 contactos congelados**: los 24 viejos, de los que
 no se sabe cuándo porque son anteriores a la primera fila del archivo, y 12 con alta, congelados después
@@ -106,14 +106,14 @@ from negocio.cambios_de_territorio group by 1;
 reaparezca en el CRM, o que alguien abra su ficha — pero un congelado no aparece en ninguna cola.
 Lo mínimo sigue siendo que `congelarLosQueYaNoEstan` escriba `sincronizado_el`; lo correcto, pedirlos
 por identificador cada tanto con `contactoPorId` (`lib/ghl/cliente.ts:545`), que ya usa
-`refrescarUnContacto` (`lib/negocio/sincronizar.ts:562`).
+`refrescarUnContacto` (`lib/negocio/sincronizar.ts:579`).
 
 ### 2.2 · Las citas no tienen resta, y la tarjeta mira treinta días de un barrido que mira catorce
 
 `lib/negocio/citas.ts` sigue con 436 líneas y cero apariciones de `congelar` o de `deleteFrom`: una
 cita que el CRM deja de listar conserva su último `estado_ghl` para siempre. Pero el agujero grande
 no es ése, y conviene nombrarlo por su constante: el barrido le pide al CRM las citas desde **14
-días atrás** (`DIAS_ATRAS`, `lib/negocio/citas.ts:74`, usado en `lib/negocio/citas.ts:161`) y la
+días atrás** (`DIAS_ATRAS`, `lib/negocio/citas.ts:75`, usado en `lib/negocio/citas.ts:163`) y la
 pestaña abre en treinta. **Toda cita que empezó hace más de catorce días no se vuelve a leer nunca**,
 y sigue contando con el estado que tenía el día que cruzó ese borde.
 
@@ -246,7 +246,7 @@ en `components/negocio/Avanzar.jsx:324`), y la excepción sigue importando: **co
 puede entrar con que un closer registre un plantón.
 
 Y la vía que **no** hay que abrir sigue escrita donde alguien la abriría: `asistio` está fuera del
-`do update` del barrido a propósito (`lib/negocio/citas.ts:417`). Si entrara, cada pasada horaria la
+`do update` del barrido a propósito (`lib/negocio/citas.ts:419`). Si entrara, cada pasada horaria la
 pondría en nulo y nada fallaría. [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md) § 7 anota los otros
 atajos que tientan —las etiquetas del CRM, las llamadas de tl;dv— y por qué ninguno es la respuesta.
 
@@ -268,9 +268,9 @@ from negocio.citas where estado_cambiado_el is not null group by 1, 2 order by 3
   en la misma transacción que `asistio`; están en cero por el mismo motivo que el § 4 y se llenan con el
   mismo primer cierre.
 - **`mensajes.estado_entrega_familia` se congela.** Sólo se refresca dentro de una hora desde el
-  envío (`VENTANA_MS`, `lib/negocio/entregas.ts:55`) y a dos mensajes por ciclo (`POR_CICLO`,
-  `lib/negocio/entregas.ts:52`), sobre la cola de `pendientesDeRevision`
-  (`lib/negocio/entregas.ts:134`). El archivo no cambió desde el 2026-08-25. El 2026-10-18 a las 15:39 UTC:
+  envío (`VENTANA_MS`, `lib/negocio/entregas.ts:56`) y a dos mensajes por ciclo (`POR_CICLO`,
+  `lib/negocio/entregas.ts:53`), sobre la cola de `pendientesDeRevision`
+  (`lib/negocio/entregas.ts:137`). El archivo no cambió desde el 2026-08-25. El 2026-10-18 a las 15:39 UTC:
   **482 mensajes en `en_curso` y 0 dentro de la ventana** que esa cola mira (479 y 0 el 2026-09-28). Ese 482 no es
   «en tránsito»: es «nunca se supo».
 - **`fallo_del_canal` casi no se escribe: 530 fallidos y 3 con motivo** (475 y 3 el 2026-09-28; 435 y 3 el
@@ -281,8 +281,8 @@ from negocio.citas where estado_cambiado_el is not null group by 1, 2 order by 3
   da también **530**: no hay un solo fallido con otro estado, como el 2026-09-28. Es la cifra que cuenta
   [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) § 10.
 - **`citas.inicio_anterior_el`, `estado_anterior_ghl` y `estado_cambiado_el`** no las lee ningún
-  archivo de `lib/`, `app/` ni `components/`: se escriben en `lib/negocio/citas.ts:388`,
-  `lib/negocio/citas.ts:408` y `lib/negocio/citas.ts:412`, y quien las lee es el § 4 de este archivo.
+  archivo de `lib/`, `app/` ni `components/`: se escriben en `lib/negocio/citas.ts:390`,
+  `lib/negocio/citas.ts:410` y `lib/negocio/citas.ts:414`, y quien las lee es el § 4 de este archivo.
 - **`ESTADO_ASISTIO`**, nuevo como caso: el CRM ya lo escribe en 3 citas y ningún archivo lo lee (§ 4).
   Leerlo no es sumarlo: `citasAlcanzables.ts` ya prohíbe sumar los plantones del CRM con `asistio`
   (`lib/negocio/citasAlcanzables.ts:87-113`), y lo mismo valdría para éstas.
@@ -440,7 +440,7 @@ Lo detalla [14-ANALIZADORES.md](14-ANALIZADORES.md) § 7, con cifras del 2026-09
 verificado acá contra el código, otra vez el 2026-10-18:
 
 - **El sello se escribe y no lo lee nadie.** El comentario dice que el motivo «tiene que poder
-  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:664-675`), y en `lib/`, `app/` y
+  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:670-681`), y en `lib/`, `app/` y
   `components/` `ultimo_motivo` sólo aparece en `lib/negocio/barrido.ts` y en `lib/datos/esquema.ts`;
   fuera de ahí lo lee `scripts/medir-analizadores.sql:88`. Una llave de tl;dv revocada sólo se ve
   con SQL. Y desde la `076` el mismo sello dice cuándo Meta no está vinculado (§ 12): tampoco lo lee nadie.
@@ -452,7 +452,7 @@ verificado acá contra el código, otra vez el 2026-10-18:
   de los agentes (`cd851b3`, 2026-10-04)**: cada llamada de los Analizadores, la clasificación incluida, deja su
   fila en `negocio.uso_de_ia` (`lib/analizadores/pipeline.ts`, `anotarLaLlamada`); el 2026-10-18 hay 24 de ellas.
 - **El contador de reintentos sólo sube** (`lib/analizadores/datos.ts:878-886`), y **el reintento
-  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:602-618`): una transcripción
+  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:608-624`): una transcripción
   pegada a mano que falle en una empresa con sólo llave de IA no se reintenta nunca sola.
 - **`scripts/medir-analizadores.sql` no mide el reintento**: el sello que lee es sólo el de
   `analizadores` (`scripts/medir-analizadores.sql:87-89`) y `reintentos_automaticos` no aparece.
@@ -478,11 +478,11 @@ verificado acá contra el código, otra vez el 2026-10-18:
   ventana de 30 días no cayó bajo el piso de 10, como se temía el 2026-09-28: tiene 25.
 - **«Meta desconectado» contra «no se invirtió»: Cerrada a medias el 2026-10-07 (`22ec755`).** El colector ya
   preguntaba el vínculo (`lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), y desde la `076` el sello lo dice:
-  «Meta no está vinculado en GoHighLevel: no se leyó el gasto» (`lib/negocio/barrido.ts:962-965`). Lo que falta es
+  «Meta no está vinculado en GoHighLevel: no se leyó el gasto» (`lib/negocio/barrido.ts:973-976`). Lo que falta es
   quien lea el sello (§ 11): ninguna pantalla lo muestra.
 - **Sólo se pedían las campañas de nuestra atribución: Cerrada el 2026-10-07 (`22ec755`).** Antes, 13 de las 61
   campañas de la cuenta (`lib/negocio/recolectarAnuncios.ts:261-320@d17e029`); hoy se piden las activas y las que
-  gastaron en la última semana (`lib/negocio/recolectarAnuncios.ts:593`), el relleno busca lo que la cuenta dice que
+  gastaron en la última semana (`lib/negocio/recolectarAnuncios.ts:597`), el relleno busca lo que la cuenta dice que
   gastó otra campaña, y `negocio.campanas` tiene 62 filas (2026-10-18).
 - **Ninguna campaña está asignada a un funnel.** `negocio.funnels_de_campana` tiene **0 filas** el 2026-10-18: los
   tres funnels de Acquisition se calculan sobre campañas sin asignar. Asignarlas era la primera tarea del usuario
@@ -568,13 +568,13 @@ Un comentario falso es un defecto de primera clase: quien lo lee para decidir, d
 sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
 
 - **Cerrada el 2026-10-07 (`22ec755`).** `lib/negocio/barrido.ts:243-245@d17e029` contaba **52 llamadas por día**
-  «por cuatro días» cuando se releían dos (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:61`); con la
-  `076` el comentario se reescribió con el costo nuevo, 8 a 14 llamadas por día (`lib/negocio/barrido.ts:264-267`).
+  «por cuatro días» cuando se releían dos (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:62`); con la
+  `076` el comentario se reescribió con el costo nuevo, 8 a 14 llamadas por día (`lib/negocio/barrido.ts:265-268`).
 - **Cerrada el 2026-10-18 (`65669f4`).** `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea
-  `anuncios` en «el cron de las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:245`), y hoy dice eso.
+  `anuncios` en «el cron de las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:246`), y hoy dice eso.
 - `lib/negocio/sincronizar.ts:23-28` dice que `ultimo_entrante_el` y los suyos «quedan nulos» y que
-  `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:319-320` pone `score` y `responsable_id` entre
-  lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:421` y `lib/negocio/sincronizar.ts:481`,
+  `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:336-337` pone `score` y `responsable_id` entre
+  lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:438` y `lib/negocio/sincronizar.ts:498`,
   que escriben `score`, y la `054`, que borró `responsable_id`.
 - `lib/ghl/contrato.ts:325` dice que la carpeta del formulario de Meta tiene 9 campos y
   `lib/ghl/contrato.ts:341` que las siete etiquetas cortas son de esa carpeta; 06 midió hoy 7 campos y
@@ -678,7 +678,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
     (`components/ajustes/Usuarios.jsx:365-366`, `components/ajustes/Empresas.jsx:145-146`).
   - Que «el auditor de IA no existe» y que `negocio.hallazgos` no tiene lector ni escritor
     (`docs/OTROS/produccion/DESPLIEGUE.md:473-476`). Tiene dos escritores
-    (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:261`), lectores en `lib/auditor/`
+    (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:265`), lectores en `lib/auditor/`
     (por ejemplo `lib/auditor/pantalla.ts:244`) y **27 filas**, detectadas entre el 2026-09-01 y el
     2026-10-06 (2026-10-18; 24 el 2026-09-28). Las dos consecuencias que el párrafo deduce sobre la cola
     «Intervenciones urgentes» cuelgan de esa premisa y no se re-midieron acá.

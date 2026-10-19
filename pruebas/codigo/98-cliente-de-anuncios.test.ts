@@ -32,6 +32,7 @@ import {
   totalDeLaCampana,
 } from '../../lib/ghl/anuncios.ts';
 import { recolectarAnuncios } from '../../lib/negocio/recolectarAnuncios.ts';
+import { ambitoDeUnCliente } from '../../lib/negocio/ambitoDelCliente.ts';
 
 const ACCESO = { token: 'un-token', locationId: 'una-ubicacion' };
 
@@ -230,7 +231,7 @@ test('el colector pide los nombres en el nivel CAMPAIGN, no en otro', async () =
     cuerpo: { data: [{ campaignId: '120249633901590467', name: 'bofu - agendamiento', status: 'ACTIVE' }], next: null },
   });
   let escritas: readonly { id: string }[] = [];
-  const r = await recolectarAnuncios('00000000-0000-4000-8000-000000000000', ACCESO, {
+  const r = await recolectarAnuncios(ambitoDeUnCliente('00000000-0000-4000-8000-000000000000', '00000000-0000-4000-8000-000000000001'), ACCESO, {
     ahora: Date.parse('2026-09-16T11:30:00Z'),
     reloj: () => 0,
     vinculo: async () => ({ tipo: 'datos' as const, datos: { estado: 'connected', cuentaId: null, paginas: 1 } }),

@@ -128,11 +128,11 @@ motivo, `sin_token`). Y en `activos`, la tarea de Meta, salen `saltada` **las 11
 **1 · El censo de etiquetas NO es el catálogo de la subcuenta.** `negocio.contactos` sólo contiene
 contactos que tienen —o tuvieron— `zona_closer` o `zona_setter`. La llamada que lee el catálogo real
 (`GET /locations/{loc}/tags`, `lib/ghl/cliente.ts:450`) sólo se dispara **cuando la búsqueda no trae
-ningún contacto** (`lib/negocio/sincronizar.ts:232-236`), y trae contactos siempre. Las 63 etiquetas
+ningún contacto** (`lib/negocio/sincronizar.ts:233-237`), y trae contactos siempre. Las 63 etiquetas
 medidas son **un piso**, no el inventario del CRM.
 
 **2 · Nuestra foto de etiquetas está vencida para los contactos congelados.** El congelamiento pone
-`territorio` en nulo y **a propósito no toca `etiquetas`** (`lib/negocio/sincronizar.ts:276-278`).
+`territorio` en nulo y **a propósito no toca `etiquetas`** (`lib/negocio/sincronizar.ts:277-279`).
 Medido: de los 25 congelados, **21 siguen cargando una etiqueta de zona** que el CRM ya les sacó (eran
 20 de 25). El censo sobrecuenta `zona_closer`/`zona_setter` hasta en 21.
 
@@ -175,7 +175,7 @@ decía «tres cabeceras distintas»; con tres familias y dos valores, nunca lo f
 | # | Operación | Quién la dispara | Frecuencia medida | Archivo |
 |---|---|---|---|---|
 | 1 | `POST /contacts/search` | cron `contactos`; botón «Sincronizar» | cada 10 min; 1 por página de 100, por etiqueta | `lib/ghl/cliente.ts:293` |
-| 2 | `GET /contacts/{id}` | abrir una ficha; el webhook, **sólo si el contacto no está en nuestra base**; **desde el 2026-10-11, la pasada de miniaturas** del cron `contactos` (`lib/negocio/miniaturaDelContacto.ts:113`) | ≈ 65 de los 320 avisos procesados del 2026-08-29 al 2026-09-27 (estimado, § 7); la pasada, hasta 50 por corrida y una sola vez por contacto con `adId`: 526 pedidos guardados al 2026-10-18, el último el 2026-10-11 | `lib/ghl/cliente.ts:545` |
+| 2 | `GET /contacts/{id}` | abrir una ficha; el webhook, **sólo si el contacto no está en nuestra base**; **desde el 2026-10-11, la pasada de miniaturas** del cron `contactos` (`lib/negocio/miniaturaDelContacto.ts:114`) | ≈ 65 de los 320 avisos procesados del 2026-08-29 al 2026-09-27 (estimado, § 7); la pasada, hasta 50 por corrida y una sola vez por contacto con `adId`: 526 pedidos guardados al 2026-10-18, el último el 2026-10-11 | `lib/ghl/cliente.ts:545` |
 | 3 | `POST /contacts/{id}/tags` | Avanzar; marcar una intervención del auditor (`lib/auditor/intervencion.ts:128`) | 7 resultados en total, ninguno desde el 2026-09-09 | `lib/ghl/cliente.ts:592` |
 | 4 | `DELETE /contacts/{id}/tags` | resolver una intervención del auditor | ninguna: **0 de 24** hallazgos resueltos (eran 0 de 20) | `lib/ghl/cliente.ts:638` |
 | 5 | `GET /locations/{loc}/tags` | **sólo si la búsqueda trajo cero contactos** | nunca en régimen | `lib/ghl/cliente.ts:450` |
@@ -185,10 +185,10 @@ decía «tres cabeceras distintas»; con tres familias y dos valores, nunca lo f
 | 9 | `GET /calendars/?locationId=` | cron `citas`; botón «Traer del calendario» | cada hora | `lib/ghl/calendarios.ts:143` |
 | 10 | `GET /calendars/events` | ídem, **1 por calendario** | 9 por corrida | `lib/ghl/calendarios.ts:230` |
 | 11 | `GET /conversations/search` | cron `mensajes`; reloj del Closer | cada 10 min + hasta 1 cada 10 s con la pestaña a la vista | `lib/ghl/conversaciones.ts:127` |
-| 12 | `GET /conversations/{id}/messages` | 1 por conversación nuestra que se movió | tope 6 por ciclo (`lib/negocio/ingesta.ts:70`) | `lib/ghl/conversaciones.ts:232` |
-| 13 | `GET /conversations/messages/{id}` | tercera pasada de entregas | 2 por ciclo (`lib/negocio/entregas.ts:52`) | `lib/ghl/conversaciones.ts:294` |
+| 12 | `GET /conversations/{id}/messages` | 1 por conversación nuestra que se movió | tope 6 por ciclo (`lib/negocio/ingesta.ts:71`) | `lib/ghl/conversaciones.ts:232` |
+| 13 | `GET /conversations/messages/{id}` | tercera pasada de entregas | 2 por ciclo (`lib/negocio/entregas.ts:53`) | `lib/ghl/conversaciones.ts:294` |
 | 14 | `POST /conversations/messages` | enviar desde el chat | por acción de una persona | `lib/ghl/conversaciones.ts:419` |
-| 15 | `GET /ad-publishing/facebook/integration` | cron `anuncios` y `anuncios_relleno`, el «paso 0» y **una compuerta**: sin `connected` no se escribe nada | 1 por pasada diaria; el relleno, sólo si hay días pendientes (`lib/negocio/rellenarAnuncios.ts:278-292`) | `lib/ghl/anuncios.ts:250` |
+| 15 | `GET /ad-publishing/facebook/integration` | cron `anuncios` y `anuncios_relleno`, el «paso 0» y **una compuerta**: sin `connected` no se escribe nada | 1 por pasada diaria; el relleno, sólo si hay días pendientes (`lib/negocio/rellenarAnuncios.ts:280-294`) | `lib/ghl/anuncios.ts:250` |
 | 16 | `GET /ad-publishing/facebook/reporting/list` | cron `anuncios`: un día por llamada, para las campañas candidatas; cron `anuncios_relleno`: **un rango por campaña**, que suma | régimen: 3 por día (1 candidata × 3 días); el relleno, 0 cuando todo cuadra | `lib/ghl/anuncios.ts:519` (día) y `lib/ghl/anuncios.ts:553` (rango) |
 | 17 | `GET /ad-publishing/facebook/entity` | cron `anuncios`, nivel `CAMPAIGN`, al principio de cada pasada (desde el 2026-09-30) | 1 por página; una página con las 62 campañas | `lib/ghl/anuncios.ts:327` |
 | 18 | `GET /ad-publishing/facebook/reporting` | cron `anuncios` y `anuncios_relleno` (desde el 2026-10-07): **la serie diaria de toda la cuenta**, la referencia del gasto | 3 por pasada diaria (60 días en tramos de 20) | `lib/ghl/anuncios.ts:621` |
@@ -225,7 +225,7 @@ en ninguna tabla nuestra.
 **`POST /contacts/search`.** El sobre: sólo `contacts` y `total`. De cada contacto, `ContactoDeGhl`
 declara 19 claves (`lib/ghl/cliente.ts:59-161`) y la fila escribe 15 columnas con datos del
 contacto, más el sello `sincronizado_el`; dos de ellas son derivadas: `territorio`, de las
-etiquetas, y desde el 2026-09-21 `score`, de los campos (§ 6) (`lib/negocio/sincronizar.ts:354-452`).
+etiquetas, y desde el 2026-09-21 `score`, de los campos (§ 6) (`lib/negocio/sincronizar.ts:371-469`).
 `locationId` se declara y no se usa. Todo lo que
 GoHighLevel mande y la interfaz no declare **se cae ahí mismo, sin error** — el defecto que costó la
 atribución hasta la `048` y, un nivel más adentro, el desglose de acciones de Meta hasta la `053`.
@@ -280,8 +280,8 @@ documentado como aceptado.
 
 **El cron pasó de ocho tareas a doce.** Una sola ruta, `/api/cron`, con ocho horarios en `vercel.json`
 (`vercel.json:6-38`); la cabecera `x-vercel-cron-schedule` dice cuál disparó (`app/api/cron/route.ts:134`) y `HORARIOS`
-dice qué tareas corre cada uno (`lib/negocio/barrido.ts:147-377`). Un horario que no está en el mapa corre **todas**
-(`lib/negocio/barrido.ts:485-495`). El orden de ejecución es el de `TAREAS` (`lib/negocio/barrido.ts:94-113`). El cron toma
+dice qué tareas corre cada uno (`lib/negocio/barrido.ts:148-378`). Un horario que no está en el mapa corre **todas**
+(`lib/negocio/barrido.ts:486-496`). El orden de ejecución es el de `TAREAS` (`lib/negocio/barrido.ts:95-114`). El cron toma
 sólo las empresas activas (`app/api/cron/route.ts:182`) y resuelve el token de Meta sólo en la corrida que trae `activos`
 (`app/api/cron/route.ts:151-152`, `:198`). Desde el 2026-10-03 las funciones corren en São Paulo, al lado de la base
 (`vercel.json:3-5`, commit `97fc905`).
@@ -291,23 +291,23 @@ La columna `ultimas_llamadas` de `negocio.tareas_programadas` guarda lo que cost
 
 | Tarea | Horario (`vercel.json`) | Última corrida (UTC) | Llamadas medidas | Contra quién | Dónde |
 |---|---|---|---|---|---|
-| `contactos` | `*/10 * * * *` | 15:30 | **8** (7) | GoHighLevel: la búsqueda **y la pasada de miniaturas** | `lib/negocio/barrido.ts:886-900` |
-| `mensajes` | `*/10 * * * *` | 15:30 | **1** (1) | GoHighLevel | `lib/negocio/barrido.ts:219-223` |
+| `contactos` | `*/10 * * * *` | 15:30 | **8** (7) | GoHighLevel: la búsqueda **y la pasada de miniaturas** | `lib/negocio/barrido.ts:896-911` |
+| `mensajes` | `*/10 * * * *` | 15:30 | **1** (1) | GoHighLevel | `lib/negocio/barrido.ts:220-224` |
 | `auditoria` | `*/10 * * * *` | 15:30 | 0 (0) | el modelo | ídem |
-| `citas` | `3 * * * *` | 15:03 | **11** (10) | GoHighLevel: 1 + un calendario más | `lib/negocio/barrido.ts:231-235` |
-| `sonda` | `3 * * * *` | — (no deja sello) | 0 | nadie | `lib/negocio/barrido.ts:697-707` |
-| `mejora` | `17 6 * * *` | 06:17 | 1 (1) | el modelo | `lib/negocio/barrido.ts:268-272` |
-| **`anuncios`** | `17 6 * * *` | 06:18 | **8** (40) | GoHighLevel | `lib/negocio/barrido.ts:255-272` |
-| `analizadores` | `41 * * * *` | 14:41 | 2 (4) | tl;dv y el modelo | `lib/negocio/barrido.ts:287-291` |
-| **`anuncios_relleno`** (nueva, `076`) | `53 * * * *` | 14:53 | **0** | GoHighLevel, sólo si un día no cuadra | `lib/negocio/barrido.ts:293-306` |
-| `reintentos` | `7 10 * * *` | 10:07 | 0 (0) | el modelo | `lib/negocio/barrido.ts:315-319` |
-| **`senales`** (nueva, `072`) | `23 * * * *` | 11:23 | 40, sumadas las 11 empresas | el modelo (la redacción del plan) | `lib/negocio/barrido.ts:346-350` |
-| **`activos`** (nueva, `078`) | `37 * * * *` | 14:37 | **0**: `saltada` en las 11, sin token | **Meta** | `lib/negocio/barrido.ts:321-334` |
+| `citas` | `3 * * * *` | 15:03 | **11** (10) | GoHighLevel: 1 + un calendario más | `lib/negocio/barrido.ts:232-236` |
+| `sonda` | `3 * * * *` | — (no deja sello) | 0 | nadie | `lib/negocio/barrido.ts:703-713` |
+| `mejora` | `17 6 * * *` | 06:17 | 1 (1) | el modelo | `lib/negocio/barrido.ts:269-273` |
+| **`anuncios`** | `17 6 * * *` | 06:18 | **8** (40) | GoHighLevel | `lib/negocio/barrido.ts:256-273` |
+| `analizadores` | `41 * * * *` | 14:41 | 2 (4) | tl;dv y el modelo | `lib/negocio/barrido.ts:288-292` |
+| **`anuncios_relleno`** (nueva, `076`) | `53 * * * *` | 14:53 | **0** | GoHighLevel, sólo si un día no cuadra | `lib/negocio/barrido.ts:294-307` |
+| `reintentos` | `7 10 * * *` | 10:07 | 0 (0) | el modelo | `lib/negocio/barrido.ts:316-320` |
+| **`senales`** (nueva, `072`) | `23 * * * *` | 11:23 | 40, sumadas las 11 empresas | el modelo (la redacción del plan) | `lib/negocio/barrido.ts:347-351` |
+| **`activos`** (nueva, `078`) | `37 * * * *` | 14:37 | **0**: `saltada` en las 11, sin token | **Meta** | `lib/negocio/barrido.ts:322-335` |
 
 Las tareas que no le hablan al CRM —`auditoria`, `mejora`, `analizadores`, `reintentos`, `senales` y `activos`— no se
-saltean por falta del token de GoHighLevel (`lib/negocio/barrido.ts:581-594`); `activos` se saltea por falta del de Meta,
-con su texto (`lib/negocio/barrido.ts:605-612`). Una tarea que corrió y dejó trabajo sin hacer lo dice en el motivo del
-sello (`lib/negocio/barrido.ts:912-1031`): el 2026-10-18 las diez tareas que corrieron para la empresa conectada tenían el
+saltean por falta del token de GoHighLevel (`lib/negocio/barrido.ts:587-600`); `activos` se saltea por falta del de Meta,
+con su texto (`lib/negocio/barrido.ts:611-618`). Una tarea que corrió y dejó trabajo sin hacer lo dice en el motivo del
+sello (`lib/negocio/barrido.ts:923-1042`): el 2026-10-18 las diez tareas que corrieron para la empresa conectada tenían el
 motivo **vacío**, o sea completas (consulta: `ultimo_motivo is null`; los textos no se leyeron).
 
 **Piso diario sólo por el cron, contra GoHighLevel: (8 + 1) × 144 + 11 × 24 + 8 = 1.568 llamadas** (el 2026-09-28 eran
@@ -317,23 +317,23 @@ Analizadores ni la tarea `senales` le hablan al CRM.
 
 **La tarea `anuncios` cuesta 8, y ahora el comentario y la medición coinciden.** El comentario cuenta «el vínculo, las
 campañas y la serie de la cuenta son unas 5 llamadas, más tres por cada campaña candidata», con 8 a 14 por día para las 1
-a 3 campañas activas (`lib/negocio/barrido.ts:264-267`); la medición del 2026-10-18 es 1 + 1 + 3 + 1 × 3 = 8. Las
-candidatas son las `ACTIVE` y las que gastaron en la última semana (`lib/negocio/recolectarAnuncios.ts:80-86`, `:590-593`).
-El proveedor tarda **4,55 s por llamada** en esta familia (`lib/negocio/recolectarAnuncios.ts:91-92`) y la pasada tiene su
-tope de 120 s, que ahora se comprueba antes de cada llamada (`lib/negocio/recolectarAnuncios.ts:98-106`). La campaña de
+a 3 campañas activas (`lib/negocio/barrido.ts:265-268`); la medición del 2026-10-18 es 1 + 1 + 3 + 1 × 3 = 8. Las
+candidatas son las `ACTIVE` y las que gastaron en la última semana (`lib/negocio/recolectarAnuncios.ts:81-87`, `:590-593`).
+El proveedor tarda **4,55 s por llamada** en esta familia (`lib/negocio/recolectarAnuncios.ts:92-93`) y la pasada tiene su
+tope de 120 s, que ahora se comprueba antes de cada llamada (`lib/negocio/recolectarAnuncios.ts:99-107`). La campaña de
 prueba `888888` que devolvía 500 ya no se pide: el universo son las campañas de la cuenta
-(`lib/negocio/recolectarAnuncios.ts:121-127`).
+(`lib/negocio/recolectarAnuncios.ts:122-128`).
 
 **El relleno del gasto cuesta cero en régimen y cientos la primera vez.** Busca, cada hora, qué campaña gastó en los días
 cerrados que no cuadran con la cuenta: un rango por campaña, partido en semanas y en días sólo donde hubo gasto
 (`lib/negocio/rellenarAnuncios.ts:15-22`). La primera vez son cientos de llamadas —61 campañas a unos 3 a 4,5 s—, por eso va
-solo en su horario y con su propio fin de reloj, 250 s (`lib/negocio/barrido.ts:293-301`,
-`lib/negocio/rellenarAnuncios.ts:57-65`); cuando no queda nada pendiente no llama ni al vínculo
-(`lib/negocio/rellenarAnuncios.ts:278-280`). El 2026-10-18 corrió con 0 llamadas.
+solo en su horario y con su propio fin de reloj, 250 s (`lib/negocio/barrido.ts:294-302`,
+`lib/negocio/rellenarAnuncios.ts:58-66`); cuando no queda nada pendiente no llama ni al vínculo
+(`lib/negocio/rellenarAnuncios.ts:280-282`). El 2026-10-18 corrió con 0 llamadas.
 
 **La miniatura de cada contacto cuesta una llamada, una sola vez.** Va dentro de `contactos`, después de sincronizar
-(`lib/negocio/barrido.ts:895-899`): hasta 50 contactos por pasada, sólo los que llegaron con `adId`, con 15 s por pedido y
-60 s por pasada (`lib/negocio/miniaturaDelContacto.ts:43-49`, `:74-93`). Al 2026-10-18 había 526 contactos pedidos, el
+(`lib/negocio/barrido.ts:906-910`): hasta 50 contactos por pasada, sólo los que llegaron con `adId`, con 15 s por pedido y
+60 s por pasada (`lib/negocio/miniaturaDelContacto.ts:44-50`, `:74-93`). Al 2026-10-18 había 526 contactos pedidos, el
 último el 2026-10-11 22:40 UTC, y 215 contactos con `adId`: la cola está vacía y la pasada sólo pide los nuevos.
 
 A eso se le suman tres caminos que no tienen horario:
@@ -346,7 +346,7 @@ A eso se le suman tres caminos que no tienen horario:
   después del aviso. Es una estimación por `creado_el`, no un conteo: la llamada no deja registro. No se volvió a estimar.
 - **Una llamada por apertura de ficha** (`lib/ghl/cliente.ts:529-543`), deliberada. No medida: no deja registro.
 - **El reloj del navegador.** Con el Closer a la vista, el tic de la operación es de 10 s
-  (`lib/cadencia.ts:40`) y el candado de `lib/negocio/pulso.ts:113` lo deja pasar una vez por ciclo —
+  (`lib/cadencia.ts:40`) y el candado de `lib/negocio/pulso.ts:114` lo deja pasar una vez por ciclo —
   **techo de 360 llamadas por hora** por esa vía, aunque en régimen la ingesta cuesta 1 por ciclo.
 
 **Las pantallas de los departamentos y el cerebro no agregan ninguna.** Ninguna ruta de `app/api/acquisition`,
@@ -362,7 +362,7 @@ de leads de Tools y «Probar conexión» de Meta.
 - `pedirExterno` hace **un solo `fetch`** (`lib/http/cliente.ts:368-374`) y espera hasta 240 s
   (`lib/http/cliente.ts:248`) contra un `maxDuration` de 300; Vercel no reintenta el cron
   (`lib/negocio/barrido.ts:17`). Los pedidos nuevos acortan la espera: 15 s cada miniatura de contacto
-  (`lib/negocio/miniaturaDelContacto.ts:46`) y 20 s cada pedido a Meta (`lib/meta/graph.ts:30`).
+  (`lib/negocio/miniaturaDelContacto.ts:47`) y 20 s cada pedido a Meta (`lib/meta/graph.ts:30`).
 - **Desde el 2026-10-15, `pedirExterno` devuelve también el código numérico del error**, si el servicio lo manda en
   `error.code` (`lib/http/cliente.ts:72-80`, `:459-468`). Lo manda Meta, y es lo único que distingue un token vencido de un
   permiso que falta o del cupo; GoHighLevel y Anthropic no lo mandan, y para ellos la respuesta queda igual.
@@ -374,10 +374,10 @@ de leads de Tools y «Probar conexión» de Meta.
   `Retry-After` sigue sin leerse (`lib/ghl/anuncios.ts:150-152`). Las otras catorce operaciones siguen
   sin red. La pasada de miniaturas **no reintenta el 429: corta** y deja lo que falta para la siguiente
   (`lib/negocio/miniaturaDelContacto.ts:26-29`), y Meta tampoco reintenta: un cupo agotado corta la pasada de activos y
-  la hora siguiente sigue (`lib/negocio/barrido.ts:984-999`).
+  la hora siguiente sigue (`lib/negocio/barrido.ts:995-1010`).
 
 El comparador que el proyecto guarda: la plataforma anterior corrió a ~7 peticiones por minuto y por
-pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:188-191`). Estamos un orden de
+pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:189-192`). Estamos un orden de
 magnitud por debajo, también con las tareas nuevas.
 
 ---
@@ -648,7 +648,7 @@ podía guardarlo: era `char(1)` con `check` de letras
 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:6-16`). Desde `e350a47`
 (2026-09-21) la columna es `smallint` entre 0 y 100
 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:70-76`) y la
-sincronización la pisa en cada pasada (`lib/negocio/sincronizar.ts:421`). El mismo commit borró dos columnas que
+sincronización la pisa en cada pasada (`lib/negocio/sincronizar.ts:438`). El mismo commit borró dos columnas que
 nunca tuvieron escritor, `responsable_id` y `responsable_rol`
 (`db/migraciones/054_las_dos_columnas_que_nadie_escribio.sql:54-55`).
 
@@ -776,7 +776,7 @@ select lower(coalesce(estado_ghl,'(nulo)')), count(*) from negocio.citas group b
 ```
 
 Los doce del 15 figuran hoy como once porque `estado_cambiado_el` guarda sólo el **último** cambio de
-cada cita (`lib/negocio/citas.ts:408-415`): una de ellas pasó de `noshow` a `cancelled` el 17. En trece
+cada cita (`lib/negocio/citas.ts:410-417`): una de ellas pasó de `noshow` a `cancelled` el 17. En trece
 días hubo **un** plantón nuevo con registro. Siguen quince `noshow` —tres que llegaron ya marcados, de
 las citas del 2026-09-08 y 09, y doce con registro—. **Es más compatible con una limpieza puntual que
 con un flujo permanente**; no verificado del lado del CRM, y con la adquisición apagada casi no hubo
@@ -798,7 +798,7 @@ de Avanzar tampoco lo trajo: ningún resultado registrado desde el 2026-09-09.
 
 | Lo que el documento pide | Evidencia |
 |---|---|
-| **Asistencia a la cita** (§ 5.3, § 10.7 *show rate*) | **Corregido el 2026-10-18: el proveedor la tiene cuando alguien la marca.** Hasta el 2026-09-15 los campos existían vacíos: 3 de 1052 citas (`lib/ghl/calendarios.ts:186`). Desde el 2026-10-05 llegan `noshow` y `showed` marcados en el CRM: 20 y 3 de 368 (bloque de arriba). `asistio` sigue nulo en **368 de 368**: la escribe una persona en Avanzar y está fuera del `on conflict` del barrido (`lib/negocio/citas.ts:417-427`). |
+| **Asistencia a la cita** (§ 5.3, § 10.7 *show rate*) | **Corregido el 2026-10-18: el proveedor la tiene cuando alguien la marca.** Hasta el 2026-09-15 los campos existían vacíos: 3 de 1052 citas (`lib/ghl/calendarios.ts:186`). Desde el 2026-10-05 llegan `noshow` y `showed` marcados en el CRM: 20 y 3 de 368 (bloque de arriba). `asistio` sigue nulo en **368 de 368**: la escribe una persona en Avanzar y está fuera del `on conflict` del barrido (`lib/negocio/citas.ts:419-429`). |
 | **Duración y «contestada» de las llamadas** | Los 128 registros de llamada traen `status = completed` en el 100 % —el estado de la llamada a la API— y **no hay duración en ningún nivel** (`lib/ghl/entrega.ts:242-248`; del 2026-09-14, no re-medido). `negocio.llamadas` sigue con **0 filas** y sin escritor (re-medido). |
 | **Transcripción / resumen de llamada** | No existe. Lo único aprovechable es `attachments[0]`, la grabación. Convertirla en resumen es un subsistema, no una columna. |
 | **Última actividad entrante/saliente por contacto** | GoHighLevel no documenta una fecha por dirección (`lib/negocio/sincronizar.ts:18-21`). La calcula un disparador nuestro sobre `negocio.mensajes`: `ultimo_entrante_el` en 305 de 594 (eran 299 de 584), `ultimo_saliente_el` en 485 (eran 476). |
@@ -904,8 +904,8 @@ Hoy hay uno.
 
 **El vínculo con Meta ya deja rastro, y es una compuerta.** El 2026-09-28 el colector lo preguntaba cada día y no lo guardaba
 en ningún lado. Desde la `076`, sin `connected` la pasada no escribe nada —un vacío guardado como cero sería permanente—
-(`lib/negocio/recolectarAnuncios.ts:547-554`), y el sello lo dice: «Meta no está vinculado en GoHighLevel: no se leyó el
-gasto» (`lib/negocio/barrido.ts:959-965`). El 2026-10-18 la tarea `anuncios` de la empresa conectada corrió a las 06:18 UTC
+(`lib/negocio/recolectarAnuncios.ts:551-558`), y el sello lo dice: «Meta no está vinculado en GoHighLevel: no se leyó el
+gasto» (`lib/negocio/barrido.ts:970-976`). El 2026-10-18 la tarea `anuncios` de la empresa conectada corrió a las 06:18 UTC
 con el motivo vacío, o sea que **el vínculo estaba `connected`** (deducido del motivo vacío; el texto no se leyó).
 
 ### El embudo por anuncio, con su costo (del 2026-09-29, no re-medido)
@@ -977,7 +977,7 @@ El orden que proponía la foto del 2026-09-15, y en qué quedó cada paso al 202
 Cada uno es un hueco medido, no una suposición.
 
 1. **El catálogo real de etiquetas de la subcuenta nunca se leyó.** `GET /locations/{loc}/tags` sólo
-   se llama si la búsqueda trae cero contactos (`lib/negocio/sincronizar.ts:232-236`). Las 80
+   se llama si la búsqueda trae cero contactos (`lib/negocio/sincronizar.ts:233-237`). Las 80
    etiquetas medidas el 2026-10-18 son las que cargan nuestros 624 contactos: **un piso**. Una sola llamada
    manual lo cerraría.
 
@@ -1014,7 +1014,7 @@ Cada uno es un hueco medido, no una suposición.
    informe no lo llamó. Si alcanza, el `opportunity_id` del § 5.4 está a una llamada de distancia.
 
 6. ~~**Si Meta sigue vinculado hoy.**~~ **Cerrado por deducción el 2026-10-18.** Desde la `076` el sello de `anuncios`
-   dice cuando el vínculo no está `connected` (`lib/negocio/barrido.ts:959-965`), y el de ese día estaba vacío (§ 9).
+   dice cuando el vínculo no está `connected` (`lib/negocio/barrido.ts:970-976`), y el de ese día estaba vacío (§ 9).
 
 7. ~~**Por qué no hay gasto desde el 2026-09-14.**~~ **Era falso: hubo** (703,38 hasta el 2026-10-18, § 9). Las 13
    campañas que se pedían sí estaban sin entregar; otra, de mensajes, gastaba y no se pedía. Lo que sigue abierto es
@@ -1062,7 +1062,7 @@ cuenta.**
 | # | Qué | Pedidos a Meta | Quién la dispara | Archivo |
 |---|---|---|---|---|
 | M1 | **«Probar conexión»**: el token (`GET /me`), la cuenta (`GET /act_…` con nombre, moneda y estado) y los últimos 25 anuncios con su miniatura; no guarda nada | 3 | una persona, desde Ajustes › Credenciales, con `credenciales.editar` | `lib/meta/conexion.ts:37-73`, `app/api/admin/credenciales/meta/route.ts:22-31` |
-| M2 | **La tarea `activos`**: el creativo de cada anuncio de `negocio.anuncios`, en dos pasos por lotes de 50 (`?ids=`): el anuncio y su creativo, y la imagen y la miniatura de 640 px | 2 por cada 50 anuncios, más uno por anuncio si un lote trae uno borrado | el cron, al minuto 37 de cada hora | `lib/meta/anuncios.ts:1-12`, `:101-148`; `lib/negocio/recolectarActivos.ts:183-210` |
+| M2 | **La tarea `activos`**: el creativo de cada anuncio de `negocio.anuncios`, en dos pasos por lotes de 50 (`?ids=`): el anuncio y su creativo, y la imagen y la miniatura de 640 px | 2 por cada 50 anuncios, más uno por anuncio si un lote trae uno borrado | el cron, al minuto 37 de cada hora | `lib/meta/anuncios.ts:1-12`, `:101-148`; `lib/negocio/recolectarActivos.ts:184-212` |
 
 «Probar conexión» es un `POST` aunque no escribe, para que un enlace o una vista previa no lo disparen, y dice en cuál de
 los tres pasos falla con un texto nuestro (`app/api/admin/credenciales/meta/route.ts:1-9`,
@@ -1070,14 +1070,14 @@ los tres pasos falla con un texto nuestro (`app/api/admin/credenciales/meta/rout
 
 **La tarea `activos`** (`lib/negocio/recolectarActivos.ts:1-15`) es reconciliación: pide los anuncios que nunca se leyeron,
 los leídos hace más de un día y los que tienen una miniatura que **vence en las próximas seis horas**, primero los que
-entregaron hace menos, hasta 200 por pasada y con 90 s de presupuesto (`lib/negocio/recolectarActivos.ts:23-33`,
+entregaron hace menos, hasta 200 por pasada y con 90 s de presupuesto (`lib/negocio/recolectarActivos.ts:24-34`,
 `:95-113`). La URL de la miniatura del CDN de Meta va firmada y vence: el vencimiento se lee del parámetro `oe`
-(`lib/negocio/recolectarActivos.ts:46-58`) y una miniatura vencida no viaja a la pantalla
-(`lib/negocio/recolectarActivos.ts:143-172`). Un anuncio de otra cuenta que el token alcance a ver se descarta
-(`lib/negocio/recolectarActivos.ts:72-92`). Guarda en `negocio.activos_de_anuncio`, una fila por anuncio leído, también sin
+(`lib/negocio/recolectarActivos.ts:47-59`) y una miniatura vencida no viaja a la pantalla
+(`lib/negocio/recolectarActivos.ts:144-173`). Un anuncio de otra cuenta que el token alcance a ver se descarta
+(`lib/negocio/recolectarActivos.ts:73-93`). Guarda en `negocio.activos_de_anuncio`, una fila por anuncio leído, también sin
 miniatura, con su motivo (`db/migraciones/078_el_activo_del_anuncio.sql:21-49`). Sin token se sella `saltada` con su texto,
-sin llamar a nadie (`lib/negocio/barrido.ts:605-612`); un token rechazado, un permiso que falta o el cupo cortan la pasada
-y el sello dice qué hacer (`lib/negocio/barrido.ts:984-999`). Creative toma la miniatura y el post de Meta antes que los
+sin llamar a nadie (`lib/negocio/barrido.ts:611-618`); un token rechazado, un permiso que falta o el cupo cortan la pasada
+y el sello dice qué hacer (`lib/negocio/barrido.ts:995-1010`). Creative toma la miniatura y el post de Meta antes que los
 del contacto (`lib/negocio/lecturaDeCreative.ts:456-457`).
 
 **Medido el 2026-10-18:** `negocio.activos_de_anuncio` tiene **0 filas**, y la tarea `activos` está `saltada` en las 11
@@ -1095,6 +1095,6 @@ para mirar que no hay token, y sella.
   no encuentra la cuenta «se dice como permiso», y el código lo dice como `no_existe` (`lib/meta/conexion.ts:46-47`).
   **Cerrado:** el comentario dice hoy `no_existe`.
 - **El presupuesto de la corrida que nombraba el comentario no era el del barrido:** `recolectarActivos.ts` decía que la
-  corrida entera tiene 240 s (`lib/negocio/recolectarActivos.ts:26`) y el barrido usa 180 s (`lib/negocio/barrido.ts:395`).
+  corrida entera tiene 240 s (`lib/negocio/recolectarActivos.ts:27`) y el barrido usa 180 s (`lib/negocio/barrido.ts:396`).
   Como `activos` corre sola en su horario, los 90 s de la pasada caben en los dos. **Cerrado:** el comentario dice hoy
   180 s y nombra `PRESUPUESTO_MS`.

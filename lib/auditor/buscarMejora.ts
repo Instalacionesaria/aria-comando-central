@@ -25,6 +25,7 @@
 
 import { conOrganizacion, datos } from '../datos/contexto.ts';
 import { registrarUso } from '../agentes/uso.ts';
+import type { AmbitoDeUnCliente } from '../negocio/ambitoDelCliente.ts';
 import { anotarIncidente, clasificarFallo } from '../fundaciones/fallo-del-modelo.ts';
 import { COMO_LEER_LOS_AUTORES, IMPUTABLE } from './atribucion.ts';
 import {
@@ -52,7 +53,10 @@ const TOPE_DE_MENSAJES = 200;
 
 /** Lo que hace falta para buscar una mejora. */
 export interface ParaBuscarMejora {
+  /** La empresa: el uso de la IA y los incidentes van con ella. */
   orgId: string;
+  /** El cliente cuyo agente se mira (el nivel 3). El tope del día cuenta los hallazgos a la vista: los de ESTE cliente. */
+  ambito: AmbitoDeUnCliente;
   zona: string;
   claveIa: string;
   idDelAgente: string;
@@ -140,15 +144,15 @@ export async function buscarUnaMejora(
   pedir: typeof pedirVeredicto = pedirVeredicto,
 ): Promise<ResultadoDeLaMejora> {
   // ── 1 · EL TOPE DEL DÍA. Una cuenta, y corta antes de todo lo demás. ──────
-  const antes = await conOrganizacion(e.orgId, () => antesDeMirar(e.zona));
+  const antes = await conOrganizacion(e.ambito, () => antesDeMirar(e.zona));
   if (antes.techoAlcanzado) return { porQueNo: 'techo_del_dia', llamadas: 0 };
 
   // ── 2 · A QUIÉN MIRAR ────────────────────────────────────────────────────
-  const elegido = await conOrganizacion(e.orgId, () => aQuienMirar());
+  const elegido = await conOrganizacion(e.ambito, () => aQuienMirar());
   if (elegido === null) return { porQueNo: 'sin_candidato', llamadas: 0 };
 
   // ── 3 · LO QUE NO CUESTA ─────────────────────────────────────────────────
-  const preparado = await conOrganizacion(e.orgId, async () => {
+  const preparado = await conOrganizacion(e.ambito, async () => {
     const mensajes = await mensajesDelContacto(elegido.contactoId);
     const hechos = medirHechos(mensajes, e.idDelAgente, ahora);
     const transcript = armarTranscript(mensajes, e.zona, e.idDelAgente);
@@ -222,7 +226,7 @@ export async function buscarUnaMejora(
           ? 'ya_estaba_abierto'
           : null;
 
-  await conOrganizacion(e.orgId, async () => {
+  await conOrganizacion(e.ambito, async () => {
     const analisis = await datos()
       .insertInto('analisis_del_agente')
       .values({
