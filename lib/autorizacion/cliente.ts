@@ -25,6 +25,12 @@ export const SECCIONES_DEL_CLIENTE: ReadonlySet<string> = new Set(['contacts', '
 /** Las capacidades que conserva, de las que su rol le dé. Sin `cerebro.usar`: el cerebro lo paga la empresa. */
 export const CAPACIDADES_DEL_CLIENTE: ReadonlySet<string> = new Set(['tablero.ver']);
 
+/** Por qué se rechaza un rol o unas pestañas para un cliente final. El alta y el cambio de rol dicen lo mismo. */
+export const MOTIVOS_DEL_CLIENTE = {
+  rol: 'Un cliente final tiene un rol restringido por pestañas y nada de la plataforma: el rol usuario.',
+  secciones: 'Un cliente final sólo ve Leads y Sales.',
+} as const;
+
 /**
  * Las rutas sin pantalla que sí alcanza: las de su propia sesión (cambiar la contraseña temporal, el segundo
  * factor, el tema). Sin ellas, un cliente final en `debe_cambiar_password` quedaría encerrado.

@@ -125,10 +125,14 @@ export async function personasQuePuedeAdministrar(
         .whereRef('us.usuario_id', '=', 'u.id')
         .select(({ fn, ref }) => fn.agg<string[]>('array_agg', [ref('us.seccion')]).as('claves'))
         .as('secciones'),
-      // Las cuentas del cliente final (el nivel 3), por lo mismo que las pestañas: el `PUT` reemplaza el conjunto.
+      // Las cuentas del cliente final (el nivel 3), por lo mismo que las pestañas: el `PUT` reemplaza el conjunto. Sin
+      // las de baja: la pantalla no las dibuja, y mandarlas de vuelta en el `PUT` —que las rechaza— dejaba a la persona
+      // sin forma de guardarse.
       eb
         .selectFrom('usuarios_cuentas as uc')
+        .innerJoin('cuentas as c', 'c.id', 'uc.cuenta_id')
         .whereRef('uc.usuario_id', '=', 'u.id')
+        .where('c.estado', '<>', 'baja')
         .select(({ fn, ref }) => fn.agg<string[]>('array_agg', [ref('uc.cuenta_id')]).as('claves'))
         .as('cuentas'),
     ])

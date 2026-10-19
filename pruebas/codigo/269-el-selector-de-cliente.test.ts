@@ -67,3 +67,10 @@ test('la barra dibuja el selector debajo del de la empresa, y la cabecera el ró
   const rotulo = readFileSync(join(RAIZ, 'components/RotuloDelFoco.jsx'), 'utf8');
   assert.match(rotulo, /rotuloDelFoco\(sesion\.cuentas, vista, sesion\.pantallasDelCliente \?\? \[\]\)/);
 });
+
+test('una empresa enfocada en su único cliente a la vista tiene el menú para volver a todos', () => {
+  // Los demás se dieron de baja: sin el menú, el foco quedaba fijo hasta cerrar la sesión.
+  assert.equal(formaDelSelector(empresa([A], 'a')), 'menu');
+  // Un foco que no está a la vista no cuenta: la sesión lo ignora.
+  assert.equal(formaDelSelector(empresa([A], 'b')), 'oculto');
+});

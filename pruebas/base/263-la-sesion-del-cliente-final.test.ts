@@ -14,7 +14,8 @@
 //     visibles;
 //   · no es «de la principal» aunque su organización lo sea — mutación: `esDeLaPrincipal` sin mirar el límite;
 //   · la base sostiene el límite: `usuarios_cuentas` sólo para limitados; un limitado no tiene roles sin restringir ni
-//     de plataforma; no se le quita el límite con cuentas asignadas — mutación: quitar cada disparador.
+//     de plataforma; no se le quita el límite con cuentas asignadas — mutación: quitar cada disparador;
+//   · y lo sostiene en cada fila, no al confirmar — mutación: la regla diferida.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -175,4 +176,21 @@ test('la base sostiene el límite: cuentas sólo para limitados, sin roles de ad
     /primero hay que quitarle sus cuentas/,
     'a un cliente final con cuentas se le quitó el límite',
   );
+});
+
+test('la regla del límite se mira en cada fila, no al confirmar', async () => {
+  // Diferida, salía en el COMMIT: fuera del `try` de la ruta (un 500) y, en PostgreSQL 17, con el rol de quien confirma.
+  await admin.query('begin');
+  try {
+    await assert.rejects(
+      admin.query(
+        `insert into identidad.usuarios_roles (usuario_id, rol_id) select $1, id from identidad.roles where clave = 'administrador' and org_id is null`,
+        [cliente],
+      ),
+      /sólo puede tener roles restringidos/,
+      'la regla esperó al commit: el rechazo sale fuera del try de la ruta',
+    );
+  } finally {
+    await admin.query('rollback');
+  }
 });

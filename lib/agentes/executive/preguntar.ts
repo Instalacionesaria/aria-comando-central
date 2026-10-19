@@ -62,6 +62,12 @@ export interface Pregunta {
   ambito: Ambito;
   usuarioId: string;
   zona: string;
+  /**
+   * La zona con que se cuenta el tope del día: la de la EMPRESA, siempre. El tope es de la empresa entera (las
+   * preguntas no tienen cuenta), y contarlo con la zona del cliente enfocado movía la medianoche: enfocar un cliente de
+   * otra zona dejaba el día en cero. Es la misma con que el panel muestra lo usado.
+   */
+  zonaDelTope: string;
   llave: string;
   /** Las claves y nombres de las secciones que la persona ve: lo que se le ofrece y adónde puede ir. */
   secciones: readonly { clave: string; nombre: string }[];
@@ -137,7 +143,7 @@ export async function preguntar(p: Pregunta): Promise<ResultadoDePreguntar> {
   const reserva = await conOrganizacion(p.ambito, () =>
     reservarPregunta({
       usuarioId: p.usuarioId,
-      zona: p.zona,
+      zona: p.zonaDelTope,
       hiloId: p.hiloId,
       texto: p.texto,
       origen: p.origen,

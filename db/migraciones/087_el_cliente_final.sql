@@ -48,8 +48,10 @@ create trigger usuarios_cuentas_solo_limitados before insert on identidad.usuari
 
 -- ─── El cliente final no administra, y no deja de serlo por accidente ──────────
 
--- Diferido: el alta de una persona inserta el usuario y después sus roles en la misma transacción, así que la regla se
--- mira al confirmar, con todo escrito.
+-- INMEDIATA, en cada fila, y no diferida al confirmar. El alta inserta primero a la persona y después sus roles, así que
+-- mirar fila por fila alcanza. Diferida, la regla corría en el COMMIT: fuera del `try` de la ruta (un 500 en vez del
+-- rechazo legible del disparador), y en PostgreSQL 17 con el rol de quien confirma y no con el de la función
+-- `security definer` que escribió, que es como entra el alta externa de Fundaciones.
 create or replace function identidad.el_limitado_no_administra() returns trigger
 language plpgsql as $$
 declare
@@ -82,9 +84,14 @@ begin
 end $$;
 
 drop trigger if exists usuarios_el_limitado_no_administra on identidad.usuarios;
-create constraint trigger usuarios_el_limitado_no_administra after insert or update of limitado_a_cuentas on identidad.usuarios
-  deferrable initially deferred for each row execute function identidad.el_limitado_no_administra();
+create trigger usuarios_el_limitado_no_administra after insert or update of limitado_a_cuentas on identidad.usuarios
+  for each row execute function identidad.el_limitado_no_administra();
 
 drop trigger if exists usuarios_roles_el_limitado_no_administra on identidad.usuarios_roles;
-create constraint trigger usuarios_roles_el_limitado_no_administra after insert on identidad.usuarios_roles
-  deferrable initially deferred for each row execute function identidad.el_limitado_no_administra();
+create trigger usuarios_roles_el_limitado_no_administra after insert on identidad.usuarios_roles
+  for each row execute function identidad.el_limitado_no_administra();
+
+-- El alta externa de organizaciones (la de Fundaciones, por n8n) escribe personas y roles en una función
+-- `security definer` de `postgres`: estos disparadores corren con ese rol y leen estas tablas. Mismo motivo que el
+-- permiso de la 080 sobre las cuentas.
+grant select on identidad.usuarios, identidad.usuarios_roles, identidad.roles, identidad.usuarios_cuentas to postgres;

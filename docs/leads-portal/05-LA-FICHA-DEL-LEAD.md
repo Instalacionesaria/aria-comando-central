@@ -375,7 +375,7 @@ acciones y siete secciones:
     un inquilino (`lib/autorizacion/respuesta.ts:321-323`);
   - **el closer asignado:** `crm_asignado_a` es el usuario del CRM, crudo
     (`lib/datos/esquema.ts:383-393`). Se cruza con `closersDeLaEmpresa`
-    (`lib/negocio/alcanceDelCloser.ts:77-95`) por `crmUsuarioId`. Si cruza, se muestra el nombre.
+    (`lib/negocio/alcanceDelCloser.ts:77-97`) por `crmUsuarioId`. Si cruza, se muestra el nombre.
     Si no cruza, «asignado en el CRM a alguien que no es un closer configurado». Si no hay
     asignación, «sin asignar en el CRM». **El id crudo no se muestra nunca.** Un closer designado y
     sin vincular tiene `crmUsuarioId` nulo (`lib/negocio/alcanceDelCloser.ts:59-60`) y no puede

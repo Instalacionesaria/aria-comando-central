@@ -165,6 +165,8 @@ export function laPregunta(contexto: Contexto, identidad: IdentidadDelCerebro, l
     ambito: ambitoDe(contexto, pantalla),
     usuarioId: contexto.usuarioId,
     zona,
+    // El tope, con la de la empresa: es de toda la empresa, y es la que usa `loDelPanel` para mostrar lo usado.
+    zonaDelTope: contexto.organizacion.zonaHoraria,
     llave: identidad.llave.claveIa,
     secciones: seccionesVisibles(contexto),
     origen: seccion === null ? 'inicio' : 'pie',

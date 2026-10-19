@@ -36,10 +36,14 @@ export default function ClientesDeLaPersona({ orgId, elegidos, alCambiar, person
     };
   }, [orgId]);
 
+  /* Sólo lo que la lista dibuja. Un cliente de baja que la persona ya tenía no tiene casilla y no se puede destildar:
+     mandarlo hacía que el servidor rechazara el conjunto entero, sin que se viera por qué. */
+  const aGuardar = (clientes ?? []).filter((c) => elegidos.has(c.id)).map((c) => c.id);
+
   const guardar = async () => {
     setGuardando(true);
     setAviso(null);
-    const r = await pedir(`/api/admin/usuarios/${personaId}/cuentas`, { metodo: 'PUT', cuerpo: { cuentas: [...elegidos] } });
+    const r = await pedir(`/api/admin/usuarios/${personaId}/cuentas`, { metodo: 'PUT', cuerpo: { cuentas: aGuardar } });
     setGuardando(false);
     if (r.tipo !== 'datos') {
       setAviso({ mal: true, texto: r.tipo === 'rechazado' ? (r.detalle ?? `Rechazado (${r.estado}).`) : 'No llegó al servidor.' });
@@ -90,7 +94,7 @@ export default function ClientesDeLaPersona({ orgId, elegidos, alCambiar, person
             </div>
           ) : null}
           <div className="aj-fila">
-            <button type="button" className="fd-btn sec" disabled={guardando || elegidos.size === 0} onClick={() => void guardar()}>
+            <button type="button" className="fd-btn sec" disabled={guardando || aGuardar.length === 0} onClick={() => void guardar()}>
               {guardando ? 'Guardando…' : 'Guardar sus clientes'}
             </button>
           </div>

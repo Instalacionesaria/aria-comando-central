@@ -228,8 +228,10 @@ export default function Usuarios({ sesion }) {
      sin `usuarios.borrar`, y un botón que va a recibir 403 es el `07` § 4. */
   const puedeBorrarPersonas = Boolean(sesion?.puedeBorrarPersonas);
 
-  const cargar = useCallback(async () => {
-    setSituacion('cargando');
+  /* `enSilencio`: sin pasar por «cargando», que desmonta la pantalla entera. Lo usa una ventana abierta que guarda por su
+     cuenta (los clientes de un cliente final): con el parpadeo, la ventana se cerraba y su aviso se perdía. */
+  const cargar = useCallback(async ({ enSilencio = false } = {}) => {
+    if (!enSilencio) setSituacion('cargando');
     const [u, r] = await Promise.all([pedir('/api/usuarios'), pedir('/api/admin/roles')]);
 
     if (u.tipo === 'sin_respuesta' || r.tipo === 'sin_respuesta') {
@@ -620,6 +622,9 @@ export default function Usuarios({ sesion }) {
   const asignables = roles.filter(
     (r) => (!r.soloPrincipal || puedeElegirEmpresa) && r.otorgable !== false,
   );
+  /* Los que puede tener un cliente final (el nivel 3): restringidos por pestañas y nada de la plataforma. Ofrecerle
+     otro al editarlo era un control que el servidor rechaza al guardar. */
+  const asignablesDelCliente = asignables.filter((r) => r.restringePorSeccion && !r.soloPrincipal);
   /**
    * El rol de plataforma, tal como lo trae el catálogo. Se guarda la fila entera y no solo su
    * clave porque **su nombre también sale de acá**: escribirlo a mano en la pantalla sería
@@ -802,7 +807,11 @@ export default function Usuarios({ sesion }) {
                     id="us-empresa"
                     value={orgNueva}
                     disabled={creandoPlataforma}
-                    onChange={(e) => setOrgNueva(e.target.value)}
+                    onChange={(e) => {
+                      setOrgNueva(e.target.value);
+                      // Los clientes elegidos eran de la empresa anterior: no tienen casilla en ésta.
+                      setCuentasNuevas(new Set());
+                    }}
                   >
                     {empresas.length === 0 ? (
                       <option value={orgId ?? ''}>{sesion?.organizacion?.nombre ?? '—'}</option>
@@ -860,6 +869,13 @@ export default function Usuarios({ sesion }) {
                     onChange={(e) => {
                       const elegido = e.target.value;
                       setRolNuevo(elegido);
+                      /* Un rol que no restringe por pestañas, o el de plataforma, no puede ser de un cliente final: la
+                         casilla y sus clientes se esconden, y no pueden seguir viajando escondidos en el alta. */
+                      const rolElegido = roles.find((r) => r.clave === elegido);
+                      if (!rolElegido?.restringePorSeccion || rolElegido.soloPrincipal) {
+                        setClienteFinal(false);
+                        setCuentasNuevas(new Set());
+                      }
                       /* UN SUPERADMINISTRADOR NACE EN LA EMPRESA PRINCIPAL, y no es una regla de
                          esta pantalla: la impone el disparador `rol_de_plataforma_acotado` de la
                          base. Sin esto, elegir el rol y dejar otra empresa daba un rechazo de la
@@ -1047,7 +1063,7 @@ export default function Usuarios({ sesion }) {
                   onChange={(e) => setEdRol(e.target.value)}
                 >
                   <option value="">Sin rol</option>
-                  {asignables.map((r) => (
+                  {(editando?.limitadoACuentas ? asignablesDelCliente : asignables).map((r) => (
                     <option key={r.clave} value={r.clave}>
                       {r.nombre}
                     </option>
@@ -1084,7 +1100,11 @@ export default function Usuarios({ sesion }) {
                   <label htmlFor="ed-secciones">Pestañas que va a ver</label>
                   <CasillasDeSecciones
                     id="ed-secciones"
-                    grupos={elRolEditado.alcance}
+                    grupos={
+                      editando?.limitadoACuentas
+                        ? soloDelCliente(elRolEditado.alcance, sesion?.pantallasDelCliente)
+                        : elRolEditado.alcance
+                    }
                     /* La empresa de QUIEN SE EDITA, que el listado ya trae. No la de la sesión:
                        coinciden hoy —`usuarioObjetivo(` filtra por la organización efectiva— y
                        usar la del que mira sería cierto por casualidad. */
@@ -1110,7 +1130,7 @@ export default function Usuarios({ sesion }) {
                     personaId={editando.id}
                     elegidos={edCuentas}
                     alCambiar={setEdCuentas}
-                    alGuardar={recargar}
+                    alGuardar={() => cargar({ enSilencio: true })}
                   />
                 </div>
               ) : null}

@@ -232,6 +232,14 @@ begin
   end loop;
 end $$;
 
+-- Los sellos del cron sin cuenta (los de la organización) son metadatos: cuándo pasó cada tarea, sin datos de nadie. El
+-- cliente final los LEE para saber si sus pantallas están al día (`frescuraDe` en Leads); sin esto, Leads le decía
+-- siempre que el barrido nunca corrió. Una política aparte, sólo de lectura, que se suma a la de arriba: escribirlos
+-- sigue siendo de quien ve la organización entera.
+drop policy if exists sellos_de_la_organizacion on negocio.tareas_programadas;
+create policy sellos_de_la_organizacion on negocio.tareas_programadas for select to app_inquilino
+  using (org_id = (select nullif(btrim(current_setting('app.org_id', true)), '')::uuid) and cuenta_id is null);
+
 -- ─── 2 · Identidad: las personas, su auditoría y la organización ────────────────
 
 -- El cliente final no ve a las personas de la empresa ni la auditoría, y no edita la organización. Sí ve la fila de su

@@ -10,7 +10,9 @@
 //   · abre Sales;
 //   · no entra a nada más: el control, el Inicio, el cerebro — mutación: sacar el paso 3b del portero;
 //   · el rechazo queda en la auditoría;
-//   · la empresa sin foco ve sus dos clientes; enfocada en B, sólo B — mutación: un `ambitoDe` que ignore el foco.
+//   · la empresa sin foco ve sus dos clientes; enfocada en B, sólo B — mutación: un `ambitoDe` que ignore el foco;
+//   · su Sales tiene los closers de su cuenta, con un rótulo en vez del nombre — mutación: el `innerJoin` a las personas;
+//   · su Leads sabe que el barrido corrió — mutación: sin la política de lectura de los sellos de la organización.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -39,6 +41,8 @@ async function limpiar(): Promise<void> {
   const o = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = $1`, [SLUG]);
   if (!o) return;
   await admin.query(`delete from negocio.contactos where org_id = $1`, [o.id]);
+  await admin.query(`delete from negocio.closer_asignado where org_id = $1`, [o.id]);
+  await admin.query(`delete from negocio.tareas_programadas where org_id = $1`, [o.id]);
   await admin.query(`delete from identidad.sesiones where usuario_id in (select id from identidad.usuarios where org_id = $1)`, [o.id]);
   await admin.query(`delete from identidad.usuarios where org_id = $1`, [o.id]);
   await admin.query(`delete from identidad.organizaciones where id = $1`, [o.id]);
@@ -155,4 +159,38 @@ test('la empresa sin foco ve sus dos clientes; enfocada en uno, sólo ése', asy
   } finally {
     await admin.query(`update identidad.sesiones set cuenta_activa = null where usuario_id = $1`, [empresa]);
   }
+});
+
+test('su Sales tiene los closers de su cuenta, con un rótulo en vez del nombre de la persona', async () => {
+  // El cliente final no ve a las personas de la empresa (`086`). Con un `innerJoin`, sus closers desaparecían y Sales
+  // salía en «—» con «no hay closers configurados».
+  const closer = await persona('Closer 266', 'usuario', [], ['closer']);
+  const a = await unaFila<{ id: string }>(admin, `select id from identidad.cuentas where org_id = $1 and es_por_omision`, [org]);
+  assert.ok(a);
+  await admin.query(
+    `insert into negocio.closer_asignado (org_id, cuenta_id, usuario_id, crm_usuario_id, actualizado_por) values ($1, $2, $3, 'crm-266', $4)`,
+    [org, a.id, closer, empresa],
+  );
+  const filas = async (token: string) => {
+    const r = await leerRespuesta<{ pantalla: { closers: { filas: { nombre: string }[] } } }>(
+      await sales(pedirComo('/api/sales?periodo=30d', token)),
+    );
+    assert.equal(r.estado, 200, JSON.stringify(r.cuerpo));
+    return r.cuerpo.pantalla.closers.filas.map((f) => f.nombre);
+  };
+  assert.deepEqual(await filas(tokenCliente), ['Closer 1'], 'el cliente final se quedó sin closers, o vio el nombre de la persona');
+  assert.deepEqual(await filas(tokenEmpresa), ['Closer 266']);
+});
+
+test('su Leads sabe que el barrido corrió: los sellos de la organización se leen', async () => {
+  await admin.query(
+    `insert into negocio.tareas_programadas (org_id, tarea, ultima_corrida_el, ultimo_estado) values ($1, 'contactos', now(), 'corrio')
+     on conflict (org_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = 'corrio'`,
+    [org],
+  );
+  const r = await leerRespuesta<{ frescura: { contactos: { estado: string } } }>(
+    await leads(pedirComo('/api/leads-portal?periodo=completo', tokenCliente)),
+  );
+  assert.equal(r.estado, 200, JSON.stringify(r.cuerpo));
+  assert.equal(r.cuerpo.frescura.contactos.estado, 'al_dia', 'el cliente final no ve el sello: Leads le dice que el barrido nunca corrió');
 });

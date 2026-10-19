@@ -123,7 +123,7 @@ pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pes
 **De quién son los leads** lo decide un solo módulo, y no es un permiso: `todo` para quien no es
 closer o es closer sin vincular a un usuario del CRM, `mio` para el closer vinculado
 (`lib/negocio/alcanceDelCloser.ts:25-38`). Quien administra puede mirar como uno de ellos, y el
-servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:138-147`).
+servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:140-149`).
 
 **Lo que cuesta mirarlas.** Leer las pantallas no llama al CRM
 (`app/api/closer/mi-dia/route.ts:5`); lo que sí corre, con la pestaña a la vista, es un reloj de 10 s

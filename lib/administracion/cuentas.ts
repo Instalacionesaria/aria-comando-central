@@ -101,15 +101,29 @@ export function slugDe(nombre: string): string {
   return base.length > 0 ? base : 'cliente';
 }
 
-/** Las columnas de la confirmación del nicho, para un alta o una edición. */
-function confirmacion(datosNuevos: DatosDeUnCliente, quien: QuienConfirma) {
-  if (datosNuevos.confirmarNicho === true) {
-    return { nicho_confirmado_el: sql<Date>`now()`, nicho_confirmado_desde: quien.desde, nicho_confirmado_por: quien.por };
-  }
-  // Cambiar el nicho sin confirmarlo deja de estar confirmado: la confirmación era del nicho anterior.
-  if (datosNuevos.nicho !== undefined) {
-    return { nicho_confirmado_el: null, nicho_confirmado_desde: null, nicho_confirmado_por: null };
-  }
+/** El sello de una confirmación del nicho: ahora, desde dónde y quién. */
+function sello(quien: QuienConfirma) {
+  return { nicho_confirmado_el: sql<Date>`now()`, nicho_confirmado_desde: quien.desde, nicho_confirmado_por: quien.por };
+}
+
+const SIN_CONFIRMAR = { nicho_confirmado_el: null, nicho_confirmado_desde: null, nicho_confirmado_por: null };
+
+/**
+ * La confirmación del nicho al editar, comparada con lo que había.
+ *
+ * Confirmar lo ya confirmado NO vuelve a sellar. El formulario manda la casilla en cada guardado, y sellar de nuevo
+ * cambiaba la fecha y quién confirmó por quien sólo renombró el cliente: justo el dato que la `086` guarda. Cambiar el
+ * nicho sin confirmarlo, o desmarcar la casilla, deja de estar confirmado: la confirmación era del nicho anterior.
+ */
+function confirmacionAlEditar(
+  cambios: DatosDeUnCliente,
+  actual: { nicho: string | null; nicho_confirmado_el: Date | null },
+  quien: QuienConfirma,
+) {
+  const cambiaElNicho = cambios.nicho !== undefined && cambios.nicho !== actual.nicho;
+  const confirmado = actual.nicho_confirmado_el !== null;
+  if (cambios.confirmarNicho === true) return confirmado && !cambiaElNicho ? {} : sello(quien);
+  if (cambios.confirmarNicho === false || cambiaElNicho) return confirmado ? SIN_CONFIRMAR : {};
   return {};
 }
 
@@ -139,7 +153,7 @@ export async function crearCuenta(nuevo: DatosDeUnCliente & { nombre: string }, 
       ...(nuevo.pais !== undefined ? { pais: nuevo.pais } : {}),
       ...(nuevo.moneda !== undefined ? { moneda: nuevo.moneda } : {}),
       ...(nuevo.zonaHoraria !== undefined ? { zona_horaria: nuevo.zonaHoraria } : {}),
-      ...confirmacion(nuevo, quien),
+      ...(nuevo.confirmarNicho === true ? sello(quien) : {}),
     })
     .returning('id')
     .executeTakeFirstOrThrow();
@@ -156,6 +170,18 @@ export async function editarCuenta(
   cambios: DatosDeUnCliente & { estado?: 'activa' | 'pausada' | 'baja' },
   quien: QuienConfirma,
 ): Promise<boolean> {
+  // Lo que había, bajo candado: la confirmación se decide contra eso (`confirmacionAlEditar`).
+  const actual = await datos()
+    .selectFrom('cuentas')
+    .select(['nicho', 'nicho_confirmado_el'])
+    .where('id', '=', id)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!actual) return false;
+  const confirmacion = confirmacionAlEditar(cambios, actual, quien);
+  // Nada que escribir (desmarcar lo que no estaba confirmado): no es un error, y un `update` sin columnas no es SQL.
+  const algo = Object.keys(confirmacion).length > 0 || Object.entries(cambios).some(([k, v]) => k !== 'confirmarNicho' && v !== undefined);
+  if (!algo) return true;
   const r = await datos()
     .updateTable('cuentas')
     .set({
@@ -168,7 +194,7 @@ export async function editarCuenta(
       ...(cambios.estado !== undefined
         ? { estado: cambios.estado, baja_el: cambios.estado === 'baja' ? sql<Date>`now()` : null }
         : {}),
-      ...confirmacion(cambios, quien),
+      ...confirmacion,
     })
     .where('id', '=', id)
     .executeTakeFirst();

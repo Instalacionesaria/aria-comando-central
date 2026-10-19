@@ -8,7 +8,8 @@
 // las dos leen esta regla, para no decidir cada una por su lado:
 //
 //   · el selector es un MENÚ con dos clientes o más; con uno solo, un cliente final ve su nombre como texto (es lo
-//     que mira), y una empresa no ve nada (no hay entre qué elegir: es lo de siempre);
+//     que mira), y una empresa no ve nada (no hay entre qué elegir: es lo de siempre), salvo que lo tenga enfocado
+//     —los demás se dieron de baja—: entonces el menú, que es la única forma de volver a todos;
 //   · el rótulo dice el cliente enfocado en las pantallas del cliente (Leads y Sales, las que el foco filtra), y
 //     «Toda la empresa» en las demás: con un cliente enfocado, una pantalla que no lo filtra tiene que decirlo, o el
 //     número parece del cliente y es de la empresa.
@@ -28,6 +29,7 @@ export type FormaDelSelector = 'oculto' | 'texto' | 'menu';
 export function formaDelSelector(cuentas: CuentasEnLaSesion): FormaDelSelector {
   if (cuentas.visibles.length >= 2) return 'menu';
   if (cuentas.visibles.length === 1 && cuentas.limitado) return 'texto';
+  if (cuentas.activa !== null && cuentas.visibles.some((c) => c.id === cuentas.activa)) return 'menu';
   return 'oculto';
 }
 

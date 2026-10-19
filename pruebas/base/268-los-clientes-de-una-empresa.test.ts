@@ -13,6 +13,8 @@
 //   · vincular la subcuenta del CRM es sólo de ARIA; una location que ya es de otro cliente da 409 sin decir de quién
 //     — mutación: darle `cuentas.vincular` al administrador, o no traducir el `23505`;
 //   · un nicho que no está en el catálogo es 400, no 500;
+//   · renombrar un cliente con el nicho confirmado no vuelve a sellar la confirmación (fecha, desde dónde, quién), y
+//     desmarcar lo que no estaba confirmado no es un 500 — mutación: sellar siempre, o un `update` sin columnas;
 //   · cada alta queda en la auditoría.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -198,4 +200,29 @@ test('vincular la subcuenta del CRM es sólo de ARIA, y una location tomada da 4
 test('un nicho que no está en el catálogo es 400, no 500', async () => {
   const r = await crear(pedirComo('/api/admin/cuentas', tokenAdmin, { metodo: 'POST', cuerpo: { nombre: 'Sin nicho real', nicho: 'no_existe_268' } }));
   assert.equal(r.status, 400, await r.clone().text());
+});
+
+test('renombrar no vuelve a sellar la confirmación del nicho, y desmarcar lo ya desmarcado no es un 500', async () => {
+  const desdeAria = await unaFila<{ id: string }>(admin, `select id from identidad.cuentas where org_id = $1 and nombre = 'Desde ARIA'`, [org]);
+  assert.ok(desdeAria);
+  const sello = () =>
+    unaFila<{ desde: string | null; por: string | null; el: Date | null }>(
+      admin,
+      `select nicho_confirmado_desde as desde, nicho_confirmado_por as por, nicho_confirmado_el as el from identidad.cuentas where id = $1`,
+      [desdeAria.id],
+    );
+  const patch = (cuerpo: Record<string, unknown>) =>
+    editar(pedirComo(`/api/admin/cuentas/${desdeAria.id}`, tokenAdmin, { metodo: 'PATCH', cuerpo }), ctx(desdeAria.id));
+  const antes = await sello();
+  assert.equal(antes?.desde, 'plataforma');
+  // Lo que manda el formulario al renombrar: el mismo nicho y la casilla marcada.
+  const renombre = await patch({ nombre: 'Desde ARIA, renombrado', nicho, confirmarNicho: true });
+  assert.equal(renombre.status, 200, await renombre.clone().text());
+  assert.deepEqual(await sello(), antes, 'renombrar volvió a sellar la confirmación y cambió quién la hizo');
+  // Desmarcarla la quita; desmarcar lo ya desmarcado no tiene nada que escribir.
+  for (const vez of ['primera', 'segunda']) {
+    const r = await patch({ confirmarNicho: false });
+    assert.equal(r.status, 200, `${vez}: ${await r.clone().text()}`);
+  }
+  assert.deepEqual(await sello(), { desde: null, por: null, el: null });
 });

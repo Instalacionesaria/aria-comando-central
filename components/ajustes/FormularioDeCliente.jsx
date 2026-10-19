@@ -25,7 +25,9 @@ function nichosPorSector(nichos) {
 export default function FormularioDeCliente({ valores, alCambiar, catalogo, prefijo }) {
   const cambiar = (campo) => (e) => {
     const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    alCambiar({ ...valores, [campo]: v });
+    // Otro nicho no está confirmado: la confirmación era del que se miró. Se vuelve a marcar mirando el nuevo.
+    const otroNicho = campo === 'nicho' && v !== valores.nicho;
+    alCambiar({ ...valores, [campo]: v, ...(otroNicho ? { confirmarNicho: false } : {}) });
   };
   const grupos = nichosPorSector(catalogo?.nichos ?? []);
 

@@ -75,20 +75,22 @@ export interface CloserConfigurado {
  * haría que las opciones del desplegable se movieran solas entre dos cargas.
  */
 export async function closersDeLaEmpresa(): Promise<CloserConfigurado[]> {
-  /* `innerJoin` y no `leftJoin`, igual que antes: sin fila en `usuarios` la designación no existe,
-     porque la clave foránea con `on delete cascade` se la lleva. Un `leftJoin` dejaría entrar una
-     fila con el nombre nulo, o sea un estado que la base ya hace imposible. */
+  /* `leftJoin`, por el cliente final (el nivel 3). La designación no existe sin su persona —la clave foránea con
+     `on delete cascade` se la lleva—, así que con la organización entera la persona siempre está. Pero el cliente final
+     (`app.toda_la_organizacion = 'no'`) no ve a las personas de la empresa (`086`): con un `innerJoin` sus closers
+     desaparecían, y su Sales salía en «—» con «no hay closers configurados». Para él, cada closer es un rótulo, en su
+     orden. */
   const filas = await datos()
     .selectFrom('closer_asignado as ca')
-    .innerJoin('usuarios as u', 'u.id', 'ca.usuario_id')
+    .leftJoin('usuarios as u', 'u.id', 'ca.usuario_id')
     .select(['ca.usuario_id', 'u.nombre', 'ca.crm_usuario_id', 'ca.actualizado_el'])
     .orderBy('ca.actualizado_el', 'asc')
     .orderBy('ca.usuario_id', 'asc')
     .execute();
 
-  return filas.map((f) => ({
+  return filas.map((f, i) => ({
     usuarioId: f.usuario_id,
-    nombre: f.nombre,
+    nombre: f.nombre ?? `Closer ${i + 1}`,
     crmUsuarioId: f.crm_usuario_id,
     actualizadoEl: f.actualizado_el,
   }));

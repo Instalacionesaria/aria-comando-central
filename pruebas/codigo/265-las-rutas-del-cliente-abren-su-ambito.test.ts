@@ -46,3 +46,13 @@ test('el cerebro abre cada transacción de la pregunta con su ámbito, y la caja
   assert.match(caja, /ambito: ambitoDe\(contexto, pantalla\)/);
   assert.match(caja, /const zona = zonaDe\(contexto, pantalla\)/);
 });
+
+test('el tope del cerebro se cuenta con la zona de la empresa, no con la del cliente enfocado', () => {
+  // El tope es de la empresa entera: con la zona del cliente enfocado, uno de otra zona movía la medianoche y el día
+  // volvía a cero.
+  const caja = sinComentarios(readFileSync(join(RAIZ, 'lib/agentes/executive/caja.ts'), 'utf8'));
+  assert.match(caja, /zonaDelTope: contexto\.organizacion\.zonaHoraria/);
+  const preguntar = sinComentarios(readFileSync(join(RAIZ, 'lib/agentes/executive/preguntar.ts'), 'utf8'));
+  const reserva = /reservarPregunta\(\{([\s\S]*?)\}\)/.exec(preguntar)?.[1] ?? '';
+  assert.match(reserva, /zona: p\.zonaDelTope,/, 'la reserva cuenta el tope con la zona del cliente enfocado');
+});

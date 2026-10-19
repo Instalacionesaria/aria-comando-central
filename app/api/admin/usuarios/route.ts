@@ -56,7 +56,8 @@ import { hashear } from '../../../../lib/datos/hash.ts';
 import { contrasenaTemporal } from '../../../../lib/autenticacion/temporal.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
-import { SECCIONES_DEL_CLIENTE } from '../../../../lib/autorizacion/cliente.ts';
+import { MOTIVOS_DEL_CLIENTE, SECCIONES_DEL_CLIENTE } from '../../../../lib/autorizacion/cliente.ts';
+import { MAXIMO_DE_CUENTAS } from '../../../../lib/datos/contexto.ts';
 
 /** No valida direcciones de correo del mundo real: valida que tenga forma de correo (05 § 3). */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -79,8 +80,8 @@ const MOTIVOS = {
     'Ninguna de las pestañas elegidas la habilita el rol de esta persona, así que no vería ' +
     'ninguna. Hay que elegir entre las que ese rol alcanza.',
   cuentas_invalidas: 'Los clientes de un cliente final van como una lista no vacía de identificadores.',
-  secciones_del_cliente: 'Un cliente final sólo ve Leads y Sales.',
-  rol_del_cliente: 'Un cliente final tiene un rol restringido por pestañas y nada de la plataforma: el rol usuario.',
+  secciones_del_cliente: MOTIVOS_DEL_CLIENTE.secciones,
+  rol_del_cliente: MOTIVOS_DEL_CLIENTE.rol,
 } as const;
 
 /** La forma de un uuid. Se comprueba antes de que el motor la rechace con un 500. */
@@ -160,6 +161,11 @@ export async function POST(peticion: Request): Promise<Response> {
     }
   }
   const cuentasPedidas = esClienteFinal ? [...new Set(cuentas as string[])] : [];
+  // El mismo tope que el cambio de sus clientes: con más, el ámbito de su sesión no se abre (`lib/datos/contexto.ts`) y
+  // la persona recibiría un 500 en cada pantalla.
+  if (cuentasPedidas.length > MAXIMO_DE_CUENTAS) {
+    return rechazo('peticion_invalida', `Como mucho ${MAXIMO_DE_CUENTAS} clientes.`);
+  }
 
   // EL 404 DEL ALTA, y la elección de empresa. Ver el encabezado.
   //

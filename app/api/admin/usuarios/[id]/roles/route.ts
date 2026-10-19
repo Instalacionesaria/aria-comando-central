@@ -37,6 +37,7 @@ import {
   seccionesConAlcance,
   SIN_SECCION,
 } from '../../../../../../lib/autorizacion/secciones.ts';
+import { MOTIVOS_DEL_CLIENTE, SECCIONES_DEL_CLIENTE } from '../../../../../../lib/autorizacion/cliente.ts';
 import { mensajeDeDisparador, ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
 import { usuarioObjetivo } from '../../../../../../lib/administracion/objetivo.ts';
@@ -107,6 +108,20 @@ export async function POST(
 
     if (roles.length !== new Set(claves as string[]).size) {
       return ok({ asignados: false, motivo: 'rol_inexistente' }, 400);
+    }
+
+    /* ── EL CLIENTE FINAL (el nivel 3), CON LAS REGLAS DEL ALTA ───────────────
+     *
+     * Sólo un rol restringido por pestañas y nada de la plataforma, y sólo las pestañas del cliente. La base exige lo
+     * primero (`087`), pero su rechazo es un texto para un técnico; y lo segundo se guardaba y nunca se veía: la sesión
+     * cruza sus pestañas con las del cliente. Se dice acá, con el mismo motivo que el alta. */
+    if (objetivo.limitado_a_cuentas) {
+      if (roles.some((r) => r.solo_principal || !r.secciones_restringidas)) {
+        return rechazo('peticion_invalida', MOTIVOS_DEL_CLIENTE.rol);
+      }
+      if (((secciones as string[] | undefined) ?? []).some((s) => !SECCIONES_DEL_CLIENTE.has(s))) {
+        return rechazo('peticion_invalida', MOTIVOS_DEL_CLIENTE.secciones);
+      }
     }
 
     // ADR-0504 · El rechazo del endpoint. Ver el encabezado: la base ya impide asignarlo fuera de

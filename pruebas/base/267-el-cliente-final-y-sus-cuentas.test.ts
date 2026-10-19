@@ -10,7 +10,10 @@
 //     la lista vacía;
 //   · el foco: la empresa enfoca uno de sus clientes y vuelve a todos; uno de otra empresa es 404; el cliente final
 //     elige entre los suyos y no entre los ajenos — mutación: no comprobar que el cliente esté a la vista;
-//   · cambiar de empresa vacía el foco: el cliente enfocado era de la anterior — mutación: no vaciarlo.
+//   · cambiar de empresa vacía el foco: el cliente enfocado era de la anterior — mutación: no vaciarlo;
+//   · el alta con más clientes que el tope del ámbito se rechaza con su motivo — mutación: sin el tope;
+//   · cambiarle el rol: sólo uno restringido y sólo las pestañas del cliente — mutación: sin la regla en la ruta;
+//   · un cliente de baja no traba a los demás: la lista no lo trae — mutación: la lista con los de baja.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -22,6 +25,11 @@ import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { resolverSesion } from '../../lib/autorizacion/sesion.ts';
 import { POST as altaDePersona } from '../../app/api/admin/usuarios/route.ts';
 import { PUT as cuentasDeLaPersona } from '../../app/api/admin/usuarios/[id]/cuentas/route.ts';
+import { POST as rolesDeLaPersona } from '../../app/api/admin/usuarios/[id]/roles/route.ts';
+import { GET as personas } from '../../app/api/usuarios/route.ts';
+import { randomUUID } from 'node:crypto';
+import { MOTIVOS_DEL_CLIENTE } from '../../lib/autorizacion/cliente.ts';
+import { MAXIMO_DE_CUENTAS } from '../../lib/datos/contexto.ts';
 import { PATCH as cambiarDeCliente } from '../../app/api/auth/cliente/route.ts';
 import { PATCH as cambiarDeEmpresa } from '../../app/api/auth/sesion/route.ts';
 
@@ -163,5 +171,51 @@ test('cambiar de empresa vacía el foco en un cliente', async () => {
     assert.equal(f?.cuenta_activa, null, 'el foco de la empresa anterior siguió puesto');
   } finally {
     await admin.query(`delete from identidad.sesiones where usuario_id = $1 and (org_activa = $2 or cuenta_activa = $3)`, [aria.id, org, suya.id]);
+  }
+});
+
+test('el alta con más clientes que el tope del ámbito se rechaza con su motivo, no con un 404', async () => {
+  const muchas = Array.from({ length: MAXIMO_DE_CUENTAS + 1 }, () => randomUUID());
+  const r = await leerRespuesta<{ detalle: string }>(
+    await alta({ email: 'tope-267@ejemplo.test', rol: 'usuario', secciones: ['contacts'], cuentas: muchas }),
+  );
+  assert.equal(r.estado, 400, JSON.stringify(r.cuerpo));
+  assert.match(String(r.cuerpo.detalle), new RegExp(`${MAXIMO_DE_CUENTAS}`));
+});
+
+test('cambiarle el rol a un cliente final: sólo uno restringido, y sólo las pestañas del cliente', async () => {
+  const cliente = await unaFila<{ id: string }>(admin, `select id from identidad.usuarios where email = $1`, [CORREO]);
+  assert.ok(cliente);
+  const pedir = (cuerpo: Record<string, unknown>) =>
+    rolesDeLaPersona(pedirComo(`/api/admin/usuarios/${cliente.id}/roles`, tokenAdmin, { metodo: 'POST', cuerpo }), ctx(cliente.id));
+  const administrador = await leerRespuesta<{ detalle: string }>(await pedir({ roles: ['administrador'] }));
+  assert.deepEqual({ estado: administrador.estado, detalle: administrador.cuerpo.detalle }, { estado: 400, detalle: MOTIVOS_DEL_CLIENTE.rol });
+  const ajenas = await leerRespuesta<{ detalle: string }>(await pedir({ roles: ['usuario'], secciones: ['contacts', 'tools'] }));
+  assert.deepEqual({ estado: ajenas.estado, detalle: ajenas.cuerpo.detalle }, { estado: 400, detalle: MOTIVOS_DEL_CLIENTE.secciones });
+  const bien = await pedir({ roles: ['usuario'], secciones: ['contacts'] });
+  assert.equal(bien.status, 200, await bien.clone().text());
+});
+
+test('un cliente de baja no traba a los demás: la lista no lo trae, y el reemplazo funciona', async () => {
+  const cliente = await unaFila<{ id: string }>(admin, `select id from identidad.usuarios where email = $1`, [CORREO]);
+  assert.ok(cliente);
+  await admin.query(`delete from identidad.usuarios_cuentas where usuario_id = $1`, [cliente.id]);
+  await admin.query(
+    `insert into identidad.usuarios_cuentas (org_id, usuario_id, cuenta_id) values ($1, $2, $3), ($1, $2, $4)`,
+    [org, cliente.id, cuentaA, cuentaB],
+  );
+  await admin.query(`update identidad.cuentas set estado = 'baja', baja_el = now() where id = $1`, [cuentaB]);
+  try {
+    const r = await leerRespuesta<{ usuarios: { id: string; cuentas: string[] }[] }>(await personas(pedirComo('/api/usuarios', tokenAdmin)));
+    assert.equal(r.estado, 200, JSON.stringify(r.cuerpo));
+    const suyo = r.cuerpo.usuarios.find((u) => u.id === cliente.id);
+    assert.deepEqual(suyo?.cuentas, [cuentaA], 'la lista trae el cliente de baja: la pantalla lo manda de vuelta y el PUT lo rechaza');
+    const reemplazo = await cuentasDeLaPersona(
+      pedirComo(`/api/admin/usuarios/${cliente.id}/cuentas`, tokenAdmin, { metodo: 'PUT', cuerpo: { cuentas: suyo?.cuentas } }),
+      ctx(cliente.id),
+    );
+    assert.equal(reemplazo.status, 200, await reemplazo.clone().text());
+  } finally {
+    await admin.query(`update identidad.cuentas set estado = 'activa', baja_el = null where id = $1`, [cuentaB]);
   }
 });
