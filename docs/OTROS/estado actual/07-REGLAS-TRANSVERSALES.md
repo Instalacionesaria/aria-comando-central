@@ -26,6 +26,8 @@
 >   sin subir, pendiente de la aprobación de un ingeniero. Cambia la regla 23 y la 7 (sección «Construido en local»).
 > - **2026-10-18 · `21556cd`..`18f61d6`** — el nivel 3, los clientes de nuestros clientes (`085` a `089`), y la pestaña
 >   Negocios: construido en local encima de la Fase 0, sin subir. La regla 23 gana otra mitad (sección «el nivel 3»).
+> - **2026-10-18 · `00ccfee`..`ca5fcdc`** — el Bloque C del nivel 3: la ingesta, las credenciales y el cron por cliente
+>   (`090` a `093`), en local y sin subir (sección «el nivel 3»).
 > - Las cifras: la cancelación del negocio a treinta días pasa de 32,0 % a **35,0 %** (14 de 40, § 9); las congeladas
 >   salieron de la ventana de treinta días (**0**, § 4); entraron **25 contactos** en treinta días (§ 5).
 > - **Lo que la foto anterior dejó abierto, re-verificado el 2026-10-18:** el `aviso` de Lead Flow ya tiene lector —el
@@ -1274,8 +1276,8 @@ para la base de producción; sí para el código del árbol y para la suite loca
 
 ## Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
 
-**Estado.** Los commits del 2026-10-18, `21556cd..18f61d6`, con las migraciones `085` a `089`, están encima de la Fase 0
-y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
+**Estado.** Los commits del 2026-10-18, `21556cd..18f61d6` y el Bloque C `00ccfee..ca5fcdc`, con las migraciones
+`085` a `093`, están encima de la Fase 0 y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
 son tres: ARIA (la organización principal), las empresas (`identidad.organizaciones`) y los clientes de cada empresa
 (`identidad.cuentas`). En pantalla se dice «Empresa» y «Cliente»; la palabra «cuenta» no aparece.
 
@@ -1305,6 +1307,31 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`app/api/negocios/route.ts:33`): la configuración en vivo, leída de identidad como presencias
   (`lib/cartera/configuracion.ts:70`), y las cifras de la foto (`lib/cartera/tablero.ts:296`). Las cifras de arriba no
   cuentan a ARIA ni a los clientes de prueba, y nunca suman monedas distintas.
+- **La ingesta es de UN cliente (Bloque C).** Todo lo que entra del CRM o de Meta se escribe en el ámbito de su
+  cliente, con un tipo que lo exige (`AmbitoDeUnCliente`, `lib/negocio/ambitoDelCliente.ts:26`): con la empresa entera
+  y dos clientes, el puente lo dejaba en el principal. Las rutas manuales abren el principal
+  (`lib/negocio/ambitoDelCliente.ts:48`). Las claves de `ingesta_pulso`, `gasto_de_la_cuenta`, `avisos_del_crm` y
+  `tareas_programadas` llevan el cliente (`db/migraciones/090_las_claves_con_cuenta.sql`, cerradas en la `092`).
+- **Cada credencial dice de qué cliente es.** Los resolvedores del CRM y de Meta piden el cliente, sin opcional
+  (`lib/credenciales/resolver.ts:58`): el principal lee las de la empresa; los demás, las suyas, siempre por
+  (organización, cliente) (`lib/credenciales/resolver.ts:66`), y sin las suyas FALTAN, nunca caen a las de la empresa.
+  Quien quiere la de la empresa lo escribe (`'la_de_la_empresa'`). El aviso del CRM entra al cliente de su secreto
+  (`app/api/avisos/crm/route.ts:150`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:72`.
+- **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:131`) corren una vez por cliente
+  activo, con sus credenciales, que la ruta resuelve por cliente (`app/api/cron/route.ts:230`); las de la empresa, una
+  vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:656`), con el presupuesto mirado antes de
+  cada una (`lib/negocio/barrido.ts:695`), y cada sello con su cliente. La frescura de una pantalla es la de su
+  cliente, o la del peor activo a la vista (`lib/negocio/frescura.ts:200`).
+- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): el vínculo de un
+  closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; Creative junta en una
+  pieza los anuncios de dos clientes que se llaman igual (la pieza, su fatiga, su enlace manual y el puente
+  nombre ↔ anuncio van sin cliente); la atribución por campaña de Conversation agrupa por el nombre de la campaña; las
+  reglas de los detectores que miran el gasto (sin entrega, concentración) suman las cuentas de Meta de todos los
+  clientes; la cobertura de la ventana de Acquisition se decide por empresa; asignar el funnel de una campaña de otro
+  cliente la guarda en el principal; «Traer del calendario» relee sólo al principal; las etiquetas cortas de los campos
+  y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
+  subcuenta con otros nombres no se reconoce). Hasta el primer cliente con subcuenta propia, ninguna de estas tiene
+  efecto; con él, se mira su pantalla antes de activarlo.
 
 ---
 

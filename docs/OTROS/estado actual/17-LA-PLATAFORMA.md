@@ -612,6 +612,10 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | `0fe13c5` | P8 | `089`: la foto diaria de los negocios y su tarea `foto`, en el horario `29 11 * * *` |
 | `8aa321c` | — | los arreglos de una revisión de P0 a P7 (17 hallazgos, ninguno una fuga) |
 | `18f61d6` | P9 | la pestaña Negocios, primera de Client Success, sólo del superadministrador |
+| `00ccfee` | C1 | `090`: la ingesta en el ámbito de UN cliente, y las claves con el cliente junto a las viejas |
+| `69a40fb` | C3 | `091`: cada credencial dice de qué cliente es; el aviso por cliente; Ajustes › Clientes › «Conexión» |
+| `742ffee` | C4 | `092`: el cron por cliente (una unidad por cliente activo) y las claves viejas cerradas |
+| `ca5fcdc` | — | `093` y los arreglos de dos revisiones del Bloque C: 19 hallazgos de la propia y 34 de los lectores que con dos clientes daban una cifra equivocada |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
@@ -621,7 +625,16 @@ credencial (`app/api/cron/route.ts:178`), y su umbral de atraso es el de las tar
 `cuenta-por-omision`; desplegar P0 a P2; la `086` con el humo de las pantallas y del cron; la `087` y desplegar P4 y P5;
 el catálogo (`cuentas.%` y `negocios.ver`) y desplegar P6 y P7; la `088` y la `089`, y desplegar P8 con el cron nuevo;
 desplegar P9. Antes de la `086` hay que comprobar en producción que ningún escritor externo escriba en `negocio` con el
-rol del inquilino, y antes de la `087`, hacer un alta externa de humo.
+rol del inquilino, y antes de la `087`, hacer un alta externa de humo. Después, el Bloque C: la `090` y C1; la `091`, la
+`093` y C3; la `092` **con C3 ya desplegado** (el aviso de C1 escribe con la clave vieja, y desde ahí no se vuelve a un
+despliegue anterior a C3); y C4.
+
+**El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
+(`app/api/cron/route.ts:230`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los
+detectores— corren una vez, con el sello sin cliente. Un orden global por el sello de cada unidad
+(`lib/negocio/barrido.ts:656`) y el presupuesto mirado antes de cada una hacen que ningún cliente ni ninguna empresa se
+queden sin correr para siempre. Lo que todavía supone una subcuenta está listado en
+[07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md), sección «el nivel 3».
 
 ---
 

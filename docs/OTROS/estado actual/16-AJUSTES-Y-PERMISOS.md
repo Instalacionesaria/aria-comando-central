@@ -560,3 +560,11 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   pestañas: el alta y el cambio de rol lo rechazan con el mismo motivo, y la base lo exige en cada fila.
 - **El foco**: la empresa elige un cliente con el selector junto al de la empresa (`PATCH /api/auth/cliente`), y Leads
   y Sales se filtran a ese cliente; las demás pantallas dicen «Toda la empresa». Cambiar de empresa vacía el foco.
+- **La conexión de un cliente** (Bloque C): Ajustes › Clientes › Editar › «Conexión» carga el token y el calendario
+  del CRM, el dominio de reservas, el usuario del agente, Meta y el secreto del aviso de un cliente que no es el
+  principal (`app/api/admin/cuentas/[id]/conexion/route.ts:28`), con las mismas capacidades que las credenciales de la
+  empresa. La del principal es la de la empresa: ahí es 409 (`app/api/admin/cuentas/[id]/conexion/route.ts:69`). La
+  subcuenta la vincula ARIA, nunca la del principal ni una que ya sea de una empresa
+  (`lib/administracion/cuentas.ts:212`); y Ajustes › Credenciales copia la de la empresa a su principal
+  (`app/api/admin/credenciales/route.ts:277`), así que dos empresas no pueden tener la misma y cambiarla libera la
+  vieja. Los closers son de la empresa: cualquier ámbito los lee (`db/migraciones/093_los_closers_de_la_empresa.sql`).
