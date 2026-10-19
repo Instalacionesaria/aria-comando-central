@@ -1333,8 +1333,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   sin prioridad al atrasado, para que uno lento no deje sin traer a los demás (`lib/negocio/traerDeLosClientes.ts:145`).
   Con un cliente, la respuesta de siempre; con varios, las cifras sumadas y `clientes`, con el nombre delante
   (`lib/negocio/traerDeLosClientes.ts:168`). Al cliente sin credenciales se le dice dónde se cargan las suyas
-  (`lib/credenciales/resolver.ts:919`). Lo exigen `pruebas/base/282-las-rutas-manuales-traen-a-cada-cliente.test.ts:327`
-  y `pruebas/codigo/283-las-rutas-manuales-son-por-cliente.test.ts:65`.
+  (`lib/credenciales/resolver.ts:919`). Lo exigen `pruebas/base/282-las-rutas-manuales-traen-a-cada-cliente.test.ts:331`
+  y `pruebas/codigo/283-las-rutas-manuales-son-por-cliente.test.ts:68`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): el vínculo de un
   closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; Creative junta en una
   pieza los anuncios de dos clientes que se llaman igual (la pieza, su fatiga, su enlace manual y el puente

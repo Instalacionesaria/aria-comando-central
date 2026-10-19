@@ -14,6 +14,8 @@
 //     `ambitoDe`;
 //   · la ingesta trae los mensajes de cada cliente en SU cliente, y un pedido enseguida frena sin ser un error, con el
 //     nombre del cliente — mutaciones: abrir a todos con el ámbito del principal; 503 cuando ninguno corrió;
+//   · en la ingesta y el calendario, el turno sale del pulso: el que lleva más sin traerse va primero — mutación: la
+//     ruta sin su `pulso` (el principal primero siempre, y un P lento deja a Y sin traer hasta el cron);
 //   · la sincronización trae a los dos y la resta de uno no congela al otro — mutaciones: la empresa entera
 //     (`exigirUnSoloCliente` lanza); `congelados` del primero;
 //   · un cliente sin credenciales no tapa a los demás, y dice dónde se cargan las suyas; sin ninguna, de quién falta —
@@ -24,6 +26,8 @@
 //   · con UN cliente, la respuesta de siempre — mutaciones: `clientes` o el nombre siempre;
 //   · el presupuesto se mira antes de cada cliente, y el turno ROTA por el sello sin darle prioridad al atrasado —
 //     mutaciones: sacar el turno; mirar el reloj una vez; mirarlo también antes del primero; priorizar `atrasado`;
+//   · un cliente que LANZA no se lleva a los demás, y con uno solo sólo la sincronización relanza (su 500 de siempre)
+//     — mutaciones: relanzar siempre; relanzar con varios; no relanzar nunca;
 //   · cada cliente tiene su agente del CRM — mutación: leer siempre el de la empresa.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -392,6 +396,25 @@ test('la ingesta trae los mensajes de cada cliente en SU cliente, y un pedido en
   assert.deepEqual(estados(otra.cuerpo.clientes), ['P:frenada', 'Y:frenada']);
 });
 
+test('en la ingesta y el calendario, el turno sale del pulso: el que lleva más sin traerse va primero', async () => {
+  // Y lleva cinco minutos sin traerse y P dos, los dos fuera del antirrebote. Si la ruta no le pasara su pulso al
+  // bucle, el principal iría primero en cada tic, y un P lento dejaría a Y sin traer hasta el cron.
+  for (const [clave, ruta, manejador] of [
+    ['mensajes', '/api/mensajes/ingesta', ingesta],
+    ['citas', '/api/closer/agenda/refrescar', refrescar],
+  ] as const) {
+    await admin.query(`delete from negocio.ingesta_pulso where org_id = $1 and clave = $2`, [org, clave]);
+    await admin.query(
+      `insert into negocio.ingesta_pulso (org_id, cuenta_id, clave, ultima_corrida_el, atrasado)
+       values ($1, $2, $4, now() - interval '2 minutes', false), ($1, $3, $4, now() - interval '5 minutes', false)`,
+      [org, p, y, clave],
+    );
+    const r = await leerRespuesta<{ clientes: Informe[] }>(await manejador(pedirComo(ruta, tokenEmpresa, POST)));
+    assert.equal(r.estado, 200, JSON.stringify(r.cuerpo));
+    assert.deepEqual(estados(r.cuerpo.clientes), ['Y:corrio', 'P:corrio'], `${ruta}: el turno no salió del pulso '${clave}'`);
+  }
+});
+
 test('la sincronización trae a los dos clientes, y la resta de uno no congela al otro', async () => {
   // Desde la última vez, la subcuenta de P ya no tiene a c282p1 y tiene a c282p2; la de Y ya no tiene a c282y2.
   contactosDe = { p: ['c282p2'], y: ['c282y1'], z: [], u: [] };
@@ -568,6 +591,41 @@ test('el turno ROTA por el sello: un cliente atrasado y lento no deja sin traer 
   // …pero en el siguiente le toca: el sello de Y quedó nuevo. Con «atrasado primero», P no se traería nunca.
   assert.deepEqual((await tic()).map(renglon), ['P:corrio', 'Y:corrio'], 'un cliente atrasado y lento dejó a los demás sin traer');
   assert.deepEqual(llamados, ['Y', 'P', 'Y']);
+});
+
+test('un cliente que LANZA no se lleva a los demás, y con uno solo sólo la sincronización relanza', async () => {
+  // Una excepción (la base, o algo que GoHighLevel no traduce a un fallo) en el principal.
+  const lanzaP = async (ambito: AmbitoDeUnCliente): Promise<DesenlaceDeUnCliente<number>> => {
+    if (cuentaDe(ambito) === p) throw new Error('se cayó la base 282');
+    return { estado: 'corrio', resultado: 0, llamadas: 0 };
+  };
+  const relanzando = { ...SI_LANZA, relanzarSiEsElUnico: true as const };
+  const registro: unknown[][] = [];
+  const consola = console.error;
+  console.error = (...partes: unknown[]) => void registro.push(partes);
+  try {
+    // Con dos, P sale `fallo` con el código y el texto de `siLanza` e Y se trae igual, relance o no la ruta: el 500 de
+    // siempre es sólo de UN cliente.
+    for (const siLanza of [SI_LANZA, relanzando]) {
+      const r = await traerDeCadaCliente(org, listos(), lanzaP, { presupuestoMs: PRESUPUESTO_DE_LA_TRAIDA_MS, siLanza });
+      assert.deepEqual(r.map(renglon), ['P:fallo', 'Y:corrio'], 'la excepción de un cliente se llevó a los demás');
+      assert.deepEqual({ codigo: r[0]!.codigo, porque: r[0]!.porque }, { codigo: SI_LANZA.codigo, porque: SI_LANZA.porque });
+    }
+    // `ADR-0704`: el mensaje va al registro, no al cuerpo.
+    assert.ok(registro.some((partes) => partes.some((x) => x instanceof Error && x.message === 'se cayó la base 282')), 'la excepción no quedó en el registro');
+
+    // Con UNO: refrescar e ingesta contestan su 503 de siempre (un renglón `fallo`); sincronizar relanza, su 500.
+    const soloP = listos().slice(0, 1);
+    const uno = await traerDeCadaCliente(org, soloP, lanzaP, { presupuestoMs: PRESUPUESTO_DE_LA_TRAIDA_MS, siLanza: SI_LANZA });
+    assert.deepEqual(uno.map(renglon), ['P:fallo'], 'con un cliente, una excepción dejó de ser el rechazo de siempre');
+    await assert.rejects(
+      traerDeCadaCliente(org, soloP, lanzaP, { presupuestoMs: PRESUPUESTO_DE_LA_TRAIDA_MS, siLanza: relanzando }),
+      /se cayó la base 282/,
+      'con un cliente, la sincronización dejó de dar el 500 de siempre',
+    );
+  } finally {
+    console.error = consola;
+  }
 });
 
 test('cada cliente tiene su agente del CRM', async () => {

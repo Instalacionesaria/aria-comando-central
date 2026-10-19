@@ -12,8 +12,11 @@
 //     campo por campo y el informe por cliente — mutaciones: el nombre o `clientes` con uno; el fallo antes que lo que
 //     corrió; `congelados` del primero;
 //   · el bucle abre cada cliente con su ámbito y nunca la empresa — mutación: leer el pulso con `conOrganizacion(orgId`;
-//   · los presupuestos caben en la ruta — mutación: subir el de la traída a 300 s;
-//   · el front nombra a los clientes que quedaron sin traer — mutación: borrar cualquiera de las dos lecturas;
+//   · los presupuestos caben en la ruta, con los 120 s del último — mutación: subir el de la traída a 240 s;
+//   · el calendario y la ingesta pasan su pulso, y sólo la sincronización relanza con uno — mutaciones: una ruta sin su
+//     `pulso`; la sincronización sin `relanzarSiEsElUnico`, u otra con él;
+//   · el front nombra a los clientes que quedaron sin traer, y al que no tiene credenciales aparte, sin pintarlo como
+//     fallo — mutaciones: borrar cualquiera de las lecturas; el filtro de antes en la Agenda; no nombrar al saltado;
 //   · medir-mensaje mide a cada cliente con lo suyo, sin cortar su bucle de conversaciones — mutaciones: la versión de
 //     antes; un `continue` de adentro vuelto `return`.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -182,11 +185,28 @@ test('los presupuestos caben en la ruta', () => {
     const fuente = leer(ruta);
     const segundos = Number(/maxDuration\s*=\s*(\d+)/.exec(fuente)?.[1]);
     assert.ok(segundos > 0, `${ruta} dejó de declarar \`maxDuration\``);
-    assert.ok(PRESUPUESTO_DE_LA_TRAIDA_MS + 60_000 <= segundos * 1000, `${ruta}: el último cliente que empieza no cabe en la función`);
+    // Los 120 s que el encabezado de `PRESUPUESTO_DE_LA_TRAIDA_MS` le promete al último cliente que empieza.
+    assert.ok(PRESUPUESTO_DE_LA_TRAIDA_MS + 120_000 <= segundos * 1000, `${ruta}: el último cliente que empieza no cabe en la función`);
     assert.match(fuente, /presupuestoMs: PRESUPUESTO_DE_LA_TRAIDA_MS/);
   }
   assert.equal(PRESUPUESTO_DEL_TIC_MS, CADENCIA.operacion);
   assert.match(leer('app/api/mensajes/ingesta/route.ts'), /presupuestoMs: PRESUPUESTO_DEL_TIC_MS/, 'la ingesta del tic no se acota a su cadencia');
+});
+
+test('cada ruta dice qué pulso decide el turno, y sólo la sincronización relanza con un cliente', () => {
+  const refrescar = leer('app/api/closer/agenda/refrescar/route.ts');
+  const ingesta = leer('app/api/mensajes/ingesta/route.ts');
+  const sincronizar = leer('app/api/contactos/sincronizar/route.ts');
+  // El tic y el botón del calendario rotan por el sello (la 282 lo mide por las rutas): sin su pulso, el principal iría
+  // primero siempre. La sincronización no tiene pulso: el orden de la sesión, el principal primero.
+  assert.match(ingesta, /pulso: 'mensajes'/, 'la ingesta no le pasa su pulso al bucle');
+  assert.match(refrescar, /pulso: 'citas'/, 'el calendario no le pasa su pulso al bucle');
+  assert.doesNotMatch(sincronizar, /pulso:/, 'la sincronización no tiene pulso propio');
+  // Con UN cliente, una excepción es lo de siempre: el 500 en la sincronización, su 503 en las otras dos.
+  assert.match(sincronizar, /relanzarSiEsElUnico: true/, 'con un cliente, la sincronización dejó de dar el 500 de siempre');
+  for (const [ruta, fuente] of [['refrescar', refrescar], ['ingesta', ingesta]] as const) {
+    assert.doesNotMatch(fuente, /relanzarSiEsElUnico/, `con un cliente, ${ruta} dejó de dar su 503 de siempre`);
+  }
 });
 
 test('el front nombra a los clientes que quedaron sin traer', () => {
@@ -206,6 +226,21 @@ test('el front nombra a los clientes que quedaron sin traer', () => {
   assert.match(lista, /const corta = Boolean\(d\.salteados\?\.length \|\| d\.truncado \|\| faltan\.length\)/);
   assert.match(lista, /const faltan = clientes\.filter\(\(c\) => c\.estado === 'fallo' \|\| c\.estado === 'sin_tiempo'\)/);
   assert.equal((lista.match(/\$\{yQuienFalta\}/g) ?? []).length, 3, 'un texto de la traída no nombra a los clientes sin traer');
+  // En la Agenda, lo mismo: el aviso de fallo es por el que falló o no alcanzó, no por el que no tiene credenciales.
+  assert.match(
+    traer,
+    /const sinLeer = clientes\.filter\(\(c\) => c\.estado === 'fallo' \|\| c\.estado === 'sin_tiempo'\)/,
+    'la Agenda pinta como fallo a un cliente sin credenciales',
+  );
+
+  // Al que le falta una credencial (`saltada`) se lo nombra aparte, con su `porque`: dónde se configura la suya.
+  for (const [pantalla, fuente, frase] of [['la Agenda', traer, 'yLosQueFaltan'], ['la lista', lista, 'yQuienFalta']] as const) {
+    assert.match(fuente, /const sinConexion = clientes\.filter\(\(c\) => c\.estado === 'saltada'\)/, `${pantalla} no separa a los clientes sin credenciales`);
+    const desde = fuente.slice(fuente.indexOf(`const ${frase} =`));
+    const declaracion = desde.slice(0, desde.search(/;\r?\n/));
+    assert.ok(declaracion.length > 50, `no encontré \`${frase}\` en ${pantalla}`);
+    assert.match(declaracion, /sinConexion\.map\(\(c\) => ` \$\{c\.nombre\}: \$\{c\.porque\}`\)/, `${pantalla} no nombra al cliente sin credenciales`);
+  }
 });
 
 test('medir-mensaje mide a cada cliente con su token, su agente y su ámbito, sin cortar su bucle', () => {

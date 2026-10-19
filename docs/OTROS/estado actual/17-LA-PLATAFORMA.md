@@ -203,7 +203,8 @@ El Closer y el Setter piden la ingesta desde el navegador, cada 10 s mientras la
 pestañas y cron se pisen es el pulso: un candado `.forUpdate().skipLocked()` para el reclamo y un alquiler de 10 s
 para todo lo demás (`lib/negocio/pulso.ts:12-25`, `:113`; `lib/cadencia.ts:40`). Con varios clientes (el nivel 3,
 G4), cada una trae a los clientes activos que su pantalla lee, de a uno, con su token y en su ámbito, con el
-presupuesto mirado antes de cada uno y el turno por el sello del pulso (`lib/negocio/traerDeLosClientes.ts:92`).
+presupuesto mirado antes de cada uno salvo el primero; el calendario y la ingesta, con el turno por el sello del
+pulso, y la sincronización, en el orden de la sesión (`lib/negocio/traerDeLosClientes.ts:92`).
 
 La cuarta es `POST /api/sonda`, con su propio secreto, `SONDA_TOKEN`, comparado con `timingSafeEqual`
 (`app/api/sonda/route.ts:16-17`, `:46-47`). Ninguna entrada de `vercel.json` la llama: la sonda programada corre
