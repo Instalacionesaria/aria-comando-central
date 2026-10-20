@@ -231,9 +231,9 @@ export async function candidatosAlCloser(db: Trx, orgId: string): Promise<Candid
  *
  * Cuenta PERSONAS de la empresa, no filas: desde la `096` una persona tiene una fila por cliente, y
  * vincular a un closer que ya existe en otro cliente no es un alta. **Con el nivel 3 es un tope por
- * empresa para todos sus clientes, y está pendiente de una decisión de producto** (si son tres por
- * empresa o tres por cliente): por ahora sigue siendo el de hoy, tres personas por empresa. Si se
- * decide por cliente, el conteo de `asignarCloser` mira sólo las personas con fila en ese cliente.
+ * empresa para todos sus clientes, y es una decisión del usuario del 2026-10-20**: tres personas por
+ * empresa, no tres por cliente. Quien trabaja en dos clientes ocupa una sola de las tres plazas, y al
+ * dar de alta un cliente la respuesta dice qué closers no están vinculados en él (`closersSinVinculoEn`).
  */
 export const TOPE_DE_CLOSERS = 3;
 

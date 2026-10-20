@@ -95,7 +95,7 @@ sólo desde ellas (§ 2.5). Las nueve rutas bajo `app/api/contactos/` —la fich
 pestañas, Avanzar, resolver una intervención y la sincronización de contactos— se declaran sin
 pantalla y piden capacidades propias —`contactos.ver`, `contactos.avanzar`, `contactos.resolver`,
 `contactos.comentar` (`lib/autorizacion/secciones.ts:599-639`)—; enviar desde el compositor del chat
-pide `conversaciones.responder` y no `contactos.ver` (`app/api/contactos/[id]/mensajes/route.ts:103`).
+pide `conversaciones.responder` y no `contactos.ver` (`app/api/contactos/[id]/mensajes/route.ts:105`).
 
 ### 2.2 · El Setter
 
@@ -123,7 +123,12 @@ pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pes
 **De quién son los leads** lo decide un solo módulo, y no es un permiso: `todo` para quien no es
 closer o es closer sin vincular a un usuario del CRM, `mio` para el closer vinculado
 (`lib/negocio/alcanceDelCloser.ts:25-38`). Desde el nivel 3 (C5 · G2, construido en local) el vínculo es de un
-cliente: «mío» son los pares (cliente, usuario del CRM), con un solo corte (`lib/negocio/alcanceDelCloser.ts:110`). Quien administra puede mirar como uno de ellos, y el
+cliente: «mío» son los pares (cliente, usuario del CRM), con un solo corte (`lib/negocio/alcanceDelCloser.ts:110`). Con
+varios clientes (C6 · D1), la Agenda, la cabecera de Mi Día y el chat de la ficha dicen de qué cliente no se está
+leyendo el calendario o los mensajes porque su conexión con GoHighLevel no está lista, y qué hacer, sólo de los
+clientes del alcance de quien mira (`lib/negocio/agenda.ts:428`, `lib/agentes/cabecera.ts:174`,
+`lib/negocio/ficha.ts:274`); la pantalla del vínculo dice quiénes no están vinculados en el cliente elegido
+(`components/closer/QuienEsElCloser.jsx:359`). Quien administra puede mirar como uno de ellos, y el
 servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:214-223`).
 
 **Lo que cuesta mirarlas.** Leer las pantallas no llama al CRM
@@ -156,9 +161,9 @@ mismo usuario del CRM es el vínculo de uno de los tres closers designados.
 panel lateral que se superpone y no navega, y un solo componente para toda la aplicación
 (`components/negocio/Ficha.jsx:3-16`). Desde AG12, cuando se abre desde una cita del Closer —Mi Día o la Agenda— suma
 una sexta pestaña, **Brief**, que va primera y se abre sola (`components/negocio/Ficha.jsx:102-104`,
-`components/negocio/Ficha.jsx:487-488`, `components/negocio/Ficha.jsx:498`); ver § 2.6. Se abre desde seis lugares, todos de estas dos pestañas: Mi
+`components/negocio/Ficha.jsx:496-497`, `components/negocio/Ficha.jsx:507`); ver § 2.6. Se abre desde seis lugares, todos de estas dos pestañas: Mi
 Día, Pipeline y Agenda del closer (`components/closer/MiDia.jsx:440`,
-`components/closer/Pipeline.jsx:313`, `components/closer/Agenda.jsx:566`), y el mismo Mi Día, el
+`components/closer/Pipeline.jsx:313`, `components/closer/Agenda.jsx:574`), y el mismo Mi Día, el
 mismo Pipeline y la lista de Contactos del setter (`components/views/SetterView.jsx:33-39`,
 `components/negocio/ListaDeContactos.jsx:433`). **No se abre desde Conversation ni desde la
 auditoría**, aunque tres comentarios digan que sí (`components/negocio/Ficha.jsx:13-14`,
@@ -167,43 +172,43 @@ de `components/conversation/` ni de `components/auditoria/` la importa, y la lis
 abre un patrón, no un contacto (`components/auditoria/PanelDeAuditoria.jsx:295`). Leads Portal tiene
 su propia ficha, `components/leads-portal/FichaDelLead.jsx`, que es otro componente.
 
-El encabezado es sólo estado, y su única acción es Avanzar (`components/negocio/Ficha.jsx:1076-1078`,
-`components/negocio/Ficha.jsx:1197`): «Ver en GHL» y «Agendar» funcionaban y se quitaron para que el
-trabajo no termine en el CRM (`components/negocio/Ficha.jsx:1056-1073`). Al abrirse pide
-`GET /api/contactos/[id]` (`components/negocio/Ficha.jsx:578`) y cada pestaña pide su ruta cuando se
-la abre (`components/negocio/Ficha.jsx:658`); sólo el Chat tiene reloj, las otras cuatro se piden una
+El encabezado es sólo estado, y su única acción es Avanzar (`components/negocio/Ficha.jsx:1087-1089`,
+`components/negocio/Ficha.jsx:1208`): «Ver en GHL» y «Agendar» funcionaban y se quitaron para que el
+trabajo no termine en el CRM (`components/negocio/Ficha.jsx:1067-1084`). Al abrirse pide
+`GET /api/contactos/[id]` (`components/negocio/Ficha.jsx:587`) y cada pestaña pide su ruta cuando se
+la abre (`components/negocio/Ficha.jsx:667`); sólo el Chat tiene reloj, las otras cuatro se piden una
 vez y se quedan (`components/negocio/Ficha.jsx:31-35`). Las cinco pestañas de siempre, en su orden
 (`components/negocio/Ficha.jsx:94-100`), con lo que hay en la base, medido el 2026-09-28 a las 23:58
 UTC sobre toda la tabla (al pie, lo re-medido el 2026-10-18):
 
 | pestaña | qué muestra | de dónde lee | cuánto hay |
 |---|---|---|---|
-| Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:209-231`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
-| Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:350-357`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:122-124`) |
-| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:459-481`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
-| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:582-583`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:585-638`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
-| Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:405-407`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
+| Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:210-232`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
+| Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:359-366`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:123-125`) |
+| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:468-490`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
+| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:591-592`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:594-647`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
+| Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:414-416`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
 
 Re-medido el 2026-10-18: **6.478 mensajes**, de los que siguen siendo **2** los escritos desde el compositor (el último,
 el 2026-09-07); 368 citas; 7 notas, 4 de ellas desde la aplicación; 4 tareas; 7 resultados. Nadie escribió nada desde
 la ficha desde el 2026-09-07.
 
 **El compositor.** Envía por `POST /api/contactos/[id]/mensajes`
-(`app/api/contactos/[id]/mensajes/route.ts:96-103`), que va al CRM con `POST /conversations/messages`
-(`app/api/contactos/[id]/mensajes/route.ts:147`, `lib/ghl/conversaciones.ts:419-427`) —un endpoint
+(`app/api/contactos/[id]/mensajes/route.ts:98-105`), que va al CRM con `POST /conversations/messages`
+(`app/api/contactos/[id]/mensajes/route.ts:149`, `lib/ghl/conversaciones.ts:419-427`) —un endpoint
 que el propio código declara no medido, porque medirlo manda un mensaje real
 (`lib/ghl/conversaciones.ts:413`)— y guarda el mensaje con `origen = 'propio'`
-(`app/api/contactos/[id]/mensajes/route.ts:232`); después pasa por `sellarSiEsDelSetter`
-(`app/api/contactos/[id]/mensajes/route.ts:256`), el sello que hoy está en 0 de 594 (§ 4.5). En toda
+(`app/api/contactos/[id]/mensajes/route.ts:234`); después pasa por `sellarSiEsDelSetter`
+(`app/api/contactos/[id]/mensajes/route.ts:258`), el sello que hoy está en 0 de 594 (§ 4.5). En toda
 la historia salieron por acá **2 mensajes**, contra miles por el CRM (§ 5.4). Las notas se escriben
 con otra capacidad, `contactos.comentar` (`app/api/contactos/[id]/notas/route.ts:84`), y quedan con
 `origen = 'plataforma'` (`app/api/contactos/[id]/notas/route.ts:127`).
 
 **Los enlaces rápidos.** El compositor ofrece un menú que pide a `/api/enlaces-rapidos`
-(`components/negocio/Ficha.jsx:636`) y filtra por el territorio del contacto
-(`components/negocio/Ficha.jsx:883-889`), con la sala y el reagendar de la cita adelante cuando el
-servidor los manda (`components/negocio/Ficha.jsx:891-936`); elegir uno pega sólo la URL en el
-borrador (`components/negocio/Ficha.jsx:950-952`). Se agregan y se borran desde el Inicio de cada
+(`components/negocio/Ficha.jsx:645`) y filtra por el territorio del contacto
+(`components/negocio/Ficha.jsx:894-900`), con la sala y el reagendar de la cita adelante cuando el
+servidor los manda (`components/negocio/Ficha.jsx:902-947`); elegir uno pega sólo la URL en el
+borrador (`components/negocio/Ficha.jsx:961-963`). Se agregan y se borran desde el Inicio de cada
 pestaña (`components/closer/Inicio.jsx:239`, `components/setter/Inicio.jsx:281`,
 `components/negocio/EnlacesRapidos.jsx:138`, `components/negocio/EnlacesRapidos.jsx:162`).
 `negocio.enlaces_rapidos` tiene **10 filas, las 10 del territorio closer y 0 del setter**, de una
@@ -260,8 +265,8 @@ caja del pie** de ninguna sección (2026-10-18; ver [11-EXECUTIVE.md](11-EXECUTI
 ### 2.8 · Las citas sin registrar, dichas en dos lugares (nuevo desde el corte)
 
 - **La cabecera del Closer** dice cuántas citas de los últimos 14 días ya ocurrieron y esperan que se registre si el
-  prospecto se presentó (`lib/agentes/cabecera.ts:144-149`), con el alcance de quien mira y el mismo predicado y la
-  misma ventana con que Avanzar ofrece cerrarlas (`lib/agentes/cabecera.ts:151-166`). La pide `mi-dia`
+  prospecto se presentó (`lib/agentes/cabecera.ts:145-150`), con el alcance de quien mira y el mismo predicado y la
+  misma ventana con que Avanzar ofrece cerrarlas (`lib/agentes/cabecera.ts:152-167`). La pide `mi-dia`
   (`app/api/closer/mi-dia/route.ts:122-125`) y la pantalla se la entrega a la cabecera
   (`components/views/CloserView.jsx:97-98`). Sin modelo. El Setter no tiene nada medible y calla
   (`lib/agentes/cabecera.ts:22-23`).

@@ -422,7 +422,7 @@ llamada de las 19 dependa del 14.
 2026-09-16 y el 2026-09-26 pasó de una ruta a seis**: Acquisition, Conversation, Creative, Conversion,
 Sales y Leads Portal validan con `periodoDe` (`app/api/acquisition/route.ts:58`, `app/api/auditoria/route.ts:63`,
 `app/api/creative/route.ts:62`, `app/api/conversion/route.ts:63`, `app/api/sales/route.ts:89`,
-`app/api/leads-portal/route.ts:54`).
+`app/api/leads-portal/route.ts:55`).
 
 **El defecto que cierra la lista cerrada** está enunciado en `lib/negocio/periodo.ts:6-17` y convertido
 en prueba en `pruebas/codigo/155-el-periodo-de-conversation.test.ts:59`. Leer `?dias=` como número abre
@@ -498,7 +498,7 @@ migración nace vacía y se llena hacia adelante (`db/migraciones/048_de_donde_v
 *no cambió*».
 
 **Dónde se resuelve entonces.** El dato se arregla **al leer**, no al migrar: la `040` infiere el canal en
-`lib/negocio/ficha.ts:186` (`CANAL_EFECTIVO`) sin tocar una fila. Y cuando hay que escribir, una fase de
+`lib/negocio/ficha.ts:187` (`CANAL_EFECTIVO`) sin tocar una fila. Y cuando hay que escribir, una fase de
 `scripts/db.mjs` que corre con el rol que sí ve las filas (sección «Construido en local», 2026-10-16).
 
 ---
@@ -910,7 +910,7 @@ la pantalla publica «ICP alto 51» y, debajo, las 51 tarjetas; con dos consulta
 otra deja la tarjeta diciendo 51 sobre una rejilla de 52, «y ninguna de las dos está mal». Una CTE arma
 una fila por persona y de ella salen la lista y el resumen, que agrupa sin volver a clasificar. Y cuando
 dos pantallas publican la misma cifra, la ruta las compara y lo dice en el aviso en vez de elegir una
-(`coherenciaConSales`, `lib/negocio/leadsDelPortal.ts:610`, `app/api/leads-portal/route.ts:69-70`). Es la
+(`coherenciaConSales`, `lib/negocio/leadsDelPortal.ts:610`, `app/api/leads-portal/route.ts:73-74`). Es la
 regla de «todo en la misma pasada» (§ 9) llevada de una tarjeta a una pantalla entera.
 
 **41 · «Los últimos 30 días» pueden ser tres poblaciones: cada una viaja con su nombre y su grano.** En
@@ -1339,14 +1339,14 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   agrupa por (campaña, cliente) (`lib/negocio/atribucionDelLead.ts:176`), y cada fila dice su cliente cuando las
   campañas de la ventana son de más de uno (`lib/negocio/atribucionDelLead.ts:213`); las campañas de Acquisition y de la
   herramienta del cerebro, igual, con el cliente de sus anuncios, el que la listó o el de sus contactos
-  (`lib/negocio/embudosDeAcquisition.ts:698`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
-  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:661`)
-  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:905`); sólo uno con
+  (`lib/negocio/embudosDeAcquisition.ts:712`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
+  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:673`)
+  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:919`); sólo uno con
   métricas y sin serie frena lo que lee Meta —«sin entrega», la concentración y el costo por mil, con su anterior
-  aparte— (`lib/negocio/embudosDeAcquisition.ts:804`, `lib/negocio/embudosDeAcquisition.ts:890`): un cliente sin Meta no
+  aparte— (`lib/negocio/embudosDeAcquisition.ts:818`, `lib/negocio/embudosDeAcquisition.ts:904`): un cliente sin Meta no
   apaga lo de los demás. Las vistas de Conversion no son la suma ni el cero de otro cliente
-  (`lib/negocio/pasosDeConversion.ts:512`), y no comparan con un cliente sin su gasto en ninguna de las dos ventanas
-  (`lib/negocio/pasosDeConversion.ts:585`, `lib/negocio/pasosDeConversion.ts:593`). En el detector, lo que es de una
+  (`lib/negocio/pasosDeConversion.ts:523`), y no comparan con un cliente sin su gasto en ninguna de las dos ventanas
+  (`lib/negocio/pasosDeConversion.ts:598`, `lib/negocio/pasosDeConversion.ts:608`). En el detector, lo que es de una
   cuenta publicitaria se mide dentro de su cliente (`lib/agentes/detectores/acquisition.ts:318`): la crítica de «sin
   entrega» es del `cliente` cuyas campañas no entregan (`lib/agentes/detectores/acquisition.ts:371`), la entidad nueva
   de la `094` (`db/migraciones/094_el_cliente_en_acquisition.sql:33`), que la pantalla nombra
@@ -1404,15 +1404,45 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   cuenta PERSONAS para el tope (`lib/negocio/closer.ts:294`) y mide el usuario repetido dentro del cliente
   (`lib/negocio/closer.ts:301`); quitar saca a la persona de todos. La ruta acepta `cuentaId` —sin él, el principal— y
   lo valida contra los clientes de la empresa: uno ajeno, de baja o mal formado es 404
-  (`app/api/admin/closer/route.ts:187`, `app/api/admin/closer/route.ts:201`); la auditoría guarda el cliente
-  (`app/api/admin/closer/route.ts:221`) y el GET suma los clientes activos y pausados
+  (`app/api/admin/closer/route.ts:195`, `app/api/admin/closer/route.ts:209`); la auditoría guarda el cliente
+  (`app/api/admin/closer/route.ts:229`) y el GET suma los clientes activos y pausados
   (`app/api/admin/closer/route.ts:96`). La pantalla muestra un selector de cliente sólo con más de uno
-  (`components/closer/QuienEsElCloser.jsx:309`), pide los usuarios del CRM del cliente elegido con un turno que descarta
-  la respuesta de uno anterior (`components/closer/QuienEsElCloser.jsx:144`) y pasa el cliente a `guardar` como
-  argumento (`components/closer/QuienEsElCloser.jsx:373`). Con un solo cliente, todo como siempre. Lo exigen
+  (`components/closer/QuienEsElCloser.jsx:318`), pide los usuarios del CRM del cliente elegido con un turno que descarta
+  la respuesta de uno anterior (`components/closer/QuienEsElCloser.jsx:148`) y pasa el cliente a `guardar` como
+  argumento (`components/closer/QuienEsElCloser.jsx:396`). Con un solo cliente, todo como siempre. Lo exigen
   `pruebas/base/288-el-closer-en-cada-cliente.test.ts:237`, `pruebas/base/288-el-closer-en-cada-cliente.test.ts:283`,
   `pruebas/base/288-el-closer-en-cada-cliente.test.ts:404` y
   `pruebas/codigo/289-el-vinculo-del-closer-por-cliente.test.ts:30`.
+- **Los avisos dicen de qué cliente y qué hacer (C6 · D1, sin migración).** La decisión del usuario del 2026-10-20: los
+  costos de cada cliente salen de SU GoHighLevel con Meta vinculado, y un aviso dice de qué cliente es y qué hacer. Un
+  módulo hoja lo lee de los sellos del barrido (`lib/negocio/faltaDeLosClientes.ts:81`): un cliente ACTIVO cuyo sello
+  más nuevo de las tareas del CRM que dicen algo del acceso (`lib/negocio/faltaDeLosClientes.ts:55`) es `saltada` con un
+  código de la falta, salvo que un pulso posterior diga que alguien ya trajo (`lib/negocio/faltaDeLosClientes.ts:120`).
+  El principal se nombra sólo con más de un cliente activo a la vista (`lib/negocio/faltaDeLosClientes.ts:69`): con uno
+  solo no cambia ningún texto ni ninguna clave. El aviso tiene un prefijo neutro («no está lista»: un token ilegible no
+  falta) y el texto del código —el de la empresa para el principal, el del cliente para los demás; al cliente final,
+  sin Ajustes— (`lib/negocio/faltaDeLosClientes.ts:155`). Lo dicen la agenda vacía, en vez de «Todavía no se leyó el
+  calendario» para siempre, y con citas `sinConexion` (`lib/negocio/agenda.ts:428`, `lib/negocio/agenda.ts:313`); la
+  cabecera de Mi Día, DESPUÉS de las citas sin registrar (`lib/agentes/cabecera.ts:174`), las dos sólo de los clientes
+  del alcance de quien mira (`lib/negocio/faltaDeLosClientes.ts:130`); el chat de la ficha, del cliente del contacto
+  (`lib/negocio/ficha.ts:274`), y Leads, arriba (`app/api/leads-portal/route.ts:70`). Acquisition y Conversion nombran,
+  después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué —Meta sin vincular en su
+  GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:193`): los que pautaron sin
+  serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:976`,
+  `lib/negocio/gastoDeLaCuenta.ts:487`), así que también cuando la serie de un cliente dejó de escribirse y la empresa
+  queda con el colector atrasado; Conversion pregunta por la ventana que decidió el motivo
+  (`lib/negocio/pasosDeConversion.ts:631`). Las frases entraron primero en A14-02 y CV15-02. Y los closers: el alta, la
+  activación y Ajustes › Clientes dicen quiénes están vinculados en otro cliente y no en ése
+  (`lib/negocio/alcanceDelCloser.ts:275`, `app/api/admin/cuentas/route.ts:99`), sólo a quien tiene `credenciales.ver` y
+  sobre su propia empresa (`lib/administracion/cuentas.ts:404`), y la pantalla del vínculo, por cliente activo, con más
+  de uno (`app/api/admin/closer/route.ts:139`, `components/closer/QuienEsElCloser.jsx:359`). El tope de tres closers
+  es por EMPRESA, y queda decidido (`lib/negocio/closer.ts:233`). Lo exigen
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:330`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:410`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:462`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:522`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:561` y
+  `pruebas/codigo/291-los-textos-de-los-avisos-por-cliente.test.ts:51`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): en el detector de
   Acquisition, el ICP y la fuga entre etapas comparan contra el
   promedio de un funnel que mezcla clientes, el monitor de atribución es una proporción de la empresa (un cliente chico
@@ -1427,18 +1457,27 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
   subcuenta con otros nombres no se reconoce); mandar un lead desde Tools usa las credenciales de la empresa
   (`app/api/tools/leads/enviar/route.ts:113`); los guiones de medición, salvo `scripts/medir-mensaje.mjs`, miden sólo
-  al principal. Y uno que no es de una subcuenta sino de su ausencia: un cliente ACTIVO sin credenciales del CRM deja
-  el aviso de la Agenda de la empresa prendido para siempre («Todavía no se leyó el calendario»: nunca tiene pulso), y
-  el botón sólo puede decir por qué. Otro de la misma familia, y es una **decisión de producto**: un cliente activo que
-  pauta sin conectar Meta deja a la empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de
-  campaña (Meta es «recomendado, no requerido», así que puede durar), y el motivo que se dice es «Faltan días de gasto»,
-  sin uno propio; lo que sólo lee Meta no se frena. Las salidas: abrir Acquisition por cliente, como Leads y Sales, o
-  sacar de los costos a la gente de ese cliente. Y de la misma familia: si el único cliente con Meta queda en pausa,
-  cuando la ventana deja atrás su último día cerrado nadie tiene serie en ella y la empresa queda en «Faltan días de
-  gasto», como una cuya serie dejó de leerse. Del vínculo de los closers (G2) quedan: el tope de tres es de PERSONAS
-  por empresa, para todos sus clientes (`lib/negocio/closer.ts:238`), y si es por empresa o por cliente es una
-  **decisión de producto** pendiente; un closer vinculado sólo en el principal no ve los contactos de un cliente nuevo
-  hasta que alguien lo vincule ahí (al dar de alta un cliente, se revisan los vínculos de sus closers); con el foco en
+  al principal. De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
+  empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de campaña —la decisión del 2026-10-20
+  es que Acquisition no pasa a ser por cliente: el gasto de cada uno sale de SU GoHighLevel con Meta vinculado, y la
+  nota dice de quién y qué hacer—, y si el sello no sabe por qué (un cliente sin ningún sello, una pasada que falló) la
+  nota sigue con «Faltan días de gasto.» sola; «Meta no vinculado» sale del sello de `anuncios`, que corre una vez al
+  día, así que se lee hasta la pasada siguiente, y con un `campaignId` de Google Ads de un cliente sin Meta vinculado
+  la frase dice «vincúlalo en GoHighLevel» aunque pague en Google; la cabecera de Acquisition no lo dice (no depende
+  del período, y con un cliente que no usa Meta sería un aviso para siempre); la frescura `fallando` con varios clientes
+  no dice de cuál es el fallo (por ejemplo, un 401 de un token revocado sin `crm_estado`); Sales no lleva el aviso de la
+  conexión, y la herramienta de la agenda del cerebro no reenvía `falta` ni `sinConexion`; el texto de siempre de la
+  agenda vosea («Usá», «Probá») y el aviso del cliente que se le suma habla de tú —se dejó así para que con un cliente
+  no cambie ninguna letra; corregirlo saca `lib/negocio/agenda.ts` de `TODAVIA_VOSEAN` en la 258—, y ese texto de
+  siempre (sin pulso, a medias) sigue mirando a todos los clientes, no al alcance. Y de la misma familia: si el único
+  cliente con Meta queda en pausa, cuando la ventana deja atrás su último día cerrado nadie tiene serie en ella y la
+  empresa queda en «Faltan días de gasto», como una cuya serie dejó de leerse (la nota nombra al que está en pausa sólo
+  si pautó en la ventana sin su serie). Del vínculo de los closers (G2) quedan: un closer vinculado sólo en otro
+  cliente no ve los contactos de un cliente nuevo hasta que alguien lo vincule ahí —el alta, la activación, Ajustes ›
+  Clientes y la pantalla del vínculo lo dicen—, y no se lo puede vincular mientras ese cliente no tenga su conexión (la
+  lista de usuarios del CRM es la de su subcuenta); el vínculo de la subcuenta (`cuentas/[id]/vinculo`, sólo ARIA) no
+  devuelve los closers sin vincular, y un rol a medida con `cuentas.crear` y sin `credenciales.ver` no recibe sus
+  nombres; con el foco en
   un cliente, la celda de quien trabaja en otro dice «Sin vínculo con el CRM» (la fila sí lo explica); en la base, la
   política de la `093` deja leer el `crm_usuario_id` de los otros clientes desde el ámbito de uno (la aplicación
   publica sólo los de la vista), y `/api/sales` devuelve también al cliente final, de cada closer, el `usuarioId` y

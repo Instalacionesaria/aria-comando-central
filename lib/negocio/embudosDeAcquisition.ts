@@ -60,7 +60,8 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { esCalificado, tieneCitaAlcanzable } from './citasAlcanzables.ts';
 import { bordesDelPeriodo, type DiasDeCalendario } from './diasCerrados.ts';
-import { coberturaDelGasto, type MotivoDelGasto } from './gastoDeLaCuenta.ts';
+import { clientesConLaSerieIncompleta, coberturaDelGasto, type MotivoDelGasto } from './gastoDeLaCuenta.ts';
+import { faltaDelGastoDe, type FaltaDelGastoDeUnCliente } from './faltaDeLosClientes.ts';
 import { cohorteEntre } from './recorrido.ts';
 import { funnelsDeLasCampanas, FUNNELS, type Funnel } from './funnelDeLaCampana.ts';
 import { PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
@@ -268,9 +269,11 @@ export interface EmbudosDeAcquisition {
    *     de la ventana le falta el total de la cuenta, o si un cliente pautó en ella sin ningún día de su serie (el
    *     nivel 3): entonces el total suma lo leído por campaña;
    *   · `motivo`: por qué el gasto no está entero, o `null`. `no_cuadra` es «falta gasto de algunas campañas»:
-   *     la cuenta dice más de lo que se alcanzó a leer por campaña, y el relleno lo está buscando.
+   *     la cuenta dice más de lo que se alcanzó a leer por campaña, y el relleno lo está buscando;
+   *   · `faltaPorCliente` (el nivel 3, C6): con días de gasto faltantes, de qué cliente y por qué, cuando el sello lo
+   *     sabe. Sólo viaja si no está vacía: con un solo cliente, nunca.
    */
-  gasto: { deLaCuenta: number | null; motivo: MotivoDelGasto | null };
+  gasto: { deLaCuenta: number | null; motivo: MotivoDelGasto | null; faltaPorCliente?: FaltaDelGastoDeUnCliente[] };
   total: Grupo;
   funnels: Record<Funnel, Grupo>;
   sinFunnel: Grupo;
@@ -444,7 +447,12 @@ export function armarEmbudos(entrada: {
    * El total de la cuenta en la ventana y en la anterior (`null` si le falta algún día), y por qué el gasto no
    * está entero. Sin esto —las pruebas puras—, el total es la suma de las campañas.
    */
-  gasto?: { deLaCuenta: number | null; deLaCuentaAnterior: number | null; motivo: MotivoDelGasto | null };
+  gasto?: {
+    deLaCuenta: number | null;
+    deLaCuentaAnterior: number | null;
+    motivo: MotivoDelGasto | null;
+    faltaPorCliente?: readonly FaltaDelGastoDeUnCliente[];
+  };
 }): EmbudosDeAcquisition {
   const deLa = (m: ReadonlyMap<string, Cifras>, c: string) => m.get(c) ?? CIFRAS_VACIAS;
 
@@ -499,7 +507,11 @@ export function armarEmbudos(entrada: {
     anterior: entrada.anterior,
     sinComparacion: entrada.sinComparacion,
     sinCostos: entrada.sinCostos,
-    gasto: { deLaCuenta, motivo: entrada.gasto?.motivo ?? null },
+    gasto: {
+      deLaCuenta,
+      motivo: entrada.gasto?.motivo ?? null,
+      ...(entrada.gasto?.faltaPorCliente?.length ? { faltaPorCliente: [...entrada.gasto.faltaPorCliente] } : {}),
+    },
     total,
     funnels,
     sinFunnel: grupo('sin_funnel', campanas.filter((c) => c.funnel === null)),
@@ -658,8 +670,8 @@ async function campanasConContactos(): Promise<Set<string>> {
  * (sin ningún día de la serie en la ventana, la cuenta dice `dias_sin_leer`). Con `desde` después de `hasta` —«Hoy»
  * antes del cierre— no hay filas y las tres dan `false`. Corre dentro de `conOrganizacion`.
  */
-export async function pautaSinLeerEn(v: DiasDeCalendario): Promise<{ sinSerie: boolean; conMetricas: boolean; sinMeta: boolean }> {
-  const r = await sql<{ sin_serie: boolean; con_metricas: boolean; sin_meta: boolean }>`
+export async function pautaSinLeerEn(v: DiasDeCalendario): Promise<{ sinSerie: boolean; conMetricas: boolean; sinMeta: boolean; cuentas: string[] }> {
+  const r = await sql<{ sin_serie: boolean; con_metricas: boolean; sin_meta: boolean; cuentas: string[] }>`
     with pauto as (
       select distinct m.cuenta_id, true as con_metricas
         from negocio.metricas_de_anuncio m
@@ -680,9 +692,11 @@ export async function pautaSinLeerEn(v: DiasDeCalendario): Promise<{ sinSerie: b
     )
     select exists (select 1 from sin_serie) as sin_serie,
            exists (select 1 from sin_serie where con_metricas) as con_metricas,
-           exists (select 1 from sin_serie where not con_metricas) as sin_meta`.execute(datos());
+           exists (select 1 from sin_serie where not con_metricas) as sin_meta,
+           array(select cuenta_id::text from sin_serie where cuenta_id is not null order by 1) as cuentas`.execute(datos());
   const f = r.rows[0]!;
-  return { sinSerie: f.sin_serie, conMetricas: f.con_metricas, sinMeta: f.sin_meta };
+  // `cuentas`, quiénes son (C6): para que la nota diga de qué cliente falta el gasto.
+  return { sinSerie: f.sin_serie, conMetricas: f.con_metricas, sinMeta: f.sin_meta, cuentas: f.cuentas };
 }
 
 /**
@@ -906,6 +920,13 @@ export async function lecturaDeAcquisition(
     ? null
     : (await coberturaDelGasto(ventana.desde, ventana.hasta, b.dias, zona)).deLaCuenta;
   const motivoDelGasto: MotivoDelGasto | null = colectorAtrasado ? 'colector_atrasado' : actualEntera.motivo;
+  /* De qué cliente faltan los días y por qué (el nivel 3, C6), cuando la nota dice «Faltan días de gasto.»: con el gasto
+     de la ventana actual incompleto o el colector atrasado. No en «Hoy» ni con `no_cuadra`, que tienen su propia frase.
+     Se pregunta por la misma ventana que decidió el freno. */
+  const faltaPorCliente =
+    periodo.clave !== 'hoy' && motivoDelGasto !== 'no_cuadra' && (sinComparacion === 'faltan_dias' || sinCostos === 'gasto_incompleto')
+      ? await faltaDelGastoDe(await clientesSinElGastoEntero({ desde: ventana.desde, hasta: b.cierre }, b.diasHastaElCierre, zona))
+      : [];
 
   const cobertura = await sql<{ con_campana: string; sobre: string }>`
     select count(*) filter (where atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}) as con_campana,
@@ -940,7 +961,19 @@ export async function lecturaDeAcquisition(
       deLaCuentaAnterior:
         anterior === null ? null : (await coberturaDelGasto(anterior.desde, anterior.hasta, d, zona)).deLaCuenta,
       motivo: periodo.clave === 'hoy' ? null : motivoDelGasto,
+      faltaPorCliente,
     },
   });
   return { embudos, actual, previa, clienteDe: universo.clienteDe, faltanDiasDeMeta, anteriorDeMeta };
+}
+
+/**
+ * Los clientes que dejan sin entero el gasto de una ventana (el nivel 3, C6): los que pautaron en ella sin ningún día de
+ * su serie (`pautaSinLeerEn`) y los de serie atrasada o con algún día sin cerrar (`clientesConLaSerieIncompleta`). Es a
+ * quiénes se les pregunta por qué (`faltaDelGastoDe`); con Conversion, por la ventana que decidió el motivo de sus
+ * vistas. Corre dentro de `conOrganizacion`.
+ */
+export async function clientesSinElGastoEntero(v: DiasDeCalendario, dias: number, zona: string): Promise<string[]> {
+  const pauta = await pautaSinLeerEn(v);
+  return [...new Set([...pauta.cuentas, ...(await clientesConLaSerieIncompleta(v.desde, v.hasta, dias, zona))])];
 }

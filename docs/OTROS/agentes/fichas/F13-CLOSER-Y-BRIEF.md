@@ -21,7 +21,7 @@ mismos argumentos que sus rutas, y con `alcanceDeQuienMira`: un closer vinculado
 
 ## El Brief: qué lee
 
-- **El formulario** del contacto (`perfilDeLaFicha`, `lib/negocio/ficha.ts:467`).
+- **El formulario** del contacto (`perfilDeLaFicha`, `lib/negocio/ficha.ts:476`).
 - **La ficha del lead** (`fichaDelLeadDelPortal`, `lib/negocio/fichaDelLeadDelPortal.ts:137`): de dónde vino,
   su puntaje de ICP, su recorrido.
 - **La ficha de una llamada anterior** del Analizador, si la llamada está vinculada al contacto (`F14`).

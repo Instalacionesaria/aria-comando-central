@@ -550,7 +550,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
 - **La cobertura de Conversion dice «de 570» sobre una base de 594** sin declarar los 24 sin alta
   (§ 2.1), que Leads Portal sí declara. **Cerrado el 2026-10-09** (CV-4 de Conversion): en «Completo» la nota dice
   «{N} contactos sin alta no entran.» (CV15-10).
-- **Leads Portal manda los huecos de Sales siempre** (`app/api/leads-portal/route.ts:80`), con el
+- **Leads Portal manda los huecos de Sales siempre** (`app/api/leads-portal/route.ts:86`), con el
   texto fijo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:59`), sin mirar si hay
   ventas. El día de la primera venta, la tarjeta la va a contar y el hueco la va a negar. Sigue igual el 2026-10-18.
 - **La tarjeta «Todos» de Leads Portal dibuja «0 vendidos»**
@@ -882,11 +882,11 @@ mensaje del commit). Esas cuatro escrituras siguen fallando bajo delegación:
 - `resultados.registrado_por`, `notas.autor_id` y `tareas.creada_por`, las tres de Avanzar
   (`lib/negocio/avanzar.ts:189`, `lib/negocio/avanzar.ts:277`, `lib/negocio/avanzar.ts:347`).
 - `mensajes.autor_usuario_id`, al mandar un mensaje a mano
-  (`app/api/contactos/[id]/mensajes/route.ts:223`). **Éste es el caro**: el envío al CRM va antes
-  (`app/api/contactos/[id]/mensajes/route.ts:147`) y la escritura después, sin `catch`
-  (`app/api/contactos/[id]/mensajes/route.ts:206`). Bajo delegación el mensaje le llega al contacto
+  (`app/api/contactos/[id]/mensajes/route.ts:225`). **Éste es el caro**: el envío al CRM va antes
+  (`app/api/contactos/[id]/mensajes/route.ts:149`) y la escritura después, sin `catch`
+  (`app/api/contactos/[id]/mensajes/route.ts:208`). Bajo delegación el mensaje le llega al contacto
   y quien lo mandó recibe un 500, que es justo lo que el comentario de la misma ruta dice que hay
-  que evitar, porque «lo mandaría de nuevo» (`app/api/contactos/[id]/mensajes/route.ts:247-249`).
+  que evitar, porque «lo mandaría de nuevo» (`app/api/contactos/[id]/mensajes/route.ts:249-251`).
 
 Las cuatro foráneas son compuestas desde la `011`
 (`db/migraciones/011_negocio_closer_setter.sql:251`, `db/migraciones/011_negocio_closer_setter.sql:349`,

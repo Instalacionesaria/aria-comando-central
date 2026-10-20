@@ -63,6 +63,7 @@ import { noCancelada } from './citas.ts';
 import { frescuraDe, type Frescura } from './frescura.ts';
 import { diaEnZona } from './tiempo.ts';
 import { type AlcanceDelCloser, type VinculoConElCrm, contactoDelCloser } from './alcanceDelCloser.ts';
+import { avisoSinConexion, clientesSinConexion, delAlcance } from './faltaDeLosClientes.ts';
 import type { Territorio } from '../datos/esquema.ts';
 
 export interface CitaDeLaAgenda {
@@ -160,6 +161,12 @@ export interface Agenda {
    * una llamada que sí existe.
    */
   falta: string | null;
+  /**
+   * Con citas a la vista, de qué cliente no se está leyendo el calendario porque su conexión con GoHighLevel no está
+   * lista, y qué hacer (el nivel 3). Sólo viaja cuando hay algo que decir —con la agenda vacía lo dice `falta`—, y
+   * sólo de los clientes del alcance de quien mira. Con un solo cliente no viaja nunca.
+   */
+  sinConexion?: string;
 }
 
 /** Cuántos días hacia adelante trae la Agenda. El documento pide quince. */
@@ -301,6 +308,10 @@ export async function agendaDelCloser(
   }
 
   const filas = await q.execute();
+  /* Con citas, el cliente cuya conexión no está lista se dice aparte: la lista se ve completa y le faltan las suyas. Sin
+     citas lo dice `falta`, y no se repite. */
+  const sinConexion =
+    filas.length > 0 ? avisoSinConexion(delAlcance(await clientesSinConexion(), opciones.alcance), 'calendario') : null;
 
   // ── EL AGRUPADO, y de acá sale el conteo de «Próximos días» ───────────────
   //
@@ -356,6 +367,7 @@ export async function agendaDelCloser(
        contando las de sus compañeros: un consejo correcto sobre un número que no es suyo. */
     falta:
       filas.length === 0 ? await porQueNoHayCitas(territorio, zonaHoraria, opciones.alcance) : null,
+    ...(sinConexion ? { sinConexion } : {}),
   };
 }
 
@@ -403,8 +415,17 @@ function avisoDeZona(zonaHoraria: string): string | null {
  * cada pantalla dice lo suyo sobre SU ventana. Está separado justamente porque la ventana difiere:
  * la Agenda mira quince días y la cola de Mi Día mira hoy, así que la tercera frase no puede ser
  * compartida sin mentir en una de las dos.
+ *
+ * ── EL CLIENTE SIN CONEXIÓN SE NOMBRA (el nivel 3, C6) ──────────────────────
+ *
+ * Un cliente activo cuya conexión con GoHighLevel no está lista nunca tiene pulso, y el texto de abajo quedaba prendido
+ * para siempre mandando a un botón que no lo arregla. Ahora se dice de qué cliente es y qué hacer
+ * (`avisoSinConexion`), y ese cliente ya no cuenta como «no se leyó». Si además otro activo no se leyó, va el texto de
+ * siempre con el aviso al final. Uno con pulso y la conexión rota —un token revocado— también se dice: sin eso, su
+ * agenda vacía diría «se leyó completo». El aviso es sólo de los clientes del alcance de quien mira (`delAlcance`): a un
+ * closer vinculado sólo en otro cliente no le sirve. Con un solo cliente, ninguno se nombra y todo es lo de siempre.
  */
-async function faltaDelBarrido(): Promise<string | null> {
+async function faltaDelBarrido(alcance?: AlcanceDelCloser): Promise<string | null> {
   /* Un pulso por cliente (el nivel 3): la agenda de la empresa entera —o la del foco, que acota la RLS— mira el PEOR
      de los clientes ACTIVOS. Con el de un solo cliente, uno al día escondería a otro que nunca se leyó; y uno en pausa
      no se barre, así que su pulso viejo no puede decir nada de hoy. Un activo sin pulso es «no se leyó». */
@@ -413,18 +434,21 @@ async function faltaDelBarrido(): Promise<string | null> {
     .leftJoin('ingesta_pulso as p', (j) =>
       j.onRef('p.org_id', '=', 'c.org_id').onRef('p.cuenta_id', '=', 'c.id').on('p.clave', '=', 'citas'),
     )
-    .select(['p.ultima_corrida_el', 'p.atrasado'])
+    .select(['c.id', 'p.ultima_corrida_el', 'p.atrasado'])
     .where('c.estado', '=', 'activa')
     .execute();
-  const pulso = pulsos.find((p) => p.ultima_corrida_el === null) ?? pulsos.find((p) => p.atrasado) ?? pulsos[0];
+  const sinConexion = await clientesSinConexion();
+  const conLaConexion = (p: { id: string }) => !sinConexion.some((s) => s.id === p.id);
+  const aviso = avisoSinConexion(delAlcance(sinConexion, alcance), 'calendario');
 
-  if (!pulso || pulso.ultima_corrida_el === null) {
-    return (
+  if (pulsos.length === 0 || pulsos.some((p) => p.ultima_corrida_el === null && conLaConexion(p))) {
+    const generico =
       'Todavía no se leyó el calendario de GoHighLevel. Puede haber citas agendadas: lo que falta ' +
-      'es el barrido que las copia acá. Usá «Traer del calendario».'
-    );
+      'es el barrido que las copia acá. Usá «Traer del calendario».';
+    return aviso === null ? generico : `${generico} ${aviso}`;
   }
-  if (pulso.atrasado) {
+  if (aviso !== null) return aviso;
+  if (pulsos.some((p) => p.atrasado && conLaConexion(p))) {
     return (
       'El último barrido del calendario quedó incompleto, así que puede haber citas que todavía no ' +
       'se copiaron. Probá con «Traer del calendario».'
@@ -454,7 +478,7 @@ export async function porQueNoHayCitasHoy(
   /** De quién son las citas que se cuentan. Ausente = el territorio entero. */
   alcance?: AlcanceDelCloser,
 ): Promise<string> {
-  const delBarrido = await faltaDelBarrido();
+  const delBarrido = await faltaDelBarrido(alcance);
   if (delBarrido !== null) return delBarrido;
 
   let q = datos()
@@ -499,7 +523,7 @@ async function porQueNoHayCitas(
   zonaHoraria: string,
   alcance?: AlcanceDelCloser,
 ): Promise<string> {
-  const delBarrido = await faltaDelBarrido();
+  const delBarrido = await faltaDelBarrido(alcance);
   if (delBarrido !== null) return delBarrido;
 
   /* ── UN CERO DE HOY EN ADELANTE NO ES UN CALENDARIO VACÍO ──────────────────

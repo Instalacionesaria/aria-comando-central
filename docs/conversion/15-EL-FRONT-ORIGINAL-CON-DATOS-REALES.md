@@ -59,7 +59,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 
 | lugar del prototipo | dato | fuente | medido |
 |---|---|---|---|
-| Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:116`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:110`) | — |
+| Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:116`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:111`) | — |
 | Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:125-132`) | sólo con 7 y 30 días |
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
@@ -150,6 +150,9 @@ documento, no en la pantalla. Los huecos, los motivos y los estados usan **sólo
 | la ventana anterior no está entera (`sin_historia`) | «Sin historia para comparar.» |
 | la lectura de contactos o de citas está atrasada (`faltan_contactos`) | «Faltan contactos por leer.» |
 | a las vistas les falta algún día de gasto, o el colector está atrasado | «Faltan días de gasto.» |
+| con varios clientes, después de «Faltan días de gasto.»: la pasada del gasto de ese cliente corrió y su GoHighLevel no tiene Meta vinculado (`vistas.faltaPorCliente`, `meta_sin_vincular`) | «El GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel.» |
+| con varios clientes, después de «Faltan días de gasto.»: la conexión de ese cliente con GoHighLevel no está lista (`sin_conexion`) | «La conexión de {cliente} con GoHighLevel no está lista. {detalle}» |
+| con varios clientes, después de «Faltan días de gasto.»: ese cliente está en pausa o de baja y no se lee (`no_activo`) | «{cliente} ya no está activo: su gasto no se lee.» |
 | las vistas: el detalle por campaña no cuadra con la cuenta (`no_cuadra`) | «Falta gasto de algunas campañas.» |
 | las vistas: el desglose de Meta no cubre la ventana o la anterior (`sin_desglose`) | «Sin desglose de Meta.» |
 | la anterior tiene citas congeladas, y los agendados no comparan | «Los agendados no comparan: hay citas congeladas.» |
@@ -163,6 +166,12 @@ documento, no en la pantalla. Los huecos, los motivos y los estados usan **sólo
 | la lectura falló | «No se pudo leer. Reintenta.» |
 
 `{corte}` es la fecha corta del corte, «31 ago», y sale del dato (`corteDeEpoca`, `lib/negocio/recorrido.ts:292-312`), nunca escrita a mano. Lo que el servidor dice cuando algo falla va en el `title`.
+
+Las tres frases de `{cliente}` (el nivel 3, C6 · D1) son las de A14-02 de Acquisition, por lo mismo: con varios
+clientes, «Faltan días de gasto.» no decía de quién ni por qué. Siguen a esa frase, una por cliente, sólo cuando el
+motivo de las vistas es `colector_atrasado` o `dias_sin_leer` y el sello del barrido sabe el porqué; se pregunta a los
+clientes de la ventana que decidió el motivo, la actual o la anterior. `{detalle}` es el texto del código de la falta
+(el de la empresa para el principal, el del cliente para los demás).
 
 **Los cinco desvíos de rótulo, declarados** · El prototipo contaba visitas y citas; acá se cuentan personas:
 
@@ -581,7 +590,7 @@ la invariante. La ruta de Conversion corta con esa ventana desde el 2026-10-08 (
 `lib/negocio/embudosDeAcquisition.ts`:
 
 - **una pura**, probada sin base: `armarPasos`, `variacionEnPuntos` y `pasoDeLaSenal`. Importa `tasa` y
-  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:286-289` y `:313-322`), y no las copia;
+  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:289-292` y `:316-325`), y no las copia;
 - **una de lectura**, probada contra la base: una sola pasada por los contactos de la cohorte y la suma de
   las vistas. Compone `recorridoDelLead` y `embudoDelFormulario`, que reciben la ventana explícita, y no
   recalcula lo que ya calculan, con una excepción: en la ventana anterior, la pasada cuenta la cohorte junto con
@@ -601,7 +610,7 @@ también `pasos` y `senales.porPaso`.
 **Qué es** · Lo que se mide no se recalcula en ningún otro lugar:
 
 - **El cerebro.** `recorrido_de_los_leads` y `formulario_de_la_landing`
-  (`lib/agentes/executive/adaptadores/conversion.ts:45` y `:62`) pasan a la lectura única, con la zona de la
+  (`lib/agentes/executive/adaptadores/conversion.ts:47` y `:64`) pasan a la lectura única, con la zona de la
   empresa. Se agrega `pasos_de_conversion`, con las cifras de la tira y de las tarjetas. Ya promete días
   cerrados para 7 y 30 días (`lib/agentes/executive/adaptadores/comun.ts:65`), y deja de ser falso para
   Conversion. `TAREAS_POR_SECCION.conversion`

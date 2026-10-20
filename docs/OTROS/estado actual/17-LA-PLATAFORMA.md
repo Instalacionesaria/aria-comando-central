@@ -233,10 +233,10 @@ el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fal
 (`lib/negocio/frescura.ts:260-266`, `:231`, `:258`).
 
 **Quién la lee** (búsqueda de `frescuraDe(` en `lib/`, `app/` y `components/`, 2026-10-18): la Agenda del Closer
-(`lib/negocio/agenda.ts:353`), el chat de la ficha (`lib/negocio/ficha.ts:295`, `:295`), Leads Portal
-(`app/api/leads-portal/route.ts:64-65`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
-**comentario de la cabecera** de cada departamento (`lib/agentes/cabecera.ts:126`, `lib/agentes/cabecera.ts:171`,
-`lib/agentes/cabecera.ts:180`), los detectores, que no publican lo que no pueden medir
+(`lib/negocio/agenda.ts:364`), el chat de la ficha (`lib/negocio/ficha.ts:298`, `:298`), Leads Portal
+(`app/api/leads-portal/route.ts:65-66`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
+**comentario de la cabecera** de cada departamento (`lib/agentes/cabecera.ts:127`, `lib/agentes/cabecera.ts:175`,
+`lib/agentes/cabecera.ts:185`), los detectores, que no publican lo que no pueden medir
 (`lib/agentes/detectores/creative.ts:122`, `lib/agentes/detectores/conversion.ts:120`,
 `lib/agentes/detectores/conversation.ts:90`), y una herramienta del cerebro que lee la frescura de las tareas
 (`lib/agentes/executive/adaptadores/plataforma.ts:58`). **Lo que nadie lee es el motivo del sello**:
@@ -623,6 +623,7 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | «Nivel 3 · C5 · Acquisition, Conversation y los detectores del gasto, por cliente (094)» | C5 · G3 | `094`: la entidad `cliente` de las señales y el funnel en la cuenta de su campaña. La atribución por campaña y las campañas de Acquisition dicen su cliente con varios; un cliente que pauta sin su serie frena los costos, y sólo uno con métricas sin serie frena lo que lee Meta; «sin entrega», la concentración, la escala y el gasto sin crecimiento, por cliente; toda señal de campaña dice su cliente; la serie atrasada mira sólo a los activos, y a uno en pausa se le pide la serie hasta su último día cerrado |
 | «Nivel 3 · C5 · la pieza de Creative es (cliente, nombre) (095)» | C5 · G1 | `095`: la clave del link manual pasa a (org, cliente, pieza). La pieza es (cliente, nombre) en la calidad, el rendimiento, la fatiga, la entrega, la miniatura y los activos, con `idDeLaPieza` (el nombre para el principal: las huellas de siempre); con piezas de dos clientes, la tarjeta y la ficha dicen el cliente, «Funciona», la concentración y el ICP comparan dentro de su cliente, y las señales y el cerebro dicen «nombre · cliente», nunca un uuid; la ruta del link valida el cliente con la sesión, y su 404 lo nombra sólo si la sesión ve más de uno |
 | «Nivel 3 · C5 · el vínculo de un closer es por cliente (096)» y «Nivel 3 · C5 · la clave del closer por cliente (097)» | C5 · G2 | `096`: la clave (org, cliente, persona) y el único del vínculo por cliente, junto a los viejos; `097`: los cierra. El vínculo de un closer con el CRM es de un cliente: «mío» son los pares (cliente, usuario del CRM) en los cinco cortes; Sales y la ficha, por par, y quien trabaja en otro cliente tiene su aviso; el tope sigue en tres personas por empresa; la ruta y la pantalla eligen el cliente (sin él, el principal), y uno ajeno o de baja es 404 |
+| «Nivel 3 · C6 · los avisos dicen de qué cliente y qué hacer» | C6 · D1 | sin migración: la agenda, la cabecera de Mi Día, el chat y Leads dicen de qué cliente no está lista la conexión con GoHighLevel y qué hacer, con el texto de su código y sólo del alcance de quien mira; Acquisition y Conversion nombran, después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué (también con el colector atrasado); el alta, la activación, Ajustes › Clientes y la pantalla del vínculo dicen qué closers no ven a un cliente; el tope de tres closers por empresa queda decidido. Con un solo cliente, ninguna respuesta cambia |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
@@ -643,7 +644,8 @@ ya no tiene su único), y lo mismo al revés; es un botón de administración, y
 `096` después de la `095`, desplegar su código, y la `097` **con G2 ya desplegado**: el `asignarCloser` de antes
 escribe con `on conflict (org_id, usuario_id)` y sin ese único daría 42P10, y desde ahí no se vuelve a un despliegue
 anterior a G2. Entre G2 y la `097` un closer no se puede vincular en un segundo cliente (la clave vieja lo rechaza);
-hoy cada empresa tiene uno.
+hoy cada empresa tiene uno. C6 · D1 (los avisos por cliente) no tiene migración: sube con su código después de G2 y de
+G3, cuyos vínculos por cliente y frenos del gasto lee; con un solo cliente por empresa ninguna respuesta cambia.
 
 **El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
 (`app/api/cron/route.ts:230`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los

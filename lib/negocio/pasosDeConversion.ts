@@ -41,8 +41,9 @@ import { campoPorNombre, type CampoDelCrm } from './camposDelCrm.ts';
 import { esCalificado, tieneCitaAlcanzable, todasSusCitasCanceladas } from './citasAlcanzables.ts';
 import { bordesDelPeriodo, type DiasDeCalendario } from './diasCerrados.ts';
 import { embudoDelFormulario, type EmbudoDelFormulario } from './embudoDelFormulario.ts';
-import { pautaSinLeerEn, type Sentido, tasa, type Variacion, variacion } from './embudosDeAcquisition.ts';
+import { clientesSinElGastoEntero, pautaSinLeerEn, type Sentido, tasa, type Variacion, variacion } from './embudosDeAcquisition.ts';
 import { coberturaDelGasto, estadoDeLaSerie, type MotivoDelGasto } from './gastoDeLaCuenta.ts';
+import { faltaDelGastoDe, type FaltaDelGastoDeUnCliente } from './faltaDeLosClientes.ts';
 import {
   CAMPO_DE_CONFIRMACION,
   confirmoElAgendamiento,
@@ -134,7 +135,11 @@ export interface Paso {
 
 export interface CifrasDeConversion {
   contactos: { valor: number; variacion: Variacion };
-  vistas: { valor: number | null; variacion: Variacion; motivo: MotivoDeLasVistas | null };
+  /**
+   * `faltaPorCliente` (el nivel 3, C6): con el motivo `colector_atrasado` o `dias_sin_leer`, de qué cliente falta el
+   * gasto y por qué, cuando el sello lo sabe. Sólo viaja si no está vacía: con un solo cliente, nunca.
+   */
+  vistas: { valor: number | null; variacion: Variacion; motivo: MotivoDeLasVistas | null; faltaPorCliente?: FaltaDelGastoDeUnCliente[] };
   formulario: {
     /** Los que traen el campo. `null` si la ventana empieza después del corte o no hay campo. */
     valor: number | null;
@@ -241,7 +246,12 @@ export interface EntradaDeLosPasos {
    * hay flecha: no hay porcentaje contra cero. Comparan por su cuenta, aunque las personas no: no son personas, y lo
    * que las hace comparables es el gasto, no la lectura de contactos.
    */
-  vistas: { actual: number | null; anterior: number | null; motivo: MotivoDeLasVistas | null };
+  vistas: {
+    actual: number | null;
+    anterior: number | null;
+    motivo: MotivoDeLasVistas | null;
+    faltaPorCliente?: readonly FaltaDelGastoDeUnCliente[];
+  };
   sinAlta: number | null;
 }
 
@@ -272,6 +282,7 @@ export function armarPasos(e: EntradaDeLosPasos): PasosDeConversion {
     valor: e.vistas.actual,
     variacion: e.vistas.anterior !== null ? variacion(e.vistas.actual, e.vistas.anterior, 'mas_es_mejor') : SIN,
     motivo: e.vistas.motivo,
+    ...(e.vistas.faltaPorCliente?.length ? { faltaPorCliente: [...e.vistas.faltaPorCliente] } : {}),
   };
 
   /* La porción compara como toda proporción sobre la cohorte: con las dos cohortes en el piso (CV15-20). Se publica
@@ -578,6 +589,8 @@ export async function lecturaDeConversion(
   const vistasActual = va.valor;
   let vistasAnterior: number | null = null;
   let motivo: MotivoDeLasVistas | null = va.motivo;
+  // Si el motivo del gasto lo decidió la ventana ANTERIOR (C6): a sus clientes se les pregunta por qué.
+  let porLaAnterior = false;
   if (b.cerrados && vistasActual !== null) {
     const candidata = b.anteriorCandidata;
     if (b.colectorAtrasado) {
@@ -589,11 +602,14 @@ export async function lecturaDeConversion(
       const cuentaActual = await coberturaDelGasto(b.ventana.desde, b.ventana.hasta, b.dias, zona);
       const cuentaAnterior = await coberturaDelGasto(candidata.desde, candidata.hasta, b.dias, zona);
       if (cuentaActual.motivo !== null) motivo = cuentaActual.motivo;
-      else if (cuentaAnterior.motivo !== null) motivo = cuentaAnterior.motivo;
-      else if ((await pautaSinLeerEn(candidata)).sinSerie) {
+      else if (cuentaAnterior.motivo !== null) {
+        motivo = cuentaAnterior.motivo;
+        porLaAnterior = true;
+      } else if ((await pautaSinLeerEn(candidata)).sinSerie) {
         /* La anterior, con un cliente que pautó sin su gasto: sin esto sus vistas salían nulas y sin motivo, y la flecha
            desaparecía sin decir por qué. */
         motivo = 'dias_sin_leer';
+        porLaAnterior = true;
       } else {
         const vp = await vistasDeLaVentana(candidata, b.dias, zona, false);
         if (vp.motivo !== null) motivo = vp.motivo;
@@ -610,6 +626,13 @@ export async function lecturaDeConversion(
     }
   }
 
+  /* De qué cliente falta el gasto y por qué (el nivel 3, C6), cuando la nota dice «Faltan días de gasto.»: a los
+     clientes de la ventana que decidió el motivo. */
+  const faltaPorCliente =
+    motivo === 'colector_atrasado' || motivo === 'dias_sin_leer'
+      ? await faltaDelGastoDe(await clientesSinElGastoEntero(porLaAnterior ? b.anteriorCandidata : b.ventana, b.dias, zona))
+      : [];
+
   const sinAlta =
     periodo.clave === 'completo'
       ? n((await sql<{ n: string }>`select count(*) as n from negocio.contactos where alta_en_el_crm is null`.execute(datos())).rows[0]?.n)
@@ -625,7 +648,7 @@ export async function lecturaDeConversion(
     recorridoAnterior,
     formulario,
     hayCampoDeConfirmacion: campoDeConfirmacion !== null,
-    vistas: { actual: vistasActual, anterior: vistasAnterior, motivo },
+    vistas: { actual: vistasActual, anterior: vistasAnterior, motivo, faltaPorCliente },
     sinAlta,
   });
   return { pasos, recorrido, formulario, recorridoAnterior, ventana: b.ventana, anterior };

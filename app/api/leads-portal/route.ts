@@ -28,6 +28,7 @@ import { conOrganizacion } from '../../../lib/datos/contexto.ts';
 import { ambitoDe } from '../../../lib/autorizacion/ambito.ts';
 import { cadenaDeCierre } from '../../../lib/negocio/cadenaDeCierre.ts';
 import { frescuraDe } from '../../../lib/negocio/frescura.ts';
+import { avisoSinConexion, clientesSinConexion } from '../../../lib/negocio/faltaDeLosClientes.ts';
 import { HUECOS, MEDIDO_EL } from '../../../lib/negocio/huecosDeSales.ts';
 import { coherenciaConSales, leadsDelPortal } from '../../../lib/negocio/leadsDelPortal.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
@@ -54,7 +55,7 @@ export async function GET(peticion: Request): Promise<Response> {
   const periodo = periodoDe(new URL(peticion.url).searchParams.get('periodo'));
   if (periodo === null) return rechazo('peticion_invalida', 'Ese período no existe.');
 
-  const { portal, cadena, frescura } = await conOrganizacion(ambitoDe(contexto, PANTALLA), async () => ({
+  const { portal, cadena, frescura, conexion } = await conOrganizacion(ambitoDe(contexto, PANTALLA), async () => ({
     portal: await leadsDelPortal(periodo.dias),
     /* La cadena de Sales, con el MISMO `dias`. No se dibuja: está para comparar. Cohorte y «agendó»
        son la misma expresión y el mismo predicado en las dos pestañas, y si no dan lo mismo ninguna
@@ -64,6 +65,9 @@ export async function GET(peticion: Request): Promise<Response> {
       contactos: await frescuraDe('contactos'),
       citas: await frescuraDe('citas'),
     },
+    /* De qué cliente a la vista no se están trayendo los contactos y las citas, y qué hacer (el nivel 3). Al cliente
+       final, sin la ruta de Ajustes: no la ve, y la conexión la carga la empresa. */
+    conexion: avisoSinConexion(await clientesSinConexion(), 'datos', contexto.cuentas.limitado),
   }));
 
   /* Si no coinciden, lo dice el aviso en vez de elegir una de las dos cifras. Ver `coherenciaConSales`. */
@@ -77,6 +81,8 @@ export async function GET(peticion: Request): Promise<Response> {
     aviso,
     coherenciaConSales: coherencia,
     frescura,
+    // Fuera de `frescura`, que es de las dos tareas: esto es de un cliente. Sólo con algo que decir.
+    ...(conexion ? { conexion } : {}),
     huecos: { medidoEl: MEDIDO_EL, lista: HUECOS.filter((h) => HUECOS_QUE_COMPARTE.includes(h.punto)) },
   });
 }

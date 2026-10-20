@@ -28,6 +28,8 @@ export interface PantallaDeLeadsPortal extends LeadsDelPortal {
   periodo: ClaveDePeriodo;
   coherenciaConSales: CoherenciaConSales;
   frescura: { contactos: Frescura; citas: Frescura };
+  /** De qué cliente no se están trayendo los contactos y las citas, y qué hacer (el nivel 3). Sólo con algo que decir. */
+  conexion?: string;
   /** Los huecos de la venta, de Sales. **Lista vacía ⟹ no se dibujan.** */
   huecos: { medidoEl: string; lista: readonly HuecoDeSales[] };
 }

@@ -29,7 +29,9 @@ export const HERRAMIENTAS_DE_CONVERSION: readonly DefinicionDeHerramienta[] = [
       'Comparan contra la ventana anterior sólo los contactos, las vistas, los agendados y la porción que entró por la ' +
       'landing; el formulario, los calificados, los confirmados y los que cancelaron no comparan nunca. Las variaciones ' +
       'también llegan como fracción y siempre sin signo: `porcentaje` 0,25 es un 25 % y `puntos` 0,05 son cinco ' +
-      'puntos; si sube o baja lo dice `tipo`. VSL y Gracias no tienen fuente. ' +
+      'puntos; si sube o baja lo dice `tipo`. VSL y Gracias no tienen fuente. Con varios clientes, cuando a las vistas ' +
+      'les faltan días de gasto, cifras.vistas.faltaPorCliente dice de qué cliente y por qué (falta: meta_sin_vincular, ' +
+      'sin_conexion con el código en que y qué hacer en detalle, o no_activo). ' +
       LOS_DIAS,
     secciones: ['conversion'],
     esquema: ARGUMENTO_PERIODO,

@@ -23,7 +23,10 @@ export const HERRAMIENTAS_DE_ACQUISITION: readonly DefinicionDeHerramienta[] = [
       'gastaron las campañas sin contactos atribuidos, que no pagan el costo por contacto. Una campaña con ' +
       'conContactos falso no dice cuánta gente trajo: sus contactos en 0 no son un dato. Dice si la comparación o ' +
       'los costos no se pueden dar, y por qué (gasto.motivo: colector_atrasado, dias_sin_leer, no_cuadra). Con ' +
-      'campañas de más de un cliente, cada campaña dice de qué cliente es (cliente).',
+      'campañas de más de un cliente, cada campaña dice de qué cliente es (cliente). Con varios clientes, cuando faltan ' +
+      'días de gasto, gasto.faltaPorCliente dice de qué cliente y por qué (falta: meta_sin_vincular, su GoHighLevel no ' +
+      'tiene Meta vinculado; sin_conexion, su conexión con GoHighLevel no está lista, con el código en que y qué hacer ' +
+      'en detalle; no_activo, está en pausa o de baja); sin la clave, no se sabe de quién.',
     secciones: ['acquisition'],
     esquema: ARGUMENTO_PERIODO,
     async ejecutar(argumentos, contexto) {

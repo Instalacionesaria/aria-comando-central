@@ -86,6 +86,8 @@ export async function GET(
     frescura: r.pestana.frescura,
     // La otra vía. Ver el comentario de `lib/negocio/ficha.ts`.
     aviso: r.pestana.aviso,
+    // Con mensajes, si la conexión del cliente del contacto no está lista (el nivel 3): sólo cuando hay algo que decir.
+    ...(r.pestana.sinConexion ? { sinConexion: r.pestana.sinConexion } : {}),
     // La ventana la calcula el SERVIDOR con su reloj. Dejársela al navegador haría que un reloj
     // atrasado abriera un compositor que el canal va a rechazar — y la decisión de gastar o no la
     // llamada la toma el servidor.

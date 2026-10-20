@@ -94,7 +94,16 @@ const FRASE = {
   sinHistoria: 'Sin historia para comparar.',
   hoySinCostos: 'Hoy, sin costos.',
   noFigura: 'No figura en Meta',
+  metaSinVincular: 'El GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel.',
+  sinConexion: 'La conexión de {cliente} con GoHighLevel no está lista. {detalle}',
+  noActivo: '{cliente} ya no está activo: su gasto no se lee.',
 };
+
+/* La frase de cada falta de un cliente (`gasto.faltaPorCliente`, el nivel 3). El servidor dice cuál; acá se elige. */
+const FRASE_DE_LA_FALTA = { meta_sin_vincular: 'metaSinVincular', sin_conexion: 'sinConexion', no_activo: 'noActivo' };
+
+/** Completa los `{cliente}` y `{detalle}` de una frase, como el `poner` de Conversion. */
+const poner = (frase, valores) => frase.replace(/\{(\w+)\}/g, (_, k) => String(valores[k] ?? ''));
 
 /* ── LOS FORMATOS DEL PROTOTIPO (líneas 5380-5382) ─────────────────────────
    Con una excepción: el costo por clic real anda en centavos, y `Math.round` lo dibujaba «$0», que
@@ -350,8 +359,14 @@ function Nota({ e }) {
   /* `no_cuadra`: todos los días tienen el total de la cuenta y el detalle por campaña todavía no lo explica; el
      relleno de cada hora lo está buscando (A14-19). Es otro hecho que «faltan días», y otra frase. */
   if (e.gasto?.motivo === 'no_cuadra') motivos.push(FRASE.faltaGasto);
-  else if (e.sinComparacion === 'faltan_dias' || e.sinCostos === 'gasto_incompleto') motivos.push(FRASE.faltanDias);
-  else if (e.sinComparacion === 'sin_historia') motivos.push(FRASE.sinHistoria);
+  else if (e.sinComparacion === 'faltan_dias' || e.sinCostos === 'gasto_incompleto') {
+    motivos.push(FRASE.faltanDias);
+    // Con varios clientes, de cuál faltan y qué hacer, cuando el servidor lo sabe (A14-02).
+    for (const f of e.gasto?.faltaPorCliente ?? []) {
+      const frase = FRASE[FRASE_DE_LA_FALTA[f.falta]];
+      if (frase) motivos.push(poner(frase, f));
+    }
+  } else if (e.sinComparacion === 'sin_historia') motivos.push(FRASE.sinHistoria);
   if (e.sinCostos === 'hoy') motivos.push(FRASE.hoySinCostos);
   return (
     <p className="acq-note">

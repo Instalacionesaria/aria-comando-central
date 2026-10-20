@@ -65,6 +65,10 @@ const SIN_CANDIDATOS = {
     'concede en Ajustes → Usuarios, en la ficha de cada una.',
 };
 
+/** «Ana», «Ana y Luis», «Ana, Luis y Eva». */
+const enLista = (nombres) =>
+  nombres.length <= 1 ? (nombres[0] ?? '') : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+
 function porQue(r) {
   if (r.tipo === 'sin_respuesta') return 'No llegó al servidor. No se cambió nada.';
   if (r.tipo === 'rechazado') return r.detalle ?? `Rechazado (${r.estado}).`;
@@ -292,6 +296,11 @@ export default function QuienEsElCloser({ alCambiar }) {
   const lleno = closers.length >= tope;
   const varios = clientes.length > 1;
   const nombreDe = new Map(clientes.map((c) => [c.id, c.nombre]));
+  /* Los closers que no ven al cliente elegido (C6): vinculados en otro y no en éste. Lo dice el servidor. */
+  const elegido = varios ? clientes.find((c) => c.id === cliente) : undefined;
+  const sinVincularAqui = (elegido?.sinVincular ?? [])
+    .map((id) => closers.find((k) => k.usuarioId === id)?.nombre)
+    .filter(Boolean);
 
   return (
     <div className="aj-tarjeta ck-admin">
@@ -320,6 +329,7 @@ export default function QuienEsElCloser({ alCambiar }) {
                 {c.nombre}
                 {c.esPorOmision ? ' · principal' : ''}
                 {c.estado === 'pausada' ? ' · pausado' : ''}
+                {c.sinVincular?.length ? ` · ${c.sinVincular.length} sin vincular` : ''}
               </option>
             ))}
           </select>
@@ -340,6 +350,19 @@ export default function QuienEsElCloser({ alCambiar }) {
           <span>
             No se pudo leer la lista de usuarios de GoHighLevel, así que no se puede vincular a
             nadie: {fallaCrm}
+          </span>
+        </div>
+      ) : null}
+
+      {/* Quiénes no ven al cliente elegido, todos juntos, antes de la lista: cada fila lo dice de sí misma, y esto dice
+          que hay que hacer algo en este cliente. */}
+      {sinVincularAqui.length > 0 ? (
+        <div className="fd-aviso falta" role="status">
+          <i>◍</i>
+          <span>
+            {`En «${elegido.nombre}» ${sinVincularAqui.length === 1 ? 'no está vinculado' : 'no están vinculados'} ` +
+              `${enLista(sinVincularAqui)}: ${sinVincularAqui.length === 1 ? 'no ve' : 'no ven'} ninguno de sus contactos ` +
+              'hasta que elijas su usuario de GoHighLevel abajo.'}
           </span>
         </div>
       ) : null}

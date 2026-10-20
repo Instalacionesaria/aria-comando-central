@@ -85,7 +85,7 @@ Estado de las cinco promesas del § 18.16, con su fecha:
 | campaña y anuncio de origen | **llega**: `adId` en 215 de 624 contactos, `utmContent` en 508 | `atribucion_primera`, medido el 2026-10-18 (213 y 506 de 594 el 2026-09-28) |
 | calidad del tráfico | **no está definida**: el documento no dice qué es | `docs/conversion/07-LO-QUE-ENTREGA-Y-RECIBE.md:36` |
 | CTR | **llega**, por anuncio y por día | `negocio.metricas_de_anuncio` |
-| *landing page views* | **llega, y Conversion la publica desde el 2026-10-09**: «Vistas de landing, según Meta», sin tasa. El desglose de acciones empieza el 2026-08-18 (re-medido el 2026-10-18), y `landingPageView` y `omniLandingPageView` valían lo mismo en las 221 filas que traían las dos el 2026-10-08 | `lib/negocio/pasosDeConversion.ts:468` |
+| *landing page views* | **llega, y Conversion la publica desde el 2026-10-09**: «Vistas de landing, según Meta», sin tasa. El desglose de acciones empieza el 2026-08-18 (re-medido el 2026-10-18), y `landingPageView` y `omniLandingPageView` valían lo mismo en las 221 filas que traían las dos el 2026-10-08 | `lib/negocio/pasosDeConversion.ts:479` |
 | audiencia y placement | **no llega**: GoHighLevel sólo agrupa por día, semana o mes | del 2026-09-20, no re-medido: `docs/conversion/07-LO-QUE-ENTREGA-Y-RECIBE.md:39` |
 
 Las vistas de landing son un agregado de Meta por anuncio y por día: no son sesiones ni se pueden cruzar con
@@ -113,7 +113,7 @@ la frase de la cabecera del departamento (`app/api/conversion/route.ts:48-51`). 
 usó (`app/api/conversion/route.ts:96-115`). El lector del navegador exige el período, sin valor por omisión
 (`lib/negocio/vistaDeConversion.ts:51`).
 
-**La lectura.** `lecturaDeConversion` (`lib/negocio/pasosDeConversion.ts:533`) compone lo que ya se medía y no
+**La lectura.** `lecturaDeConversion` (`lib/negocio/pasosDeConversion.ts:544`) compone lo que ya se medía y no
 lo recalcula:
 
 - la ventana, con `bordesDelPeriodo` (`lib/negocio/diasCerrados.ts:82`): «7 días» y «30 días» son días
@@ -123,10 +123,10 @@ lo recalcula:
   y 30 días las dos pantallas cuentan a la misma gente;
 - el reparto, con `recorridoDelLead`, y el formulario, con `embudoDelFormulario`, sobre esa ventana;
 - una pasada por la cohorte —agendó, calificó, confirmó, canceló, la cohorte hasta el corte y las citas
-  congeladas— (`lib/negocio/pasosDeConversion.ts:416`), y la de la ventana anterior a la misma edad;
-- las vistas de landing de Meta (`lib/negocio/pasosDeConversion.ts:499`).
+  congeladas— (`lib/negocio/pasosDeConversion.ts:427`), y la de la ventana anterior a la misma edad;
+- las vistas de landing de Meta (`lib/negocio/pasosDeConversion.ts:510`).
 
-`armarPasos` (`lib/negocio/pasosDeConversion.ts:249`) arma con eso la tira y las cinco tarjetas, con sus
+`armarPasos` (`lib/negocio/pasosDeConversion.ts:259`) arma con eso la tira y las cinco tarjetas, con sus
 variaciones y su lectura; todo viaja de 0 a 1. El cerebro (`pasos_de_conversion`, `recorrido_de_los_leads`,
 `formulario_de_la_landing`, `lib/agentes/executive/adaptadores/conversion.ts:19`) y el detector leen la misma
 lectura, así que lo que dicen de una cifra es lo que la pantalla dibuja.
@@ -135,22 +135,22 @@ lectura, así que lo que dicen de una cifra es lo que la pantalla dibuja.
 `estetica-op` (`components/views/ConversionView.jsx:19-27`).
 
 **El panel.** `components/conversion/PanelDeConversion.jsx` (520 líneas) dibuja el marcado del prototipo, en su
-orden (`components/conversion/PanelDeConversion.jsx:187`):
+orden (`components/conversion/PanelDeConversion.jsx:189`):
 
 1. **El encabezado**: «Conversion», «Dónde se pierde la gente entre el click y la cita», el chip «GoHighLevel»
    con el punto verde sólo si la lectura de contactos está al día
-   (`components/conversion/PanelDeConversion.jsx:157`), el botón «Plan de acción» y los cuatro períodos sin
-   «Personalizado» ni el matiz de «Hoy» (`components/conversion/PanelDeConversion.jsx:169`). Abre en 30 días y
+   (`components/conversion/PanelDeConversion.jsx:159`), el botón «Plan de acción» y los cuatro períodos sin
+   «Personalizado» ni el matiz de «Hoy» (`components/conversion/PanelDeConversion.jsx:171`). Abre en 30 días y
    enciende el botón que el servidor contestó.
-2. **La tira** (`components/conversion/PanelDeConversion.jsx:250`): «Landing y VSL» con Contactos, Vistas de
+2. **La tira** (`components/conversion/PanelDeConversion.jsx:252`): «Landing y VSL» con Contactos, Vistas de
    landing según Meta y «Dan play al VSL» en «—»; «Formulario y cita» con quienes empiezan el formulario y los que
    agendan; «Calidad de lo agendado» con agendados, calificados y no calificados.
-3. **La nota de cobertura** (`components/conversion/PanelDeConversion.jsx:309`): cuántos contactos traen por
+3. **La nota de cobertura** (`components/conversion/PanelDeConversion.jsx:311`): cuántos contactos traen por
    dónde entraron, la ventana de verdad, contra qué compara, y por qué falta una flecha cuando falta.
-4. **El recorrido** (`components/conversion/PanelDeConversion.jsx:364`): Landing, VSL, Formulario, Agenda y
+4. **El recorrido** (`components/conversion/PanelDeConversion.jsx:368`): Landing, VSL, Formulario, Agenda y
    Gracias, sin bandas. Cada porcentaje es sobre los contactos de la ventana, y la caída «−N» es contra la cohorte,
    no contra la tarjeta de al lado. VSL y Gracias son huecos y no abren cajón.
-5. **La alarma** (`components/conversion/PanelDeConversion.jsx:465`), sólo con señales `critica` y con 7 o 30
+5. **La alarma** (`components/conversion/PanelDeConversion.jsx:469`), sólo con señales `critica` y con 7 o 30
    días. Hoy ninguna regla de Conversion es crítica, así que no aparece.
 6. **La tarjeta de señales**, la misma de Acquisition, Creative y Conversation.
 
@@ -161,7 +161,7 @@ calificados, tasa, confirmados, cancelaron y no calificados (`components/convers
 observaciones van sólo en los pasos a los que apunta una regla (`components/conversion/CajonDelPaso.jsx:257`).
 
 Las frases de los huecos y los motivos son una lista cerrada (`components/conversion/comun.jsx:41`), la del
-`CV15-02`; el navegador no calcula y multiplica por 100 en un solo lugar (`components/conversion/comun.jsx:74`).
+`CV15-02`; el navegador no calcula y multiplica por 100 en un solo lugar (`components/conversion/comun.jsx:77`).
 Lo nuevo de estilo vive en `app/conversion.css` (175 líneas), acotado a la vista y al cajón.
 
 **Las pruebas.** 20 en `pruebas/codigo/246-pasos-de-conversion.test.ts`, 19 en
@@ -412,19 +412,21 @@ no son personas y no llevan tasa. Contra la ventana anterior comparan los contac
 landing (con las dos cohortes en el piso); los agendados, a la misma edad y sin citas congeladas en la anterior;
 las vistas, por su cuenta, con el gasto entero y el desglose completo en las dos ventanas. **Nunca** comparan el
 formulario, los calificados, los no calificados, los confirmados ni los que cancelaron: el descarte y la
-confirmación no tienen fecha (`lib/negocio/pasosDeConversion.ts:249`, `CV15-20`).
+confirmación no tienen fecha (`lib/negocio/pasosDeConversion.ts:259`, `CV15-20`).
 
 **15. El servidor calcula; el navegador dibuja.** Las tasas, las caídas y las variaciones con su lectura llegan
 hechas; el navegador sólo les da formato, multiplica por 100 en un solo lugar
-(`components/conversion/comun.jsx:74`) y elige la frase de la lista cerrada. La prueba
+(`components/conversion/comun.jsx:77`) y elige la frase de la lista cerrada. La prueba
 `pruebas/codigo/247-la-pantalla-de-conversion.test.ts` lo vigila.
 
 **16. Con varios clientes (el nivel 3, C5 · G3), las vistas no son las de otro cliente.** Si un cliente pautó en la
 ventana sin Meta conectado, sus vistas no las leyó nadie: no se publica la suma de los demás ni el cero que midió la
-cuenta de otro, y la nota dice «Faltan días de gasto» (`lib/negocio/pasosDeConversion.ts:512`). Y con un cliente sin su
-gasto en la ventana o en la anterior, las vistas no comparan, diciendo por qué (`lib/negocio/pasosDeConversion.ts:585`,
-`lib/negocio/pasosDeConversion.ts:593`). Con un solo cliente, lo de siempre. Lo exige
-`pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts`.
+cuenta de otro, y la nota dice «Faltan días de gasto» (`lib/negocio/pasosDeConversion.ts:523`). Y con un cliente sin su
+gasto en la ventana o en la anterior, las vistas no comparan, diciendo por qué (`lib/negocio/pasosDeConversion.ts:598`,
+`lib/negocio/pasosDeConversion.ts:608`). Desde C6 · D1, la nota dice después de «Faltan días de gasto» de qué cliente
+falta y qué hacer, preguntando por la ventana que decidió el motivo (`lib/negocio/pasosDeConversion.ts:631`). Con un
+solo cliente, lo de siempre. Lo exigen `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts` y
+`pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:541`.
 
 ---
 

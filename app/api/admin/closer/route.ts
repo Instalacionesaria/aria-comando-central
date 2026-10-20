@@ -51,7 +51,7 @@ import {
   TOPE_DE_CLOSERS,
   quitarCloser,
 } from '../../../../lib/negocio/closer.ts';
-import { closersDeLaEmpresa } from '../../../../lib/negocio/alcanceDelCloser.ts';
+import { closersDeLaEmpresa, closersSinVinculoEn } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { porcentajesDeLaEmpresa, TIPO_CLOSER } from '../../../../lib/negocio/comision.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 import { datos } from '../../../../lib/datos/contexto.ts';
@@ -129,7 +129,15 @@ async function estado(orgId: string) {
       nombre: a.nombre,
       vinculos: a.vinculosALaVista,
     })),
-    clientes: clientes.map((c) => ({ id: c.id, nombre: c.nombre, esPorOmision: c.es_por_omision, estado: c.estado })),
+    /* Con más de un cliente, quiénes no ven a cada cliente ACTIVO (C6): vinculados en otro y no en éste, por su
+       `usuarioId`. Con uno solo no viaja: todo vínculo es del principal. */
+    clientes: clientes.map((c) => ({
+      id: c.id,
+      nombre: c.nombre,
+      esPorOmision: c.es_por_omision,
+      estado: c.estado,
+      ...(clientes.length > 1 ? { sinVincular: c.estado === 'activa' ? closersSinVinculoEn(c.id, asignado).map((k) => k.usuarioId) : [] } : {}),
+    })),
     tope: TOPE_DE_CLOSERS,
   };
 }

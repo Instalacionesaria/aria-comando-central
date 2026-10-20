@@ -157,7 +157,7 @@ contacto**.
 
 > Se cuentan por el asignatario del **contacto**, no por `citas.crm_asignado_a`, aunque esa columna
 > exista. El producto ya lo decidió: *«la cita no tiene dueño propio: es del contacto»*
-> (`lib/negocio/agenda.ts:285-287`). Contar por la columna de la cita haría que el mismo closer vea N
+> (`lib/negocio/agenda.ts:292-294`). Contar por la columna de la cita haría que el mismo closer vea N
 > en Agenda y M en Sales, **y las dos pantallas estarían bien**.
 
 ### S2-09 · Tasa de cancelación por closer

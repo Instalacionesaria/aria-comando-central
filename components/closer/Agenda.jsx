@@ -345,6 +345,14 @@ export default function Agenda({ zonaHoraria, verComo = null }) {
           <span>{datos.frescura.aviso}</span>
         </div>
       ) : null}
+      {/* Con citas a la vista, el cliente cuya conexión con GoHighLevel no está lista (el nivel 3): sus citas no están.
+          El texto lo arma el servidor; sin citas lo dice el vacío. */}
+      {datos.sinConexion ? (
+        <div className="fd-aviso falta" role="status">
+          <i>◍</i>
+          <span>{datos.sinConexion}</span>
+        </div>
+      ) : null}
 
       {aviso ? (
         <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">

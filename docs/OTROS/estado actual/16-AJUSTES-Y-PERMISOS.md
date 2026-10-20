@@ -568,3 +568,8 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   (`lib/administracion/cuentas.ts:212`); y Ajustes › Credenciales copia la de la empresa a su principal
   (`app/api/admin/credenciales/route.ts:277`), así que dos empresas no pueden tener la misma y cambiarla libera la
   vieja. Los closers son de la empresa: cualquier ámbito los lee (`db/migraciones/093_los_closers_de_la_empresa.sql`).
+- **Los closers que no ven a un cliente** (C6 · D1): el alta, la activación y la lista de Ajustes › Clientes dicen
+  qué closers están vinculados en otro cliente y no en ése —no ven sus contactos— (`app/api/admin/cuentas/route.ts:99`,
+  `components/ajustes/Clientes.jsx:42`), sólo a quien tiene `credenciales.ver` (la capacidad de la pantalla del
+  vínculo) y sobre su propia empresa: la plataforma operando sobre otra no recibe los nombres
+  (`lib/administracion/cuentas.ts:404`).

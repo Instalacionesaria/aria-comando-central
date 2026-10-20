@@ -92,11 +92,24 @@ documento y no en la pantalla. Los huecos usan **sólo** estas frases:
 | la ventana anterior no está entera (`sin_historia`) | «Sin historia para comparar.» |
 | «Hoy» no publica costos (`sinCostos: hoy`) | «Hoy, sin costos.» |
 | una campaña que GoHighLevel no listó, y que por eso no se puede asignar | «No figura en Meta» |
+| con varios clientes, después de «Faltan días de gasto.»: la pasada del gasto de ese cliente corrió y su GoHighLevel no tiene Meta vinculado (`gasto.faltaPorCliente`, `meta_sin_vincular`) | «El GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel.» |
+| con varios clientes, después de «Faltan días de gasto.»: la conexión de ese cliente con GoHighLevel no está lista (`sin_conexion`) | «La conexión de {cliente} con GoHighLevel no está lista. {detalle}» |
+| con varios clientes, después de «Faltan días de gasto.»: ese cliente está en pausa o de baja y no se lee (`no_activo`) | «{cliente} ya no está activo: su gasto no se lee.» |
 
 Las seis de abajo entraron al construir (AQ-4): sin ellas, un fallo al asignar, la primera carga, la
 falta de flechas o de costos y la campaña que no se puede asignar se habrían visto como un guion sin
 explicación. El motivo largo de cada una sigue en este documento, no en la pantalla. Lo que el servidor
 dice cuando algo falla va en el `title`.
+
+Las tres últimas entraron con el nivel 3 (C6 · D1, 2026-10-20): con varios clientes, «Faltan días de gasto.» no
+decía de quién ni por qué, y la decisión del usuario es que los costos de cada cliente salen de SU GoHighLevel con
+Meta vinculado y que el aviso diga de qué cliente es y qué hacer. Van DESPUÉS de esa frase, una por cliente, sólo
+cuando el servidor sabe el porqué por el sello del barrido (`lib/negocio/faltaDeLosClientes.ts`); si no lo sabe, la
+nota sigue con la frase sola. `{cliente}` es el nombre del cliente y `{detalle}` el texto del código de la falta, que
+ya dice qué hacer: el de la empresa (`TEXTO_DE_FALTA_GHL`) para el principal y el del cliente
+(`TEXTO_DE_FALTA_GHL_DEL_CLIENTE`) para los demás —su subcuenta la vincula la plataforma, su token se carga en su
+Conexión—. El prefijo es neutro («no está lista») porque un token ilegible no es un token que falte. El principal se
+nombra sólo con más de un cliente activo a la vista: con un solo cliente la nota es la de siempre.
 
 **Estado** · **Construido el 2026-09-30** (AQ-4): la lista vive en `FRASE`, en
 `components/acquisition/PanelDeAcquisition.jsx`, y `pruebas/codigo/182-la-pantalla-de-acquisition.test.ts`

@@ -12,7 +12,9 @@ import { autorDelCambio } from '../../../../../lib/autorizacion/sesion.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
 import { auditarAdministracion } from '../../../../../lib/autenticacion/auditoria.ts';
 import { esZonaValida } from '../../../../../lib/negocio/zonas.ts';
+import { closersDeLaEmpresa, closersSinVinculoEn } from '../../../../../lib/negocio/alcanceDelCloser.ts';
 import {
+  diceLosClosersSinVincular,
   editarCuenta,
   empresaDestino,
   leerDatosDeUnCliente,
@@ -50,11 +52,15 @@ export async function PATCH(peticion: Request, ctx: RouteContext<'/api/admin/cue
 
   try {
     const encontrado = await conOrganizacion({ orgId: destino, todaLaOrganizacion: true, cuentas: '*' }, async () => {
-      if (!(await editarCuenta(id, cambios, quien))) return false;
+      if (!(await editarCuenta(id, cambios, quien))) return null;
       await auditarAdministracion(datos(), { accion: 'cuenta_editada', actor: contexto.usuarioId, objetivo: id, orgId: destino });
-      return true;
+      /* Al activarlo, los closers vinculados en otro cliente y no en éste (C6), como en el alta: no ven sus contactos. */
+      const sin =
+        cambios.estado === 'activa' && diceLosClosersSinVincular(contexto, destino) ? closersSinVinculoEn(id, await closersDeLaEmpresa()) : [];
+      return sin.map((k) => k.nombre);
     });
-    return encontrado ? ok({ editado: true }) : rechazo('no_encontrado');
+    if (encontrado === null) return rechazo('no_encontrado');
+    return ok({ editado: true, ...(encontrado.length > 0 ? { closersSinVincular: encontrado } : {}) });
   } catch (e) {
     return rechazoDeLaBase(e);
   }

@@ -131,8 +131,8 @@ OB», y Borrar (`components/analizadores/PanelDeAnalizadores.jsx:379-430`). Sinc
 
 La lista viaja con una línea para la cabecera del departamento (`app/api/analizadores/llamadas/route.ts:34-41`;
 `components/analizadores/PanelDeAnalizadores.jsx:99`). Sale de `comentarioDeLasLlamadas`
-(`lib/agentes/cabecera.ts:178-184`): primero, si la tarea de cada hora **nunca corrió, falló o está atrasada**
-(`lib/agentes/cabecera.ts:74-79`), y si no, una regla de la Reunión de hoy de esa sección; sin nada que decir, calla.
+(`lib/agentes/cabecera.ts:183-189`): primero, si la tarea de cada hora **nunca corrió, falló o está atrasada**
+(`lib/agentes/cabecera.ts:75-80`), y si no, una regla de la Reunión de hoy de esa sección; sin nada que decir, calla.
 Es la primera vez que la pantalla dice algo de la frescura de su tarea. No dice lo que va en el motivo del sello
 (§ 7).
 

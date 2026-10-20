@@ -183,7 +183,7 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 
 | dato | en la maqueta | de dónde sale | cobertura |
 |---|---|---|---|
-| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:467-548`) | `LP09-09` |
+| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:476-557`) | `LP09-09` |
 | «8/8 campos» y «Formulario completado» | `aios-command-center_1.html:4823`, `:4858` | no hay conteo de campos; lo más cercano es el estado «Form Landing VSL» (`lib/negocio/recorrido.ts:231-238`) | `LP09-09` |
 | ICP Score | `aios-command-center_1.html:4857` | `contactos.score` | 471 |
 | Fit score, Intent score | `aios-command-center_1.html:4857` | **no existen** | hueco |
@@ -530,7 +530,7 @@ Conversation: «el CRM no registró reproducción».
 **Requisitos que salen de acá:**
 
 - De `campos_del_crm` a la ficha van **sólo** tres cosas: los campos del grupo `calificacion` —por
-  `perfilDeLaFicha`, que ya descarta lo vacío (`lib/negocio/ficha.ts:490-496`)—; el «Video Pre-Call»
+  `perfilDeLaFicha`, que ya descarta lo vacío (`lib/negocio/ficha.ts:499-505`)—; el «Video Pre-Call»
   del grupo `interacciones` (`LP05-11`; los otros tres campos de ese grupo son `LP05-P01`); y el
   estado del formulario. **Los 174 sin grupo no viajan**, salvo esa última: ahí están la atribución
   de campañas y los enlaces del sistema (`lib/ghl/contrato.ts:243-245`).

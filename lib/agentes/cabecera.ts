@@ -34,6 +34,7 @@ import { enPalabras, frescuraDe, type Frescura } from '../negocio/frescura.ts';
 import { citaCerrable } from '../negocio/citasAlcanzables.ts';
 import { DIAS_DE_LA_TASA } from '../negocio/indicadoresDeCitas.ts';
 import { type AlcanceDelCloser, contactoDelCloser } from '../negocio/alcanceDelCloser.ts';
+import { avisoSinConexion, clientesSinConexion, delAlcance } from '../negocio/faltaDeLosClientes.ts';
 import { diaEnZona } from '../negocio/tiempo.ts';
 import { ventanaDeMetricas } from '../negocio/costoDelAnuncio.ts';
 import { diasSinCuadrar } from '../negocio/gastoDeLaCuenta.ts';
@@ -165,13 +166,17 @@ export async function citasSinRegistrar(alcance: AlcanceDelCloser): Promise<numb
   return Number(fila.n);
 }
 
-/** El comentario de Closer: la lectura del calendario, y las citas sin registrar de su alcance. */
+/**
+ * El comentario de Closer: la lectura del calendario, y las citas sin registrar de su alcance. Y, con varios clientes,
+ * el cliente de su alcance cuya conexión con GoHighLevel no está lista (C6): DESPUÉS de la regla de las citas, que es
+ * algo que quien mira puede hacer ya; un aviso que no se arregla desde acá no la tapa mientras dure.
+ */
 export async function comentarioDelCloser(alcance: AlcanceDelCloser): Promise<ComentarioDeLaCabecera | null> {
-  return comentarioDeLaCabecera({
-    falta: faltaPorFrescura(await frescuraDe('citas'), 'la lectura del calendario'),
-    senales: [],
-    regla: textoDeCitasSinRegistrar(await citasSinRegistrar(alcance)),
-  });
+  const falta = faltaPorFrescura(await frescuraDe('citas'), 'la lectura del calendario');
+  const regla = textoDeCitasSinRegistrar(await citasSinRegistrar(alcance));
+  const sinConexion =
+    falta === null && regla === null ? avisoSinConexion(delAlcance(await clientesSinConexion(), alcance), 'calendario') : null;
+  return comentarioDeLaCabecera({ falta: falta ?? sinConexion, senales: [], regla });
 }
 
 /** El comentario de Llamadas de venta: el análisis de tl;dv, y la regla de la Reunión de hoy de su sección. */

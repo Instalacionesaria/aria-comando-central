@@ -275,7 +275,7 @@ function Cuerpo({ p, filtros, alFiltrar, mostradas, alMostrarMas, alAbrir }) {
 /** Lo que la pantalla dice de sí misma, ANTES de las cifras: la frescura y el aviso de la cohorte. */
 function Avisos({ p }) {
   const frescura = [p.frescura?.contactos?.aviso, p.frescura?.citas?.aviso].filter(Boolean);
-  const avisos = [...frescura, p.cohorte.avisoDeLaVentana, p.aviso].filter(Boolean);
+  const avisos = [...frescura, p.conexion, p.cohorte.avisoDeLaVentana, p.aviso].filter(Boolean);
   const ultima = p.cohorte.total === 0 && p.cohorte.ultimaAlta ? `El último contacto entró el ${fechaCorta(p.cohorte.ultimaAlta)}.` : null;
   if (avisos.length === 0 && !ultima) return null;
   return (

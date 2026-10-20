@@ -327,7 +327,7 @@ test('las citas se cuentan por el asignatario del CONTACTO, no por `citas.crm_as
   /* `citas.crm_asignado_a` existe y es un tercer identificador. Medido en producción difiere del
      asignatario del contacto en 38 de las 134 citas del closer más grande, así que usarlo mueve más
      de una cuarta parte de la tabla. La cita no tiene dueño propio: es del contacto
-     (`agenda.ts:286-287`). */
+     (`agenda.ts:293-294`). */
   await limpiar();
   const delContacto = await unaPersona('Dueño del contacto');
   const deLaCita = await unaPersona('Dueño de la cita');

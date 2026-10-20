@@ -52,7 +52,7 @@
 //
 // Y hay un tercer identificador que NO se usa: `citas.crm_asignado_a` existe. Medido, difiere del
 // asignatario del contacto en **38 de las 134 citas de Q**. La cita no tiene dueño propio: es del
-// contacto (`agenda.ts:286-287`).
+// contacto (`agenda.ts:293-294`).
 //
 // ── LA ASISTENCIA SALE DE LA CITA, Y EL CASO QUE LO PRUEBA ESTÁ EN LA BASE ──
 //

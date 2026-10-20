@@ -265,3 +265,13 @@ export function verComoDeLaUrl(peticion: Request): string | null {
     ? crudo
     : null;
 }
+
+/**
+ * Los closers que NO ven a un cliente (el nivel 3, C6): los que están vinculados en algún cliente y en ése no. Su
+ * alcance es «mío» con los pares de los otros, así que no ven ninguno de sus contactos hasta que alguien los vincule ahí.
+ * Los designados sin ningún vínculo no están: ven todo, también al cliente nuevo. Pura, y con TODOS los vínculos —corre
+ * con la organización entera—: con el foco, `vinculos` sigue siendo de todos los clientes.
+ */
+export function closersSinVinculoEn(cuentaId: string, closers: readonly CloserConfigurado[]): CloserConfigurado[] {
+  return closers.filter((c) => c.vinculos.length > 0 && !c.vinculos.some((v) => v.cuentaId === cuentaId));
+}

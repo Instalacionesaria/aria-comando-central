@@ -497,7 +497,7 @@ cuenta vieja; por código son 7, porque el patrón de LeadFlow comparte código 
 2026-10-18, con los mismos 27 hallazgos abiertos).
 
 **22 · La pantalla no avisa si su dato está viejo.** **Abierto** (`CN1-P08`): la pantalla sigue sin decirlo, y el
-comentario de la cabecera no mira la frescura para Conversation (`lib/agentes/cabecera.ts:124`). Lo dice el cerebro
+comentario de la cabecera no mira la frescura para Conversation (`lib/agentes/cabecera.ts:125`). Lo dice el cerebro
 con `frescura`, que cubre las cinco tareas de esta pantalla (`lib/agentes/executive/adaptadores/plataforma.ts:38`), y el
 detector pasa a «sin medición» si el auditor no está al día (`lib/agentes/detectores/conversation.ts:27-28`). Con el
 barrido caído, «Hoy» y «7 días» se vaciarían igual que un embudo sin entrada —que es lo que pasa hoy, con el barrido

@@ -26,6 +26,7 @@ import { CANALES_DEL_CHAT } from '../ghl/entrega.ts';
 import { camposQueSeMuestran, hayCatalogo } from './camposDelCrm.ts';
 import { frescuraDe, frescuraDelAviso, type Frescura, type FrescuraDelAviso } from './frescura.ts';
 import { definicionDe, modoDe } from './salidas.ts';
+import { avisoSinConexion, clientesSinConexion } from './faltaDeLosClientes.ts';
 import { fechaDelDia } from './tiempo.ts';
 
 /**
@@ -208,7 +209,7 @@ const CANAL_EFECTIVO = sql<string | null>`coalesce(tipo_ghl, case when canal lik
  */
 export async function mensajesDeLaFicha(
   contactoId: string,
-): Promise<Pestana<MensajeDeFicha> & { frescura: Frescura; aviso: FrescuraDelAviso }> {
+): Promise<Pestana<MensajeDeFicha> & { frescura: Frescura; aviso: FrescuraDelAviso; sinConexion?: string }> {
   /* El cliente del contacto (el nivel 3): sus mensajes entran por SU ingesta y SU aviso. La frescura, el aviso y el
      pulso de abajo son los suyos; los de la empresa entera dirían «al día» con este cliente sin traer nada, o al
      revés. Sin contacto a la vista, `undefined`: los de todo lo que se ve. */
@@ -269,6 +270,8 @@ export async function mensajesDeLaFicha(
     .orderBy('id', 'desc')
     .limit(TOPE_DE_MENSAJES)
     .execute();
+  // Si la conexión del cliente del contacto con GoHighLevel no está lista (C6): sólo la de su cliente.
+  const sinConexion = cuenta === undefined ? null : avisoSinConexion(await clientesSinConexion(cuenta), 'mensajes');
 
   return {
     filas: crudos
@@ -283,7 +286,7 @@ export async function mensajesDeLaFicha(
         falloDelCanal: m.fallo_del_canal,
       }))
       .reverse(),
-    falta: crudos.length > 0 ? null : await porQueNoHayMensajes(cuenta),
+    falta: crudos.length > 0 ? null : await porQueNoHayMensajes(cuenta, sinConexion),
     /* ── LA FRESCURA SE CALCULA SIEMPRE, HAYA O NO MENSAJES ──────────────────
      *
      * `falta` de arriba está condicionado a `crudos.length > 0`, y con razón: contesta «¿por qué no
@@ -299,6 +302,9 @@ export async function mensajesDeLaFicha(
        Va como campo HERMANO y nunca dentro de `falta`: `falta` existe solo cuando no hay datos, y un
        aviso inerte convive perfectamente con un chat lleno. */
     aviso: await frescuraDelAviso(cuenta),
+    /* Con mensajes, que la conexión del cliente del contacto no está lista también se dice (el nivel 3, C6): el chat se
+       ve completo y lo nuevo no está entrando. Sin mensajes ya lo dice `falta`. */
+    ...(crudos.length > 0 && sinConexion !== null ? { sinConexion } : {}),
   };
 }
 
@@ -314,7 +320,10 @@ export async function mensajesDeLaFicha(
  * Y son TRES estados y no dos, porque el del medio es el que dura más al principio: nunca corrió,
  * está a mitad de camino, o terminó.
  */
-async function porQueNoHayMensajes(cuenta: string | undefined): Promise<string | null> {
+async function porQueNoHayMensajes(cuenta: string | undefined, sinConexion: string | null): Promise<string | null> {
+  /* La conexión del cliente del contacto no está lista (el nivel 3, C6): se dice de cuál y qué hacer. Antes de mirar el
+     pulso: con un token revocado, la vuelta completa de antes diría que el cero está medido. */
+  if (sinConexion !== null) return sinConexion;
   // El pulso del cliente del contacto: cada cliente camina su propia subcuenta (el nivel 3).
   const pulso = await datos()
     .selectFrom('ingesta_pulso')

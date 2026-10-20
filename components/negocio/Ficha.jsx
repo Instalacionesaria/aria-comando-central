@@ -297,6 +297,14 @@ function Cuerpo({
         <span>{p.frescura.aviso}</span>
       </div>
     ) : null;
+    /* La conexión del cliente del contacto, cuando no está lista y hay mensajes (sin ellos lo dice `falta`). Va con el
+       atraso: es otra razón para que lo último no esté. */
+    const sinConexion = p.sinConexion ? (
+      <div className="fd-aviso falta" role="status">
+        <i>◍</i>
+        <span>{p.sinConexion}</span>
+      </div>
+    ) : null;
 
     if (p.filas.length === 0) {
       return (
@@ -324,6 +332,7 @@ function Cuerpo({
     return (
       <div className="cw-chat" aria-live="polite">
         {atraso}
+        {sinConexion}
         {avisoDelCrm}
         {conSeparadores(p.filas, zona).map((r) =>
           r.tipo === 'dia' ? (
@@ -722,6 +731,8 @@ export default function Ficha({ contactoId, alCerrar, citaId = null }) {
            completo, y el mensaje de ayer es el que no está. */
         frescura: r.datos.frescura ?? null,
         aviso: r.datos.aviso ?? null,
+        // De qué cliente no están entrando los mensajes, con el chat lleno (el nivel 3). Sólo viaja con algo que decir.
+        sinConexion: r.datos.sinConexion ?? null,
       },
     }));
   }, [contactoId]);

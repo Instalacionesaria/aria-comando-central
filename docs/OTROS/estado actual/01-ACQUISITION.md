@@ -117,7 +117,7 @@ señales, todo falso mirando otra empresa (`:98-102`). Ya no publica la tabla po
 
 **El panel** (`components/acquisition/PanelDeAcquisition.jsx`), de arriba abajo:
 
-1. **El encabezado**: «Acquisition», el botón «Plan de acción» (`components/acquisition/PanelDeAcquisition.jsx:196`) y el segmentado de cuatro períodos, sin
+1. **El encabezado**: «Acquisition», el botón «Plan de acción» (`components/acquisition/PanelDeAcquisition.jsx:205`) y el segmentado de cuatro períodos, sin
    «Personalizado» y sin el matiz «las últimas 24 horas» de las otras pantallas, porque acá «Hoy» es el día de
    calendario (`:221-240`). El botón encendido es el que contestó el servidor (`:201`).
 2. **Cinco cifras** (`Cifras`, `:306-342`): Inversión, Contactos («todas las campañas»), Clics a landing VSL
@@ -134,13 +134,13 @@ señales, todo falso mirando otra empresa (`:98-102`). Ya no publica la tabla po
    campaña que nunca trajo un contacto con su campaña dibuja «—» en sus etapas de personas, no 0 (`:577-579`).
 6. **La tarjeta «Señales detectadas»** (`:259-267`), de `components/senales/SenalesDelDepartamento.jsx`.
 
-El reloj recarga sólo con la pestaña a la vista (`components/acquisition/PanelDeAcquisition.jsx:184-186`); la caja del cerebro del pie pregunta con el período
+El reloj recarga sólo con la pestaña a la vista (`components/acquisition/PanelDeAcquisition.jsx:193-195`); la caja del cerebro del pie pregunta con el período
 que se mira (`:131`), y el comentario de la cabecera se publica desde la respuesta (`:134`).
 
 **De dónde sale cada cifra** (`lib/negocio/embudosDeAcquisition.ts:12-20`):
 
 - **Inversión del total**: lo que Meta cobró en toda la cuenta en la ventana, de `negocio.gasto_de_la_cuenta`
-  (`lib/negocio/embudosDeAcquisition.ts:480-491`). La de cada campaña y cada funnel suma `metricas_de_anuncio` por
+  (`lib/negocio/embudosDeAcquisition.ts:488-499`). La de cada campaña y cada funnel suma `metricas_de_anuncio` por
   `meta_campana_id` (`:549-559`).
 - **Inversión con contactos**: la de las campañas que alguna vez trajeron un contacto con su `campaignId`
   (`:634-639`, `:611`). Es el único numerador de los costos de personas (`:384`, `:402`).
@@ -148,13 +148,13 @@ que se mira (`:131`), y el comentario de la cabecera se publica desde la respues
   (`:579-592`). **Agendados**: `tieneCitaAlcanzable`; **calificados**: `esCalificado`, agendó y no está descartado
   (`lib/negocio/citasAlcanzables.ts:180-182`).
 - **Clics**: `linkClick` de Meta; sin entrega son cero, con entrega y sin desglose no se saben
-  (`lib/negocio/embudosDeAcquisition.ts:616`). No llevan tasa: son clics, no personas (`:369-387`).
+  (`lib/negocio/embudosDeAcquisition.ts:628`). No llevan tasa: son clics, no personas (`:372-390`).
 - **«Completaron form»**, la etapa de Booking directo: siempre «Sin dato desde el 31 ago.» (`:343-349`,
-  `components/acquisition/PanelDeAcquisition.jsx:414-415`).
-- **ICP**: promedio del puntaje de los calificados con puntaje, desde diez (`lib/negocio/embudosDeAcquisition.ts:408`),
-  con los cortes 75 y 50 de `tramosDelIcp.ts` (`lib/negocio/embudosDeAcquisition.ts:583-586`).
+  `components/acquisition/PanelDeAcquisition.jsx:429-430`).
+- **ICP**: promedio del puntaje de los calificados con puntaje, desde diez (`lib/negocio/embudosDeAcquisition.ts:411`),
+  con los cortes 75 y 50 de `tramosDelIcp.ts` (`lib/negocio/embudosDeAcquisition.ts:595-598`).
 - **Las campañas listadas**: toda campaña con anuncios guardados, con contactos atribuidos alguna vez o con un funnel
-  asignado, no sólo las de la ventana (`lib/negocio/embudosDeAcquisition.ts:698-766`), ordenadas por inversión, contactos e identificador (`:460-465`).
+  asignado, no sólo las de la ventana (`lib/negocio/embudosDeAcquisition.ts:712-780`), ordenadas por inversión, contactos e identificador (`:468-473`).
 
 **Ventanas.** «7 días» y «30 días» son días **cerrados**: terminan en el último día cuyo total de la cuenta se
 releyó después de la medianoche de la empresa (`lib/negocio/diasCerrados.ts:14-26`,
@@ -163,7 +163,7 @@ viejo —gasto o contacto con campaña— y termina hoy (`lib/negocio/embudosDeA
 anterior se compara sólo si está entera (`:884-897`), y sus agendados se cuentan a la misma edad (`:922-923`). Un
 día está entero cuando su total de la cuenta se releyó después de terminar y el detalle por campaña cuadra con él,
 con diez centavos de tolerancia, o está declarado residuo (`lib/negocio/gastoDeLaCuenta.ts:36`, `:354-429`). Los
-costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcquisition.ts:898-899`).
+costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcquisition.ts:912-913`).
 
 **Lo que dibuja hoy, deducido** del código sobre lo medido el 2026-10-18 (§ 4). El último día cerrado es el
 2026-10-17:
@@ -177,7 +177,7 @@ costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcqu
 - **«Completo»** empieza el 2026-08-11, el alta del primer contacto con campaña, una semana antes del primer día de
   gasto guardado (2026-08-18). A la ventana le faltan esos siete días de la serie, así que **nunca publica costos**
   y la nota dice «Faltan días de gasto.» (`lib/negocio/gastoDeLaCuenta.ts:430-435`,
-  `lib/negocio/embudosDeAcquisition.ts:898-899`): riesgo 3. Su Inversión es la suma por campaña, 7.100,17, porque
+  `lib/negocio/embudosDeAcquisition.ts:912-913`): riesgo 3. Su Inversión es la suma por campaña, 7.100,17, porque
   sin todos los días no hay total de la cuenta (`lib/negocio/gastoDeLaCuenta.ts:439`).
 - **«Sin funnel»** lista **29 campañas**: las 28 con anuncios guardados y una con contactos y sin anuncios. 13
   tienen contactos atribuidos; las 16 restantes dibujan «—» en sus personas.
@@ -192,7 +192,7 @@ dentro de esos renglones (`:19-20`). Resolver, validar y firmar tienen sus rutas
 
 **El comentario de la cabecera** habla, en este orden, de la frescura de la tarea `anuncios`, de días de los últimos
 7 que no cuadran con la cuenta, de la señal abierta crítica o alta más grave y de la regla de la Reunión de hoy de
-esta sección (`lib/agentes/cabecera.ts:7-14`, `:107-111`, `:129-131`). Las cuatro señales abiertas son de gravedad
+esta sección (`lib/agentes/cabecera.ts:7-14`, `:108-112`, `:130-132`). Las cuatro señales abiertas son de gravedad
 media, así que por ellas no dice nada (`:66`).
 
 **Pruebas**, contadas con `grep` el 2026-10-18 y **no corridas para este corte**:
@@ -204,7 +204,7 @@ media, así que por ellas no dice nada (`:66`).
 `pruebas/codigo/99-anuncios.test.ts` (42) y `pruebas/base/99-anuncios.test.ts` (24).
 
 **Lo que nadie vio todavía: la pantalla con sesión y datos reales.** AQ-5 subió sin la comparación en el
-navegador, por decisión del usuario (`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md:458`); la
+navegador, por decisión del usuario (`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md:471`); la
 verificación de AG9 miró el plan y las señales en el preview local, no en producción. No hay en el repositorio ni en
 los mensajes de commit ningún registro del humo con sesión.
 
@@ -233,7 +233,7 @@ el conflicto «a $19», las tres preguntas del chat y la tarjeta «Campañas y t
 `4e9a242`): `lib/aios/` sólo conserva `index.js` y `shell.js`. Lo que el Inicio dice hoy de Acquisition sale de las
 mismas lecturas: la Reunión de hoy toma la falta de entrega de las señales y la caída de entrada de la semana
 cerrada (`lib/agentes/reunion/temas.ts:146-186`), y el cerebro responde con `embudos_de_acquisition`, la misma
-función y la misma ventana que la pantalla (`lib/agentes/executive/adaptadores/acquisition.ts:1-2`, `:29-32`).
+función y la misma ventana que la pantalla (`lib/agentes/executive/adaptadores/acquisition.ts:1-2`, `:32-35`).
 
 ---
 
@@ -302,7 +302,7 @@ la miniatura y el post de cada anuncio, para Creative, y espera el token de la e
 
 **2 · Las campañas de mensajes, sin atribución.** El gasto ya entra (`076`); la gente que trae no: sus contactos llegan
 sin `campaignId`, y «cuántos DMs trajo cada campaña» queda fuera
-(`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md:434-435`). Hoy es todo el gasto de la ventana (§ 4).
+(`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md:447-448`). Hoy es todo el gasto de la ventana (§ 4).
 
 **3 · «Completaron form».** El campo del CRM dejó de escribirse el 2026-08-31 (`lib/negocio/embudoDelFormulario.ts:33-38`).
 
@@ -315,7 +315,7 @@ sin `campaignId`, y «cuántos DMs trajo cada campaña» queda fuera
 cambio exige una tabla de cambios que no existe (`lib/negocio/calidadDeLaAtribucion.ts:26-29`).
 
 **7 · Cuándo se pone una etiqueta de descarte.** Sin esa fecha, los calificados no pueden compararse contra la
-ventana anterior (`lib/negocio/embudosDeAcquisition.ts:181-188`).
+ventana anterior (`lib/negocio/embudosDeAcquisition.ts:182-189`).
 
 **8 · Calificado y costo por calificado del § 18.7**, si «calificado» llega a significar otra cosa que agendó y no
 descartado (A14-07); y **la diferencia entre leads de Meta y de la base**, que sigue fuera de alcance
@@ -326,16 +326,16 @@ descartado (A14-07); y **la diferencia entre leads de Meta y de la base**, que s
 ## 6 · Reglas propias
 
 **1 · La campaña se identifica por id, nunca por nombre**, y el funnel se asigna por campaña, a mano
-(`lib/negocio/embudosDeAcquisition.ts:218-220`, `db/migraciones/066_el_funnel_de_la_campana.sql:35`).
+(`lib/negocio/embudosDeAcquisition.ts:219-221`, `db/migraciones/066_el_funnel_de_la_campana.sql:35`).
 
 **2 · El servidor calcula; el navegador dibuja.** Tasas, costos, variaciones y su color llegan hechos, porque el piso
 vive en un módulo que importa la base (`lib/negocio/embudosDeAcquisition.ts:22-27`).
 
 **3 · Una tasa debajo de diez es «—», y un costo sin inversión o sin etapa también**: con la pauta parada, «$0 por
-contacto» diría que salieron gratis (`lib/negocio/embudosDeAcquisition.ts:286-299`).
+contacto» diría que salieron gratis (`lib/negocio/embudosDeAcquisition.ts:289-302`).
 
 **4 · La Inversión es la de la cuenta; los costos de personas, la de las campañas con contactos.** Una campaña de
-mensajes no puede inflar el costo por contacto de las otras (`lib/negocio/embudosDeAcquisition.ts:94-99`, `:475-491`).
+mensajes no puede inflar el costo por contacto de las otras (`lib/negocio/embudosDeAcquisition.ts:95-100`, `:483-499`).
 
 **5 · Tres ceros distintos**: el medido (la cuenta dijo 0), el no pedido (`dias_sin_leer`) y el parcial (`no_cuadra`)
 (`lib/negocio/gastoDeLaCuenta.ts:275-281`, `:344-353`).
@@ -345,17 +345,17 @@ contra siete (`lib/negocio/embudosDeAcquisition.ts:33-42`); la anterior, con los
 (`lib/negocio/citasAlcanzables.ts:127-133`).
 
 **7 · Los clics no son personas**: sin tasa, y su costo se paga con el gasto de las filas que los cuentan
-(`lib/negocio/embudosDeAcquisition.ts:100-104`).
+(`lib/negocio/embudosDeAcquisition.ts:101-105`).
 
 **8 · La Inversión lleva flecha sin color**; las demás cantidades, «más es mejor»; los calificados, sin flecha por
-ahora (`lib/negocio/embudosDeAcquisition.ts:301-322`, `:400`).
+ahora (`lib/negocio/embudosDeAcquisition.ts:304-325`, `:403`).
 
 **9 · Lista cerrada de frases.** Cada hueco dice una de las de `FRASE`
-(`components/acquisition/PanelDeAcquisition.jsx:77-97`), y una frase nueva entra primero en el documento.
+(`components/acquisition/PanelDeAcquisition.jsx:77-100`), y una frase nueva entra primero en el documento.
 
 **10 · Ningún botón que vaya a dar 403**: el selector de funnel y las acciones sobre señales los decide el servidor,
 y nada se ofrece mirando otra empresa (`app/api/acquisition/route.ts:91-102`,
-`components/acquisition/PanelDeAcquisition.jsx:247`).
+`components/acquisition/PanelDeAcquisition.jsx:256`).
 
 **11 · Detectar no es recomendar.** El detector mide sobre la lectura de la pantalla y una regla que no se puede medir
 queda «sin medición» en vez de cerrarse sola (`lib/agentes/detectores/acquisition.ts:11-17`); lo de presupuesto va a
@@ -365,16 +365,19 @@ validación ejecutiva.
 guarda como cero (`lib/negocio/recolectarAnuncios.ts:11-20`, `db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:68-70`).
 
 **13 · Con varios clientes (el nivel 3, C5 · G3), lo de una cuenta publicitaria es de su cliente.** Cada campaña dice de
-qué cliente es cuando las campañas son de más de uno (`lib/negocio/embudosDeAcquisition.ts:698`); con uno solo, la fila
+qué cliente es cuando las campañas son de más de uno (`lib/negocio/embudosDeAcquisition.ts:712`); con uno solo, la fila
 de siempre. Un cliente que pautó en la ventana sin ningún día de su serie deja a la empresa sin costos, sin flechas y
-sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:661`, `lib/negocio/embudosDeAcquisition.ts:905`); el
+sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:673`, `lib/negocio/embudosDeAcquisition.ts:919`); el
 detector sólo frena lo que lee Meta con un cliente que tiene métricas y no serie
-(`lib/negocio/embudosDeAcquisition.ts:804`), y mide «sin entrega», la concentración, la escala y el gasto sin
+(`lib/negocio/embudosDeAcquisition.ts:818`), y mide «sin entrega», la concentración, la escala y el gasto sin
 crecimiento dentro de cada cliente (`lib/agentes/detectores/acquisition.ts:318`). El funnel de una campaña se guarda en
 su cliente (`lib/negocio/funnelDeLaCampana.ts:100`). Toda señal de campaña se nombra «Campaña (Cliente)» —en la
 tarjeta, la cabecera y la Reunión—, con el cliente de la pantalla (`lib/agentes/senales/lectura.ts:104`). A un cliente
 en pausa se le pide la serie sólo hasta su último día cerrado (`lib/negocio/gastoDeLaCuenta.ts:398`): pausarlo no deja
-a la empresa sin el gasto entero mientras la ventana tenga días después de la pausa. Lo exigen
+a la empresa sin el gasto entero mientras la ventana tenga días después de la pausa. Y desde C6 · D1 la nota dice,
+después de «Faltan días de gasto.», de qué cliente falta y qué hacer —Meta sin vincular en su GoHighLevel, su conexión,
+o que ya no está activo—, también con el colector atrasado, cuando el sello del barrido lo sabe
+(`lib/negocio/embudosDeAcquisition.ts:926`; `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:462`). Lo exigen
 `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:313`,
 `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:519` y
 `pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts:41`; con un solo cliente, que el freno de Meta y su
@@ -387,7 +390,7 @@ anterior sean los de siempre, `pruebas/base/284-acquisition-y-conversation-con-v
 **1 · Ninguna campaña tiene funnel, y la pantalla lo dice en voz baja.** Las tres tarjetas, que son el centro del
 prototipo, dicen «Sin campañas asignadas»; todo está en la última tabla. La primera tarea real después de AQ-5 era
 asignar las campañas, y no se hizo (§ 4). Si la pantalla debe avisar cuando aparece una campaña sin asignar es
-`A14-P03`, abierta (`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md:466`).
+`A14-P03`, abierta (`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md:479`).
 
 **2 · Una señal abierta era falsa. Cerrado el 2026-10-18 (`65669f4`).** Al corte,
 `ACQ-ATRIBUCION-UTM` decía que 0 % de los contactos con alguna UTM las trae completas. El monitor buscaba sólo

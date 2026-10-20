@@ -21,9 +21,11 @@ import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 import { esZonaValida } from '../../../../lib/negocio/zonas.ts';
+import { closersDeLaEmpresa, closersSinVinculoEn } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import {
   catalogoDelCliente,
   crearCuenta,
+  diceLosClosersSinVincular,
   empresaDestino,
   leerDatosDeUnCliente,
   listarCuentas,
@@ -44,10 +46,19 @@ export async function GET(peticion: Request): Promise<Response> {
   const destino = empresaDestino(contexto, new URL(peticion.url).searchParams.get('orgId'));
   if (destino === null) return rechazo('no_encontrado');
 
-  const cuerpo = await conOrganizacion(entera(destino), async () => ({
-    clientes: await listarCuentas(),
-    catalogo: await catalogoDelCliente(),
-  }));
+  const cuerpo = await conOrganizacion(entera(destino), async () => {
+    const clientes = await listarCuentas();
+    /* Por cliente ACTIVO, los closers vinculados en otro y no en éste: no ven sus contactos (C6). Uno en pausa no se
+       barre ni se trabaja, y lo dice su activación. Con un solo cliente nunca hay nadie. */
+    const closers = diceLosClosersSinVincular(contexto, destino) ? await closersDeLaEmpresa() : null;
+    return {
+      clientes: clientes.map((c) => {
+        const sin = closers === null || c.estado !== 'activa' ? [] : closersSinVinculoEn(c.id, closers);
+        return sin.length > 0 ? { ...c, closersSinVincular: sin.map((k) => k.nombre) } : c;
+      }),
+      catalogo: await catalogoDelCliente(),
+    };
+  });
   return ok(cuerpo);
 }
 
@@ -75,7 +86,7 @@ export async function POST(peticion: Request): Promise<Response> {
   const quien = quienConfirma(destino === contexto.orgEfectiva ? autorDelCambio(contexto) : null);
 
   try {
-    const id = await conOrganizacion(entera(destino), async () => {
+    const { id, sinVincular } = await conOrganizacion(entera(destino), async () => {
       const nuevo = await crearCuenta({ ...leidos, nombre: leidos.nombre ?? '' }, quien);
       await auditarAdministracion(datos(), {
         accion: 'cuenta_creada',
@@ -83,9 +94,12 @@ export async function POST(peticion: Request): Promise<Response> {
         objetivo: nuevo,
         orgId: destino,
       });
-      return nuevo;
+      /* Los closers vinculados en otro cliente no ven al nuevo hasta que alguien los vincule en él (C6): la respuesta los
+         nombra, para que el alta lo diga en vez de dejarlo para cuando alguien note que faltan contactos. */
+      const sin = diceLosClosersSinVincular(contexto, destino) ? closersSinVinculoEn(nuevo, await closersDeLaEmpresa()) : [];
+      return { id: nuevo, sinVincular: sin.map((k) => k.nombre) };
     });
-    return ok({ creado: true, id }, 201);
+    return ok({ creado: true, id, ...(sinVincular.length > 0 ? { closersSinVincular: sinVincular } : {}) }, 201);
   } catch (e) {
     return rechazoDeLaBase(e);
   }

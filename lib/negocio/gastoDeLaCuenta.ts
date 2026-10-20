@@ -470,3 +470,67 @@ export async function diasSinCuadrar(enLaVentana: (alias: string) => RawBuilder<
            > ${Math.round(TOLERANCIA_DEL_CUADRE * 100)}`.execute(datos());
   return Number(r.rows[0]?.n ?? 0);
 }
+
+/**
+ * QUIÉNES dejan el gasto de una ventana `[desde, hasta]` sin entero (el nivel 3, C6): los ids de los clientes cuya serie
+ * está atrasada o falta —con las reglas de `estadoDeLaSerie`: sólo los ACTIVOS, sin leer hace más de 26 horas, con su
+ * último día cerrado de hace más de tres, o con métricas y ninguna serie— y los que tienen algún día de la ventana sin
+ * su total cerrado, con las reglas de `coberturaDelGasto` (a uno que ya no está activo, sólo hasta su último cerrado).
+ *
+ * Es la lista hermana de esas dos, que dicen SI el gasto está entero para toda la empresa; ésta dice de quién es lo que
+ * falta, para que la nota lo nombre. Un cliente que vincula Meta y lo pierde deja de escribir su serie: a las 26 horas
+ * la empresa queda con el colector atrasado, pero en la ventana todavía tiene días de su serie, así que
+ * `pautaSinLeerEn` no lo lista y sólo esta lista lo encuentra; lo mismo uno con métricas viejas y ninguna serie, que deja
+ * la ventana entera y la empresa atrasada. El que no cuadra (`no_cuadra`) no está: su total está, y lo que falta lo
+ * busca el relleno. Corre dentro de `conOrganizacion`.
+ */
+export async function clientesConLaSerieIncompleta(desde: string, hasta: string, dias: number, zona: string): Promise<string[]> {
+  const r = await sql<{ cuenta_id: string }>`
+    with activos as (
+      select id from identidad.cuentas where estado = 'activa'
+    ),
+    atrasados as (
+      select cuenta_id
+        from negocio.gasto_de_la_cuenta
+       where cuenta_id in (select id from activos)
+       group by cuenta_id
+      having max(leido_el) < now() - interval '26 hours'
+          or coalesce(max(fecha) filter (where fecha < current_date
+                                           and leido_el >= ((fecha + 1)::timestamp at time zone ${zona})) < current_date - 3,
+                      false)
+    ),
+    metricas_sin_serie as (
+      select a.id as cuenta_id from activos a
+       where exists (select 1 from negocio.metricas_de_anuncio m where m.cuenta_id = a.id)
+         and not exists (select 1 from negocio.gasto_de_la_cuenta g where g.cuenta_id = a.id)
+    ),
+    serie as (
+      select s.cuenta_id, s.fecha, s.leido_el >= ((s.fecha + 1)::timestamp at time zone ${zona}) as cerrado
+        from negocio.gasto_de_la_cuenta s
+       where s.fecha between ${desde}::date and ${hasta}::date
+    ),
+    tope as (
+      select g.cuenta_id, coalesce(c.estado, 'activa') = 'activa' as activo,
+             case when coalesce(c.estado, 'activa') = 'activa' then ${hasta}::date
+                  else least(${hasta}::date,
+                             max(g.fecha) filter (where g.leido_el >= ((g.fecha + 1)::timestamp at time zone ${zona})))
+             end as hasta
+        from negocio.gasto_de_la_cuenta g
+        left join identidad.cuentas c on c.id = g.cuenta_id
+       where g.cuenta_id in (select cuenta_id from serie)
+       group by g.cuenta_id, c.estado
+    ),
+    faltan as (
+      select s.cuenta_id
+        from serie s
+        join tope t on t.cuenta_id = s.cuenta_id
+       group by s.cuenta_id, t.activo, t.hasta
+      having count(*) filter (where s.fecha <= t.hasta and s.cerrado)
+             < case when t.activo then ${dias}::int
+                    else least(${dias}::int, greatest(0, coalesce(t.hasta - ${desde}::date + 1, 0))) end
+    )
+    select cuenta_id::text as cuenta_id from atrasados
+    union select cuenta_id::text from metricas_sin_serie
+    union select cuenta_id::text from faltan`.execute(datos());
+  return r.rows.map((f) => f.cuenta_id);
+}

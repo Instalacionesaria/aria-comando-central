@@ -121,12 +121,14 @@ cabecera que dice qué se borró y por qué (`components/views/ContactsView.jsx:
 **Las dos rutas.**
 
 - `GET /api/leads-portal?periodo=`: pide `tablero.ver` con `PANTALLA = 'contacts'`
-  (`app/api/leads-portal/route.ts:36`, `:47`); rechaza un período que no está en la lista en vez
-  de corregirlo (`app/api/leads-portal/route.ts:51-55`); dentro de una sola `conOrganizacion` pide la
+  (`app/api/leads-portal/route.ts:37`, `:48`); rechaza un período que no está en la lista en vez
+  de corregirlo (`app/api/leads-portal/route.ts:52-56`); dentro de una sola `conOrganizacion` pide la
   cohorte, **la cadena de Sales con el mismo `dias`** y la frescura de contactos y citas
-  (`app/api/leads-portal/route.ts:57-67`), y publica la comparación de las dos
-  (`app/api/leads-portal/route.ts:70`) junto con tres de los cinco huecos de Sales
-  (`app/api/leads-portal/route.ts:45`, `:79`).
+  (`app/api/leads-portal/route.ts:58-71`) —y, con varios clientes, de cuál no se están trayendo los contactos y las
+  citas y qué hacer, `conexion`, al cliente final sin la ruta de Ajustes (`app/api/leads-portal/route.ts:70`, C6 · D1)—,
+  y publica la comparación de las dos
+  (`app/api/leads-portal/route.ts:74`) junto con tres de los cinco huecos de Sales
+  (`app/api/leads-portal/route.ts:46`, `:83`).
 - `GET /api/leads-portal/[id]`: la ficha, la única respuesta con teléfono y correo. Misma capacidad
   y misma pantalla que la lista; un id mal formado, inexistente o de otra empresa da el mismo 404
   (`app/api/leads-portal/[id]/route.ts:16-19`, `:36-45`). No refresca contra el CRM ni escribe.
@@ -148,7 +150,7 @@ cabecera que dice qué se borró y por qué (`components/views/ContactsView.jsx:
 | `atribucionVisible.ts` | ocho claves del primer toque por lista blanca; de `url` y `referrer`, el host | `lib/negocio/atribucionVisible.ts:51-60` |
 | `huecosDelLeadsPortal.ts` | cinco huecos de la ficha, con su fecha | `lib/negocio/huecosDelLeadsPortal.ts:37-77` |
 | `filtrosDelPortal.ts` | búsqueda, tramo y etapa, en el navegador | `lib/negocio/filtrosDelPortal.ts:91-98` |
-| `vistaDeLeadsPortal.ts` | la lectura desde el navegador; no calcula nada | `lib/negocio/vistaDeLeadsPortal.ts:45-66` |
+| `vistaDeLeadsPortal.ts` | la lectura desde el navegador; no calcula nada | `lib/negocio/vistaDeLeadsPortal.ts:47-68` |
 
 **Lo que dibuja el panel** (`components/leads-portal/PanelDeLeadsPortal.jsx`), de arriba abajo:
 
@@ -250,7 +252,7 @@ carpeta no copia ninguno de esos datos.
 | «Revenue» y «Cierre N %» por tramo | «monto reportado» y «—» con motivo (`lib/negocio/leadsDelPortal.ts:477-516`) |
 | dos estados por paso | tres: «sin registrar» no es «no asistió» (`components/leads-portal/PanelDeLeadsPortal.jsx:337-352`) |
 | el botón «Plan de acción», cuatro frases escritas a mano | borrado; la primera frase, medida, no da 22 % sino 17,8 % a 30 días el 2026-09-27 (`docs/leads-portal/07-EL-PLAN-DE-ACCION.md:71-104`); el 2026-09-28, 18,1 %: 50 de 277 |
-| la píldora «Personalizado» y un tercer botón que mandaba `mes` | borrados; el período se valida contra la lista (`app/api/leads-portal/route.ts:51-55`) |
+| la píldora «Personalizado» y un tercer botón que mandaba `mes` | borrados; el período se valida contra la lista (`app/api/leads-portal/route.ts:52-56`) |
 | `window.AIOSLeadCard`, que abría una ficha por NOMBRE y, si no la encontraba, la de otra persona | la ficha por id con 404 (`app/api/leads-portal/[id]/route.ts:43-46`) |
 | `data-leads` en las tarjetas, que abría el cajón «Grupo de contactos» | tocar la tarjeta filtra la rejilla |
 | el salto «↗ GHL» | `tel:` y `mailto:`, sin enlace al CRM |
@@ -399,7 +401,7 @@ Nadie nuevo recibió la pestaña desde LP-4 (`docs/leads-portal/12-QUIEN-VE-QUE.
 | Ubicación y posición del anuncio | ficha, publicidad | 27-sep (`lib/negocio/huecosDelLeadsPortal.ts:56-62`) | Meta, con el desglose por ubicación que la sincronización de anuncios no trae | no re-medido |
 | El costo del lead | ficha, publicidad | 27-sep (`lib/negocio/huecosDelLeadsPortal.ts:63-69`) | un modelo que reparta el gasto diario por anuncio: no sería un dato | sin cambio |
 | El dispositivo y la ciudad | ficha, publicidad | 27-sep (`lib/negocio/huecosDelLeadsPortal.ts:70-76`) | sólo de la IP y el navegador, que no se muestran por privacidad | sin cambio |
-| La venta · el revenue y el cierre · el pago verificado | panel, abajo | 21-sep (`lib/negocio/huecosDeSales.ts:53`, `:49-69`), consumidos de Sales (`app/api/leads-portal/route.ts:45`) | el registro manual del closer en Avanzar; el pago, una integración de cobros que no existe | re-medido el 2026-10-18: 7 resultados, 0 ventas. Desde SA-3 (2026-10-09) Sales ya no dibuja esta lista: sólo vive porque esta pestaña comparte tres (`lib/negocio/huecosDeSales.ts:3-8`). La credencial de pagos «en 0 de 5 organizaciones» es del 2026-09-21, no re-medida |
+| La venta · el revenue y el cierre · el pago verificado | panel, abajo | 21-sep (`lib/negocio/huecosDeSales.ts:53`, `:49-69`), consumidos de Sales (`app/api/leads-portal/route.ts:46`) | el registro manual del closer en Avanzar; el pago, una integración de cobros que no existe | re-medido el 2026-10-18: 7 resultados, 0 ventas. Desde SA-3 (2026-10-09) Sales ya no dibuja esta lista: sólo vive porque esta pestaña comparte tres (`lib/negocio/huecosDeSales.ts:3-8`). La credencial de pagos «en 0 de 5 organizaciones» es del 2026-09-21, no re-medida |
 
 **Lo que no es un hueco entero, y no se colapsa en uno:** la asistencia es `sin_registrar` con su
 número —12 personas a 30 días y 93 en «Completo» el 2026-10-18 (46 y 77 el 2026-09-28)—, y el plantón del
@@ -560,7 +562,7 @@ el ICP y esta pestaña no (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:127-
 **Las fechas de los huecos son literales.** «Medido el 27 de septiembre» y «21 de septiembre» están
 escritos en el código (`lib/negocio/huecosDelLeadsPortal.ts:37`, `lib/negocio/huecosDeSales.ts:53`)
 y nada los vuelve a medir. La ruta manda los tres huecos de Sales siempre, sin mirar
-`hayVentasRegistradas` (`app/api/leads-portal/route.ts:80`): el día que se registre una venta, el
+`hayVentasRegistradas` (`app/api/leads-portal/route.ts:86`): el día que se registre una venta, el
 hueco sigue diciendo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:59`) con su
 fecha vieja hasta que alguien lo edite, mientras la tarjeta ya cuenta la venta.
 

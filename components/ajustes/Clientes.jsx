@@ -33,6 +33,22 @@ const MOTIVOS = {
 
 const ESTADOS = { activa: 'Activo', pausada: 'Pausado', baja: 'De baja' };
 
+/** «Ana», «Ana y Luis», «Ana, Luis y Eva». */
+const enLista = (nombres) =>
+  nombres.length <= 1 ? (nombres[0] ?? '') : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+
+/* Los closers vinculados en otros clientes y no en éste (el nivel 3): no ven sus contactos hasta que alguien los vincule
+   aquí. Lo dice el servidor, sólo a quien ve la pantalla del vínculo. `null` sin nadie. */
+function closersSinVincular(nombres, cliente) {
+  if (!nombres?.length) return null;
+  const uno = nombres.length === 1;
+  return (
+    `${enLista(nombres)} ${uno ? 'es closer' : 'son closers'} en otros clientes y no ${uno ? 'está vinculado' : 'están vinculados'} ` +
+    `en éste: no ${uno ? 've' : 'ven'} sus contactos. ${uno ? 'Vincúlalo' : 'Vincúlalos'} en Closer › Inicio › Closers eligiendo ` +
+    `«${cliente}», cuando tenga su conexión con GoHighLevel.`
+  );
+}
+
 /** El texto de un rechazo, con el detalle del servidor si lo trae. */
 function porQue(r) {
   if (r.tipo === 'sin_respuesta') return 'No llegó al servidor. No se cambió nada.';
@@ -74,7 +90,9 @@ export default function Clientes({ sesion, conConexion = false }) {
       setAviso({ mal: true, texto: porQue(r) });
       return;
     }
-    setAviso({ mal: false, texto: editando ? 'Cliente guardado.' : `«${valores.nombre.trim()}» agregado.` });
+    const listo = editando ? 'Cliente guardado.' : `«${valores.nombre.trim()}» agregado.`;
+    const sin = editando ? null : closersSinVincular(r.datos.closersSinVincular, valores.nombre.trim());
+    setAviso({ mal: false, texto: sin ? `${listo} ${sin}` : listo });
     if (!cabeceraVisible) {
       setAlta(null);
       setEditando(null);
@@ -86,7 +104,9 @@ export default function Clientes({ sesion, conConexion = false }) {
     async (cliente, estado) => {
       setAviso(null);
       const r = await pedir(`/api/admin/cuentas/${cliente.id}`, { metodo: 'PATCH', cuerpo: { estado } });
-      setAviso(r.tipo === 'datos' ? { mal: false, texto: `«${cliente.nombre}»: ${ESTADOS[estado].toLowerCase()}.` } : { mal: true, texto: porQue(r) });
+      const sin = r.tipo === 'datos' ? closersSinVincular(r.datos.closersSinVincular, cliente.nombre) : null;
+      const listo = `«${cliente.nombre}»: ${ESTADOS[estado].toLowerCase()}.`;
+      setAviso(r.tipo === 'datos' ? { mal: false, texto: sin ? `${listo} ${sin}` : listo } : { mal: true, texto: porQue(r) });
       await refrescar();
     },
     [refrescar],
@@ -169,6 +189,8 @@ export default function Clientes({ sesion, conConexion = false }) {
                 <div className="rs">
                   {c.pais ?? 'sin país'} · {c.zonaHoraria}
                 </div>
+                {/* Sólo en los activos, y sólo para quien ve el vínculo: lo decide el servidor. */}
+                {c.closersSinVincular?.length ? <div className="rs">Closers sin vincular aquí: {enLista(c.closersSinVincular)}</div> : null}
               </div>
               <div>
                 {/* El nicho sin confirmar se dice: no entra a las comparaciones entre negocios. */}

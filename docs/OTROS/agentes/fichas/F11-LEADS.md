@@ -14,7 +14,7 @@
 ## Lo que el cerebro lee acá
 
 - **De GHL**: `cohorte_de_leads`, con la fila de 14 claves y sin teléfono ni correo, como la pantalla
-  (`app/api/leads-portal/route.ts:58`); los huecos de la pantalla.
+  (`app/api/leads-portal/route.ts:59`); los huecos de la pantalla.
 - **De Radar**: `leads_del_scraper`, sólo agregados.
 
 ## El Plan de prospección

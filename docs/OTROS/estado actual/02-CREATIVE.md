@@ -238,8 +238,8 @@ la concentración del gasto, la frecuencia alta y el ICP de la pieza contra su e
 (`lib/agentes/detectores/creative.ts:43-48`) y mide con los mismos tres módulos y los mismos días que la pantalla
 (`lib/agentes/detectores/creative.ts:111-118`); el plan las reparte en cuatro grupos
 (`lib/agentes/plan/creative.ts:24-29`). El comentario de la cabecera mira la frescura de la tarea `anuncios`
-(`lib/agentes/cabecera.ts:109`) y el cuadre del gasto de las campañas contra el de la cuenta
-(`lib/agentes/cabecera.ts:122-130`); no mira `activos`.
+(`lib/agentes/cabecera.ts:110`) y el cuadre del gasto de las campañas contra el de la cuenta
+(`lib/agentes/cabecera.ts:123-131`); no mira `activos`.
 
 **El cerebro.** Cuatro herramientas en `lib/agentes/executive/adaptadores/creative.ts`: `calidad_de_piezas`,
 `rendimiento_de_piezas`, `fatiga_de_piezas` y **`creative_en_cifras`**
@@ -493,7 +493,7 @@ Los 16 de la foto anterior, con su estado al 2026-10-18, y uno nuevo.
 **1 · La pantalla describía un período que terminó, y no lo decía.** **Cambió.** Cada tarjeta dice «Entregando» o «Sin
 entrega» (`lib/negocio/lecturaDeCreative.ts:367`), la ficha dice el último día con entrega
 (`components/creative/FichaDelCreativo.jsx:136`), y la cabecera avisa si la lectura de los anuncios está vieja o si el
-gasto no cuadra con el de la cuenta (`lib/agentes/cabecera.ts:122-130`). Lo que sigue sin decirse es la fecha de las
+gasto no cuadra con el de la cuenta (`lib/agentes/cabecera.ts:123-131`). Lo que sigue sin decirse es la fecha de las
 cifras de la tira: el 2026-10-18 dibuja las impresiones de 30 días con todas las piezas «Sin entrega» (deducido). El
 último día con impresiones pasó del 2026-10-05 al 2026-10-14; si la pauta no vuelve, desde el 2026-11-13 la ventana de
 30 días no tiene ningún día con entrega (deducido de `lib/negocio/costoDelAnuncio.ts:83-85` y del último día medido).

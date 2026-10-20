@@ -394,3 +394,13 @@ export function rechazoDeLaBase(e: unknown): Response {
   if (deDisparador) return rechazo('rechazo_de_la_base', deDisparador);
   throw e;
 }
+
+/**
+ * Si la respuesta de Ajustes › Clientes dice qué closers no ven a un cliente (el nivel 3, C6). Con `credenciales.ver`, la
+ * capacidad de la pantalla donde se vinculan, y sólo sobre la empresa de la sesión: la plataforma operando sobre otra
+ * desde el tablero de Negocios no recibe los nombres de sus closers, y la instrucción de vincularlos no se puede seguir
+ * desde ahí.
+ */
+export function diceLosClosersSinVincular(contexto: { permisos: ReadonlySet<string>; orgEfectiva: string }, destino: string): boolean {
+  return contexto.permisos.has('credenciales.ver') && destino === contexto.orgEfectiva;
+}

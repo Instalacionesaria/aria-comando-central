@@ -51,6 +51,8 @@ const FRASE_DE_LAS_VISTAS = {
   no_cuadra: FRASE.faltaGasto,
   sin_desglose: FRASE.sinDesglose,
 };
+/* La frase de cada falta de un cliente (`vistas.faltaPorCliente`, el nivel 3). El servidor dice cuál; acá se elige. */
+const FRASE_DE_LA_FALTA = { meta_sin_vincular: FRASE.metaSinVincular, sin_conexion: FRASE.sinConexion, no_activo: FRASE.noActivo };
 
 export default function PanelDeConversion() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
@@ -317,6 +319,8 @@ function Nota({ p }) {
   if (ps.sinComparacion === 'faltan_contactos') motivos.push(FRASE.faltanContactos);
   if (c.agendados.congeladasEnLaAnterior) motivos.push(FRASE.congeladas);
   if (c.vistas.motivo !== null) motivos.push(FRASE_DE_LAS_VISTAS[c.vistas.motivo]);
+  // Con varios clientes, de cuál falta el gasto y qué hacer, cuando el servidor lo sabe (CV15-02).
+  for (const f of c.vistas.faltaPorCliente ?? []) if (FRASE_DE_LA_FALTA[f.falta]) motivos.push(poner(FRASE_DE_LA_FALTA[f.falta], f));
   // Si cruza el corte lo dice el servidor (`laVentanaLoCruza`), el mismo dato que leen la tarjeta y los avisos.
   if (c.formulario.corte !== null && c.formulario.laVentanaLoCruza) {
     motivos.push(poner(FRASE.cruzaElCorte, { corte: fechaCorta(c.formulario.corte) }));

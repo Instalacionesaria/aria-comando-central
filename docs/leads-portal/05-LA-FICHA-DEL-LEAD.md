@@ -159,17 +159,17 @@ acciones y siete secciones:
   (`aios-command-center_1.html:4668-4671`): la facturación depende de `seg`. El cuestionario dice lo que el
   tramo ya decía, y parece confirmarlo.
 - **Qué pide:**
-  - **el grupo `calificacion` de `perfilDeLaFicha`** (`lib/negocio/ficha.ts:467`), agrupado por
-    significado y no por formulario (`lib/negocio/ficha.ts:442-452`). Sus carpetas son tres
+  - **el grupo `calificacion` de `perfilDeLaFicha`** (`lib/negocio/ficha.ts:476`), agrupado por
+    significado y no por formulario (`lib/negocio/ficha.ts:451-461`). Sus carpetas son tres
     (`lib/ghl/contrato.ts:332-340`): la del puntaje, «Score | ICP Nuevo» y «Score | ICP Lead Form
     (Meta)». Así entran las dos cosas que el § 5.3 pide por separado: las respuestas de Meta Lead Ads
     y las de la landing (`§ 5.3:253-254`);
-  - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:490-496`);
+  - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:499-505`);
   - **sin «N de M».** Son dos formularios con preguntas distintas y casi nadie contesta los dos —6
     personas, medido en LP-3—: un «5 de 17» diría que faltan doce respuestas que la persona nunca tuvo
     delante;
   - **el puntaje aparece una sola vez**, en la sección de calificación. Hoy saldría dos veces: como
-    «Calificación» (`lib/negocio/ficha.ts:511`) y como el propio campo del CRM, que vive en una de las
+    «Calificación» (`lib/negocio/ficha.ts:520`) y como el propio campo del CRM, que vive en una de las
     carpetas del grupo (`lib/ghl/contrato.ts:333-336`);
   - **un campo sin grupo no aparece.** Es la prueba de LP-3. Medido: **174** campos del catálogo no
     tienen grupo, contra **17** del grupo `calificacion` en **3** carpetas;
@@ -410,7 +410,7 @@ contesta una sola vez.
 
 ### LP05-P03 · ¿La ficha muestra las etiquetas crudas del CRM?
 
-`perfilDeLaFicha` las pone en el grupo «origen» (`lib/negocio/ficha.ts:512-514`). Esta ficha sólo
+`perfilDeLaFicha` las pone en el grupo «origen» (`lib/negocio/ficha.ts:521-523`). Esta ficha sólo
 muestra la de descarte (`LP05-05`). Las crudas explican casos raros, como por qué alguien está donde
 está. Pero son vocabulario interno del CRM, y en una pestaña que ve más gente que el closer quizás no
 corresponde.

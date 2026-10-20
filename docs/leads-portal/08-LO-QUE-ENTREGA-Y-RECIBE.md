@@ -335,7 +335,7 @@ Ninguna pantalla lee de Leads Portal, y LP-4 no cambia eso. Lo que produce y otr
 ### LP08-16 · Dos fichas de la misma persona, y una sola definición de cada pieza
 
 **Rastro** · La ficha de las pestañas de operación, `components/negocio/Ficha.jsx`, y la de esta
-pestaña, que LP-3 arma sobre `perfilDeLaFicha` (`lib/negocio/ficha.ts:467`).
+pestaña, que LP-3 arma sobre `perfilDeLaFicha` (`lib/negocio/ficha.ts:476`).
 
 **Requisito** · Quien tenga las dos pestañas va a ver a la misma persona en dos fichas. Pueden
 diferir en **qué hacen** —aquélla refresca y escribe notas; ésta sólo lee (`LP05-03`)— pero
