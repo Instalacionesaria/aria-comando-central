@@ -16,13 +16,16 @@
 //   · con pulso y la conexión rota, la agenda vacía no dice «se leyó completo» — mutación: mirar sólo a los sin pulso;
 //   · con citas, viaja `sinConexion`; con un solo cliente, nada cambia ni aparece la clave — mutación: nombrar siempre
 //     al principal;
-//   · el foco y el alcance: a un closer vinculado sólo en otro cliente no se le dice — mutación: no filtrar por alcance;
+//   · el foco y el alcance: a un closer vinculado sólo en otro cliente no se le dice, con la agenda vacía y con sus
+//     citas a la vista; al vinculado en ese cliente, sí — mutaciones: no filtrar por alcance, la agenda con citas sin
+//     filtrar, callárselo a todo closer vinculado;
 //   · la cabecera de Mi Día lo dice DESPUÉS de las citas sin registrar — mutación: ponerlo antes;
 //   · la ficha dice lo del cliente del contacto — mutación: los clientes de la empresa;
 //   · Leads lo dice arriba, y al cliente final sin Ajustes — mutación: el texto de la empresa al cliente final;
 //   · Acquisition y Conversion nombran al cliente que deja el gasto incompleto, con su porqué, también cuando su serie
-//     dejó de escribirse (el colector atrasado) y cuando la ventana que lo decide es la anterior — mutaciones: listar al
-//     que no se sabe por qué, sin la serie atrasada, sin el que no está activo, la ventana actual siempre;
+//     dejó de escribirse (el colector atrasado) y cuando la ventana que lo decide es la anterior —por un cliente que
+//     pautó en ella sin serie, o por la cobertura de su gasto— — mutaciones: listar al que no se sabe por qué, sin la
+//     serie atrasada, sin el que no está activo, la ventana actual siempre, la actual cuando decide la cobertura;
 //   · el alta, la activación y las dos listas dicen qué closers no ven a un cliente, sólo a la empresa misma —
 //     mutaciones: contar a los que ven todo, la plataforma recibe los nombres, `sinVincular` con un solo cliente.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -85,7 +88,10 @@ const b = nueva('gamma-290-atraso', 'Gamma 290 atraso');
 const s = nueva('gamma-290-sin-serie', 'Gamma 290 sin serie');
 /** K: los closers. */
 const k = nueva('gamma-290-closers', 'Gamma 290 closers');
-const TODAS = [g, u, a, b, s, k];
+/** H: la ventana anterior decide. P con su Meta entera; la serie de Y, entera en la ventana actual y con un hueco en la
+    anterior. */
+const h = nueva('gamma-290-anterior', 'Gamma 290 anterior');
+const TODAS = [g, u, a, b, s, k, h];
 
 const foco = (e: Empresa, cuenta: string) => ({ orgId: e.org, todaLaOrganizacion: true, cuentas: [cuenta] }) as const;
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -214,13 +220,15 @@ async function persona(e: Empresa, nombre: string, rol: string, cuentas: string[
   return f.id;
 }
 
-/** Un anuncio con sus métricas y su serie, de hace 20 días a `hasta` días atrás; la serie, leída hace `leidaHaceDias`. */
-async function pauta(e: Empresa, cuenta: string, anuncio: string, campana: string, hasta = 2, leidaHaceDias = 0): Promise<void> {
+/** Un anuncio con sus métricas y su serie, de hace 20 días a `hasta` días atrás, salvo los días de `hueco`; la serie,
+    leída hace `leidaHaceDias`. */
+async function pauta(e: Empresa, cuenta: string, anuncio: string, campana: string, hasta = 2, leidaHaceDias = 0, hueco: readonly number[] = []): Promise<void> {
   await admin.query(
     `insert into negocio.anuncios (org_id, cuenta_id, meta_anuncio_id, meta_campana_id, nombre) values ($1, $2, $3, $4, $3)`,
     [e.org, cuenta, anuncio, campana],
   );
   for (let atras = 20; atras >= hasta; atras--) {
+    if (hueco.includes(atras)) continue;
     await admin.query(
       `insert into negocio.metricas_de_anuncio (org_id, cuenta_id, meta_anuncio_id, fecha, gasto, impresiones, acciones)
        values ($1, $2, $3, current_date - $4::int, 100, 1000, '{"landingPageView": 5, "linkClick": 3}'::jsonb)`,
@@ -306,6 +314,12 @@ before(async () => {
     assert.equal(await asignarCloser(closers.ce, 'uC', jefe, k.p), null);
     assert.equal(await asignarCloser(closers.ce, 'uC2', jefe, k.y), null);
   });
+
+  /* H: las dos series hasta anteayer, así que la ventana de «7 días» va de hace ocho a hace dos y la anterior, de hace
+     quince a hace nueve. A Y le faltan los días 10 a 12: sólo la anterior queda sin su gasto entero. */
+  await crear(h, { y: true });
+  await pauta(h, h.p, 'h290p', '2900401');
+  await pauta(h, h.y, 'h290y', '2900402', 2, 0, [10, 11, 12]);
   const aria = await unaFila<{ id: string }>(admin, `select id from identidad.usuarios where email = 'fundadora@principal.ejemplo'`);
   assert.ok(aria, 'falta el sembrado');
   tokenAria = await sesionDe(aria.id);
@@ -377,16 +391,27 @@ test('un pulso posterior al sello saca al cliente del aviso; con pulso y la cone
 });
 
 test('con citas viaja `sinConexion`; con un solo cliente no cambia nada', async () => {
-  const id = await cita(g, g.p, cG.p, new Date(Date.now() + 24 * HORA));
+  const ids = [await cita(g, g.p, cG.p, new Date(Date.now() + 24 * HORA))];
+  /* Los contactos, del usuario del CRM de `mio`: sin él, el corte del alcance (`contactoDelCloser`) deja la cita afuera,
+     la agenda del closer sale vacía y `sinConexion` ni se calcula. */
+  await admin.query(`update negocio.contactos set crm_asignado_a = 'u290' where id = any($1::uuid[])`, [[cG.p, cG.y]]);
   try {
     const r = await agenda(g.org);
     assert.equal(r.total, 1);
     assert.equal(r.falta, null);
     assert.equal(r.sinConexion, deY('sin_token', 'calendario'), 'con citas a la vista, no se dice que faltan las de un cliente');
-    // A un closer vinculado sólo en P no se le dice lo de Y: no lo ve ni lo arregla. Vinculado en Y, sí.
-    assert.ok(!('sinConexion' in (await agenda(g.org, mio(g.p)))), 'el closer de otro cliente recibe el aviso de Y');
+    // A un closer vinculado sólo en P no se le dice lo de Y: no lo ve ni lo arregla.
+    const soloP = await agenda(g.org, mio(g.p));
+    assert.equal(soloP.total, 1, 'el closer de P no ve su cita: lo que sigue no mediría nada');
+    assert.ok(!('sinConexion' in soloP), 'el closer de otro cliente recibe el aviso de Y');
+    // Vinculado en Y, sí: con una cita de Y a la vista, que las suyas no se están leyendo.
+    ids.push(await cita(g, g.y, cG.y, new Date(Date.now() + 26 * HORA)));
+    const soloY = await agenda(g.org, mio(g.y));
+    assert.equal(soloY.total, 1, 'el closer de Y no ve su cita');
+    assert.equal(soloY.sinConexion, deY('sin_token', 'calendario'), 'al closer de Y no se le dijo que faltan las citas de su cliente');
   } finally {
-    await admin.query(`delete from negocio.citas where id = $1`, [id]);
+    await admin.query(`delete from negocio.citas where id = any($1::uuid[])`, [ids]);
+    await admin.query(`update negocio.contactos set crm_asignado_a = null where id = any($1::uuid[])`, [[cG.p, cG.y]]);
   }
 
   // Un solo cliente, con su token saltado: el texto de siempre, sin nombrarlo, y sin la clave nueva.
@@ -556,6 +581,14 @@ test('Conversion nombra al cliente de la ventana que decidió el motivo, la actu
   }
   // Sin sellos, la clave no viaja.
   assert.ok(!('faltaPorCliente' in (await conOrganizacion(a.org, () => lecturaDeConversion(PERIODO, ZONA))).pasos.cifras.vistas));
+
+  /* La cobertura de la anterior decide: la serie de Y, entera en la actual —el gasto de la ventana está— y con un hueco
+     en la anterior. A Y se le pregunta por la anterior, que es donde le falta; por la actual no le falta nada. */
+  await sello(h, h.y, 'anuncios', 'corrio', MOTIVO_SIN_META_EN_GHL, 30);
+  assert.equal((await conOrganizacion(h.org, () => lecturaDeAcquisition(PERIODO, ZONA))).embudos.gasto.motivo, null, 'la ventana actual no está entera: no es el caso de la anterior');
+  const porLaCuenta = (await conOrganizacion(h.org, () => lecturaDeConversion(PERIODO, ZONA))).pasos.cifras.vistas;
+  assert.equal(porLaCuenta.motivo, 'dias_sin_leer');
+  assert.deepEqual(porLaCuenta.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_vincular' }], 'con la anterior sin su gasto entero, se le preguntó por la actual');
 });
 
 test('el alta, la activación y las dos listas dicen qué closers no ven a un cliente', async () => {

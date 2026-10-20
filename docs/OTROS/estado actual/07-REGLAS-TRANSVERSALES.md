@@ -1437,11 +1437,11 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   sobre su propia empresa (`lib/administracion/cuentas.ts:404`), y la pantalla del vínculo, por cliente activo, con más
   de uno (`app/api/admin/closer/route.ts:139`, `components/closer/QuienEsElCloser.jsx:359`). El tope de tres closers
   es por EMPRESA, y queda decidido (`lib/negocio/closer.ts:233`). Lo exigen
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:330`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:410`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:462`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:522`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:561` y
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:344`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:435`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:487`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:547`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:594` y
   `pruebas/codigo/291-los-textos-de-los-avisos-por-cliente.test.ts:51`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): en el detector de
   Acquisition, el ICP y la fuga entre etapas comparan contra el

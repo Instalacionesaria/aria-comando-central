@@ -426,7 +426,7 @@ gasto en la ventana o en la anterior, las vistas no comparan, diciendo por qué 
 `lib/negocio/pasosDeConversion.ts:608`). Desde C6 · D1, la nota dice después de «Faltan días de gasto» de qué cliente
 falta y qué hacer, preguntando por la ventana que decidió el motivo (`lib/negocio/pasosDeConversion.ts:631`). Con un
 solo cliente, lo de siempre. Lo exigen `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts` y
-`pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:541`.
+`pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:566`.
 
 ---
 

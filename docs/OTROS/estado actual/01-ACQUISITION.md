@@ -119,37 +119,37 @@ señales, todo falso mirando otra empresa (`:98-102`). Ya no publica la tabla po
 
 1. **El encabezado**: «Acquisition», el botón «Plan de acción» (`components/acquisition/PanelDeAcquisition.jsx:205`) y el segmentado de cuatro períodos, sin
    «Personalizado» y sin el matiz «las últimas 24 horas» de las otras pantallas, porque acá «Hoy» es el día de
-   calendario (`:221-240`). El botón encendido es el que contestó el servidor (`:201`).
-2. **Cinco cifras** (`Cifras`, `:306-342`): Inversión, Contactos («todas las campañas»), Clics a landing VSL
+   calendario (`:230-249`). El botón encendido es el que contestó el servidor (`:210`).
+2. **Cinco cifras** (`Cifras`, `:315-351`): Inversión, Contactos («todas las campañas»), Clics a landing VSL
    («según Meta»), Agendados y Calificados con su costo. Debajo de la Inversión va la ventana real —«18 sep – 17
-   oct»— y, si la hay, la inversión «sin contactos atribuidos» (`:312-321`).
-3. **La nota** (`Nota`, `:348-365`): «N de M leads traen campaña», y por qué faltan flechas o costos con las frases
-   de la lista cerrada (`:79-97`).
-4. **Tres tarjetas de funnel** (`Tarjeta`, `:368-450`): inversión, calificados y costo por calificado, y cada etapa
+   oct»— y, si la hay, la inversión «sin contactos atribuidos» (`:321-330`).
+3. **La nota** (`Nota`, `:357-380`): «N de M leads traen campaña», y por qué faltan flechas o costos con las frases
+   de la lista cerrada (`:79-100`).
+4. **Tres tarjetas de funnel** (`Tarjeta`, `:383-465`): inversión, calificados y costo por calificado, y cada etapa
    con su barra, su tasa contra la entrada, su costo y, bajo los agendados, los calificados con el ICP promedio y
-   la barra alto/medio/bajo (`:426-443`).
-5. **Las tablas plegables**, una por funnel y «Sin funnel» al final, abierta mientras tenga campañas (`:459-462`).
+   la barra alto/medio/bajo (`:441-458`).
+5. **Las tablas plegables**, una por funnel y «Sin funnel» al final, abierta mientras tenga campañas (`:474-477`).
    Cada campaña dice su estado en Meta y, para quien puede asignar y no mira otra empresa, lleva el selector de
-   funnel (`:621-668`); la que GoHighLevel no listó dice «No figura en Meta» y no se asigna (`:627-632`). Una
-   campaña que nunca trajo un contacto con su campaña dibuja «—» en sus etapas de personas, no 0 (`:577-579`).
-6. **La tarjeta «Señales detectadas»** (`:259-267`), de `components/senales/SenalesDelDepartamento.jsx`.
+   funnel (`:636-683`); la que GoHighLevel no listó dice «No figura en Meta» y no se asigna (`:642-647`). Una
+   campaña que nunca trajo un contacto con su campaña dibuja «—» en sus etapas de personas, no 0 (`:592-594`).
+6. **La tarjeta «Señales detectadas»** (`:268-276`), de `components/senales/SenalesDelDepartamento.jsx`.
 
 El reloj recarga sólo con la pestaña a la vista (`components/acquisition/PanelDeAcquisition.jsx:193-195`); la caja del cerebro del pie pregunta con el período
-que se mira (`:131`), y el comentario de la cabecera se publica desde la respuesta (`:134`).
+que se mira (`:140`), y el comentario de la cabecera se publica desde la respuesta (`:143`).
 
 **De dónde sale cada cifra** (`lib/negocio/embudosDeAcquisition.ts:12-20`):
 
 - **Inversión del total**: lo que Meta cobró en toda la cuenta en la ventana, de `negocio.gasto_de_la_cuenta`
   (`lib/negocio/embudosDeAcquisition.ts:488-499`). La de cada campaña y cada funnel suma `metricas_de_anuncio` por
-  `meta_campana_id` (`:549-559`).
+  `meta_campana_id` (`:561-571`).
 - **Inversión con contactos**: la de las campañas que alguna vez trajeron un contacto con su `campaignId`
-  (`:634-639`, `:611`). Es el único numerador de los costos de personas (`:384`, `:402`).
+  (`:646-651`, `:623`). Es el único numerador de los costos de personas (`:387`, `:405`).
 - **Contactos**: los que traen esa campaña en `atribucion_primera->>'campaignId'`, dados de alta en la ventana
-  (`:579-592`). **Agendados**: `tieneCitaAlcanzable`; **calificados**: `esCalificado`, agendó y no está descartado
+  (`:591-604`). **Agendados**: `tieneCitaAlcanzable`; **calificados**: `esCalificado`, agendó y no está descartado
   (`lib/negocio/citasAlcanzables.ts:180-182`).
 - **Clics**: `linkClick` de Meta; sin entrega son cero, con entrega y sin desglose no se saben
   (`lib/negocio/embudosDeAcquisition.ts:628`). No llevan tasa: son clics, no personas (`:372-390`).
-- **«Completaron form»**, la etapa de Booking directo: siempre «Sin dato desde el 31 ago.» (`:343-349`,
+- **«Completaron form»**, la etapa de Booking directo: siempre «Sin dato desde el 31 ago.» (`:346-352`,
   `components/acquisition/PanelDeAcquisition.jsx:429-430`).
 - **ICP**: promedio del puntaje de los calificados con puntaje, desde diez (`lib/negocio/embudosDeAcquisition.ts:411`),
   con los cortes 75 y 50 de `tramosDelIcp.ts` (`lib/negocio/embudosDeAcquisition.ts:595-598`).
@@ -160,7 +160,7 @@ que se mira (`:131`), y el comentario de la cabecera se publica desde la respues
 releyó después de la medianoche de la empresa (`lib/negocio/diasCerrados.ts:14-26`,
 `lib/negocio/gastoDeLaCuenta.ts:301-349`). «Hoy» es hoy, sin costos ni flechas; «Completo» empieza en el dato más
 viejo —gasto o contacto con campaña— y termina hoy (`lib/negocio/embudosDeAcquisition.ts:43-47`). La ventana
-anterior se compara sólo si está entera (`:884-897`), y sus agendados se cuentan a la misma edad (`:922-923`). Un
+anterior se compara sólo si está entera (`:898-911`), y sus agendados se cuentan a la misma edad (`:943-944`). Un
 día está entero cuando su total de la cuenta se releyó después de terminar y el detalle por campaña cuadra con él,
 con diez centavos de tolerancia, o está declarado residuo (`lib/negocio/gastoDeLaCuenta.ts:36`, `:354-429`). Los
 costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcquisition.ts:912-913`).
@@ -193,7 +193,7 @@ dentro de esos renglones (`:19-20`). Resolver, validar y firmar tienen sus rutas
 **El comentario de la cabecera** habla, en este orden, de la frescura de la tarea `anuncios`, de días de los últimos
 7 que no cuadran con la cuenta, de la señal abierta crítica o alta más grave y de la regla de la Reunión de hoy de
 esta sección (`lib/agentes/cabecera.ts:7-14`, `:108-112`, `:130-132`). Las cuatro señales abiertas son de gravedad
-media, así que por ellas no dice nada (`:66`).
+media, así que por ellas no dice nada (`:67`).
 
 **Pruebas**, contadas con `grep` el 2026-10-18 y **no corridas para este corte**:
 `pruebas/codigo/181-embudos-de-acquisition.test.ts` (19), `pruebas/base/181-embudos-de-acquisition.test.ts` (29),
@@ -377,7 +377,7 @@ en pausa se le pide la serie sólo hasta su último día cerrado (`lib/negocio/g
 a la empresa sin el gasto entero mientras la ventana tenga días después de la pausa. Y desde C6 · D1 la nota dice,
 después de «Faltan días de gasto.», de qué cliente falta y qué hacer —Meta sin vincular en su GoHighLevel, su conexión,
 o que ya no está activo—, también con el colector atrasado, cuando el sello del barrido lo sabe
-(`lib/negocio/embudosDeAcquisition.ts:926`; `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:462`). Lo exigen
+(`lib/negocio/embudosDeAcquisition.ts:926`; `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:487`). Lo exigen
 `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:313`,
 `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:519` y
 `pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts:41`; con un solo cliente, que el freno de Meta y su
