@@ -1388,8 +1388,32 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   siempre, y con un solo cliente el motivo es el de siempre (`pruebas/base/178-enlace-de-la-pieza.test.ts:178`). Esto
   cierra la concentración de Creative; «sin entrega» la cerró G3. Lo exigen
   `pruebas/base/286-la-pieza-es-de-un-cliente.test.ts:233` y `pruebas/codigo/287-la-pieza-con-su-cliente.test.ts:48`.
-- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): el vínculo de un
-  closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; en el detector de
+- **El vínculo de un closer es por cliente (C5 · G2, `096` y `097`).** Los usuarios de GoHighLevel son de cada
+  subcuenta: `negocio.closer_asignado` pasa a tener una fila por persona y cliente, con la clave (org_id, cuenta_id,
+  usuario_id) y un usuario del CRM único DENTRO de cada cliente
+  (`db/migraciones/096_el_closer_por_cliente_expandir.sql:44`, `db/migraciones/096_el_closer_por_cliente_expandir.sql:51`,
+  `db/migraciones/097_el_closer_por_cliente_cerrar.sql:34`). «Mío» son los pares (cliente, usuario del CRM), con un
+  solo corte (`lib/negocio/alcanceDelCloser.ts:110`) en la fila, las tres consultas de la Agenda, el cockpit, la
+  cabecera y el Brief: el mismo id en dos subcuentas —un usuario de la agencia— son dos vínculos. La lista de closers
+  trae, por persona, todos sus vínculos y los de los clientes a la vista (`lib/negocio/alcanceDelCloser.ts:142`): el
+  alcance se arma con todos (`lib/negocio/alcanceDelCloser.ts:192`) —la política de contactos ya recorta al foco, así
+  que quien sólo trabaja en otro cliente no ve, con el foco en éste, los leads de los demás— y lo que se publica, con
+  los de la vista. Sales agrupa por par (`lib/negocio/cierrePorCloser.ts:301`) y quien está vinculado sólo en otro
+  cliente tiene su propio aviso (`lib/negocio/cierrePorCloser.ts:346`); la ficha del lead busca al closer por par
+  (`lib/negocio/fichaDelLeadDelPortal.ts:251`). El escritor recibe el cliente explícito (`lib/negocio/closer.ts:285`),
+  cuenta PERSONAS para el tope (`lib/negocio/closer.ts:294`) y mide el usuario repetido dentro del cliente
+  (`lib/negocio/closer.ts:301`); quitar saca a la persona de todos. La ruta acepta `cuentaId` —sin él, el principal— y
+  lo valida contra los clientes de la empresa: uno ajeno, de baja o mal formado es 404
+  (`app/api/admin/closer/route.ts:187`, `app/api/admin/closer/route.ts:201`); la auditoría guarda el cliente
+  (`app/api/admin/closer/route.ts:221`) y el GET suma los clientes activos y pausados
+  (`app/api/admin/closer/route.ts:96`). La pantalla muestra un selector de cliente sólo con más de uno
+  (`components/closer/QuienEsElCloser.jsx:309`), pide los usuarios del CRM del cliente elegido con un turno que descarta
+  la respuesta de uno anterior (`components/closer/QuienEsElCloser.jsx:144`) y pasa el cliente a `guardar` como
+  argumento (`components/closer/QuienEsElCloser.jsx:373`). Con un solo cliente, todo como siempre. Lo exigen
+  `pruebas/base/288-el-closer-en-cada-cliente.test.ts:234`, `pruebas/base/288-el-closer-en-cada-cliente.test.ts:280`,
+  `pruebas/base/288-el-closer-en-cada-cliente.test.ts:356` y
+  `pruebas/codigo/289-el-vinculo-del-closer-por-cliente.test.ts:30`.
+- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): en el detector de
   Acquisition, el ICP y la fuga entre etapas comparan contra el
   promedio de un funnel que mezcla clientes, el monitor de atribución es una proporción de la empresa (un cliente chico
   con la atribución rota queda tapado) y el cambio brusco del conjunto sigue con el freno de los costos; las señales no
@@ -1411,8 +1435,16 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   sin uno propio; lo que sólo lee Meta no se frena. Las salidas: abrir Acquisition por cliente, como Leads y Sales, o
   sacar de los costos a la gente de ese cliente. Y de la misma familia: si el único cliente con Meta queda en pausa,
   cuando la ventana deja atrás su último día cerrado nadie tiene serie en ella y la empresa queda en «Faltan días de
-  gasto», como una cuya serie dejó de leerse. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene
-  efecto; con él, se mira su pantalla antes de activarlo, con su Conexión cargada.
+  gasto», como una cuya serie dejó de leerse. Del vínculo de los closers (G2) quedan: el tope de tres es de PERSONAS
+  por empresa, para todos sus clientes (`lib/negocio/closer.ts:238`), y si es por empresa o por cliente es una
+  **decisión de producto** pendiente; un closer vinculado sólo en el principal no ve los contactos de un cliente nuevo
+  hasta que alguien lo vincule ahí (al dar de alta un cliente, se revisan los vínculos de sus closers); con el foco en
+  un cliente, la celda de quien trabaja en otro dice «Sin vínculo con el CRM» (la fila sí lo explica); en la base, la
+  política de la `093` deja leer el `crm_usuario_id` de los otros clientes desde el ámbito de uno (la aplicación
+  publica sólo los de la vista), y `/api/sales` devuelve el `usuarioId` de cada closer también al cliente final; y el
+  corte por par no calza entero con el índice `contactos_por_asignado` (org_id, territorio, crm_asignado_a), sin efecto
+  con los volúmenes de hoy. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene efecto; con él, se
+  mira su pantalla antes de activarlo, con su Conexión cargada.
 
 ---
 

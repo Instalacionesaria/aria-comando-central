@@ -144,11 +144,13 @@ Este departamento tiene **dos identificadores de persona** y no son intercambiab
 | **el del CRM** | `contactos.crm_asignado_a`, `citas.crm_asignado_a` | contactos y citas |
 | **el nuestro** | `resultados.registrado_por` → `identidad.usuarios.id` | intentos y dinero |
 
-El puente es `negocio.closer_asignado.crm_usuario_id`. `lib/negocio/inicio.ts:124-127` ya advierte qué
+El puente es `negocio.closer_asignado.crm_usuario_id` —desde el nivel 3, uno por cliente: el eje del CRM es el par
+(cliente, usuario del CRM), `lib/negocio/cierrePorCloser.ts:301`—. `lib/negocio/inicio.ts:124-127` ya advierte qué
 pasa si se cruzan: *«cruzarlos daría los contactos de quien registró»*.
 
 **Requisito:** un closer designado **sin vínculo** al CRM tiene las cifras del eje CRM en **`null`**,
-nunca en `0`. No es que tenga cero citas: es que no hay eje para buscárselas.
+nunca en `0`. No es que tenga cero citas: es que no hay eje para buscárselas. Lo mismo, con su propio aviso, quien
+está vinculado sólo en otro cliente cuando la tabla mira uno (`lib/negocio/cierrePorCloser.ts:346`).
 
 ---
 

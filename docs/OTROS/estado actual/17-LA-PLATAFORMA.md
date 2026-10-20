@@ -622,6 +622,7 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | «Nivel 3 · C5 · las rutas manuales traen a cada cliente» | C5 · G4 | sin migración: la Agenda, el tic de la ingesta y «Traer de GoHighLevel» traen a cada cliente activo con su token y en su ámbito; `medir-mensaje` mide por cliente |
 | «Nivel 3 · C5 · Acquisition, Conversation y los detectores del gasto, por cliente (094)» | C5 · G3 | `094`: la entidad `cliente` de las señales y el funnel en la cuenta de su campaña. La atribución por campaña y las campañas de Acquisition dicen su cliente con varios; un cliente que pauta sin su serie frena los costos, y sólo uno con métricas sin serie frena lo que lee Meta; «sin entrega», la concentración, la escala y el gasto sin crecimiento, por cliente; toda señal de campaña dice su cliente; la serie atrasada mira sólo a los activos, y a uno en pausa se le pide la serie hasta su último día cerrado |
 | «Nivel 3 · C5 · la pieza de Creative es (cliente, nombre) (095)» | C5 · G1 | `095`: la clave del link manual pasa a (org, cliente, pieza). La pieza es (cliente, nombre) en la calidad, el rendimiento, la fatiga, la entrega, la miniatura y los activos, con `idDeLaPieza` (el nombre para el principal: las huellas de siempre); con piezas de dos clientes, la tarjeta y la ficha dicen el cliente, «Funciona», la concentración y el ICP comparan dentro de su cliente, y las señales y el cerebro dicen «nombre · cliente», nunca un uuid; la ruta del link valida el cliente con la sesión, y su 404 lo nombra sólo si la sesión ve más de uno |
+| «Nivel 3 · C5 · el vínculo de un closer es por cliente (096)» y «Nivel 3 · C5 · la clave del closer por cliente (097)» | C5 · G2 | `096`: la clave (org, cliente, persona) y el único del vínculo por cliente, junto a los viejos; `097`: los cierra. El vínculo de un closer con el CRM es de un cliente: «mío» son los pares (cliente, usuario del CRM) en los cinco cortes; Sales y la ficha, por par, y quien trabaja en otro cliente tiene su aviso; el tope sigue en tres personas por empresa; la ruta y la pantalla eligen el cliente (sin él, el principal), y uno ajeno o de baja es 404 |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
@@ -638,7 +639,11 @@ después. C5 · G3: la `094` después de la `093` y antes de desplegar su códig
 escribe la entidad `cliente`, que sin la `094` el `check` rechaza); con un solo cliente el código anda igual con o sin
 ella. La foránea de la `094` no puede fallar en producción: cada empresa tiene un solo cliente. C5 · G1: la `095`
 después de la `094` y su código enseguida: entre los dos, «Guardar» el link manual da 42P10 (el `on conflict` de antes
-ya no tiene su único), y lo mismo al revés; es un botón de administración, y producción tiene 0 links.
+ya no tiene su único), y lo mismo al revés; es un botón de administración, y producción tiene 0 links. C5 · G2: la
+`096` después de la `095`, desplegar su código, y la `097` **con G2 ya desplegado**: el `asignarCloser` de antes
+escribe con `on conflict (org_id, usuario_id)` y sin ese único daría 42P10, y desde ahí no se vuelve a un despliegue
+anterior a G2. Entre G2 y la `097` un closer no se puede vincular en un segundo cliente (la clave vieja lo rechaza);
+hoy cada empresa tiene uno.
 
 **El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
 (`app/api/cron/route.ts:230`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los

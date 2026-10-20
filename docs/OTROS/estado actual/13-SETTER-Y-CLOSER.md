@@ -122,7 +122,8 @@ pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pes
 
 **De quién son los leads** lo decide un solo módulo, y no es un permiso: `todo` para quien no es
 closer o es closer sin vincular a un usuario del CRM, `mio` para el closer vinculado
-(`lib/negocio/alcanceDelCloser.ts:25-38`). Quien administra puede mirar como uno de ellos, y el
+(`lib/negocio/alcanceDelCloser.ts:25-38`). Desde el nivel 3 (C5 · G2, construido en local) el vínculo es de un
+cliente: «mío» son los pares (cliente, usuario del CRM), con un solo corte (`lib/negocio/alcanceDelCloser.ts:110`). Quien administra puede mirar como uno de ellos, y el
 servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:214-223`).
 
 **Lo que cuesta mirarlas.** Leer las pantallas no llama al CRM
