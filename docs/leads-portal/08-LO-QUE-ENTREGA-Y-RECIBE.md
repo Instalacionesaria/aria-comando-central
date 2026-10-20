@@ -145,7 +145,7 @@ promedian»*.
 
 ### LP08-09 · Del alcance del closer: el nombre del asignado, o nada
 
-**Rastro** · `closersDeLaEmpresa` (`lib/negocio/alcanceDelCloser.ts:77`).
+**Rastro** · `closersDeLaEmpresa` (`lib/negocio/alcanceDelCloser.ts:130`).
 
 **Requisito** · El nombre del closer sale de ahí o no sale; un asignado que no cruza no se muestra
 como identificador crudo (`LP05-16`). Medido el 2026-09-27: 253 personas con asignado en el CRM y 252

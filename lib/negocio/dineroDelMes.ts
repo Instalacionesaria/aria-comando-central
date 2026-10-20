@@ -37,6 +37,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import type { VinculoConElCrm } from './alcanceDelCloser.ts';
 
 /** Un indicador del cockpit. `valor: null` = **no hay de dónde medirlo**. */
 export interface Indicador {
@@ -69,8 +70,11 @@ export type SujetoDelCockpit =
    * de cierre, y sumarlo inflaría el número sin que nada fallara.
    */
   | { tipo: 'empresa'; usuarioIds: readonly string[] }
-  /** Un closer concreto. `crmUsuarioId` nulo = designado sin vincular: sus contactos son todos. */
-  | { tipo: 'persona'; usuarioId: string; crmUsuarioId: string | null };
+  /**
+   * Un closer concreto, con sus vínculos con el CRM (uno por cliente, el nivel 3). Vacío = designado
+   * sin vincular: sus contactos son todos.
+   */
+  | { tipo: 'persona'; usuarioId: string; vinculos: readonly VinculoConElCrm[] };
 
 export interface DineroDelMes {
   /** El mes al que corresponden los tres números, en la zona de la organización. */

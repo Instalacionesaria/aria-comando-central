@@ -37,6 +37,8 @@ export interface Escenario {
   org: string;
   /** La otra, para probar que nada se cruza. */
   otraOrg: string;
+  /** El cliente principal de `alfa` (su cuenta por omisión): el vínculo de un closer es de un cliente (el nivel 3). */
+  principal: string;
   /** `ana@alfa.ejemplo`, la persona del sembrado en `alfa`. */
   quien: string;
   /** El token de una sesión activa de `quien`, con rol de administrador. */
@@ -59,11 +61,14 @@ export async function montar(marca: string): Promise<Escenario> {
   const b = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug='beta'`);
   const u = await unaFila<{ id: string }>(admin, `select id from identidad.usuarios where email='ana@alfa.ejemplo'`);
   assert.ok(a && b && u, 'falta el sembrado: corré `npm run db:reset`');
+  const p = await unaFila<{ id: string }>(admin, `select id from identidad.cuentas where org_id = $1 and es_por_omision`, [a.id]);
+  assert.ok(p, 'alfa no tiene cuenta por omisión');
 
   const esc: Escenario = {
     admin,
     org: a.id,
     otraOrg: b.id,
+    principal: p.id,
     quien: u.id,
     token: await sesionDe(u.id),
     marca,

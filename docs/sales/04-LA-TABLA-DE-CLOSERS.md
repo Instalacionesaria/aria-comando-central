@@ -62,7 +62,7 @@ Medido: **4 asignatarios distintos** en `contactos.crm_asignado_a`, y 250 de 590
 | D | 1 | 0 |
 
 Y `negocio.closer_asignado` tiene **3 filas** para esta organización — el tope es
-`TOPE_DE_CLOSERS = 3` (`lib/negocio/closer.ts:232`). O sea que hay un cuarto asignatario en el CRM
+`TOPE_DE_CLOSERS = 3` (`lib/negocio/closer.ts:238`). O sea que hay un cuarto asignatario en el CRM
 que no está configurado como closer acá.
 
 ---
@@ -70,7 +70,7 @@ que no está configurado como closer acá.
 ## S4-04 · Las filas salen del catálogo, no de un `group by`
 
 **Requisito.** Las filas se construyen desde `closersDeLaEmpresa()`
-(`lib/negocio/alcanceDelCloser.ts:77`), no agrupando lo que haya en las tablas.
+(`lib/negocio/alcanceDelCloser.ts:130`), no agrupando lo que haya en las tablas.
 
 **El defecto que evita:** un `group by` sólo devuelve a quien tiene filas. **El closer sin actividad
 desaparece de la tabla**, y su ausencia se lee como «no está configurado» en vez de «no registró
@@ -144,7 +144,7 @@ Este departamento tiene **dos identificadores de persona** y no son intercambiab
 | **el del CRM** | `contactos.crm_asignado_a`, `citas.crm_asignado_a` | contactos y citas |
 | **el nuestro** | `resultados.registrado_por` → `identidad.usuarios.id` | intentos y dinero |
 
-El puente es `negocio.closer_asignado.crm_usuario_id`. `lib/negocio/inicio.ts:123-125` ya advierte qué
+El puente es `negocio.closer_asignado.crm_usuario_id`. `lib/negocio/inicio.ts:124-127` ya advierte qué
 pasa si se cruzan: *«cruzarlos daría los contactos de quien registró»*.
 
 **Requisito:** un closer designado **sin vínculo** al CRM tiene las cifras del eje CRM en **`null`**,
@@ -180,7 +180,7 @@ Tres prohibiciones, cada una con su defecto:
 Las columnas «Ventas» y «Revenue» del prototipo **no vuelven acá**, ni siquiera cuando haya ventas.
 
 **El defecto que evita:** pondrían en la misma **fila** una columna del mes calendario —que es la
-ventana del cockpit, `dineroDelMes.ts:105`— junto a columnas de la ventana rodante que elige el segmentado.
+ventana del cockpit, `dineroDelMes.ts:109`— junto a columnas de la ventana rodante que elige el segmentado.
 Dos ventanas en una pantalla ya cuestan explicación; **dos ventanas en una fila son peores, porque
 una fila se lee como una unidad**.
 

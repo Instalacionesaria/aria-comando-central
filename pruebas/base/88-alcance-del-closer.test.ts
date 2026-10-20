@@ -110,7 +110,7 @@ async function loQueVe(usuarioId: string): Promise<string[]> {
 test('un closer VINCULADO ve solo los contactos que el CRM le asignó', async () => {
   await limpiar();
   await tresContactos();
-  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien));
+  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal));
 
   assert.deepEqual(
     await loQueVe(esc.quien),
@@ -126,7 +126,7 @@ test('los SIN ASIGNAR no son de ningún closer, y por eso no se reparten', async
      fallaría nada: las tres listas seguirían devolviendo filas, una de más cada una. */
   await limpiar();
   await tresContactos();
-  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien));
+  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal));
 
   const suyos = await loQueVe(esc.quien);
   assert.equal(
@@ -150,7 +150,7 @@ test('un closer SIN VINCULAR ve TODO, y eso es a propósito', async () => {
      ══════════════════════════════════════════════════════════════════════════ */
   await limpiar();
   await tresContactos();
-  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, null, esc.quien));
+  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, null, esc.quien, esc.principal));
 
   assert.deepEqual(
     (await loQueVe(esc.quien)).length,
@@ -165,7 +165,7 @@ test('quien NO es closer ve todo, incluidos los que nadie tiene asignados', asyn
   /* Se designa a OTRA persona, no a quien mira. Sin closers configurados esta prueba pasaría por el
      motivo equivocado —no hay a quién acotar— y no diría nada sobre el caso real, que es un
      administrador mirando una empresa que sí tiene closers. */
-  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien));
+  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal));
 
   const deOtro = await loQueVe('00000000-0000-4000-8000-000000000000');
   assert.equal(deOtro.length, 3, 'quien no es closer dejó de ver la cartera completa');
@@ -188,7 +188,7 @@ test('el Pipeline acota IGUAL que Mi Día: tres pantallas, una sola respuesta', 
    * cambia lo que un closer ve, las dos afirmaciones se mueven juntas o esto se pone rojo. */
   await limpiar();
   await tresContactos();
-  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien));
+  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal));
 
   const { deMiDia, delPipeline } = await conOrganizacion(esc.org, async () => {
     const closers = await closersDeLaEmpresa();
@@ -242,7 +242,7 @@ test('los CONTADORES del cockpit son de la misma persona que el número grande',
     deUno: await cockpitDelMes('UTC', 0, {
       tipo: 'persona',
       usuarioId: esc.quien,
-      crmUsuarioId: CRM_UNO,
+      vinculos: [{ cuentaId: esc.principal, crmUsuarioId: CRM_UNO }],
     }),
     deLaEmpresa: await cockpitDelMes('UTC', 0, { tipo: 'empresa', usuarioIds: [esc.quien] }),
   }));
@@ -275,14 +275,16 @@ test('«ver como» solo lo atiende quien ve TODO, y un closer no puede usarlo', 
      ══════════════════════════════════════════════════════════════════════════ */
   await limpiar();
   await conOrganizacion(esc.org, async () => {
-    await asignarCloser(esc.quien, CRM_UNO, esc.quien);
+    await asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal);
   });
 
   const closers: CloserConfigurado[] = await conOrganizacion(esc.org, () => closersDeLaEmpresa());
+  const vinculoDos = [{ cuentaId: esc.principal, crmUsuarioId: CRM_DOS }];
   const otro: CloserConfigurado = {
     usuarioId: '00000000-0000-4000-8000-000000000001',
     nombre: 'Otro',
-    crmUsuarioId: CRM_DOS,
+    vinculos: vinculoDos,
+    vinculosALaVista: vinculoDos,
     actualizadoEl: new Date(),
   };
   const lista = [...closers, otro];
@@ -290,7 +292,7 @@ test('«ver como» solo lo atiende quien ve TODO, y un closer no puede usarlo', 
   // Quien ve todo SÍ puede mirar los números de un closer.
   assert.deepEqual(
     alcancePedido({ tipo: 'todo' }, otro.usuarioId, lista),
-    { tipo: 'mio', crmUsuarioId: CRM_DOS },
+    { tipo: 'mio', usuarioId: otro.usuarioId, vinculos: vinculoDos },
     'quien administra no puede elegir de quién ver los números',
   );
 
@@ -298,7 +300,7 @@ test('«ver como» solo lo atiende quien ve TODO, y un closer no puede usarlo', 
   const propio = alcanceDe(esc.quien, lista);
   assert.deepEqual(
     alcancePedido(propio, otro.usuarioId, lista),
-    { tipo: 'mio', crmUsuarioId: CRM_UNO },
+    { tipo: 'mio', usuarioId: esc.quien, vinculos: [{ cuentaId: esc.principal, crmUsuarioId: CRM_UNO }] },
     'un closer pudo ver los leads de otro mandando `verComo` a mano',
   );
 });
@@ -308,15 +310,21 @@ test('un `verComo` que no es de la empresa cae en «toda la empresa», no en un 
      por la política de fila: un identificador de otra organización no está en ella. Lo que se afirma
      es qué pasa entonces — se ignora, y quien pide sigue viendo todo. */
   const lista: CloserConfigurado[] = [
-    { usuarioId: 'a', nombre: 'A', crmUsuarioId: CRM_UNO, actualizadoEl: new Date() },
+    {
+      usuarioId: 'a',
+      nombre: 'A',
+      vinculos: [{ cuentaId: esc.principal, crmUsuarioId: CRM_UNO }],
+      vinculosALaVista: [{ cuentaId: esc.principal, crmUsuarioId: CRM_UNO }],
+      actualizadoEl: new Date(),
+    },
   ];
   assert.deepEqual(alcancePedido({ tipo: 'todo' }, 'de-otra-empresa', lista), { tipo: 'todo' });
 
   /* Y un closer SIN VINCULAR tampoco se puede elegir: no tiene leads propios, así que su opción
-     daría lo mismo que «toda la empresa» — y con `crmUsuarioId` nulo la consulta compararía contra
-     nulo, que no es igual a nada y devolvería CERO filas. Un tablero vacío que parece un dato. */
+     daría lo mismo que «toda la empresa» — y sin vínculos la consulta no tendría ningún par contra
+     el que comparar y devolvería CERO filas. Un tablero vacío que parece un dato. */
   const sinVinculo: CloserConfigurado[] = [
-    { usuarioId: 'b', nombre: 'B', crmUsuarioId: null, actualizadoEl: new Date() },
+    { usuarioId: 'b', nombre: 'B', vinculos: [], vinculosALaVista: [], actualizadoEl: new Date() },
   ];
   assert.deepEqual(alcancePedido({ tipo: 'todo' }, 'b', sinVinculo), { tipo: 'todo' });
 });
@@ -342,8 +350,8 @@ test('quitar a UN closer no se lleva a los otros', async () => {
   await limpiar();
   const segundo = await unaPersona('Segundo');
   await conOrganizacion(esc.org, async () => {
-    await asignarCloser(esc.quien, CRM_UNO, esc.quien);
-    await asignarCloser(segundo, CRM_DOS, esc.quien);
+    await asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal);
+    await asignarCloser(segundo, CRM_DOS, esc.quien, esc.principal);
   });
 
   const antes = await conOrganizacion(esc.org, () => closersDeLaEmpresa());
@@ -367,8 +375,8 @@ test('dos closers NO se pueden vincular al mismo usuario del CRM', async () => {
   await limpiar();
   const otro = await unaPersona('Tercero');
   const porque = await conOrganizacion(esc.org, async () => {
-    await asignarCloser(esc.quien, CRM_UNO, esc.quien);
-    return asignarCloser(otro, CRM_UNO, esc.quien);
+    await asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal);
+    return asignarCloser(otro, CRM_UNO, esc.quien, esc.principal);
   });
   assert.equal(porque, 'crm_ya_vinculado');
 });

@@ -236,7 +236,7 @@ export interface Detalle {
   /**
    * El cliente de esa pieza (`identidad.cuentas.id`), en `enlace_de_pieza_cargado` y `enlace_de_pieza_borrado` (el
    * nivel 3): dos clientes de una empresa pueden tener una pieza con el mismo nombre, y sin él las dos dejarían la
-   * misma fila.
+   * misma fila. Y el cliente del vínculo, en `closer_designado`: el usuario del CRM es de la subcuenta de ese cliente.
    */
   cuenta?: string;
   /**

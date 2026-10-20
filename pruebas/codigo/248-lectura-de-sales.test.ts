@@ -35,7 +35,7 @@ import { repartirLasLlamadas } from '../../lib/negocio/motivosDeLasLlamadas.ts';
 function unCloser(o: Partial<CierreDeUnCloser> & { usuarioId: string }): CierreDeUnCloser {
   return {
     nombre: `Closer ${o.usuarioId}`,
-    crmUsuarioId: `crm-${o.usuarioId}`,
+    vinculos: [{ cuentaId: 'p', crmUsuarioId: `crm-${o.usuarioId}` }],
     contactos: 10,
     citas: 12,
     canceladas: 3,
@@ -130,7 +130,7 @@ test('la tabla lleva las seis columnas del prototipo, cada una con su eje y su m
     filas: [
       unCloser({ usuarioId: 'a', contactos: 22, citas: 30, conAsistencia: 0, intentos: 0 }),
       unCloser({ usuarioId: 'b', contactos: 66, citas: 90, conAsistencia: 5, sePresentaron: 3, intentos: 12, ventas: 4, montoDeVentas: 4000 }),
-      unCloser({ usuarioId: 'c', crmUsuarioId: null, contactos: null, citas: null, conAsistencia: null, sePresentaron: null }),
+      unCloser({ usuarioId: 'c', vinculos: [], contactos: null, citas: null, conAsistencia: null, sePresentaron: null }),
       unCloser({ usuarioId: 'd', citas: 0, intentos: 3, ventas: 0, porSalida: { seguimiento: 3 } }),
     ],
   }));

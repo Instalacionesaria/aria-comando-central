@@ -181,14 +181,17 @@ test('la Agenda corta por asignación en SUS TRES consultas, no solo en la lista
 
      Un conteo sin cortar no rompe ninguna lista: deja un mensaje correcto con un número ajeno, que
      manda a esa persona a buscar citas que su Agenda no le va a mostrar nunca. */
+  /* El corte es `contactoDelCloser` (el nivel 3: por par cliente-usuario del CRM), y la columna ya no
+     se nombra suelta en este archivo: un `crm_asignado_a` a mano sería un corte que no mira el cliente. */
   const src = sinComentarios(leer('lib/negocio/agenda.ts'));
-  const cortes = (src.match(/crm_asignado_a/g) ?? []).length;
+  const cortes = (src.match(/contactoDelCloser\(/g) ?? []).length;
   assert.equal(
     cortes,
     3,
     `\`agenda.ts\` corta por asignación en ${cortes} consultas y tiene TRES que lo necesitan: la ` +
       'lista y los dos conteos que explican un cero',
   );
+  assert.doesNotMatch(src, /crm_asignado_a/, '`agenda.ts` corta a mano por `crm_asignado_a`, sin el cliente del contacto');
 });
 
 test('el selector «ver como» viaja a las sub-pestañas que lo obedecen', () => {

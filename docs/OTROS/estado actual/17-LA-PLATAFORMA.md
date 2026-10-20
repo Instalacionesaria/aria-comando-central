@@ -233,14 +233,14 @@ el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fal
 (`lib/negocio/frescura.ts:260-266`, `:231`, `:258`).
 
 **Quién la lee** (búsqueda de `frescuraDe(` en `lib/`, `app/` y `components/`, 2026-10-18): la Agenda del Closer
-(`lib/negocio/agenda.ts:352`), el chat de la ficha (`lib/negocio/ficha.ts:295`, `:295`), Leads Portal
+(`lib/negocio/agenda.ts:353`), el chat de la ficha (`lib/negocio/ficha.ts:295`, `:295`), Leads Portal
 (`app/api/leads-portal/route.ts:64-65`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
 **comentario de la cabecera** de cada departamento (`lib/agentes/cabecera.ts:126`, `lib/agentes/cabecera.ts:171`,
 `lib/agentes/cabecera.ts:180`), los detectores, que no publican lo que no pueden medir
 (`lib/agentes/detectores/creative.ts:122`, `lib/agentes/detectores/conversion.ts:120`,
 `lib/agentes/detectores/conversation.ts:90`), y una herramienta del cerebro que lee la frescura de las tareas
 (`lib/agentes/executive/adaptadores/plataforma.ts:58`). **Lo que nadie lee es el motivo del sello**:
-`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:772`).
+`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:779`).
 
 **La frescura por tabla, medida el 2026-10-18 hacia las 15:42 UTC:**
 
@@ -280,7 +280,7 @@ de `public` a `respaldo_aria_brain`. Medido el 2026-10-18: en `public` hay **0**
 base**: la misma revisión del 2026-10-12 dejó permisos de producción por corregir, revisados ese día, con su plan fuera
 del repositorio a propósito.
 
-**Las `aria_cc_*`.** `lib/datos/esquema.ts:2236-2241` tipa seis; en producción hay seis, y no son las mismas:
+**Las `aria_cc_*`.** `lib/datos/esquema.ts:2243-2248` tipa seis; en producción hay seis, y no son las mismas:
 `aria_cc_scraper_mediciones` **sigue sin existir** (`to_regclass` nulo, 2026-10-18) aunque el código la escribe
 (`lib/tools/medicion.ts:65`, `:94`, dentro de un `catch`, `lib/tools/medicion.ts:71-76`), y `aria_cc_icp_oferta`
 existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`). El detalle es de

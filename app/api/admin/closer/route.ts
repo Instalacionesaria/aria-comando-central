@@ -30,6 +30,15 @@
 // endpoint que escribiera las dos con `?? null` borraría la mitad ajena en cada guardado"*.
 //
 // La pantalla llama a los dos. Eso es correcto: son dos decisiones distintas del administrador.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL VÍNCULO ES DE UN CLIENTE (el nivel 3, C5 · G2)
+//
+// Los usuarios de GoHighLevel son de cada subcuenta, así que el vínculo se guarda en un cliente: el
+// `PUT` acepta `cuentaId` y, sin él, guarda en el principal (un navegador de antes sigue andando, y
+// con un solo cliente es el único). El cliente se valida contra los de la empresa —uno de otra, o
+// uno dado de baja, es 404 como en `usuarios-crm` (`ADR-0501`)— y se escribe explícito, nunca al
+// puente. El `GET` suma los clientes activos y pausados, para el selector de la pantalla.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
@@ -49,6 +58,8 @@ import { datos } from '../../../../lib/datos/contexto.ts';
 
 export const PANTALLA = 'credenciales';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const MOTIVOS: Record<string, string> = {
   cuerpo_invalido: 'El cuerpo de la petición no es JSON válido.',
   falta_usuario: 'Hay que decir a quién se designa.',
@@ -56,8 +67,9 @@ const MOTIVOS: Record<string, string> = {
     'Esa persona no puede ser closer. Para poder serlo tiene que tener la pestaña Closer ' +
     'habilitada.',
   tope:
-    `Ya hay ${TOPE_DE_CLOSERS} closers configurados, que es el máximo. Quitá a uno antes de ` +
+    `Ya hay ${TOPE_DE_CLOSERS} closers configurados, que es el máximo. Quita a uno antes de ` +
     'agregar otro.',
+  cliente_ajeno: 'Ese cliente no es de esta empresa.',
   crm_ya_vinculado:
     'Ese usuario de GoHighLevel ya está vinculado a otra persona. Cada usuario del CRM ' +
     'corresponde a un solo closer: si los dos lo tuvieran, los dos verían los mismos leads.',
@@ -70,7 +82,7 @@ async function estado(orgId: string) {
   // medias, porque ninguna de las dos escribe. Es la forma que `ADR-0209` admite.
   const { candidatos, porqueNinguno } = await conIdentidad((db) => candidatosAlCloser(db, orgId));
 
-  const { porcentajes, asignado } = await conOrganizacion(orgId, async () => ({
+  const { porcentajes, asignado, clientes } = await conOrganizacion(orgId, async () => ({
     // Se reusa la MISMA función que alimentaba el panel de porcentajes del equipo, y no una consulta
     // nueva: es el único lugar del sistema que sabe leer esa columna conservando el `null`, y un
     // segundo lector es un segundo lugar donde escribir `?? 0` por costumbre.
@@ -78,6 +90,16 @@ async function estado(orgId: string) {
     // omitirlo mostraría el porcentaje de otro negocio con los mismos nombres al lado.
     porcentajes: await porcentajesDeLaEmpresa(TIPO_CLOSER),
     asignado: await closersDeLaEmpresa(),
+    /* Los clientes en los que se puede vincular (el nivel 3), el principal primero. Los de baja no —los clientes no se
+       borran, se dan de baja—: no se vincula a nadie en un cliente que ya no está, y con uno activo y otro de baja la
+       pantalla no tiene por qué ofrecer un selector. */
+    clientes: await datos()
+      .selectFrom('cuentas')
+      .select(['id', 'nombre', 'es_por_omision', 'estado'])
+      .where('estado', '!=', 'baja')
+      .orderBy('es_por_omision', 'desc')
+      .orderBy('nombre', 'asc')
+      .execute(),
   }));
 
   const porUsuario = new Map(porcentajes.map((p) => [p.usuarioId, p.porcentaje]));
@@ -95,16 +117,19 @@ async function estado(orgId: string) {
        los tres YA tienen la pestaña Closer, así que el aviso anterior —«dale la pestaña a alguien»—
        mandaba a una pantalla donde no hay nada que cambiar. Ver `PorqueNingunCandidato`. */
     porqueNinguno,
-    /* La LISTA de closers, con su vínculo. Era uno solo hasta la migración 034.
+    /* La LISTA de closers, con sus vínculos. Era uno solo hasta la migración 034, y con un solo
+       vínculo hasta la `096`: ahora uno por cliente.
 
-       `crmUsuarioId` viaja aunque sea nulo, y no es lo mismo que omitirlo: nulo significa
-       «designado y sin vincular», que es un estado que la pantalla dibuja distinto —esa persona ve
-       todos los leads, como cualquiera que no sea closer— y hay que decírselo. */
+       `vinculos` viaja aunque esté vacío, y no es lo mismo que omitirlo: vacío significa «designado
+       y sin vincular en ningún cliente», que es un estado que la pantalla dibuja distinto —esa
+       persona ve todos los leads, como cualquiera que no sea closer— y hay que decírselo. Van los de
+       la vista: con la organización entera, que es como se lee acá, son todos. */
     closers: asignado.map((a) => ({
       usuarioId: a.usuarioId,
       nombre: a.nombre,
-      crmUsuarioId: a.crmUsuarioId,
+      vinculos: a.vinculosALaVista,
     })),
+    clientes: clientes.map((c) => ({ id: c.id, nombre: c.nombre, esPorOmision: c.es_por_omision, estado: c.estado })),
     tope: TOPE_DE_CLOSERS,
   };
 }
@@ -138,7 +163,7 @@ export async function PUT(peticion: Request): Promise<Response> {
   } catch {
     return rechazo('peticion_invalida', MOTIVOS['cuerpo_invalido']);
   }
-  const c = cuerpo as { usuarioId?: unknown; crmUsuarioId?: unknown } | null;
+  const c = cuerpo as { usuarioId?: unknown; crmUsuarioId?: unknown; cuentaId?: unknown } | null;
   if (typeof c?.usuarioId !== 'string' || c.usuarioId.trim() === '') {
     return rechazo('peticion_invalida', MOTIVOS['falta_usuario']);
   }
@@ -156,6 +181,11 @@ export async function PUT(peticion: Request): Promise<Response> {
   const crmUsuarioId =
     typeof c.crmUsuarioId === 'string' && c.crmUsuarioId.trim() !== '' ? c.crmUsuarioId.trim() : null;
 
+  /* El cliente del vínculo (el nivel 3). Ausente o vacío = el principal, como antes de que hubiera
+     varios. Uno mal formado no llega a la base: es el mismo 404 que uno ajeno. */
+  const pedido = typeof c.cuentaId === 'string' && c.cuentaId.trim() !== '' ? c.cuentaId.trim() : null;
+  if (pedido !== null && !UUID.test(pedido)) return rechazo('no_encontrado', MOTIVOS['cliente_ajeno']);
+
   const { candidatos } = await conIdentidad((db) => candidatosAlCloser(db, contexto.orgEfectiva));
   if (!candidatos.some((k) => k.usuarioId === objetivo)) {
     /* 404 y no 403, por `ADR-0501`: un identificador de otra empresa no se confirma ni se niega. Y el
@@ -165,7 +195,17 @@ export async function PUT(peticion: Request): Promise<Response> {
   }
 
   const porque = await conOrganizacion(contexto.orgEfectiva, async () => {
-    const porque = await asignarCloser(objetivo, crmUsuarioId, contexto.usuarioId);
+    /* Contra los clientes de ESTA empresa, en la misma transacción. Uno de otra no está a la vista
+       (`cuentas_propias_lee`) y es 404, como en `usuarios-crm`: sin esto, la clave foránea lo
+       rechazaría con un 500. Y se escribe explícito: dejarlo al puente lo pondría en el principal. */
+    const cliente = await datos()
+      .selectFrom('cuentas')
+      .select('id')
+      .where('estado', '!=', 'baja')
+      .where((eb) => (pedido === null ? eb('es_por_omision', '=', true) : eb('id', '=', pedido)))
+      .executeTakeFirst();
+    if (!cliente) return 'cliente_ajeno' as const;
+    const porque = await asignarCloser(objetivo, crmUsuarioId, contexto.usuarioId, cliente.id);
     /* Si no se designó, no se audita: el registro se lee para reconstruir cambios, y una fila que
        describe algo que no pasó es ruido que hace desconfiar del resto. */
     if (porque !== null) return porque;
@@ -178,10 +218,12 @@ export async function PUT(peticion: Request): Promise<Response> {
       actor: contexto.usuarioId,
       objetivo,
       orgId: contexto.orgEfectiva,
+      detalle: { cuenta: cliente.id },
     });
     return null;
   });
 
+  if (porque === 'cliente_ajeno') return rechazo('no_encontrado', MOTIVOS['cliente_ajeno']);
   /* Los dos rechazos salen con 409 y no con 400: la petición está bien formada y el estado del
      servidor es el que no la admite — ya hay tres closers, o ese usuario del CRM ya es de otro.
      Un 400 mandaría a revisar el cuerpo, que está impecable. */
@@ -192,7 +234,7 @@ export async function PUT(peticion: Request): Promise<Response> {
 }
 
 /**
- * Quita la designación: la organización queda **sin closer**.
+ * Quita la designación de UNA persona, en todos los clientes (`quitarCloser`).
  *
  * Existe por lo mismo que «Dejar sin configurar» existe para el porcentaje: hay que poder volver de
  * «es Ana» a «todavía nadie». Sin esta operación el único camino sería designar a otra persona, que

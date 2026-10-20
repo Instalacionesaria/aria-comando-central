@@ -297,8 +297,8 @@ acciones y siete secciones:
   Notas sobre la tabla:
   - `utmMedium` es un nombre, no un id, y un renombre en Meta parte la serie. Acquisition pide
     decirlo en pantalla (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`);
-  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1007`);
-  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1004-1015`). **Medido: 213 de 213
+  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1014`);
+  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1011-1022`). **Medido: 213 de 213
     cruzan.**
 - **Sólo el host.** **286** direcciones traen un token: un JWT, un `fbclid` o un `token=`. Es lo que
   pide A8-18 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:239`). Hosts medidos:
@@ -322,10 +322,10 @@ acciones y siete secciones:
   | campo de la maqueta | qué es hoy | rastro |
   |---|---|---|
   | Ubicación · Posición | **hueco**: el placement no llega de ningún lado | A8-29, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304` |
-  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1105-1113`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
+  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1112-1120`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
   | Dispositivo · Ciudad | **hueco**: están dentro de `userAgent` e `ip`, que no se muestran. Acquisition pide derivarlos y no mostrarlos (A8-17). La maqueta elige el dispositivo por la paridad del puntaje (`aios-command-center_1.html:4673`) | `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:238` |
   | Plataforma | **no es un dato aparte**: lo dice `sessionSource`. No se inventa «Meta» | — |
-  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1012-1013`). Ver `LP05-P02` | — |
+  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1019-1020`). Ver `LP05-P02` | — |
   | Punto de captura | **se reemplaza** por el host de `url` y por «Llegó por» (`LP05-07`) | A8-18 |
   | Conjunto · Creative · UTM | **dato real**, por la lista blanca (`LP05-13`); «Creative» es el **nombre** del anuncio, no la pieza (ver la nota) | A8-07, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93` |
 
@@ -375,11 +375,11 @@ acciones y siete secciones:
     un inquilino (`lib/autorizacion/respuesta.ts:324-326`);
   - **el closer asignado:** `crm_asignado_a` es el usuario del CRM, crudo
     (`lib/datos/esquema.ts:383-393`). Se cruza con `closersDeLaEmpresa`
-    (`lib/negocio/alcanceDelCloser.ts:77-97`) por `crmUsuarioId`. Si cruza, se muestra el nombre.
-    Si no cruza, «asignado en el CRM a alguien que no es un closer configurado». Si no hay
-    asignación, «sin asignar en el CRM». **El id crudo no se muestra nunca.** Un closer designado y
-    sin vincular tiene `crmUsuarioId` nulo (`lib/negocio/alcanceDelCloser.ts:59-60`) y no puede
-    cruzar;
+    (`lib/negocio/alcanceDelCloser.ts:130-170`) por par —el cliente del contacto y su usuario del
+    CRM, entre los vínculos a la vista (el nivel 3)—. Si cruza, se muestra el nombre. Si no cruza,
+    «asignado en el CRM a alguien que no es un closer configurado». Si no hay asignación, «sin
+    asignar en el CRM». **El id crudo no se muestra nunca.** Un closer designado y sin vincular no
+    tiene vínculos (`lib/negocio/alcanceDelCloser.ts:88-91`) y no puede cruzar;
   - **Medido:** **253** contactos tienen `crm_asignado_a`, y **252** cruzan con alguno de los **3**
     closers configurados.
 - **Lo que el § 5.3 lista y la ficha no muestra:** `lead_id` y `ghl_contact_id` (`§ 5.3:246-247`). Son
@@ -401,9 +401,9 @@ portal completarían el recorrido: la confirmación de asistencia es justo lo qu
 
 Ninguno es un dato personal. `medium` está en 552 contactos y `campaignId` en 358. El objetivo existe
 para los 213 contactos cuyo `adId` cruza con `negocio.anuncios`; cuántos lo traen cargado no se midió,
-y la columna puede ser nula (`lib/datos/esquema.ts:1012-1013`). Quedaron afuera porque la lista del plan
+y la columna puede ser nula (`lib/datos/esquema.ts:1019-1020`). Quedaron afuera porque la lista del plan
 es la mínima que llena la ficha de la maqueta. `campaignId` sólo serviría para cruzar, y hoy
-`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1004-1015`).
+`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1011-1022`).
 `medium` y el objetivo sí llenarían dos filas que la maqueta tiene: «Plataforma» y «Objetivo».
 Para el objetivo, es la misma pregunta que `LP09-P04` (`09-DE-DONDE-VIENE-CADA-DATO.md`), y se
 contesta una sola vez.

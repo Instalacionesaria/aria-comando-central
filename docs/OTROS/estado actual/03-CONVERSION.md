@@ -225,7 +225,7 @@ fuente de «visitas a la landing», del corte por dispositivo y de una falla de 
 (`lib/aios/executive.js:186-189@c4cf2a8`, `lib/aios/executive-panel.js:11-27@c4cf2a8`); se borró con la etapa E7 de la
 nueva estructura. **Leads Portal consume y no inventa**: su ficha trae la familia de cada lead con
 `familiaDelRecorrido` y el estado del formulario con `CAMPO_DEL_FORMULARIO`
-(`lib/negocio/fichaDelLeadDelPortal.ts:157`, `lib/negocio/fichaDelLeadDelPortal.ts:212-213`).
+(`lib/negocio/fichaDelLeadDelPortal.ts:158`, `lib/negocio/fichaDelLeadDelPortal.ts:213-214`).
 
 ---
 

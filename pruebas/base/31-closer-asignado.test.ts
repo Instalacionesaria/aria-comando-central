@@ -530,11 +530,11 @@ test('el cockpit sigue al designado: cambiarlo cambia TODOS los números', async
   const t = await sesion(ana);
 
   await designar(pedir(t, { usuarioId: cierra }));
-  let ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'persona', usuarioId: cierra, crmUsuarioId: null }));
+  let ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'persona', usuarioId: cierra, vinculos: [] }));
   assert.equal(ck.cobrado.valor, 1000, 'el cockpit sumó ventas que no son del designado');
 
   await designar(pedir(t, { usuarioId: cierraDos }));
-  ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'persona', usuarioId: cierraDos, crmUsuarioId: null }));
+  ck = await conOrganizacion(alfa, () => cockpitDelMes(ZONA, 0, { tipo: 'persona', usuarioId: cierraDos, vinculos: [] }));
   assert.equal(ck.cobrado.valor, 2000, 'cambiar el designado no cambió los números');
 });
 

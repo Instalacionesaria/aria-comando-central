@@ -113,7 +113,7 @@ respuesta de Mi Día declara `llamadasAlCrm: 0` (`app/api/setter/mi-dia/route.ts
 (`components/views/CloserView.jsx:47-52`). Seis rutas de lectura bajo `app/api/closer/`, todas con `closer.ver`, más
 dos que nacieron después del corte: `brief` (§ 2.6) y `cerebro` (§ 2.7). Las seis:
 `mi-dia` (colas + cockpit + comisión, y desde AG12 y AG15 las marcas del Brief y el comentario de la cabecera,
-`app/api/closer/mi-dia/route.ts:50-184`, `app/api/closer/mi-dia/route.ts:124-133`), `agenda`, `pipeline`,
+`app/api/closer/mi-dia/route.ts:50-175`, `app/api/closer/mi-dia/route.ts:117-126`), `agenda`, `pipeline`,
 `meta` (PATCH), `agenda/refrescar` (POST, con `maxDuration = 300`,
 `app/api/closer/agenda/refrescar/route.ts:65`) y `contactos`. **Esta última no la llama ninguna
 pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pestaña Contactos; un
@@ -123,7 +123,7 @@ pantalla**: la lista de contactos salió de Mi Día y el Closer no tiene sub-pes
 **De quién son los leads** lo decide un solo módulo, y no es un permiso: `todo` para quien no es
 closer o es closer sin vincular a un usuario del CRM, `mio` para el closer vinculado
 (`lib/negocio/alcanceDelCloser.ts:25-38`). Quien administra puede mirar como uno de ellos, y el
-servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:140-149`).
+servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:214-223`).
 
 **Lo que cuesta mirarlas.** Leer las pantallas no llama al CRM
 (`app/api/closer/mi-dia/route.ts:5`); lo que sí corre, con la pestaña a la vista, es un reloj de 10 s
@@ -225,7 +225,7 @@ no alcanza, la objeción probable es la más frecuente de las llamadas de la emp
 
 - **Dónde.** En la ficha abierta desde una cita del Closer (§ 2.5), y como marca en la agenda de Mi Día: «BRIEF
   LISTO» y «SIN FORMULARIO» (`components/closer/MiDia.jsx:181-187`), que arma el servidor sin modelo
-  (`app/api/closer/mi-dia/route.ts:124-128`).
+  (`app/api/closer/mi-dia/route.ts:117-121`).
 - **Cuándo.** Al abrir la pestaña, una vez, si no hay uno guardado y se puede
   (`components/closer/BriefDeLaCita.jsx:88-92`). Regenerarlo a mano cuenta para el tope del cerebro; generarlo al abrir,
   no (`app/api/closer/brief/route.ts:18-19`, `app/api/closer/brief/route.ts:106-111`).
@@ -249,11 +249,11 @@ que el Brief usa de respaldo sí existen: **89** en `negocio.objeciones_clasific
 Cada pestaña tiene su caja «Pregúntale al cerebro sobre …» al pie, con su ruta
 (`app/api/setter/cerebro/route.ts`, `app/api/closer/cerebro/route.ts`), y el cerebro tiene herramientas de las dos:
 tres del Setter y cuatro del Closer, con las mismas funciones y los mismos argumentos que sus rutas
-(`lib/agentes/executive/adaptadores/setter.ts:1-6`, `lib/agentes/executive/adaptadores/closer.ts:1-7`). Del Setter
+(`lib/agentes/executive/adaptadores/setter.ts:1-6`, `lib/agentes/executive/adaptadores/closer.ts:1-9`). Del Setter
 **viajan sólo los conteos**, porque sus filas son contactos con teléfono y correo
 (`lib/agentes/executive/adaptadores/setter.ts:4-6`); del Closer, sin el selector «ver como» y con el alcance de quien
 pregunta, y de la agenda las horas y el estado de cada cita sin el contacto ni la sala
-(`lib/agentes/executive/adaptadores/closer.ts:3-7`). En producción, **ninguna conversación con el cerebro salió de la
+(`lib/agentes/executive/adaptadores/closer.ts:3-9`). En producción, **ninguna conversación con el cerebro salió de la
 caja del pie** de ninguna sección (2026-10-18; ver [11-EXECUTIVE.md](11-EXECUTIVE.md)).
 
 ### 2.8 · Las citas sin registrar, dichas en dos lugares (nuevo desde el corte)
@@ -261,7 +261,7 @@ caja del pie** de ninguna sección (2026-10-18; ver [11-EXECUTIVE.md](11-EXECUTI
 - **La cabecera del Closer** dice cuántas citas de los últimos 14 días ya ocurrieron y esperan que se registre si el
   prospecto se presentó (`lib/agentes/cabecera.ts:144-149`), con el alcance de quien mira y el mismo predicado y la
   misma ventana con que Avanzar ofrece cerrarlas (`lib/agentes/cabecera.ts:151-166`). La pide `mi-dia`
-  (`app/api/closer/mi-dia/route.ts:129-132`) y la pantalla se la entrega a la cabecera
+  (`app/api/closer/mi-dia/route.ts:122-125`) y la pantalla se la entrega a la cabecera
   (`components/views/CloserView.jsx:97-98`). Sin modelo. El Setter no tiene nada medible y calla
   (`lib/agentes/cabecera.ts:22-23`).
 - **La Reunión de hoy** del Inicio trae el tema «Sales · Closer»: contactos de la empresa entera, a 30 días, con una
@@ -286,10 +286,10 @@ que ya no es cierto o que nadie volvió a medir.
 
 ### 3.1 · La tasa de asistencia del Inicio del closer es un `null` escrito a mano
 
-- **Dónde:** `lib/negocio/inicio.ts:165-170`. La tarjeta la dibuja en
+- **Dónde:** `lib/negocio/inicio.ts:163-168`. La tarjeta la dibuja en
   `components/closer/Inicio.jsx:186-187`.
 - **Qué dice:** «Todavía no se puede calcular», siempre. El comentario que lo justifica —«Hoy no hay
-  ninguna cita leída»— es falso desde que el barrido llena `negocio.citas` (`lib/negocio/inicio.ts:54-61`;
+  ninguna cita leída»— es falso desde que el barrido llena `negocio.citas` (`lib/negocio/inicio.ts:55-62`;
   333 filas el 2026-09-28).
 - **Por qué importa:** el día que un closer registre asistencias, **su propio cockpit seguirá
   diciendo «—»**. La cifra existe en otro módulo —`tasaDeAsistencia`, con su piso
@@ -298,7 +298,7 @@ que ya no es cierto o que nadie volvió a medir.
 
 ### 3.2 · «Con cita agendada» sale de una etiqueta sin fecha, con el calendario ya leído
 
-`lib/negocio/inicio.ts:41-53` lo cuenta con la etiqueta `cita_agendada` y deja escrito que «el día que
+`lib/negocio/inicio.ts:42-54` lo cuenta con la etiqueta `cita_agendada` y deja escrito que «el día que
 se lea el calendario» pasará a ser del mes. El calendario ya se barre cada hora
 (`lib/negocio/barrido.ts:252-256`) y `negocio.citas` tiene fecha en sus 333 filas, pero el indicador
 sigue en la etiqueta: **88 contactos del territorio closer** la llevan, medido el 2026-09-28, sin
@@ -323,7 +323,7 @@ Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay
   tabla (`lib/ghl/contrato.ts:399-401`, `lib/ghl/contrato.ts:410-417`).
 - **«Todavía no se escriben: Avanzar es el paso siguiente»** (`lib/ghl/contrato.ts:396`), sobre las
   etiquetas que Avanzar manda desde el 2026-08-26 (commit `39bade3`). Y en el cockpit, «mientras
-  Avanzar no exista» (`lib/negocio/inicio.ts:110-111`).
+  Avanzar no exista» (`lib/negocio/inicio.ts:111-112`).
 - **«`closer_asignado` tiene `org_id` como clave primaria entera»**, o sea un closer por empresa, en
   cinco lugares: `lib/negocio/comisionDelSetter.ts:18-20`, `lib/negocio/inicioDelSetter.ts:6-7`,
   `app/api/setter/mi-dia/route.ts:57-58`, `components/setter/Inicio.jsx:10-11` y
@@ -504,7 +504,7 @@ empresa tiene como cuenta del agente de IA (§ 2.4); el otro ausente no tenía n
   la ventana de 14 días, la más reciente del 2026-09-28. Es una venta que existe en el CRM y no en
   `negocio.resultados`. El Pipeline la dibuja en «Ganado», porque sin etapa escrita clasifica por
   etiqueta (`lib/negocio/etapas.ts:258-259`, `lib/negocio/pipeline.ts:119`), mientras el Inicio y
-  Sales, que leen resultados (`lib/negocio/dineroDelMes.ts:134-153`), dicen cero ventas. Dos pantallas
+  Sales, que leen resultados (`lib/negocio/dineroDelMes.ts:138-157`), dicen cero ventas. Dos pantallas
   del mismo producto, el mismo contacto, dos respuestas.
 - **La llamada.** **63 contactos** el 2026-09-28 (65 el 2026-10-18), todos del territorio closer (de 287), llevan
   `bot_desactivado_postcall`, que el sistema lee como «ya tuvo
@@ -653,10 +653,10 @@ del CRM; si entrara, cada pasada horaria la volvería a nulo sin error
 
 **5 · Venta, acuerdo sin pago y venta chica son tres hechos.** Cada catálogo manda sus salidas a sus
 columnas (`lib/negocio/etapas.ts:76-94`), y lo cobrado suma sólo `venta`
-(`lib/negocio/dineroDelMes.ts:139-150`).
+(`lib/negocio/dineroDelMes.ts:143-154`).
 
 **6 · Un cero medido no es un cero sin medir.** Con resultados en el mes y ninguna venta, «0»; sin
-ningún resultado, «—» con su motivo (`lib/negocio/dineroDelMes.ts:155-185`). En septiembre de 2026
+ningún resultado, «—» con su motivo (`lib/negocio/dineroDelMes.ts:159-189`). En septiembre de 2026
 (hora de Lima) hay 6 resultados, de dos de los tres closers: la vista de empresa y esos dos ven **0
 ventas medidas**, y el tercero ve «—». Octubre empezó sin registros —ninguno al 2026-10-18—, así que este mes los
 tres y la vista de empresa ven «—» (deducido de la regla, no visto en pantalla).
@@ -667,7 +667,7 @@ tarea ni comisión (`app/api/contactos/[id]/avanzar/route.ts:158-173`,
 
 **8 · El alcance no es un permiso.** Vive en la consulta, y el closer sin vincular ve todo, porque
 mostrarle cero le diría «no hay trabajo» (`lib/negocio/alcanceDelCloser.ts:23-38`). La comisión es
-de una persona o de nadie, nunca la suma de tres (`app/api/closer/mi-dia/route.ts:111-124`).
+de una persona o de nadie, nunca la suma de tres (`app/api/closer/mi-dia/route.ts:107-117`).
 
 ---
 

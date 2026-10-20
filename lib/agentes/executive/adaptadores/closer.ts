@@ -2,9 +2,11 @@
 // `app/api/closer/mi-dia/route.ts`, `app/api/closer/agenda/route.ts` y `app/api/closer/pipeline/route.ts`,
 // sin el selector «ver como»: el cerebro mira lo que ve quien pregunta al abrir la pantalla.
 //
-// El alcance sale de `alcanceDeQuienMira`, el único lugar donde se decide: un closer vinculado al CRM ve lo
-// suyo, y cualquier otra persona —quien administra, o un closer todavía sin vincular— ve la empresa. De las colas y del pipeline viajan **sólo los conteos**; de la
-// agenda, las horas y el estado de cada cita, sin el contacto, su teléfono, el título ni la sala.
+// El alcance sale de `alcanceDeQuienMira`, el único lugar donde se decide: un closer vinculado al CRM en algún
+// cliente ve lo suyo —los contactos de sus pares (cliente, usuario del CRM); con el foco en un cliente donde no está
+// vinculado, ninguno—, y cualquier otra persona —quien administra, o un closer todavía sin vincular— ve la empresa.
+// De las colas y del pipeline viajan **sólo los conteos**; de la agenda, las horas y el estado de cada cita, sin el
+// contacto, su teléfono, el título ni la sala.
 
 import { agendaDelCloser, DIAS_DE_LA_AGENDA } from '../../../negocio/agenda.ts';
 import { alcanceDeQuienMira } from '../../../negocio/alcanceDelCloser.ts';
@@ -46,19 +48,15 @@ export const HERRAMIENTAS_DEL_CLOSER: readonly DefinicionDeHerramienta[] = [
     async ejecutar(_argumentos, contexto) {
       const { closers, alcance } = await alcanceDeQuienMira(contexto.usuarioId, null);
       const colas = await colasDelDia(contexto.zona, alcance);
-      // El mismo sujeto que arma la ruta, de las mismas dos piezas.
+      // El mismo sujeto que arma la ruta, de las mismas dos piezas: la persona y sus vínculos, del alcance.
       const sujeto =
         closers.length === 0
           ? ({ tipo: 'nadie' } as const)
           : alcance.tipo === 'todo'
             ? ({ tipo: 'empresa', usuarioIds: closers.map((k) => k.usuarioId) } as const)
-            : ({
-                tipo: 'persona',
-                usuarioId: closers.find((k) => k.crmUsuarioId === alcance.crmUsuarioId)?.usuarioId ?? '',
-                crmUsuarioId: alcance.crmUsuarioId,
-              } as const);
+            : ({ tipo: 'persona', usuarioId: alcance.usuarioId, vinculos: alcance.vinculos } as const);
       const cockpit = await cockpitDelMes(contexto.zona, colas.tareasPendientes, sujeto);
-      const c = sujeto.tipo === 'persona' && sujeto.usuarioId !== '' ? await comisionDelMes(sujeto.usuarioId, contexto.zona) : null;
+      const c = sujeto.tipo === 'persona' ? await comisionDelMes(sujeto.usuarioId, contexto.zona) : null;
       return {
         de: sujeto.tipo === 'nadie' ? 'nadie' : deQuien(alcance.tipo),
         ...tomar(cockpit, ['mes', 'cobrado', 'ventas', 'acuerdos', 'conCitaAgendada', 'tasaDeAsistencia', 'noShows', 'tareasPendientes'] as const),

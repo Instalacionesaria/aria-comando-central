@@ -77,7 +77,7 @@ Y aunque existiera: 0 sobre 7 intentos no llega al piso de 10.
 **Rastro** · `SalesView.jsx:77-81@833fc51`; `§ 5.4:271` (*«¿El cliente compró?»*).
 **Estado** · **Cero en toda la base.** Ver `01-LA-VENTA-NO-EXISTE.md`.
 
-**Se consume, no se recalcula.** `lib/negocio/dineroDelMes.ts:149` ya publica este conteo para el Inicio del
+**Se consume, no se recalcula.** `lib/negocio/dineroDelMes.ts:153` ya publica este conteo para el Inicio del
 Closer. Sales lo toma de ahí o habrá dos cifras del mismo hecho.
 
 ## S3-05 · «Revenue reportado» — el rótulo es lo único correcto
@@ -119,8 +119,8 @@ venta:
 
 | estado | qué se dibuja | cuándo |
 |---|---|---|
-| no hay ningún closer configurado | **`—`** + «nadie eligió de quién son los números» | `dineroDelMes.ts:164-173` |
-| hay closers y ningún resultado en el mes | **`—`** + «nadie registró nada todavía» | `dineroDelMes.ts:162` |
+| no hay ningún closer configurado | **`—`** + «nadie eligió de quién son los números» | `dineroDelMes.ts:168-177` |
+| hay closers y ningún resultado en el mes | **`—`** + «nadie registró nada todavía» | `dineroDelMes.ts:166` |
 | hay resultados y ninguna venta | **`0` medido**, atenuado, con su denominador al lado | hoy |
 | hay ventas sin monto cargado | **`—`** con su propio motivo | `comision.ts:14-28` |
 

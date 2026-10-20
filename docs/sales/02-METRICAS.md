@@ -35,7 +35,7 @@ que gobiernan el catálogo.
 1. **Una venta del closer y una del setter NO se suman, nunca.** `venta` va a la etapa `ganado`;
    `venta_chica` **no** (`lib/negocio/etapas.ts:86-94`). Son dos negocios de tamaños distintos: *«una
    venta chica de $497 dibujada en la misma columna que un cierre de $12.000 no es un detalle»*.
-2. **Venta ≠ acuerdo sin pago.** Sólo una es dinero cobrado (`lib/negocio/dineroDelMes.ts:79-85`). Filtrar
+2. **Venta ≠ acuerdo sin pago.** Sólo una es dinero cobrado (`lib/negocio/dineroDelMes.ts:83-89`). Filtrar
    «tiene monto» en vez de `salida = 'venta'` mete el acuerdo en el revenue y da un número más grande
    y creíble.
 3. **Es venta REPORTADA, no pago verificado.** El `§ 5.4:288` lo exige por escrito, y el rótulo va
@@ -63,13 +63,13 @@ que gobiernan el catálogo.
 **Unidad** · Dinero.
 **Población** · Los resultados registrados por los closers configurados de la empresa.
 **Rastro** · `SalesView.jsx:14-18@a39a732` («Revenue reportado», `$55,200`); `§ 5.4:271-274`;
-`lib/negocio/dineroDelMes.ts:132-152`.
+`lib/negocio/dineroDelMes.ts:136-156`.
 **Estado** · **Se consume** de `lib/negocio/dineroDelMes.ts`, que se extrajo de `inicio.ts` para
 que la regla exista una sola vez. Vale `0` medido o `—` según haya o no resultados en el mes, y con
 cero closers configurados dice otra cosa que con closers y sin resultados: son dos textos porque
 mandan a hacer dos cosas opuestas. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 
-> La ventana es **mes calendario en la zona de la organización** (`dineroDelMes.ts:105`), y **no** una de
+> La ventana es **mes calendario en la zona de la organización** (`dineroDelMes.ts:109`), y **no** una de
 > las cuatro rodantes. Eso no se disimula: el bloque lleva el mes en su propio encabezado. Ver
 > `06-PERIODOS-Y-PISOS.md`.
 
@@ -79,7 +79,7 @@ mandan a hacer dos cosas opuestas. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 **Fórmula** · `count(*) filter (where salida = 'venta')`.
 **Unidad** · Conteo.
 **Población** · La misma que `S2-01`.
-**Rastro** · `SalesView.jsx:77-81@833fc51` (`18`); `lib/negocio/dineroDelMes.ts:149`.
+**Rastro** · `SalesView.jsx:77-81@833fc51` (`18`); `lib/negocio/dineroDelMes.ts:153`.
 **Estado** · **Se consume.** Medido: **0 en toda la base**.
 
 ### S2-03 · Acuerdos sin pagar
@@ -88,7 +88,7 @@ mandan a hacer dos cosas opuestas. Ver `08-LO-QUE-ENTREGA-Y-RECIBE.md`.
 **Fórmula** · `count(*) filter (where salida = 'acuerdo_sin_pago')`.
 **Unidad** · Conteo.
 **Población** · La misma.
-**Rastro** · `lib/negocio/salidas.ts:96`; `lib/negocio/dineroDelMes.ts:150`.
+**Rastro** · `lib/negocio/salidas.ts:96`; `lib/negocio/dineroDelMes.ts:154`.
 **Estado** · **Se consume.** Medido: 0. **No suma al cobrado** — regla 2.
 
 ---
@@ -190,7 +190,7 @@ los `noshow` entre los cancelados. Ver `04-LA-TABLA-DE-CLOSERS.md § S4-05` y la
 **Fórmula** · `count(*)` sobre `resultados` por `registrado_por`.
 **Unidad** · Conteo, con su reparto por salida.
 **Población** · **Otro eje**: lo que la persona registró, no lo que le asignaron. Ver la nota de
-`inicio.ts:123-125` — cruzarlos daría los contactos de quien registró.
+`inicio.ts:124-127` — cruzarlos daría los contactos de quien registró.
 **Estado** · **Construida** en `lib/negocio/cierrePorCloser.ts`, columna «Registró». Medido: 7 en total, de 2 personas, y **sólo 2 en la ventana de 14 días**.
 
 ### S2-11 · Tasa de asistencia por closer

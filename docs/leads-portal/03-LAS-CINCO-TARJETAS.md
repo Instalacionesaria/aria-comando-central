@@ -207,7 +207,7 @@ la pantalla nueva no puede heredar sin querer.
   (`aios-command-center_1.html:4728`).
 - **Qué pide:** vendió = tiene al menos un resultado con salida `venta` (`lib/negocio/salidas.ts:84`).
   `acuerdo_sin_pago` no cuenta (`lib/negocio/salidas.ts:96`), por la regla que ya separa el cobrado del
-  comprometido (`lib/negocio/dineroDelMes.ts:79-85`). `venta_chica`, la del setter
+  comprometido (`lib/negocio/dineroDelMes.ts:83-89`). `venta_chica`, la del setter
   (`lib/negocio/etapas.ts:86-94`), tampoco: la venta del closer y la del setter no se suman
   (`docs/sales/02-METRICAS.md:35-37`).
 - **Medido:** **0** personas con venta. En toda la base hay 7 resultados: seguimiento 4, no_show 2 y
@@ -260,7 +260,7 @@ la pantalla nueva no puede heredar sin querer.
   comentario de `comision.ts` describe ese mismo defecto (`lib/negocio/comision.ts:26-27`).
 - **El formato de la maqueta es andamiaje:** `'$'+n.toLocaleString('en-US')`
   (`aios-command-center_1.html:4587`). La tabla de resultados guarda el monto y ninguna moneda
-  (`lib/datos/esquema.ts:859-872`).
+  (`lib/datos/esquema.ts:866-879`).
 
 ### LP03-14 · Las tarjetas no emiten `data-leads`
 

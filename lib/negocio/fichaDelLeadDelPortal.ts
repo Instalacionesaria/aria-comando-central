@@ -151,6 +151,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
       'c.atribucion_primera',
       'c.campos_del_crm',
       'c.crm_asignado_a',
+      'c.cuenta_id',
       'c.ultimo_entrante_el',
       'c.ultimo_saliente_el',
       'c.mensajes_desde_el',
@@ -243,7 +244,11 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
   const historiaLeida = c.mensajes_desde_el !== null;
   const descarte = new Set<string>(ETIQUETAS_DE_DESCARTE);
   const asignado = c.crm_asignado_a;
-  const closer = asignado === null ? null : closers.find((k) => k.crmUsuarioId === asignado);
+  // Por par (el nivel 3): el usuario del CRM es de la subcuenta del contacto, y el mismo id en otra es otra persona.
+  const closer =
+    asignado === null
+      ? null
+      : closers.find((k) => k.vinculosALaVista.some((v) => v.cuentaId === c.cuenta_id && v.crmUsuarioId === asignado));
   const tramo = tramoDelPuntaje(c.score);
 
   return {

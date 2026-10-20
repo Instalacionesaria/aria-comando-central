@@ -97,7 +97,7 @@ el servidor ya filtró con la misma función que decide el menú (`components/vi
 La configuración de comisiones fue una cuarta pestaña y se mudó a Closer → Inicio sin cambiar su autorización: sigue
 declarando `PANTALLA = 'credenciales'` (`components/views/AjustesView.jsx:89-105`, `app/api/admin/comisiones/route.ts:45`).
 Lo mismo quién es el closer, la lista de usuarios del CRM para elegirlo, el tramo del setter y los enlaces rápidos:
-`app/api/admin/closer/route.ts:50`, `app/api/admin/closer/usuarios-crm/route.ts:33`, `app/api/admin/setter/route.ts:51`,
+`app/api/admin/closer/route.ts:59`, `app/api/admin/closer/usuarios-crm/route.ts:33`, `app/api/admin/setter/route.ts:51`,
 `app/api/admin/enlaces-rapidos/route.ts:44`. Con la de credenciales, la de Meta y la de los topes, la sección
 `credenciales` tiene **ocho** rutas (eran seis; medido sobre el árbol del 2026-10-18).
 

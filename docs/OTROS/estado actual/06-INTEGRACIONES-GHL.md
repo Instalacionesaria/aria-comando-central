@@ -539,7 +539,7 @@ negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:315`
 por su nombre **saltándose el filtro de carpetas**. El 2026-09-15 la usaban dos módulos; hoy seis:
 `lib/negocio/consumoDelPrecall.ts:159`, `lib/negocio/indicadoresDeCitas.ts:248`,
 `lib/negocio/calidadDelCreativo.ts:148`, `lib/negocio/embudoDelFormulario.ts:178`,
-`lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:212-214`. De los campos que se
+`lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:213-215`. De los campos que se
 leen así, dos viven en carpetas sin grupo: «Confirmación Agendamiento»
 (`lib/negocio/indicadoresDeCitas.ts:208`) y «Form Landing VSL» (`lib/negocio/recorrido.ts:231`). El
 precio está escrito: si alguien renombra el campo en el CRM, devuelve `null`.
@@ -610,7 +610,7 @@ Form completo sin agendar       39
 El 2026-09-15 este informe decía que ninguna pantalla lo leía. **Cambió**: desde el 2026-09-20
 (commit `4da946d`) lo leen por nombre, para Conversion, `lib/negocio/embudoDelFormulario.ts:178` y
 `lib/negocio/recorrido.ts:258`, y desde el 2026-09-26, para Leads Portal,
-`lib/negocio/fichaDelLeadDelPortal.ts:212`. Y las cifras no se movieron por otro motivo: el campo
+`lib/negocio/fichaDelLeadDelPortal.ts:213`. Y las cifras no se movieron por otro motivo: el campo
 dejó de reportar el 2026-08-31, cuando la gente empezó a entrar por el widget y no por la landing
 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-23`).
 

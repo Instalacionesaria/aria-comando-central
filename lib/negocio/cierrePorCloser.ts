@@ -39,7 +39,8 @@
 //   · `contactos.crm_asignado_a` — el del CRM. Corta contactos y citas.
 //   · `resultados.registrado_por` — el nuestro. Corta lo registrado.
 //
-// El puente es `closer_asignado.crm_usuario_id`, y `inicio.ts:123-125` ya advierte qué pasa si se
+// El puente es `closer_asignado.crm_usuario_id` —con el nivel 3, uno por cliente: el eje del CRM es
+// el PAR (cliente, usuario del CRM)—, y `inicio.ts:124-127` ya advierte qué pasa si se
 // cruzan: *«cruzarlos daría los contactos de quien registró»*. Medido, **acá no es una hipótesis**:
 //
 //     Q  94 citas  ·  0 resultados
@@ -78,7 +79,7 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { type CloserConfigurado, closersDeLaEmpresa } from './alcanceDelCloser.ts';
+import { type CloserConfigurado, type VinculoConElCrm, closersDeLaEmpresa } from './alcanceDelCloser.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { alcanzable, cancelada, descartado, marcadaComoPlanton } from './citasAlcanzables.ts';
 
@@ -136,8 +137,12 @@ export interface CierreDeUnCloser {
   /** Nuestro usuario: el eje de lo REGISTRADO. */
   usuarioId: string;
   nombre: string;
-  /** El del CRM: el eje de personas y citas. `null` = designado sin vincular. */
-  crmUsuarioId: string | null;
+  /**
+   * El del CRM: el eje de personas y citas. Sus vínculos en los clientes que esta lectura tiene a la
+   * vista, uno por cliente (el nivel 3). Vacío = sin eje: designado sin vincular, o vinculado sólo
+   * en otro cliente.
+   */
+  vinculos: VinculoConElCrm[];
 
   // ── Eje CRM. Todos `null` sin vínculo, que NO es lo mismo que cero. ──
   /** Personas distintas detrás de sus citas. Segundo término de `citas`, nunca su reemplazo. */
@@ -268,6 +273,7 @@ export async function cierrePorCloser(
       j.onRef('co.org_id', '=', 'ci.org_id').onRef('co.id', '=', 'ci.contacto_id'),
     )
     .select([
+      'co.cuenta_id as cuenta',
       'co.crm_asignado_a as quien',
       sql<number>`count(*)`.as('citas'),
       /* `distinct` y no `count(*)`: 94 citas son 82 personas, y publicar el conteo de citas con el
@@ -290,7 +296,9 @@ export async function cierrePorCloser(
     .where(alcanzable('ci'))
     .where(sql<boolean>`not ${descartado('ci')}`)
     .where(enLaVentana)
-    .groupBy('co.crm_asignado_a')
+    /* Por PAR y no por el usuario del CRM solo (el nivel 3): los usuarios son de cada subcuenta, y el
+       mismo id en dos clientes —un usuario de la agencia— puede ser de dos closers. */
+    .groupBy(['co.cuenta_id', 'co.crm_asignado_a'])
     .execute();
 
   /* El otro eje, en su propia consulta porque agrupa por otra columna de otra tabla. Dos niveles
@@ -312,12 +320,19 @@ export async function cierrePorCloser(
     .groupBy(['registrado_por', 'salida'])
     .execute();
 
-  const porCrm = new Map(ejeCrm.filter((f) => f.quien !== null).map((f) => [f.quien!, f] as const));
+  const par = (cuenta: string, crm: string) => JSON.stringify([cuenta, crm]);
+  const porPar = new Map(ejeCrm.filter((f) => f.quien !== null).map((f) => [par(f.cuenta, f.quien!), f] as const));
   const conCloser = new Set<string>();
 
   const filas: CierreDeUnCloser[] = catalogo.map((c) => {
-    const e = c.crmUsuarioId === null ? undefined : porCrm.get(c.crmUsuarioId);
-    if (c.crmUsuarioId !== null) conCloser.add(c.crmUsuarioId);
+    /* Los vínculos A LA VISTA, no todos: con el foco en un cliente, el vínculo en otro no es de esta
+       tabla. Cada contacto está en un solo par, así que las cifras de sus pares se suman. */
+    const suyas = c.vinculosALaVista.flatMap((v) => {
+      const k = par(v.cuentaId, v.crmUsuarioId);
+      conCloser.add(k);
+      const e = porPar.get(k);
+      return e ? [e] : [];
+    });
 
     /* ── SIN VÍNCULO ES `null`; VINCULADO Y SIN CITAS ES CERO MEDIDO ──────────
      *
@@ -325,13 +340,18 @@ export async function cierrePorCloser(
      * CRM, la otra a mirar por qué no le están llegando citas. Un `?? 0` las escribe igual y la
      * primera desaparece. Hoy los tres closers de producción están vinculados, así que este nulo
      * **no lo cubre ninguna fila real**: sólo el tipo y su prueba. */
-    const sinEje = c.crmUsuarioId === null;
-    const contactos = sinEje ? null : Number(e?.contactos ?? 0);
-    const citas = sinEje ? null : Number(e?.citas ?? 0);
-    const canceladas = sinEje ? null : Number(e?.canceladas ?? 0);
-    const conAsistencia = sinEje ? null : Number(e?.con_asistencia ?? 0);
-    const sePresentaron = sinEje ? null : Number(e?.se_presentaron ?? 0);
-    const noShowDelCalendario = sinEje ? null : Number(e?.planton ?? 0);
+    const sinEje = c.vinculosALaVista.length === 0;
+    /* Vinculado, pero sólo en clientes que esta lectura no ve: no es «sin vincular» y su fila lo dice
+       distinto. Sólo pasa fuera de la organización entera, que ve todos los clientes. */
+    const enOtroCliente = sinEje && c.vinculos.length > 0;
+    const suma = (k: 'contactos' | 'citas' | 'canceladas' | 'con_asistencia' | 'se_presentaron' | 'planton') =>
+      sinEje ? null : suyas.reduce((s, e) => s + Number(e[k] ?? 0), 0);
+    const contactos = suma('contactos');
+    const citas = suma('citas');
+    const canceladas = suma('canceladas');
+    const conAsistencia = suma('con_asistencia');
+    const sePresentaron = suma('se_presentaron');
+    const noShowDelCalendario = suma('planton');
 
     const porSalida: Record<string, number> = {};
     let intentos = 0;
@@ -350,7 +370,7 @@ export async function cierrePorCloser(
     return {
       usuarioId: c.usuarioId,
       nombre: c.nombre,
-      crmUsuarioId: c.crmUsuarioId,
+      vinculos: c.vinculosALaVista,
       contactos,
       citas,
       canceladas,
@@ -367,7 +387,7 @@ export async function cierrePorCloser(
       montoDeVentas,
       ventasSinMonto,
       tasaDeCierre: tasa(ventas, intentos),
-      aviso: avisoDeLaFila({ sinEje, citas, conAsistencia, noShowDelCalendario, intentos }),
+      aviso: avisoDeLaFila({ sinEje, enOtroCliente, citas, conAsistencia, noShowDelCalendario, intentos }),
     };
   });
 
@@ -378,7 +398,7 @@ export async function cierrePorCloser(
   const sinAsignar = vacio();
   const deAlguienQueNoEsCloser = vacio();
   for (const f of ejeCrm) {
-    if (f.quien !== null && conCloser.has(f.quien)) continue;
+    if (f.quien !== null && conCloser.has(par(f.cuenta, f.quien))) continue;
     const donde = f.quien === null ? sinAsignar : deAlguienQueNoEsCloser;
     donde.contactos += Number(f.contactos);
     donde.citas += Number(f.citas);
@@ -422,11 +442,21 @@ function tasa(numerador: number | null, denominador: number | null): number | nu
 /** Qué le falta a una fila. **`null` ⟹ la fila no dibuja ninguna nota.** */
 function avisoDeLaFila(f: {
   sinEje: boolean;
+  enOtroCliente: boolean;
   citas: number | null;
   conAsistencia: number | null;
   noShowDelCalendario: number | null;
   intentos: number;
 }): string | null {
+  if (f.enOtroCliente) {
+    /* Con la organización entera no pasa nunca: ve todos los clientes. Con el foco en un cliente o con
+       su cliente final, esta persona es closer de la empresa y trabaja en otros: «no está vinculado»
+       mandaría a vincularla acá, y no hay nada que arreglar. */
+    return (
+      'Es closer de la empresa y está vinculado en otro cliente, no en éste: sus personas y sus citas ' +
+      'son de ese cliente, así que acá no tiene ninguna que mostrar.'
+    );
+  }
   if (f.sinEje) {
     return (
       'Está designado como closer y no está vinculado a un usuario del CRM, así que no se le pueden ' +

@@ -43,7 +43,7 @@ leen citas agregan una tercera:
 | `negocio.campos_del_crm` | qué pregunta es cada clave de `contactos.campos_del_crm` | `db/migraciones/039_campos_del_crm.sql:124` |
 | `negocio.carpetas_del_crm` | a qué grupo va cada carpeta de campos | `db/migraciones/039_campos_del_crm.sql:75` |
 | `negocio.closer_asignado` | el puente entre el asignado del CRM y un closer nuestro | `db/migraciones/020_closer_asignado.sql:56` |
-| `identidad.usuarios` | el nombre de ese closer, que `closersDeLaEmpresa` trae con un `leftJoin` (`lib/negocio/alcanceDelCloser.ts:85`); el cliente final no ve a las personas y recibe un rótulo, «Closer 1» (`:93`) | `db/migraciones/002_organizaciones_y_usuarios.sql:72` |
+| `identidad.usuarios` | el nombre de ese closer, que `closersDeLaEmpresa` trae con un `leftJoin` (`lib/negocio/alcanceDelCloser.ts:141`); el cliente final no ve a las personas y recibe un rótulo, «Closer 1» (`:93`) | `db/migraciones/002_organizaciones_y_usuarios.sql:72` |
 | `negocio.anuncios` | el nombre del anuncio cuando `adId` cruza | `db/migraciones/050_lo_que_costo_cada_anuncio.sql:83`; la llave es `meta_anuncio_id` (`:93`) y el nombre, `nombre` (`:105`) |
 | `negocio.tareas_programadas` | si el barrido está al día (`frescuraDe`, `lib/negocio/frescura.ts:116`) | `db/migraciones/014_tareas_programadas.sql:41` |
 
@@ -164,7 +164,7 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 | Email | `aios-command-center_1.html:4808`, sin manejador | `contactos.email` (`db/migraciones/011_negocio_closer_setter.sql:71`) como `mailto:` | **590** de 593, medido en LP-3 (`LP09-P05`) |
 | ↗ GHL | `aios-command-center_1.html:4809`, `:4865-4866` | — | se borra: sin enlace a GoHighLevel (`12-QUIEN-VE-QUE.md`) |
 | Teléfono, Email | `aios-command-center_1.html:4862` | las mismas dos columnas | sólo en la ficha |
-| Closer asignado | `aios-command-center_1.html:4862` | `crm_asignado_a` cruzado con `negocio.closer_asignado` y el nombre de `closersDeLaEmpresa` (`lib/negocio/alcanceDelCloser.ts:77-97`) | `LP09-10` |
+| Closer asignado | `aios-command-center_1.html:4862` | `crm_asignado_a` cruzado con `negocio.closer_asignado` y el nombre de `closersDeLaEmpresa` (`lib/negocio/alcanceDelCloser.ts:130-170`) | `LP09-10` |
 | País | no está | `contactos.pais` (`db/migraciones/048_de_donde_vino_el_lead.sql:128-129`) | **569** |
 | Sincronizado | no está | `contactos.sincronizado_el` | la última, 2026-09-27 00:00 UTC |
 
@@ -562,7 +562,7 @@ select (select count(*) from c where crm_asignado_a is not null) con_asignado,
 
 **Requisito:** el que no cruza —uno— se muestra como «asignado a alguien que no está configurado
 como closer», **nunca con el identificador crudo del CRM**. El nombre sale de `closersDeLaEmpresa`
-(`lib/negocio/alcanceDelCloser.ts:77-97`), que ya va por la conexión del inquilino.
+(`lib/negocio/alcanceDelCloser.ts:130-170`), que ya va por la conexión del inquilino.
 
 ### LP09-11 · Los mensajes: cuándo, nunca qué
 

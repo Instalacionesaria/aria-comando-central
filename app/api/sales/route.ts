@@ -48,7 +48,7 @@
 // El revenue de cada fila de la tabla no sale de ahí: es el de la ventana, de `cierrePorCloser`. No N+1 por closer: su consulta corta
 // por `registrado_por` y la de las etiquetas por `crm_asignado_a`, así que las filas nunca sumarían
 // el total y la tabla mentiría sin que nada fallara. El motivo largo está en el plan de la pantalla
-// y en `inicio.ts:123-125`.
+// y en `inicio.ts:124-127`.
 //
 // Y la lista de closers se lee UNA vez, en la lectura, y se pasa a los tres consumidores: el dinero, la tabla y
 // los motivos. Con dos lecturas, podrían discrepar sobre quiénes son los closers dentro de la misma respuesta.
@@ -56,7 +56,7 @@
 // ── LO QUE NO VIAJA, Y ES DELIBERADO ───────────────────────────────────────
 //
 // Del cockpit sólo viajan `mes`, `cobrado`, `ventas` y `acuerdos`. `conCitaAgendada` no es del mes
-// —*«una etiqueta no trae fecha»*, `inicio.ts:44-48`—, `tasaDeAsistencia` está cableada a `null`
+// —*«una etiqueta no trae fecha»*, `inicio.ts:45-49`—, `tasaDeAsistencia` está cableada a `null`
 // allá y Sales publica la suya, `noShows` cuenta contactos con etiqueta y no citas, y
 // `tareasPendientes` no tiene valor honesto en esta pantalla. Devolver el cockpit entero los traería
 // los cuatro de arriba sin que nada fallara; hay una prueba de forma que lo impide.

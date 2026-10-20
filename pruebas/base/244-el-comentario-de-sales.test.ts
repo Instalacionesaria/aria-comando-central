@@ -84,8 +84,8 @@ test('las citas sin registrar son las que Avanzar ofrece cerrar; con alcance pro
   await cita(a.id, hace(20)); // fuera de los 14 días de Avanzar
   await cita(a.id, hace(1), { sinCalendario: true }); // sin calendario: Avanzar no la ofrece
   await cita(b.id, hace(2)); // de otro closer
-  assert.equal(await conOrganizacion(esc.org, () => citasSinRegistrar({ tipo: 'mio', crmUsuarioId: CRM_A })), 1);
-  assert.equal(await conOrganizacion(esc.org, () => citasSinRegistrar({ tipo: 'mio', crmUsuarioId: CRM_B })), 1);
+  assert.equal(await conOrganizacion(esc.org, () => citasSinRegistrar({ tipo: 'mio', usuarioId: esc.quien, vinculos: [{ cuentaId: esc.principal, crmUsuarioId: CRM_A }] })), 1);
+  assert.equal(await conOrganizacion(esc.org, () => citasSinRegistrar({ tipo: 'mio', usuarioId: esc.quien, vinculos: [{ cuentaId: esc.principal, crmUsuarioId: CRM_B }] })), 1);
   assert.equal(await conOrganizacion(esc.org, () => citasSinRegistrar({ tipo: 'todo' })), antes + 2);
 });
 

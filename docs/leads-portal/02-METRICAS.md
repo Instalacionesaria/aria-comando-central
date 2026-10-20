@@ -54,7 +54,7 @@
    decirlo» y `0` es un hecho medido. La maqueta los colapsa en una línea: su `rate` devuelve `0`
    cuando el denominador es cero (`aios-command-center_1.html:4707`).
 7. **Vender es tener un resultado con salida `venta`.** No lo es un acuerdo sin pago
-   (`lib/negocio/dineroDelMes.ts:79-84`) ni una venta chica del setter
+   (`lib/negocio/dineroDelMes.ts:83-88`) ni una venta chica del setter
    (`lib/negocio/etapas.ts:86-94`). Y es venta **reportada por el closer**, no pago verificado
    (`lib/negocio/cadenaDeCierre.ts:353-358`).
 8. **La asistencia no se deduce ni se mezcla.** La que registra Avanzar (`citas.asistio`) y el
@@ -293,7 +293,7 @@ El cero del caso 3 sí es un hecho: la base tiene ventas y ninguna es de este tr
 tramo.
 **Unidad** · Dinero, tal como el closer lo cargó.
 **Población** · Los resultados `venta` de los contactos del tramo. **`acuerdo_sin_pago` no entra**
-(`lib/negocio/salidas.ts:96`; `lib/negocio/dineroDelMes.ts:79-84`).
+(`lib/negocio/salidas.ts:96`; `lib/negocio/dineroDelMes.ts:83-88`).
 **Rastro** · `aios-command-center_1.html:4711` y `:4719` (por tramo), `:4730` (Todos) y `:4770-4772` (cada
 tarjeta de la rejilla); `§ 5.3:263` («Monto reportado por el closer»).
 **Estado** · **`null` hoy, con el mismo motivo que LP02-07.** Medido el 2026-09-27: 0 montos

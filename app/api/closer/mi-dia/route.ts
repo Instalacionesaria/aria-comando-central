@@ -89,21 +89,17 @@ export async function GET(peticion: Request): Promise<Response> {
        * Tres formas, y las tres se ven distinto: sin closers configurados no hay de quién mostrar
        * números; con alcance `todo` se suman los closers; con `mio` es una persona.
        *
-       * El identificador de NUESTRO usuario se busca por el vínculo del CRM y no se arrastra en el
-       * alcance, porque el alcance habla del CRM y el cockpit de quién registró el resultado acá:
-       * son dos ejes, y meterlos en un solo valor es cómo se llega a contar los resultados de una
-       * persona sobre los contactos de otra. */
+       * El cockpit tiene dos ejes —quién registró el resultado acá (`usuarioId`) y de quién son los
+       * contactos en el CRM (`vinculos`)—, y meterlos en un solo valor es cómo se llega a contar los
+       * resultados de una persona sobre los contactos de otra. El alcance `mio` los lleva a los dos
+       * porque salen de la MISMA fila de `closersDeLaEmpresa`: no se cruzan, y ya no hace falta buscar
+       * a la persona por su usuario del CRM (con el nivel 3 tiene uno por cliente). */
       const sujeto =
         closers.length === 0
           ? ({ tipo: 'nadie' } as const)
           : alcance.tipo === 'todo'
             ? ({ tipo: 'empresa', usuarioIds: closers.map((k) => k.usuarioId) } as const)
-            : ({
-                tipo: 'persona',
-                usuarioId:
-                  closers.find((k) => k.crmUsuarioId === alcance.crmUsuarioId)?.usuarioId ?? '',
-                crmUsuarioId: alcance.crmUsuarioId,
-              } as const);
+            : ({ tipo: 'persona', usuarioId: alcance.usuarioId, vinculos: alcance.vinculos } as const);
 
       // El contador se le PASA al cockpit, no se recalcula. Ver el encabezado.
       const cockpit = await cockpitDelMes(zona, colas.tareasPendientes, sujeto);
@@ -118,10 +114,7 @@ export async function GET(peticion: Request): Promise<Response> {
        * Y es de UNA persona o de NADIE, nunca una suma. Quien mira «toda la empresa» no tiene
        * comisión que mostrar: sumar las de tres closers daría un número que no es de nadie y que
        * nadie cobra. `null`, que la pantalla ya sabe dibujar. */
-      const comision =
-        sujeto.tipo === 'persona' && sujeto.usuarioId !== ''
-          ? await comisionDelMes(sujeto.usuarioId, zona)
-          : null;
+      const comision = sujeto.tipo === 'persona' ? await comisionDelMes(sujeto.usuarioId, zona) : null;
       /* La marca de cada cita de la agenda: «BRIEF LISTO» y «SIN FORMULARIO» (AG12 de los agentes). Sin modelo:
          lee lo guardado y el formulario del contacto. */
       const briefs = await marcasDelBrief(
@@ -135,10 +128,7 @@ export async function GET(peticion: Request): Promise<Response> {
   );
   /* De quién son los números que se están mostrando. `null` = de toda la empresa, que no es lo
      mismo que «no hay nadie»: eso lo dice `closers` vacío. */
-  const mirando =
-    alcance.tipo === 'mio'
-      ? (closers.find((k) => k.crmUsuarioId === alcance.crmUsuarioId) ?? null)
-      : null;
+  const mirando = alcance.tipo === 'mio' ? (closers.find((k) => k.usuarioId === alcance.usuarioId) ?? null) : null;
 
   return ok({
     cockpit,
@@ -154,7 +144,8 @@ export async function GET(peticion: Request): Promise<Response> {
     closers: closers.map((k) => ({
       usuarioId: k.usuarioId,
       nombre: k.nombre,
-      vinculado: k.crmUsuarioId !== null,
+      // Vinculado en algún cliente: es lo que decide su alcance (`alcanceDe`).
+      vinculado: k.vinculos.length > 0,
     })),
     /* De quién son los números en pantalla, o `null` si son de toda la empresa. */
     mirando: mirando === null ? null : { usuarioId: mirando.usuarioId, nombre: mirando.nombre },

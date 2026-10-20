@@ -51,7 +51,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { noCancelada } from './citas.ts';
 import { armarPildora, type Pildora } from './pildora.ts';
-import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
+import { type AlcanceDelCloser, contactoDelCloser } from './alcanceDelCloser.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import {
   CITA_AGENDADA,
@@ -717,7 +717,7 @@ export async function filasDeTerritorio(
      * alcance, o con alcance `todo`, la consulta sale exactamente como salía antes.
      *
      * Se compara contra `crm_asignado_a`, el identificador del usuario del CRM guardado crudo, y
-     * no contra `responsable_id`. El motivo está en la migración 034: resolver el vínculo al
+     * no contra `responsable_id` —con el cliente del contacto: el par de `contactoDelCloser`—. El motivo está en la migración 034: resolver el vínculo al
      * escribir obligaría a re-sincronizar todos los contactos cada vez que se corrige a qué
      * persona corresponde un usuario del CRM.
      *
@@ -725,7 +725,7 @@ export async function filasDeTerritorio(
      * un contador para que alguien los asigne en el CRM. Un `or … is null` acá se los daría a los
      * tres closers a la vez, y dos closers llamarían al mismo contacto sin saberlo. */
     .$if(opciones.alcance?.tipo === 'mio', (q) =>
-      q.where('c.crm_asignado_a', '=', (opciones.alcance as { crmUsuarioId: string }).crmUsuarioId),
+      q.where(contactoDelCloser('c', (opciones.alcance as Extract<AlcanceDelCloser, { tipo: 'mio' }>).vinculos)),
     )
     // Por actividad entrante, y los que nunca escribieron al final. `nulls last` explícito:
     // en PostgreSQL `desc` pone los nulos PRIMERO por omisión, así que sin esto la lista

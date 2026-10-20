@@ -36,9 +36,33 @@
 // Los contactos **sin asignar** —17 de los 152— quedan fuera de todo `mio` y dentro de `todo`. Fue
 // la decisión de producto: *«solo quien no es closer»*, con un contador para que alguien los asigne
 // en el CRM. Ningún lead desaparece, y dos closers nunca trabajan el mismo.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL VÍNCULO ES DE UN CLIENTE (el nivel 3, C5 · G2)
+//
+// Los usuarios de GoHighLevel son de cada SUBCUENTA, y cada cliente de la empresa tiene la suya: un
+// closer puede ser `uA` en la de A y `uB` en la de B, y el mismo id en dos subcuentas (un usuario
+// de la agencia) pueden ser dos personas. Por eso «mío» es una lista de PARES (cliente, usuario del
+// CRM) y no un id suelto, y su corte vive en una sola función, `contactoDelCloser`.
+//
+// «Sin vincular» sigue cayendo en `todo`, pero ahora significa «sin ningún vínculo, en ningún
+// cliente». Quien está vinculado en B y no en A ve, en A, cero contactos: es closer de la empresa y
+// no trabaja ese cliente. Y el alcance se arma con TODOS sus vínculos, no sólo con los de los
+// clientes que la lectura tiene a la vista: la política de `contactos` ya recorta al foco, así que
+// un vínculo de otro cliente da cero filas. Armarlo con los de la vista dejaba a ese closer, con el
+// foco en A, sin vínculos —o sea en `todo`— viendo los leads de los demás.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { sql, type RawBuilder } from 'kysely';
+
 import { datos } from '../datos/contexto.ts';
+
+/** Un vínculo con el CRM: el usuario de GoHighLevel de una persona en la subcuenta de UN cliente. */
+export interface VinculoConElCrm {
+  /** El cliente (`identidad.cuentas.id`): de su subcuenta es el usuario. */
+  cuentaId: string;
+  crmUsuarioId: string;
+}
 
 /**
  * De quién son los leads que hay que mostrar.
@@ -46,19 +70,48 @@ import { datos } from '../datos/contexto.ts';
  * Es una unión discriminada y no un `string | null`, por lo mismo que el resto del proyecto usa
  * uniones para los estados: con `crmUsuarioId: string | null`, «ve todo» y «es closer y no tiene
  * vínculo» se escriben igual —los dos son `null`— y quien consuma tiene que acordarse de cuál era.
+ *
+ * `mio` lleva a la persona y sus vínculos, que salen de la MISMA fila de `closersDeLaEmpresa`: el
+ * cockpit toma de acá el eje propio (`usuarioId`, quién registró) y el corte toma el del CRM
+ * (`vinculos`), sin buscar uno a partir del otro. `vinculos` nunca está vacío.
  */
 export type AlcanceDelCloser =
   | { tipo: 'todo' }
-  | { tipo: 'mio'; crmUsuarioId: string };
+  | { tipo: 'mio'; usuarioId: string; vinculos: readonly VinculoConElCrm[] };
 
-/** Un closer configurado, con su vínculo al CRM. */
+/** Un closer configurado, con sus vínculos al CRM. */
 export interface CloserConfigurado {
   usuarioId: string;
   /** El nombre, para que la pantalla diga de quién son los números que muestra. */
   nombre: string;
-  /** `null` = designado y sin vincular. Esa persona ve todo. */
-  crmUsuarioId: string | null;
+  /**
+   * TODOS sus vínculos, en cualquier cliente. Vacío = designado y sin vincular en ninguno: esa
+   * persona ve todo. Deciden el alcance (`alcanceDe`), nunca lo que se publica.
+   */
+  vinculos: VinculoConElCrm[];
+  /**
+   * Los de los clientes que esta lectura tiene a la vista. Deciden lo que se publica —la tabla de
+   * Sales, la ficha, la pantalla de vínculos—: con el foco en A, el vínculo en B no es de esta
+   * lectura. Con la organización entera son todos.
+   */
+  vinculosALaVista: VinculoConElCrm[];
+  /** La fila más vieja de la persona: es lo que ordena la lista. */
   actualizadoEl: Date;
+}
+
+/**
+ * El corte del closer: los contactos de alguno de sus pares (cliente, usuario del CRM). **El
+ * único**: lo usan la fila, las tres consultas de la Agenda, el cockpit, el Brief y la cabecera.
+ *
+ * Va por par y no por el usuario del CRM solo porque el mismo id en dos subcuentas —un usuario de la
+ * agencia— puede ser de dos closers: con `crm_asignado_a in (…)`, cada uno se llevaba los contactos
+ * del otro cliente. Sin vínculos no hay «mío»: el alcance es `todo`, y llamarla así es un error.
+ */
+export function contactoDelCloser(alias: string, vinculos: readonly VinculoConElCrm[]): RawBuilder<boolean> {
+  if (vinculos.length === 0) throw new Error('contactoDelCloser: sin vínculos no hay «mío»: el alcance es «todo»');
+  return sql<boolean>`(${sql.ref(`${alias}.cuenta_id`)}, ${sql.ref(`${alias}.crm_asignado_a`)}) in (${sql.join(
+    vinculos.map((v) => sql`(${v.cuentaId}::uuid, ${v.crmUsuarioId}::text)`),
+  )})`;
 }
 
 /**
@@ -80,20 +133,40 @@ export async function closersDeLaEmpresa(): Promise<CloserConfigurado[]> {
      (`app.toda_la_organizacion = 'no'`) no ve a las personas de la empresa (`086`): con un `innerJoin` sus closers
      desaparecían, y su Sales salía en «—» con «no hay closers configurados». Para él, cada closer es un rótulo, en su
      orden. */
+  /* Una fila por (persona, cliente) desde la `096`. El `leftJoin` a las cuentas no filtra a nadie: la designación es
+     de la empresa (la `093` la deja leer desde cualquier ámbito). Dice qué vínculos están A LA VISTA, porque la
+     política de las cuentas de la sesión (`cuentas_propias_lee`) sólo deja ver las del foco o las del cliente final. */
   const filas = await datos()
     .selectFrom('closer_asignado as ca')
     .leftJoin('usuarios as u', 'u.id', 'ca.usuario_id')
-    .select(['ca.usuario_id', 'u.nombre', 'ca.crm_usuario_id', 'ca.actualizado_el'])
+    .leftJoin('cuentas as cu', (j) => j.onRef('cu.org_id', '=', 'ca.org_id').onRef('cu.id', '=', 'ca.cuenta_id'))
+    .select(['ca.usuario_id', 'ca.cuenta_id', 'u.nombre', 'ca.crm_usuario_id', 'ca.actualizado_el', 'cu.id as a_la_vista'])
     .orderBy('ca.actualizado_el', 'asc')
     .orderBy('ca.usuario_id', 'asc')
+    .orderBy('ca.cuenta_id', 'asc')
     .execute();
 
-  return filas.map((f, i) => ({
-    usuarioId: f.usuario_id,
-    nombre: f.nombre ?? `Closer ${i + 1}`,
-    crmUsuarioId: f.crm_usuario_id,
-    actualizadoEl: f.actualizado_el,
-  }));
+  /* Agrupadas por persona. Un `Map` conserva el orden de la primera aparición, que es la fila más vieja de cada uno:
+     el orden de siempre, (designación, id). Y el rótulo `Closer N` es por persona, no por fila. */
+  const porPersona = new Map<string, CloserConfigurado>();
+  for (const f of filas) {
+    let k = porPersona.get(f.usuario_id);
+    if (!k) {
+      k = {
+        usuarioId: f.usuario_id,
+        nombre: f.nombre ?? `Closer ${porPersona.size + 1}`,
+        vinculos: [],
+        vinculosALaVista: [],
+        actualizadoEl: f.actualizado_el,
+      };
+      porPersona.set(f.usuario_id, k);
+    }
+    if (f.crm_usuario_id === null) continue;
+    const vinculo = { cuentaId: f.cuenta_id, crmUsuarioId: f.crm_usuario_id };
+    k.vinculos.push(vinculo);
+    if (f.a_la_vista !== null) k.vinculosALaVista.push(vinculo);
+  }
+  return [...porPersona.values()];
 }
 
 /**
@@ -113,9 +186,10 @@ export function alcanceDe(
   closers: readonly CloserConfigurado[],
 ): AlcanceDelCloser {
   const suyo = closers.find((c) => c.usuarioId === usuarioId);
-  // No es closer, o lo es y no está vinculado. Ver el encabezado: las dos ven todo.
-  if (!suyo || suyo.crmUsuarioId === null) return { tipo: 'todo' };
-  return { tipo: 'mio', crmUsuarioId: suyo.crmUsuarioId };
+  // No es closer, o lo es y no está vinculado en ningún cliente. Ver el encabezado: las dos ven todo.
+  if (!suyo || suyo.vinculos.length === 0) return { tipo: 'todo' };
+  // TODOS sus vínculos y no los de la vista: ver el encabezado, «el vínculo es de un cliente».
+  return { tipo: 'mio', usuarioId: suyo.usuarioId, vinculos: suyo.vinculos };
 }
 
 /**
@@ -144,8 +218,8 @@ export function alcancePedido(
 ): AlcanceDelCloser {
   if (propio.tipo !== 'todo' || !verComo) return propio;
   const elegido = closers.find((c) => c.usuarioId === verComo);
-  if (!elegido || elegido.crmUsuarioId === null) return propio;
-  return { tipo: 'mio', crmUsuarioId: elegido.crmUsuarioId };
+  if (!elegido || elegido.vinculos.length === 0) return propio;
+  return { tipo: 'mio', usuarioId: elegido.usuarioId, vinculos: elegido.vinculos };
 }
 
 

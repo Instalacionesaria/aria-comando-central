@@ -741,16 +741,23 @@ export interface TablaComisiones {
  * El nombre en singular quedó de la migración 020, cuando la clave primaria era `org_id` sola y
  * la base impedía un segundo. La 034 la abrió a `(org_id, usuario_id)`; el nombre se conserva
  * porque renombrar la tabla arrastra este archivo, el borrado y tres consultas para ganar una `s`.
+ *
+ * Desde el nivel 3 (`096`/`097`) hay una fila por persona Y CLIENTE: la clave es
+ * `(org_id, cuenta_id, usuario_id)`, porque el usuario del CRM es de la subcuenta de cada cliente.
+ * Ser closer = tener alguna fila. `cuenta_id` sigue siendo `ColumnaCuenta` (la 259 lo exige para
+ * `DE_UNA_CUENTA`); que vaya explícito lo garantiza la firma de `asignarCloser`.
  */
 export interface TablaCloserAsignado {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
   usuario_id: string;
   /**
-   * El usuario de GoHighLevel con el que se vincula. **Lo que decide de quién es cada lead.**
+   * El usuario de GoHighLevel con el que se vincula EN ESTE CLIENTE: el de su subcuenta. **Lo que
+   * decide de quién es cada lead** de este cliente.
    *
-   * `null` = designado pero SIN vincular. No tiene leads propios que reclamar, así que ve todo,
-   * como cualquiera que no sea closer — nunca una lista vacía sin explicación.
+   * `null` = designado pero SIN vincular en este cliente. Sin ningún vínculo en ningún cliente no
+   * tiene leads propios que reclamar, así que ve todo, como cualquiera que no sea closer — nunca una
+   * lista vacía sin explicación.
    */
   crm_usuario_id: string | null;
   actualizado_el: Generated<Date>;

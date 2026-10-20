@@ -16,7 +16,7 @@
 //
 // Los bloques se importan de sus módulos con `import type`. Redeclararlos acá daría dos
 // definiciones que compilan mientras coincidan y **dejan de coincidir sin que nada falle** — el
-// mismo motivo por el que `inicio.ts:34-38` re-exporta sus tipos en vez de copiarlos.
+// mismo motivo por el que `inicio.ts:35-39` re-exporta sus tipos en vez de copiarlos.
 //
 // Y el `import type` no arrastra nada al navegador: se borra al compilar. Un `import` normal de
 // `cierrePorCloser.ts` metería `datos()` y la capa de base en el paquete del cliente.

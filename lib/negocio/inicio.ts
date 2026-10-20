@@ -21,6 +21,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { type VinculoConElCrm, contactoDelCloser } from './alcanceDelCloser.ts';
 import {
   type DineroDelMes,
   type Indicador,
@@ -120,18 +121,15 @@ export async function cockpitDelMes(
      * migración 020 vino a cerrar cuando el número grande era de la empresa y el anillo de al lado
      * de quien miraba.
      *
-     * Se corta por `crm_asignado_a` y no por `registrado_por`: son dos ejes distintos y ninguno
-     * sirve para lo del otro. Un contacto es de un closer porque el CRM se lo asignó; un resultado
-     * es de un closer porque él lo registró acá. Cruzarlos daría los contactos de quien registró.
+     * Se corta por `crm_asignado_a` (con el cliente del contacto: los pares de `contactoDelCloser`) y
+     * no por `registrado_por`: son dos ejes distintos y ninguno sirve para lo del otro. Un contacto
+     * es de un closer porque el CRM se lo asignó; un resultado es de un closer porque él lo registró
+     * acá. Cruzarlos daría los contactos de quien registró.
      *
      * `empresa` y `nadie` no cortan: los dos miran el territorio entero, que es lo correcto para
      * quien administra y lo único posible cuando no hay closers. */
-    .$if(sujeto.tipo === 'persona' && sujeto.crmUsuarioId !== null, (q) =>
-      q.where(
-        'crm_asignado_a',
-        '=',
-        (sujeto as { crmUsuarioId: string }).crmUsuarioId,
-      ),
+    .$if(sujeto.tipo === 'persona' && sujeto.vinculos.length > 0, (q) =>
+      q.where(contactoDelCloser('contactos', (sujeto as { vinculos: readonly VinculoConElCrm[] }).vinculos)),
     )
     .select(({ fn }) => [
       fn

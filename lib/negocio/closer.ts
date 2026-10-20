@@ -228,6 +228,12 @@ export async function candidatosAlCloser(db: Trx, orgId: string): Promise<Candid
  * Se pidió *«por ahora pongamos hasta un máximo de 3 closers»*, y «por ahora» es la palabra que
  * decide dónde vive el número. Como constante, subirlo es esta línea. Como `check` en la base, es
  * otra migración contra producción para un número que se sabe provisorio.
+ *
+ * Cuenta PERSONAS de la empresa, no filas: desde la `096` una persona tiene una fila por cliente, y
+ * vincular a un closer que ya existe en otro cliente no es un alta. **Con el nivel 3 es un tope por
+ * empresa para todos sus clientes, y está pendiente de una decisión de producto** (si son tres por
+ * empresa o tres por cliente): por ahora sigue siendo el de hoy, tres personas por empresa. Si se
+ * decide por cliente, el conteo de `asignarCloser` mira sólo las personas con fila en ese cliente.
  */
 export const TOPE_DE_CLOSERS = 3;
 
@@ -235,48 +241,64 @@ export const TOPE_DE_CLOSERS = 3;
 export type PorqueNoSeDesigno = 'tope' | 'crm_ya_vinculado';
 
 /**
- * Designa a un closer, o le cambia el vínculo con el CRM si ya estaba.
+ * Designa a un closer, o le cambia el vínculo con el CRM en UN cliente si ya estaba.
  *
  * ── ERA UN REEMPLAZO ATÓMICO Y AHORA ES UN ALTA ────────────────────────────
  *
  * La versión de un solo closer hacía `on conflict (org_id) do update`, y su motivo escrito era
  * bueno: *«no existe el instante con dos designados ni el instante con ninguno»*. Con la clave
  * primaria en `(org_id, usuario_id)` desde la migración 034, ese conflicto ya no ocurre — designar
- * a otro **agrega**, no reemplaza. El `on conflict` que queda es por la clave nueva, y sirve para
- * lo que ahora se necesita: cambiarle el vínculo a quien ya es closer sin borrarlo y volver a
+ * a otro **agrega**, no reemplaza. El `on conflict` que queda es por la clave de la fila, y sirve
+ * para lo que ahora se necesita: cambiarle el vínculo a quien ya es closer sin borrarlo y volver a
  * crearlo.
+ *
+ * ── EL VÍNCULO ES DE UN CLIENTE (el nivel 3, `096`) ────────────────────────
+ *
+ * Los usuarios del CRM son de cada subcuenta, así que la fila es de (persona, cliente) y la clave
+ * del conflicto es `(org_id, cuenta_id, usuario_id)`. El cliente va EXPLÍCITO, nunca al puente, y
+ * va AL FINAL de la firma: una llamada vieja de tres argumentos falla ruidosa (el `throw`) en vez de
+ * escribir en el cliente que el puente elija. Desvincular en un cliente es el mismo upsert con
+ * `null`: la fila queda, inocua —no es vínculo y la designación ya existía—, y «Quitar» la borra.
+ *
+ * Corre con la organización entera: la designación es de la empresa, y el conteo del tope y del
+ * vínculo repetido tiene que ver las filas de todos los clientes.
  *
  * ── LOS DOS RECHAZOS, Y POR QUÉ SE MIDEN ACÁ Y NO EN LA BASE ───────────────
  *
- *   · `tope` — ya hay `TOPE_DE_CLOSERS`. Se cuenta antes de insertar, dentro de la misma
+ *   · `tope` — ya hay `TOPE_DE_CLOSERS` personas. Se cuenta antes de insertar, dentro de la misma
  *     transacción del inquilino. No es una carrera que importe: dos altas simultáneas que pasen
  *     el conteo dejarían un cuarto closer, y el costo de eso es una fila de más que se puede
  *     borrar desde la misma pantalla. Un `check` en la base para cubrir eso sería una migración
- *     por un número provisorio.
- *   · `crm_ya_vinculado` — ese usuario del CRM ya es de otro. **Eso SÍ lo hace cumplir la base**,
- *     con el índice único parcial de la 034: dos personas vinculadas al mismo usuario partirían
- *     los mismos leads a las dos y nada fallaría. Acá se comprueba antes solo para devolver un
- *     motivo que la pantalla pueda decir, en vez de un `23505` que nombra un índice.
+ *     por un número provisorio. Vincular en otro cliente a quien ya es closer no es un alta.
+ *   · `crm_ya_vinculado` — ese usuario del CRM ya es de otro EN ESE CLIENTE. **Eso SÍ lo hace
+ *     cumplir la base**, con el índice único parcial de la `096` (`closer_por_usuario_del_crm_en_el_cliente`):
+ *     dos personas vinculadas al mismo usuario de una subcuenta partirían los mismos leads a las dos
+ *     y nada fallaría. El mismo id en OTRA subcuenta es otro usuario. Acá se comprueba antes solo
+ *     para devolver un motivo que la pantalla pueda decir, en vez de un `23505` que nombra un índice.
  */
 export async function asignarCloser(
   usuarioId: string,
   crmUsuarioId: string | null,
   actor: string,
+  cuentaId: string,
 ): Promise<PorqueNoSeDesigno | null> {
+  if (!cuentaId) throw new Error('asignarCloser: falta el cliente; el vínculo es de una subcuenta');
+
   const yaEs = await datos()
     .selectFrom('closer_asignado')
-    .select(['usuario_id', 'crm_usuario_id'])
+    .select(['usuario_id', 'cuenta_id', 'crm_usuario_id'])
     .execute();
 
-  const esNuevo = !yaEs.some((c) => c.usuario_id === usuarioId);
-  if (esNuevo && yaEs.length >= TOPE_DE_CLOSERS) return 'tope';
+  // Personas, no filas: una persona tiene una fila por cliente en el que está vinculada.
+  const personas = new Set(yaEs.map((c) => c.usuario_id));
+  if (!personas.has(usuarioId) && personas.size >= TOPE_DE_CLOSERS) return 'tope';
 
-  /* El vínculo, contra los OTROS. Sin excluirse a sí mismo, volver a guardar a alguien con el
-     mismo usuario del CRM que ya tenía se rechazaría — y eso es guardar sin cambiar nada, que
-     tiene que poder hacerse. */
+  /* El vínculo, contra los OTROS del MISMO cliente. Sin excluirse a sí mismo, volver a guardar a
+     alguien con el mismo usuario del CRM que ya tenía se rechazaría — y eso es guardar sin cambiar
+     nada, que tiene que poder hacerse. */
   if (
     crmUsuarioId !== null &&
-    yaEs.some((c) => c.crm_usuario_id === crmUsuarioId && c.usuario_id !== usuarioId)
+    yaEs.some((c) => c.cuenta_id === cuentaId && c.crm_usuario_id === crmUsuarioId && c.usuario_id !== usuarioId)
   ) {
     return 'crm_ya_vinculado';
   }
@@ -284,13 +306,14 @@ export async function asignarCloser(
   await datos()
     .insertInto('closer_asignado')
     .values({
+      cuenta_id: cuentaId,
       usuario_id: usuarioId,
       crm_usuario_id: crmUsuarioId,
       actualizado_el: new Date(),
       actualizado_por: actor,
     } as never)
     .onConflict((oc: any) =>
-      oc.columns(['org_id', 'usuario_id']).doUpdateSet({
+      oc.columns(['org_id', 'cuenta_id', 'usuario_id']).doUpdateSet({
         crm_usuario_id: crmUsuarioId,
         actualizado_el: new Date(),
         actualizado_por: actor,
@@ -301,7 +324,8 @@ export async function asignarCloser(
 }
 
 /**
- * Saca a UNA persona de la lista de closers.
+ * Saca a UNA persona de la lista de closers, en TODOS los clientes: sus filas son una por cliente
+ * (la `096`), y ser closer es de la empresa. Para sacarla de un solo cliente está «sin vincular» ahí.
  *
  * Antes borraba la fila de la organización sin nombrar a nadie, porque había una sola. Ahora el
  * identificador es obligatorio: sin él, `deleteFrom` sin `where` se lleva **a los tres**, y la

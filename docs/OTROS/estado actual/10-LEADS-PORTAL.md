@@ -348,7 +348,7 @@ los tres sobre el piso; el 2026-10-18 ninguno de los tres tramos llega a diez co
 `lib/negocio/citasAlcanzables.ts:96-100`). `citas.asistio` con dato: **0 de 368**. Personas con alguna cita: 316
 (292). Del 2026-09-28, no re-medido: con todas sus citas canceladas, 146; y a 30 días,
 **92 de los 139 agendados** tenían todas sus citas alcanzables canceladas —la ficha lo dice
-«agendó y canceló» (`lib/negocio/fichaDelLeadDelPortal.ts:176-182`); la tarjeta, no— y 75 de los
+«agendó y canceló» (`lib/negocio/fichaDelLeadDelPortal.ts:177-183`); la tarjeta, no— y 75 de los
 139 llevaban una etiqueta de descarte. Resultados, el 2026-10-18: **7** —seguimiento 4, no_show 2, no_interesa
 1—, el último del 2026-09-09: los mismos siete que `lib/negocio/huecosDeSales.ts:56-63` contó el 2026-09-21.
 **Ninguna venta en la base.**
@@ -538,7 +538,7 @@ para ocultarlos es `LP04-P02`.
 
 **Dos de las tres personas que ven la pestaña ven acá más de lo que ven en Closer.** Están
 vinculadas a un usuario del CRM, así que en Closer su alcance es `mio`
-(`lib/negocio/alcanceDelCloser.ts:23-28`, `:109-117`); acá ven la cohorte entera —nombre, puntaje,
+(`lib/negocio/alcanceDelCloser.ts:23-28`, `:182-192`); acá ven la cohorte entera —nombre, puntaje,
 campaña y estado de los 600 con alta (2026-10-18)—. No es un dato personal nuevo: las cuatro personas activas ya
 podían leer cualquier ficha por `contactos.ver` (`docs/leads-portal/12-QUIEN-VE-QUE.md:84-136`). Pero
 la decisión «quien tenga la pestaña» se tomó con esta cifra sin medir, y hoy está medida.

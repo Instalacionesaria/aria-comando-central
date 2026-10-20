@@ -8,7 +8,7 @@
 // entrarían sin que nada fallara, con la forma correcta y nombres creíbles:
 //
 //   · `conCitaAgendada`  **no es del mes** — sale de una etiqueta, y *«una etiqueta no trae fecha»*
-//                        (`inicio.ts:44-48`). En una pantalla con selector de período, un número que
+//                        (`inicio.ts:45-49`). En una pantalla con selector de período, un número que
 //                        no responde al período es la definición del defecto.
 //   · `tasaDeAsistencia` está **cableada a `null`** allá. Sales publica la suya, de otra fuente.
 //   · `noShows`          cuenta CONTACTOS con etiqueta; la cifra de Sales cuenta CITAS con

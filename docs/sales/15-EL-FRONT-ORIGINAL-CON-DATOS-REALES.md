@@ -64,10 +64,10 @@ organización que tiene datos.
 |---|---|---|---|
 | Encabezado | «Sales», «Cierre, closers y motivos de pérdida» y los cuatro períodos de `lib/negocio/periodo.ts:83-96` | — | — |
 | Asistencias | las citas ocurridas en la ventana con `asistio` marcado como presente | `negocio.citas.asistio` | **0 de 363** citas con la asistencia marcada: «—», «Nadie marca la asistencia.» |
-| Tasa de cierre | ventas sobre intentos de los closers en la ventana, con piso de 10 intentos | `lib/negocio/cierrePorCloser.ts:336-369` | 1 intento en 30 días: «—» |
-| Ventas | la suma de las ventas registradas por los closers en la ventana | `lib/negocio/cierrePorCloser.ts:348` | **0** en 30 días (cero medido: hubo 1 resultado); en 7 días, «—» |
+| Tasa de cierre | ventas sobre intentos de los closers en la ventana, con piso de 10 intentos | `lib/negocio/cierrePorCloser.ts:356-389` | 1 intento en 30 días: «—» |
+| Ventas | la suma de las ventas registradas por los closers en la ventana | `lib/negocio/cierrePorCloser.ts:368` | **0** en 30 días (cero medido: hubo 1 resultado); en 7 días, «—» |
 | Revenue reportado | la suma del `monto` de esas ventas | `negocio.resultados.monto` | **$0** en 30 días |
-| Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:231` | 3 closers, 2 registraron alguna vez |
+| Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:236` | 3 closers, 2 registraron alguna vez |
 | Motivos de no venta | los resultados de «No le interesa» por motivo del catálogo (`lib/negocio/salidas.ts:159-167`), en la ventana | `negocio.resultados.detalle` | 1 en toda la historia, «Otro», del 2026-08-30; ninguno en 30 días |
 | La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `lib/negocio/lecturaDeSales.ts:258` y `lib/negocio/lecturaDeSales.ts:286-288` | — |
 
@@ -167,7 +167,7 @@ servidor.
 
 **Fórmula** · Las de hoy, sin cambios: las citas por `inicio_el` y los resultados por `creado_el`, desde `now()`
 menos los días del período. El dinero del mes va por mes calendario en la zona de la empresa
-(`lib/negocio/dineroDelMes.ts:101`).
+(`lib/negocio/dineroDelMes.ts:105`).
 
 **La diferencia con Acquisition y Conversion, dicha** · Esas dos cortan «7 días» y «30 días» en días cerrados.
 Sales no, por las dos razones de § 1. Es `S15-P01`.
@@ -192,7 +192,7 @@ denominador no es asistencia (`docs/OTROS/estado actual/05-SALES.md`, regla 7). 
 
 **Qué es** · Ventas sobre intentos de los closers en la ventana.
 
-**Fórmula** · Σ ventas / Σ intentos de las filas de `cierrePorCloser` (`lib/negocio/cierrePorCloser.ts:336-369`).
+**Fórmula** · Σ ventas / Σ intentos de las filas de `cierrePorCloser` (`lib/negocio/cierrePorCloser.ts:356-389`).
 Un intento es un resultado registrado por el closer. Con menos de `PISO_DE_UNA_TASA` (10) intentos, «—» con
 «Pocos intentos para una tasa.»; sin ninguno, «Nadie registró en esta ventana.»; sin closers configurados, «Sin
 closers configurados.».
@@ -207,7 +207,7 @@ setter es otra cosa y no se suma.
 **Fórmula** · Σ `ventas` de las filas. Sin ningún resultado de los closers en la ventana, «—» con «Nadie registró
 en esta ventana.»; sin closers configurados, «Sin closers configurados.»; con resultados y sin ventas, **0**, que
 es un cero medido. Es la misma distinción de
-`dineroDelMes` (`lib/negocio/dineroDelMes.ts:156-186`).
+`dineroDelMes` (`lib/negocio/dineroDelMes.ts:160-190`).
 
 **Estado** · El cálculo, construido el 2026-10-09 (SA-1): `ventas` de `armarSales`; el dibujo, construido el 2026-10-09 (SA-3). El 2026-10-09, 0 en 30 días y «—» en 7.
 
@@ -230,10 +230,10 @@ del catálogo.
 | columna | dato | fuente |
 |---|---|---|
 | Closer | el nombre del catálogo de la empresa; debajo, «{N} contactos asignados» | `closersDeLaEmpresa()` |
-| Agendadas | las citas de sus contactos en la ventana, por el eje del CRM | `lib/negocio/cierrePorCloser.ts:231` |
+| Agendadas | las citas de sus contactos en la ventana, por el eje del CRM | `lib/negocio/cierrePorCloser.ts:236` |
 | Asistieron | sus citas con `asistio` presente; sin ninguna marcada, «—» | igual |
-| Ventas | sus ventas registradas | `lib/negocio/cierrePorCloser.ts:348` |
-| Cierre | ventas sobre intentos, con el piso **por fila** | `lib/negocio/cierrePorCloser.ts:369` |
+| Ventas | sus ventas registradas | `lib/negocio/cierrePorCloser.ts:368` |
+| Cierre | ventas sobre intentos, con el piso **por fila** | `lib/negocio/cierrePorCloser.ts:389` |
 | Revenue | el monto reportado de sus ventas | `montoDeVentas`, nuevo en SA-1 |
 
 **Los dos ejes, dichos** · Agendadas y Asistieron cuentan citas del CRM; Ventas, Cierre y Revenue cuentan lo que
@@ -280,7 +280,7 @@ prototipo (`card`, `card-head`, `rows`, `row-i`):
 - **la cancelación**: canceladas sobre citas ocurridas (`lib/negocio/indicadoresDeCitas.ts:341`);
 - **el ciclo hasta la cita**: la mediana y el p90 del alta a la primera cita (`lib/negocio/cicloHastaLaCita.ts:97`);
 - **el dinero del mes**: cobrado, ventas y acuerdos del mes calendario, con el nombre del mes
-  (`lib/negocio/dineroDelMes.ts:101`);
+  (`lib/negocio/dineroDelMes.ts:105`);
 - **la cobertura**: cuántos contactos tienen alta y cuántas citas caen en una fila de closer.
 
 Cada sección con su aviso del servidor.

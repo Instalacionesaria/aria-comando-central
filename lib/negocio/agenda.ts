@@ -46,8 +46,8 @@
 // contacto no está ahí se saltea—. O sea que las citas de hoy salían bien en una pantalla y de más
 // en la otra: la contradicción estaba a un clic de distancia y ninguna de las dos parecía mal.
 //
-// El corte es el mismo que el de las otras tres, `crm_asignado_a` contra el usuario del CRM del
-// closer, porque una cita no tiene dueño propio: **la cita es del contacto**, y de quién es el
+// El corte es el mismo que el de las otras tres, `contactoDelCloser`: el contacto contra los pares
+// (cliente, usuario del CRM) del closer, porque una cita no tiene dueño propio: **la cita es del contacto**, y de quién es el
 // contacto ya está decidido en un solo lugar. Darle un eje propio a la Agenda —el dueño del
 // calendario de GoHighLevel, por ejemplo— sería una segunda respuesta a la misma pregunta, y el día
 // que las dos discrepen no hay forma de saber cuál manda.
@@ -62,7 +62,7 @@ import { estaCancelada } from '../ghl/calendarios.ts';
 import { noCancelada } from './citas.ts';
 import { frescuraDe, type Frescura } from './frescura.ts';
 import { diaEnZona } from './tiempo.ts';
-import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
+import { type AlcanceDelCloser, type VinculoConElCrm, contactoDelCloser } from './alcanceDelCloser.ts';
 import type { Territorio } from '../datos/esquema.ts';
 
 export interface CitaDeLaAgenda {
@@ -179,12 +179,12 @@ export const DIAS_DE_LA_AGENDA = 15;
  * escrito ahí abajo: *«explicar un cero con un número de otra pantalla»*. El alcance es el mismo
  * problema un piso más adentro.
  *
- * Devuelve el identificador y no un booleano para que quien llama pueda hacer `if (mio !== null)` y
- * usarlo ya estrechado: sin eso, cada uno de los tres sitios necesitaría su propia conversión de
+ * Devuelve los vínculos y no un booleano para que quien llama pueda hacer `if (mio !== null)` y
+ * usarlos ya estrechados: sin eso, cada uno de los tres sitios necesitaría su propia conversión de
  * tipo, que es tres lugares donde equivocarse.
  */
-function soloDe(alcance: AlcanceDelCloser | undefined): string | null {
-  return alcance?.tipo === 'mio' ? alcance.crmUsuarioId : null;
+function soloDe(alcance: AlcanceDelCloser | undefined): readonly VinculoConElCrm[] | null {
+  return alcance?.tipo === 'mio' ? alcance.vinculos : null;
 }
 
 /**
@@ -283,13 +283,14 @@ export async function agendaDelCloser(
    * El primero es el territorio, arriba. Éste es el que faltaba, y el encabezado del archivo cuenta
    * lo que costaba: con tres closers vinculados, los tres veían las citas de los tres.
    *
-   * Va contra `k.crm_asignado_a` —el contacto— y no contra ninguna columna de `citas`, porque la
-   * cita no tiene dueño propio: es del contacto, y de quién es el contacto ya se decide en un solo
-   * lugar. Es el mismo corte que `fila.ts` aplica a las otras tres pantallas.
+   * Va contra el contacto (`contactoDelCloser('k', …)`: su cliente y su asignado en el CRM) y no
+   * contra ninguna columna de `citas`, porque la cita no tiene dueño propio: es del contacto, y de
+   * quién es el contacto ya se decide en un solo lugar. Es el mismo corte que `fila.ts` aplica a las
+   * otras tres pantallas.
    *
    * Los SIN asignar quedan afuera, igual que allá y por el mismo motivo de producto: un contacto que
    * el CRM no asignó no es de nadie, y un `or … is null` acá le daría la misma cita a los tres. */
-  if (mio !== null) q = q.where('k.crm_asignado_a', '=', mio);
+  if (mio !== null) q = q.where(contactoDelCloser('k', mio));
 
   if (opciones.incluirCanceladas !== true) {
     /* La condición estaba escrita a mano acá, otra vez a mano en `miDia.ts`, y en ningún lado en
@@ -473,7 +474,7 @@ export async function porQueNoHayCitasHoy(
   /* Y el mismo alcance, por lo mismo un piso más adentro: «se ven en Closer → Agenda» sobre citas
      que la Agenda de esa persona NO le va a mostrar es mandarla a una pantalla vacía. */
   const mio = soloDe(alcance);
-  if (mio !== null) q = q.where('k.crm_asignado_a', '=', mio);
+  if (mio !== null) q = q.where(contactoDelCloser('k', mio));
 
   const adelante = await q.executeTakeFirst();
 
@@ -529,7 +530,7 @@ async function porQueNoHayCitas(
   // Y el alcance, que es la otra mitad del mismo cuidado: el número que vuelve honesto a un cero
   // tiene que ser de las MISMAS citas que la lista habría mostrado.
   const mio = soloDe(alcance);
-  if (mio !== null) q = q.where('k.crm_asignado_a', '=', mio);
+  if (mio !== null) q = q.where(contactoDelCloser('k', mio));
 
   const recientes = await q.executeTakeFirst();
 

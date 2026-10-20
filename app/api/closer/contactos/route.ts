@@ -83,6 +83,11 @@ export async function GET(peticion: Request): Promise<Response> {
     filas,
     pagina,
     hayMas,
-    closers: closers.map((k) => ({ nombre: k.nombre, crmUsuarioId: k.crmUsuarioId })),
+    /* Por par (el nivel 3): el usuario del CRM es de una subcuenta, y el mismo id en dos clientes
+       puede ser de dos personas. Sólo los vínculos a la vista: los de otro cliente no son de esta
+       lectura. */
+    closers: closers.flatMap((k) =>
+      k.vinculosALaVista.map((v) => ({ nombre: k.nombre, cuentaId: v.cuentaId, crmUsuarioId: v.crmUsuarioId })),
+    ),
   });
 }

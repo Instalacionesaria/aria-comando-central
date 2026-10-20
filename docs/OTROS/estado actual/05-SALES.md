@@ -155,8 +155,8 @@ la ventana lo alcanzaba por un día. Desde el 2026-10-10, sin un registro nuevo,
 en la tabla, cada fila sin resultados. No es una rotura: es el cero medido que pasa a ser «no hay medición».
 
 **La tabla por closer.** Tres filas, una por closer configurado y vinculado (3 de 3, medido el 2026-10-18), en orden
-de designación y nunca por tasa (`lib/negocio/cierrePorCloser.ts:235-244`). Agendadas y Asistieron cuentan citas del
-CRM; Ventas, Cierre y Revenue, lo que cada persona registró (`lib/negocio/cierrePorCloser.ts:516-520`). La subfila
+de designación y nunca por tasa (`lib/negocio/cierrePorCloser.ts:240-249`). Agendadas y Asistieron cuentan citas del
+CRM; Ventas, Cierre y Revenue, lo que cada persona registró (`lib/negocio/cierrePorCloser.ts:546-550`). La subfila
 dice «{N} contactos asignados» —la asignación por ICP del prototipo no existe—. **La tabla muestra el nombre real de
 cada closer**, a propósito: es una evaluación de desempeño y la trata como tal (`lib/negocio/cierrePorCloser.ts:11-13`).
 La nota de la tabla y la de cada fila —por qué una tasa no está, qué eje cuenta cada columna— no se dibujan: viajan en
@@ -164,9 +164,9 @@ La nota de la tabla y la de cada fila —por qué una tasa no está, qué eje cu
 Los plantones del calendario, que la tabla anterior publicaba como columna, ya no se dibujan.
 
 **Ventanas y pisos.** Cuatro ventanas en una pantalla: el MES calendario en la zona de la empresa para el dinero
-(`lib/negocio/dineroDelMes.ts:105`); la COHORTE de contactos dados de alta en N días para la cadena y el ciclo
+(`lib/negocio/dineroDelMes.ts:109`); la COHORTE de contactos dados de alta en N días para la cadena y el ciclo
 (`lib/negocio/cadenaDeCierre.ts:169`); las CITAS ocurridas en N días para la asistencia, la cancelación y las
-columnas del CRM de la tabla (`lib/negocio/cierrePorCloser.ts:258-259`); y lo REGISTRADO en N días —los resultados
+columnas del CRM de la tabla (`lib/negocio/cierrePorCloser.ts:263-264`); y lo REGISTRADO en N días —los resultados
 por `creado_el`— para Ventas, Revenue, la tasa de cierre, las columnas de lo registrado y los motivos. Todas
 rodantes. Las tres primeras viajan descritas (`lib/negocio/ventanasDeSales.ts:39-52`); la cuarta no tiene texto
 propio, y la nota de la tabla dice que sus dos ejes cuentan distinto. El piso es `PISO_DE_UNA_TASA = 10`
@@ -246,9 +246,9 @@ monto son `venta` (`lib/negocio/salidas.ts:84`) y `acuerdo_sin_pago` (`:96`). El
 No es el momento · Competencia · No califica · Otro (`lib/negocio/salidas.ts:165`), y es lo que agrupa
 `motivosDeNoVenta`; «Pidió tiempo» es de `nurture` (`lib/negocio/salidas.ts:198`).
 
-**La maquinaria de dinero está escrita, probada y consumida por dos pantallas.** `lib/negocio/dineroDelMes.ts:132-153`
+**La maquinaria de dinero está escrita, probada y consumida por dos pantallas.** `lib/negocio/dineroDelMes.ts:136-157`
 suma `monto` sólo donde `salida = 'venta'` y cuenta los acuerdos aparte; distingue el `0` medido del `—`, y separa
-«no hay closers» de «nadie registró» (`lib/negocio/dineroDelMes.ts:164-173`).
+«no hay closers» de «nadie registró» (`lib/negocio/dineroDelMes.ts:168-177`).
 
 **Las citas: 368** (363 el 2026-10-09), del 2026-08-12 al 2026-10-20, una sola futura. Ninguna con la asistencia
 marcada. 20 son plantones del calendario, 179 están canceladas, 101 congeladas, y 3 dicen «showed»: el calendario
@@ -316,11 +316,11 @@ prototipo no se dibuja hasta que lo tenga.
 ## 6 · Reglas propias de este departamento
 
 **1 · Una venta del closer y una venta del setter NO se suman. Nunca.** Escrita con su motivo en
-`lib/negocio/etapas.ts:86-94`. La cumplen el código de Sales por clave exacta (`lib/negocio/cierrePorCloser.ts:346-348`)
+`lib/negocio/etapas.ts:86-94`. La cumplen el código de Sales por clave exacta (`lib/negocio/cierrePorCloser.ts:366-368`)
 y el predicado compartido (`lib/negocio/ventasDelContacto.ts:27`); el monto de cada fila suma sólo `venta`, y la base
 248 lo prueba con `venta_chica` y `acuerdo_sin_pago` con monto.
 
-**2 · Una venta y un acuerdo sin pago son dos hechos distintos, y solo uno es dinero.** `lib/negocio/dineroDelMes.ts:78-84`
+**2 · Una venta y un acuerdo sin pago son dos hechos distintos, y solo uno es dinero.** `lib/negocio/dineroDelMes.ts:82-88`
 y `lib/negocio/etapas.ts:78`.
 
 **3 · Es venta REPORTADA, no pago verificado.** El §5.4 lo exige por escrito (línea 288 del documento). El revenue
@@ -337,14 +337,14 @@ el CRM, sin citas, sin asistencia marcada, sin registros en la ventana, bajo el 
 closer que registra sus intentos no es una muestra al azar (`lib/negocio/indicadoresDeCitas.ts:325-327`).
 
 **6 · El denominador de una tasa de asistencia lleva `asistio is not null`.** `lib/negocio/indicadoresDeCitas.ts:385-394`,
-y la tabla lo repite por fila (`lib/negocio/cierrePorCloser.ts:277-281`). Asistencias es el conteo de los que se
+y la tabla lo repite por fila (`lib/negocio/cierrePorCloser.ts:283-287`). Asistencias es el conteo de los que se
 presentaron entre las citas con la asistencia respondida; sin ninguna respondida, «—».
 
 **7 · Sales NO deduce la asistencia de la salida.** `lib/negocio/salidas.ts:185-197`: tiene que leer `citas.asistio`.
 
 **8 · Un resultado es un INTENTO del closer, no una cita, y lo registrado es de OTRO EJE que lo asignado.**
 `resultados.registrado_por` contra `contactos.crm_asignado_a`, que en esta base dan vuelta la tabla si se cruzan
-(`lib/negocio/cierrePorCloser.ts:37-50`).
+(`lib/negocio/cierrePorCloser.ts:37-51`).
 
 **9 · El filtro de citas «alcanzables y no descartadas» es del sistema.** `lib/negocio/citasAlcanzables.ts:54-56` y
 `:79-85`.
@@ -368,7 +368,7 @@ y la pantalla no los dibuja (doc 15, S15-18).
 **El borde de la ventana rodante.** **Pasó el 2026-10-10**, como la foto anterior anunció: las cifras de lo
 registrado pasaron de «0» a «—» a 30 días sin que nadie hiciera nada (§ 2). Es correcto, y quien lo vea puede leerlo
 como una rotura. Al dinero del mes le pasó el 2026-10-01: desde ese día dice «—»
-(`lib/negocio/dineroDelMes.ts:164-165`). El próximo borde es el de los motivos de no venta (§ 5, punto 8).
+(`lib/negocio/dineroDelMes.ts:168-169`). El próximo borde es el de los motivos de no venta (§ 5, punto 8).
 
 **Una tasa con menos de 10 eventos.** La cancelación no aplica el piso (`lib/negocio/indicadoresDeCitas.ts:449`) y la
 tarjeta de abajo la dibuja con su decimal sobre cualquier denominador: el 2026-10-18, con «7 días», 2 de 4 citas dan

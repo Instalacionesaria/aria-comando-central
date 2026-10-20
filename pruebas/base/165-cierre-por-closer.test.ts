@@ -15,7 +15,7 @@
 //     G   7 citas  ·  2 resultados   ← los únicos de los últimos catorce días
 //
 // Quien tiene 94 de las 136 citas no registró nada, y quien tiene 7 registró toda la actividad
-// reciente. Un `registrado_por` donde va `crm_asignado_a` —el defecto que `inicio.ts:123-125`
+// reciente. Un `registrado_por` donde va `crm_asignado_a` —el defecto que `inicio.ts:124-127`
 // anticipa— no mueve las cifras unos puntos: **intercambia las filas**. Por eso los dos ejes tienen
 // su propia prueba y se siembran cruzados a propósito.
 //

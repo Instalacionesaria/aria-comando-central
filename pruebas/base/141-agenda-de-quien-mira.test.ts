@@ -128,7 +128,7 @@ async function sinDesignaciones(): Promise<void> {
 
 /** Designa a alguien y lo vincula a un usuario del CRM. */
 async function vincular(usuarioId: string, crmUsuarioId: string): Promise<void> {
-  await conOrganizacion(esc.org, () => asignarCloser(usuarioId, crmUsuarioId, esc.quien));
+  await conOrganizacion(esc.org, () => asignarCloser(usuarioId, crmUsuarioId, esc.quien, esc.principal));
 }
 
 /**
@@ -255,7 +255,7 @@ test('un closer DESIGNADO PERO SIN VINCULAR ve todo, y eso es a propósito', asy
   await limpiar(esc);
   await sinDesignaciones();
   await tresCitasDeManana();
-  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, null, esc.quien));
+  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, null, esc.quien, esc.principal));
 
   const { nombres } = await loQueVeEnLaAgenda(esc.token);
   assert.equal(nombres.length, 3, 'un closer sin vincular se quedó con la agenda vacía');

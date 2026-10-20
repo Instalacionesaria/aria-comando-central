@@ -99,7 +99,7 @@ revenues distintos y **ninguna falla**.
 
 ### Y consumirlo tiene una consecuencia que se acepta por escrito
 
-El cockpit trabaja sobre **mes calendario en la zona de la organización** (`dineroDelMes.ts:105`); Sales
+El cockpit trabaja sobre **mes calendario en la zona de la organización** (`dineroDelMes.ts:109`); Sales
 sobre ventanas rodantes. **Las dos nunca coinciden.** Por eso el bloque del dinero lleva el mes en su
 propio encabezado. Ver `06-PERIODOS-Y-PISOS.md`.
 
@@ -111,7 +111,7 @@ propio encabezado. Ver `06-PERIODOS-Y-PISOS.md`.
 |---|---|---|
 | `lib/negocio/inicio.ts` | `cobrado`, `ventas`, `acuerdos` | el dinero tiene un solo dueño |
 | `lib/negocio/indicadoresDeCitas.ts:341` | la tasa de cancelación | ya existe, y trae la partición de descartados que el commit `9931f4d` pagó |
-| `lib/negocio/alcanceDelCloser.ts:77` | quiénes son los closers | o las filas salen de un `group by` y el inactivo desaparece |
+| `lib/negocio/alcanceDelCloser.ts:130` | quiénes son los closers | o las filas salen de un `group by` y el inactivo desaparece |
 | `lib/negocio/salidas.ts` | el vocabulario de salidas y sus opciones | el catálogo existe una vez |
 | `lib/negocio/periodo.ts` | las cuatro ventanas | isomorfo, lo comparten las cinco pantallas |
 
