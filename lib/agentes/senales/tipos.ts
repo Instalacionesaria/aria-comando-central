@@ -17,6 +17,9 @@ export type VentanaDeSenal = (typeof VENTANAS_DE_LAS_SENALES)[number];
  * `cliente`: un cliente de la empresa (el nivel 3), por su id de `identidad.cuentas`; lo que es de toda una cuenta
  * publicitaria cuando la empresa tiene varios. Con uno solo, eso sigue siendo `empresa`. La base tiene el mismo juego
  * en su `check` (`094`).
+ *
+ * `pieza`: su identificador, `idDeLaPieza` (`lib/negocio/idDeLaPieza.ts`): el nombre normalizado si es del cliente
+ * principal —con uno solo, siempre—, y `<cuenta>:<nombre>` si es de otro (el nivel 3).
  */
 export const ENTIDADES_DE_SENAL = [
   'campana', 'conjunto', 'anuncio', 'pieza', 'funnel', 'par_de_etapas', 'familia_de_entrada',

@@ -1332,6 +1332,8 @@ export interface TablaPromptsDelAgente {
  *
  * `pieza` llega normalizada —`lower(btrim(nombre))`, la misma expresión que `llaveDelCreativo`— y la
  * base lo hace cumplir con un `check`. El único escritor es `lib/negocio/enlaceDeLaPieza.ts`.
+ *
+ * Un link por (cliente, pieza): la clave es (org_id, cuenta_id, pieza) desde la 095 (el nivel 3).
  */
 export interface TablaEnlacesDePieza {
   org_id: ColumnaInquilino;

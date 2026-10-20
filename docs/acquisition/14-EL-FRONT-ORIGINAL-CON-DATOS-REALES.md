@@ -148,7 +148,7 @@ dividiría clics por personas y podría pasar el 100 %. La etapa dibuja su núme
 contra la entrada.
 
 **Rastro** · `db/migraciones/053_el_desglose_que_ya_llegaba.sql` guarda el desglose; Creative ya lo lee
-(`lib/negocio/rendimientoDelCreativo.ts:98`).
+(`lib/negocio/rendimientoDelCreativo.ts:99`).
 
 **Fórmula** · La suma de `linkClick` de la ventana. Si en la ventana no llegó ningún desglose de
 acciones, los clics son nulos —no se saben—; si llegó y no trae `linkClick`, son cero: ese tipo no

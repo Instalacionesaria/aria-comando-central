@@ -31,6 +31,7 @@ import { useState } from 'react';
 import Ventana from '../Ventana.jsx';
 import { Valor } from '../cerebro/Evidencia.jsx';
 import { decidirSenal, firmarUmbral } from '@/lib/negocio/vistaDeSenales';
+import { nombreDeLaPieza } from '@/lib/negocio/idDeLaPieza';
 
 const DEPARTAMENTOS = {
   acquisition: { nombre: 'Acquisition', cerrados: true, conPerdida: true },
@@ -110,8 +111,9 @@ function nombreDe(entidad, nombres, funnels, delServidor = null) {
   if (entidad.tipo === 'familia_de_entrada' || (entidad.tipo === 'funnel' && entidad.id === 'formulario')) return null;
   // Un cliente (el nivel 3): el nombre que resolvió el servidor; si no llegó, el rótulo y nunca el uuid.
   if (entidad.tipo === 'cliente') return nombres.get(entidad.id) ?? 'Cliente';
-  // Una pieza no tiene otro identificador que su nombre normalizado.
-  return entidad.id;
+  /* Una pieza (el nivel 3): el rótulo que resolvió el servidor para una señal viva —«nombre · cliente» con varios—; si
+     no hay, su nombre, sin el id del cliente que lleva cuando no es del principal. Nunca el uuid. */
+  return nombres.get(entidad.id) ?? nombreDeLaPieza(entidad.id);
 }
 
 // ─── El Plan de acción ──────────────────────────────────────────────────────

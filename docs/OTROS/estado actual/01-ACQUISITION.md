@@ -372,7 +372,7 @@ detector sólo frena lo que lee Meta con un cliente que tiene métricas y no ser
 (`lib/negocio/embudosDeAcquisition.ts:804`), y mide «sin entrega», la concentración, la escala y el gasto sin
 crecimiento dentro de cada cliente (`lib/agentes/detectores/acquisition.ts:318`). El funnel de una campaña se guarda en
 su cliente (`lib/negocio/funnelDeLaCampana.ts:100`). Toda señal de campaña se nombra «Campaña (Cliente)» —en la
-tarjeta, la cabecera y la Reunión—, con el cliente de la pantalla (`lib/agentes/senales/lectura.ts:100`). A un cliente
+tarjeta, la cabecera y la Reunión—, con el cliente de la pantalla (`lib/agentes/senales/lectura.ts:104`). A un cliente
 en pausa se le pide la serie sólo hasta su último día cerrado (`lib/negocio/gastoDeLaCuenta.ts:398`): pausarlo no deja
 a la empresa sin el gasto entero mientras la ventana tenga días después de la pausa. Lo exigen
 `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:313`,
@@ -429,10 +429,10 @@ contra la versión del 2026-09-15: con ésta caen en otro texto.
 
 **10 · Comentarios del código que no decían la verdad. Cerrado el 2026-10-18 (`65669f4`).**
 `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea `anuncios` «del cron de las 17:06 UTC», y es
-a las 06:17 (`lib/negocio/barrido.ts:289`); `lib/negocio/costoDelAnuncio.ts:458` decía que «el colector pide hoy y los
+a las 06:17 (`lib/negocio/barrido.ts:289`); `lib/negocio/costoDelAnuncio.ts:471` decía que «el colector pide hoy y los
 tres anteriores», y pide hoy y los dos anteriores (`lib/negocio/recolectarAnuncios.ts:62`). Los dos seguían igual que
 el 2026-09-28 al corte; ese mismo día se corrigieron, y hoy dicen 06:17 UTC y «hoy y los dos anteriores». Antes ya
 se habían cerrado el de las «52 llamadas» de `barrido.ts` (hoy `lib/negocio/barrido.ts:285-288`, con el costo de la `076`) y el de
-`comoDia` en `costoDelAnuncio.ts`, que ya saca las fechas como texto (`lib/negocio/costoDelAnuncio.ts:405-407`).
+`comoDia` en `costoDelAnuncio.ts`, que ya saca las fechas como texto (`lib/negocio/costoDelAnuncio.ts:418-420`).
 
 **11 · La comprobación con sesión no consta.** Ni la de AQ-5 ni la de las señales en producción (§ 2).

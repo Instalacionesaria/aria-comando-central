@@ -98,6 +98,11 @@ export interface FilaDeCosto {
    * distinguirlas mirando. El argumento completo está en `creativo.ts`.
    */
   creativo: string;
+  /**
+   * El cliente del anuncio (el nivel 3): su cuenta de Meta es de un cliente, y la pieza es (cliente, nombre). En un
+   * anuncio con leads y sin gasto, el del anuncio si está en la dimensión; si no, el de sus contactos.
+   */
+  cuentaId: string;
   /** El nombre que le puso quien lo armó. Sin la dimensión, un anuncio es dieciocho dígitos. */
   nombre: string;
   campanaId: string | null;
@@ -232,6 +237,7 @@ export async function costoDelAnuncio(dias = DIAS_DE_LA_TASA): Promise<CostoDeLo
          llave de pieza. Cadena vacía y no el identificador: del otro lado eso cae en «(anuncio sin
          nombre)», que es un grupo rotulado — poner el `adId` lo haría parecer una pieza más. */
       creativo: l.creativo,
+      cuentaId: l.cuentaId,
       campanaId: null,
       gasto: null,
       impresiones: null,
@@ -287,6 +293,7 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
       'a.nombre as nombre',
       // La llave de Creative, calculada por la base. Ver `creativo.ts`.
       llaveDelCreativo('a.nombre').as('creativo'),
+      'a.cuenta_id as cuentaId',
       'a.meta_campana_id as campanaId',
       /* `sum` ignora los nulos, que es exactamente lo que hace falta: un día sin entrega no suma
          cero, no participa. Y devuelve NULL cuando TODOS los días son nulos, que es la distinción
@@ -301,7 +308,7 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
     /* `lower(btrim(a.nombre))` es funcionalmente dependiente de `a.nombre`, que ya está agrupado
        — pero PostgreSQL sólo reconoce esa dependencia a través de una clave primaria, no de una
        columna cualquiera, así que hay que nombrarla. */
-    .groupBy(['m.meta_anuncio_id', 'a.nombre', 'a.meta_campana_id'])
+    .groupBy(['m.meta_anuncio_id', 'a.cuenta_id', 'a.nombre', 'a.meta_campana_id'])
     .groupBy(llaveDelCreativo('a.nombre'))
     .execute();
 
@@ -313,6 +320,7 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
       anuncioId: f.anuncioId,
       nombre: f.nombre,
       creativo: f.creativo,
+      cuentaId: f.cuentaId,
       campanaId: f.campanaId,
       gasto: gasto === null ? null : redondear(gasto, 2),
       impresiones,
@@ -331,7 +339,7 @@ async function gastoPorAnuncio(dias: number): Promise<Omit<FilaDeCosto, 'leads' 
 /** Los contactos NUESTROS atribuidos a cada anuncio, y cuántos agendaron. */
 async function leadsPorAnuncio(
   dias: number,
-): Promise<{ anuncioId: string; nombre: string | null; creativo: string; leads: number; agendaron: number }[]> {
+): Promise<{ anuncioId: string; nombre: string | null; creativo: string; cuentaId: string; leads: number; agendaron: number }[]> {
   const filas = await datos()
     .selectFrom('contactos')
     .leftJoin('anuncios as a', (j) =>
@@ -344,6 +352,10 @@ async function leadsPorAnuncio(
       'a.nombre as nombre',
       // La misma llave, por el mismo motivo: estas filas también terminan agrupadas por pieza.
       llaveDelCreativo('a.nombre').as('creativo'),
+      /* El cliente de la pieza (el nivel 3): el del ANUNCIO, que es donde está su gasto; el `adId` es único en la
+         empresa, así que la unión no se restringe al cliente del contacto. Sin el anuncio en la dimensión, el de sus
+         contactos: uno solo, para que el anuncio siga siendo una fila y `porId` no pierda la otra mitad. */
+      sql<string>`coalesce(a.cuenta_id, (array_agg(contactos.cuenta_id order by contactos.cuenta_id))[1])`.as('cuentaId'),
       sql<number>`count(*)`.as('leads'),
       /* El mismo `exists` y el mismo filtro de cita alcanzable que `atribucionDelLead` y que el
          booking rate. Tiene que ser el mismo o las filas de este corte no sumarían la cifra grande
@@ -353,13 +365,14 @@ async function leadsPorAnuncio(
     .where(sql<boolean>`contactos.atribucion_primera ? 'adId'`)
     // La MISMA ventana que el gasto, anclada al día. Ver `VENTANAS` arriba.
     .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
-    .groupBy([sql`1`, 'a.nombre', llaveDelCreativo('a.nombre')])
+    .groupBy([sql`1`, 'a.cuenta_id', 'a.nombre', llaveDelCreativo('a.nombre')])
     .execute();
 
   return filas.map((f) => ({
     anuncioId: f.anuncioId,
     nombre: f.nombre,
     creativo: f.creativo ?? '',
+    cuentaId: f.cuentaId,
     leads: Number(f.leads ?? 0),
     agendaron: Number(f.agendaron ?? 0),
   }));

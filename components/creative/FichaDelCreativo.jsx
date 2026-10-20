@@ -23,11 +23,17 @@
  * Se abre en una pestaña nueva con `noopener noreferrer`, y nada más: no se reproduce ni se embebe (C15-06). El
  * formulario para cargarlo se dibuja SÓLO si el servidor dijo que esta sesión puede (`puedeEditar`): ofrecer un
  * control que va a dar 403 es el `07` § 4. El servidor valida igual.
+ *
+ * ── LA PIEZA ES (CLIENTE, NOMBRE) (el nivel 3) ─────────────────────────────
+ *
+ * Se dibuja su `nombre`; con piezas de dos clientes o más, también su cliente, en la cabecera y en «Qué es». El link
+ * manual es el de la pieza EN SU CLIENTE: el editor lo carga con su `cuentaId`.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { borrarEnlaceDeLaPieza, guardarEnlaceDeLaPieza } from '@/lib/negocio/vistaDeCreative';
+import { rotuloDeLaPieza } from '@/lib/negocio/idDeLaPieza';
 import Miniatura from './Miniatura.jsx';
 import { CRITERIO, ESTADO, ETAPA, FORMATO_DEL_CRITERIO, FRASE, VER_EN, corto, fechaCorta, miles, motivo, o, pf, plata, veces } from './comun.jsx';
 
@@ -82,11 +88,11 @@ export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual,
   return createPortal(
     <>
       <div className="scrim on" onClick={alCerrar} aria-hidden="true" />
-      <aside className="drawer on cr-ficha" ref={cajon} role="dialog" aria-modal="true" aria-label={`Pieza ${pieza.clave}`}>
+      <aside className="drawer on cr-ficha" ref={cajon} role="dialog" aria-modal="true" aria-label={`Pieza ${rotuloDeLaPieza(pieza.nombre, pieza.cliente)}`}>
         <div className="dw-head">
           <div className="cr-cabeza">
-            <h3 className="cr-titulo">{pieza.clave}</h3>
-            <div className="m">{`${ESTADO[pieza.estado]} · ${ETAPA[pieza.etapa]}`}</div>
+            <h3 className="cr-titulo">{pieza.nombre}</h3>
+            <div className="m">{`${ESTADO[pieza.estado]} · ${ETAPA[pieza.etapa]}${pieza.cliente ? ` · ${pieza.cliente}` : ''}`}</div>
             {/* El veredicto del prototipo, contra la etapa (CF1-08): «Funciona» con su cifra, o «Bajo en…». */}
             {gana ? (
               <span className="dw-verdict good">{`✓ Funciona · ${unica ? FRASE.unica : `${o(valor.valor, FORMATO_DEL_CRITERIO[criterio])} ${CRITERIO[criterio].unidad}`}`}</span>
@@ -113,7 +119,7 @@ export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual,
                   {manual ? <span className="cr-dato">{`Link cargado a mano el ${elDia(manual.actualizadoEl)}.`}</span> : null}
                 </p>
               ) : null}
-              {puedeEditar ? <EditorDelEnlace pieza={pieza.clave} enlace={manual} alCambiarEnlaces={alCambiarEnlaces} /> : null}
+              {puedeEditar ? <EditorDelEnlace cuentaId={pieza.cuentaId} pieza={pieza.nombre} enlace={manual} alCambiarEnlaces={alCambiarEnlaces} /> : null}
             </div>
           </div>
 
@@ -128,7 +134,8 @@ export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual,
               <Caja rotulo="Duración" valor={FRASE.guion} porque={FRASE.sinFuente} />
               <Caja rotulo="Primer día con entrega" valor={fechaCorta(f.primerDia) ?? FRASE.guion} porque={f.primerDia ? null : FRASE.sinEntrega} ancha />
               <Caja rotulo="Último día con entrega" valor={fechaCorta(f.ultimoDia) ?? FRASE.guion} porque={f.ultimoDia ? null : FRASE.sinEntrega} ancha />
-              <Caja rotulo="Pieza" valor={pieza.clave} ancha />
+              <Caja rotulo="Pieza" valor={pieza.nombre} ancha />
+              {pieza.cliente ? <Caja rotulo="Cliente" valor={pieza.cliente} ancha /> : null}
               <Caja rotulo="Dolor que ataca" valor={FRASE.guion} porque={FRASE.sinFuente} ancha />
             </div>
           </div>
@@ -208,8 +215,8 @@ function Dato({ rotulo, c, formato, hi = false }) {
   );
 }
 
-/** Cargar, reemplazar o sacar el link manual. El motivo del servidor se muestra tal cual. */
-function EditorDelEnlace({ pieza, enlace, alCambiarEnlaces }) {
+/** Cargar, reemplazar o sacar el link manual de la pieza en su cliente. El motivo del servidor se muestra tal cual. */
+function EditorDelEnlace({ cuentaId, pieza, enlace, alCambiarEnlaces }) {
   const [url, setUrl] = useState(enlace?.url ?? '');
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState('');
@@ -217,7 +224,7 @@ function EditorDelEnlace({ pieza, enlace, alCambiarEnlaces }) {
   async function aplicar(accion) {
     setOcupado(true);
     setError('');
-    const r = accion === 'sacar' ? await borrarEnlaceDeLaPieza(pieza) : await guardarEnlaceDeLaPieza(pieza, url.trim());
+    const r = accion === 'sacar' ? await borrarEnlaceDeLaPieza(cuentaId, pieza) : await guardarEnlaceDeLaPieza(cuentaId, pieza, url.trim());
     setOcupado(false);
     if (r.tipo === 'datos') {
       alCambiarEnlaces(r.enlaces);

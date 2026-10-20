@@ -30,6 +30,8 @@
  *   · **Sin párrafos** (CF1-05): es un tablero. La cobertura, los avisos y lo que falta para medir siguen viajando,
  *     y los da el agente de Creative cuando se le pregunta.
  *   · **Ningún dato de una persona** (CF1-17): los nombres son de piezas, que son nombres de anuncios.
+ *   · **La pieza es (cliente, nombre)** (el nivel 3): se dibuja su `nombre`, y su `clave` es sólo la llave. Con piezas
+ *     de dos clientes o más, la tarjeta dice el cliente en su propia línea, y el link manual es el de SU cliente.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -38,6 +40,7 @@ import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { leerCreative } from '@/lib/negocio/vistaDeCreative';
+import { rotuloDeLaPieza } from '@/lib/negocio/idDeLaPieza';
 import { useSesion } from '../../app/sesion-contexto.tsx';
 import FichaDelCreativo from './FichaDelCreativo';
 import Miniatura from './Miniatura.jsx';
@@ -47,6 +50,9 @@ import { CRITERIO, ESTADO, ETAPA, FRASE, PERIODO_EN_LA_BARRA, corto, miles, moti
 
 /** El criterio con el que abre la pantalla: el del prototipo (`let criterion = 'agendas'`). */
 const CRITERIO_POR_OMISION = 'agendas';
+
+/** El link manual de una pieza: el de su cliente y su nombre (el nivel 3). Por el nombre solo, sería el de un homónimo. */
+const esDe = (pieza) => (e) => e.cuentaId === pieza.cuentaId && e.pieza === pieza.nombre;
 
 export default function PanelDeCreative() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
@@ -224,9 +230,11 @@ function Tablero({ p, criterio, alOrdenar, alCambiar }) {
           criterio={criterio}
           gana={grupos.funciona.includes(pieza.clave)}
           unica={unicas.has(pieza.clave)}
-          manual={enlaces.find((e) => e.pieza === pieza.clave) ?? null}
-          manualDelServidor={p.enlaces.some((e) => e.pieza === pieza.clave)}
-          puedeEditar={puedeEditar}
+          manual={enlaces.find(esDe(pieza)) ?? null}
+          manualDelServidor={p.enlaces.some(esDe(pieza))}
+          /* Y sólo en un cliente que la sesión ve: el servidor rechaza el de uno de baja, y ofrecerlo sería un control
+             que no funciona. */
+          puedeEditar={puedeEditar && sesion.cuentas.visibles.some((c) => c.id === pieza.cuentaId)}
           alCambiarEnlaces={(lista) => {
             setEnlaces(lista);
             alCambiar();
@@ -346,6 +354,9 @@ function Grupo({ claves, gana, porClave, unicas, alAbrir }) {
  * La tarjeta `cc` del prototipo (CF1-09): la miniatura con su estado, el nombre de la pieza, la etiqueta de la etapa
  * y las seis métricas de la tira. La marca «Perdiendo gancho», cuando la fatiga tiene veredicto y lo dice. Al tocarla
  * se abre la ficha. Una cifra en «—» lleva su frase en el `title`: en 50 px no entra una línea.
+ *
+ * Con piezas de dos clientes o más, el cliente va en su propia línea, debajo del nombre: dos piezas con el mismo nombre
+ * se distinguen por él. En la fila de las etiquetas, con la etapa y «Única de su etapa.», quedaba recortado.
  */
 function Tarjeta({ pieza, gana, unica, alAbrir }) {
   const c = pieza.cifras;
@@ -358,12 +369,13 @@ function Tarjeta({ pieza, gana, unica, alAbrir }) {
     ['Frecuencia', c.frecuencia, veces],
   ];
   const abrir = () => alAbrir(pieza.clave);
+  const rotulo = rotuloDeLaPieza(pieza.nombre, pieza.cliente);
   return (
     <div
       className={gana ? 'cc win' : 'cc lose'}
       tabIndex={0}
       role="button"
-      aria-label={`Pieza ${pieza.clave}`}
+      aria-label={`Pieza ${rotulo}`}
       onClick={abrir}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -377,9 +389,14 @@ function Tarjeta({ pieza, gana, unica, alAbrir }) {
         <span className={pieza.estado === 'entregando' ? 'cc-status act' : 'cc-status pau'}>{ESTADO[pieza.estado]}</span>
       </Miniatura>
       <div className="cc-body">
-        <div className="cc-name" title={pieza.clave}>
-          {pieza.clave}
+        <div className="cc-name" title={rotulo}>
+          {pieza.nombre}
         </div>
+        {pieza.cliente ? (
+          <div className="cr-cliente" title={pieza.cliente}>
+            {pieza.cliente}
+          </div>
+        ) : null}
         <div className="cc-qual">
           <span className="tag fmt">{ETAPA[pieza.etapa]}</span>
           {unica ? <span className="tag ang">{FRASE.unica}</span> : null}

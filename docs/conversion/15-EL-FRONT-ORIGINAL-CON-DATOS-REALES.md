@@ -60,10 +60,10 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | lugar del prototipo | dato | fuente | medido |
 |---|---|---|---|
 | Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:116`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:110`) | — |
-| Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:123-130`) | sólo con 7 y 30 días |
+| Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:125-132`) | sólo con 7 y 30 días |
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
-| Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:99`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
+| Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:100`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
 | Panel 1 · Dan play al VSL | hueco | 79 escrituras, las 79 en cero (`lib/negocio/embudoDelFormulario.ts:124-134`) | — |
 | Panel 2 · Empiezan el form | contactos con el campo `Form Landing VSL` | `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`), que murió el 2026-08-31 | **0**: «Sin dato desde el 31 ago.» |
 | Panel 2 · Agendan | contactos con alguna cita alcanzable, sobre la cohorte | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`) | **63** de 105, 60 % |
@@ -81,7 +81,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | Cajón de Formulario | los tres estados y la contradicción con las citas, que hasta CV-4 fueron el segundo bloque | `embudoDelFormulario` | — |
 | Cajón de Agenda | agendados, calificados, tasa, confirmados, cancelaron y no calificados | CV15-18 | 63 · 35 · 56 % · 18 · 12 · 28 |
 | Alarma | las señales `critica` | `senales.lista` | ninguna: no hay reglas críticas |
-| Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:199`) | — |
+| Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:201`) | — |
 
 ### Lo que la medición del 2026-10-08 agregó
 
@@ -526,7 +526,7 @@ La cifra sobre la cohorte, construida el 2026-10-08 (CV-2): `personasDeLaCohorte
 | cualquier otra | ninguno: va sólo a la tarjeta |
 
 **La alarma** · `#cvAlarmWrap` se muestra sólo si hay alguna señal con gravedad `critica`
-(`lib/agentes/senales/tipos.ts:28`), y sólo con 7 o 30 días. **Hoy ninguna regla de Conversion es crítica**
+(`lib/agentes/senales/tipos.ts:31`), y sólo con 7 o 30 días. **Hoy ninguna regla de Conversion es crítica**
 —son media, info, media y media (`lib/agentes/detectores/conversion.ts:47-84`)—, así que no aparece hasta que
 exista una. Su `gsub` del prototipo, «rompe el funnel · no espera al ciclo diario», es falso: las señales
 las guarda la pasada de la mañana. Pasa a «detectada en la pasada de la mañana». Cada fila: `al-t` es el

@@ -43,18 +43,22 @@ function grupoDe(d: Deteccion): GrupoDelPlanDeCreative {
 /** Un CTR que ya viene en porcentaje (2,76 es 2,76 %): no se multiplica. */
 const enPorcentaje = (x: unknown) => (typeof x === 'number' ? `${numero(x)} %` : '—');
 
-/** La frase de cada regla: métrica, valor y base juntas, con el verbo de la medición (C6-10). */
+/**
+ * La frase de cada regla: métrica, valor y base juntas, con el verbo de la medición (C6-10). Con piezas de dos clientes
+ * o más (el nivel 3), la evidencia nombra al cliente, y lo medido dentro de él lo dice: la parte es «del gasto de su
+ * cliente» y el promedio, el «de su etapa en su cliente». Con uno, la frase de siempre.
+ */
 export function textoDeCreative(d: Deteccion): string {
   const ev = (d.evidencia ?? {}) as Record<string, unknown>;
   switch (d.regla) {
     case CRE.caidaDeCtr:
       return `Su CTR bajó ${porcentaje(d.cambioPct)} entre la primera y la segunda mitad de sus ${numero(ev.dias as number)} días con entrega: de ${enPorcentaje(d.lineaBase)} a ${enPorcentaje(d.valorActual)}, sobre ${numero(d.muestra)} impresiones.`;
     case CRE.concentracion:
-      return `Se lleva el ${porcentaje(d.valorActual)} del gasto de la ventana, entre ${numero((ev.piezas as unknown[] | undefined)?.length)} piezas con gasto.`;
+      return `Se lleva el ${porcentaje(d.valorActual)} del gasto ${ev.cliente ? 'de su cliente en' : 'de'} la ventana, entre ${numero((ev.piezas as unknown[] | undefined)?.length)} piezas con gasto.`;
     case CRE.frecuenciaAlta:
       return `El anuncio se mostró ${numero(d.valorActual)} veces por persona en promedio en la semana, sobre ${numero(d.muestra)} impresiones.`;
     case CRE.icpPorPieza:
-      return `Su ICP promedio está ${numero((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del promedio de las piezas de su etapa (${String(ev.etapa ?? '—')}): ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} contactos con puntaje.`;
+      return `Su ICP promedio está ${numero((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del promedio de las piezas de su etapa${ev.cliente ? ' en su cliente' : ''} (${String(ev.etapa ?? '—')}): ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} contactos con puntaje.`;
     default:
       return `${d.metrica}: ${numero(d.valorActual)}.`;
   }

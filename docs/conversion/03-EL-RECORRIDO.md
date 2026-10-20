@@ -89,7 +89,7 @@ banda (`:254`, `:259`), y hay un quinto estado `na` que el CSS pinta apagado
 
 **Estado** · **Los cinco estados son el requisito, y `na` es el importante.** Es «no se puede decir»,
 que en este departamento va a ser el estado más frecuente: cuatro de los cinco pasos no tienen fuente
-completa. Es el mismo `fatigado: boolean | null` de `lib/negocio/fatigaDelCreativo.ts:85-90`, donde
+completa. Es el mismo `fatigado: boolean | null` de `lib/negocio/fatigaDelCreativo.ts:87-92`, donde
 `null` *«no es lo mismo que “no está fatigada”»*.
 
 ### CV3-05 · El contador de pasos fuera de rango
@@ -119,7 +119,7 @@ esperado»` **sólo cuando cae por debajo**.
 **Estado** · **Requisito, y es la regla del silencio bien aplicada**: el sufijo aparece sólo cuando
 hay algo que decir. Y publicar el conteo al lado del porcentaje es el par `{con, sobre}` que este
 repositorio exige en todas partes —*«una proporción sola se lee como precisión y el par dice de
-cuántos habla»* (`lib/negocio/calidadDelCreativo.ts:327-328`)—.
+cuántos habla»* (`lib/negocio/calidadDelCreativo.ts:340-341`)—.
 
 ---
 

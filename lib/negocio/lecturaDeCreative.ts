@@ -19,8 +19,12 @@
 //   · **Toda tasa lleva su piso**: 1000 sobre impresiones (`PISO_DE_IMPRESIONES`); el click-to-landing, el de 10 clics
 //     al enlace que ya aplica su módulo. Bajo el piso, «—» con su motivo. La tira y las tarjetas no dibujan tasas sobre
 //     contactos: Calificados y Agendas son conteos.
-//   · **La pieza es el nombre del anuncio normalizado** (`llaveDelCreativo`), la misma llave de los tres módulos.
-//   · **«Funciona» es contra la etapa** (CF1-08): cada pieza contra el promedio de las piezas de su etapa.
+//   · **La pieza es (cliente, nombre)** (el nivel 3): el nombre del anuncio normalizado (`llaveDelCreativo`), la misma
+//     llave de los tres módulos, en el cliente de sus anuncios o de sus contactos. Su `clave` es `idDeLaPieza`: con un
+//     solo cliente, el nombre de siempre. Lo que se dibuja es el `nombre`, y con piezas de dos clientes o más, su
+//     `cliente`.
+//   · **«Funciona» es contra la etapa** (CF1-08): cada pieza contra el promedio de las piezas de su etapa; con piezas de
+//     dos clientes o más, de su etapa en su cliente, como la señal del ICP.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -28,8 +32,9 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { calidadDelCreativo, type CalidadDeLosCreativos } from './calidadDelCreativo.ts';
 import { ventanaDeMetricas } from './costoDelAnuncio.ts';
-import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo } from './creativo.ts';
+import { ETAPAS, type Etapa, clientesDeCreative, etapaDelNombre, llaveDelCreativo } from './creativo.ts';
 import { enlacesDeLasPiezas, type EnlaceDePieza } from './enlaceDeLaPieza.ts';
+import { idDeLaPieza, llaveInterna, type ClientesDeCreative } from './idDeLaPieza.ts';
 import { fatigaDelCreativo, type FatigaDeLosCreativos } from './fatigaDelCreativo.ts';
 import { miniaturasDeLasPiezas } from './miniaturaDelContacto.ts';
 import { activosDeLasPiezas, type ActivoDeLaPieza } from './recolectarActivos.ts';
@@ -78,8 +83,17 @@ export interface CifrasDeLaPieza {
 }
 
 export interface PiezaDeCreative {
-  /** El nombre de la pieza, normalizado. Es la llave y lo que se dibuja. */
+  /**
+   * El identificador de la pieza (`idDeLaPieza`): el nombre si es del principal —con un cliente, siempre—, y
+   * `<cuentaId>:<nombre>` si es de otro. Es la llave de los criterios y de la ficha; no se dibuja.
+   */
   clave: string;
+  /** El nombre de la pieza, normalizado: lo que se dibuja. */
+  nombre: string;
+  /** El cliente de la pieza (el nivel 3), por su id de `identidad.cuentas`: con él se carga su link manual. */
+  cuentaId: string;
+  /** El nombre de su cliente cuando la lectura trae piezas de dos clientes o más; con uno, `null` y no se dibuja. */
+  cliente: string | null;
   etapa: ClaveDeEtapa;
   /** Impresiones en alguno de los últimos 3 días del calendario, hoy incluido (CF1-09). */
   estado: 'entregando' | 'sin_entrega';
@@ -111,6 +125,11 @@ export interface GruposDeUnCriterio {
   promedioPorEtapa: Record<ClaveDeEtapa, number | null>;
   /** Las piezas que son la única de su etapa con valor: «Funciona» sin contra quién compararse (CF1-08). */
   unicas: string[];
+  /**
+   * Con piezas de dos clientes o más (el nivel 3): el promedio de cada etapa EN CADA CLIENTE, que es contra el que se
+   * comparó cada pieza; `promedioPorEtapa` queda como el de todas. Con un cliente no viaja.
+   */
+  promediosPorCliente?: { cuentaId: string; cliente: string | null; promedioPorEtapa: Record<ClaveDeEtapa, number | null> }[];
 }
 
 export interface PantallaDeCreativeArmada {
@@ -130,6 +149,8 @@ export interface PantallaDeCreativeArmada {
 /** Lo que la lectura de entrega trae de una pieza. Conteos de la ventana; los días, de toda la historia. */
 export interface EntregaDeLaPieza {
   pieza: string;
+  /** El cliente de los anuncios de la pieza (el nivel 3). */
+  cuentaId: string;
   impresiones: number;
   clics: number;
   /** Las acciones y las impresiones de los anuncio-día que TRAÍAN la clave; `null` si ninguno la trajo. */
@@ -156,6 +177,8 @@ export interface EntradaDeCreative {
   /** Lo leído de Meta por pieza (`078`). Vacío mientras la empresa no cargue su token. */
   activos: ReadonlyMap<string, ActivoDeLaPieza>;
   enlaces: readonly EnlaceDePieza[];
+  /** Los clientes a la vista y el principal: con ellos se arma la `clave` de cada pieza y se nombra su cliente. */
+  clientes: ClientesDeCreative;
 }
 
 // ─── Las cuentas, puras ─────────────────────────────────────────────────────
@@ -186,60 +209,103 @@ function medida(p: PiezaDeCreative, entrega: EntregaDeLaPieza | undefined, crite
   return { valor: c.valor, num: c.valor, den: 1 };
 }
 
-/** Los dos grupos de un criterio, contra el promedio de la etapa (CF1-08). */
-function agrupar(piezas: readonly PiezaDeCreative[], entrega: ReadonlyMap<string, EntregaDeLaPieza>, criterio: Criterio): GruposDeUnCriterio {
-  const promedioPorEtapa = Object.fromEntries(CLAVES_DE_ETAPA.map((e) => [e, null])) as Record<ClaveDeEtapa, number | null>;
-  const conValorPorEtapa = new Map<ClaveDeEtapa, number>();
-  for (const etapa of CLAVES_DE_ETAPA) {
-    const medidas = piezas
-      .filter((p) => p.etapa === etapa)
-      .map((p) => medida(p, entrega.get(p.clave), criterio))
-      .filter((m): m is { valor: number; num: number; den: number } => m !== null);
-    conValorPorEtapa.set(etapa, medidas.length);
-    if (medidas.length === 0) continue;
-    /* Las tasas, pesadas —la suma de numeradores sobre la de denominadores—; los conteos, el promedio simple. */
-    promedioPorEtapa[etapa] =
-      criterio === 'hookRate'
-        ? medidas.reduce((s, m) => s + m.num, 0) / medidas.reduce((s, m) => s + m.den, 0)
-        : medidas.reduce((s, m) => s + m.valor, 0) / medidas.length;
+/** El promedio de un criterio sobre unas piezas, y cuántas tienen valor. `null` = ninguna con valor. */
+function promedioDe(piezas: readonly PiezaDeCreative[], entrega: ReadonlyMap<string, EntregaDeLaPieza>, criterio: Criterio) {
+  const medidas = piezas
+    .map((p) => medida(p, entrega.get(p.clave), criterio))
+    .filter((m): m is { valor: number; num: number; den: number } => m !== null);
+  if (medidas.length === 0) return { promedio: null, conValor: 0 };
+  /* Las tasas, pesadas —la suma de numeradores sobre la de denominadores—; los conteos, el promedio simple. */
+  const promedio =
+    criterio === 'hookRate'
+      ? medidas.reduce((s, m) => s + m.num, 0) / medidas.reduce((s, m) => s + m.den, 0)
+      : medidas.reduce((s, m) => s + m.valor, 0) / medidas.length;
+  return { promedio, conValor: medidas.length };
+}
+
+/** El promedio de cada etapa sobre unas piezas. */
+function porEtapa(piezas: readonly PiezaDeCreative[], entrega: ReadonlyMap<string, EntregaDeLaPieza>, criterio: Criterio) {
+  return Object.fromEntries(
+    CLAVES_DE_ETAPA.map((etapa) => [etapa, promedioDe(piezas.filter((p) => p.etapa === etapa), entrega, criterio).promedio]),
+  ) as Record<ClaveDeEtapa, number | null>;
+}
+
+/**
+ * Los dos grupos de un criterio, contra el promedio de la etapa (CF1-08).
+ *
+ * Con piezas de dos clientes o más (`varios`, el nivel 3), cada pieza se compara con las de su etapa EN SU CLIENTE,
+ * como la señal del ICP (`lib/agentes/detectores/creative.ts`): con el promedio de los dos, las piezas de un cliente
+ * chico quedaban siempre en «No funciona», y la pantalla y la señal decían cosas distintas. La única es la única de
+ * su etapa en su cliente. Con un cliente, lo de siempre.
+ */
+function agrupar(
+  piezas: readonly PiezaDeCreative[],
+  entrega: ReadonlyMap<string, EntregaDeLaPieza>,
+  criterio: Criterio,
+  varios: boolean,
+): GruposDeUnCriterio {
+  const promedioPorEtapa = porEtapa(piezas, entrega, criterio);
+  const grupoDe = (p: PiezaDeCreative) => (varios ? `${p.cuentaId}·${p.etapa}` : p.etapa);
+  const grupos = new Map<string, { promedio: number | null; conValor: number }>();
+  for (const g of new Set(piezas.map(grupoDe))) {
+    grupos.set(g, promedioDe(piezas.filter((p) => grupoDe(p) === g), entrega, criterio));
   }
   const funciona: PiezaDeCreative[] = [];
   const noFunciona: PiezaDeCreative[] = [];
   const unicas: string[] = [];
   for (const p of piezas) {
     const v = p.cifras[criterio].valor;
-    const promedio = promedioPorEtapa[p.etapa];
+    const { promedio, conValor } = grupos.get(grupoDe(p))!;
     if (v === null || promedio === null) {
       noFunciona.push(p);
       continue;
     }
-    if (conValorPorEtapa.get(p.etapa) === 1) unicas.push(p.clave);
+    if (conValor === 1) unicas.push(p.clave);
     (v >= promedio ? funciona : noFunciona).push(p);
   }
-  /* De mayor a menor; sin valor al final; empate por nombre, para que el orden no dependa de la consulta. */
+  /* De mayor a menor; sin valor al final; empate por nombre —y entre dos homónimos, por cliente—, para que el orden
+     no dependa de la consulta. */
+  const porNombre = (a: PiezaDeCreative, b: PiezaDeCreative) => a.nombre.localeCompare(b.nombre) || a.cuentaId.localeCompare(b.cuentaId);
   const orden = (a: PiezaDeCreative, b: PiezaDeCreative) => {
     const va = a.cifras[criterio].valor;
     const vb = b.cifras[criterio].valor;
-    if (va === null && vb === null) return a.clave.localeCompare(b.clave);
+    if (va === null && vb === null) return porNombre(a, b);
     if (va === null) return 1;
     if (vb === null) return -1;
-    return vb - va || a.clave.localeCompare(b.clave);
+    return vb - va || porNombre(a, b);
   };
+  /* Los promedios contra los que se comparó cada pieza, cliente por cliente, en el orden en que aparecen sus piezas. */
+  const deCadaCliente = () =>
+    [...new Map(piezas.map((p) => [p.cuentaId, p.cliente])).entries()].map(([cuentaId, cliente]) => ({
+      cuentaId,
+      cliente,
+      promedioPorEtapa: porEtapa(piezas.filter((p) => p.cuentaId === cuentaId), entrega, criterio),
+    }));
   return {
     funciona: funciona.sort(orden).map((p) => p.clave),
     noFunciona: noFunciona.sort(orden).map((p) => p.clave),
     promedioPorEtapa,
     unicas,
+    ...(varios ? { promediosPorCliente: deCadaCliente() } : {}),
   };
 }
 
 /** Lo que dibuja la pantalla, desde lo leído. Sin base: la prueba lo arma con números a mano. */
 export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
   const sinPuntaje = e.calidad.campoDeIcp === null;
-  const entrega = new Map(e.entrega.map((x) => [x.pieza, x]));
-  const rendimiento = new Map(e.rendimiento.filas.map((f) => [f.creativo, f]));
-  const fatiga = new Map(e.fatiga.filas.map((f) => [f.creativo, f]));
-  const enlaces = new Map(e.enlaces.map((x) => [x.pieza, x]));
+  /* La pieza es (cliente, nombre) (el nivel 3): cada lectura se indexa por la `clave` (`idDeLaPieza`), la misma de las
+     miniaturas y los activos, y de las que traen piezas se anota de quién es cada una y cómo se llama. */
+  const id = (cuentaId: string, nombre: string) => idDeLaPieza(cuentaId, nombre, e.clientes.principal);
+  const deLaPieza = new Map<string, { cuentaId: string; nombre: string }>();
+  const anotar = (cuentaId: string, nombre: string) => {
+    const clave = id(cuentaId, nombre);
+    if (!deLaPieza.has(clave)) deLaPieza.set(clave, { cuentaId, nombre });
+    return clave;
+  };
+  const entrega = new Map(e.entrega.map((x) => [anotar(x.cuentaId, x.pieza), x]));
+  const rendimiento = new Map(e.rendimiento.filas.map((f) => [anotar(f.cuentaId, f.creativo), f]));
+  const fatiga = new Map(e.fatiga.filas.map((f) => [id(f.cuentaId, f.creativo), f]));
+  const enlaces = new Map(e.enlaces.map((x) => [id(x.cuentaId, x.pieza), x]));
 
   /* La calidad viene por (pieza, etapa del contacto): se suma por pieza, y la etapa con más contactos es la de
      respaldo cuando la campaña de la pieza no dice su etapa —no tiene anuncios, o su campaña con más impresiones no
@@ -248,7 +314,8 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
   const calidad = new Map<string, { contactos: number; calificados: number; agendaron: number; etapa: Etapa | null; deLaEtapa: number }>();
   for (const f of e.calidad.filas) {
     if (f.creativo === null) continue;
-    const ya = calidad.get(f.creativo) ?? { contactos: 0, calificados: 0, agendaron: 0, etapa: null, deLaEtapa: -1 };
+    const clave = anotar(f.cuentaId, f.creativo);
+    const ya = calidad.get(clave) ?? { contactos: 0, calificados: 0, agendaron: 0, etapa: null, deLaEtapa: -1 };
     ya.contactos += f.contactos;
     ya.calificados += f.calificados;
     ya.agendaron += f.agendaron;
@@ -257,7 +324,7 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
       ya.etapa = f.etapa;
       ya.deLaEtapa = f.contactos;
     }
-    calidad.set(f.creativo, ya);
+    calidad.set(clave, ya);
   }
 
   /* Una pieza entra si hizo algo EN LA VENTANA: trajo contactos, tuvo impresiones o gastó. La entrega trae todas las
@@ -265,8 +332,17 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
      piezas de siempre, 23 de ellas en «No funciona» con todo en «—». */
   const activa = (clave: string) =>
     calidad.has(clave) || (entrega.get(clave)?.impresiones ?? 0) > 0 || (rendimiento.get(clave)?.gasto ?? 0) > 0;
-  const claves = [...new Set([...calidad.keys(), ...rendimiento.keys(), ...entrega.keys()])].filter(activa).sort((a, b) => a.localeCompare(b));
+  /* Por nombre, y entre dos homónimos por cliente: con un cliente, el orden de siempre. */
+  const claves = [...deLaPieza.keys()].filter(activa).sort((a, b) => {
+    const x = deLaPieza.get(a)!;
+    const y = deLaPieza.get(b)!;
+    return x.nombre.localeCompare(y.nombre) || x.cuentaId.localeCompare(y.cuentaId);
+  });
+  /* El cliente se dibuja —y cada pieza se compara dentro del suyo— cuando las piezas de la lectura son de dos clientes
+     o más. Con uno no hay nada que distinguir. */
+  const varios = new Set(claves.map((k) => deLaPieza.get(k)!.cuentaId)).size >= 2;
   const piezas: PiezaDeCreative[] = claves.map((clave) => {
+    const { cuentaId, nombre } = deLaPieza.get(clave)!;
     const q = calidad.get(clave);
     const r = rendimiento.get(clave);
     const x = entrega.get(clave);
@@ -284,6 +360,9 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
       (deLosContactos === null ? null : enlaceDePublicacion(deLosContactos, LARGO_MAXIMO_DE_MINIATURA));
     return {
       clave,
+      nombre,
+      cuentaId,
+      cliente: varios ? (e.clientes.nombres.get(cuentaId) ?? null) : null,
       etapa: x?.etapa ?? q?.etapa ?? 'sin_etapa',
       estado: x?.entregando ? 'entregando' : 'sin_entrega',
       cifras: {
@@ -340,7 +419,7 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
         : sinValor('sin_reporte'),
   };
 
-  const criterios = Object.fromEntries(CRITERIOS.map((c) => [c, agrupar(piezas, entrega, c)])) as Record<Criterio, GruposDeUnCriterio>;
+  const criterios = Object.fromEntries(CRITERIOS.map((c) => [c, agrupar(piezas, entrega, c, varios)])) as Record<Criterio, GruposDeUnCriterio>;
 
   return {
     cifras,
@@ -363,7 +442,8 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
  * La entrega de cada pieza: las impresiones, los clics y las tres acciones de la ventana —sobre los anuncio-día que
  * traían cada clave, como `rendimientoDelCreativo`—, la frecuencia pesada por impresiones —como `frecuenciaPorAnuncio`
  * del detector—, la etapa de la campaña con más impresiones y los días con entrega de toda la historia. Los anuncios
- * sin nombre van en su pieza rotulada, como en `rendimientoDelCreativo`. Corre dentro de `conOrganizacion`.
+ * sin nombre van en su pieza rotulada, como en `rendimientoDelCreativo`. La pieza es (cliente, nombre) (el nivel 3):
+ * todo se agrupa también por el cliente de los anuncios. Corre dentro de `conOrganizacion`.
  */
 export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza[]> {
   const enVentana = ventanaDeMetricas('m', dias);
@@ -376,6 +456,7 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
     .selectFrom('metricas_de_anuncio as m')
     .innerJoin('anuncios as a', (j) => j.onRef('a.org_id', '=', 'm.org_id').onRef('a.meta_anuncio_id', '=', 'm.meta_anuncio_id'))
     .select([
+      'a.cuenta_id as cuentaId',
       pieza.as('pieza'),
       sql<string | null>`sum(m.impresiones) filter (where ${enVentana})`.as('impresiones'),
       sql<string | null>`sum(m.clics) filter (where ${enVentana})`.as('clics'),
@@ -390,7 +471,7 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
       /* Los últimos 3 días del calendario, hoy incluido: la convención de `ventanaDeMetricas`. */
       sql<boolean>`coalesce(max(m.fecha) filter (where m.impresiones > 0) > current_date - 3, false)`.as('entregando'),
     ])
-    .groupBy(pieza)
+    .groupBy(['a.cuenta_id', pieza])
     .execute();
 
   /* La etapa: la de la campaña de la que más impresiones tuvo la pieza en toda la historia; empate, el id menor. En
@@ -401,19 +482,24 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
     .innerJoin('anuncios as a', (j) => j.onRef('a.org_id', '=', 'm.org_id').onRef('a.meta_anuncio_id', '=', 'm.meta_anuncio_id'))
     .leftJoin('campanas as cp', (j) => j.onRef('cp.org_id', '=', 'a.org_id').onRef('cp.meta_campana_id', '=', 'a.meta_campana_id'))
     .select([
+      'a.cuenta_id as cuentaId',
       pieza.as('pieza'),
       'a.meta_campana_id as campana',
       etapaDelNombre('cp.nombre').as('etapa'),
       sql<string | null>`sum(m.impresiones)`.as('impresiones'),
     ])
-    .groupBy([pieza, 'a.meta_campana_id', 'cp.nombre'])
+    .groupBy(['a.cuenta_id', pieza, 'a.meta_campana_id', 'cp.nombre'])
     /* El orden decide cuál gana: la primera de cada pieza. Sin él, la que gana es la que la base devuelva primero. */
+    .orderBy('a.cuenta_id')
     .orderBy(pieza)
     .orderBy(sql`sum(m.impresiones) desc nulls last`)
     .orderBy('a.meta_campana_id')
     .execute();
   const etapas = new Map<string, Etapa | null>();
-  for (const c of porCampana) if (!etapas.has(c.pieza)) etapas.set(c.pieza, (c.etapa as Etapa | null) ?? null);
+  for (const c of porCampana) {
+    const llave = llaveInterna(c.cuentaId, c.pieza);
+    if (!etapas.has(llave)) etapas.set(llave, (c.etapa as Etapa | null) ?? null);
+  }
 
   const parDe = (f: Record<string, unknown>, clave: string) =>
     f[`i_${clave}`] === null || f[`i_${clave}`] === undefined
@@ -423,6 +509,7 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
   const nombre = (pieza: string) => (pieza === '' ? PIEZA_SIN_NOMBRE : pieza);
   return filas.map((f) => ({
     pieza: nombre(f.pieza),
+    cuentaId: f.cuentaId,
     impresiones: Number(f.impresiones ?? 0),
     clics: Number(f.clics ?? 0),
     vistas: parDe(f as Record<string, unknown>, 'videoView'),
@@ -430,7 +517,7 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
     landing: parDe(f as Record<string, unknown>, 'landingPageView'),
     frecuencia: f.frecuencia === null ? null : Number(f.frecuencia),
     impresionesConFrecuencia: Number(f.impresionesConFrecuencia ?? 0),
-    etapa: etapas.get(f.pieza) ?? null,
+    etapa: etapas.get(llaveInterna(f.cuentaId, f.pieza)) ?? null,
     primerDia: f.primerDia,
     ultimoDia: f.ultimoDia,
     entregando: Boolean(f.entregando),
@@ -453,13 +540,15 @@ export async function lecturaDeCreative(dias: number): Promise<LecturaDeCreative
   const fatiga = await fatigaDelCreativo(dias);
   const enlaces = await enlacesDeLasPiezas();
   const entrega = await entregaDeLasPiezas(dias);
-  const miniaturas = await miniaturasDeLasPiezas();
-  const activos = await activosDeLasPiezas();
+  // Una sola lectura de los clientes para la clave de toda la pantalla: las miniaturas y los activos la reciben.
+  const clientes = await clientesDeCreative();
+  const miniaturas = await miniaturasDeLasPiezas(clientes);
+  const activos = await activosDeLasPiezas(clientes);
   return {
     calidad,
     rendimiento,
     fatiga,
     enlaces,
-    pantalla: armarCreative({ calidad, rendimiento, fatiga, entrega, miniaturas, activos, enlaces }),
+    pantalla: armarCreative({ calidad, rendimiento, fatiga, entrega, miniaturas, activos, enlaces, clientes }),
   };
 }

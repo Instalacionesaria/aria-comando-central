@@ -131,11 +131,11 @@ pestaña publica tramos por persona. **Las dos cifras no se reconcilian, y ningu
 
 | | Creative | Leads Portal |
 |---|---|---|
-| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:217`) y entra al `avg` (`:225`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
-| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:63`, `:142`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:313`) |
-| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:239`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
+| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:225`) y entra al `avg` (`:234`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
+| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:64`, `:148`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:313`) |
+| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:248`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
 
-Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:60` y la
+Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:61` y la
 constante de `lib/ghl/contrato.ts:313` nombran el mismo identificador—. **El día que alguien renombre
 «Puntaje | ICP» en el CRM, Creative pierde el ICP y esta pestaña no**, y ninguna de las dos falla.
 

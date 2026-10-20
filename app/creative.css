@@ -85,6 +85,13 @@
   font-size: 13.5px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.35; height: 1.35em; margin-top: 1px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* El cliente de la pieza (el nivel 3), con piezas de dos clientes o más: su propia línea, debajo del nombre, porque en la
+   fila de las etiquetas lo recortaban la etapa y «Única de su etapa.». Un nombre largo se corta con puntos suspensivos,
+   y entero está en el `title`. */
+#v-creative .cr-cliente {
+  font-size: 11px; font-weight: 500; color: var(--txt-dim); line-height: 1.35; height: 1.35em; margin-top: 2px;
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 #v-creative .cc-qual { display: flex; gap: 5px; margin-top: 6px; height: 19px; overflow: hidden; }
 #v-creative .cc-mx { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin-top: auto; padding-top: 11px; }
 #v-creative .cc-mx > div {

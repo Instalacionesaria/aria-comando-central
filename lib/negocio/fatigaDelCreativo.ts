@@ -69,6 +69,8 @@ export const CAIDA_QUE_PREOCUPA = 0.2;
 
 export interface FatigaDeUnCreativo {
   creativo: string;
+  /** El cliente de sus anuncios (el nivel 3): la serie es de la pieza de UN cliente, no la de dos con el mismo nombre. */
+  cuentaId: string;
   /** Días con entrega de la pieza en la ventana. Viaja siempre: una tendencia sobre 8 no es una sobre 26. */
   dias: number;
   desde: string;
@@ -141,11 +143,14 @@ export async function fatigaDelCreativo(dias = DIAS_DE_LA_TASA): Promise<FatigaD
    * departamento.
    *
    * Y sólo entran los días CON entrega: un día sin impresiones no dice nada sobre si la pieza cansó
-   * a alguien, porque no se mostró. */
+   * a alguien, porque no se mostró.
+   *
+   * La pieza es (cliente, nombre) (el nivel 3): la serie y sus mitades se arman por cliente. Juntas, las fechas de
+   * dos clientes se cruzaban y cada mitad mezclaba días de los dos. */
   const filas = await datos()
     .selectFrom(sql`(
       with porDia as (
-        select ${llaveDelCreativo('a.nombre')} as creativo, m.fecha as fecha,
+        select a.cuenta_id as cuenta, ${llaveDelCreativo('a.nombre')} as creativo, m.fecha as fecha,
                sum(m.impresiones) as impresiones, sum(m.clics) as clics
           from negocio.metricas_de_anuncio m
           join negocio.anuncios a
@@ -153,13 +158,13 @@ export async function fatigaDelCreativo(dias = DIAS_DE_LA_TASA): Promise<FatigaD
          where ${ventanaDeMetricas('m', dias)}
            and m.impresiones > 0
            and ${llaveDelCreativo('a.nombre')} <> ''
-         group by 1, 2
+         group by 1, 2, 3
       ), mitades as (
-        select creativo, fecha, impresiones, clics,
-               ntile(2) over (partition by creativo order by fecha) as mitad
+        select cuenta, creativo, fecha, impresiones, clics,
+               ntile(2) over (partition by cuenta, creativo order by fecha) as mitad
           from porDia
       )
-      select creativo,
+      select cuenta, creativo,
              count(*) as dias,
              min(fecha)::text as desde,
              max(fecha)::text as hasta,
@@ -168,7 +173,7 @@ export async function fatigaDelCreativo(dias = DIAS_DE_LA_TASA): Promise<FatigaD
              sum(impresiones) filter (where mitad = 2) as imp2,
              sum(clics)       filter (where mitad = 2) as clics2
         from mitades
-       group by creativo
+       group by cuenta, creativo
     )`.as('f'))
     .selectAll()
     .execute();
@@ -196,6 +201,7 @@ function leerUnaFila(f: Record<string, unknown>): FatigaDeUnCreativo {
 
   const base = {
     creativo: String(f.creativo),
+    cuentaId: String(f.cuenta),
     dias,
     desde: String(f.desde),
     hasta: String(f.hasta),

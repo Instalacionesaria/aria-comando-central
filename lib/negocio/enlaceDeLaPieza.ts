@@ -16,6 +16,12 @@
 // pieza que no casa con ningún anuncio de la empresa es una pieza que no existe.
 //
 // Y la base lo hace cumplir por su lado: el `check` de la 063 rechaza una pieza sin normalizar.
+//
+// ── LA PIEZA ES (CLIENTE, NOMBRE) (el nivel 3) ─────────────────────────────
+//
+// Dos clientes de una empresa pueden tener una pieza con el mismo nombre, y son dos piezas con dos links. El link se
+// escribe con su cliente, la pieza existe si un anuncio DE ESE CLIENTE lleva su nombre, y la `095` lo hace cumplir en
+// la clave: (org_id, cuenta_id, pieza).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -26,6 +32,8 @@ import { enlaceDePublicacion, type Red } from './urlExterna.ts';
 
 /** Un link manual, tal como lo dibuja la pantalla. */
 export interface EnlaceDePieza {
+  /** El cliente de la pieza (el nivel 3). */
+  cuentaId: string;
   pieza: string;
   url: string;
   red: Red;
@@ -33,11 +41,15 @@ export interface EnlaceDePieza {
   actualizadoEl: string;
 }
 
-/** Si la pieza existe: al menos un anuncio de la empresa lleva ese nombre, normalizado. */
-export async function existeLaPieza(pieza: string): Promise<boolean> {
+/**
+ * Si la pieza existe: al menos un anuncio DE ESE CLIENTE lleva ese nombre, normalizado. Un nombre que sólo tiene otro
+ * cliente de la empresa es una pieza que no existe.
+ */
+export async function existeLaPieza(cuentaId: string, pieza: string): Promise<boolean> {
   const fila = await datos()
     .selectFrom('anuncios')
     .select(sql<number>`1`.as('hay'))
+    .where('cuenta_id', '=', cuentaId)
     .where(sql<boolean>`${llaveDelCreativo('nombre')} = ${pieza}`)
     .limit(1)
     .executeTakeFirst();
@@ -45,7 +57,7 @@ export async function existeLaPieza(pieza: string): Promise<boolean> {
 }
 
 /**
- * Los links de la empresa, por pieza.
+ * Los links de la empresa, por pieza y su cliente.
  *
  * Un link guardado que HOY no pasa la validación —porque la lista de hosts cambió, o porque alguien
  * lo escribió a mano en la base saltándose la ruta— **no viaja**. Dibujarlo sería ofrecer un «Ver en
@@ -54,8 +66,9 @@ export async function existeLaPieza(pieza: string): Promise<boolean> {
 export async function enlacesDeLasPiezas(): Promise<EnlaceDePieza[]> {
   const filas = await datos()
     .selectFrom('enlaces_de_pieza')
-    .select(['pieza', 'url', 'actualizado_el'])
+    .select(['cuenta_id', 'pieza', 'url', 'actualizado_el'])
     .orderBy('pieza')
+    .orderBy('cuenta_id')
     .execute();
 
   const salida: EnlaceDePieza[] = [];
@@ -63,6 +76,7 @@ export async function enlacesDeLasPiezas(): Promise<EnlaceDePieza[]> {
     const valido = enlaceDePublicacion(f.url);
     if (valido === null) continue;
     salida.push({
+      cuentaId: f.cuenta_id,
       pieza: f.pieza,
       url: valido.url,
       red: valido.red,
@@ -82,20 +96,23 @@ export async function enlacesDeLasPiezas(): Promise<EnlaceDePieza[]> {
  * @returns `null` si se guardó, o por qué no.
  */
 export async function guardarEnlace(
-  enlace: { pieza: string; url: string },
+  /** `cuentaId`: el cliente de la pieza, ya comprobado por la ruta contra los que ve la sesión. */
+  enlace: { cuentaId: string; pieza: string; url: string },
   /** `null` cuando lo carga un rol de plataforma sobre otra organización (`autorDelCambio`). */
   actor: string | null,
 ): Promise<'sin_pieza' | 'url_invalida' | null> {
   const valido = enlaceDePublicacion(enlace.url);
   if (valido === null) return 'url_invalida';
-  if (!(await existeLaPieza(enlace.pieza))) return 'sin_pieza';
+  if (!(await existeLaPieza(enlace.cuentaId, enlace.pieza))) return 'sin_pieza';
 
   const ahora = new Date();
   await datos()
     .insertInto('enlaces_de_pieza')
-    .values({ pieza: enlace.pieza, url: valido.url, actualizado_el: ahora, actualizado_por: actor } as never)
+    .values({ cuenta_id: enlace.cuentaId, pieza: enlace.pieza, url: valido.url, actualizado_el: ahora, actualizado_por: actor } as never)
+    /* La clave de la `095`. El cliente de una fila no se actualiza nunca —el puente, `completar_cuenta`, lo impide— y
+       el link de otro cliente es otra fila. */
     .onConflict((oc) =>
-      oc.columns(['org_id', 'pieza']).doUpdateSet({
+      oc.columns(['org_id', 'cuenta_id', 'pieza']).doUpdateSet({
         url: valido.url,
         actualizado_el: ahora,
         actualizado_por: actor,
@@ -115,10 +132,11 @@ export async function guardarEnlace(
  *
  * @returns el link que se sacó —para que la auditoría diga CUÁL—, o `null` si no había ninguno.
  */
-export async function borrarEnlace(pieza: string): Promise<string | null> {
+export async function borrarEnlace(enlace: { cuentaId: string; pieza: string }): Promise<string | null> {
   const borrada = await datos()
     .deleteFrom('enlaces_de_pieza')
-    .where('pieza', '=', pieza)
+    .where('cuenta_id', '=', enlace.cuentaId)
+    .where('pieza', '=', enlace.pieza)
     .returning('url')
     .executeTakeFirst();
   return borrada?.url ?? null;

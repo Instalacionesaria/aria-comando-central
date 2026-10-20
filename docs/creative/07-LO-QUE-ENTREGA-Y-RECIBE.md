@@ -58,7 +58,7 @@ es la repetición: es el recálculo.**
 
 | | Acquisition | Creative |
 |---|---|---|
-| Unidad | el anuncio (`meta_anuncio_id`) | la pieza (el nombre normalizado) |
+| Unidad | el anuncio (`meta_anuncio_id`) | la pieza (el nombre normalizado, en su cliente desde el nivel 3) |
 | Pregunta | ¿qué costó cada anuncio? | ¿qué pieza hay que volver a producir? |
 | Además | el monitor de atribución del § 18.14 | ICP y agenda por pieza, y la cobertura del puente |
 

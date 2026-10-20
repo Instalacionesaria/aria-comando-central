@@ -15,11 +15,11 @@ Para una empresa en America/Lima (UTC−5), de 19:00 a 24:00 locales `current_da
 Dónde, en `current_date`:
 
 - La cohorte por días de calendario hasta hoy, `ventanaDeLaCohorte` (`lib/negocio/recorrido.ts:202`), y sus copias a
-  mano en Creative (`lib/negocio/calidadDelCreativo.ts:239`) y en el costo por anuncio
-  (`lib/negocio/costoDelAnuncio.ts:355`). Desde el 2026-10-08 Conversion corta con `cohorteEntre`
+  mano en Creative (`lib/negocio/calidadDelCreativo.ts:248`) y en el costo por anuncio
+  (`lib/negocio/costoDelAnuncio.ts:367`). Desde el 2026-10-08 Conversion corta con `cohorteEntre`
   (`lib/negocio/recorrido.ts:214-217`), la de Acquisition: días cerrados, pero el borde de cada día sigue en UTC.
 - La ventana del gasto (`lib/negocio/costoDelAnuncio.ts:84`), sin tope arriba.
-- El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:106`,
+- El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:117`,
   `lib/agentes/detectores/conversion.ts:122@02d9207`; desde el 2026-10-08 el de Conversion son los días cerrados de
   `bordesDelPeriodo`), y el de Conversation en días UTC de JavaScript
   (`lib/agentes/detectores/conversation.ts:81`).

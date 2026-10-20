@@ -1279,7 +1279,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
 ## Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
 
 **Estado.** Los commits del 2026-10-18, `21556cd..18f61d6` y el Bloque C `00ccfee..ca5fcdc`, con las migraciones
-`085` a `094` (la `094`, de C5 · G3, del 2026-10-19), están encima de la Fase 0 y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
+`085` a `095` (la `094`, de C5 · G3, del 2026-10-19; la `095`, de C5 · G1, del 2026-10-20), están encima de la Fase 0 y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
 son tres: ARIA (la organización principal), las empresas (`identidad.organizaciones`) y los clientes de cada empresa
 (`identidad.cuentas`). En pantalla se dice «Empresa» y «Cliente»; la palabra «cuenta» no aparece.
 
@@ -1350,8 +1350,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   cuenta publicitaria se mide dentro de su cliente (`lib/agentes/detectores/acquisition.ts:318`): la crítica de «sin
   entrega» es del `cliente` cuyas campañas no entregan (`lib/agentes/detectores/acquisition.ts:371`), la entidad nueva
   de la `094` (`db/migraciones/094_el_cliente_en_acquisition.sql:33`), que la pantalla nombra
-  (`lib/agentes/senales/lectura.ts:192`); y toda señal de campaña dice su cliente con varios, «Campaña (Cliente)», con
-  el cliente de la pantalla (`lib/agentes/senales/lectura.ts:100`). El funnel se guarda en el cliente de su campaña
+  (`lib/agentes/senales/lectura.ts:197`); y toda señal de campaña dice su cliente con varios, «Campaña (Cliente)», con
+  el cliente de la pantalla (`lib/agentes/senales/lectura.ts:104`). El funnel se guarda en el cliente de su campaña
   (`lib/negocio/funnelDeLaCampana.ts:100`) y la base lo exige (`db/migraciones/094_el_cliente_en_acquisition.sql:52`).
   La serie atrasada y «métricas sin serie» miran sólo a los clientes activos (`lib/negocio/gastoDeLaCuenta.ts:316`): uno
   en pausa dejaba la empresa atrasada para siempre. Y la cobertura de la ventana le pide a uno en pausa su serie sólo
@@ -1363,14 +1363,41 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:449`,
   `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:519` y
   `pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts:41`.
+- **La pieza de Creative es (cliente, nombre) (C5 · G1, `095`).** Los clientes de una empresa comparten la convención
+  de nombres, y su «hook 1» son dos piezas. El identificador es `idDeLaPieza` (`lib/negocio/idDeLaPieza.ts:35`), en un
+  módulo puro que también lee el navegador: el nombre si la pieza es del principal —con un cliente, siempre: la clave,
+  las huellas y la pantalla de siempre— y `<cuenta>:<nombre>` si es de otro; quien agrupa sin saber cuál es el
+  principal usa una llave interna aparte (`lib/negocio/idDeLaPieza.ts:51`). La calidad agrupa por cliente
+  (`lib/negocio/calidadDelCreativo.ts:251`) y cruza un contacto sólo con un anuncio de SU cliente
+  (`lib/negocio/calidadDelCreativo.ts:353`); el rendimiento, la fatiga y la entrega, también
+  (`lib/negocio/rendimientoDelCreativo.ts:347`, `lib/negocio/fatigaDelCreativo.ts:164`,
+  `lib/negocio/lecturaDeCreative.ts:474`). Los leads y la miniatura de un contacto son del cliente de su ANUNCIO, y sólo
+  sin el anuncio en la dimensión, del contacto (`lib/negocio/costoDelAnuncio.ts:358`,
+  `lib/negocio/miniaturaDelContacto.ts:210`). Con piezas de dos clientes o más en la lectura
+  (`lib/negocio/lecturaDeCreative.ts:343`), la pieza dice su cliente (`lib/negocio/lecturaDeCreative.ts:365`) —la
+  tarjeta en su propia línea (`components/creative/PanelDeCreative.jsx:396`), la ficha en «Qué es»— y «Funciona» compara
+  cada pieza con las de su etapa EN SU CLIENTE (`lib/negocio/lecturaDeCreative.ts:248`), como la señal del ICP
+  (`lib/agentes/detectores/creative.ts:304`); la concentración es sobre el gasto de su cliente
+  (`lib/agentes/detectores/creative.ts:220`), la evidencia nombra al cliente (`lib/agentes/detectores/creative.ts:185`)
+  y la pantalla nombra la señal «nombre · cliente» y la del anuncio «Anuncio (Cliente)»
+  (`lib/agentes/senales/lectura.ts:206`, `lib/agentes/senales/lectura.ts:200`). El cerebro nunca lee un uuid: la clave
+  y los criterios viajan con el rótulo (`lib/agentes/executive/adaptadores/creative.ts:30`). El link manual es de
+  (cliente, pieza) (`db/migraciones/095_la_pieza_es_de_un_cliente.sql:32`): la ruta valida el cliente contra los que ve
+  la sesión y, sin decirlo, usa el principal (`app/api/creative/enlace/route.ts:68`). Esto cierra la concentración de
+  Creative; «sin entrega» la cerró G3. Lo exigen `pruebas/base/286-la-pieza-es-de-un-cliente.test.ts:233` y
+  `pruebas/codigo/287-la-pieza-con-su-cliente.test.ts:46`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): el vínculo de un
-  closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; Creative junta en una
-  pieza los anuncios de dos clientes que se llaman igual (la pieza, su fatiga, su enlace manual y el puente
-  nombre ↔ anuncio van sin cliente); en el detector de Acquisition, el ICP y la fuga entre etapas comparan contra el
+  closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; en el detector de
+  Acquisition, el ICP y la fuga entre etapas comparan contra el
   promedio de un funnel que mezcla clientes, el monitor de atribución es una proporción de la empresa (un cliente chico
   con la atribución rota queda tapado) y el cambio brusco del conjunto sigue con el freno de los costos; las señales no
   llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); un `campaignId`
-  numérico de Google Ads cuenta como pauta sin Meta; las etiquetas cortas de los campos
+  numérico de Google Ads cuenta como pauta sin Meta; en Creative, el identificador de una pieza depende de cuál es el
+  principal (si algún día se mueve `es_por_omision`, sus señales se cierran solas y renacen, y las decididas pierden su
+  bloqueo), una pieza de un cliente que no es el principal suma 37 caracteres a su `entidad_id` (tope 200, `072`: un
+  nombre de más de 163 haría fallar la pasada de Creative), si el gasto de un cliente no cuadra la concentración queda
+  sin medir para todos (`gastoCuadra` es de la empresa), y un anuncio fuera de la dimensión con leads de dos clientes
+  los junta en uno de los dos; las etiquetas cortas de los campos
   y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
   subcuenta con otros nombres no se reconoce); mandar un lead desde Tools usa las credenciales de la empresa
   (`app/api/tools/leads/enviar/route.ts:113`); los guiones de medición, salvo `scripts/medir-mensaje.mjs`, miden sólo

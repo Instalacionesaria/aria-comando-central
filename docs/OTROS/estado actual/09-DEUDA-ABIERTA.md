@@ -537,9 +537,9 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   sus claves (`lib/negocio/calidadDeLaAtribucion.ts:91-106`, usadas en `:137-145`): completas, 56 de 519; la señal sigue,
   por `utmTerm`, la que menos llega. Subido a producción el mismo día.
 - **«Entregó N días» cuenta días sin impresiones.** `diasConEntrega` es `gasto is not null`
-  (`lib/negocio/costoDelAnuncio.ts:297`), y hay **47 filas con gasto 0 y sin impresiones** (2026-10-18; 38 el
+  (`lib/negocio/costoDelAnuncio.ts:304`), y hay **47 filas con gasto 0 y sin impresiones** (2026-10-18; 38 el
   2026-09-28); la nota se dibujaba en la tabla por anuncio de Acquisition, que salió con AQ-4. Creative lo
-  corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:220-233`) y
+  corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:223-236`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
 - **«Landing con VSL» es circular y no se marca.** La marca exige el 90 %
   (`components/conversion/PanelDeConversion.jsx:347@b2dcdf5`, `lib/negocio/recorridoDelLead.ts:273-275`) y la
@@ -586,8 +586,8 @@ sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
 - **Cerrada el 2026-10-07 (`22ec755`).** `comoDia` (`lib/negocio/costoDelAnuncio.ts:409-412@d17e029`) usaba
   `toISOString()` sobre un `date`, lo que `lib/negocio/recolectarAnuncios.ts:329-333@d17e029` documenta como defecto
   al este de UTC; la función se fue con la reescritura del gasto.
-- `lib/negocio/costoDelAnuncio.ts:517` numera «2 ·» el tercer aviso (el de
-  `lib/negocio/costoDelAnuncio.ts:493` ya es el 2), y `lib/negocio/costoDelAnuncio.ts:18` dice que el
+- `lib/negocio/costoDelAnuncio.ts:530` numera «2 ·» el tercer aviso (el de
+  `lib/negocio/costoDelAnuncio.ts:506` ya es el 2), y `lib/negocio/costoDelAnuncio.ts:18` dice que el
   `adId` llega «si y sólo si» el lead entró por Facebook o Instagram; 01 midió hoy 4 de 217 que no
   (no re-medido).
 - **Cerrado el 2026-10-08** (CV-1 de Conversion): `lib/negocio/recorrido.ts:193-195@210ac73` justificaba la ventana anclada porque Conversion cruza con el
@@ -781,14 +781,14 @@ el documento miente o si buscó mal.
   `docs/sales/14-LOS-CINCO-ESLABONES.md:54`. Las cinco decían 451, que dejó de ser la regla; el 2026-09-28 se
   reapuntaron a la 625 (`861b5f0`), y el 2026-10-18 la 625 sigue siendo el encabezado del § 11. La de `docs/sales/`
   la audita la prueba; las otras cuatro, no.
-- **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:170`, `lib/negocio/rendimientoDelCreativo.ts:119`
-  y `lib/negocio/rendimientoDelCreativo.ts:235` mandan el defecto de grano a las líneas 158-165 de
+- **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:176`, `lib/negocio/rendimientoDelCreativo.ts:120`
+  y `lib/negocio/rendimientoDelCreativo.ts:238` mandan el defecto de grano a las líneas 158-165 de
   `costoDelAnuncio.ts` (157-164 el 2026-09-28: alguien sumó una y siguen sin llegar), y está hacia
-  `lib/negocio/costoDelAnuncio.ts:200`; `lib/negocio/fatigaDelCreativo.ts:7` manda la frecuencia a las 89-96, y está
-  hacia `lib/negocio/costoDelAnuncio.ts:119`; `lib/negocio/rendimientoDelCreativo.ts:225` manda a la 296 lo
-  que está en `lib/negocio/costoDelAnuncio.ts:297`; y `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, CV-1— a la 357 de
+  `lib/negocio/costoDelAnuncio.ts:205`; `lib/negocio/fatigaDelCreativo.ts:7` manda la frecuencia a las 89-96, y está
+  hacia `lib/negocio/costoDelAnuncio.ts:124`; `lib/negocio/rendimientoDelCreativo.ts:228` manda a la 296 lo
+  que está en `lib/negocio/costoDelAnuncio.ts:304`; y `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, CV-1— a la 357 de
   `costoDelAnuncio.ts` y a la 230 de `calidadDelCreativo.ts` lo que está en
-  `lib/negocio/costoDelAnuncio.ts:355` y `lib/negocio/calidadDelCreativo.ts:239`.
+  `lib/negocio/costoDelAnuncio.ts:367` y `lib/negocio/calidadDelCreativo.ts:248`.
 
 Lo que haría falta: que la auditoría sume `docs/conversion/`, `docs/acquisition/` y los comentarios
 del código, y que las citas entre documentos de carpetas distintas vayan por sección y no por línea,

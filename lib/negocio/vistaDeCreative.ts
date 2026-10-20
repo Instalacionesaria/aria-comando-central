@@ -81,12 +81,15 @@ async function escribirEnlace(
   return { tipo: 'fallo', mensaje: 'No se pudo conectar para guardar el link.' };
 }
 
-/** Carga o reemplaza el link manual de una pieza. */
-export function guardarEnlaceDeLaPieza(pieza: string, url: string): Promise<ResultadoDelEnlace> {
-  return escribirEnlace('PUT', '/api/creative/enlace', { pieza, url });
+/**
+ * Carga o reemplaza el link manual de una pieza. La pieza es (cliente, nombre) (el nivel 3): el cliente va primero, para
+ * que una llamada de antes no compile.
+ */
+export function guardarEnlaceDeLaPieza(cuentaId: string, pieza: string, url: string): Promise<ResultadoDelEnlace> {
+  return escribirEnlace('PUT', '/api/creative/enlace', { cuentaId, pieza, url });
 }
 
-/** Saca el link manual de una pieza. */
-export function borrarEnlaceDeLaPieza(pieza: string): Promise<ResultadoDelEnlace> {
-  return escribirEnlace('DELETE', `/api/creative/enlace?pieza=${encodeURIComponent(pieza)}`);
+/** Saca el link manual de una pieza de un cliente. */
+export function borrarEnlaceDeLaPieza(cuentaId: string, pieza: string): Promise<ResultadoDelEnlace> {
+  return escribirEnlace('DELETE', `/api/creative/enlace?pieza=${encodeURIComponent(pieza)}&cuentaId=${encodeURIComponent(cuentaId)}`);
 }

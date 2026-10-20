@@ -126,7 +126,7 @@ el mismo hueco que `CV11-03` declara.
 **Unidad** · Los **dos términos**, siempre, no sólo la proporción.
 **Población** · La cohorte entera.
 **Rastro** · `§ 18.5:1247` del documento funcional; el patrón `puente` de
-`lib/negocio/calidadDelCreativo.ts:303-329`.
+`lib/negocio/calidadDelCreativo.ts:313-342`.
 **Estado** · **Construible hoy**: 475 de 590 (80,5 %). **No es una muestra al azar** — ver `CV1-P01`.
 
 ---
@@ -195,7 +195,7 @@ comportamiento es muy distinto.»*
 Y aunque se ejecutara, los 90 días cruzarían el corte del 2026-08-31 dos veces. **La forma es el
 requisito** —comparar cada cifra contra su propio histórico es una buena idea— pero el umbral hay que
 calibrarlo y declarar que no lo está, como hizo Creative con `PISO_DE_IMPRESIONES`
-(`lib/negocio/rendimientoDelCreativo.ts:51-69`).
+(`lib/negocio/rendimientoDelCreativo.ts:52-70`).
 
 ### CV2-09 · «Calificadas» tiene DOS fuentes en la misma pantalla, y dan números distintos
 
@@ -208,7 +208,7 @@ el cajón dice **479**; «No calificadas» dice 283 arriba y 286 abajo. Y la Lec
 afirma *«Las 84 restantes»* (`conversion.js:502`), que es un tercer número literal.
 
 **El requisito que sobrevive** es que el ICP del lead califique la cita — y eso **ya existe**:
-`lib/negocio/calidadDelCreativo.ts:63` resuelve `Puntaje | ICP` con 344 de 344 contactos de treinta
+`lib/negocio/calidadDelCreativo.ts:64` resuelve `Puntaje | ICP` con 344 de 344 contactos de treinta
 días. **Conversion lo consume, no lo recalcula** (`§ 2.4` del documento funcional).
 
 Y el `0.94` del comparativo (`conversion.js:167`) no tiene justificación ni comentario en ninguna

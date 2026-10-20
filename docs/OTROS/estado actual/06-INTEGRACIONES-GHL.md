@@ -175,7 +175,7 @@ decía «tres cabeceras distintas»; con tres familias y dos valores, nunca lo f
 | # | Operación | Quién la dispara | Frecuencia medida | Archivo |
 |---|---|---|---|---|
 | 1 | `POST /contacts/search` | cron `contactos`; botón «Sincronizar» | cada 10 min; 1 por página de 100, por etiqueta | `lib/ghl/cliente.ts:293` |
-| 2 | `GET /contacts/{id}` | abrir una ficha; el webhook, **sólo si el contacto no está en nuestra base**; **desde el 2026-10-11, la pasada de miniaturas** del cron `contactos` (`lib/negocio/miniaturaDelContacto.ts:114`) | ≈ 65 de los 320 avisos procesados del 2026-08-29 al 2026-09-27 (estimado, § 7); la pasada, hasta 50 por corrida y una sola vez por contacto con `adId`: 526 pedidos guardados al 2026-10-18, el último el 2026-10-11 | `lib/ghl/cliente.ts:545` |
+| 2 | `GET /contacts/{id}` | abrir una ficha; el webhook, **sólo si el contacto no está en nuestra base**; **desde el 2026-10-11, la pasada de miniaturas** del cron `contactos` (`lib/negocio/miniaturaDelContacto.ts:115`) | ≈ 65 de los 320 avisos procesados del 2026-08-29 al 2026-09-27 (estimado, § 7); la pasada, hasta 50 por corrida y una sola vez por contacto con `adId`: 526 pedidos guardados al 2026-10-18, el último el 2026-10-11 | `lib/ghl/cliente.ts:545` |
 | 3 | `POST /contacts/{id}/tags` | Avanzar; marcar una intervención del auditor (`lib/auditor/intervencion.ts:128`) | 7 resultados en total, ninguno desde el 2026-09-09 | `lib/ghl/cliente.ts:592` |
 | 4 | `DELETE /contacts/{id}/tags` | resolver una intervención del auditor | ninguna: **0 de 24** hallazgos resueltos (eran 0 de 20) | `lib/ghl/cliente.ts:638` |
 | 5 | `GET /locations/{loc}/tags` | **sólo si la búsqueda trajo cero contactos** | nunca en régimen | `lib/ghl/cliente.ts:450` |
@@ -333,7 +333,7 @@ solo en su horario y con su propio fin de reloj, 250 s (`lib/negocio/barrido.ts:
 
 **La miniatura de cada contacto cuesta una llamada, una sola vez.** Va dentro de `contactos`, después de sincronizar
 (`lib/negocio/barrido.ts:1043-1047`): hasta 50 contactos por pasada, sólo los que llegaron con `adId`, con 15 s por pedido y
-60 s por pasada (`lib/negocio/miniaturaDelContacto.ts:44-50`, `:74-93`). Al 2026-10-18 había 526 contactos pedidos, el
+60 s por pasada (`lib/negocio/miniaturaDelContacto.ts:45-51`, `:75-94`). Al 2026-10-18 había 526 contactos pedidos, el
 último el 2026-10-11 22:40 UTC, y 215 contactos con `adId`: la cola está vacía y la pasada sólo pide los nuevos.
 
 A eso se le suman tres caminos que no tienen horario:
@@ -353,7 +353,7 @@ A eso se le suman tres caminos que no tienen horario:
 `app/api/creative`, `app/api/conversion`, `app/api/conversation`, `app/api/sales`, `app/api/leads-portal` ni
 `app/api/executive` importa `lib/ghl/`, `lib/meta/`, `pedirExterno` ni `resolverAccesoAGhl`, y tampoco `lib/agentes/` ni
 las lecturas de pantalla de `lib/negocio/` (búsqueda del 2026-10-18): leen lo que el cron ya guardó. Creative lee la
-miniatura de la base, la de Meta antes que la del contacto (`lib/negocio/lecturaDeCreative.ts:456-457`). Los únicos que
+miniatura de la base, la de Meta antes que la del contacto (`lib/negocio/lecturaDeCreative.ts:545-546`). Los únicos que
 salen a un proveedor de datos fuera del cron son las rutas de operación del Closer y del Setter, el aviso del CRM, el envío
 de leads de Tools y «Probar conexión» de Meta.
 
@@ -362,7 +362,7 @@ de leads de Tools y «Probar conexión» de Meta.
 - `pedirExterno` hace **un solo `fetch`** (`lib/http/cliente.ts:368-374`) y espera hasta 240 s
   (`lib/http/cliente.ts:248`) contra un `maxDuration` de 300; Vercel no reintenta el cron
   (`lib/negocio/barrido.ts:17`). Los pedidos nuevos acortan la espera: 15 s cada miniatura de contacto
-  (`lib/negocio/miniaturaDelContacto.ts:47`) y 20 s cada pedido a Meta (`lib/meta/graph.ts:30`).
+  (`lib/negocio/miniaturaDelContacto.ts:48`) y 20 s cada pedido a Meta (`lib/meta/graph.ts:30`).
 - **Desde el 2026-10-15, `pedirExterno` devuelve también el código numérico del error**, si el servicio lo manda en
   `error.code` (`lib/http/cliente.ts:72-80`, `:459-468`). Lo manda Meta, y es lo único que distingue un token vencido de un
   permiso que falta o del cupo; GoHighLevel y Anthropic no lo mandan, y para ellos la respuesta queda igual.
@@ -538,7 +538,7 @@ están fuera y no hay forma de traerlos sin cambiar `carpetas_del_crm.grupo`. Pa
 negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:315`) resuelve un campo
 por su nombre **saltándose el filtro de carpetas**. El 2026-09-15 la usaban dos módulos; hoy seis:
 `lib/negocio/consumoDelPrecall.ts:159`, `lib/negocio/indicadoresDeCitas.ts:248`,
-`lib/negocio/calidadDelCreativo.ts:142`, `lib/negocio/embudoDelFormulario.ts:178`,
+`lib/negocio/calidadDelCreativo.ts:148`, `lib/negocio/embudoDelFormulario.ts:178`,
 `lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:212-214`. De los campos que se
 leen así, dos viven en carpetas sin grupo: «Confirmación Agendamiento»
 (`lib/negocio/indicadoresDeCitas.ts:208`) y «Form Landing VSL» (`lib/negocio/recorrido.ts:231`). El
@@ -940,7 +940,7 @@ trazabilidad del § 16.2 —*«capturar UTMs y `meta_ad_id`»*— sigue cumplido
 4. **El video y las métricas finas** — **siguen sin llegar por ninguna vía construida**: el archivo del video, cuartiles,
    tiempo medio visto, retención de seis segundos y los desgloses por ubicación y demografía (`lib/ghl/anuncios.ts:62-74`).
    El plan dejó el video para después de medir con el primer token real (CR-8 y CR-9,
-   `docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md:190-201`). Lo que sí llega del lado del video es `videoView`, con 90 % de
+   `docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md:193-204`). Lo que sí llega del lado del video es `videoView`, con 90 % de
    cobertura en su medición del 2026-09-18 (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:66-73`) y una definición
    que GoHighLevel no documenta (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:271-279`).
 
@@ -1036,7 +1036,7 @@ Cada uno es un hueco medido, no una suposición.
 
 11. **Si el token de Meta, cuando alguien lo cargue, sirve para lo que se construyó.** Nada de § 11 se ejecutó nunca
     contra Meta con un token real: ni cuánto dura la firma de una miniatura, ni qué tipos de creativo traen imagen, ni el
-    costo en llamadas por hora. Es la etapa CR-4 del plan (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md:190-201`).
+    costo en llamadas por hora. Es la etapa CR-4 del plan (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md:193-204`).
 
 ---
 
@@ -1062,7 +1062,7 @@ cuenta.**
 | # | Qué | Pedidos a Meta | Quién la dispara | Archivo |
 |---|---|---|---|---|
 | M1 | **«Probar conexión»**: el token (`GET /me`), la cuenta (`GET /act_…` con nombre, moneda y estado) y los últimos 25 anuncios con su miniatura; no guarda nada | 3 | una persona, desde Ajustes › Credenciales, con `credenciales.editar` | `lib/meta/conexion.ts:37-73`, `app/api/admin/credenciales/meta/route.ts:22-31` |
-| M2 | **La tarea `activos`**: el creativo de cada anuncio de `negocio.anuncios`, en dos pasos por lotes de 50 (`?ids=`): el anuncio y su creativo, y la imagen y la miniatura de 640 px | 2 por cada 50 anuncios, más uno por anuncio si un lote trae uno borrado | el cron, al minuto 37 de cada hora | `lib/meta/anuncios.ts:1-12`, `:101-148`; `lib/negocio/recolectarActivos.ts:184-214` |
+| M2 | **La tarea `activos`**: el creativo de cada anuncio de `negocio.anuncios`, en dos pasos por lotes de 50 (`?ids=`): el anuncio y su creativo, y la imagen y la miniatura de 640 px | 2 por cada 50 anuncios, más uno por anuncio si un lote trae uno borrado | el cron, al minuto 37 de cada hora | `lib/meta/anuncios.ts:1-12`, `:101-148`; `lib/negocio/recolectarActivos.ts:192-222` |
 
 «Probar conexión» es un `POST` aunque no escribe, para que un enlace o una vista previa no lo disparen, y dice en cuál de
 los tres pasos falla con un texto nuestro (`app/api/admin/credenciales/meta/route.ts:1-9`,
@@ -1070,15 +1070,15 @@ los tres pasos falla con un texto nuestro (`app/api/admin/credenciales/meta/rout
 
 **La tarea `activos`** (`lib/negocio/recolectarActivos.ts:1-15`) es reconciliación: pide los anuncios que nunca se leyeron,
 los leídos hace más de un día y los que tienen una miniatura que **vence en las próximas seis horas**, primero los que
-entregaron hace menos, hasta 200 por pasada y con 90 s de presupuesto (`lib/negocio/recolectarActivos.ts:24-34`,
-`:95-113`). La URL de la miniatura del CDN de Meta va firmada y vence: el vencimiento se lee del parámetro `oe`
-(`lib/negocio/recolectarActivos.ts:47-59`) y una miniatura vencida no viaja a la pantalla
-(`lib/negocio/recolectarActivos.ts:144-173`). Un anuncio de otra cuenta que el token alcance a ver se descarta
-(`lib/negocio/recolectarActivos.ts:73-93`). Guarda en `negocio.activos_de_anuncio`, una fila por anuncio leído, también sin
+entregaron hace menos, hasta 200 por pasada y con 90 s de presupuesto (`lib/negocio/recolectarActivos.ts:25-35`,
+`:96-114`). La URL de la miniatura del CDN de Meta va firmada y vence: el vencimiento se lee del parámetro `oe`
+(`lib/negocio/recolectarActivos.ts:48-60`) y una miniatura vencida no viaja a la pantalla
+(`lib/negocio/recolectarActivos.ts:145-181`). Un anuncio de otra cuenta que el token alcance a ver se descarta
+(`lib/negocio/recolectarActivos.ts:74-94`). Guarda en `negocio.activos_de_anuncio`, una fila por anuncio leído, también sin
 miniatura, con su motivo (`db/migraciones/078_el_activo_del_anuncio.sql:21-49`). Sin token se sella `saltada` con su texto,
 sin llamar a nadie (`lib/negocio/barrido.ts:742-749`); un token rechazado, un permiso que falta o el cupo cortan la pasada
 y el sello dice qué hacer (`lib/negocio/barrido.ts:1132-1147`). Creative toma la miniatura y el post de Meta antes que los
-del contacto (`lib/negocio/lecturaDeCreative.ts:456-457`).
+del contacto (`lib/negocio/lecturaDeCreative.ts:545-546`).
 
 **Medido el 2026-10-18:** `negocio.activos_de_anuncio` tiene **0 filas**, y la tarea `activos` está `saltada` en las 11
 empresas activas, la última vez a las 14:37 UTC. Cuesta cero llamadas: corre cada hora, abre la transacción de identidad
@@ -1095,6 +1095,6 @@ para mirar que no hay token, y sella.
   no encuentra la cuenta «se dice como permiso», y el código lo dice como `no_existe` (`lib/meta/conexion.ts:46-47`).
   **Cerrado:** el comentario dice hoy `no_existe`.
 - **El presupuesto de la corrida que nombraba el comentario no era el del barrido:** `recolectarActivos.ts` decía que la
-  corrida entera tiene 240 s (`lib/negocio/recolectarActivos.ts:27`) y el barrido usa 180 s (`lib/negocio/barrido.ts:416`).
+  corrida entera tiene 240 s (`lib/negocio/recolectarActivos.ts:28`) y el barrido usa 180 s (`lib/negocio/barrido.ts:416`).
   Como `activos` corre sola en su horario, los 90 s de la pasada caben en los dos. **Cerrado:** el comentario dice hoy
   180 s y nombra `PRESUPUESTO_MS`.

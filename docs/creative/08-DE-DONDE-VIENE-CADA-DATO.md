@@ -118,7 +118,7 @@ nuevo que GoHighLevel agregue sería otra migración»*.
 
 1. **Multiplica el grano.** Las impresiones son **una** fila por (anuncio, día); las acciones serían
    **15-25**. Unirlas para dividir multiplica el denominador y el hook rate sale ~20 veces más chico y
-   perfectamente creíble. `lib/negocio/costoDelAnuncio.ts:158-165` documenta ese defecto **para este
+   perfectamente creíble. `lib/negocio/costoDelAnuncio.ts:163-170` documenta ese defecto **para este
    mismo par de tablas**: *«no falla: devuelve un número más grande»*.
 2. **Costo de escritura.** El colector ya consume ~164 s del presupuesto de 120 s en su tramo fijo de
    tres días (12 campañas × 4,55 s medidos). Veinte inserciones más por anuncio-día encenderían

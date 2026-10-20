@@ -17,7 +17,8 @@ import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
 import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { leerCreativos, type CreativoDeMeta } from '../meta/anuncios.ts';
-import { llaveOSinCreativo } from './creativo.ts';
+import { clientesDeCreative, llaveOSinCreativo } from './creativo.ts';
+import { idDeLaPieza, type ClientesDeCreative } from './idDeLaPieza.ts';
 import type { FallaDeMeta } from '../meta/graph.ts';
 import { enlaceDePublicacion, LARGO_MAXIMO_DE_MINIATURA, LARGO_MAXIMO_DE_URL, medioPermitido } from './urlExterna.ts';
 
@@ -146,13 +147,19 @@ export interface ActivoDeLaPieza {
  * junta varios anuncios: gana el que más impresiones tuvo en toda su historia, por separado para la miniatura y para
  * el post —el anuncio más visto puede no tener post y otro sí—; empate, el id menor. Sin ventana, como la miniatura
  * de los contactos: la imagen de la pieza no depende del período. Corre dentro de `conOrganizacion`.
+ *
+ * La pieza es (cliente, nombre) (el nivel 3): la llave del mapa es la `clave` de la pantalla (`idDeLaPieza`), con el
+ * cliente del anuncio. Con un solo cliente, el nombre de siempre. `clientes` es el que ya leyó la lectura; sin él, se
+ * lee acá.
  */
-export async function activosDeLasPiezas(): Promise<Map<string, ActivoDeLaPieza>> {
+export async function activosDeLasPiezas(clientes?: ClientesDeCreative): Promise<Map<string, ActivoDeLaPieza>> {
+  const { principal } = clientes ?? (await clientesDeCreative());
   const pieza = llaveOSinCreativo('a.nombre');
   const filas = await datos()
     .selectFrom('activos_de_anuncio as x')
     .innerJoin('anuncios as a', (j) => j.onRef('a.org_id', '=', 'x.org_id').onRef('a.meta_anuncio_id', '=', 'x.meta_anuncio_id'))
     .select([
+      'a.cuenta_id as cuentaId',
       pieza.as('pieza'),
       sql<string | null>`case when x.miniatura_caduca_el > now() then x.miniatura_url end`.as('miniatura'),
       'x.publicacion_url as publicacion',
@@ -166,8 +173,9 @@ export async function activosDeLasPiezas(): Promise<Map<string, ActivoDeLaPieza>
   const salida = new Map<string, ActivoDeLaPieza>();
   for (const f of filas) {
     if (f.pieza === null) continue; // ya filtrado en la consulta; acá sólo lo sabe el tipo
-    const ya = salida.get(f.pieza) ?? { miniatura: null, publicacion: null };
-    salida.set(f.pieza, { miniatura: ya.miniatura ?? f.miniatura, publicacion: ya.publicacion ?? f.publicacion });
+    const clave = idDeLaPieza(f.cuentaId, f.pieza, principal);
+    const ya = salida.get(clave) ?? { miniatura: null, publicacion: null };
+    salida.set(clave, { miniatura: ya.miniatura ?? f.miniatura, publicacion: ya.publicacion ?? f.publicacion });
   }
   return salida;
 }

@@ -248,7 +248,7 @@ el equivocado es un defecto silencioso: la columna se llena con números plausib
 **Estado** · **Construible hoy.** Medido: de 31 % a 77 % según la pieza, con cinco piezas sobre el
 piso en 30 días. **Se cuenta con `count(distinct contacto_id)`** — verificado en
 `02-CREATIVE.md:445-448@63b8cd1`: un `count(*)` sobre el `left join` inflaba «agendamiento - yaping» de 109 a 112.
-Y usa **el mismo `exists` con `ghl_calendario_id`** que `lib/negocio/costoDelAnuncio.ts:311-314`, o
+Y usa **el mismo `exists` con `ghl_calendario_id`** que `lib/negocio/costoDelAnuncio.ts:318-321`, o
 las dos pantallas no sumarían igual.
 
 ### C2-19 · Las citas congeladas viajan al lado de la tasa de agenda
@@ -294,7 +294,7 @@ de `07-REGLAS-TRANSVERSALES.md`. Creative agrupa lo que Acquisition ya calculó.
 ### C2-23 · CPL por pieza
 
 **Fórmula** · Gasto de la pieza / contactos de la pieza.
-**Piso** · **Ninguno, y no es una inconsistencia.** `lib/negocio/costoDelAnuncio.ts:111-119` lo dejó
+**Piso** · **Ninguno, y no es una inconsistencia.** `lib/negocio/costoDelAnuncio.ts:116-124` lo dejó
 escrito: *«el piso existe para las PROPORCIONES… El CPL no es una proporción — "gastamos 200 y entró
 uno" es un hecho exacto sobre lo que ya pasó.»* Lo que lo salva es que el conteo de contactos viaja al
 lado.

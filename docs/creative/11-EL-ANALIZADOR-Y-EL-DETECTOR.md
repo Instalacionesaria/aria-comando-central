@@ -113,7 +113,7 @@ period_start / period_end / severity / confidence / possible_causes / recommende
 | campo | qué implica |
 |---|---|
 | `alert_id`, `created_at` | **tiene que sobrevivir a la recarga**, o no puede decir «esto apareció el martes» |
-| `entity_type`, `entity_id` | la alerta apunta a una pieza, un anuncio, un conjunto o una campaña: el tipo es parte de la llave |
+| `entity_type`, `entity_id` | la alerta apunta a una pieza, un anuncio, un conjunto o una campaña: el tipo es parte de la llave. La pieza lleva su cliente cuando no es del principal (el nivel 3: `idDeLaPieza`, AG-21 de `docs/OTROS/agentes/02`) |
 | `baseline`, `current_value`, `change_percentage` | **la evidencia viaja con la alerta**, no se recalcula al mirarla. Si el baseline se recalcula, la alerta de ayer cambia de razón sola |
 | `period_start`, `period_end` | la ventana sobre la que se detectó, que no es la que el usuario está mirando |
 | `severity`, `confidence` | **dos escalas que nadie definió** — y `confidence` sobre 7 días de serie no puede ser la misma que sobre 26 |

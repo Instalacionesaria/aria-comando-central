@@ -44,7 +44,7 @@
 «Landing page views» entre las inexistentes. **Dejó de ser cierto el 2026-09-19** (lo registra
 `docs/OTROS/estado actual/03-CONVERSION.md:79-93@b3ca9ad`): el desglose de acciones de Meta trae `landingPageView`
 por anuncio y por día, se guarda en `negocio.metricas_de_anuncio.acciones` (migración `053`) y ya se
-publica en `lib/negocio/rendimientoDelCreativo.ts:99` como «Vistas de la landing».
+publica en `lib/negocio/rendimientoDelCreativo.ts:100` como «Vistas de la landing».
 
 **Con dos límites que hay que decir al usarlo:**
 
@@ -78,7 +78,7 @@ departamentos tienen el mismo hueco por dos motivos distintos.
 
 **Estado** · Ver `CV1-08`: de los 104 contactos en la landing propia, **89 traen `utm_content`** y
 sólo **4** traen `adId`. Conversion cruza con Creative por `llaveDelCreativo()`
-(`lib/negocio/creativo.ts:44`) y **no escribe una segunda normalización**.
+(`lib/negocio/creativo.ts:53`) y **no escribe una segunda normalización**.
 
 ---
 
@@ -125,7 +125,7 @@ al `§ 10.6`. El prototipo lo dibuja en el paso «Gracias»; se va con el borrad
 
 **Rastro** · Cuatro de las seis `Lectura` del prototipo dicen `Corresponde a Sales`
 (`conversion.js:478`, `:502`, `:519`) o `Corresponde a Conversation` (`:548`).
-**Estado** · El ICP ya se resuelve en `lib/negocio/calidadDelCreativo.ts:63` con 344 de 344 contactos
+**Estado** · El ICP ya se resuelve en `lib/negocio/calidadDelCreativo.ts:64` con 344 de 344 contactos
 de treinta días. **Conversion lo consume**; la definición de «calificada» —dónde está el corte— no es
 suya: `docs/creative/08-DE-DONDE-VIENE-CADA-DATO.md:166` la deja como pregunta abierta con cuatro
 pantallas candidatas.

@@ -40,13 +40,16 @@ const TOFU = 'TOFU' as const;
 const MOFU = 'MOFU' as const;
 const BOFU = 'BOFU' as const;
 
+/** El cliente de todas las filas: una empresa con un solo cliente, su principal (el nivel 3). */
+const P = 'P';
+
 const calidad = (f: Partial<FilaDeCreativo> & { creativo: string | null }): FilaDeCreativo => ({
-  etapa: null, contactos: 0, conPuntaje: 0, icpPromedio: null, calificados: 0, agendaron: 0, tasaDeAgenda: null, anunciosDeMeta: 0, ...f,
+  cuentaId: P, etapa: null, contactos: 0, conPuntaje: 0, icpPromedio: null, calificados: 0, agendaron: 0, tasaDeAgenda: null, anunciosDeMeta: 0, ...f,
 });
 
 const rend = (f: Partial<FilaDeRendimiento> & { creativo: string }): FilaDeRendimiento =>
   ({
-    anuncios: 1, gasto: 100, impresiones: 0, clics: 0, cpm: null, cpc: null, ctr: null, diasConEntrega: 1,
+    cuentaId: P, anuncios: 1, gasto: 100, impresiones: 0, clics: 0, cpm: null, cpc: null, ctr: null, diasConEntrega: 1,
     hookRate: { cantidad: null, tasa: null, anuncioDiasConLaClave: 0, anuncioDiasConEntrega: 1 },
     linkCtr: { cantidad: null, tasa: null, anuncioDiasConLaClave: 0, anuncioDiasConEntrega: 1 },
     landingPageViewRate: { cantidad: null, tasa: null, anuncioDiasConLaClave: 0, anuncioDiasConEntrega: 1 },
@@ -58,7 +61,7 @@ const rend = (f: Partial<FilaDeRendimiento> & { creativo: string }): FilaDeRendi
 
 /** Sin decirlo, las impresiones con frecuencia son todas las de la pieza si trae frecuencia, y ninguna si no. */
 const entrega = (f: Partial<EntregaDeLaPieza> & { pieza: string }): EntregaDeLaPieza => ({
-  impresiones: 0, clics: 0, vistas: null, clicsAlEnlace: null, landing: null, frecuencia: null, etapa: null,
+  cuentaId: P, impresiones: 0, clics: 0, vistas: null, clicsAlEnlace: null, landing: null, frecuencia: null, etapa: null,
   primerDia: '2026-09-01', ultimoDia: '2026-10-05', entregando: false,
   impresionesConFrecuencia: f.frecuencia === null || f.frecuencia === undefined ? 0 : (f.impresiones ?? 0),
   ...f,
@@ -97,9 +100,9 @@ function entrada(o: Partial<EntradaDeCreative> & { campoDeIcp?: string | null } 
     fatiga: {
       dias: 30, aviso: null, conVeredicto: { con: 2, sobre: 3 },
       filas: [
-        { creativo: 'a', fatigado: true },
-        { creativo: 'c', fatigado: false },
-        { creativo: 'b', fatigado: null },
+        { creativo: 'a', cuentaId: P, fatigado: true },
+        { creativo: 'c', cuentaId: P, fatigado: false },
+        { creativo: 'b', cuentaId: P, fatigado: null },
       ],
     } as unknown as FatigaDeLosCreativos,
     entrega: [
@@ -110,7 +113,8 @@ function entrada(o: Partial<EntradaDeCreative> & { campoDeIcp?: string | null } 
     ],
     miniaturas: new Map([['a', 'https://www.facebook.com/ads/image/?d=uno'], ['c', 'https://www.facebook.com/ads/image/?d=dos']]),
     activos: new Map(),
-    enlaces: [{ pieza: 'c', url: 'https://www.instagram.com/p/xyz/', red: 'instagram', actualizadoEl: '2026-10-01' } as unknown as EnlaceDePieza],
+    enlaces: [{ cuentaId: P, pieza: 'c', url: 'https://www.instagram.com/p/xyz/', red: 'instagram', actualizadoEl: '2026-10-01' } as unknown as EnlaceDePieza],
+    clientes: { principal: P, nombres: new Map([[P, 'Principal']]) },
     ...o,
   };
 }
@@ -225,7 +229,7 @@ test('la fila de abajo: el gasto, el CTR, el link CTR, la landing y las que perd
   // Sobre las que TIENEN veredicto: «b» no tiene, así que son 2 y no 3.
   assert.deepEqual(d.perdiendoGancho, { con: 1, sobre: 2 });
   const sinVeredicto = armarCreative(entrada({
-    fatiga: { dias: 30, aviso: null, conVeredicto: { con: 0, sobre: 2 }, filas: [{ creativo: 'a', fatigado: null }, { creativo: 'c', fatigado: null }] } as unknown as FatigaDeLosCreativos,
+    fatiga: { dias: 30, aviso: null, conVeredicto: { con: 0, sobre: 2 }, filas: [{ creativo: 'a', cuentaId: P, fatigado: null }, { creativo: 'c', cuentaId: P, fatigado: null }] } as unknown as FatigaDeLosCreativos,
   }));
   assert.deepEqual(sinVeredicto.loDemas.perdiendoGancho, { con: 0, sobre: 0 }, 'sin veredictos, «0 de 2» en lugar de la frase de la fatiga');
   const vacia = armarCreative(entrada({ entrega: [], rendimiento: { filas: [], gastoTotal: null } as unknown as RendimientoDeLosCreativos }));

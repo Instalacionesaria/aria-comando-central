@@ -6,8 +6,16 @@
 // Creative publica sólo lo que es de la pieza o del anuncio (C11-04): la caída del CTR, la concentración del
 // gasto en una pieza, la frecuencia de un anuncio y el ICP de una pieza. Lo de campaña y de conjunto —la
 // entrega, el CPM, el costo por contacto, los cambios por conjunto— es de Acquisition (`./acquisition.ts`), y
-// Creative no publica ni una señal con esas entidades. La pieza se identifica por su llave normalizada
-// (`lib/negocio/creativo.ts`), la misma con que la pantalla agrupa: no hay otro identificador de una pieza.
+// Creative no publica ni una señal con esas entidades. La pieza se identifica por su cliente y su nombre normalizado
+// (`idDeLaPieza`, `lib/negocio/idDeLaPieza.ts`), el mismo identificador con que la pantalla agrupa: el nombre si es del
+// principal —con un cliente, la huella de siempre—, `<cuenta>:<nombre>` si es de otro.
+//
+// ── CON VARIOS CLIENTES (el nivel 3) ─────────────────────────────────────────
+//
+// Lo que la regla dice de «la cuenta» se mide dentro de cada cliente: la concentración es sobre el gasto de SU cliente,
+// y el ICP de una pieza se compara con las de su etapa EN SU CLIENTE —el puntaje es el campo de la subcuenta de cada
+// uno—. Con piezas de dos clientes o más, la evidencia nombra al cliente (`cliente`, su id), y con eso la frase lo dice
+// y la pantalla rotula la señal. Con uno, la evidencia y la frase son las de siempre.
 //
 // ── CONSUME LA LECTURA DE LA PANTALLA ────────────────────────────────────────
 //
@@ -27,7 +35,8 @@ import { rendimientoDelCreativo, PISO_DE_IMPRESIONES, type RendimientoDeLosCreat
 import { fatigaDelCreativo, type FatigaDeLosCreativos } from '../../negocio/fatigaDelCreativo.ts';
 import { ventanaDeMetricas } from '../../negocio/costoDelAnuncio.ts';
 import { diasSinCuadrar } from '../../negocio/gastoDeLaCuenta.ts';
-import { llaveDelCreativo } from '../../negocio/creativo.ts';
+import { clientesDeCreative, llaveDelCreativo } from '../../negocio/creativo.ts';
+import { idDeLaPieza } from '../../negocio/idDeLaPieza.ts';
 import { type DebajoDelPiso, type Deteccion, type VentanaDeSenal } from '../senales/tipos.ts';
 import type { ReglaDelCatalogo } from '../senales/umbrales.ts';
 
@@ -55,7 +64,7 @@ export const REGLAS_DE_CREATIVE: readonly ReglaDelCatalogo[] = [
     unidad: 'proporcion',
     denominador: null,
     gravedad: 'media',
-    porque: 'Con tres piezas o más, que una se lleve más de un tercio del gasto deja la cuenta dependiendo de una sola pieza. Es presupuesto: requiere validación ejecutiva.',
+    porque: 'Con tres piezas o más en una cuenta publicitaria (con varios clientes, la de cada uno), que una se lleve más de un tercio de su gasto deja la cuenta dependiendo de una sola pieza. Es presupuesto: requiere validación ejecutiva.',
   },
   {
     codigo: CRE.frecuenciaAlta,
@@ -73,7 +82,7 @@ export const REGLAS_DE_CREATIVE: readonly ReglaDelCatalogo[] = [
     unidad: 'puntos',
     denominador: 'contactos con puntaje',
     gravedad: 'media',
-    porque: 'Quince puntos de ICP bajo el promedio de las piezas de su etapa separan un tramo del otro (C7-10).',
+    porque: 'Quince puntos de ICP bajo el promedio de las piezas de su etapa (con varios clientes, en su cliente) separan un tramo del otro (C7-10).',
   },
 ];
 
@@ -85,8 +94,10 @@ export interface MedidaDeCreative {
   calidad: Pick<CalidadDeLosCreativos, 'filas' | 'campoDeIcp'>;
   rendimiento: Pick<RendimientoDeLosCreativos, 'filas'>;
   fatiga: Pick<FatigaDeLosCreativos, 'filas'>;
-  /** La frecuencia media de cada anuncio, pesada por impresiones. Sólo en 7 días: la regla es semanal. */
-  frecuencias: ReadonlyMap<string, { frecuencia: number; impresiones: number; creativo: string | null }> | null;
+  /** El cliente por omisión de la empresa: el identificador de sus piezas es el nombre (`idDeLaPieza`). */
+  principal: string | null;
+  /** La frecuencia media de cada anuncio, pesada por impresiones, con su cliente. Sólo en 7 días: la regla es semanal. */
+  frecuencias: ReadonlyMap<string, { frecuencia: number; impresiones: number; creativo: string | null; cuentaId: string }> | null;
   /** Si la lectura de anuncios del cron está al día: sin ella, gasto y entrega no se miden. */
   anunciosAlDia: boolean;
   /**
@@ -115,6 +126,7 @@ export async function medirCreative(ventana: VentanaDeSenal): Promise<MedidaDeCr
     calidad,
     rendimiento,
     fatiga,
+    principal: (await clientesDeCreative()).principal,
     frecuencias,
     anunciosAlDia: anuncios.estado === 'al_dia',
     gastoCuadra: (await diasSinCuadrar((alias) => ventanaDeMetricas(alias, dias))) === 0,
@@ -133,19 +145,23 @@ async function frecuenciaPorAnuncio(dias: number): Promise<MedidaDeCreative['fre
     .innerJoin('anuncios as a', (j) => j.onRef('a.org_id', '=', 'm.org_id').onRef('a.meta_anuncio_id', '=', 'm.meta_anuncio_id'))
     .select([
       'm.meta_anuncio_id as anuncio',
+      'a.cuenta_id as cuentaId',
       llaveDelCreativo('a.nombre').as('creativo'),
       sql<string | null>`sum(m.impresiones) filter (where m.frecuencia is not null)`.as('impresiones'),
       sql<string | null>`sum(m.frecuencia * m.impresiones) filter (where m.frecuencia is not null)
         / nullif(sum(m.impresiones) filter (where m.frecuencia is not null), 0)`.as('frecuencia'),
     ])
     .where(ventanaDeMetricas('m', dias))
-    .groupBy(['m.meta_anuncio_id', 'a.nombre'])
+    .groupBy(['m.meta_anuncio_id', 'a.cuenta_id', 'a.nombre'])
     .groupBy(llaveDelCreativo('a.nombre'))
     .execute();
   return new Map(
     filas
       .filter((f) => f.frecuencia !== null)
-      .map((f) => [f.anuncio, { frecuencia: Number(f.frecuencia), impresiones: Number(f.impresiones ?? 0), creativo: f.creativo || null }]),
+      .map((f) => [
+        f.anuncio,
+        { frecuencia: Number(f.frecuencia), impresiones: Number(f.impresiones ?? 0), creativo: f.creativo || null, cuentaId: f.cuentaId },
+      ]),
   );
 }
 
@@ -157,7 +173,17 @@ const redondear = (x: number, decimales = 2) => Math.round(x * 10 ** decimales) 
 export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detecciones: Deteccion[]; debajoDelPiso: DebajoDelPiso[]; sinMedicion: string[] } {
   const salida = { detecciones: [] as Deteccion[], debajoDelPiso: [] as DebajoDelPiso[], sinMedicion: [] as string[] };
   const base = { periodo: m.periodo, datosDesde: null, destino: null, requiereValidacionEjecutiva: false, perdidaContactos: null };
-  const impresionesDe = new Map(m.rendimiento.filas.map((f) => [f.creativo, f.impresiones ?? 0]));
+  /* El identificador de una pieza (el nivel 3): su nombre si es del principal, con su cliente si es de otro. */
+  const id = (cuentaId: string, creativo: string) => idDeLaPieza(cuentaId, creativo, m.principal);
+  /* Con piezas de dos clientes o más, la evidencia nombra al cliente: la frase lo dice y la pantalla rotula la señal. */
+  const clientes = new Set([
+    ...m.calidad.filas.filter((f) => f.creativo !== null).map((f) => f.cuentaId),
+    ...m.rendimiento.filas.map((f) => f.cuentaId),
+    ...m.fatiga.filas.map((f) => f.cuentaId),
+    ...[...(m.frecuencias?.values() ?? [])].map((x) => x.cuentaId),
+  ]);
+  const delCliente = (cuentaId: string) => (clientes.size >= 2 ? { cliente: cuentaId } : {});
+  const impresionesDe = new Map(m.rendimiento.filas.map((f) => [id(f.cuentaId, f.creativo), f.impresiones ?? 0]));
 
   // ── El CTR de una pieza cae entre la primera y la segunda mitad de la serie ──
   if (!m.anunciosAlDia) {
@@ -170,17 +196,17 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
       salida.detecciones.push({
         ...base,
         regla: CRE.caidaDeCtr,
-        entidad: { tipo: 'pieza', id: f.creativo },
+        entidad: { tipo: 'pieza', id: id(f.cuentaId, f.creativo) },
         metrica: 'ctr',
         lineaBase: f.ctrTemprano,
         valorActual: f.ctrTardio,
         cambioPct: redondear(-f.caida, 4),
-        muestra: impresionesDe.get(f.creativo) ?? null,
+        muestra: impresionesDe.get(id(f.cuentaId, f.creativo)) ?? null,
         gravedad: 'media',
         causasPosibles: ['puede deberse a que la audiencia ya vio la pieza', 'puede deberse a más competencia por la misma audiencia'],
         revisionRecomendada: 'Revisa si la pieza necesita una variante: su CTR va en baja dentro de la ventana.',
         umbral: u,
-        evidencia: { ventana: m.ventana, creativo: f.creativo, dias: f.dias, desde: f.desde, hasta: f.hasta, ctrTemprano: f.ctrTemprano, ctrTardio: f.ctrTardio, caida: f.caida },
+        evidencia: { ventana: m.ventana, creativo: f.creativo, ...delCliente(f.cuentaId), dias: f.dias, desde: f.desde, hasta: f.hasta, ctrTemprano: f.ctrTemprano, ctrTardio: f.ctrTardio, caida: f.caida },
       });
     }
   }
@@ -191,16 +217,23 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
     salida.sinMedicion.push(CRE.concentracion);
   } else {
     const u = umbral(CRE.concentracion);
-    const conGasto = m.rendimiento.filas.filter((f) => (f.gasto ?? 0) > 0);
-    const total = conGasto.reduce((s, f) => s + (f.gasto ?? 0), 0);
-    if (conGasto.length >= 3 && total > 0) {
+    /* Sobre el gasto de SU cliente (el nivel 3): «la cuenta» de la regla es la cuenta publicitaria, y cada cliente tiene
+       la suya. Juntas, la pieza que se lleva casi todo el gasto de un cliente chico no se veía al lado del grande. Con un
+       cliente, el gasto de la empresa. */
+    const porCliente = new Map<string, typeof m.rendimiento.filas>();
+    for (const f of m.rendimiento.filas) {
+      if ((f.gasto ?? 0) > 0) porCliente.set(f.cuentaId, [...(porCliente.get(f.cuentaId) ?? []), f]);
+    }
+    for (const [cuentaId, conGasto] of porCliente) {
+      const total = conGasto.reduce((s, f) => s + (f.gasto ?? 0), 0);
+      if (conGasto.length < 3 || total <= 0) continue;
       for (const f of conGasto) {
         const parte = (f.gasto ?? 0) / total;
         if (parte < u.valor) continue;
         salida.detecciones.push({
           ...base,
           regla: CRE.concentracion,
-          entidad: { tipo: 'pieza', id: f.creativo },
+          entidad: { tipo: 'pieza', id: id(f.cuentaId, f.creativo) },
           metrica: 'parte_del_gasto',
           lineaBase: null,
           valorActual: redondear(parte, 4),
@@ -211,7 +244,12 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
           revisionRecomendada: 'Decide con la dirección si la cuenta debe depender tanto de una sola pieza.',
           requiereValidacionEjecutiva: true,
           umbral: u,
-          evidencia: { ventana: m.ventana, total: redondear(total), piezas: conGasto.map((x) => ({ creativo: x.creativo, gasto: redondear(x.gasto ?? 0), parte: redondear((x.gasto ?? 0) / total, 4) })) },
+          evidencia: {
+            ventana: m.ventana,
+            ...delCliente(cuentaId),
+            total: redondear(total),
+            piezas: conGasto.map((x) => ({ creativo: x.creativo, gasto: redondear(x.gasto ?? 0), parte: redondear((x.gasto ?? 0) / total, 4) })),
+          },
         });
       }
     }
@@ -243,7 +281,7 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
           causasPosibles: ['puede deberse a una audiencia chica para el presupuesto', 'puede deberse a un anuncio que corre hace mucho sin cambios'],
           revisionRecomendada: 'Revisa si la audiencia del anuncio se agotó.',
           umbral: u,
-          evidencia: { ventana: m.ventana, anuncio, creativo: x.creativo, frecuencia: redondear(x.frecuencia), impresiones: x.impresiones },
+          evidencia: { ventana: m.ventana, anuncio, creativo: x.creativo, ...delCliente(x.cuentaId), frecuencia: redondear(x.frecuencia), impresiones: x.impresiones },
         });
       }
     }
@@ -253,31 +291,34 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
   // El corte se hace dentro de cada etapa y nunca entre etapas (C3-06): una pieza de captación no compite con
   // una de cierre. El promedio es el de las piezas —«el ICP promedio por pieza es X» (C6-04a)—, no el de los
   // contactos: así lo decía la pantalla hasta el 2026-10-11, y así lo da el agente. La fila sin etapa o sin creativo no
-  // está en ningún promedio.
+  // está en ningún promedio. Y dentro de su CLIENTE (el nivel 3): el puntaje es el campo «Puntaje | ICP» de la subcuenta
+  // de cada uno, y la pantalla compara igual (`agrupar`, `lib/negocio/lecturaDeCreative.ts`).
   if (m.calidad.campoDeIcp === null) {
     salida.sinMedicion.push(CRE.icpPorPieza);
   } else {
     const u = umbral(CRE.icpPorPieza);
-    const porEtapa = new Map<string, typeof m.calidad.filas>();
+    const porEtapa = new Map<string, { etapa: string; filas: typeof m.calidad.filas }>();
     for (const f of m.calidad.filas) {
       // `icpPromedio` llega nulo bajo el piso de calificados: esa pieza no tiene cifra que comparar.
       if (f.creativo === null || f.etapa === null || f.icpPromedio === null) continue;
-      porEtapa.set(f.etapa, [...(porEtapa.get(f.etapa) ?? []), f]);
+      const grupo = `${f.cuentaId}·${f.etapa}`;
+      porEtapa.set(grupo, { etapa: f.etapa, filas: [...(porEtapa.get(grupo)?.filas ?? []), f] });
     }
     // Una pieza puede correr en dos etapas: la huella es de la pieza, así que se publica su caída más grande.
     const porPieza = new Map<string, Deteccion>();
-    for (const [etapa, filas] of porEtapa) {
+    for (const { etapa, filas } of porEtapa.values()) {
       if (filas.length < 2) continue;
       const promedio = filas.reduce((s, f) => s + f.icpPromedio!, 0) / filas.length;
       for (const f of filas) {
         const debajo = promedio - f.icpPromedio!;
         if (debajo < u.valor) continue;
-        const previa = porPieza.get(f.creativo!);
+        const pieza = id(f.cuentaId, f.creativo!);
+        const previa = porPieza.get(pieza);
         if (previa && previa.lineaBase! - previa.valorActual! >= debajo) continue;
-        porPieza.set(f.creativo!, {
+        porPieza.set(pieza, {
           ...base,
           regla: CRE.icpPorPieza,
-          entidad: { tipo: 'pieza', id: f.creativo! },
+          entidad: { tipo: 'pieza', id: pieza },
           metrica: 'icp_promedio',
           lineaBase: redondear(promedio, 1),
           valorActual: redondear(f.icpPromedio!, 1),
@@ -287,7 +328,7 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
           causasPosibles: ['puede deberse al mensaje de la pieza', 'puede deberse a la audiencia donde corre'],
           revisionRecomendada: 'Revisa a quién le habla la pieza: trae gente que encaja menos que las otras de su etapa.',
           umbral: u,
-          evidencia: { ventana: m.ventana, creativo: f.creativo, etapa, icpPromedio: f.icpPromedio, promedioDeLaEtapa: redondear(promedio, 1), piezasDeLaEtapa: filas.length, conPuntaje: f.conPuntaje },
+          evidencia: { ventana: m.ventana, creativo: f.creativo, ...delCliente(f.cuentaId), etapa, icpPromedio: f.icpPromedio, promedioDeLaEtapa: redondear(promedio, 1), piezasDeLaEtapa: filas.length, conPuntaje: f.conPuntaje },
         });
       }
     }

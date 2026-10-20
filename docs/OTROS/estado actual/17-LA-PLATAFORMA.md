@@ -143,21 +143,21 @@ frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:172-
 
 **Cuánto dura una corrida** se midió el 2026-09-28 (horario `*/10`, 93 s de los 180 del presupuesto, ~75 de la única
 empresa con token). **No se volvió a medir**; desde el 2026-10-11 esa misma corrida suma la pasada de hasta 50
-miniaturas (`lib/negocio/miniaturaDelContacto.ts:44`, llamada en `lib/negocio/barrido.ts:1043-1047`).
+miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/barrido.ts:1043-1047`).
 
 ### 2.4 · Las doce tareas
 
 | tarea | módulo | qué hace | llamadas en el último sello de `aria`, 2026-10-18 |
 |---|---|---|---|
 | `sonda` | `lib/deteccion/sonda.ts:103` | busca filas de una organización de control vistas desde la otra | 0 al proveedor; **no deja sello** |
-| `contactos` | `lib/negocio/sincronizar.ts:156` y `lib/negocio/miniaturaDelContacto.ts:158` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
+| `contactos` | `lib/negocio/sincronizar.ts:156` y `lib/negocio/miniaturaDelContacto.ts:159` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
 | `mensajes` | `lib/negocio/ingesta.ts:108` | camina las conversaciones por marca de agua | 1 |
 | `auditoria` | `lib/auditor/analisis.ts:332` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
 | `citas` | `lib/negocio/citas.ts:147` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:75`, `:80`) | 11 |
 | `mejora` | `lib/auditor/buscarMejora.ts:143` | una mejora de prompt por día y por empresa | 1 inferencia |
 | `anuncios` | `lib/negocio/recolectarAnuncios.ts:511` | el costo diario por anuncio y el gasto de toda la cuenta, vía GoHighLevel | 8 |
 | `anuncios_relleno` | `lib/negocio/rellenarAnuncios.ts:206` | busca qué campaña gastó en los días que no cuadran con la cuenta; con todo cuadrado no llama | 0 |
-| `activos` | `lib/negocio/recolectarActivos.ts:184` | la miniatura y el post de cada anuncio, de Meta | `saltada`: sin token de Meta |
+| `activos` | `lib/negocio/recolectarActivos.ts:192` | la miniatura y el post de cada anuncio, de Meta | `saltada`: sin token de Meta |
 | `analizadores` | `lib/analizadores/tarea.ts:75` | descubre, analiza, completa fichas y clasifica objeciones | 2 |
 | `reintentos` | `lib/analizadores/tarea.ts:231` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:207`) | 0 |
 | `senales` | `lib/agentes/detectores/correr.ts:131` | la pasada diaria de los detectores y el Plan de acción de cada departamento | 8 (las redacciones) |
@@ -237,7 +237,7 @@ el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fal
 (`app/api/leads-portal/route.ts:64-65`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
 **comentario de la cabecera** de cada departamento (`lib/agentes/cabecera.ts:126`, `lib/agentes/cabecera.ts:171`,
 `lib/agentes/cabecera.ts:180`), los detectores, que no publican lo que no pueden medir
-(`lib/agentes/detectores/creative.ts:111`, `lib/agentes/detectores/conversion.ts:120`,
+(`lib/agentes/detectores/creative.ts:122`, `lib/agentes/detectores/conversion.ts:120`,
 `lib/agentes/detectores/conversation.ts:90`), y una herramienta del cerebro que lee la frescura de las tareas
 (`lib/agentes/executive/adaptadores/plataforma.ts:58`). **Lo que nadie lee es el motivo del sello**:
 `ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:772`).
@@ -280,7 +280,7 @@ de `public` a `respaldo_aria_brain`. Medido el 2026-10-18: en `public` hay **0**
 base**: la misma revisión del 2026-10-12 dejó permisos de producción por corregir, revisados ese día, con su plan fuera
 del repositorio a propósito.
 
-**Las `aria_cc_*`.** `lib/datos/esquema.ts:2234-2239` tipa seis; en producción hay seis, y no son las mismas:
+**Las `aria_cc_*`.** `lib/datos/esquema.ts:2236-2241` tipa seis; en producción hay seis, y no son las mismas:
 `aria_cc_scraper_mediciones` **sigue sin existir** (`to_regclass` nulo, 2026-10-18) aunque el código la escribe
 (`lib/tools/medicion.ts:65`, `:94`, dentro de un `catch`, `lib/tools/medicion.ts:71-76`), y `aria_cc_icp_oferta`
 existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`). El detalle es de
@@ -621,6 +621,7 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | `ca5fcdc` | — | `093` y los arreglos de dos revisiones del Bloque C: 19 hallazgos de la propia y 34 de los lectores que con dos clientes daban una cifra equivocada |
 | «Nivel 3 · C5 · las rutas manuales traen a cada cliente» | C5 · G4 | sin migración: la Agenda, el tic de la ingesta y «Traer de GoHighLevel» traen a cada cliente activo con su token y en su ámbito; `medir-mensaje` mide por cliente |
 | «Nivel 3 · C5 · Acquisition, Conversation y los detectores del gasto, por cliente (094)» | C5 · G3 | `094`: la entidad `cliente` de las señales y el funnel en la cuenta de su campaña. La atribución por campaña y las campañas de Acquisition dicen su cliente con varios; un cliente que pauta sin su serie frena los costos, y sólo uno con métricas sin serie frena lo que lee Meta; «sin entrega», la concentración, la escala y el gasto sin crecimiento, por cliente; toda señal de campaña dice su cliente; la serie atrasada mira sólo a los activos, y a uno en pausa se le pide la serie hasta su último día cerrado |
+| «Nivel 3 · C5 · la pieza de Creative es (cliente, nombre) (095)» | C5 · G1 | `095`: la clave del link manual pasa a (org, cliente, pieza). La pieza es (cliente, nombre) en la calidad, el rendimiento, la fatiga, la entrega, la miniatura y los activos, con `idDeLaPieza` (el nombre para el principal: las huellas de siempre); con piezas de dos clientes, la tarjeta y la ficha dicen el cliente, «Funciona», la concentración y el ICP comparan dentro de su cliente, y las señales y el cerebro dicen «nombre · cliente», nunca un uuid; la ruta del link valida el cliente con la sesión |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
@@ -635,7 +636,9 @@ rol del inquilino, y antes de la `087`, hacer un alta externa de humo. Después,
 despliegue anterior a C3); y C4. C5 · G4 (las rutas manuales por cliente) no tiene migración y sube con C4 o
 después. C5 · G3: la `094` después de la `093` y antes de desplegar su código (con un segundo cliente, el detector ya
 escribe la entidad `cliente`, que sin la `094` el `check` rechaza); con un solo cliente el código anda igual con o sin
-ella. La foránea de la `094` no puede fallar en producción: cada empresa tiene un solo cliente.
+ella. La foránea de la `094` no puede fallar en producción: cada empresa tiene un solo cliente. C5 · G1: la `095`
+después de la `094` y su código enseguida: entre los dos, «Guardar» el link manual da 42P10 (el `on conflict` de antes
+ya no tiene su único), y lo mismo al revés; es un botón de administración, y producción tiene 0 links.
 
 **El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
 (`app/api/cron/route.ts:230`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los

@@ -49,6 +49,13 @@ medida dentro de su cliente (la concentración, la escala) sigue siendo `campana
 evidencia, y si no viene, el de la campaña, con el criterio de la pantalla de Acquisition. La base tiene el mismo juego
 en su `check` (`senales_entidad_tipo_check`).
 
+`pieza` (el nivel 3, C5 · G1) es (cliente, nombre): su id es `idDeLaPieza` (`lib/negocio/idDeLaPieza.ts`), el nombre
+normalizado si la pieza es del cliente principal —con un solo cliente, siempre: la huella de siempre— y
+`<cuenta>:<nombre>` si es de otro, porque dos clientes comparten la convención de nombres. Con piezas de dos clientes o
+más, Creative mide dentro de cada cliente (la concentración sobre su gasto, el ICP contra su etapa en él) y la evidencia
+nombra al cliente (`cliente`); la pantalla muestra la pieza «nombre · cliente» y el anuncio «Anuncio (Cliente)». Nunca
+un uuid: ni en la tarjeta, ni en el plan, ni en el cerebro.
+
 ## AG-22 · La huella y la reconciliación diaria
 
 - La **huella** es `departamento · regla · entidad_tipo · entidad_id · ventana`.

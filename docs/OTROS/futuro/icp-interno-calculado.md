@@ -60,7 +60,7 @@ que este documento discute es **de quién depende**, no si hoy anda.
   catálogo por «icp», «puntaje» o «score» salen **diez campos**, y **nueve estaban vacíos** en la
   ventana de 14 días medida el 2026-09-16 —entre ellos `Puntaje Final` y `puntaje_encaje_icp`, que por
   el nombre eran candidatos a ser la afinidad que Acquisition necesita—
-  (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:375-397`, `lib/negocio/calidadDelCreativo.ts:54-57`).
+  (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:375-397`, `lib/negocio/calidadDelCreativo.ts:55-58`).
   Buscando solo por «score» o «puntaje» —sin `perfil_icp`— el 2026-09-21 salieron **nueve, con ocho
   vacíos** sobre todos los contactos, y el segundo con datos es `Pre-Score | Meta Lead Ads`, que es
   categórico y no un puntaje (`lib/ghl/contrato.ts:293-295`). Son dos búsquedas distintas en dos
@@ -91,7 +91,7 @@ La base no dice si hay relación.
 
 La consecuencia ya está en el producto: el Leads Portal va a contar esos ceros como «sin calificar»
 (decisión del 2026-09-26), mientras Creative los **promedia** en su ICP por pieza
-(`lib/negocio/calidadDelCreativo.ts:226`). Son dos lecturas del mismo número del CRM, y las dos son
+(`lib/negocio/calidadDelCreativo.ts:235`). Son dos lecturas del mismo número del CRM, y las dos son
 defendibles porque el número no dice cuál es la correcta. Un puntaje propio no tiene ese problema:
 **si Comando Central no lo calculó, vale `null`; si lo calculó, el 0 es un 0.**
 
@@ -363,8 +363,8 @@ y lo natural es que sea **ICP bajo**. Es lo que obliga a que `tramoDelPuntaje` r
 ### LPF-P06 · Qué otras cifras cambian de fuente
 
 `tramosDelIcp` garantiza el Leads Portal y nada más. Creative lee el puntaje del CRM **por su
-cuenta**, por nombre y sin pasar por `contactos.score` (`lib/negocio/calidadDelCreativo.ts:63`,
-`lib/negocio/calidadDelCreativo.ts:142`), y el Perfil del closer muestra `score` como «Calificación»
+cuenta**, por nombre y sin pasar por `contactos.score` (`lib/negocio/calidadDelCreativo.ts:64`,
+`lib/negocio/calidadDelCreativo.ts:148`), y el Perfil del closer muestra `score` como «Calificación»
 (`lib/negocio/ficha.ts:511`). Si cambia la fuente, ¿cambian también ellas? Si no, el mismo lead va a
 tener un ICP en el portal y otro en Creative y en el Closer, y eso se tiene que decir en las tres.
 

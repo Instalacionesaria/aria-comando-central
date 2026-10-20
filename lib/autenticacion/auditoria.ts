@@ -234,6 +234,12 @@ export interface Detalle {
    */
   pieza?: string;
   /**
+   * El cliente de esa pieza (`identidad.cuentas.id`), en `enlace_de_pieza_cargado` y `enlace_de_pieza_borrado` (el
+   * nivel 3): dos clientes de una empresa pueden tener una pieza con el mismo nombre, y sin él las dos dejarían la
+   * misma fila.
+   */
+  cuenta?: string;
+  /**
    * La campaña de Meta, en `funnel_de_campana_asignado` y `funnel_de_campana_quitado`: su
    * identificador, que no es un dato de nadie. Sin él, `funnel` diría qué funnel y no de qué campaña.
    */

@@ -37,7 +37,8 @@ import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
 import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { atribucionDelContacto, contactoPorId } from '../ghl/cliente.ts';
-import { llaveDelCreativo } from './creativo.ts';
+import { clientesDeCreative, llaveDelCreativo } from './creativo.ts';
+import { idDeLaPieza, type ClientesDeCreative } from './idDeLaPieza.ts';
 import { LARGO_MAXIMO_DE_MINIATURA, enlaceDePublicacion, medioPermitido } from './urlExterna.ts';
 
 /** Cuántos contactos se piden, como mucho, en cada pasada. */
@@ -196,11 +197,17 @@ export async function guardarMiniaturas(filas: readonly FilaNueva[]): Promise<vo
  * anuncio, `entregaDeLasPiezas` y el rendimiento). Los contactos que traen la imagen son justo los que entran por un
  * anuncio de Instagram (DM), y ésos llegan SIN UTMs: con el `utmContent` solo, 2 de las 3 imágenes de producción no
  * tenían pieza y la pantalla no mostraba ninguna (medido el 2026-10-15).
+ *
+ * Y DE QUÉ CLIENTE (el nivel 3): el del anuncio, que es donde está su gasto; sin anuncio, el del contacto. La llave del
+ * mapa es la `clave` de la pantalla (`idDeLaPieza`): con un solo cliente, el nombre de siempre. `clientes` es el que ya
+ * leyó la lectura de Creative; sin él, se lee acá.
  */
-export async function miniaturasDeLasPiezas(): Promise<Map<string, string>> {
+export async function miniaturasDeLasPiezas(clientes?: ClientesDeCreative): Promise<Map<string, string>> {
+  const { principal } = clientes ?? (await clientesDeCreative());
   const pieza = sql<string>`coalesce(
     nullif(${llaveDelCreativo('a.nombre')}, ''),
     nullif(${llaveDelCreativo("c.atribucion_primera ->> 'utmContent'")}, ''))`;
+  const cuenta = sql<string>`coalesce(a.cuenta_id, c.cuenta_id)`;
   const imagen = sql<string>`coalesce(m.video_url, m.photo_url)`;
   const filas = await datos()
     .selectFrom('miniaturas_del_contacto as m')
@@ -208,12 +215,13 @@ export async function miniaturasDeLasPiezas(): Promise<Map<string, string>> {
     .leftJoin('anuncios as a', (j) =>
       j.onRef('a.org_id', '=', 'c.org_id').on(sql<boolean>`a.meta_anuncio_id = c.atribucion_primera ->> 'adId'`),
     )
-    .select([pieza.as('pieza'), imagen.as('imagen')])
+    .select([cuenta.as('cuentaId'), pieza.as('pieza'), imagen.as('imagen')])
     .where(sql<boolean>`coalesce(m.video_url, m.photo_url) is not null`)
     .where(sql<boolean>`${pieza} is not null`)
-    .groupBy([pieza, imagen])
+    .groupBy([cuenta, pieza, imagen])
     /* El orden decide cuál gana: la primera permitida de cada pieza. Sin él, la que gana es la que la base devuelva
        primero. */
+    .orderBy(cuenta)
     .orderBy(pieza)
     .orderBy(sql`count(*) desc`)
     .orderBy(sql`max(c.alta_en_el_crm) desc nulls last`)
@@ -221,9 +229,10 @@ export async function miniaturasDeLasPiezas(): Promise<Map<string, string>> {
     .execute();
   const elegidas = new Map<string, string>();
   for (const f of filas) {
-    if (elegidas.has(f.pieza)) continue;
+    const clave = idDeLaPieza(f.cuentaId, f.pieza, principal);
+    if (elegidas.has(clave)) continue;
     if (enlaceDePublicacion(f.imagen, LARGO_MAXIMO_DE_MINIATURA) === null && !medioPermitido(f.imagen, LARGO_MAXIMO_DE_MINIATURA)) continue;
-    elegidas.set(f.pieza, f.imagen);
+    elegidas.set(clave, f.imagen);
   }
   return elegidas;
 }

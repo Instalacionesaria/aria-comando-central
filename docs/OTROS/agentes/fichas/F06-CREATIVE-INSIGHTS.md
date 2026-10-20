@@ -14,7 +14,7 @@
 
 ## Qué lee
 
-Lo mismo que su pantalla, con los mismos argumentos (`lib/negocio/lecturaDeCreative.ts:451-453`, la lectura de la ruta): la calidad, el
+Lo mismo que su pantalla, con los mismos argumentos (`lib/negocio/lecturaDeCreative.ts:538-540`, la lectura de la ruta): la calidad, el
 rendimiento y la fatiga de cada pieza, sobre los mismos días que la pantalla. Esas ventanas llegan hasta hoy
 —`ventanaDeMetricas` y la cohorte de contactos— y no son de días cerrados como las de Acquisition: una señal
 calculada sobre otra ventana diría otra cifra que la que se ve.
@@ -38,8 +38,12 @@ día de cien impresiones el peso de uno de diez mil.
   compara. Una pieza que está baja en dos etapas es **una** señal, la de la caída más grande: la huella es de la
   pieza.
 - **La frecuencia es la única regla semanal**: en 30 días no se mide, ni como señal ni como «sin medición».
-- **La pieza no tiene otro identificador que su nombre normalizado** (`lib/negocio/creativo.ts`); el del anuncio
-  es el de Meta, y su nombre se resuelve al mostrar (`lib/agentes/senales/lectura.ts`).
+- **La pieza es (cliente, nombre)** (el nivel 3, C5 · G1): su identificador es `idDeLaPieza`
+  (`lib/negocio/idDeLaPieza.ts`), el nombre normalizado si es del principal —con un cliente, siempre— y
+  `<cuenta>:<nombre>` si es de otro; el del anuncio es el de Meta, y los nombres se resuelven al mostrar
+  (`lib/agentes/senales/lectura.ts`). Con piezas de dos clientes o más, la concentración es sobre el gasto de SU
+  cliente, el ICP se compara con su etapa EN SU cliente, la evidencia nombra al cliente y la señal se muestra
+  «nombre · cliente» (el anuncio, «Anuncio (Cliente)»).
 - **Lo que no se puede medir no se publica**: sin la lectura de anuncios al día (`frescuraDe('anuncios')`), la
   caída del CTR, la concentración y la frecuencia van a «sin medición»; sin el campo de ICP en el CRM, el ICP
   por pieza.

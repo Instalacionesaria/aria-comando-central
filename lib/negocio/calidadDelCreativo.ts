@@ -44,6 +44,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { campoPorNombre, valorDelCampo, type CampoDelCrm } from './camposDelCrm.ts';
 import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
+import { llaveInterna } from './idDeLaPieza.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
 import { UMBRAL_ALTO } from './tramosDelIcp.ts';
@@ -68,6 +69,11 @@ export interface FilaDeCreativo {
   /** El nombre de la pieza, normalizado. `null` = el contacto no trae creativo. */
   creativo: string | null;
   /**
+   * El cliente de los contactos (el nivel 3): la pieza es (cliente, creativo), y «sin creativo» es un grupo por cliente.
+   * El nombre de su `utmContent` se cruza sólo con los anuncios de SU cliente.
+   */
+  cuentaId: string;
+  /**
    * La etapa del embudo, leída del nombre de campaña. `null` = no se pudo leer.
    *
    * **No se fuerza a ninguna rama**: lo que no trae un segmento reconocible cae acá y se cuenta
@@ -90,7 +96,7 @@ export interface FilaDeCreativo {
   /** `null` bajo el piso. Nunca cero: sin base no hay tasa. */
   tasaDeAgenda: number | null;
   /**
-   * En cuántos anuncios de Meta corre esta pieza. `0` = el nombre no cruza contra
+   * En cuántos anuncios de Meta DE SU CLIENTE corre esta pieza. `0` = el nombre no cruza contra
    * `negocio.anuncios`.
    *
    * No es decoración: es la única mitigación honesta de que dos piezas distintas con el mismo
@@ -190,16 +196,18 @@ async function anunciosPorNombre(): Promise<Map<string, number>> {
   const filas = await datos()
     .selectFrom('anuncios')
     .select([
+      'cuenta_id',
       llaveDelCreativo('nombre').as('n'),
       sql<number>`count(*)`.as('c'),
     ])
     /* Sobre la llave y no sobre el nombre crudo: un nombre de sólo espacios normaliza a vacío
        y contaría como una pieza más. */
     .where(sql<boolean>`${llaveDelCreativo('nombre')} <> ''`)
-    .groupBy(sql`1`)
+    // Por cliente (el nivel 3): el «hook 1» de otro cliente es otra pieza, y sus anuncios no son de ésta.
+    .groupBy(['cuenta_id', llaveDelCreativo('nombre')])
     .execute();
 
-  return new Map(filas.map((f) => [f.n, Number(f.c ?? 0)]));
+  return new Map(filas.map((f) => [llaveInterna(f.cuenta_id, f.n), Number(f.c ?? 0)]));
 }
 
 async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promise<FilaDeCreativo[]> {
@@ -219,6 +227,7 @@ async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promis
   const filas = await datos()
     .selectFrom('contactos')
     .select([
+      'contactos.cuenta_id as cuentaId',
       llave.as('creativo'),
       etapaDelNombre("contactos.atribucion_primera ->> 'campaign'").as('etapa'),
       sql<number>`count(*)`.as('contactos'),
@@ -239,7 +248,7 @@ async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promis
     .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
     /* Se agrupa por la EXPRESIÓN y no por un alias: PostgreSQL no admite alias en `group by` con
        subconsultas correlacionadas de por medio. */
-    .groupBy([llave, etapaDelNombre("contactos.atribucion_primera ->> 'campaign'")])
+    .groupBy(['contactos.cuenta_id', llave, etapaDelNombre("contactos.atribucion_primera ->> 'campaign'")])
     .execute();
 
   return filas
@@ -249,6 +258,7 @@ async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promis
       const conPuntaje = Number(f.conPuntaje ?? 0);
       return {
         creativo: f.creativo,
+        cuentaId: f.cuentaId,
         etapa: f.etapa,
         contactos,
         conPuntaje,
@@ -259,7 +269,7 @@ async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promis
         calificados: Number(f.calificados ?? 0),
         agendaron,
         tasaDeAgenda: contactos >= PISO_DE_UNA_TASA ? agendaron / contactos : null,
-        anunciosDeMeta: f.creativo === null ? 0 : (anuncios.get(f.creativo) ?? 0),
+        anunciosDeMeta: f.creativo === null ? 0 : (anuncios.get(llaveInterna(f.cuentaId, f.creativo)) ?? 0),
       };
     })
     /* Por volumen, que es un hecho. No por tasa: ordenar por una cifra que la mayoría de las filas
@@ -324,6 +334,9 @@ async function congeladasDeLaVentana(dias: number): Promise<number> {
  *
  * Los términos viajan y no sólo la proporción: una proporción sola se lee como precisión y el par
  * dice de cuántos habla.
+ *
+ * Y el cruce es con un anuncio de SU cliente (el nivel 3): un nombre que sólo existe en otro cliente es un
+ * renombre o una prueba de este, no un cruce.
  */
 async function coberturaDelPuente(
   dias: number,
@@ -337,7 +350,8 @@ async function coberturaDelPuente(
       sql<number>`count(*) filter (where ${llave} is null)`.as('sinNombre'),
       sql<number>`count(*) filter (where exists (
         select 1 from negocio.anuncios a
-         where a.org_id = contactos.org_id and ${llaveDelCreativo('a.nombre')} = ${llave}))`.as('con'),
+         where a.org_id = contactos.org_id and a.cuenta_id = contactos.cuenta_id
+           and ${llaveDelCreativo('a.nombre')} = ${llave}))`.as('con'),
     ])
     .where(sql<boolean>`contactos.alta_en_el_crm >= (current_date - make_interval(days => ${dias} - 1))`)
     .executeTakeFirst();

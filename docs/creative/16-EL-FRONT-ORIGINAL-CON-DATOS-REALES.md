@@ -24,7 +24,7 @@
 **Por qué contra la etapa.** Con un solo promedio, la pieza BOFU —la que habla con quien ya conoce la oferta— levanta
 la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volumen en la medición de septiembre
 (`03-LA-BIBLIOTECA.md`, `C3-05`). La etapa sale del nombre de la campaña (`etapaDelNombre`,
-`lib/negocio/creativo.ts:70`), como ya hacían la pantalla anterior y el detector (`CRE-ICP-POR-PIEZA`).
+`lib/negocio/creativo.ts:79`), como ya hacían la pantalla anterior y el detector (`CRE-ICP-POR-PIEZA`).
 
 ---
 
@@ -35,12 +35,12 @@ la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volume
 | lugar del prototipo | dato | fuente | estado |
 |---|---|---|---|
 | Encabezado: «Creative», «Qué funciona, qué no, y por qué», «Plan de acción», el segmentado | el título, la bajada, el plan real del detector y los cuatro períodos | `BotonDelPlan`, `lib/negocio/periodo.ts` | real |
-| Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:137`) más el tramo | real |
+| Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:143`) más el tramo | real |
 | Tira: Agendas | contactos que agendaron | `calidadDelCreativo` | real |
-| Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:322`) | real |
-| Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:146`) | «—» |
+| Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:325`) | real |
+| Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:147`) | «—» |
 | Tira: Alcance | **impresiones** (desvío) | `rendimientoDelCreativo` | real |
-| Tira: Frecuencia | impresiones sobre alcance, pesada por impresiones | `metricas_de_anuncio`, como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:129`) | real |
+| Tira: Frecuencia | impresiones sobre alcance, pesada por impresiones | `metricas_de_anuncio`, como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:141`) | real |
 | Barra «Ordenar por» | Calificados, Agendas, Hook rate, Impresiones | el servidor | real |
 | Grupos «Funciona» / «No funciona» | contra el promedio de la etapa | el servidor | real |
 | Tarjeta: miniatura | `videoUrl` de la primera atribución | `negocio.miniaturas_del_contacto`, completada con `GET /contacts/{id}` | real desde CF-1 |
@@ -156,7 +156,7 @@ segmentado con los cuatro períodos del sistema, sin «Personalizado» ni la cla
 **Qué es** · Hoy · 7 días · 30 días · Completo, con 30 días por omisión. Creative cuenta días del calendario anclados a
 `current_date`, **con hoy incluido** (`ventanaDeMetricas`): no son días cerrados como los de Acquisition. Toda tasa lleva su
 piso: 10 clics al enlace para el click-to-landing (`PISO_DE_UNA_TASA`) o 1000 impresiones
-(`PISO_DE_IMPRESIONES`, `lib/negocio/rendimientoDelCreativo.ts:69`). Bajo el piso, «—» con su frase.
+(`PISO_DE_IMPRESIONES`, `lib/negocio/rendimientoDelCreativo.ts:70`). Bajo el piso, «—» con su frase.
 
 **Estado** · Construido el 2026-10-11 (CF-1): `sobreImpresiones` de `lib/negocio/lecturaDeCreative.ts`.
 
@@ -177,9 +177,9 @@ Frecuencia. Las dos primeras son sumas; Hook rate y Frecuencia, el promedio pesa
 de los promedios; Retención, «—». La celda del criterio de orden elegido lleva la marca `.hi` del prototipo.
 
 **Fórmula** · Calificados: los contactos de la pieza con `tramoDelPuntaje` alto, sobre el mismo puntaje que lee
-`calidadDelCreativo` (el campo «Puntaje | ICP», `CAMPO_DE_ICP`, `lib/negocio/calidadDelCreativo.ts:63`). Hook rate: la
+`calidadDelCreativo` (el campo «Puntaje | ICP», `CAMPO_DE_ICP`, `lib/negocio/calidadDelCreativo.ts:64`). Hook rate: la
 suma de `videoView` sobre la suma de impresiones de los anuncio-días con la clave. Frecuencia: impresiones sobre
-alcance, pesada por impresiones como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:129-150`).
+alcance, pesada por impresiones como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:141-166`).
 
 **Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
 
@@ -203,7 +203,7 @@ mayor a menor.
 para las tasas, y el simple para los conteos. Una etapa con una sola pieza con valor no tiene contra quién compararse: la pieza va
 a «Funciona» con la línea «Única de su etapa.» —frase de CF1-02, la respuesta por defecto de `CF1-P03`—.
 
-**Estado** · Construido el 2026-10-11 (CF-1): `agrupar`, en `lib/negocio/lecturaDeCreative.ts`, arma los dos grupos de cada criterio con su promedio por etapa y las piezas únicas de su etapa.
+**Estado** · Construido el 2026-10-11 (CF-1): `agrupar`, en `lib/negocio/lecturaDeCreative.ts`, arma los dos grupos de cada criterio con su promedio por etapa y las piezas únicas de su etapa. **Desde el nivel 3** (C5 · G1, en local), con piezas de dos clientes o más cada pieza se compara con las de su etapa EN SU CLIENTE —como la señal del ICP—, y la única es la única de su etapa en su cliente; `promediosPorCliente` trae esos promedios y `promedioPorEtapa` queda como el de todas. Con un cliente, lo de siempre.
 
 ### CF1-09 · La tarjeta de pieza
 
@@ -212,11 +212,11 @@ nombre de la pieza; la etiqueta de la etapa; las seis métricas de la tira, por 
 cuando la fatiga tiene veredicto y la pieza está fatigada. Al tocarla se abre la ficha.
 
 **Fórmula** · «Entregando»: la pieza tuvo impresiones en alguno de los últimos 3 días. La fatiga sale de
-`fatigaDelCreativo` (`lib/negocio/fatigaDelCreativo.ts:131`): `fatigado === true`. En la tarjeta, una cifra en «—» lleva su
+`fatigaDelCreativo` (`lib/negocio/fatigaDelCreativo.ts:133`): `fatigado === true`. En la tarjeta, una cifra en «—» lleva su
 frase en el `title` y no debajo: la celda mide 50 px, como en el prototipo, y la línea no entra; la ficha la dibuja
 debajo.
 
-**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
+**Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`. **Desde el nivel 3** (C5 · G1, en local), la pieza es (cliente, nombre): se dibuja su `nombre`, y con piezas de dos clientes o más el cliente va en una línea propia debajo, con puntos suspensivos —en la fila de las etiquetas lo recortaban la etapa y «Única de su etapa.»—; el `title` del nombre dice «nombre · cliente». Con un cliente, la tarjeta es la de siempre.
 
 ### CF1-10 · La ficha de la pieza
 
@@ -225,11 +225,11 @@ secciones:
 
 | sección | qué lleva |
 |---|---|
-| La pieza | la miniatura grande, «Ver en Facebook/Instagram» si hay `videoUrl` o enlace manual, y el editor del enlace manual de hoy |
-| Qué es | Etapa, Estado, Anuncios, Primer día con entrega, Último día con entrega, Pieza; Formato, Ángulo, Duración y Dolor en «—» |
+| La pieza | la miniatura grande, «Ver en Facebook/Instagram» si hay `videoUrl` o enlace manual, y el editor del enlace manual de hoy (desde el nivel 3, el de la pieza en su cliente, y sólo en un cliente que la sesión ve) |
+| Qué es | Etapa, Estado, Anuncios, Primer día con entrega, Último día con entrega, Pieza (y Cliente, con piezas de dos clientes o más); Formato, Ángulo, Duración y Dolor en «—» |
 | Datos de la pieza | las seis de la tira, más el gasto, el CTR, el link CTR, la landing y el click-to-landing |
 | Retención y guion | «—» con «GoHighLevel no lo entrega.» |
-| Los anuncios | los anuncios de la pieza, por impresiones (`anunciosDeLaPieza`, `lib/negocio/rendimientoDelCreativo.ts:267`) |
+| Los anuncios | los anuncios de la pieza, por impresiones (`anunciosDeLaPieza`, `lib/negocio/rendimientoDelCreativo.ts:270`) |
 
 Conserva lo que la ficha anterior ya resolvía: el portal en `document.body`, el foco y Escape
 (`components/creative/FichaDelCreativo.jsx`). Desde CF-4, además, el foco vuelve a la tarjeta al cerrar, el tabulador no

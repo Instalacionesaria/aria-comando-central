@@ -47,6 +47,7 @@ import { datos } from '../datos/contexto.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { costoDelAnuncio, ventanaDeMetricas } from './costoDelAnuncio.ts';
 import { llaveDelCreativo } from './creativo.ts';
+import { llaveInterna } from './idDeLaPieza.ts';
 
 /**
  * Cuántas impresiones hacen falta antes de publicar una tasa cuyo denominador son impresiones.
@@ -198,6 +199,8 @@ export interface TasaDeAccion {
 export interface FilaDeRendimiento {
   /** El nombre de la pieza, normalizado. La misma llave que `calidadDelCreativo`. */
   creativo: string;
+  /** El cliente de sus anuncios (el nivel 3): la pieza es (cliente, creativo). */
+  cuentaId: string;
   /** En cuántos anuncios corre. Medido: 21 de 32 piezas corren en más de uno, hasta seis. */
   anuncios: number;
 
@@ -328,9 +331,9 @@ export async function rendimientoDelCreativo(
     primerDiaConDesglose(dias),
   ]);
 
-  /* Las filas de Acquisition, agrupadas por el nombre de la pieza. Acá NO hay riesgo de grano: sus
-     filas ya vienen una por anuncio, y varios anuncios de la misma pieza se suman — que es
-     exactamente lo que el departamento existe para hacer. */
+  /* Las filas de Acquisition, agrupadas por la pieza: su cliente y su nombre (el nivel 3). Acá NO hay riesgo
+     de grano: sus filas ya vienen una por anuncio, y varios anuncios de la misma pieza se suman — que es
+     exactamente lo que el departamento existe para hacer. Los de dos clientes con el mismo nombre, no. */
   const porPieza = new Map<string, FilaDeRendimiento>();
 
   for (const f of costo.filas) {
@@ -341,7 +344,8 @@ export async function rendimientoDelCreativo(
        gasto es real y tiene que seguir sumando el total de la pantalla. */
     const creativo = f.creativo === '' ? PIEZA_SIN_NOMBRE : f.creativo;
 
-    const acc = porPieza.get(creativo) ?? nuevaFila(creativo);
+    const llave = llaveInterna(f.cuentaId, creativo);
+    const acc = porPieza.get(llave) ?? nuevaFila(f.cuentaId, creativo);
     acc.anuncios += 1;
     acc.gasto = suma(acc.gasto, f.gasto);
     acc.impresiones = suma(acc.impresiones, f.impresiones);
@@ -354,7 +358,7 @@ export async function rendimientoDelCreativo(
     });
     /* `f.diasConEntrega` NO se acumula acá: es el predicado del gasto y el grano del anuncio. Los
        días de la pieza los pone `volcarElDesglose` desde la consulta del desglose. Ver el campo. */
-    porPieza.set(creativo, acc);
+    porPieza.set(llave, acc);
   }
 
   for (const fila of porPieza.values()) {
@@ -381,7 +385,7 @@ export async function rendimientoDelCreativo(
         ? redondear((clics / impresiones) * 100, 3)
         : null;
 
-    const d = desglose.get(fila.creativo);
+    const d = desglose.get(llaveInterna(fila.cuentaId, fila.creativo));
     if (d) volcarElDesglose(fila, d);
 
     fila.anunciosDeLaPieza.sort(
@@ -404,7 +408,7 @@ export async function rendimientoDelCreativo(
   };
 }
 
-function nuevaFila(creativo: string): FilaDeRendimiento {
+function nuevaFila(cuentaId: string, creativo: string): FilaDeRendimiento {
   const vacia = (): TasaDeAccion => ({
     cantidad: null,
     tasa: null,
@@ -413,6 +417,7 @@ function nuevaFila(creativo: string): FilaDeRendimiento {
   });
   return {
     creativo,
+    cuentaId,
     anuncios: 0,
     gasto: null,
     impresiones: null,
@@ -480,6 +485,7 @@ async function desglosePorCreativo(dias: number): Promise<Map<string, DesgloseDe
       j.onRef('a.org_id', '=', 'm.org_id').onRef('a.meta_anuncio_id', '=', 'm.meta_anuncio_id'),
     )
     .select([
+      'a.cuenta_id as cuentaId',
       llave.as('creativo'),
       /* El denominador de la COBERTURA: días con impresiones, no con gasto. Son distintos —un día
          puede entregar con gasto nulo— y el que corresponde acá es el de las impresiones, porque es
@@ -506,7 +512,8 @@ async function desglosePorCreativo(dias: number): Promise<Map<string, DesgloseDe
        desglose quedaría huérfano y la pieza saldría con gasto y sin ninguna tasa. Es la misma
        familia de defecto que la normalización doble que `creativo.ts` cierra. */
     .where(sql<boolean>`${llaveDelCreativo('a.nombre')} <> ''`)
-    .groupBy(llave)
+    // Por cliente (el nivel 3), como el gasto: el desglose de una pieza es el de los anuncios de SU cliente.
+    .groupBy(['a.cuenta_id', llave])
     .execute();
 
   const salida = new Map<string, DesgloseDeUnaPieza>();
@@ -521,7 +528,7 @@ async function desglosePorCreativo(dias: number): Promise<Map<string, DesgloseDe
         dias: dias_,
       });
     }
-    salida.set(f.creativo, {
+    salida.set(llaveInterna(f.cuentaId, f.creativo), {
       anuncioDias: Number(f.anuncioDias ?? 0),
       dias: Number(f.dias ?? 0),
       porClave,

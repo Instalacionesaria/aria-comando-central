@@ -104,8 +104,10 @@ test('la frecuencia se pesa por impresiones, sólo con los días que la traen y 
   await unDia(esc.otraOrg, id, 1, 50000, 9);
 
   const m = await medir('7d');
+  // El anuncio sin cliente cae en el principal (el puente), y la frecuencia lo dice: es la pieza de ese cliente.
+  const { rows } = await esc.admin.query<{ id: string }>(`select id from identidad.cuentas where org_id = $1 and es_por_omision`, [esc.org]);
   // (2 · 1.000 + 5 · 3.000) / 4.000 = 4,25; el promedio simple diría 3,5.
-  assert.deepEqual(m.frecuencias?.get(id), { frecuencia: 4.25, impresiones: 4000, creativo: 'pieza pesada' });
+  assert.deepEqual(m.frecuencias?.get(id), { frecuencia: 4.25, impresiones: 4000, creativo: 'pieza pesada', cuentaId: rows[0]!.id });
 });
 
 test('en 30 días la frecuencia no se mide: la regla es semanal', async () => {

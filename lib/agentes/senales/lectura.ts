@@ -4,14 +4,18 @@
 // La entidad viaja como identificador y el nombre de una campaña o de un anuncio se resuelve acá, al mostrar
 // (A6-05), por `negocio.campanas` y `negocio.anuncios`; el de un cliente (el nivel 3), por `identidad.cuentas`. Con
 // campañas de más de un cliente, una campaña se muestra «Campaña (Cliente)»: el de la evidencia si se midió dentro de
-// su cliente, y si no el suyo. Una pieza no tiene otro identificador que su nombre normalizado
-// (`lib/negocio/creativo.ts`), así que ése es su nombre. El rótulo de un funnel lo pone la pantalla, que ya lo tiene.
+// su cliente, y si no el suyo. Una pieza se nombra por su nombre normalizado, sin el id de su cliente que lleva su
+// identificador cuando no es del principal (`lib/negocio/idDeLaPieza.ts`): «nombre · cliente» cuando la evidencia nombra
+// al cliente —el detector lo hace con piezas de dos clientes o más, como la pantalla—, y si no su nombre. Lo mismo un
+// anuncio: «Anuncio (Cliente)» con la evidencia. Nunca un uuid. El rótulo de un funnel lo pone la pantalla, que ya lo
+// tiene.
 // Lo que no tiene nombre —un conjunto, una campaña que GoHighLevel no listó— viaja sin él y la pantalla dibuja el
 // identificador.
 
 import { datos } from '../../datos/contexto.ts';
 import { NOMBRE_DEL_AGENTE } from '../../auditor/vista.ts';
 import { clienteDeCadaCampana } from '../../negocio/embudosDeAcquisition.ts';
+import { nombreDeLaPieza, rotuloDeLaPieza } from '../../negocio/idDeLaPieza.ts';
 import { ROTULOS, type Familia } from '../../negocio/recorrido.ts';
 import { CATALOGO_DE_REGLAS, umbralesFirmados, umbralVigente } from './umbrales.ts';
 import type { DepartamentoConSenales, Deteccion, Gravedad, VentanaDeSenal } from './tipos.ts';
@@ -64,8 +68,8 @@ export async function senalesDeLaPantalla(
      TODA señal de campaña se nombra «Campaña (Cliente)» —sin entrega, el costo por lead, el ICP—, no sólo la que se
      midió dentro de su cliente; dos campañas homónimas de dos clientes no se distinguen por el nombre. Con uno, vacío. */
   const clienteDeLaCampana = filas.some((f) => f.entidad_tipo === 'campana') ? await clienteDeCadaCampana() : new Map<string, string>();
-  /* Los clientes (el nivel 3): la entidad de lo que es de toda una cuenta publicitaria con varios, y el de cada campaña.
-     Las pantallas de señales abren la empresa entera, así que se ven todos. */
+  /* Los clientes (el nivel 3): la entidad de lo que es de toda una cuenta publicitaria con varios, el de cada campaña y
+     el de lo que se midió dentro de un cliente. Las pantallas de señales abren la empresa entera, así que se ven todos. */
   const clientes =
     clienteDeLaCampana.size > 0 || filas.some((f) => f.entidad_tipo === 'cliente' || clienteDeLaEvidencia(f.evidencia) !== null)
       ? new Map((await datos().selectFrom('cuentas').select(['id', 'nombre']).execute()).map((c) => [c.id, c.nombre]))
@@ -178,7 +182,8 @@ function nombreDe(
   clientes: ReadonlyMap<string, string>,
   /**
    * El cliente de una campaña: el de la evidencia, si se midió dentro de su cliente, o el suyo cuando las campañas son
-   * de más de uno. Una campaña con cliente se nombra «Campaña (Cliente)».
+   * de más de uno. Una campaña con cliente se nombra «Campaña (Cliente)». El de una pieza o un anuncio, el de la
+   * evidencia: Creative lo nombra con piezas de dos clientes o más.
    */
   delCliente: string | null,
 ): string | null {
@@ -192,10 +197,16 @@ function nombreDe(
     case 'cliente':
       // Un cliente (el nivel 3), por su nombre en identidad: la entidad es su id de `identidad.cuentas`.
       return clientes.get(entidad.id) ?? null;
-    case 'anuncio':
-      return anuncios.get(entidad.id) ?? null;
-    case 'pieza':
-      return entidad.id;
+    case 'anuncio': {
+      const nombre = anuncios.get(entidad.id) ?? null;
+      const cliente = delCliente === null ? undefined : clientes.get(delCliente);
+      // Sin cliente —con un solo cliente siempre—, el nombre de siempre.
+      return cliente === undefined ? nombre : `${nombre ?? `Anuncio ${entidad.id}`} (${cliente})`;
+    }
+    case 'pieza': {
+      // Su nombre, sin el id del cliente que lleva cuando no es del principal; con el de la evidencia, «nombre · cliente».
+      return rotuloDeLaPieza(nombreDeLaPieza(entidad.id), delCliente === null ? null : (clientes.get(delCliente) ?? null));
+    }
     case 'familia_de_entrada':
       // La familia por su rótulo de pantalla (Conversion): «Landing con VSL», no `landing`.
       return ROTULOS[entidad.id as Familia]?.titulo ?? entidad.id;

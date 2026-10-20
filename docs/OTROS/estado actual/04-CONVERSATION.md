@@ -199,7 +199,7 @@ porciones del ICP lo llevan sobre el total de quienes agendaron (`lib/negocio/le
 sentimiento sobre los juzgados (`lib/negocio/lecturaDeConversation.ts:155-164`). El piso se aplica en la lectura, no
 en las funciones, que comparten otras pantallas.
 
-**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:123`) con las
+**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:125`) con las
 señales que trae la ruta (`components/conversation/PanelDeConversation.jsx:141`): el plan de la pasada de la mañana,
 de 7 días con «7 días» y de 30 con los otros tres (`app/api/auditoria/route.ts:76`). El detector tiene una sola regla,
 `CONV-PATRON-ABIERTO` (`lib/agentes/detectores/conversation.ts:36-49`): traduce los hallazgos abiertos del auditor,

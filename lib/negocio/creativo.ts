@@ -27,9 +27,18 @@
 // Medido el 2026-09-19 sobre los 79 anuncios: cero con tabulaciones, cero con espacio duro, cero con
 // espacios al borde. **No muerde hoy**, y por eso se arregla hoy: el defecto que todavía no ocurrió
 // es el único que se puede arreglar sin datos que corregir.
+//
+// ── LA PIEZA ES (CLIENTE, NOMBRE) (el nivel 3) ──────────────────────────────
+//
+// Esta llave es la del NOMBRE. La pieza es además de un cliente: dos clientes de una empresa comparten la convención
+// de nombres, y su «hook 1» son dos piezas. El identificador que suma el cliente vive en `./idDeLaPieza.ts`, que es
+// puro para que el navegador lo lea; acá queda lo que lee la base para armarlo, `clientesDeCreative`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
+
+import { datos } from '../datos/contexto.ts';
+import type { ClientesDeCreative } from './idDeLaPieza.ts';
 
 /**
  * El nombre de una pieza, normalizado. **La única definición del departamento.**
@@ -91,4 +100,16 @@ export function etapaDelNombre(columna: string) {
       from unnest(string_to_array(upper(coalesce(${sql.raw(columna)}, '')), '|')) e
      where btrim(e) in (${lista})
      limit 1)`;
+}
+
+/**
+ * Los clientes de la empresa y cuál es el principal, para el identificador de las piezas (`./idDeLaPieza.ts`). Corre
+ * dentro de `conOrganizacion`, como `frescura.ts`: con la empresa entera ve a todos, también a los de baja, cuyas
+ * piezas siguen en la historia. Con el foco en un cliente que no es el principal (el cerebro desde la caja de Sales),
+ * la base no deja ver al principal: `principal` sale nulo, todo identificador lleva su cliente, y lo que se dice va con
+ * el rótulo, que no lo lleva.
+ */
+export async function clientesDeCreative(): Promise<ClientesDeCreative> {
+  const filas = await datos().selectFrom('cuentas').select(['id', 'nombre', 'es_por_omision']).execute();
+  return { principal: filas.find((f) => f.es_por_omision)?.id ?? null, nombres: new Map(filas.map((f) => [f.id, f.nombre])) };
 }

@@ -25,11 +25,14 @@ import type { FilaDeRendimiento } from '../../lib/negocio/rendimientoDelCreativo
 import type { FatigaDeUnCreativo } from '../../lib/negocio/fatigaDelCreativo.ts';
 import type { Deteccion } from '../../lib/agentes/senales/tipos.ts';
 
-const pieza = (creativo: string, gasto: number, impresiones = 5000) => ({ creativo, gasto, impresiones }) as FilaDeRendimiento;
+/** El cliente de todas las filas: una empresa con un solo cliente, su principal (el nivel 3). Con dos, la 287. */
+const P = 'P';
+
+const pieza = (creativo: string, gasto: number, impresiones = 5000) => ({ creativo, cuentaId: P, gasto, impresiones }) as FilaDeRendimiento;
 const fatiga = (creativo: string, caida: number | null, fatigado: boolean | null = caida === null ? null : caida >= 0.2) =>
-  ({ creativo, dias: 20, desde: '2026-09-10', hasta: '2026-10-04', ctrTemprano: 2.76, ctrTardio: 1.98, caida, fatigado, motivo: null, porque: null }) as FatigaDeUnCreativo;
+  ({ creativo, cuentaId: P, dias: 20, desde: '2026-09-10', hasta: '2026-10-04', ctrTemprano: 2.76, ctrTardio: 1.98, caida, fatigado, motivo: null, porque: null }) as FatigaDeUnCreativo;
 const calidad = (creativo: string | null, etapa: FilaDeCreativo['etapa'], icpPromedio: number | null, conPuntaje = 20) =>
-  ({ creativo, etapa, icpPromedio, conPuntaje, contactos: conPuntaje }) as FilaDeCreativo;
+  ({ creativo, cuentaId: P, etapa, icpPromedio, conPuntaje, contactos: conPuntaje }) as FilaDeCreativo;
 
 function medida(e: Partial<{
   ventana: '7d' | '30d';
@@ -48,7 +51,8 @@ function medida(e: Partial<{
     calidad: { filas: e.calidad ?? [], campoDeIcp: e.campoDeIcp === undefined ? 'campo-icp' : e.campoDeIcp },
     rendimiento: { filas: e.rendimiento ?? [] },
     fatiga: { filas: e.fatiga ?? [] },
-    frecuencias: ventana === '7d' ? new Map((e.frecuencias ?? []).map(([id, frecuencia, impresiones]) => [id, { frecuencia, impresiones, creativo: 'pieza' }])) : null,
+    principal: P,
+    frecuencias: ventana === '7d' ? new Map((e.frecuencias ?? []).map(([id, frecuencia, impresiones]) => [id, { frecuencia, impresiones, creativo: 'pieza', cuentaId: P }])) : null,
     anunciosAlDia: e.anunciosAlDia ?? true,
     gastoCuadra: e.gastoCuadra ?? true,
   };
