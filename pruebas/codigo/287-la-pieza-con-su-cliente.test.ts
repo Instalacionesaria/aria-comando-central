@@ -11,12 +11,14 @@
 //   · `armarCreative` con un cliente: la clave es el nombre y la pieza no dice cliente; con dos, cada pieza con sus
 //     cifras, su link, su miniatura y su cliente — mutación: los mapas por nombre;
 //   · «Funciona» con dos clientes es contra su etapa EN SU CLIENTE, como la señal del ICP — mutación: contra la etapa
-//     de todos; y el cliente sólo se dibuja con piezas de dos clientes en la lectura;
+//     de todos; y el cliente sólo se dibuja con piezas de dos clientes en la lectura; un empate y las sin valor van
+//     por (nombre, cliente) — mutación: ordenar por la clave;
 //   · el detector: la concentración dentro de cada cliente y el ICP por (cliente, etapa), con la evidencia y la frase
 //     que lo dicen — mutaciones: la concentración y el ICP sobre todos;
 //   · el cerebro no lee ningún uuid — mutación: la clave de la pantalla tal cual;
-//   · la fuente: la ruta valida el cliente con la sesión, el escritor y el borrado van por cliente, la `095` arma la
-//     clave nueva, el navegador manda el cliente y nombra la pieza sin el uuid, con el módulo puro.
+//   · la fuente: la ruta valida el cliente con la sesión y nombra al cliente en el 404 sólo si ve más de uno, el
+//     escritor y el borrado van por cliente, la `095` arma la clave nueva, el navegador manda el cliente y nombra la
+//     pieza sin el uuid, con el módulo puro.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -168,6 +170,15 @@ test('con dos clientes, «Funciona» es contra la etapa EN SU CLIENTE, como la s
   );
 });
 
+test('en los dos grupos, un empate y las sin valor van por (nombre, cliente), no por la clave', () => {
+  /* Las dos «a» tienen 2 agendas: empatan, y van por nombre y, entre homónimas, por cliente. Por la clave, la de Y —que
+     empieza con los dígitos de su id— quedaba delante de la del principal, y con ella todas las de Y. */
+  const g = armarCreative(entrada({ entrega: [...entrada().entrega, entrega({ pieza: 'c', cuentaId: Y, impresiones: 1000 })] })).criterios.agendas;
+  assert.deepEqual(g.funciona, ['a', `${Y}:a`]);
+  // Sin contactos, sin valor: la «b» de P y la «c» de Y, al final y por nombre.
+  assert.deepEqual(g.noFunciona, ['b', `${Y}:c`]);
+});
+
 test('el cerebro nunca lee un uuid: la clave y los criterios van con el rótulo', () => {
   const c = pantallaParaElCerebro(armarCreative(entrada()));
   assert.doesNotMatch(JSON.stringify(c), UUID);
@@ -265,8 +276,11 @@ test('la ruta del link: el cliente es uno de los que ve la sesión, y sin decirl
   assert.match(ruta, /guardarEnlace\(\{ cuentaId, pieza, url \}, autorDelCambio\(contexto\)\)/);
   assert.match(ruta, /borrarEnlace\(\{ cuentaId, pieza \}\)/);
   assert.equal(ruta.match(/detalle: \{ enlace: url, pieza, cuenta: cuentaId \}/g)?.length, 2, 'una de las dos auditorías no dice el cliente');
-  // El motivo de siempre, sin el cliente: con un solo cliente la respuesta no cambia.
+  /* El motivo de siempre, salvo que el pedido diga el cliente Y la sesión vea más de uno: el navegador lo manda siempre,
+     y con un solo cliente la respuesta no cambia (la 178 lo mira en la base). */
   assert.match(ruta, /sin_pieza: 'Esa pieza no corresponde a ningún anuncio de la empresa\.',/);
+  assert.match(ruta, /MOTIVOS\[dijoElCliente && contexto\.cuentas\.visibles\.length > 1 \? 'sin_pieza_del_cliente' : 'sin_pieza'\]/);
+  assert.match(ruta, /const sinPieza = motivoSinPieza\(contexto, c\?\.cuentaId\);/);
 });
 
 test('el escritor del link y la 095: la clave es (org, cliente, pieza), y la pieza existe en SU cliente', () => {

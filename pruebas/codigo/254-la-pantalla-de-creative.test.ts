@@ -18,7 +18,8 @@
 //     cambiar una, o intercambiar dos;
 //   · las etapas, los estados y los criterios son los del servidor — mutación: sacar uno;
 //   · la miniatura no manda el `referrer`, carga perezosa y, si falla, cae al fondo — mutación: sacar una de las tres;
-//   · la ficha es el cajón del prototipo, en un portal, con sus secciones en orden — mutación: mover una;
+//   · la ficha es el cajón del prototipo, en un portal, con sus secciones en orden — mutación: mover una; y la ficha
+//     y la tarjeta dicen el nombre y el cliente, nunca la `clave` (el nivel 3) — mutación: dibujar la clave;
 //   · no vuelven «Personalizado», la clave `mes`, la curva, el guion ni los nombres de la maqueta;
 //   · la carga: la última lectura gana, la recarga no pisa a la primera y la primera se apaga;
 //   · se multiplica por 100 en un solo lugar, y el panel no divide ni ordena;
@@ -221,6 +222,8 @@ test('la tarjeta es la `cc` del prototipo: el estado, el nombre, la etapa y las 
   assert.match(tarjeta, /const rotulo = rotuloDeLaPieza\(pieza\.nombre, pieza\.cliente\);/);
   assert.match(tarjeta, /<div className="cc-name" title=\{rotulo\}>\s*\{pieza\.nombre\}/);
   assert.match(tarjeta, /\{pieza\.cliente \? \(\s*<div className="cr-cliente" title=\{pieza\.cliente\}>\s*\{pieza\.cliente\}\s*<\/div>\s*\) : null\}/, 'el cliente no tiene su línea');
+  assert.match(tarjeta, /aria-label=\{`Pieza \$\{rotulo\}`\}/, 'el lector de pantalla no oye el cliente de la pieza');
+  assert.doesNotMatch(tarjeta, /\{pieza\.clave\}/, 'la tarjeta dibuja la clave, que en la pieza de otro cliente es su uuid');
   assert.match(tarjeta, /<div className="cc-qual">\s*<span className="tag fmt">\{ETAPA\[pieza\.etapa\]\}<\/span>\s*\{unica \? <span className="tag ang">\{FRASE\.unica\}<\/span> : null\}/, 'la etiqueta no es la etapa (CF1-02), o la única no se marca');
   assert.match(tarjeta, /\{o\(cifra\.valor, formato\)\}/, 'la celda no dibuja con el formato de su cifra');
   assert.match(tarjeta, /<div className=\{i < 2 \? 'pm' : undefined\}/, 'las dos de resultado no van resaltadas, como en el prototipo');
@@ -292,6 +295,18 @@ test('la ficha es el cajón del prototipo: en un portal, con sus secciones en or
   const f = funcion(ficha(), 'FichaDelCreativo');
   assert.match(f, /createPortal\([\s\S]*document\.body,\s*\);/, 'la ficha no se monta en `document.body`');
   assert.match(f, /<aside className="drawer on cr-ficha" ref=\{cajon\} role="dialog" aria-modal="true"/);
+  /* La pieza es (cliente, nombre) (el nivel 3): la ficha dibuja el nombre y, con piezas de dos clientes, el cliente, en
+     la cabecera y en «Qué es». La `clave` no se dibuja en ningún lado: en la pieza de otro cliente es `<uuid>:<nombre>`. */
+  assert.match(f, /aria-label=\{`Pieza \$\{rotuloDeLaPieza\(pieza\.nombre, pieza\.cliente\)\}`\}>/, 'el cajón no se anuncia con el rótulo de la pieza');
+  assert.match(f, /<h3 className="cr-titulo">\{pieza\.nombre\}<\/h3>/, 'el título de la ficha no es el nombre de la pieza');
+  assert.match(
+    f,
+    /<div className="m">\{`\$\{ESTADO\[pieza\.estado\]\} · \$\{ETAPA\[pieza\.etapa\]\}\$\{pieza\.cliente \? ` · \$\{pieza\.cliente\}` : ''\}`\}<\/div>/,
+    'la cabecera no dice el cliente',
+  );
+  assert.match(f, /<Caja rotulo="Pieza" valor=\{pieza\.nombre\} ancha \/>/, '«Qué es» no dice el nombre de la pieza');
+  assert.match(f, /\{pieza\.cliente \? <Caja rotulo="Cliente" valor=\{pieza\.cliente\} ancha \/> : null\}/, '«Qué es» no dice el cliente');
+  assert.doesNotMatch(ficha(), /pieza\.clave/, 'la ficha usa la clave, que en la pieza de otro cliente es su uuid');
   assert.match(f, /if \(e\.key === 'Escape' && e\.target\?\.tagName !== 'INPUT'\) alCerrarRef\.current\(\);/, 'Escape no cierra la ficha, o la cierra escribiendo el link');
   assert.match(f, /document\.addEventListener\('keydown', alTeclear\);/, 'la ficha no escucha el teclado');
   assert.match(f, /const origen = document\.activeElement;[\s\S]*if \(origen instanceof HTMLElement && origen\.isConnected\) origen\.focus\(\);/, 'al cerrar, el foco no vuelve a la tarjeta');

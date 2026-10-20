@@ -160,7 +160,7 @@ foco entra al abrirla, vuelve a la tarjeta al cerrarla, no sale del cajón con e
 del link no cierra (`components/creative/FichaDelCreativo.jsx:55-78`). El editor del link se dibuja con
 `puedeConfigurarComisiones` (`components/creative/PanelDeCreative.jsx:185`), que la sesión arma con
 `credenciales.editar` (`app/api/auth/sesion/route.ts:142`), lo mismo que pide el servidor
-(`app/api/creative/enlace/route.ts:82`).
+(`app/api/creative/enlace/route.ts:89`).
 
 **La miniatura, y de dónde sale** (CF1-11, CF1-12, C15-08). Por pieza manda **Meta**: la miniatura vigente y el post
 leídos con el token de la empresa, y sólo si Meta no tiene, la de los contactos
@@ -210,11 +210,11 @@ orden: el token, la cuenta publicitaria y la lectura de los últimos 25 anuncios
 (`lib/negocio/lecturaDeCreative.ts:53-60`), cada uno con su frase (`components/creative/comun.jsx:26-34`), más el «—»
 mismo, la miniatura, la fatiga, el grupo vacío, la única de su etapa, la primera carga y el fallo: catorce frases en
 `FRASE` (`components/creative/comun.jsx:8-23`), las mismas de la tabla de CF1-02, y
-`pruebas/codigo/254-la-pantalla-de-creative.test.ts:230` exige que coincidan en las dos direcciones. Un cero es un cero
+`pruebas/codigo/254-la-pantalla-de-creative.test.ts:233` exige que coincidan en las dos direcciones. Un cero es un cero
 medido. Una tasa chica lleva un decimal debajo del 10 % (`components/creative/comun.jsx:86-89`). No se dibujan la
 cobertura del puente nombre↔anuncio, los avisos, las ventanas de cada fuente ni la lista de lo que no se puede medir
 (CF1-05): viajan en la respuesta y en las herramientas del cerebro, y
-`pruebas/codigo/254-la-pantalla-de-creative.test.ts:388` vigila que no vuelvan.
+`pruebas/codigo/254-la-pantalla-de-creative.test.ts:403` vigila que no vuelvan.
 
 **Los desvíos de rótulo**, declarados en CF1-02: «Impresiones» por «Alcance», porque el alcance diario no se suma;
 «Entregando» / «Sin entrega» por «Activo» / «Pausado», porque no se sabe si alguien la pausó; la etapa en lugar de las
@@ -306,7 +306,7 @@ El click-to-landing está en la ficha; el ICP promedio y la tasa de agenda, en `
 regla del ICP del detector; la cobertura y los huecos, en la respuesta. «Sin creativo» —los contactos sin nombre de
 pieza— era una fila de la tabla de gente y hoy no se dibuja (riesgo 10).
 
-**Ningún nombre de la maqueta se copió** (CF1-17): `pruebas/codigo/254-la-pantalla-de-creative.test.ts:337` lee del
+**Ningún nombre de la maqueta se copió** (CF1-17): `pruebas/codigo/254-la-pantalla-de-creative.test.ts:352` lee del
 prototipo los nombres, formatos, ángulos y dolores de las ocho piezas y exige que ninguno aparezca en la vista, el
 panel, la ficha, `comun.jsx` ni la miniatura. Los nombres que dibuja la pantalla son de anuncios reales, que son de
 piezas y no de personas; esta foto no los copia.

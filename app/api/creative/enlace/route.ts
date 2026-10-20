@@ -50,7 +50,7 @@ const MOTIVOS = {
     'vista previa que comparte el Administrador de anuncios—.',
   largo: 'La pieza o el link son demasiado largos.',
   sin_pieza: 'Esa pieza no corresponde a ningún anuncio de la empresa.',
-  // El de un pedido que dijo el cliente (el nivel 3): con uno solo, el de arriba sigue siendo el de siempre.
+  // El de un pedido que dijo el cliente cuando la sesión ve dos o más (el nivel 3): con uno solo, el de arriba.
   sin_pieza_del_cliente: 'Esa pieza no corresponde a ningún anuncio de ese cliente.',
   no_estaba: 'Esa pieza no tenía link.',
 } as const;
@@ -70,8 +70,15 @@ function clienteDe(contexto: Contexto, pedido: unknown): string | null {
   return typeof pedido === 'string' && contexto.cuentas.visibles.some((c) => c.id === pedido) ? pedido : null;
 }
 
-/** Si el pedido dijo de qué cliente es la pieza: con él, el motivo nombra al cliente. */
-const dijoElCliente = (pedido: unknown) => pedido !== undefined && pedido !== null && pedido !== '';
+/**
+ * El motivo de una pieza que no está: nombra al cliente sólo si el pedido lo dijo Y la sesión ve más de uno. El
+ * navegador manda el cliente siempre, también en una empresa de un solo cliente: con mirar sólo el pedido, ahí el
+ * «…de la empresa.» de siempre se volvía «…de ese cliente.» (la revisión de G1).
+ */
+function motivoSinPieza(contexto: Contexto, pedido: unknown): string {
+  const dijoElCliente = pedido !== undefined && pedido !== null && pedido !== '';
+  return MOTIVOS[dijoElCliente && contexto.cuentas.visibles.length > 1 ? 'sin_pieza_del_cliente' : 'sin_pieza'];
+}
 
 /**
  * Carga o reemplaza el link de una pieza. Cuerpo: `{ cuentaId?, pieza, url }`.
@@ -94,7 +101,7 @@ export async function PUT(peticion: Request): Promise<Response> {
   const url = typeof c?.url === 'string' ? c.url.trim() : '';
   if (url === '') return rechazo('peticion_invalida', MOTIVOS['falta_url']);
   if (url.length > LARGO_MAXIMO_DE_URL) return rechazo('peticion_invalida', MOTIVOS['largo']);
-  const sinPieza = MOTIVOS[dijoElCliente(c?.cuentaId) ? 'sin_pieza_del_cliente' : 'sin_pieza'];
+  const sinPieza = motivoSinPieza(contexto, c?.cuentaId);
   const cuentaId = clienteDe(contexto, c?.cuentaId);
   if (cuentaId === null) return rechazo('no_encontrado', sinPieza);
 

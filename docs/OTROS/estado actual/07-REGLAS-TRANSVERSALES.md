@@ -1383,9 +1383,11 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/agentes/senales/lectura.ts:206`, `lib/agentes/senales/lectura.ts:200`). El cerebro nunca lee un uuid: la clave
   y los criterios viajan con el rótulo (`lib/agentes/executive/adaptadores/creative.ts:30`). El link manual es de
   (cliente, pieza) (`db/migraciones/095_la_pieza_es_de_un_cliente.sql:32`): la ruta valida el cliente contra los que ve
-  la sesión y, sin decirlo, usa el principal (`app/api/creative/enlace/route.ts:68`). Esto cierra la concentración de
-  Creative; «sin entrega» la cerró G3. Lo exigen `pruebas/base/286-la-pieza-es-de-un-cliente.test.ts:233` y
-  `pruebas/codigo/287-la-pieza-con-su-cliente.test.ts:46`.
+  la sesión y, sin decirlo, usa el principal (`app/api/creative/enlace/route.ts:68`); el 404 nombra al cliente sólo
+  si el pedido lo dice y la sesión ve más de uno (`app/api/creative/enlace/route.ts:80`): el navegador lo manda
+  siempre, y con un solo cliente el motivo es el de siempre (`pruebas/base/178-enlace-de-la-pieza.test.ts:178`). Esto
+  cierra la concentración de Creative; «sin entrega» la cerró G3. Lo exigen
+  `pruebas/base/286-la-pieza-es-de-un-cliente.test.ts:233` y `pruebas/codigo/287-la-pieza-con-su-cliente.test.ts:48`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): el vínculo de un
   closer con su usuario del CRM es uno por persona y se elige entre los usuarios del principal; en el detector de
   Acquisition, el ICP y la fuga entre etapas comparan contra el

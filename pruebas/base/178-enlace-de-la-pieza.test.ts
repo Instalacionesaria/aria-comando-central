@@ -8,7 +8,8 @@
 //
 //   · quien administra lo carga y queda auditado — mutación: no auditar;
 //   · el rol `usuario` NO lo carga, aunque tenga la pestaña — mutación: pedir `tablero.ver`;
-//   · una pieza que no es de la empresa da 404 — mutación: saltear `existeLaPieza`;
+//   · una pieza que no es de la empresa da 404 — mutación: saltear `existeLaPieza`; y con un solo cliente su motivo es
+//     el de siempre aunque el pedido diga el cliente — mutación: elegirlo sólo por el pedido (la revisión de G1);
 //   · la base rechaza una pieza sin normalizar y un link sin `https://` — mutación: quitar el `check`;
 //   · un link guardado que hoy no pasa la validación no viaja — mutación: no filtrar en la lectura.
 //   · dos borrados a la vez auditan uno solo — mutación: volver al `select` seguido de `delete` que
@@ -173,6 +174,18 @@ test('una pieza que no es de la empresa da 404, igual que una que no existe', as
   }
   // Y el nombre sin normalizar tampoco es la pieza: la llave es la de la base, no la que llega.
   assert.equal((await cargar(esc.token, { pieza: NOMBRE, url: URL_BUENA })).status, 404);
+
+  /* El navegador del nivel 3 manda SIEMPRE el cliente de la pieza, también en esta empresa, que tiene uno solo: el
+     motivo tiene que ser el de siempre, no el que nombra al cliente. Mutación: elegirlo sólo por el pedido. */
+  const { rows: cuentas } = await esc.admin.query<{ id: string; es_por_omision: boolean }>(
+    'select id, es_por_omision from identidad.cuentas where org_id = $1',
+    [esc.org],
+  );
+  assert.deepEqual(cuentas.map((c) => c.es_por_omision), [true], 'la empresa del sembrado ya no tiene un solo cliente');
+  for (const cuerpo of [{ cuentaId: cuentas[0]!.id }, {}]) {
+    const r = await leerRespuesta<{ detalle: string }>(await cargar(esc.token, { ...cuerpo, pieza: `no existe ${MARCA}`, url: URL_BUENA }));
+    assert.deepEqual([r.estado, r.cuerpo.detalle], [404, 'Esa pieza no corresponde a ningún anuncio de la empresa.'], JSON.stringify(cuerpo));
+  }
 });
 
 test('un link que no es de Facebook o Instagram, o que no es https, se rechaza con su motivo', async () => {
