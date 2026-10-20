@@ -13,11 +13,14 @@
 //   · «mío» son los pares, en los cinco cortes (la fila, la Agenda, el cockpit, la cabecera y el Brief) — mutaciones:
 //     el corte por el usuario del CRM solo, el alcance con un solo vínculo, cualquier sitio que vuelva al id suelto;
 //   · la tabla de Sales pone cada cita en la fila de su par — mutaciones: agrupar o mapear por el usuario solo;
-//   · con el foco en un cliente se publican sus vínculos y el alcance usa todos: quien trabaja en otro cliente tiene
-//     su aviso y no ve lo de los demás; el cliente final, sólo los suyos — mutaciones: sin el cruce con las cuentas, el
-//     alcance con los de la vista, sin el aviso propio;
-//   · el tope cuenta personas, el usuario repetido se mide dentro del cliente y quitar saca de todos — mutaciones: el
-//     conteo por filas, la comprobación de toda la empresa, el borrado sólo en el principal;
+//   · con el foco en un cliente se publican sus vínculos —en la lista y en la tabla de Sales— y el alcance usa todos:
+//     quien trabaja en otro cliente tiene su aviso y no ve lo de los demás; el cliente final, sólo los suyos; y quien
+//     no está vinculado en ninguno no sale como «en otro cliente» — mutaciones: sin el cruce con las cuentas, el
+//     alcance con los de la vista, sin el aviso propio, Sales publica todos los vínculos, «otro cliente» sin mirar si
+//     tiene alguno;
+//   · el tope cuenta personas, el usuario repetido se mide dentro del cliente, sin cliente no se escribe y quitar saca
+//     de todos — mutaciones: el conteo por filas, la comprobación de toda la empresa, sin el `throw` del cliente, el
+//     borrado sólo en el principal;
 //   · la ruta guarda en el cliente pedido, sin cliente en el principal, y uno ajeno o dado de baja es 404 —
 //     mutaciones: la ruta no pasa el cliente, no lo valida, acepta uno de baja, el escritor lo deja al puente;
 //   · la ficha del lead dice el closer de SU par — mutación: buscar por el usuario del CRM solo.
@@ -298,6 +301,9 @@ test('con el foco en un cliente se publican sus vínculos y el alcance usa todos
   const fila = (u: string) => conFoco.tabla.filas.find((f) => f.usuarioId === u)!;
   assert.equal(fila(z).citas, null, 'con el foco en P, Z tiene citas de cero en vez de no tener eje');
   assert.equal(fila(x).citas, 2);
+  // Lo que publica Sales (`/api/sales` devuelve estas filas enteras): sólo los vínculos a la vista.
+  assert.deepEqual(fila(z).vinculos, [], 'con el foco en P, Sales publicó el vínculo de Z en Y');
+  assert.deepEqual(fila(x).vinculos, [{ cuentaId: p, crmUsuarioId: 'uP' }]);
   assert.match(fila(z).aviso ?? '', /vinculado en otro cliente/, 'quien trabaja en otro cliente sale como «sin vincular»');
   assert.doesNotMatch(fila(x).aviso ?? '', /otro cliente/);
   // El alcance usa TODOS sus vínculos: con el foco en P, Z no ve nada (sus contactos son de Y), no todo.
@@ -305,10 +311,34 @@ test('con el foco en un cliente se publican sus vínculos y el alcance usa todos
   assert.deepEqual(conFoco.filasDeZ, [], 'con el foco en P, Z —vinculado sólo en Y— ve los leads de los demás');
   assert.deepEqual(ids(conFoco.filasDeX), de('c1'));
 
-  const deY = await conOrganizacion(clienteFinal(y), () => closersDeLaEmpresa());
-  assert.deepEqual(deY.map((f) => f.nombre), ['Closer 1', 'Closer 2']);
-  assert.ok(deY.every((f) => f.vinculosALaVista.every((vin) => vin.cuentaId === y)), 'el cliente final de Y vio un vínculo de P');
-  assert.deepEqual(deY.find((f) => f.usuarioId === x)!.vinculosALaVista, [{ cuentaId: y, crmUsuarioId: 'uY' }]);
+  const deY = await conOrganizacion(clienteFinal(y), async () => ({ closers: await closersDeLaEmpresa(), tabla: await cierrePorCloser(14) }));
+  assert.deepEqual(deY.closers.map((f) => f.nombre), ['Closer 1', 'Closer 2']);
+  assert.ok(deY.closers.every((f) => f.vinculosALaVista.every((vin) => vin.cuentaId === y)), 'el cliente final de Y vio un vínculo de P');
+  assert.deepEqual(deY.closers.find((f) => f.usuarioId === x)!.vinculosALaVista, [{ cuentaId: y, crmUsuarioId: 'uY' }]);
+  /* Y lo que le llega por Sales: la cuenta P y el usuario del CRM de X en P no son de este cliente. X está vinculado en
+     los dos, así que una tabla que publique todos los vínculos se lo da. */
+  assert.equal(deY.tabla.filas.length, 2);
+  assert.ok(
+    deY.tabla.filas.every((f) => f.vinculos.every((vin) => vin.cuentaId === y)),
+    'Sales le publicó al cliente final de Y un vínculo de P',
+  );
+  assert.deepEqual(deY.tabla.filas.find((f) => f.usuarioId === x)!.vinculos, [{ cuentaId: y, crmUsuarioId: 'uY' }]);
+});
+
+test('quien no está vinculado en ningún cliente tiene el aviso de sin vincular, no el de otro cliente', async () => {
+  try {
+    await conOrganizacion(deTodos(), async () => assert.equal(await asignarCloser(w, null, jefe, p), null));
+    for (const [ambito, cual] of [[deTodos(), 'la organización entera'], [foco(p), 'el foco en P']] as const) {
+      const t = await conOrganizacion(ambito, () => cierrePorCloser(14));
+      const deW = t.filas.find((f) => f.usuarioId === w);
+      assert.ok(deW, `con ${cual}, W no tiene fila`);
+      assert.equal(deW.citas, null);
+      assert.match(deW.aviso ?? '', /no está vinculado a un usuario del CRM/, `con ${cual}, W no tiene el aviso de sin vincular`);
+      assert.doesNotMatch(deW.aviso ?? '', /otro cliente/, `con ${cual}, quien no está vinculado en ninguno salió como vinculado en otro`);
+    }
+  } finally {
+    await vincularBase();
+  }
 });
 
 test('el tope cuenta personas, no filas', async () => {
@@ -338,6 +368,24 @@ test('el usuario del CRM repetido se mide dentro del cliente', async () => {
     assert.equal(r.enP, null, 'el mismo id en otra subcuenta es otro usuario');
     const deW = (await admin.query(`select cuenta_id, crm_usuario_id from negocio.closer_asignado where org_id = $1 and usuario_id = $2`, [org, w])).rows;
     assert.deepEqual(deW, [{ cuenta_id: p, crm_usuario_id: 'uY' }], 'el vínculo no quedó en el cliente que se pidió');
+  } finally {
+    await vincularBase();
+  }
+});
+
+test('sin el cliente, asignar falla ruidoso y no escribe en el principal', async () => {
+  /* Una llamada de antes de la `096`, de tres argumentos: sin el `throw`, el insert sin `cuenta_id` toma el del puente
+     y vincula en el principal sin que nadie lo haya pedido. */
+  try {
+    await assert.rejects(
+      conOrganizacion(deTodos(), () => asignarCloser(w, 'uW', jefe, undefined as never)),
+      /falta el cliente/,
+    );
+    assert.equal(
+      (await admin.query(`select 1 from negocio.closer_asignado where org_id = $1 and usuario_id = $2`, [org, w])).rowCount,
+      0,
+      'sin el cliente se escribió una fila',
+    );
   } finally {
     await vincularBase();
   }

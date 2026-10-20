@@ -283,7 +283,10 @@ test('un closer designado y SIN vincular tiene el eje del CRM en `null`, no en c
   assert.equal(f.tasaDeCancelacion, null);
   /* El eje NUESTRO sí existe siempre: lo que registró esta persona se sabe sin pasar por el CRM. */
   assert.equal(f.intentos, 0, 'el eje propio no depende del vínculo y no puede ser nulo');
-  assert.match(f.aviso ?? '', /vinculad/i);
+  /* El texto propio y no `/vinculad/`, que también casa con el aviso de quien está vinculado en otro cliente: con un
+     solo cliente ese aviso no puede salir nunca, y mandaría a buscar un vínculo que no existe. */
+  assert.match(f.aviso ?? '', /no está vinculado a un usuario del CRM/);
+  assert.doesNotMatch(f.aviso ?? '', /otro cliente/, 'con un solo cliente, quien no está vinculado salió como vinculado en otro');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

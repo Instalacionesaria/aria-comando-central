@@ -1410,8 +1410,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`components/closer/QuienEsElCloser.jsx:309`), pide los usuarios del CRM del cliente elegido con un turno que descarta
   la respuesta de uno anterior (`components/closer/QuienEsElCloser.jsx:144`) y pasa el cliente a `guardar` como
   argumento (`components/closer/QuienEsElCloser.jsx:373`). Con un solo cliente, todo como siempre. Lo exigen
-  `pruebas/base/288-el-closer-en-cada-cliente.test.ts:234`, `pruebas/base/288-el-closer-en-cada-cliente.test.ts:280`,
-  `pruebas/base/288-el-closer-en-cada-cliente.test.ts:356` y
+  `pruebas/base/288-el-closer-en-cada-cliente.test.ts:237`, `pruebas/base/288-el-closer-en-cada-cliente.test.ts:283`,
+  `pruebas/base/288-el-closer-en-cada-cliente.test.ts:404` y
   `pruebas/codigo/289-el-vinculo-del-closer-por-cliente.test.ts:30`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): en el detector de
   Acquisition, el ICP y la fuga entre etapas comparan contra el
@@ -1441,9 +1441,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   hasta que alguien lo vincule ahí (al dar de alta un cliente, se revisan los vínculos de sus closers); con el foco en
   un cliente, la celda de quien trabaja en otro dice «Sin vínculo con el CRM» (la fila sí lo explica); en la base, la
   política de la `093` deja leer el `crm_usuario_id` de los otros clientes desde el ámbito de uno (la aplicación
-  publica sólo los de la vista), y `/api/sales` devuelve el `usuarioId` de cada closer también al cliente final; y el
-  corte por par no calza entero con el índice `contactos_por_asignado` (org_id, territorio, crm_asignado_a), sin efecto
-  con los volúmenes de hoy. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene efecto; con él, se
+  publica sólo los de la vista), y `/api/sales` devuelve también al cliente final, de cada closer, el `usuarioId` y
+  los vínculos a la vista (`cuentaId` y `crmUsuarioId`, sólo los de su cliente; antes de G2 viajaba el `crmUsuarioId`
+  suelto); y el corte por par no calza entero con el índice `contactos_por_asignado` (org_id, territorio,
+  crm_asignado_a), sin efecto con los volúmenes de hoy. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene efecto; con él, se
   mira su pantalla antes de activarlo, con su Conexión cargada.
 
 ---
