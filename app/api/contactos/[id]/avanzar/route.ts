@@ -48,7 +48,7 @@ import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
 import type { Territorio } from '../../../../../lib/datos/esquema.ts';
-import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../../lib/credenciales/resolver.ts';
+import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE } from '../../../../../lib/credenciales/resolver.ts';
 import {
   etiquetasDelResultado,
   etiquetasDelResultadoDelSetter,
@@ -555,7 +555,9 @@ async function avisarAlCrm(
 
   const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, orgId, cliente));
   if (acceso.tipo === 'falta') {
-    return { avisado: false, etiquetas: [], porque: TEXTO_DE_FALTA_GHL[acceso.que] };
+    // La de otro cliente se carga en su Conexión: con el texto de la empresa, iría a Ajustes › Credenciales.
+    const textos = cliente !== 'la_de_la_empresa' && !cliente.esPorOmision ? TEXTO_DE_FALTA_GHL_DEL_CLIENTE : TEXTO_DE_FALTA_GHL;
+    return { avisado: false, etiquetas: [], porque: textos[acceso.que] };
   }
 
   /* Se copia porque `ponerEtiquetas` pide un arreglo mutable y `etiquetasDelResultado` devuelve

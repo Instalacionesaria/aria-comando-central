@@ -113,7 +113,8 @@ export function aCsv(filas: readonly LeadGuardado[]): string {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export type ResultadoDeEnvio =
-  | { tipo: 'ok'; enviados: number; etiqueta: string }
+  /** `cliente`: el nombre del cliente al que se subieron, sólo cuando la empresa tiene más de uno activo. */
+  | { tipo: 'ok'; enviados: number; etiqueta: string; cliente: string | null }
   | { tipo: 'fallo'; mensaje: string };
 
 /**
@@ -121,18 +122,22 @@ export type ResultadoDeEnvio =
  *
  * Se mandan **identificadores y nada más**: los datos los lee el servidor de la base, filtrados
  * por la organización de la sesión. Ni el token ni el Location ID viajan por acá — ya viven
- * cifrados en las credenciales de la organización. Ver `app/api/tools/leads/enviar/route.ts`.
+ * cifrados en las credenciales del cliente elegido. Ver `app/api/tools/leads/enviar/route.ts`.
+ *
+ * `cuentaId` es el cliente de destino (el nivel 3). Sin él, el principal: con un solo cliente, el
+ * pedido de siempre, sin el campo.
  */
 export async function enviarLeadsAlCrm(
   ids: readonly string[],
   etiqueta: string,
+  cuentaId: string | null = null,
 ): Promise<ResultadoDeEnvio> {
-  const r = await pedir<{ enviados: number; etiqueta: string }>(`${RUTA}/enviar`, {
+  const r = await pedir<{ enviados: number; etiqueta: string; cliente?: string }>(`${RUTA}/enviar`, {
     metodo: 'POST',
-    cuerpo: { ids, etiqueta },
+    cuerpo: cuentaId ? { ids, etiqueta, cuentaId } : { ids, etiqueta },
   });
   if (r.tipo === 'datos') {
-    return { tipo: 'ok', enviados: r.datos.enviados, etiqueta: r.datos.etiqueta };
+    return { tipo: 'ok', enviados: r.datos.enviados, etiqueta: r.datos.etiqueta, cliente: r.datos.cliente ?? null };
   }
   if (r.tipo === 'rechazado') {
     return { tipo: 'fallo', mensaje: r.detalle || 'No se pudieron subir los leads.' };

@@ -28,7 +28,7 @@ import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
-import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../../lib/credenciales/resolver.ts';
+import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE } from '../../../../../lib/credenciales/resolver.ts';
 import {
   enviarMensaje,
   TIPO_DEL_CANAL,
@@ -141,7 +141,9 @@ export async function POST(
 
   const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, contexto.orgEfectiva, cliente ?? 'la_de_la_empresa'));
   if (acceso.tipo === 'falta') {
-    return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);
+    // La de otro cliente se carga en su Conexión: con el texto de la empresa, iría a Ajustes › Credenciales.
+    const textos = cliente && !cliente.esPorOmision ? TEXTO_DE_FALTA_GHL_DEL_CLIENTE : TEXTO_DE_FALTA_GHL;
+    return rechazo('credenciales_incompletas', textos[acceso.que]);
   }
 
   // ── PASO 2 · mandar. ──────────────────────────────────────────────────────

@@ -7,20 +7,29 @@
 // EL NAVEGADOR MANDA IDENTIFICADORES, NO LEADS
 //
 // La versión de ARIA-brain mandaba **los leads enteros** desde el navegador, junto con el token
-// de HighLevel que el alumno pegaba en un formulario. Acá se manda `{ ids, etiqueta }` y nada
-// más, y la diferencia no es de prolijidad:
+// de HighLevel que el alumno pegaba en un formulario. Acá se manda `{ ids, etiqueta, cuentaId? }`
+// y nada más, y la diferencia no es de prolijidad:
 //
 //   1. **Los datos salen de la base, filtrados por RLS.** Un `id` que no sea de esta
 //      organización simplemente no devuelve fila, así que no hay forma de subir al CRM de una
 //      empresa un lead que no le pertenece — ni por error de código ni a propósito.
 //
-//   2. **El token nunca pasa por el navegador.** Sale cifrado de
-//      `organizaciones_credenciales`, se descifra del lado del servidor y se usa. En ARIA-brain
-//      el alumno lo pegaba en cada sesión y viajaba en cada envío.
+//   2. **El token nunca pasa por el navegador.** Sale cifrado de las credenciales del cliente
+//      elegido —el principal, las de la empresa; los demás, las suyas—, se descifra del lado del
+//      servidor y se usa. En ARIA-brain el alumno lo pegaba en cada sesión y viajaba en cada envío.
 //
 //   3. **El contenido no se puede falsear.** Con los leads llegando del cliente, cualquiera con
 //      la consola abierta podía inyectar contactos inventados en el CRM de su propia empresa.
 //      Suena menor hasta que alguien lo usa para meter mil filas basura.
+//
+// ── A QUÉ CLIENTE VA (el nivel 3) ────────────────────────────────────────────
+//
+// Al que dice el pedido (`cuentaId`), si es uno ACTIVO de la empresa; sin decirlo, al principal,
+// que con un solo cliente es el único y es lo de siempre. No es el foco: Tools es de la empresa
+// entera (la cabecera dice «Toda la empresa»), y que el foco eligiera el destino decidiría en
+// silencio una escritura irreversible al CRM de otro negocio. Tampoco es «el cliente del lead»:
+// un lead scrapeado no es un contacto del CRM y no tiene cliente. La pantalla muestra el selector
+// con más de un cliente activo, y la respuesta nombra al cliente sólo entonces.
 //
 // ── POR QUÉ EL TOKEN YA ESTABA Y NO HIZO FALTA UNA COLUMNA NUEVA ────────────
 //
@@ -42,12 +51,15 @@
 
 import { exigir } from '../../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
+import { clientesQueTrae, type ClienteQueSeTrae } from '../../../../../lib/autorizacion/ambito.ts';
+import type { Contexto } from '../../../../../lib/autorizacion/sesion.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
 import { pedirExterno } from '../../../../../lib/http/cliente.ts';
 import {
   resolverAccesoAGhl,
   TEXTO_DE_FALTA_GHL,
+  TEXTO_DE_FALTA_GHL_DEL_CLIENTE,
 } from '../../../../../lib/credenciales/resolver.ts';
 
 export const PANTALLA = 'tools';
@@ -73,6 +85,24 @@ function webhook(): string | null {
   return url && url.trim().length > 0 ? url.trim() : null;
 }
 
+/**
+ * El cliente del envío, entre los ACTIVOS de la empresa (`clientesQueTrae`, el principal primero): el del pedido o,
+ * sin decirlo, el principal. Sin tocar la base: la lista es la de la sesión. Uno de otra empresa, de baja o que no es
+ * un id es `'ajeno'` —el mismo 404 que uno que no existe (`ADR-0501`)—; uno en pausa, `'en_pausa'`, porque nadie lo
+ * mira y su subcuenta puede ya no ser nuestra.
+ */
+function clienteDelEnvio(
+  contexto: Contexto,
+  activos: readonly ClienteQueSeTrae[],
+  pedido: unknown,
+): ClienteQueSeTrae | 'en_pausa' | 'ajeno' {
+  if (pedido === undefined || pedido === null || pedido === '') return activos.find((c) => c.esPorOmision) ?? 'ajeno';
+  if (typeof pedido !== 'string') return 'ajeno';
+  const activo = activos.find((c) => c.id === pedido);
+  if (activo) return activo;
+  return contexto.cuentas.visibles.some((c) => c.id === pedido) ? 'en_pausa' : 'ajeno';
+}
+
 export async function POST(peticion: Request): Promise<Response> {
   // `tools.editar` y no `tools.ver`: esto escribe en un sistema externo a nombre de la empresa.
   // Es la misma línea que separa sondear un scraping de arrancarlo.
@@ -82,9 +112,9 @@ export async function POST(peticion: Request): Promise<Response> {
   const url = webhook();
   if (!url) return rechazo('motor_no_configurado', 'Falta N8N_HIGHLEVEL_WEBHOOK.');
 
-  let cuerpo: { ids?: unknown; etiqueta?: unknown };
+  let cuerpo: { ids?: unknown; etiqueta?: unknown; cuentaId?: unknown };
   try {
-    cuerpo = (await peticion.json()) as { ids?: unknown; etiqueta?: unknown };
+    cuerpo = (await peticion.json()) as { ids?: unknown; etiqueta?: unknown; cuentaId?: unknown };
   } catch {
     return rechazo('peticion_invalida', 'El cuerpo no es JSON');
   }
@@ -105,18 +135,31 @@ export async function POST(peticion: Request): Promise<Response> {
      etiqueta sigue siendo identificable como nuestro. */
   const etiqueta = String(cuerpo.etiqueta ?? '').trim().slice(0, 60) || 'ARIA';
 
+  // ── 0 · El cliente, antes que nada: un destino que no es de la empresa no lee ni el token ──
+  const activos = clientesQueTrae(contexto, PANTALLA);
+  const cliente = clienteDelEnvio(contexto, activos, cuerpo.cuentaId);
+  if (cliente === 'ajeno') return rechazo('no_encontrado', 'Ese cliente no es de esta empresa.');
+  if (cliente === 'en_pausa') {
+    return rechazo('peticion_invalida', 'Ese cliente está en pausa: no se le suben leads hasta reactivarlo.');
+  }
+  // Con un solo cliente activo, la respuesta de siempre: el nombre sólo dice algo si hubo que elegir.
+  const varios = activos.length > 1;
+
   // ── 1 · Las credenciales, primero ──────────────────────────────────────────
   //
   // Antes de leer un solo lead: si falta el token, leerlos habría sido trabajo tirado. Y el
   // mensaje que llega a la pantalla dice QUÉ falta y dónde se carga, no "no se pudo".
   const acceso = await conIdentidad(async (db) =>
-    resolverAccesoAGhl(db, contexto.orgEfectiva, 'la_de_la_empresa'),
+    resolverAccesoAGhl(db, contexto.orgEfectiva, cliente),
   );
   if (acceso.tipo === 'falta') {
-    return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);
+    // La del principal se carga en Ajustes › Credenciales; la de otro cliente, en su Conexión.
+    const textos = cliente.esPorOmision ? TEXTO_DE_FALTA_GHL : TEXTO_DE_FALTA_GHL_DEL_CLIENTE;
+    return rechazo('credenciales_incompletas', textos[acceso.que]);
   }
 
   // ── 2 · Los leads, de la base y no del navegador ───────────────────────────
+  // Los leads son de la empresa (no tienen cliente): se leen con la organización entera.
   const leads = await conOrganizacion(contexto.orgEfectiva, async () =>
     datos()
       .selectFrom('public.aria_cc_scraper_leads')
@@ -140,7 +183,8 @@ export async function POST(peticion: Request): Promise<Response> {
   // Los nombres de campo son los que ese flujo ya espera —`apiToken`, `etiqueta`, `locationId`,
   // `leads`— y no se traducen: es el mismo webhook que usa ARIA-brain, y renombrarlos acá
   // significaría que el flujo reciba un objeto sin los campos que busca y cree cero contactos
-  // reportando éxito.
+  // reportando éxito. El token y la location son los del cliente elegido: viaja el token de
+  // OTRO negocio a n8n, y lo que n8n guarde de cada ejecución es un riesgo dicho en el 07.
   const r = await pedirExterno<{ ok?: boolean; error?: string }>(url, {
     metodo: 'POST',
     cuerpo: {
@@ -161,5 +205,5 @@ export async function POST(peticion: Request): Promise<Response> {
     return rechazo('motor_rechazo', r.detalle ?? `HighLevel respondió ${r.estado}.`);
   }
 
-  return ok({ enviados: leads.length, etiqueta });
+  return ok({ enviados: leads.length, etiqueta, ...(varios ? { cliente: cliente.nombre } : {}) });
 }

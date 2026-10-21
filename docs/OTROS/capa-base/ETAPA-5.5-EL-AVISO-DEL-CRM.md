@@ -72,7 +72,7 @@ Cuántos workflows con acción Webhook existen, a qué URL apuntan (¿al sistema
 ## 3 · EL PLAN, EN ETAPAS NUMERADAS
 
 ### ETAPA 1 · UN SOLO ESCRITOR DE `negocio.mensajes`, CON DEDUPLICACIÓN POR GEMELO — **HOY, con lo que hay en disco**
-Va primero y no depende de nada porque **arregla un defecto que existe HOY sin ningún webhook**. Verificado: `app/api/contactos/[id]/mensajes/route.ts:184` escribe `ghl_mensaje_id: enviado.datos.mensajeId ?? \`propio:${id}:${ahora.getTime()}\`` con `id_fabricado: fabricado` y `origen: 'propio'`, sin pasar por `guardarMensajes`. Ese valor no puede colisionar nunca con el identificador real, así que cuando la ingesta trae el mismo mensaje quedan **DOS filas para un solo mensaje**, visibles en el chat, sin ningún error. Y el encabezado de `lib/negocio/ingesta.ts:1` («EL único escritor de `negocio.mensajes`») es hoy **falso**.
+Va primero y no depende de nada porque **arregla un defecto que existe HOY sin ningún webhook**. Verificado: `app/api/contactos/[id]/mensajes/route.ts:186` escribe `ghl_mensaje_id: enviado.datos.mensajeId ?? \`propio:${id}:${ahora.getTime()}\`` con `id_fabricado: fabricado` y `origen: 'propio'`, sin pasar por `guardarMensajes`. Ese valor no puede colisionar nunca con el identificador real, así que cuando la ingesta trae el mismo mensaje quedan **DOS filas para un solo mensaje**, visibles en el chat, sin ningún error. Y el encabezado de `lib/negocio/ingesta.ts:1` («EL único escritor de `negocio.mensajes`») es hoy **falso**.
 
 - **Archivos:** nuevo `lib/negocio/mensajes.ts` exportando `escribirMensajes(orgId, filas, { fijarPiso })`; se extrae de `lib/negocio/ingesta.ts:281-360`; pasan por él los DOS escritores de hoy (`ingesta.ts` y el POST del chat).
 - **Migración:** ninguna.

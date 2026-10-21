@@ -157,7 +157,7 @@ búsquedas de anuncios, el Espía; las demás, el Scraper (`lib/tools/scrapers.t
 | `GET /api/tools/trabajos` | `tools.ver` | los trabajos en vuelo, de la base, tope 20 | `app/api/tools/trabajos/route.ts:49`, `:58`, `:64-96` |
 | `GET /api/tools/busquedas-del-espia` **(nueva)** | `tools.ver` | las búsquedas del Espía, o con `?trabajo=` su análisis guardado | `app/api/tools/busquedas-del-espia/route.ts:20-28` |
 | `GET /api/tools/leads` | `tools.ver` | el historial, de a 100, por fuente y búsqueda | `app/api/tools/leads/route.ts:51`, `:57-134` |
-| `POST /api/tools/leads/enviar` | `tools.editar` | hasta 100 leads por id al flujo de n8n | `app/api/tools/leads/enviar/route.ts:68`, `:76-79` |
+| `POST /api/tools/leads/enviar` | `tools.editar` | hasta 100 leads por id al flujo de n8n; desde el nivel 3 (en local), con el token y la subcuenta del cliente elegido | `app/api/tools/leads/enviar/route.ts:80`, `:106-109` |
 | `GET /api/tools/saldo` | `tools.ver` | el monedero de la empresa, desglosado | `app/api/tools/saldo/route.ts:19-48` |
 | `POST /api/tools/espia` | `tools.editar` | el análisis con IA de una búsqueda del Espía | `app/api/tools/espia/route.ts:41-47` |
 | `GET`, `POST`, `DELETE /api/tools/cerebro` **(nueva)** | `tools.ver` · `cerebro.usar` | la caja del cerebro de esta pantalla | `app/api/tools/cerebro/route.ts:1-9` |
@@ -382,7 +382,11 @@ fuera de la principal (`components/ajustes/Usuarios.jsx:145`). `administrador` n
 
 **12 · Mis Leads y el detalle del panel no se reúsan** (`components/monitoreo/PanelDeMonitoreo.jsx:18-23`).
 
-**13 · Al CRM se mandan identificadores, no leads** (`app/api/tools/leads/enviar/route.ts:7-19`, `:119-126`).
+**13 · Al CRM se mandan identificadores, no leads** (`app/api/tools/leads/enviar/route.ts:7-19`, `:161-169`). Desde el
+nivel 3 (C6 · D2, en local, sin subir), a un cliente que se elige: el pedido dice `cuentaId`, que tiene que ser un
+cliente ACTIVO de la empresa, y sin él va al principal; el token y la subcuenta son los de ese cliente
+(`app/api/tools/leads/enviar/route.ts:94`, `:153`). La pantalla muestra el selector sólo con más de un cliente activo
+(`components/tools/MisLeads.jsx:400`), y con uno solo el pedido y la respuesta son los de siempre.
 
 **14 · Lo que viaja al cerebro es conteo o texto limpio.** Los leads, contados; el análisis del Espía, recortado y sin datos de
 contacto (`lib/agentes/executive/adaptadores/tools.ts:3-6`).
@@ -451,10 +455,11 @@ transacciones por panel en cada entrada de quien los ve, y crece con cada empres
 problema desde E11: se monta en cada visita a Prospección o al Scraper (`components/views/ToolsView.jsx:106-111`).
 
 **El botón de subir al CRM se ofrece a quien no puede usarlo.** Mis Leads se monta sin `puedeEditar`
-(`components/views/ToolsView.jsx:81`) y dibuja el envío siempre (`components/tools/MisLeads.jsx:394-403`); la ruta pide
-`tools.editar` (`app/api/tools/leads/enviar/route.ts:79`). El Espía y el Scraper sí reciben la bandera
+(`components/views/ToolsView.jsx:81`) y dibuja el envío siempre (`components/tools/MisLeads.jsx:426-435`); la ruta pide
+`tools.editar` (`app/api/tools/leads/enviar/route.ts:109`). El Espía y el Scraper sí reciben la bandera
 (`components/views/ToolsView.jsx:73`, `:79`), y los dos la heredan falsa también cuando falló la lectura del estado de Tools:
-el aviso culpa al rol (`components/tools/VistaDelScraper.jsx:18-21`).
+el aviso culpa al rol (`components/tools/VistaDelScraper.jsx:18-21`). Con el nivel 3 (en local), con más de un cliente
+activo, también le muestra el selector de cliente.
 
 **Dos personas de empresas cliente tenían `monitoreo.ver`** (medido el 2026-09-28, no re-medido). Las separan del panel la
 pestaña no concedida —sigue habiendo 1 sola concesión, medida el 2026-10-18— y `soloDesdeLaPrincipal`.

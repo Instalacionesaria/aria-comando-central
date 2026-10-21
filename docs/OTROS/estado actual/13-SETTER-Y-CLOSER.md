@@ -195,11 +195,11 @@ la ficha desde el 2026-09-07.
 
 **El compositor.** Envía por `POST /api/contactos/[id]/mensajes`
 (`app/api/contactos/[id]/mensajes/route.ts:98-105`), que va al CRM con `POST /conversations/messages`
-(`app/api/contactos/[id]/mensajes/route.ts:149`, `lib/ghl/conversaciones.ts:419-427`) —un endpoint
+(`app/api/contactos/[id]/mensajes/route.ts:151`, `lib/ghl/conversaciones.ts:419-427`) —un endpoint
 que el propio código declara no medido, porque medirlo manda un mensaje real
 (`lib/ghl/conversaciones.ts:413`)— y guarda el mensaje con `origen = 'propio'`
-(`app/api/contactos/[id]/mensajes/route.ts:234`); después pasa por `sellarSiEsDelSetter`
-(`app/api/contactos/[id]/mensajes/route.ts:258`), el sello que hoy está en 0 de 594 (§ 4.5). En toda
+(`app/api/contactos/[id]/mensajes/route.ts:236`); después pasa por `sellarSiEsDelSetter`
+(`app/api/contactos/[id]/mensajes/route.ts:260`), el sello que hoy está en 0 de 594 (§ 4.5). En toda
 la historia salieron por acá **2 mensajes**, contra miles por el CRM (§ 5.4). Las notas se escriben
 con otra capacidad, `contactos.comentar` (`app/api/contactos/[id]/notas/route.ts:84`), y quedan con
 `origen = 'plataforma'` (`app/api/contactos/[id]/notas/route.ts:127`).
@@ -399,7 +399,7 @@ cita tiene `asistio` y el resultado tiene `cita_id`
 
 Qué citas ofrece Avanzar para preguntar: las que **ya empezaron, no están canceladas, son
 alcanzables** y cayeron en los **últimos 14 días** (`lib/negocio/citasParaCerrar.ts:58-71`; la ficha
-la llama sin argumento en `app/api/contactos/[id]/route.ts:153`). Con una sola candidata viene
+la llama sin argumento en `app/api/contactos/[id]/route.ts:155`). Con una sola candidata viene
 elegida y la respuesta es obligatoria; con dos o más, el selector arranca en «No es sobre ninguna de
 estas citas» (`components/negocio/Avanzar.jsx:86`, `components/negocio/Avanzar.jsx:337`), y
 registrar sin elegir

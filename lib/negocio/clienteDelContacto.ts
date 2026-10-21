@@ -5,10 +5,12 @@
 // reservas saldría con el dominio de otro negocio. El contacto siempre tiene cliente (`083`: `cuenta_id` obligatoria).
 
 import { datos } from '../datos/contexto.ts';
-import type { ClienteDeLaCredencial } from '../credenciales/resolver.ts';
 
-/** El cliente del contacto, o `null` si no está a la vista. **Corre dentro de `conOrganizacion`.** */
-export async function clienteDelContacto(contactoId: string): Promise<ClienteDeLaCredencial | null> {
+/**
+ * El cliente del contacto, o `null` si no está a la vista. **Corre dentro de `conOrganizacion`.** Es siempre un cliente
+ * (sirve de `ClienteDeLaCredencial`), y de su `esPorOmision` sale también el texto de una falta.
+ */
+export async function clienteDelContacto(contactoId: string): Promise<{ id: string; esPorOmision: boolean } | null> {
   const f = await datos()
     .selectFrom('contactos as k')
     .innerJoin('cuentas as c', 'c.id', 'k.cuenta_id')

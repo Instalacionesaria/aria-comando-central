@@ -34,8 +34,8 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // que `scripts/organizacion-principal.mjs` está en esta lista.
   'scripts/mudar-auditoria.mjs',
   // Mide la respuesta de citas del CRM contra la subcuenta real para saber si trae un sello de
-  // creación y cómo se llama. Necesita la LISTA de organizaciones —y las credenciales de cada una,
-  // que son de identidad— y después trabaja de una en una: es textualmente el caso que el 04 § 4
+  // creación y cómo se llama. Necesita la LISTA de organizaciones, sus clientes activos y la credencial
+  // de cada uno (el nivel 3) —identidad— y después trabaja de a un cliente: es el caso que el 04 § 4
   // nombra como legítimo, el mismo de `scripts/db.mjs verificar`.
   //
   // Y sólo hace `GET`: no escribe ni en el CRM ni en la base, y no imprime datos de nadie.
@@ -48,20 +48,20 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'scripts/medir-mensaje.mjs',
   // El tercero de la familia, con el mismo argumento: mide si el CRM manda la atribución del
   // anuncio —`attributionSource`, las UTM, el `fbclid`— que el documento de arquitectura pide y que
-  // el tipo del contacto no declara. Decide si hace falta conectar el API de Meta o si el dato ya
-  // viene en la misma respuesta que ya pedimos. Sólo `GET`, y de esos campos imprime la FORMA y
-  // nunca el valor: un `referrer` puede llevar el identificador de una persona adentro.
+  // el tipo del contacto no declara. Lee sus clientes activos y la credencial de cada uno (el nivel
+  // 3), y trabaja de a un cliente. Sólo `GET`, y de esos campos imprime la FORMA y nunca el valor:
+  // un `referrer` puede llevar el identificador de una persona adentro.
   'scripts/medir-contacto.mjs',
   // El cuarto, con el mismo argumento (2026-09-29): mide si alguna lectura del Ad Manager de
   // GoHighLevel trae la miniatura, el video o el link al post de cada anuncio, antes de conectar
-  // Meta directo (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`). Lista de organizaciones y sus
-  // credenciales, y después una por una. Sólo `GET`; imprime claves y hosts, nunca valores, y una
+  // Meta directo (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`). Lista de organizaciones, sus clientes
+  // activos y la credencial de cada uno, y después de a uno. Sólo `GET`; claves y hosts, nunca valores, y una
   // clave con forma de secreto —`/integration` trae el token de la Página— se nombra y no se sigue.
   'scripts/medir-activos-en-ghl.mjs',
   // El quinto, con el mismo argumento (2026-10-07): mide cómo trae el Ad Manager de GoHighLevel el gasto de
   // TODA la cuenta —la serie diaria y su corte de 25 filas, el total de una campaña en un rango— antes de
-  // cambiar el colector (`076`). Lee la empresa principal y su credencial. Sólo `GET`; imprime conteos,
-  // sumas y claves, nunca ids ni nombres: la campaña de la sonda va por argumento.
+  // cambiar el colector (`076`). Lee la empresa principal, sus clientes activos y la credencial de cada uno.
+  // Sólo `GET`; imprime conteos, sumas, claves y los nombres de la empresa y sus clientes, nunca un id.
   'scripts/medir-gasto-de-la-cuenta.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
@@ -260,8 +260,8 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // `select`. Los anuncios no salen de esta base: se los pide al backend de scraping con el
   // `org_id` de la sesión. El filtro por organización lo pone esa consulta a mano.
   'app/api/tools/espia/route.ts',
-  // Subir leads seleccionados al CRM. Lee el Private Integration Token de GoHighLevel por
-  // identidad —`organizaciones_credenciales` es inalcanzable desde el rol del inquilino— con
+  // Subir leads seleccionados al CRM. Lee el Private Integration Token del cliente elegido por
+  // identidad —las credenciales son inalcanzables desde el rol del inquilino— con
   // `resolverAccesoAGhl`, exactamente como la ruta de mensajes. El filtro por organización lo
   // pone la propia función con `contexto.orgEfectiva`.
   'app/api/tools/leads/enviar/route.ts',
@@ -514,7 +514,7 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   'scripts/enlaces-rapidos.mjs',
   // Subir leads al CRM. **Qué queda a medias si la segunda mitad falla: NADA.** Es el caso más
   // benigno de esta lista, porque NINGUNA de las dos mitades escribe en nuestra base: la primera
-  // LEE el token de identidad, la segunda LEE los leads de negocio, y la única escritura es a un
+  // LEE la credencial del cliente elegido, la segunda LEE los leads de negocio, y la única escritura es a un
   // sistema externo, después de que las dos lecturas salieron bien. No hay confirmación parcial
   // posible.
   //

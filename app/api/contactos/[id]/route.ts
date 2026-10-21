@@ -39,6 +39,7 @@ import {
   dominioDeReservasDe,
   resolverAccesoAGhl,
   TEXTO_DE_FALTA_GHL,
+  TEXTO_DE_FALTA_GHL_DEL_CLIENTE,
 } from '../../../../lib/credenciales/resolver.ts';
 import { filaDeContacto } from '../../../../lib/negocio/fila.ts';
 import { citasParaCerrar } from '../../../../lib/negocio/citasParaCerrar.ts';
@@ -111,8 +112,9 @@ export async function GET(
     const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, orgId, cliente ?? 'la_de_la_empresa'));
     if (acceso.tipo !== 'listo') {
       // Se dice cuál falta, con el texto que ya existe para eso. Un «no se pudo» sin decir que la
-      // empresa no tiene token manda a alguien a revisar la red.
-      porque = `${REFRESCO.sin_credencial} ${TEXTO_DE_FALTA_GHL[acceso.que]}`;
+      // empresa no tiene token manda a alguien a revisar la red. El de otro cliente, en su Conexión.
+      const textos = cliente && !cliente.esPorOmision ? TEXTO_DE_FALTA_GHL_DEL_CLIENTE : TEXTO_DE_FALTA_GHL;
+      porque = `${REFRESCO.sin_credencial} ${textos[acceso.que]}`;
     } else {
       const r = await conOrganizacion(orgId, () =>
         refrescarUnContacto(acceso, antes.ghlContactId as string),

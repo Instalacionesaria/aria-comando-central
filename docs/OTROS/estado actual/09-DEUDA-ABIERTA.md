@@ -882,11 +882,11 @@ mensaje del commit). Esas cuatro escrituras siguen fallando bajo delegación:
 - `resultados.registrado_por`, `notas.autor_id` y `tareas.creada_por`, las tres de Avanzar
   (`lib/negocio/avanzar.ts:189`, `lib/negocio/avanzar.ts:277`, `lib/negocio/avanzar.ts:347`).
 - `mensajes.autor_usuario_id`, al mandar un mensaje a mano
-  (`app/api/contactos/[id]/mensajes/route.ts:225`). **Éste es el caro**: el envío al CRM va antes
-  (`app/api/contactos/[id]/mensajes/route.ts:149`) y la escritura después, sin `catch`
-  (`app/api/contactos/[id]/mensajes/route.ts:208`). Bajo delegación el mensaje le llega al contacto
+  (`app/api/contactos/[id]/mensajes/route.ts:227`). **Éste es el caro**: el envío al CRM va antes
+  (`app/api/contactos/[id]/mensajes/route.ts:151`) y la escritura después, sin `catch`
+  (`app/api/contactos/[id]/mensajes/route.ts:210`). Bajo delegación el mensaje le llega al contacto
   y quien lo mandó recibe un 500, que es justo lo que el comentario de la misma ruta dice que hay
-  que evitar, porque «lo mandaría de nuevo» (`app/api/contactos/[id]/mensajes/route.ts:249-251`).
+  que evitar, porque «lo mandaría de nuevo» (`app/api/contactos/[id]/mensajes/route.ts:251-253`).
 
 Las cuatro foráneas son compuestas desde la `011`
 (`db/migraciones/011_negocio_closer_setter.sql:251`, `db/migraciones/011_negocio_closer_setter.sql:349`,

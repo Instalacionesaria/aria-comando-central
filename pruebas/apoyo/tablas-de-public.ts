@@ -1,4 +1,4 @@
-// Las tres tablas de `public` que leen las herramientas del cerebro, creadas SÓLO para una prueba.
+// Las tres tablas de `public` que leen las herramientas del cerebro y Tools, creadas SÓLO para la prueba que las usa.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // POR QUÉ HACE FALTA

@@ -214,10 +214,14 @@ crea una segunda cita en vez de mover la que había (`lib/ghl/agendar.ts:66-76`)
 Subir leads desde Tools (`app/api/tools/leads/enviar/route.ts`, desde el 2026-08-30, commit
 `45bcd6d`) no llama a GoHighLevel: le manda a un flujo de n8n el **token del CRM**, el Location ID,
 una etiqueta y hasta 100 leads por envío, y es n8n quien crea los contactos
-(`app/api/tools/leads/enviar/route.ts:144-152`; el tope en `app/api/tools/leads/enviar/route.ts:68`
-y la etiqueta por omisión, `ARIA`, en `app/api/tools/leads/enviar/route.ts:106`). La foto del
+(`app/api/tools/leads/enviar/route.ts:188-196`; el tope en `app/api/tools/leads/enviar/route.ts:80`
+y la etiqueta por omisión, `ARIA`, en `app/api/tools/leads/enviar/route.ts:136`). La foto del
 2026-09-15 no la nombraba. Dos cosas que conviene saber: el token sale de nuestro servidor hacia un
-tercero, y **cuántos envíos se hicieron no se puede medir desde la base**: la ruta no deja registro
+tercero —desde el nivel 3 (C6 · D2, en local, sin subir), el del cliente elegido: con uno que no es el principal, el
+Private Integration Token de OTRO negocio, y n8n guarda por omisión el cuerpo de cada ejecución en su historial;
+antes del primer cliente con subcuenta propia hay que dejar de guardar las ejecuciones de ese flujo (o sacar
+`apiToken` de lo guardado), revisar quién ve ese historial y comprobar que el flujo use el `apiToken` y el
+`locationId` del cuerpo (07, «Lo que usaba las credenciales de la empresa»)—, y **cuántos envíos se hicieron no se puede medir desde la base**: la ruta no deja registro
 en ninguna tabla nuestra.
 
 ### Qué se lee y qué se descarta al parsear
@@ -1032,7 +1036,7 @@ Cada uno es un hueco medido, no una suposición.
    «vivos».
 
 10. **Cuántos lotes se subieron al CRM desde Tools.** La ruta que manda leads a n8n
-    (`app/api/tools/leads/enviar/route.ts:144-152`) no deja registro en la base.
+    (`app/api/tools/leads/enviar/route.ts:188-196`) no deja registro en la base.
 
 11. **Si el token de Meta, cuando alguien lo cargue, sirve para lo que se construyó.** Nada de § 11 se ejecutó nunca
     contra Meta con un token real: ni cuánto dura la firma de una miniatura, ni qué tipos de creativo traen imagen, ni el

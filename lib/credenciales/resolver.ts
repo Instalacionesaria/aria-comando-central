@@ -51,7 +51,7 @@ import type { Trx } from '../datos/capa.ts';
 // empresa: con el token de la empresa, el contacto de otro cliente no existe en su subcuenta, y un enlace de reservas
 // con el dominio de la empresa le llegaría al lead de otro negocio. Sin fila o sin token, el cliente «falta», con
 // el mismo motivo que una empresa sin cargar. `'la_de_la_empresa'` lo dice quien de verdad quiere la de la empresa
-// (el cron, en las tareas de la empresa; los guiones de medición). La llave de IA, tl;dv y los pagos son de la empresa.
+// (el cron, en las tareas de la empresa; quiénes, lo lista la 277). La llave de IA, tl;dv y los pagos son de la empresa.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** De qué cliente es la credencial que se pide. */

@@ -34,6 +34,7 @@ import {
   enviarLeadsAlCrm,
   leerLeads,
 } from '@/lib/tools/leads';
+import { useSesion } from '../../app/sesion-contexto.tsx';
 
 /* De dónde llegan los leads, dicho como la navegación: el Scraper y el Plan de prospección guardan acá
    los dos (`NE-52`). */
@@ -119,6 +120,19 @@ export default function MisLeads() {
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState(null);
 
+  /* ── A qué cliente se suben (el nivel 3) ──────────────────────────────────
+     Con un solo cliente activo no hay nada que elegir y el envío es el de siempre. Con más, se
+     elige en el panel y arranca en el principal; si el elegido se pausa, cae al principal. No es
+     el foco: Tools es de la empresa entera, y una escritura que no se deshace no se decide en
+     silencio con lo que está enfocado en otra pantalla. */
+  const sesion = useSesion();
+  const activos = (sesion?.cuentas?.visibles ?? []).filter((c) => c.estado === 'activa');
+  const varios = activos.length > 1;
+  const [elegido, setElegido] = useState(null);
+  const cliente = activos.some((c) => c.id === elegido)
+    ? elegido
+    : activos.find((c) => c.esPorOmision)?.id ?? null;
+
   /* El reloj de la pausa. Al teclear de nuevo —o al desmontar— se cancela el anterior: sin el
      `clearTimeout`, cerrar la pestaña con una búsqueda a medias dejaría un `setState` sobre un
      componente que ya no existe. */
@@ -187,11 +201,14 @@ export default function MisLeads() {
   const enviar = async () => {
     setEnviando(true);
     setAviso(null);
-    const r = await enviarLeadsAlCrm([...marcados], etiqueta);
+    const r = await enviarLeadsAlCrm([...marcados], etiqueta, varios ? cliente : null);
     if (r.tipo === 'ok') {
       setAviso({
         mal: false,
-        texto: `${r.enviados} leads subidos a HighLevel con la etiqueta «${r.etiqueta}».`,
+        // El cliente sólo viene con más de uno activo: el aviso dice adónde fue el lote.
+        texto: r.cliente
+          ? `${r.enviados} leads subidos a HighLevel de ${r.cliente} con la etiqueta «${r.etiqueta}».`
+          : `${r.enviados} leads subidos a HighLevel con la etiqueta «${r.etiqueta}».`,
       });
       /* Se limpia la selección pero NO la etiqueta: lo normal es subir varios lotes al mismo
          sitio, y volver a escribirla cada vez sería trabajo de más. */
@@ -361,8 +378,8 @@ export default function MisLeads() {
 
       {/* ── El panel de envío ─────────────────────────────────────────────────
           NO pide API Token ni Location ID, y ésa es la diferencia con el del hub. Los dos ya
-          viven en las credenciales de la organización —el token cifrado— cargados una vez en
-          Ajustes por un administrador. Pedirlos otra vez acá sería duplicar un secreto y
+          viven en las credenciales de la organización o del cliente elegido —el token cifrado—
+          cargados una vez en Ajustes por un administrador. Pedirlos otra vez acá sería duplicar un secreto y
           dejar que cualquiera con permiso de editar pegue el de otra empresa.
 
           Sólo la ETIQUETA es de este envío, porque es lo único que cambia entre un lote y el
@@ -377,6 +394,21 @@ export default function MisLeads() {
           <p className="lp-pista">
             Marca los leads que quieres subir con las casillas de la izquierda.
           </p>
+        ) : null}
+
+        {/* El destino, sólo con más de un cliente activo, a la vista y arriba de la etiqueta. */}
+        {varios ? (
+          <label className="lp-campo">
+            Cliente
+            <select value={cliente ?? ''} onChange={(e) => setElegido(e.target.value)} disabled={enviando}>
+              {activos.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.esPorOmision ? `${c.nombre} · principal` : c.nombre}
+                </option>
+              ))}
+            </select>
+            <em>Los leads se suben a la subcuenta de GoHighLevel de este cliente.</em>
+          </label>
         ) : null}
 
         <label className="lp-campo">
@@ -413,7 +445,11 @@ export default function MisLeads() {
             pantalla por primera vez se pregunta a qué cuenta van los leads, y la respuesta no
             debería requerir provocar un error para verla. */}
         <p className="lp-nota">
-          El token y la subcuenta de HighLevel son los de tu organización, cargados en Ajustes.
+          {varios
+            ? 'El token y la subcuenta son los del cliente elegido: los del principal se cargan en Ajustes › ' +
+              'Credenciales; el token de los demás, en Ajustes › Clientes › Conexión, y su subcuenta la vincula la ' +
+              'plataforma.'
+            : 'El token y la subcuenta de HighLevel son los de tu organización, cargados en Ajustes.'}
         </p>
       </aside>
     </div>

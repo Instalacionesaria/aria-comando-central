@@ -17,6 +17,8 @@
 //     sigue corre en el ámbito de ese cliente;
 //   · la Conexión de Ajustes › Clientes no vuelve a «Leyendo…» al recargar con datos ya dibujados: desmontaría
 //     `AvisoDelCrm` y perdería la cabecera recién generada (el mismo defecto que la 108 cuida en Credenciales).
+//   · quien pide la de la empresa a propósito está escrito, uno por uno (C6 · D2) — mutación: Tools o un guion de
+//     medición con `'la_de_la_empresa'` de vuelta.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';
@@ -129,4 +131,33 @@ test('la Conexión de un cliente no desmonta el aviso al recargar', () => {
   // Y mientras la cabecera del aviso está a la vista, la ventana no se cierra con Escape ni con el fondo.
   assert.match(leer('components/ajustes/Clientes.jsx'), /cerrablePorFuera=\{!cabeceraVisible\}/);
   assert.match(fuente, /alMostrarCabecera=\{alMostrarCabecera\}/);
+});
+
+/**
+ * Quien pide la de la empresa A PROPÓSITO, uno por uno y con su porqué (el nivel 3, C6). Una ruta o un guion que pasa
+ * `'la_de_la_empresa'` como tercer argumento compila y pasa la prueba de los tres argumentos: con dos clientes leería la
+ * subcuenta de la empresa para lo de otro negocio. Cada uso nuevo, o uno que se va, se escribe acá en el mismo commit.
+ */
+const PIDEN_LA_DE_LA_EMPRESA: readonly string[] = [
+  // El barrido del principal y las tareas que son de la empresa entera; cada otro cliente lleva su credencial aparte.
+  'app/api/cron/route.ts',
+  // «Probar conexión» de Ajustes › Credenciales: prueba la de la empresa, que es la que esa pantalla carga.
+  'app/api/admin/credenciales/meta/route.ts',
+  // Las cuatro rutas de un contacto: `cliente ?? …`, la caída cuando el contacto no está a la vista (antes, un 404).
+  'app/api/contactos/[id]/route.ts',
+  'app/api/contactos/[id]/resolver/route.ts',
+  'app/api/contactos/[id]/mensajes/route.ts',
+  'app/api/contactos/[id]/avanzar/route.ts',
+];
+
+test('quien pide la de la empresa está escrito, y la lista no tiene entradas muertas', () => {
+  const piden = archivosFuente(['app', 'lib', 'scripts', 'components'])
+    .filter((a) => a.ruta !== 'lib/credenciales/resolver.ts' && a.limpio.includes("'la_de_la_empresa'"))
+    .map((a) => a.ruta);
+  assert.deepEqual(
+    piden.filter((r) => !PIDEN_LA_DE_LA_EMPRESA.includes(r)),
+    [],
+    'piden la credencial de la empresa sin decirlo: con dos clientes, leen la subcuenta de la empresa para otro negocio',
+  );
+  assert.deepEqual(PIDEN_LA_DE_LA_EMPRESA.filter((r) => !piden.includes(r)), [], 'ya no piden la de la empresa: sácalos de PIDEN_LA_DE_LA_EMPRESA');
 });

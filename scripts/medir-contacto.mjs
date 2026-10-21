@@ -37,9 +37,13 @@
 // **Sólo lee**, por `pedirExterno`. No imprime datos de nadie: del contacto salen los NOMBRES de
 // las claves y, de los campos de atribución, sólo si están presentes y su forma — nunca el valor,
 // que puede ser una URL con el identificador de una persona adentro.
+//
+// **Mide a cada cliente activo con SU token** (el nivel 3), y con más de uno la cabecera dice
+// «Empresa · Cliente». Con un cliente por empresa, mide lo mismo que medía.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { conIdentidad, cerrarClientes } from '../lib/datos/capa.ts';
+import { clientesParaBarrer } from '../lib/administracion/cuentas.ts';
 import { resolverAccesoAGhl } from '../lib/credenciales/resolver.ts';
 import { pedirExterno } from '../lib/http/cliente.ts';
 
@@ -94,76 +98,106 @@ async function main() {
   );
 
   for (const org of orgs) {
-    const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, org.id, 'la_de_la_empresa'));
-    if (acceso.tipo !== 'listo') continue;
-
-    console.log(`\n═══ ${org.nombre} ═══`);
-
-    const r = await pedirExterno(`${BASE}/contacts/search`, {
-      metodo: 'POST',
-      cabeceras: cabeceras(acceso.token),
-      cuerpo: {
-        locationId: acceso.locationId,
-        pageLimit: CUANTOS,
-        sort: [{ field: 'dateAdded', direction: 'desc' }],
-      },
-    });
-    if (r.tipo !== 'datos') {
-      console.log(`  no se pudieron traer contactos: ${r.tipo} ${r.estado ?? r.causa ?? ''}`);
-      continue;
-    }
-
-    const lista = Array.isArray(r.datos?.contacts) ? r.datos.contacts : [];
-    if (lista.length === 0) {
-      console.log('  la subcuenta no devolvió contactos.');
-      continue;
-    }
-    console.log(`  contactos mirados: ${lista.length} (los más nuevos)`);
-
-    const claves = new Map();
-    const atribucion = new Map();
-    let conDateAdded = 0;
-
-    for (const c of lista) {
-      const o = c ?? {};
-      for (const [k, v] of Object.entries(o)) {
-        if (v === null || v === undefined || v === '') continue;
-        sumar(claves, k);
-        if (!DE_ATRIBUCION.test(k)) continue;
-        /* De los campos de atribución se mira la FORMA, nunca el valor: un `referrer` o una url de
-           sesión puede llevar el identificador de una persona adentro. */
-        if (typeof v === 'object' && !Array.isArray(v)) {
-          for (const k2 of Object.keys(v)) {
-            if (v[k2] !== null && v[k2] !== undefined && v[k2] !== '') sumar(atribucion, `${k}.${k2}`);
-          }
-        } else {
-          sumar(atribucion, `${k} : ${Array.isArray(v) ? 'array' : typeof v}`);
-        }
+    /* Sus clientes ACTIVOS (el nivel 3), cada uno con SU token y SU subcuenta, el principal primero: los contactos de
+       otro cliente están en otra subcuenta, y el GET de uno con el token de otro no lo encuentra. */
+    const clientes = await conIdentidad(async (db) => {
+      const nombres = new Map(
+        (await db.selectFrom('cuentas').select(['id', 'nombre']).where('org_id', '=', org.id).execute()).map((c) => [
+          c.id,
+          c.nombre,
+        ]),
+      );
+      const salida = [];
+      for (const cuenta of await clientesParaBarrer(db, org.id)) {
+        salida.push({ cuenta, nombre: nombres.get(cuenta.id) ?? cuenta.id, acceso: await resolverAccesoAGhl(db, org.id, cuenta) });
       }
-      if (o.dateAdded) conDateAdded++;
-    }
-
-    console.log(`\n  TODAS las claves con valor (${claves.size}):`);
-    console.log('    ' + [...claves.keys()].sort().join(', '));
-
-    console.log('\n  ┌─ LO QUE DECIDE SI HACE FALTA EL API DE META ──────────────────────');
-    imprimir('campos de atribución presentes:', atribucion, lista.length);
-    console.log('  │');
-    console.log('  │  El documento pide: campaña, ad set, anuncio, creativo, UTM de primer y último');
-    console.log('  │  toque, y landing de origen. Lo que no aparezca arriba, no viene por acá.');
-    console.log('  └──────────────────────────────────────────────────────────────────');
-
-    console.log(`\n  \`dateAdded\` (la fecha real de entrada del lead): ${conDateAdded} de ${lista.length}`);
-
-    /* La cobertura de las cinco, junta. `timezone` y `country` no los pesca el regex de atribución
-       —no tienen por qué— y sin esto aparecen en la lista de claves sin decir en cuántos vienen. */
-    console.log('\n  cobertura de las cinco que se van a guardar:');
-    for (const k of LAS_QUE_VAMOS_A_GUARDAR) {
-      console.log(`    ${k.padEnd(34)} ${String(claves.get(k) ?? 0).padStart(4)} de ${lista.length}`);
-    }
-
-    await compararConElGet(acceso, lista);
+      return salida;
+    });
+    const varios = clientes.length > 1;
+    for (const c of clientes) await medirUnCliente(org, c, varios);
   }
+}
+
+/**
+ * La medición de UN cliente: sus contactos más nuevos y el GET de uno, con SU token. Con un solo cliente, la cabecera es
+ * la de la empresa, como antes. Cada `return` corta a este cliente y no a los demás; los dos `continue` de adentro
+ * saltean una clave vacía o una que no es de atribución.
+ */
+async function medirUnCliente(org, { nombre, acceso }, varios) {
+  const titulo = varios ? `${org.nombre} · ${nombre}` : org.nombre;
+  if (acceso.tipo !== 'listo') {
+    // Con un cliente se calla, como antes: una empresa sin token no es noticia. Con varios, el que falta se nombra.
+    if (varios) console.log(`\n═══ ${titulo} ═══\n  SIN MEDIR — sin acceso al CRM (${acceso.que})`);
+    return;
+  }
+
+  console.log(`\n═══ ${titulo} ═══`);
+
+  const r = await pedirExterno(`${BASE}/contacts/search`, {
+    metodo: 'POST',
+    cabeceras: cabeceras(acceso.token),
+    cuerpo: {
+      locationId: acceso.locationId,
+      pageLimit: CUANTOS,
+      sort: [{ field: 'dateAdded', direction: 'desc' }],
+    },
+  });
+  if (r.tipo !== 'datos') {
+    console.log(`  no se pudieron traer contactos: ${r.tipo} ${r.estado ?? r.causa ?? ''}`);
+    return;
+  }
+
+  const lista = Array.isArray(r.datos?.contacts) ? r.datos.contacts : [];
+  if (lista.length === 0) {
+    console.log('  la subcuenta no devolvió contactos.');
+    return;
+  }
+  console.log(`  contactos mirados: ${lista.length} (los más nuevos)`);
+
+  const claves = new Map();
+  const atribucion = new Map();
+  let conDateAdded = 0;
+
+  for (const c of lista) {
+    const o = c ?? {};
+    for (const [k, v] of Object.entries(o)) {
+      if (v === null || v === undefined || v === '') continue;
+      sumar(claves, k);
+      if (!DE_ATRIBUCION.test(k)) continue;
+      /* De los campos de atribución se mira la FORMA, nunca el valor: un `referrer` o una url de
+         sesión puede llevar el identificador de una persona adentro. */
+      if (typeof v === 'object' && !Array.isArray(v)) {
+        for (const k2 of Object.keys(v)) {
+          if (v[k2] !== null && v[k2] !== undefined && v[k2] !== '') sumar(atribucion, `${k}.${k2}`);
+        }
+      } else {
+        sumar(atribucion, `${k} : ${Array.isArray(v) ? 'array' : typeof v}`);
+      }
+    }
+    if (o.dateAdded) conDateAdded++;
+  }
+
+  console.log(`\n  TODAS las claves con valor (${claves.size}):`);
+  console.log('    ' + [...claves.keys()].sort().join(', '));
+
+  console.log('\n  ┌─ LO QUE DECIDE SI HACE FALTA EL API DE META ──────────────────────');
+  imprimir('campos de atribución presentes:', atribucion, lista.length);
+  console.log('  │');
+  console.log('  │  El documento pide: campaña, ad set, anuncio, creativo, UTM de primer y último');
+  console.log('  │  toque, y landing de origen. Lo que no aparezca arriba, no viene por acá.');
+  console.log('  └──────────────────────────────────────────────────────────────────');
+
+  console.log(`\n  \`dateAdded\` (la fecha real de entrada del lead): ${conDateAdded} de ${lista.length}`);
+
+  /* La cobertura de las cinco, junta. `timezone` y `country` no los pesca el regex de atribución
+     —no tienen por qué— y sin esto aparecen en la lista de claves sin decir en cuántos vienen. */
+  console.log('\n  cobertura de las cinco que se van a guardar:');
+  for (const k of LAS_QUE_VAMOS_A_GUARDAR) {
+    console.log(`    ${k.padEnd(34)} ${String(claves.get(k) ?? 0).padStart(4)} de ${lista.length}`);
+  }
+
+  // El GET, con el token de ESTE cliente: el contacto es de su subcuenta.
+  await compararConElGet(acceso, lista);
 }
 
 /**

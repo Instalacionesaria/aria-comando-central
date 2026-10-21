@@ -37,7 +37,7 @@ import { SIN_SECCION } from '../../../../../lib/autorizacion/secciones.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../../lib/datos/contexto.ts';
-import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../../lib/credenciales/resolver.ts';
+import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE } from '../../../../../lib/credenciales/resolver.ts';
 import { resolverLaIntervencion } from '../../../../../lib/auditor/intervencion.ts';
 import { clienteDelContacto } from '../../../../../lib/negocio/clienteDelContacto.ts';
 
@@ -72,8 +72,9 @@ export async function POST(
      * el contacto sale de la cola —nadie lo vuelve a mirar— y **el agente se queda pausado para
      * siempre**, porque la etiqueta que lo pausa nadie la va a quitar. Un estado sin salida.
      *
-     * Con el rechazo, el aviso sigue abierto y visible, que es el estado de antes. */
-    return rechazo('servicio_externo_no_disponible', TEXTO_DE_FALTA_GHL[acceso.que]);
+     * Con el rechazo, el aviso sigue abierto y visible, que es el estado de antes. La de otro cliente, en su Conexión. */
+    const textos = cliente && !cliente.esPorOmision ? TEXTO_DE_FALTA_GHL_DEL_CLIENTE : TEXTO_DE_FALTA_GHL;
+    return rechazo('servicio_externo_no_disponible', textos[acceso.que]);
   }
 
   const r = await resolverLaIntervencion({

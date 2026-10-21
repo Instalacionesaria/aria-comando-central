@@ -26,7 +26,7 @@
 import { exigir } from '../../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
-import { resolverAccesoAGhl, TEXTO_DE_FALTA_GHL } from '../../../../../lib/credenciales/resolver.ts';
+import { agenteDelCrmDe, resolverAccesoAGhl, TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE } from '../../../../../lib/credenciales/resolver.ts';
 import { usuariosDelCrm } from '../../../../../lib/ghl/cliente.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
@@ -45,52 +45,35 @@ export async function GET(peticion: Request): Promise<Response> {
      cargado como `crm_agente_usuario_id` para el auditor. O sea que quien vincule a un closer con
      ese usuario se lleva TODOS los leads — no es un error, pero hay que saberlo antes de elegir. */
   /* `?cuenta=` (el nivel 3): los usuarios de la subcuenta de UN cliente, con SUS credenciales. Sólo un cliente de la
-     organización efectiva —uno de otra empresa es 404—; sin el parámetro, los de la empresa, como siempre. */
+     organización efectiva que no esté de baja —uno de otra empresa o de baja es 404, como en `PUT /api/admin/closer`—;
+     sin el parámetro, los del principal, que son los de la empresa (la `085` asegura uno por empresa). */
   const pedido = new URL(peticion.url).searchParams.get('cuenta');
   if (pedido !== null && !UUID.test(pedido)) return rechazo('no_encontrado');
   const leido = await conIdentidad(async (db) => {
-    const cliente = pedido
-      ? await db
-          .selectFrom('cuentas')
-          .select(['id', 'es_por_omision'])
-          .where('org_id', '=', contexto.orgEfectiva)
-          .where('id', '=', pedido)
-          .executeTakeFirst()
-      : null;
-    if (pedido && !cliente) return null;
-    const propio = cliente && !cliente.es_por_omision;
+    const vivos = db
+      .selectFrom('cuentas')
+      .select(['id', 'es_por_omision'])
+      .where('org_id', '=', contexto.orgEfectiva)
+      .where('estado', '<>', 'baja');
+    const fila = await (pedido === null ? vivos.where('es_por_omision', '=', true) : vivos.where('id', '=', pedido))
+      .executeTakeFirst();
+    if (!fila) return null;
+    const cliente = { id: fila.id, esPorOmision: fila.es_por_omision };
     return {
-      acceso: await resolverAccesoAGhl(
-        db,
-        contexto.orgEfectiva,
-        cliente ? { id: cliente.id, esPorOmision: cliente.es_por_omision } : 'la_de_la_empresa',
-      ),
-      agenteId:
-        (propio
-          ? (
-              await db
-                .selectFrom('cuentas_credenciales')
-                .select('crm_agente_usuario_id')
-                .where('org_id', '=', contexto.orgEfectiva)
-                .where('cuenta_id', '=', cliente.id)
-                .executeTakeFirst()
-            )?.crm_agente_usuario_id
-          : (
-              await db
-                .selectFrom('organizaciones_credenciales')
-                .select('crm_agente_usuario_id')
-                .where('org_id', '=', contexto.orgEfectiva)
-                .executeTakeFirst()
-            )?.crm_agente_usuario_id) ?? null,
+      cliente,
+      acceso: await resolverAccesoAGhl(db, contexto.orgEfectiva, cliente),
+      agenteId: await agenteDelCrmDe(db, contexto.orgEfectiva, cliente),
     };
   });
   if (!leido) return rechazo('no_encontrado');
-  const { acceso, agenteId } = leido;
+  const { cliente, acceso, agenteId } = leido;
   if (acceso.tipo === 'falta') {
     /* Los cinco motivos de falta de credencial se dicen con su texto, que nombra la acción: cargar
        el token, cargar la subcuenta, volver a cargarlo porque no se puede descifrar. Un «no se pudo»
-       genérico mandaría a mirar la red cuando lo que falta es una casilla de Integraciones. */
-    return rechazo('credenciales_incompletas', TEXTO_DE_FALTA_GHL[acceso.que]);
+       genérico mandaría a mirar la red cuando lo que falta es una casilla de Integraciones. La de
+       un cliente que no es el principal se carga en SU Conexión, y su subcuenta la vincula ARIA. */
+    const textos = cliente.esPorOmision ? TEXTO_DE_FALTA_GHL : TEXTO_DE_FALTA_GHL_DEL_CLIENTE;
+    return rechazo('credenciales_incompletas', textos[acceso.que]);
   }
 
   const r = await usuariosDelCrm(acceso);
@@ -99,9 +82,11 @@ export async function GET(peticion: Request): Promise<Response> {
        puede arreglar. Lo demás —sin respuesta, demasiadas peticiones, un rechazo del proveedor— es
        esperar y reintentar, y decir lo contrario manda a rotar un token que estaba bien. */
     const detalle =
-      r.fallo.tipo === 'no_autorizado'
-        ? 'GoHighLevel rechazó el token. Hay que volver a cargarlo en Integraciones.'
-        : 'No se pudo leer la lista de usuarios de GoHighLevel. Probá de nuevo en un momento.';
+      r.fallo.tipo !== 'no_autorizado'
+        ? 'No se pudo leer la lista de usuarios de GoHighLevel. Probá de nuevo en un momento.'
+        : cliente.esPorOmision
+          ? 'GoHighLevel rechazó el token. Hay que volver a cargarlo en Integraciones.'
+          : 'GoHighLevel rechazó el token de este cliente. Hay que volver a cargarlo en Ajustes › Clientes › Conexión.';
     return rechazo('credenciales_incompletas', detalle);
   }
 

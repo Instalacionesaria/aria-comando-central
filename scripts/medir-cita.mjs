@@ -33,9 +33,16 @@
 // API del proveedor, sin pantalla que llenar— y ése es justamente el argumento con el que la lista
 // de excepciones crece hasta que nadie sabe cuántos clientes HTTP hay. El cable trampa saltó acá y
 // se le hizo caso.
+//
+// ── CADA CLIENTE CON SU TOKEN (el nivel 3) ──────────────────────────────────
+//
+// Los calendarios de un cliente viven en SU subcuenta, así que se mide a cada cliente activo con lo
+// suyo, y con más de uno la cabecera dice «Empresa · Cliente». Como antes, la corrida termina en el
+// primero que tenga un calendario con citas: con un cliente por empresa, mide lo mismo que medía.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { conIdentidad, cerrarClientes } from '../lib/datos/capa.ts';
+import { clientesParaBarrer } from '../lib/administracion/cuentas.ts';
 import { resolverAccesoAGhl } from '../lib/credenciales/resolver.ts';
 import { listarCalendarios } from '../lib/ghl/calendarios.ts';
 import { pedirExterno } from '../lib/http/cliente.ts';
@@ -60,80 +67,111 @@ async function main() {
   );
 
   for (const org of orgs) {
-    const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, org.id, 'la_de_la_empresa'));
-    if (acceso.tipo !== 'listo') continue;
+    // Sus clientes ACTIVOS, cada uno con SU token y SU subcuenta, el principal primero.
+    const clientes = await conIdentidad(async (db) => {
+      const nombres = new Map(
+        (await db.selectFrom('cuentas').select(['id', 'nombre']).where('org_id', '=', org.id).execute()).map((c) => [
+          c.id,
+          c.nombre,
+        ]),
+      );
+      const salida = [];
+      for (const cuenta of await clientesParaBarrer(db, org.id)) {
+        salida.push({ cuenta, nombre: nombres.get(cuenta.id) ?? cuenta.id, acceso: await resolverAccesoAGhl(db, org.id, cuenta) });
+      }
+      return salida;
+    });
+    const varios = clientes.length > 1;
+    // Con un calendario que tenga citas alcanza: la corrida termina en el primer cliente que las tiene, como antes
+    // terminaba en la primera empresa.
+    for (const c of clientes) if (await medirUnCliente(org, c, varios)) return;
+  }
+}
 
-    console.log(`\n═══ ${org.nombre} ═══`);
-    const cals = await listarCalendarios(acceso);
-    if (cals.tipo !== 'datos') {
-      console.log('  no se pudieron leer los calendarios:', cals.fallo?.que ?? '(sin motivo)');
+/**
+ * La medición de UN cliente: sus calendarios y los eventos de uno, con SU token. `true` cuando respondió la pregunta
+ * (un calendario con citas). Cada `return false` corta a este cliente y no a los demás; los dos `continue` de adentro
+ * saltean un calendario que falló o que no tiene citas.
+ */
+async function medirUnCliente(org, { nombre, acceso }, varios) {
+  const titulo = varios ? `${org.nombre} · ${nombre}` : org.nombre;
+  if (acceso.tipo !== 'listo') {
+    // Con un cliente se calla, como antes: una empresa sin token no es noticia. Con varios, el que falta se nombra.
+    if (varios) console.log(`\n═══ ${titulo} ═══\n  SIN MEDIR — sin acceso al CRM (${acceso.que})`);
+    return false;
+  }
+
+  console.log(`\n═══ ${titulo} ═══`);
+  const cals = await listarCalendarios(acceso);
+  if (cals.tipo !== 'datos') {
+    console.log('  no se pudieron leer los calendarios:', cals.fallo?.que ?? '(sin motivo)');
+    return false;
+  }
+  console.log(`  calendarios: ${cals.datos.length}`);
+
+  // Una ventana ancha hacia atrás: se busca una cita cualquiera, no las de hoy.
+  const hasta = new Date();
+  const desde = new Date(hasta.getTime() - 120 * 86_400_000);
+
+  for (const cal of cals.datos) {
+    const q = new URLSearchParams({
+      locationId: acceso.locationId,
+      calendarId: cal.id,
+      startTime: String(desde.getTime()),
+      endTime: String(hasta.getTime()),
+    });
+    const r = await pedirExterno(`https://services.leadconnectorhq.com/calendars/events?${q}`, {
+      cabeceras: {
+        Authorization: `Bearer ${acceso.token}`,
+        Version: '2021-04-15',
+        Accept: 'application/json',
+      },
+    });
+    if (r.tipo !== 'datos') {
+      console.log(`  ${cal.id}: ${r.tipo} ${r.estado ?? r.causa ?? ''} ${r.codigo ?? ''}`.trimEnd());
       continue;
     }
-    console.log(`  calendarios: ${cals.datos.length}`);
+    const eventos = Array.isArray(r.datos?.events) ? r.datos.events : [];
+    if (eventos.length === 0) continue;
 
-    // Una ventana ancha hacia atrás: se busca una cita cualquiera, no las de hoy.
-    const hasta = new Date();
-    const desde = new Date(hasta.getTime() - 120 * 86_400_000);
+    console.log(`\n  calendario ${cal.id} — ${eventos.length} evento(s). Claves del primero:`);
+    const e = eventos[0];
+    for (const k of Object.keys(e).sort()) console.log(`    ${k.padEnd(22)} ${seguro(k, e[k])}`);
 
-    for (const cal of cals.datos) {
-      const q = new URLSearchParams({
-        locationId: acceso.locationId,
-        calendarId: cal.id,
-        startTime: String(desde.getTime()),
-        endTime: String(hasta.getTime()),
-      });
-      const r = await pedirExterno(`https://services.leadconnectorhq.com/calendars/events?${q}`, {
-        cabeceras: {
-          Authorization: `Bearer ${acceso.token}`,
-          Version: '2021-04-15',
-          Accept: 'application/json',
-        },
-      });
-      if (r.tipo !== 'datos') {
-        console.log(`  ${cal.id}: ${r.tipo} ${r.estado ?? r.causa ?? ''} ${r.codigo ?? ''}`.trimEnd());
-        continue;
-      }
-      const eventos = Array.isArray(r.datos?.events) ? r.datos.events : [];
-      if (eventos.length === 0) continue;
-
-      console.log(`\n  calendario ${cal.id} — ${eventos.length} evento(s). Claves del primero:`);
-      const e = eventos[0];
-      for (const k of Object.keys(e).sort()) console.log(`    ${k.padEnd(22)} ${seguro(k, e[k])}`);
-
-      /* El censo COMPLETO, no sólo el de las candidatas. Un campo puede venir en algunos eventos y
-         no en el primero —`rescheduledAt` es justamente así de esperable— y filtrar antes de contar
-         es cómo una medición termina respondiendo la pregunta que uno hizo en vez de la que tenía. */
-      const todas = new Set();
-      for (const ev of eventos) for (const k of Object.keys(ev)) todas.add(k);
-      console.log(`
+    /* El censo COMPLETO, no sólo el de las candidatas. Un campo puede venir en algunos eventos y
+       no en el primero —`rescheduledAt` es justamente así de esperable— y filtrar antes de contar
+       es cómo una medición termina respondiendo la pregunta que uno hizo en vez de la que tenía. */
+    const todas = new Set();
+    for (const ev of eventos) for (const k of Object.keys(ev)) todas.add(k);
+    console.log(`
   censo sobre los ${eventos.length} eventos — TODAS las claves vistas:`);
-      for (const k of [...todas].sort()) {
-        const n = eventos.filter((ev) => ev[k] !== null && ev[k] !== undefined && ev[k] !== '').length;
-        const marca = SOSPECHOSAS.test(k) || /reschedul|assign/i.test(k) ? '  <<<' : '';
-        console.log(`    ${k.padEnd(22)} presente en ${String(n).padStart(4)} de ${eventos.length}${marca}`);
-      }
+    for (const k of [...todas].sort()) {
+      const n = eventos.filter((ev) => ev[k] !== null && ev[k] !== undefined && ev[k] !== '').length;
+      const marca = SOSPECHOSAS.test(k) || /reschedul|assign/i.test(k) ? '  <<<' : '';
+      console.log(`    ${k.padEnd(22)} presente en ${String(n).padStart(4)} de ${eventos.length}${marca}`);
+    }
 
-      /* Y la comprobación que de verdad decide si `reservada_el` sirve: ¿`dateAdded` es distinto de
-         `startTime`? Si fueran iguales, sería la hora de la cita con otro nombre y no la de reserva. */
-      const distintos = eventos.filter((ev) => {
-        const a = ev.dateAdded ? new Date(ev.dateAdded).getTime() : null;
-        const b = ev.startTime ? new Date(ev.startTime).getTime() : null;
-        return a !== null && b !== null && Math.abs(a - b) > 60_000;
-      }).length;
-      console.log(`
+    /* Y la comprobación que de verdad decide si `reservada_el` sirve: ¿`dateAdded` es distinto de
+       `startTime`? Si fueran iguales, sería la hora de la cita con otro nombre y no la de reserva. */
+    const distintos = eventos.filter((ev) => {
+      const a = ev.dateAdded ? new Date(ev.dateAdded).getTime() : null;
+      const b = ev.startTime ? new Date(ev.startTime).getTime() : null;
+      return a !== null && b !== null && Math.abs(a - b) > 60_000;
+    }).length;
+    console.log(`
   dateAdded difiere de startTime en más de un minuto: ${distintos} de ${eventos.length}`);
 
-      const antes = eventos.filter((ev) => {
-        const a = ev.dateAdded ? new Date(ev.dateAdded).getTime() : null;
-        const b = ev.startTime ? new Date(ev.startTime).getTime() : null;
-        return a !== null && b !== null && a < b;
-      }).length;
-      console.log(`  y es ANTERIOR a la cita (que es lo que tiene que ser): ${antes} de ${eventos.length}`);
+    const antes = eventos.filter((ev) => {
+      const a = ev.dateAdded ? new Date(ev.dateAdded).getTime() : null;
+      const b = ev.startTime ? new Date(ev.startTime).getTime() : null;
+      return a !== null && b !== null && a < b;
+    }).length;
+    console.log(`  y es ANTERIOR a la cita (que es lo que tiene que ser): ${antes} de ${eventos.length}`);
 
-      return; // Con un calendario que tenga citas alcanza para responder la pregunta.
-    }
-    console.log('  ningún calendario devolvió citas en la ventana.');
+    return true; // Con un calendario que tenga citas alcanza para responder la pregunta.
   }
+  console.log('  ningún calendario devolvió citas en la ventana.');
+  return false;
 }
 
 try {

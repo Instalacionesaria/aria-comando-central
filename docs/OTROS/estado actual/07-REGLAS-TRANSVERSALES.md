@@ -1319,7 +1319,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/credenciales/resolver.ts:58`): el principal lee las de la empresa; los demás, las suyas, siempre por
   (organización, cliente) (`lib/credenciales/resolver.ts:66`), y sin las suyas FALTAN, nunca caen a las de la empresa.
   Quien quiere la de la empresa lo escribe (`'la_de_la_empresa'`). El aviso del CRM entra al cliente de su secreto
-  (`app/api/avisos/crm/route.ts:150`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:72`.
+  (`app/api/avisos/crm/route.ts:150`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:74`.
 - **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:131`) corren una vez por cliente
   activo, con sus credenciales, que la ruta resuelve por cliente (`app/api/cron/route.ts:230`); las de la empresa, una
   vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:656`), con el presupuesto mirado antes de
@@ -1443,6 +1443,44 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:547`,
   `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:594` y
   `pruebas/codigo/291-los-textos-de-los-avisos-por-cliente.test.ts:51`.
+- **Lo que usaba las credenciales de la empresa usa las del cliente (C6 · D2, sin migración).** «Subir a HighLevel» de
+  Tools le manda a n8n el token y la location del cliente que se elige (`app/api/tools/leads/enviar/route.ts:153`): el
+  del pedido, si es uno ACTIVO de la empresa, y sin decirlo el principal (`app/api/tools/leads/enviar/route.ts:94`). No
+  es el foco —Tools es de la empresa entera, y la cabecera dice «Toda la empresa»— ni «el cliente del lead»: un lead
+  scrapeado no tiene cliente. Uno en pausa es 400, y uno de otra empresa, de baja o que no es un id, 404, antes de leer
+  ningún token (`app/api/tools/leads/enviar/route.ts:141`); a uno sin conexión se le dice qué falta con el texto del
+  cliente (`app/api/tools/leads/enviar/route.ts:157`), y la respuesta nombra al cliente sólo con más de un activo
+  (`app/api/tools/leads/enviar/route.ts:208`). La pantalla cuenta sólo los activos (`components/tools/MisLeads.jsx:129`),
+  dibuja el selector con más de uno, arrancando en el principal (`components/tools/MisLeads.jsx:400`), y manda el
+  cliente sólo entonces (`components/tools/MisLeads.jsx:204`, `lib/tools/leads.ts:137`). La lista de usuarios del CRM no
+  lee a un cliente de baja (`app/api/admin/closer/usuarios-crm/route.ts:57`), sin `?cuenta=` resuelve el principal
+  (`app/api/admin/closer/usuarios-crm/route.ts:58`), lee el agente con su resolvedor
+  (`app/api/admin/closer/usuarios-crm/route.ts:65`) y dice la falta y el token rechazado de un cliente con su texto
+  (`app/api/admin/closer/usuarios-crm/route.ts:75`, `app/api/admin/closer/usuarios-crm/route.ts:89`). Las cuatro rutas
+  de un contacto dicen la falta con el texto del cliente del contacto, y el de la empresa sólo al principal
+  (`app/api/contactos/[id]/route.ts:116`, `app/api/contactos/[id]/resolver/route.ts:76`,
+  `app/api/contactos/[id]/mensajes/route.ts:145`, `app/api/contactos/[id]/avanzar/route.ts:559`). Los cuatro guiones de
+  medición miden a cada cliente activo con su token (`scripts/medir-cita.mjs:96`, `scripts/medir-contacto.mjs:126`,
+  `scripts/medir-activos-en-ghl.mjs:161`) y siguen midiendo lo que medían con un cliente: medir-cita termina en el
+  primer cliente con citas (`scripts/medir-cita.mjs:87`) y medir-gasto mide sólo la empresa principal
+  (`scripts/medir-gasto-de-la-cuenta.mjs:129`), con S0 —si Meta está vinculado en el GoHighLevel de cada cliente— antes
+  de la serie (`scripts/medir-gasto-de-la-cuenta.mjs:184`), los tokens después del OK
+  (`scripts/medir-gasto-de-la-cuenta.mjs:161`) y S4 sólo con la corrida acotada a un cliente
+  (`scripts/medir-gasto-de-la-cuenta.mjs:143`). Quien pide la de la empresa a propósito está escrito, uno por uno —el
+  cron, «Probar conexión» de Meta y la caída de las cuatro rutas de un contacto—, y cada uso nuevo se suma en el mismo
+  commit (`pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:141`). Con un solo cliente, todo como
+  siempre, salvo S0 en medir-gasto (un guion manual: una llamada más). **Un riesgo que decide el usuario:** con un
+  cliente que no es el principal, al webhook de n8n viaja el Private Integration Token de OTRO negocio, y n8n guarda
+  por omisión el cuerpo de cada ejecución, así que ese token queda en texto plano en su historial. Antes del primer
+  cliente con subcuenta propia: no guardar las ejecuciones de ese flujo (o sacar `apiToken` de lo guardado), revisar
+  quién ve ese historial y comprobar que el flujo use el `apiToken` y el `locationId` del cuerpo y no tenga la
+  subcuenta de ARIA escrita adentro (desde el repositorio no se ve). Lo exigen
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:261`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:288`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:317`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:343`,
+  `pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:68` y
+  `pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:98`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): en el detector de
   Acquisition, el ICP y la fuga entre etapas comparan contra el
   promedio de un funnel que mezcla clientes, el monitor de atribución es una proporción de la empresa (un cliente chico
@@ -1455,9 +1493,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   sin medir para todos (`gastoCuadra` es de la empresa), y un anuncio fuera de la dimensión con leads de dos clientes
   los junta en uno de los dos; las etiquetas cortas de los campos
   y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
-  subcuenta con otros nombres no se reconoce); mandar un lead desde Tools usa las credenciales de la empresa
-  (`app/api/tools/leads/enviar/route.ts:113`); los guiones de medición, salvo `scripts/medir-mensaje.mjs`, miden sólo
-  al principal. De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
+  subcuenta con otros nombres no se reconoce). De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
   empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de campaña —la decisión del 2026-10-20
   es que Acquisition no pasa a ser por cliente: el gasto de cada uno sale de SU GoHighLevel con Meta vinculado, y la
   nota dice de quién y qué hacer—, y si el sello no sabe por qué (un cliente sin ningún sello, una pasada que falló) la
@@ -1483,7 +1519,18 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   publica sólo los de la vista), y `/api/sales` devuelve también al cliente final, de cada closer, el `usuarioId` y
   los vínculos a la vista (`cuentaId` y `crmUsuarioId`, sólo los de su cliente; antes de G2 viajaba el `crmUsuarioId`
   suelto); y el corte por par no calza entero con el índice `contactos_por_asignado` (org_id, territorio,
-  crm_asignado_a), sin efecto con los volúmenes de hoy. Hasta el primer cliente con subcuenta propia, ninguna de estas tiene efecto; con él, se
+  crm_asignado_a), sin efecto con los volúmenes de hoy. De lo que usaba las credenciales de la empresa (D2, más arriba)
+  quedan: el estado de las integraciones que el cerebro le da a quien pregunta sigue siendo el de la empresa
+  (`lib/agentes/executive/caja.ts:65`), así que con varios clientes dice «CRM conectado» aunque uno activo no tenga
+  token; los envíos de Tools no se auditan, y con varios clientes «¿a qué cliente fue ese lote?» no se puede
+  reconstruir (auditarlo sería una escritura nueva en la ruta, y cambiaría su porqué en `CRUZAN_LOS_DOS_DOMINIOS`); el
+  selector de Tools arranca en el principal y no en el cliente enfocado, y también lo ve quien no tiene `tools.editar`
+  (el panel sigue sin `puedeEditar`, ver el 15); no hay «Probar conexión» de un cliente que no es el principal;
+  `scripts/medir-activos-en-ghl.mjs` hace unas 80 llamadas por cliente, sin `--confirmo` ni `--cliente=`; los guiones
+  imprimen el nombre de cada cliente, que puede ser el de una persona; la lista de usuarios del CRM sigue diciendo
+  «Probá de nuevo» (está en `TODAVIA_VOSEAN` de la 258), para que con un cliente no cambie ninguna letra; y Tools y la
+  lista sin `?cuenta=` dependen del principal activo de la `085`, que la base no asegura contra un `update` que lo
+  desmarque (sin él, Tools da 500 y la lista, 404). Hasta el primer cliente con subcuenta propia, ninguna de estas tiene efecto; con él, se
   mira su pantalla antes de activarlo, con su Conexión cargada.
 
 ---

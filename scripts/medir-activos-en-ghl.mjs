@@ -24,9 +24,13 @@
 // el repositorio fue público. Tampoco se imprimen ids: las campañas y anuncios se nombran por su
 // número de orden. El texto de un 422 sí se imprime, porque es la validación de la PETICIÓN
 // («listType must be a valid enum value»), no un dato.
+//
+// **Mide a cada cliente activo con SU token y SU location** (el nivel 3), y con más de uno la
+// cabecera dice «Empresa · Cliente». Con un cliente por empresa, mide lo mismo que medía.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { conIdentidad, cerrarClientes } from '../lib/datos/capa.ts';
+import { clientesParaBarrer } from '../lib/administracion/cuentas.ts';
 import { resolverAccesoAGhl } from '../lib/credenciales/resolver.ts';
 import { pedirExterno } from '../lib/http/cliente.ts';
 
@@ -130,127 +134,158 @@ async function main() {
   );
 
   for (const org of orgs) {
-    const acceso = await conIdentidad(async (db) => resolverAccesoAGhl(db, org.id, 'la_de_la_empresa'));
-    if (acceso.tipo !== 'listo') continue;
-    const loc = `locationId=${encodeURIComponent(acceso.locationId)}`;
-    const t = acceso.token;
-    console.log(`\n═══ ${org.nombre} ═══`);
+    /* Sus clientes ACTIVOS (el nivel 3), cada uno con SU token y SU subcuenta, el principal primero: los anuncios de
+       otro cliente están en otra subcuenta. */
+    const clientes = await conIdentidad(async (db) => {
+      const nombres = new Map(
+        (await db.selectFrom('cuentas').select(['id', 'nombre']).where('org_id', '=', org.id).execute()).map((c) => [
+          c.id,
+          c.nombre,
+        ]),
+      );
+      const salida = [];
+      for (const cuenta of await clientesParaBarrer(db, org.id)) {
+        salida.push({ cuenta, nombre: nombres.get(cuenta.id) ?? cuenta.id, acceso: await resolverAccesoAGhl(db, org.id, cuenta) });
+      }
+      return salida;
+    });
+    const varios = clientes.length > 1;
+    for (const c of clientes) await medirUnCliente(org, c, varios);
+  }
+}
 
-    // ── 0 · Qué hay: campañas por origen ───────────────────────────────────
-    console.log('\n[0] Campañas por origen');
-    const porOrigen = {};
-    for (const tipo of ['INTEGRATION', 'AD_MANAGER']) {
-      for (const nivel of ['CAMPAIGN', 'AD']) {
-        const r = await leer(`/entity?${loc}&type=${tipo}&entityType=${nivel}`, t);
-        const n = r.tipo === 'datos' ? lista(r.datos).length : null;
-        console.log(`  /entity type=${tipo} entityType=${nivel} → ${r.tipo === 'datos' ? `200 · ${n} entidades (1ª página)` : r.estado ?? r.causa}`);
-        if (r.tipo === 'datos') porOrigen[`${tipo}/${nivel}`] = lista(r.datos);
+/**
+ * La medición de UN cliente, de [0] a [F], con SU token y SU location. Con un solo cliente, la cabecera es la de la
+ * empresa, como antes. El `return` corta a este cliente y no a los demás.
+ */
+async function medirUnCliente(org, { nombre, acceso }, varios) {
+  const titulo = varios ? `${org.nombre} · ${nombre}` : org.nombre;
+  if (acceso.tipo !== 'listo') {
+    // Con un cliente se calla, como antes: una empresa sin token no es noticia. Con varios, el que falta se nombra.
+    if (varios) console.log(`\n═══ ${titulo} ═══\n  SIN MEDIR — sin acceso al CRM (${acceso.que})`);
+    return;
+  }
+  const loc = `locationId=${encodeURIComponent(acceso.locationId)}`;
+  const t = acceso.token;
+  console.log(`\n═══ ${titulo} ═══`);
+
+  // ── 0 · Qué hay: campañas por origen ───────────────────────────────────
+  console.log('\n[0] Campañas por origen');
+  const porOrigen = {};
+  for (const tipo of ['INTEGRATION', 'AD_MANAGER']) {
+    for (const nivel of ['CAMPAIGN', 'AD']) {
+      const r = await leer(`/entity?${loc}&type=${tipo}&entityType=${nivel}`, t);
+      const n = r.tipo === 'datos' ? lista(r.datos).length : null;
+      console.log(`  /entity type=${tipo} entityType=${nivel} → ${r.tipo === 'datos' ? `200 · ${n} entidades (1ª página)` : r.estado ?? r.causa}`);
+      if (r.tipo === 'datos') porOrigen[`${tipo}/${nivel}`] = lista(r.datos);
+    }
+  }
+  const listado = await leer(
+    `/reporting/list?${loc}&listType=campaigns&type=INTEGRATION&startDate=${DESDE}&endDate=${HASTA}`,
+    t,
+  );
+  const campanasInt = listado.tipo === 'datos' ? lista(listado.datos) : [];
+  console.log(`  /reporting/list campaigns INTEGRATION → ${listado.tipo === 'datos' ? `${campanasInt.length} campañas` : listado.estado}`);
+
+  const candidatas = [
+    ...(porOrigen['AD_MANAGER/CAMPAIGN'] ?? []).map((c) => ({ origen: 'AD_MANAGER', id: idDe(c, 'campaignId', 'id') })),
+    ...campanasInt.map((c) => ({ origen: 'INTEGRATION', id: idDe(c, 'campaignId', 'id') })),
+  ].filter((c) => c.id);
+  const aProbar = [
+    ...candidatas.filter((c) => c.origen === 'AD_MANAGER').slice(0, CAMPANAS),
+    ...candidatas.filter((c) => c.origen === 'INTEGRATION').slice(0, CAMPANAS),
+  ];
+
+  // ── A · La ruta que nunca se probó ─────────────────────────────────────
+  console.log('\n[A] GET /campaign/{campaignId}');
+  const variantes = [
+    '',
+    '&fields=adsets,ads',
+    '&fields=adsets,ads&source=facebook',
+    '&fields=ads&source=INTEGRATION',
+    '&fields=ads&source=AD_MANAGER',
+    '&fields=ads{creative}',
+    '&fields=ads{creative{thumbnail_url,video_id,effective_object_story_id}}',
+    '&fields=creative',
+    '&fields=zz_campo_inventado',
+  ];
+  let unAnuncio = null;
+  for (const [i, c] of aProbar.entries()) {
+    console.log(`\n  · campaña ${i + 1} (${c.origen})`);
+    for (const v of variantes) {
+      const r = await leer(`/campaign/${encodeURIComponent(c.id)}?${loc}${v}`, t);
+      const d = mostrar(`campaign${v || ' (sin fields)'}`, r);
+      if (!unAnuncio && d) {
+        const ads = lista(d.ads ?? d.data?.ads ?? []);
+        const a = ads.find((x) => idDe(x, 'adId', 'id'));
+        if (a) unAnuncio = idDe(a, 'adId', 'id');
       }
     }
-    const listado = await leer(
-      `/reporting/list?${loc}&listType=campaigns&type=INTEGRATION&startDate=${DESDE}&endDate=${HASTA}`,
-      t,
-    );
-    const campanasInt = listado.tipo === 'datos' ? lista(listado.datos) : [];
-    console.log(`  /reporting/list campaigns INTEGRATION → ${listado.tipo === 'datos' ? `${campanasInt.length} campañas` : listado.estado}`);
+  }
 
-    const candidatas = [
-      ...(porOrigen['AD_MANAGER/CAMPAIGN'] ?? []).map((c) => ({ origen: 'AD_MANAGER', id: idDe(c, 'campaignId', 'id') })),
-      ...campanasInt.map((c) => ({ origen: 'INTEGRATION', id: idDe(c, 'campaignId', 'id') })),
-    ].filter((c) => c.id);
-    const aProbar = [
-      ...candidatas.filter((c) => c.origen === 'AD_MANAGER').slice(0, CAMPANAS),
-      ...candidatas.filter((c) => c.origen === 'INTEGRATION').slice(0, CAMPANAS),
-    ];
+  // ── B · El reporte por campaña ─────────────────────────────────────────
+  console.log('\n[B] GET /reporting/campaign/{campaignId}');
+  for (const [i, c] of aProbar.slice(0, 2).entries()) {
+    const r = await leer(`/reporting/campaign/${encodeURIComponent(c.id)}?${loc}&startDate=${DESDE}&endDate=${HASTA}`, t);
+    mostrar(`campaña ${i + 1} (${c.origen})`, r);
+  }
 
-    // ── A · La ruta que nunca se probó ─────────────────────────────────────
-    console.log('\n[A] GET /campaign/{campaignId}');
-    const variantes = [
-      '',
-      '&fields=adsets,ads',
-      '&fields=adsets,ads&source=facebook',
-      '&fields=ads&source=INTEGRATION',
-      '&fields=ads&source=AD_MANAGER',
-      '&fields=ads{creative}',
-      '&fields=ads{creative{thumbnail_url,video_id,effective_object_story_id}}',
-      '&fields=creative',
-      '&fields=zz_campo_inventado',
-    ];
-    let unAnuncio = null;
-    for (const [i, c] of aProbar.entries()) {
-      console.log(`\n  · campaña ${i + 1} (${c.origen})`);
-      for (const v of variantes) {
-        const r = await leer(`/campaign/${encodeURIComponent(c.id)}?${loc}${v}`, t);
-        const d = mostrar(`campaign${v || ' (sin fields)'}`, r);
-        if (!unAnuncio && d) {
-          const ads = lista(d.ads ?? d.data?.ads ?? []);
-          const a = ads.find((x) => idDe(x, 'adId', 'id'));
-          if (a) unAnuncio = idDe(a, 'adId', 'id');
-        }
-      }
+  // ── C · /entity con lo que no se probó ─────────────────────────────────
+  console.log('\n[C] /entity con parámetros no probados');
+  const primera = aProbar.find((c) => c.origen === 'INTEGRATION') ?? aProbar[0];
+  for (const extra of [
+    '&type=INTEGRATION&entityType=AD&fetchAll=true',
+    primera ? `&type=INTEGRATION&entityType=AD&campaignId=${encodeURIComponent(primera.id)}` : null,
+    '&type=AD_MANAGER&entityType=AD&fetchAll=true',
+    '&type=AD_MANAGER&entityType=ADSET',
+  ].filter(Boolean)) {
+    const r = await leer(`/entity?${loc}${extra}`, t);
+    mostrar(`entity${extra.replace(/campaignId=[^&]+/, 'campaignId=…')}`, r);
+  }
+  if (!unAnuncio) {
+    const ads = porOrigen['INTEGRATION/AD'] ?? [];
+    unAnuncio = ads.map((a) => idDe(a, 'adId', 'id')).find(Boolean) ?? null;
+  }
+
+  // ── D · Los enums que dicen los 422 ────────────────────────────────────
+  console.log('\n[D] Enums (el texto del 422 los nombra)');
+  for (const extra of ['&type=INTEGRATION&entityType=CREATIVE', '&type=ZZ&entityType=AD', '&type=INTEGRATION&entityType=POST']) {
+    mostrar(`entity${extra}`, await leer(`/entity?${loc}${extra}`, t));
+  }
+
+  // ── E · Detalle por entidad ────────────────────────────────────────────
+  console.log('\n[E] Detalle por anuncio');
+  if (unAnuncio) {
+    const a = encodeURIComponent(unAnuncio);
+    for (const camino of [
+      `/entity/${a}?${loc}`,
+      `/entity/${a}?${loc}&type=INTEGRATION&entityType=AD`,
+      `/ads/${a}?${loc}`,
+      `/ad/${a}?${loc}`,
+      `/ads-v2/${a}?${loc}`,
+      `/ads/${a}/preview?${loc}`,
+      `/ad/${a}/preview?${loc}`,
+    ]) {
+      mostrar(camino.replace(a, '{adId}').replace(/locationId=[^&]+/, 'locationId=…'), await leer(camino, t));
     }
+  } else {
+    console.log('  sin anuncio para probar');
+  }
 
-    // ── B · El reporte por campaña ─────────────────────────────────────────
-    console.log('\n[B] GET /reporting/campaign/{campaignId}');
-    for (const [i, c] of aProbar.slice(0, 2).entries()) {
-      const r = await leer(`/reporting/campaign/${encodeURIComponent(c.id)}?${loc}&startDate=${DESDE}&endDate=${HASTA}`, t);
-      mostrar(`campaña ${i + 1} (${c.origen})`, r);
-    }
-
-    // ── C · /entity con lo que no se probó ─────────────────────────────────
-    console.log('\n[C] /entity con parámetros no probados');
-    const primera = aProbar.find((c) => c.origen === 'INTEGRATION') ?? aProbar[0];
-    for (const extra of [
-      '&type=INTEGRATION&entityType=AD&fetchAll=true',
-      primera ? `&type=INTEGRATION&entityType=AD&campaignId=${encodeURIComponent(primera.id)}` : null,
-      '&type=AD_MANAGER&entityType=AD&fetchAll=true',
-      '&type=AD_MANAGER&entityType=ADSET',
-    ].filter(Boolean)) {
-      const r = await leer(`/entity?${loc}${extra}`, t);
-      mostrar(`entity${extra.replace(/campaignId=[^&]+/, 'campaignId=…')}`, r);
-    }
-    if (!unAnuncio) {
-      const ads = porOrigen['INTEGRATION/AD'] ?? [];
-      unAnuncio = ads.map((a) => idDe(a, 'adId', 'id')).find(Boolean) ?? null;
-    }
-
-    // ── D · Los enums que dicen los 422 ────────────────────────────────────
-    console.log('\n[D] Enums (el texto del 422 los nombra)');
-    for (const extra of ['&type=INTEGRATION&entityType=CREATIVE', '&type=ZZ&entityType=AD', '&type=INTEGRATION&entityType=POST']) {
-      mostrar(`entity${extra}`, await leer(`/entity?${loc}${extra}`, t));
-    }
-
-    // ── E · Detalle por entidad ────────────────────────────────────────────
-    console.log('\n[E] Detalle por anuncio');
-    if (unAnuncio) {
-      const a = encodeURIComponent(unAnuncio);
-      for (const camino of [
-        `/entity/${a}?${loc}`,
-        `/entity/${a}?${loc}&type=INTEGRATION&entityType=AD`,
-        `/ads/${a}?${loc}`,
-        `/ad/${a}?${loc}`,
-        `/ads-v2/${a}?${loc}`,
-        `/ads/${a}/preview?${loc}`,
-        `/ad/${a}/preview?${loc}`,
-      ]) {
-        mostrar(camino.replace(a, '{adId}').replace(/locationId=[^&]+/, 'locationId=…'), await leer(camino, t));
-      }
-    } else {
-      console.log('  sin anuncio para probar');
-    }
-
-    // ── F · Página, Instagram, usuario, cuenta ────────────────────────────
-    console.log('\n[F] Página, Instagram, usuario y cuenta');
-    const integ = await leer(`/integration?${loc}`, t);
-    const integD = mostrar('integration', integ);
-    const paginas = await leer(`/pages?${loc}`, t);
-    const pagD = mostrar('pages', paginas);
-    const pagina = lista(pagD)[0] ?? (Array.isArray(integD?.pages) ? integD.pages[0] : null);
-    const pageId = idDe(pagina, 'pageId', 'id');
-    if (pageId) mostrar('page/{pageId}/instagram', await leer(`/page/${encodeURIComponent(pageId)}/instagram?${loc}`, t));
-    mostrar('me', await leer(`/me?${loc}`, t));
-    const cuenta = idDe(integD, 'fbAdAccountId');
-    if (cuenta) mostrar('ad-accounts/{id}', await leer(`/ad-accounts/${encodeURIComponent(cuenta)}?${loc}`, t));
+  // ── F · Página, Instagram, usuario, cuenta ────────────────────────────
+  console.log('\n[F] Página, Instagram, usuario y cuenta');
+  const integ = await leer(`/integration?${loc}`, t);
+  const integD = mostrar('integration', integ);
+  const paginas = await leer(`/pages?${loc}`, t);
+  const pagD = mostrar('pages', paginas);
+  const pagina = lista(pagD)[0] ?? (Array.isArray(integD?.pages) ? integD.pages[0] : null);
+  const pageId = idDe(pagina, 'pageId', 'id');
+  if (pageId) mostrar('page/{pageId}/instagram', await leer(`/page/${encodeURIComponent(pageId)}/instagram?${loc}`, t));
+  mostrar('me', await leer(`/me?${loc}`, t));
+  // La cuenta publicitaria de Meta, que no es el cliente (en `main`, el cliente se llama `cuenta`).
+  const cuentaPublicitaria = idDe(integD, 'fbAdAccountId');
+  if (cuentaPublicitaria) {
+    mostrar('ad-accounts/{id}', await leer(`/ad-accounts/${encodeURIComponent(cuentaPublicitaria)}?${loc}`, t));
   }
 }
 
