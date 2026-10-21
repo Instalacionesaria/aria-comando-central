@@ -131,7 +131,7 @@ devuelve.
 **Rastro** · `aios-command-center_1.html:4710` y `:4715` («N agendados»); el filtro «Agendados» de
 `aios-command-center_1.html:3061`; el predicado en `lib/negocio/citasAlcanzables.ts:135-145`.
 **Estado** · **Construible hoy**, y es el mismo predicado que usan Sales
-(`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:245`) y
+(`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:253`) y
 Conversion. Tres consecuencias de la definición, las tres a propósito:
 
 - **Una cita cancelada cuenta.** El predicado pregunta por la existencia de una cita alcanzable, no

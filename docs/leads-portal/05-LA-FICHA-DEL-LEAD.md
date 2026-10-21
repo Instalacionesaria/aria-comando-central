@@ -159,17 +159,17 @@ acciones y siete secciones:
   (`aios-command-center_1.html:4668-4671`): la facturación depende de `seg`. El cuestionario dice lo que el
   tramo ya decía, y parece confirmarlo.
 - **Qué pide:**
-  - **el grupo `calificacion` de `perfilDeLaFicha`** (`lib/negocio/ficha.ts:476`), agrupado por
-    significado y no por formulario (`lib/negocio/ficha.ts:451-461`). Sus carpetas son tres
+  - **el grupo `calificacion` de `perfilDeLaFicha`** (`lib/negocio/ficha.ts:481`), agrupado por
+    significado y no por formulario (`lib/negocio/ficha.ts:456-466`). Sus carpetas son tres
     (`lib/ghl/contrato.ts:332-340`): la del puntaje, «Score | ICP Nuevo» y «Score | ICP Lead Form
     (Meta)». Así entran las dos cosas que el § 5.3 pide por separado: las respuestas de Meta Lead Ads
     y las de la landing (`§ 5.3:253-254`);
-  - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:499-505`);
+  - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:504-510`);
   - **sin «N de M».** Son dos formularios con preguntas distintas y casi nadie contesta los dos —6
     personas, medido en LP-3—: un «5 de 17» diría que faltan doce respuestas que la persona nunca tuvo
     delante;
   - **el puntaje aparece una sola vez**, en la sección de calificación. Hoy saldría dos veces: como
-    «Calificación» (`lib/negocio/ficha.ts:520`) y como el propio campo del CRM, que vive en una de las
+    «Calificación» (`lib/negocio/ficha.ts:525`) y como el propio campo del CRM, que vive en una de las
     carpetas del grupo (`lib/ghl/contrato.ts:333-336`);
   - **un campo sin grupo no aparece.** Es la prueba de LP-3. Medido: **174** campos del catálogo no
     tienen grupo, contra **17** del grupo `calificacion` en **3** carpetas;
@@ -297,8 +297,8 @@ acciones y siete secciones:
   Notas sobre la tabla:
   - `utmMedium` es un nombre, no un id, y un renombre en Meta parte la serie. Acquisition pide
     decirlo en pantalla (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`);
-  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1014`);
-  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1011-1022`). **Medido: 213 de 213
+  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1025`);
+  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1022-1033`). **Medido: 213 de 213
     cruzan.**
 - **Sólo el host.** **286** direcciones traen un token: un JWT, un `fbclid` o un `token=`. Es lo que
   pide A8-18 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:239`). Hosts medidos:
@@ -322,10 +322,10 @@ acciones y siete secciones:
   | campo de la maqueta | qué es hoy | rastro |
   |---|---|---|
   | Ubicación · Posición | **hueco**: el placement no llega de ningún lado | A8-29, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304` |
-  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1112-1120`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
+  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1123-1131`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
   | Dispositivo · Ciudad | **hueco**: están dentro de `userAgent` e `ip`, que no se muestran. Acquisition pide derivarlos y no mostrarlos (A8-17). La maqueta elige el dispositivo por la paridad del puntaje (`aios-command-center_1.html:4673`) | `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:238` |
   | Plataforma | **no es un dato aparte**: lo dice `sessionSource`. No se inventa «Meta» | — |
-  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1019-1020`). Ver `LP05-P02` | — |
+  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1030-1031`). Ver `LP05-P02` | — |
   | Punto de captura | **se reemplaza** por el host de `url` y por «Llegó por» (`LP05-07`) | A8-18 |
   | Conjunto · Creative · UTM | **dato real**, por la lista blanca (`LP05-13`); «Creative» es el **nombre** del anuncio, no la pieza (ver la nota) | A8-07, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93` |
 
@@ -333,7 +333,7 @@ acciones y siete secciones:
   (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304`) porque habla de la pieza: el formato y el
   *Creative Profile*, que no llegan de ningún lado. Lo que esta ficha muestra en «Creative» es el
   nombre que viene en `utmContent`, que A8-07 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`)
-  llama anuncio y que Creative usa como llave (`lib/negocio/calidadDelCreativo.ts:214`). El rótulo
+  llama anuncio y que Creative usa como llave (`lib/negocio/calidadDelCreativo.ts:222`). El rótulo
   no promete más que eso.
 
   Los huecos salen de `huecosDelLeadsPortal.ts` con su fecha: el VSL, fit e intent, ubicación,
@@ -401,16 +401,16 @@ portal completarían el recorrido: la confirmación de asistencia es justo lo qu
 
 Ninguno es un dato personal. `medium` está en 552 contactos y `campaignId` en 358. El objetivo existe
 para los 213 contactos cuyo `adId` cruza con `negocio.anuncios`; cuántos lo traen cargado no se midió,
-y la columna puede ser nula (`lib/datos/esquema.ts:1019-1020`). Quedaron afuera porque la lista del plan
+y la columna puede ser nula (`lib/datos/esquema.ts:1030-1031`). Quedaron afuera porque la lista del plan
 es la mínima que llena la ficha de la maqueta. `campaignId` sólo serviría para cruzar, y hoy
-`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1011-1022`).
+`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1022-1033`).
 `medium` y el objetivo sí llenarían dos filas que la maqueta tiene: «Plataforma» y «Objetivo».
 Para el objetivo, es la misma pregunta que `LP09-P04` (`09-DE-DONDE-VIENE-CADA-DATO.md`), y se
 contesta una sola vez.
 
 ### LP05-P03 · ¿La ficha muestra las etiquetas crudas del CRM?
 
-`perfilDeLaFicha` las pone en el grupo «origen» (`lib/negocio/ficha.ts:521-523`). Esta ficha sólo
+`perfilDeLaFicha` las pone en el grupo «origen» (`lib/negocio/ficha.ts:526-528`). Esta ficha sólo
 muestra la de descarte (`LP05-05`). Las crudas explican casos raros, como por qué alguien está donde
 está. Pero son vocabulario interno del CRM, y en una pestaña que ve más gente que el closer quizás no
 corresponde.

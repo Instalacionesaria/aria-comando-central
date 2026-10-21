@@ -521,8 +521,8 @@ contacto. El catálogo no borra lo que desapareció, a propósito (`lib/negocio/
 ### El reparto por carpeta, y las que son inalcanzables
 
 Un campo se dibuja en el Perfil sólo si su carpeta tiene `grupo` (`lib/negocio/camposDelCrm.ts:256`).
-El grupo se pone **una sola vez, al descubrir la carpeta**, desde `CARPETAS_DEL_PERFIL`
-(`lib/ghl/contrato.ts:332-344`), que lista cuatro.
+El grupo se pone **al descubrir la carpeta**, desde `CARPETAS_DEL_PERFIL` (`lib/ghl/contrato.ts:332-344`), que lista cuatro, o cuando llega tarde el nombre de una sin grupo que nadie eligió (`lib/negocio/camposDelCrm.ts:592`);
+desde la `098` también lo elige una persona en Ajustes › Clientes (`grupo_elegido_el`), y ningún refresco lo pisa.
 
 | Clase | Carpetas | Campos | Con algún valor | Valores guardados |
 |---|---|---|---|---|
@@ -542,7 +542,7 @@ están fuera y no hay forma de traerlos sin cambiar `carpetas_del_crm.grupo`. Pa
 negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:318`) resuelve un campo
 por su nombre **saltándose el filtro de carpetas**. El 2026-09-15 la usaban dos módulos; hoy seis:
 `lib/negocio/consumoDelPrecall.ts:159`, `lib/negocio/indicadoresDeCitas.ts:248`,
-`lib/negocio/calidadDelCreativo.ts:148`, `lib/negocio/embudoDelFormulario.ts:182`,
+`lib/negocio/camposDelCrm.ts:529` (el puntaje de Creative, si el cliente no eligió el suyo), `lib/negocio/embudoDelFormulario.ts:182`,
 `lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:213-215`. De los campos que se
 leen así, dos viven en carpetas sin grupo: «Confirmación Agendamiento»
 (`lib/negocio/indicadoresDeCitas.ts:208`) y «Form Landing VSL» (`lib/negocio/recorrido.ts:231`). El

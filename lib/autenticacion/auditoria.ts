@@ -152,6 +152,12 @@ export type Accion =
   | 'cuentas_asignadas'
   // El foco de una sesión en un cliente. Como `organizacion_cambiada`: lleva el destino.
   | 'cuenta_cambiada'
+  /* El puntaje y el Perfil de un cliente (C6 · D4). Cambian qué puntaje tienen sus leads y qué ve el closer en el
+     Perfil, y la pantalla se ve igual de bien con el campo equivocado. Son acciones distintas por el mismo criterio
+     que asignar y quitar: «elegí este campo» y «volví al de su nombre» son hechos distintos. */
+  | 'puntaje_elegido'
+  | 'puntaje_por_su_nombre'
+  | 'carpeta_del_perfil_elegida'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -236,9 +242,16 @@ export interface Detalle {
   /**
    * El cliente de esa pieza (`identidad.cuentas.id`), en `enlace_de_pieza_cargado` y `enlace_de_pieza_borrado` (el
    * nivel 3): dos clientes de una empresa pueden tener una pieza con el mismo nombre, y sin él las dos dejarían la
-   * misma fila. Y el cliente del vínculo, en `closer_designado`: el usuario del CRM es de la subcuenta de ese cliente.
+   * misma fila. Y el cliente del vínculo, en `closer_designado` (el usuario del CRM es de su subcuenta), y el del
+   * puntaje y el Perfil, en `puntaje_elegido`, `puntaje_por_su_nombre` y `carpeta_del_perfil_elegida`.
    */
   cuenta?: string;
+  /** El campo del CRM elegido como puntaje, en `puntaje_elegido`: su id en la subcuenta, que no es un dato de nadie. */
+  campo?: string;
+  /** La carpeta de campos del CRM, en `carpeta_del_perfil_elegida`: su id en la subcuenta. */
+  carpeta?: string;
+  /** El grupo del Perfil que se eligió para esa carpeta. `null` = no se muestra. */
+  grupo?: string | null;
   /**
    * La campaña de Meta, en `funnel_de_campana_asignado` y `funnel_de_campana_quitado`: su
    * identificador, que no es un dato de nadie. Sin él, `funnel` diría qué funnel y no de qué campaña.
@@ -312,6 +325,10 @@ export async function auditarAdministracion(
       | 'cuenta_vinculada'
       // Las cuentas de un cliente final. El objetivo es la persona.
       | 'cuentas_asignadas'
+      // El puntaje y el Perfil de un cliente. El objetivo es el cliente, y `detalle.cuenta` también.
+      | 'puntaje_elegido'
+      | 'puntaje_por_su_nombre'
+      | 'carpeta_del_perfil_elegida'
     >;
     actor: string;
     objetivo: string;

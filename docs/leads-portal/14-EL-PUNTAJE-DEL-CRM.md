@@ -35,19 +35,20 @@ un puntaje por contacto. No se cruzan en ninguna tabla
 - **Cómo llega:** en la misma respuesta de contactos que ya trae todo lo demás. Se guarda crudo en
   `contactos.campos_del_crm` desde la migración `039`, y desde el 2026-09-21 la sincronización lo
   deriva a `contactos.score` sin ninguna llamada nueva (`lib/negocio/sincronizar.ts:415-423`).
-- **Cuál campo es:** está designado a mano por identificador en `CAMPO_DEL_PUNTAJE`
-  (`lib/ghl/contrato.ts:313`), porque no se puede deducir: el grupo `calificacion` tiene 17 campos y
-  cualquiera de las preguntas del cuestionario daría un «puntaje» plausible y falso
-  (`lib/ghl/contrato.ts:288-291`).
-- **Qué se acepta:** un entero de 0 a 100; cualquier otra cosa se guarda como `null`
-  (`lib/negocio/sincronizar.ts:544-553`), y la columna es `smallint` con `check between 0 and 100`
+- **Cuál campo es:** se elige por cliente en Ajustes › Clientes (`campos_del_crm.es_el_puntaje`, la `098`, C6 · D4),
+  porque no se puede deducir: el grupo `calificacion` tiene 17 campos y cualquiera de las preguntas del cuestionario
+  daría un «puntaje» plausible y falso (`lib/ghl/contrato.ts:288-291`). Sin elegir, el de siempre: el identificador de
+  `CAMPO_DEL_PUNTAJE` en la subcuenta de ARIA (`lib/ghl/contrato.ts:313`) y el que se llama «Puntaje | ICP» en la de
+  cada cliente; con uno elegido, ése y nada más (`lib/negocio/camposDelCrm.ts:379`, `lib/negocio/camposDelCrm.ts:514`).
+- **Qué se acepta:** un entero de 0 a 100 escrito con dígitos; cualquier otra cosa se guarda como `null`
+  (`lib/negocio/sincronizar.ts:544-553`, `lib/negocio/camposDelCrm.ts:444`), y la columna es `smallint` con `check between 0 and 100`
   desde la migración `055` (`lib/datos/esquema.ts:376`).
 - **Qué significa el nulo:** que el CRM no lo trae para ese contacto. **No es un cero**
   (`lib/datos/esquema.ts:379-380`).
 
 Hasta el 2026-09-21 la columna estaba vacía: Acquisition la midió el 2026-09-16 con cero valores y
 el dato vivía sólo en el `jsonb` (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:399-401`). Hoy la leen el
-Perfil del closer y del setter (`lib/negocio/ficha.ts:511-520`) y la fila de sus listas
+Perfil del closer y del setter (`lib/negocio/ficha.ts:516-525`) y la fila de sus listas
 (`components/negocio/Fila.jsx:235-237`). **Esta pestaña es el primer lector que lo corta en tramos.**
 
 El documento funcional pide las dos cosas por separado —«ICP score» y «Segmento de ICP»
@@ -61,7 +62,8 @@ cuestionario (`lib/datos/esquema.ts:364-367`). Dos consecuencias:
 1. **El tramo es el de hoy, no el del día del alta.** «30 días · ICP alto» son los que entraron en
    los últimos 30 días **y hoy** tienen 75 o más. El reparto de una misma ventana puede cambiar sin
    que entre nadie. Se declara en la pantalla (`LP06-14`).
-2. **Los congelados no se refrescan** —se ven y no cuestan llamadas
+2. **Los congelados no se refrescan** —salvo cuando alguien elige el campo del puntaje de su cliente: ahí se recalculan
+   todos desde lo guardado (`lib/negocio/camposDelCrm.ts:800`)—; se ven y no cuestan llamadas
    (`lib/negocio/sincronizar.ts:564-570`)—, así que su puntaje es el del último día que tuvieron
    etiqueta de zona. Son 25, y 24 no tienen alta (medido el 2026-09-27), así que casi no entran en
    ninguna ventana
@@ -77,14 +79,14 @@ Hay dos caminos para leer el puntaje, y hoy dan lo mismo:
 
 | quién | de dónde | cómo encuentra el campo | qué acepta |
 |---|---|---|---|
-| sincronización → `contactos.score` | la columna | por identificador (`lib/ghl/contrato.ts:313`) | entero 0-100 (`lib/negocio/sincronizar.ts:544-553`) |
-| Creative | el `jsonb` | por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:64`, `:148`) | cualquier número, decimales incluidos (`lib/negocio/calidadDelCreativo.ts:221-225`) |
+| sincronización → `contactos.score` | la columna | el elegido del cliente; si no, por identificador y por nombre (`lib/negocio/camposDelCrm.ts:379`) | entero 0-100 (`lib/negocio/sincronizar.ts:544-553`) |
+| Creative | el `jsonb` | el elegido del cliente; si no, por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:64`, `lib/negocio/camposDelCrm.ts:529`) | el mismo entero 0-100, desde C6 · D4 (`lib/negocio/camposDelCrm.ts:456`, `lib/negocio/calidadDelCreativo.ts:229-233`) |
 
 Coinciden porque la columna, que sólo acepta enteros de 0 a 100 (`lib/negocio/sincronizar.ts:544-553`),
 tenía el 2026-09-27 los mismos 471 valores que el `jsonb` tenía el 2026-09-21
 (`lib/ghl/contrato.ts:278-279`). Pero divergen en dos casos que no fallan en ninguna parte: si alguien **renombra** el
-campo en el CRM, Creative apaga su columna y la de acá sigue; si llega un **decimal**, Creative lo
-promedia y acá es `null`.
+campo en el CRM, Creative apaga su columna y la de acá sigue. El **decimal** ya no: desde C6 · D4 las dos validan
+igual, y un decimal es `null` en las dos.
 
 **Requisito** · Esta pestaña lee **sólo `contactos.score`**, en un único lugar de la consulta de LP-2,
 y nunca el `jsonb`.
@@ -196,7 +198,7 @@ La maqueta rotula las tarjetas «Calificado alto», «Calificado medio» y **«N
 | **60** | el techo del rechazo: el 2026-09-16 la casa no rechazaba por ICP a nadie de 60 o más (0 de 67), y el máximo rechazado era 59 | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:525-541` |
 | **75** | donde saltaba el agendamiento: 75,7 % en el tramo alto contra ~51-53 % en medio y bajo | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:543-555` |
 | **80** | una frase inventada del Plan de acción: «Prioriza el contacto inmediato con ICP sobre 80» | `aios-command-center_1.html:5722` |
-| ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:235` |
+| ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:243` |
 
 El de 80 no es un requisito: es una de las frases del Plan de acción, cuyo censo está en
 `07-EL-PLAN-DE-ACCION.md`. La frase de al lado —«el ICP alto es el 22 % del volumen pero produce el
@@ -296,7 +298,7 @@ Tres lecturas, las tres requisitos:
 ### LP14-12 · Creative promedia el cero; esta pestaña lo aparta
 
 Creative publica un **ICP promedio por pieza** que promedia todos los valores numéricos, **ceros
-incluidos** (`lib/negocio/calidadDelCreativo.ts:234-235`), y hasta el 2026-10-11 dibujaba al lado el `n` de los que
+incluidos** (`lib/negocio/calidadDelCreativo.ts:242-243`), y hasta el 2026-10-11 dibujaba al lado el `n` de los que
 tienen puntaje, que también los incluye (`components/creative/PanelDeCreative.jsx:390-391@1971ab2`); desde ese día ese
 promedio no se dibuja, y lo da el agente. Esta pestaña no
 promedia: clasifica, y el 0 va a «Sin calificar».

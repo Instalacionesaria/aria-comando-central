@@ -345,8 +345,8 @@ export type SalidaResultado =
  * mediana 54 — guardado en `campos_del_crm` desde la `039` y sin que nada lo derivara a su columna.
  *
  * Ahora lo deriva `sincronizar.ts`, y se PISA en cada corrida como `crm_asignado_a`: el CRM lo
- * recalcula cuando el lead responde el cuestionario. La designación de cuál campo es está en
- * `CAMPO_DEL_PUNTAJE` (`lib/ghl/contrato.ts`), porque de 17 campos del grupo `calificacion` sólo
+ * recalcula cuando el lead responde el cuestionario. Cuál campo es se elige por cliente (`098`), con
+ * `CAMPO_DEL_PUNTAJE` (`lib/ghl/contrato.ts`) como respaldo, porque de 17 campos del grupo `calificacion` sólo
  * uno es el puntaje y los otros dieciséis darían un «score» plausible y falso.
  *
  * `responsable_id` y `responsable_rol` estaban también en esta lista y **se borraron** en la
@@ -367,7 +367,7 @@ export interface TablaContactos {
   /**
    * El puntaje que el CRM le calcula al lead, **0 a 100**. Un hecho de GoHighLevel, no nuestro.
    *
-   * Sale de «Puntaje | ICP» (`CAMPO_DEL_PUNTAJE`), lo deriva `sincronizar.ts` de `campos_del_crm`,
+   * Sale del campo del puntaje de su subcuenta (`camposDelPuntaje`), lo deriva `sincronizar.ts` de `campos_del_crm`,
    * y se PISA en cada corrida: el CRM lo recalcula cuando el lead responde el cuestionario.
    *
    * ── ERA `char(1)` CON UN `check` DE LETRAS, Y NO PODÍA GUARDARLO ──────────
@@ -499,6 +499,11 @@ export interface TablaCarpetasDelCrm {
   /** `null` = sus campos NO se muestran. Es el valor por omisión de una carpeta recién vista. */
   grupo: GrupoDePerfil | null;
   visto_el: Generated<Date>;
+  /**
+   * NUESTRA (`098`). `null` = el grupo lo puso el contrato al descubrir la carpeta; con fecha = lo eligió una persona
+   * en Ajustes › Clientes, y ningún refresco del catálogo lo toca. Es lo único que quiere decir «elegida».
+   */
+  grupo_elegido_el: Date | null;
 }
 
 /** Los cuatro grupos de la pestaña Perfil. El mismo vocabulario que `CampoDePerfil['grupo']`. */
@@ -525,6 +530,12 @@ export interface TablaCamposDelCrm {
    */
   posicion: ColumnType<string, number | string | undefined, number | string | undefined>;
   visto_el: Generated<Date>;
+  /**
+   * NUESTRA (`098`): el campo que esta subcuenta usa como puntaje del lead, elegido en Ajustes › Clientes. Uno por
+   * cliente (un índice único parcial). `false` en todos = se reconoce por id o por nombre (`camposDelPuntaje`). El
+   * refresco del catálogo no la nombra, así que no la pisa.
+   */
+  es_el_puntaje: Generated<boolean>;
 }
 
 export interface TablaCitas {

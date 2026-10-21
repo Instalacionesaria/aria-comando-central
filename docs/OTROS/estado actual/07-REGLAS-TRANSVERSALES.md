@@ -498,7 +498,7 @@ migración nace vacía y se llena hacia adelante (`db/migraciones/048_de_donde_v
 *no cambió*».
 
 **Dónde se resuelve entonces.** El dato se arregla **al leer**, no al migrar: la `040` infiere el canal en
-`lib/negocio/ficha.ts:187` (`CANAL_EFECTIVO`) sin tocar una fila. Y cuando hay que escribir, una fase de
+`lib/negocio/ficha.ts:192` (`CANAL_EFECTIVO`) sin tocar una fila. Y cuando hay que escribir, una fase de
 `scripts/db.mjs` que corre con el rol que sí ve las filas (sección «Construido en local», 2026-10-16).
 
 ---
@@ -1368,8 +1368,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   módulo puro que también lee el navegador: el nombre si la pieza es del principal —con un cliente, siempre: la clave,
   las huellas y la pantalla de siempre— y `<cuenta>:<nombre>` si es de otro; quien agrupa sin saber cuál es el
   principal usa una llave interna aparte (`lib/negocio/idDeLaPieza.ts:116`). La calidad agrupa por cliente
-  (`lib/negocio/calidadDelCreativo.ts:251`) y cruza un contacto sólo con un anuncio de SU cliente
-  (`lib/negocio/calidadDelCreativo.ts:353`); el rendimiento, la fatiga y la entrega, también
+  (`lib/negocio/calidadDelCreativo.ts:259`) y cruza un contacto sólo con un anuncio de SU cliente
+  (`lib/negocio/calidadDelCreativo.ts:361`); el rendimiento, la fatiga y la entrega, también
   (`lib/negocio/rendimientoDelCreativo.ts:347`, `lib/negocio/fatigaDelCreativo.ts:164`,
   `lib/negocio/lecturaDeCreative.ts:474`). Los leads y la miniatura de un contacto son del cliente de su ANUNCIO, y sólo
   sin el anuncio en la dimensión, del contacto (`lib/negocio/costoDelAnuncio.ts:358`,
@@ -1425,7 +1425,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   calendario» para siempre, y con citas `sinConexion` (`lib/negocio/agenda.ts:428`, `lib/negocio/agenda.ts:313`); la
   cabecera de Mi Día, DESPUÉS de las citas sin registrar (`lib/agentes/cabecera.ts:174`), las dos sólo de los clientes
   del alcance de quien mira (`lib/negocio/faltaDeLosClientes.ts:130`); el chat de la ficha, del cliente del contacto
-  (`lib/negocio/ficha.ts:274`), y Leads, arriba (`app/api/leads-portal/route.ts:70`). Acquisition y Conversion nombran,
+  (`lib/negocio/ficha.ts:279`), y Leads, arriba (`app/api/leads-portal/route.ts:70`). Acquisition y Conversion nombran,
   después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué —Meta sin vincular en su
   GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:193`): los que pautaron sin
   serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:984`,
@@ -1523,7 +1523,44 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/295-las-senales-de-cada-cliente.test.ts:325`,
   `pruebas/base/295-las-senales-de-cada-cliente.test.ts:390` y
   `pruebas/base/295-las-senales-de-cada-cliente.test.ts:488`.
-- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerró C6 · D3 ya no está):
+- **El puntaje y el Perfil de cada subcuenta, configurables (C6 · D4, `098`).** Cuál campo del CRM es el puntaje del
+  lead y qué carpetas se muestran en el Perfil se reconocían solos —por el id de la subcuenta de ARIA o por el nombre
+  del snapshot—, y un cliente con otros nombres se quedaba sin puntaje y sin Perfil. Desde la `098` se eligen cliente por
+  cliente en Ajustes › Clientes › «Puntaje y Perfil» (`components/ajustes/ConexionDelCliente.jsx:115`,
+  `components/ajustes/ConexionDelCliente.jsx:222`), también para el principal, con `credenciales.ver` para leer y
+  `credenciales.editar` para elegir (`app/api/admin/cuentas/[id]/campos/route.ts:94`,
+  `app/api/admin/cuentas/[id]/campos/route.ts:104`), y viven en el catálogo de cada subcuenta:
+  `campos_del_crm.es_el_puntaje`, uno por cliente con un índice único parcial, y `carpetas_del_crm.grupo_elegido_el`
+  (`lib/datos/esquema.ts:538`, `lib/datos/esquema.ts:506`). Con la configuración de hoy nada cambia: una subcuenta SIN
+  campo elegido resuelve lo de antes —la sincronización, la unión de la constante y el primero por su nombre; Creative,
+  el de su nombre—, y sólo la que eligió usa ése y nada más (`lib/negocio/camposDelCrm.ts:514`,
+  `lib/negocio/camposDelCrm.ts:529`). Un puntaje es un entero de 0 a 100 escrito con dígitos, y lo dice UNA validación:
+  `puntajeDeUnValor` en la sincronización (`lib/negocio/sincronizar.ts:552`) y `puntajeUsable`, lo mismo en SQL, en
+  Creative, en el conteo de la pantalla y en el recálculo (`lib/negocio/camposDelCrm.ts:444`,
+  `lib/negocio/camposDelCrm.ts:456`); hasta acá Creative promediaba decimales y valores de más de 100. Al elegir, el
+  puntaje de TODOS los contactos del cliente se recalcula desde lo guardado, congelados incluidos, en la misma
+  transacción y sin llamar al CRM (`app/api/admin/cuentas/[id]/campos/route.ts:135`, `lib/negocio/camposDelCrm.ts:800`).
+  Creative no le da «Calificados: 0» al cliente sin campo (`lib/negocio/lecturaDeCreative.ts:295`) y lo nombra,
+  separando «no se leyó su catálogo» de «no tiene campo» (`lib/negocio/calidadDelCreativo.ts:162`,
+  `lib/negocio/calidadDelCreativo.ts:401`). La pantalla avisa cuando el elegido dejó de ser numérico o no vino en la
+  última lectura del catálogo —lo borraron en GoHighLevel, o el cliente se vinculó a otra subcuenta—
+  (`lib/negocio/camposDelCrm.ts:703`), y el vínculo lo recuerda al cambiar la subcuenta
+  (`app/api/admin/cuentas/[id]/vinculo/route.ts:82`). El refresco del catálogo no pisa lo elegido, y una carpeta sin
+  nombre ni grupo que nadie eligió toma el suyo cuando su nombre llega tarde (`lib/negocio/camposDelCrm.ts:155`,
+  `lib/negocio/camposDelCrm.ts:592`). «Elegida» quiere decir sólo que la eligió una persona: el tercer «falta» del Perfil
+  pregunta si alguna carpeta SE MUESTRA, la haya elegido una persona o el contrato, y con catálogo y ninguna lo dice sin
+  culpar al contacto (`lib/negocio/ficha.ts:561`, `lib/negocio/camposDelCrm.ts:576`). Dos elecciones al mismo tiempo:
+  la segunda es 409 (`app/api/admin/cuentas/[id]/campos/route.ts:148`). Todo auditado —`puntaje_elegido`,
+  `puntaje_por_su_nombre` y `carpeta_del_perfil_elegida`, sin el cuerpo— (`lib/autenticacion/auditoria.ts:158`). Lo
+  exigen `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:284`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:316`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:329`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:363`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:456`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:476`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:518` y
+  `pruebas/codigo/297-el-puntaje-y-el-perfil-se-eligen-en-la-conexion.test.ts:36`.
+- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3 y D4 ya no está):
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
   señales se cierran solas y renacen, y las decididas pierden su bloqueo; desde D3 lo mismo vale para la fuga, el
@@ -1553,9 +1590,19 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   atrasado calla a todos» que D3 cerró en Conversation y Conversion; se cierra llevándolo a
   `frenoDeLaTarea('anuncios', …)` con `sinMedicionDeClientes`, en un frente aparte—; y el nombre del cliente queda
   escrito en el «no se pudo medir» del plan del día, así que si se renombra, el plan de ese día dice el nombre viejo.
-  Y de antes: las etiquetas cortas de los campos
-  y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
-  subcuenta con otros nombres no se reconoce). De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
+  Y de antes: las etiquetas cortas de los campos son por id de la subcuenta de ARIA (`ETIQUETAS_CORTAS`), así que en
+  otra subcuenta los campos largos del formulario de Meta NO se acortan. Del puntaje y el Perfil (D4, más arriba)
+  quedan: el catálogo se relee como mucho una vez por día, así que un campo nuevo tarda hasta un día en poder elegirse,
+  un cliente recién conectado no tiene nada que elegir hasta su primera sincronización, y al vincular otra subcuenta el
+  catálogo de la anterior sigue «fresco» hasta un día y el de la nueva no se lee antes (no hay un «leer el catálogo
+  ahora»: tocaría el CRM y cruzaría los dos dominios); elegir un numérico con otra escala sólo lo delata el conteo de
+  la pantalla (lo que no es de 0 a 100 queda «Sin calificar»); el Brief marca «SIN FORMULARIO» a los leads de un
+  cliente sin carpetas que se muestren, y elegir o cambiar grupos cambia la huella de los Briefs de sus citas, que se
+  vuelven a preparar con IA; Acquisition no dice qué cliente no tiene puntaje (sus leads van a «Sin calificar»); con un
+  campo elegido en la subcuenta de ARIA, el cuestionario de la ficha del portal muestra «Puntaje | ICP» como una
+  respuesta más; elige quien tiene `credenciales.editar`, no `cuentas.editar`; y la `098` puede cambiar dos cosas con
+  un solo cliente —el tercer «falta» de una empresa con catálogo y ninguna carpeta con grupo, y las cifras de Creative
+  con un valor que no es un entero de 0 a 100—, que se miden antes de subir. De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
   empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de campaña —la decisión del 2026-10-20
   es que Acquisition no pasa a ser por cliente: el gasto de cada uno sale de SU GoHighLevel con Meta vinculado, y la
   nota dice de quién y qué hacer—, y si el sello no sabe por qué (un cliente sin ningún sello, una pasada que falló) la

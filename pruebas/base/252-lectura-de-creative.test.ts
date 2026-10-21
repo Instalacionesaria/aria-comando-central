@@ -10,7 +10,7 @@
 //     sacar la ventana, sumar días sin la clave, promediar la frecuencia, mirar sólo la ventana para los días;
 //   · la etapa: la de la campaña con más impresiones — mutación: la primera que aparezca;
 //   · el hook rate de la entrega es el de `rendimientoDelCreativo` — mutación: otro denominador;
-//   · los calificados: ICP de 75 o más, sin contar el cero ni un texto — mutación: otro umbral, o romper con un texto;
+//   · los calificados: ICP de 75 o más, sin contar el cero, un texto ni un decimal (C6 · D4) — mutación: otro umbral, o romper con un texto;
 //   · la miniatura de la pieza: la más frecuente entre sus contactos; empate, la del contacto más nuevo; sólo de los
 //     hosts permitidos, con el tope de la tabla; la foto si no hay video — mutación: la primera, cualquier host, el tope
 //     del link manual, sólo el video;
@@ -164,18 +164,19 @@ test('la entrega de una pieza: la ventana, las claves, la frecuencia pesada, los
   assert.ok(!todas.some((x) => x.pieza === ''), 'quedó una pieza con nombre vacío');
 });
 
-test('los calificados: ICP de 75 o más, sin el cero ni un texto', async () => {
+test('los calificados: ICP de 75 o más, sin el cero, un texto ni un decimal', async () => {
   await limpiar();
   await esc.admin.query(`insert into negocio.carpetas_del_crm (org_id, carpeta_id, nombre, visto_el) values ($1, $2, 'Prueba', now()) on conflict do nothing`, [esc.org, CARPETA]);
   await esc.admin.query(
     `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion, visto_el) values ($1, $2, $3, $4, 'TEXT', '1', now()) on conflict do nothing`,
     [esc.org, CAMPO, CAMPO_DE_ICP, CARPETA],
   );
-  for (const icp of ['75', '90.5', '74.9', '0', 'alto', null]) await unLead({ pieza: PIEZA, icp });
+  // `90.5` no es un puntaje: la validación es la de la sincronización, un entero de 0 a 100 (C6 · D4).
+  for (const icp of ['75', '90', '90.5', '74.9', '0', 'alto', null]) await unLead({ pieza: PIEZA, icp });
   const f = (await enAlfa(() => calidadDelCreativo(30))).filas.filter((x) => x.creativo === PIEZA);
   await limpiar();
-  assert.equal(f.reduce((s, x) => s + x.calificados, 0), 2, 'contó otro umbral, el cero o un texto');
-  assert.equal(f.reduce((s, x) => s + x.contactos, 0), 6);
+  assert.equal(f.reduce((s, x) => s + x.calificados, 0), 2, 'contó otro umbral, el cero, un texto o un decimal');
+  assert.equal(f.reduce((s, x) => s + x.contactos, 0), 7);
 });
 
 test('la miniatura de la pieza: la más frecuente; empate, la del contacto más nuevo; sólo hosts permitidos', async () => {

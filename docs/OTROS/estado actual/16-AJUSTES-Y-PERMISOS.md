@@ -568,6 +568,13 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   (`lib/administracion/cuentas.ts:212`); y Ajustes › Credenciales copia la de la empresa a su principal
   (`app/api/admin/credenciales/route.ts:277`), así que dos empresas no pueden tener la misma y cambiarla libera la
   vieja. Los closers son de la empresa: cualquier ámbito los lee (`db/migraciones/093_los_closers_de_la_empresa.sql`).
+- **El puntaje y el Perfil de un cliente** (C6 · D4, `098`): debajo de la Conexión, «Puntaje y Perfil» elige cuál campo
+  numérico de su GoHighLevel es el puntaje de sus leads y qué carpetas se muestran en el Perfil y en qué grupo
+  (`components/ajustes/CamposDelCliente.jsx:40`). También para el principal: no son credenciales, son el catálogo de su
+  subcuenta. Lee con `credenciales.ver` y elige con `credenciales.editar`, con la pantalla `credenciales`; quien sólo ve
+  lo ve de sólo lectura (`puedeEditar`), y un cliente de otra empresa o de baja es 404
+  (`app/api/admin/cuentas/[id]/campos/route.ts:94`, `app/api/admin/cuentas/[id]/campos/route.ts:104`). Corre como
+  inquilino con el foco en ese cliente, sin abrir identidad, y queda auditado.
 - **Los closers que no ven a un cliente** (C6 · D1): el alta, la activación y la lista de Ajustes › Clientes dicen
   qué closers están vinculados en otro cliente y no en ése —no ven sus contactos— (`app/api/admin/cuentas/route.ts:99`,
   `components/ajustes/Clientes.jsx:42`), sólo a quien tiene `credenciales.ver` (la capacidad de la pantalla del

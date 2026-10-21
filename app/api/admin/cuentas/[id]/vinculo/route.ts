@@ -29,6 +29,13 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Una location de GoHighLevel: letras y números. No se interpreta, se guarda. */
 const LOCATION = /^[A-Za-z0-9_-]{1,100}$/;
 const DEL_PRINCIPAL = 'La subcuenta del cliente principal es la de la empresa: se carga en Ajustes › Credenciales.';
+/* El puntaje y las carpetas del Perfil que se hayan elegido para este cliente (C6 · D4) son de los campos de su
+   subcuenta anterior, y no se borran: sus leads nuevos quedarían «Sin calificar» sin que nada lo dijera. Esta ruta no
+   los mira —están en negocio, y leerlos cruzaría los dos dominios—, así que lo dice siempre que cambia la subcuenta; la
+   pantalla del puntaje lo marca después, cuando el catálogo nuevo se lee y el elegido no está. */
+const REVISAR_LO_ELEGIDO =
+  'Si este cliente tenía elegidos el puntaje o las carpetas del Perfil, eran de su subcuenta anterior: cuando se lea ' +
+  'el catálogo de la nueva, revísalos en su Conexión.';
 
 export async function PATCH(peticion: Request, ctx: RouteContext<'/api/admin/cuentas/[id]/vinculo'>): Promise<Response> {
   const contexto = await exigir(peticion, ['cuentas.vincular'], PANTALLA);
@@ -72,6 +79,6 @@ export async function PATCH(peticion: Request, ctx: RouteContext<'/api/admin/cue
     if (resultado === 'subcuenta_en_uso') return rechazo('subcuenta_en_uso');
     if (resultado === 'cliente_principal') return rechazo('cliente_principal', DEL_PRINCIPAL);
     await auditarAdministracion(db, { accion: 'cuenta_vinculada', actor: contexto.usuarioId, objetivo: id, orgId });
-    return ok({ vinculado: true });
+    return ok({ vinculado: true, ...(cambios.crmCuentaId !== undefined ? { aviso: REVISAR_LO_ELEGIDO } : {}) });
   });
 }

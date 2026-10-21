@@ -23,7 +23,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { CANALES_DEL_CHAT } from '../ghl/entrega.ts';
-import { camposQueSeMuestran, hayCatalogo } from './camposDelCrm.ts';
+import { camposQueSeMuestran, hayCarpetasQueSeMuestran, hayCatalogo } from './camposDelCrm.ts';
 import { frescuraDe, frescuraDelAviso, type Frescura, type FrescuraDelAviso } from './frescura.ts';
 import { definicionDe, modoDe } from './salidas.ts';
 import { avisoSinConexion, clientesSinConexion } from './faltaDeLosClientes.ts';
@@ -149,6 +149,11 @@ const FALTA = {
   perfilSinRespuestas:
     'Este contacto no completó ninguno de los formularios de calificación, así que no hay más ' +
     'datos que mostrar.',
+  /* El tercero (C6 · D4): con catálogo y ninguna carpeta que se muestre en la subcuenta del contacto. Antes decía
+     «no completó los formularios», que culpaba al contacto de algo que es una elección de la empresa. */
+  perfilSinCarpetas:
+    'Ninguna carpeta de campos del CRM de este cliente se muestra en el Perfil, así que solo se muestran los ' +
+    'datos básicos. Quien administra la empresa elige cuáles en Ajustes › Clientes.',
 } as const;
 
 // ─── Chat ───────────────────────────────────────────────────────────────────
@@ -508,7 +513,7 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
   poner('Teléfono', c.telefono, 'detalles');
   poner('Correo', c.email, 'detalles');
   poner('Fuente', c.fuente, 'origen');
-  /* El puntaje que el CRM calcula: «Puntaje | ICP», 0 a 100, en 471 de 590 contactos.
+  /* El puntaje que el CRM calcula, 0 a 100: el campo de su subcuenta («Puntaje | ICP» en la de ARIA, 471 de 590).
      *
      Decía *«es una letra y hoy nada la calcula»*, y las dos mitades eran falsas — ver `esquema.ts`
      y la migración `055`.
@@ -539,7 +544,7 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
 
   /* ── EL «FALTA», QUE AHORA DEPENDE DE POR QUÉ NO HAY MÁS ───────────────────
    *
-   * Tres situaciones y tres respuestas distintas. Colapsarlas devolvería un texto que a veces
+   * Cuatro situaciones y cuatro respuestas distintas. Colapsarlas devolvería un texto que a veces
    * miente, que es exactamente lo que este archivo acaba de arreglar.
    *
    * Y se cuenta lo que ENTRÓ, no lo que el catálogo ofrece: un catálogo con veintiún campos y un
@@ -548,11 +553,12 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
   if (cuantosDelCrm > 0) return { filas: campos, falta: null };
   return {
     filas: campos,
-    // `mostrables` vacío no distingue «nadie leyó el catálogo» de «se leyó y ninguna carpeta está
-    // elegida»: las dos son estados del sistema y las dos mandan al mismo lado. Por eso la
-    // pregunta que se hace es si HAY catálogo.
-    // El catálogo de la subcuenta del contacto (el nivel 3), no el de cualquier cliente.
-    falta: (await hayCatalogo(c.cuenta_id)) ? FALTA.perfilSinRespuestas : FALTA.perfilSinCatalogo,
+    // `mostrables` vacío no distingue «nadie leyó el catálogo» de «se leyó y ninguna carpeta se
+    // muestra»: son dos estados del sistema y mandan a lugares distintos —la sincronización y Ajustes ›
+    // Clientes—. Las dos preguntas, sobre la subcuenta del contacto (el nivel 3), no la de otro cliente.
+    falta: !(await hayCatalogo(c.cuenta_id))
+      ? FALTA.perfilSinCatalogo
+      : (await hayCarpetasQueSeMuestran(c.cuenta_id)) ? FALTA.perfilSinRespuestas : FALTA.perfilSinCarpetas,
   };
 }
 

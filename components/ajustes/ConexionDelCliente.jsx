@@ -16,11 +16,16 @@
  * Mismas reglas que `Credenciales.jsx`: de un secreto sólo el estado y la vista previa que calcula el servidor; la
  * cadena vacía no borra (borrar es `null`, con su botón); y una recarga con datos ya dibujados NO vuelve a «Leyendo…»,
  * porque eso desmontaría `AvisoDelCrm` y perdería la cabecera recién generada, que no se vuelve a mostrar.
+ *
+ * Debajo va «Puntaje y Perfil» (`CamposDelCliente`, C6 · D4) — también en el principal: el campo del puntaje y las
+ * carpetas del Perfil no son credenciales sino el catálogo de su subcuenta, y se eligen acá para todos los clientes.
+ * Vive en su propio archivo, con su propia lectura.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import AvisoDelCrm from './AvisoDelCrm.jsx';
+import CamposDelCliente from './CamposDelCliente.jsx';
 
 /** Lo que se carga de un cliente. `estado` = secreto (se ve su estado); `valor` = identificador (se ve entero). */
 const CAMPOS = [
@@ -99,13 +104,16 @@ export default function ConexionDelCliente({ cliente, relectura = 0, alMostrarCa
 
   if (cliente.esPorOmision) {
     return (
-      <div className="aj-bloque">
-        <div className="dw-sec-t">Conexión</div>
-        <p className="aj-ayuda">
-          El cliente principal usa la conexión de la empresa: su token de GoHighLevel, su Meta y su aviso se cargan en
-          <b> Ajustes › Credenciales</b>.
-        </p>
-      </div>
+      <>
+        <div className="aj-bloque">
+          <div className="dw-sec-t">Conexión</div>
+          <p className="aj-ayuda">
+            El cliente principal usa la conexión de la empresa: su token de GoHighLevel, su Meta y su aviso se cargan en
+            <b> Ajustes › Credenciales</b>. Su puntaje y su Perfil, en cambio, se eligen acá.
+          </p>
+        </div>
+        <CamposDelCliente cliente={cliente} />
+      </>
     );
   }
 
@@ -188,27 +196,30 @@ export default function ConexionDelCliente({ cliente, relectura = 0, alMostrarCa
   }
 
   return (
-    <div className="aj-bloque">
-      <div className="dw-sec-t">Conexión</div>
-      <p className="aj-ayuda">
-        Lo propio de este cliente: su GoHighLevel y su Meta. La llave de IA, tl;dv y los pagos son de la empresa.
-      </p>
-      <div className="aj-ayuda">
-        Subcuenta de GoHighLevel: <b>{datos.crmCuentaId ?? 'sin vincular'}</b>. La vincula ARIA.
-      </div>
-      {causa ? (
-        <div className="fd-aviso mal" role="status">
-          <i>⚠</i>
-          <span>{causa}</span>
+    <>
+      <div className="aj-bloque">
+        <div className="dw-sec-t">Conexión</div>
+        <p className="aj-ayuda">
+          Lo propio de este cliente: su GoHighLevel y su Meta. La llave de IA, tl;dv y los pagos son de la empresa.
+        </p>
+        <div className="aj-ayuda">
+          Subcuenta de GoHighLevel: <b>{datos.crmCuentaId ?? 'sin vincular'}</b>. La vincula ARIA.
         </div>
-      ) : null}
-      {CAMPOS.map(fila)}
-      <AvisoDelCrm
-        ruta={ruta}
-        configurado={datos.avisoSecretoConfigurado === true}
-        alGenerar={() => void cargar()}
-        alMostrarCabecera={alMostrarCabecera}
-      />
-    </div>
+        {causa ? (
+          <div className="fd-aviso mal" role="status">
+            <i>⚠</i>
+            <span>{causa}</span>
+          </div>
+        ) : null}
+        {CAMPOS.map(fila)}
+        <AvisoDelCrm
+          ruta={ruta}
+          configurado={datos.avisoSecretoConfigurado === true}
+          alGenerar={() => void cargar()}
+          alMostrarCabecera={alMostrarCabecera}
+        />
+      </div>
+      <CamposDelCliente cliente={cliente} />
+    </>
   );
 }

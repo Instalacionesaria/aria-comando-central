@@ -298,17 +298,17 @@ export const ETIQUETAS_DE_DESCARTE: readonly string[] = [
  *
  * El identificador es de la subcuenta de GoHighLevel de ARIA. Hoy es la única con contactos —las
  * otras once organizaciones tienen 0—, así que vive acá con el resto de los literales del
- * proveedor. El día que haya una segunda subcuenta esto se muda a
- * `identidad.organizaciones_credenciales`, como `crm_agente_usuario_id`, y **este párrafo es el que
+ * proveedor. Decía que con una segunda subcuenta esto se mudaba a `organizaciones_credenciales`;
+ * no se mudó: se elige por cliente en su catálogo (la `098`, ver abajo), y **este párrafo es el que
  * dice cuándo dejó de alcanzar una constante**.
  *
  * ── Y LA SEGUNDA SUBCUENTA LLEGÓ (el nivel 3, 2026-10-18) ──────────────────
  *
- * Los clientes de una empresa nacen del mismo snapshot: el campo se llama igual y tiene otro id. Hasta que la
- * Conexión de cada cliente lo pueda configurar, en las otras subcuentas se busca por su nombre EXACTO
- * (`NOMBRE_DEL_PUNTAJE`) en su catálogo (`camposDelPuntaje`), y este id sigue siendo el de la de ARIA. El nombre
- * exacto no es el problema de arriba —los nueve que dicen «score» o «puntaje»—: es uno solo, el mismo que Creative
- * ya busca así (`CAMPO_DE_ICP`).
+ * Los clientes de una empresa nacen del mismo snapshot: el campo se llama igual y tiene otro id. Desde C6 · D4 (la
+ * `098`) cada cliente elige el suyo en Ajustes › Clientes (`campos_del_crm.es_el_puntaje`); si no eligió, se busca por
+ * su nombre EXACTO (`NOMBRE_DEL_PUNTAJE`) en su catálogo (`camposDelPuntaje`), y este id queda de respaldo en la de
+ * ARIA. El nombre exacto no es el problema de arriba —los nueve que dicen «score» o «puntaje»—: es uno solo, el mismo
+ * que Creative usa cuando nadie eligió (`CAMPO_DE_ICP`).
  */
 export const CAMPO_DEL_PUNTAJE = '9HXxl5DW6aayQgKUPiOS';
 
@@ -321,7 +321,7 @@ export interface CarpetaDelPerfil {
   id: string;
   /**
    * Cómo se llama en GoHighLevel. Para leer esta lista y, desde el nivel 3, para reconocerla en la subcuenta de otro
-   * cliente: nace del mismo snapshot, con el mismo nombre y otro id (`grupoDeLaCarpeta`).
+   * cliente —nace del mismo snapshot, con el mismo nombre y otro id (`grupoDeLaCarpeta`)— cuando nadie eligió (`098`).
    */
   nombre: string;
   /** El grupo de `CampoDePerfil` donde caen sus campos. */

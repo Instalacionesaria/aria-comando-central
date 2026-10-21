@@ -214,7 +214,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
       ultimoDiaDelFormulario(),
       campoPorNombre(CAMPO_DEL_PRECALL),
       closersDeLaEmpresa(),
-      // El campo del puntaje de cada subcuenta (el nivel 3): va arriba, no en el cuestionario.
+      // El campo del puntaje de cada subcuenta (el nivel 3; el elegido, si hay, y nada más): va arriba, no en el cuestionario.
       camposDelPuntaje(),
     ]);
 

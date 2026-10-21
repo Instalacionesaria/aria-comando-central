@@ -183,7 +183,7 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 
 | dato | en la maqueta | de dónde sale | cobertura |
 |---|---|---|---|
-| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:476-557`) | `LP09-09` |
+| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:481-563`) | `LP09-09` |
 | «8/8 campos» y «Formulario completado» | `aios-command-center_1.html:4823`, `:4858` | no hay conteo de campos; lo más cercano es el estado «Form Landing VSL» (`lib/negocio/recorrido.ts:231-238`) | `LP09-09` |
 | ICP Score | `aios-command-center_1.html:4857` | `contactos.score` | 471 |
 | Fit score, Intent score | `aios-command-center_1.html:4857` | **no existen** | hueco |
@@ -221,8 +221,9 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 
 ### LP09-06 · El puntaje, los tramos y los ceros
 
-`contactos.score` lo escribe la sincronización (`lib/negocio/sincronizar.ts:441`) desde el campo que
-`CAMPO_DEL_PUNTAJE` designa (`lib/ghl/contrato.ts:313`), con `puntajeDelCrm`
+`contactos.score` lo escribe la sincronización (`lib/negocio/sincronizar.ts:441`) desde el campo del puntaje de la
+subcuenta —el elegido en Ajustes › Clientes o, si no, el que `CAMPO_DEL_PUNTAJE` designa (`lib/ghl/contrato.ts:313`) y
+el que se llama «Puntaje | ICP»: `lib/negocio/camposDelCrm.ts:379`—, con `puntajeDelCrm`
 (`lib/negocio/sincronizar.ts:544-553`): un valor fuera de 0-100 o no entero entra como nulo. **El
 cero no se colapsa a nulo** (`lib/negocio/sincronizar.ts:432-440`): los dos ceros se guardan
 distintos y la decisión de contarlos juntos es nuestra, en la pantalla.
@@ -292,7 +293,7 @@ select jsonb_object_agg(t, n) from (
   `enCero` (47). Y viaja `cerosRecientes`, que hoy vale 0: si aparece un cero en los últimos 14 días,
   la pantalla avisa, porque entonces el grupo dejó de ser el lote cerrado de agosto.
 - La divergencia con Creative **se declara**: su ICP promedio por pieza sí promedia los ceros
-  (`lib/negocio/calidadDelCreativo.ts:235`). Las dos cifras están bien por separado y miden cosas
+  (`lib/negocio/calidadDelCreativo.ts:243`). Las dos cifras están bien por separado y miden cosas
   distintas; lo que no puede pasar es que alguien las compare sin saberlo. El detalle, en
   `14-EL-PUNTAJE-DEL-CRM.md`.
 
@@ -530,13 +531,13 @@ Conversation: «el CRM no registró reproducción».
 **Requisitos que salen de acá:**
 
 - De `campos_del_crm` a la ficha van **sólo** tres cosas: los campos del grupo `calificacion` —por
-  `perfilDeLaFicha`, que ya descarta lo vacío (`lib/negocio/ficha.ts:499-505`)—; el «Video Pre-Call»
+  `perfilDeLaFicha`, que ya descarta lo vacío (`lib/negocio/ficha.ts:504-510`)—; el «Video Pre-Call»
   del grupo `interacciones` (`LP05-11`; los otros tres campos de ese grupo son `LP05-P01`); y el
   estado del formulario. **Los 174 sin grupo no viajan**, salvo esa última: ahí están la atribución
   de campañas y los enlaces del sistema (`lib/ghl/contrato.ts:243-245`).
 - **La excepción, dicha:** «Form Landing VSL» vive en la carpeta «📁 Score | ICP», que no tiene
   grupo (`docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:823`; no está en
-  `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:332-344`), y se lee **por nombre**, con
+  `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:332-344`, ni la eligió nadie en Ajustes › Clientes), y se lee **por nombre**, con
   `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`, `:258`). Es el único campo sin grupo que
   viaja, y viaja nombrado, no por pertenecer a una carpeta. La prueba de LP-3 «un campo sin grupo no
   aparece» tiene que dejarlo pasar a él y a ningún otro: un segundo campo sin grupo en la ficha es

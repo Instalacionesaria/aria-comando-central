@@ -127,7 +127,7 @@ cliente: «mío» son los pares (cliente, usuario del CRM), con un solo corte (`
 varios clientes (C6 · D1), la Agenda, la cabecera de Mi Día y el chat de la ficha dicen de qué cliente no se está
 leyendo el calendario o los mensajes porque su conexión con GoHighLevel no está lista, y qué hacer, sólo de los
 clientes del alcance de quien mira (`lib/negocio/agenda.ts:428`, `lib/agentes/cabecera.ts:174`,
-`lib/negocio/ficha.ts:274`); la pantalla del vínculo dice quiénes no están vinculados en el cliente elegido
+`lib/negocio/ficha.ts:279`); la pantalla del vínculo dice quiénes no están vinculados en el cliente elegido
 (`components/closer/QuienEsElCloser.jsx:359`). Quien administra puede mirar como uno de ellos, y el
 servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:214-223`).
 
@@ -183,11 +183,11 @@ UTC sobre toda la tabla (al pie, lo re-medido el 2026-10-18):
 
 | pestaña | qué muestra | de dónde lee | cuánto hay |
 |---|---|---|---|
-| Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:210-232`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
-| Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:359-366`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:123-125`) |
-| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas elegidas | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:468-490`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
-| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:591-592`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:594-647`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
-| Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:414-416`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
+| Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:215-237`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
+| Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:364-371`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:123-125`) |
+| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas que se muestran | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:473-495`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
+| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:597-598`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:600-653`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
+| Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:419-421`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
 
 Re-medido el 2026-10-18: **6.478 mensajes**, de los que siguen siendo **2** los escritos desde el compositor (el último,
 el 2026-09-07); 368 citas; 7 notas, 4 de ellas desde la aplicación; 4 tareas; 7 resultados. Nadie escribió nada desde

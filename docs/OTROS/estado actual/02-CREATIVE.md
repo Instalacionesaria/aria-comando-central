@@ -120,7 +120,7 @@ siempre— y `<cuenta>:<nombre>` si es de otro (`lib/negocio/idDeLaPieza.ts:58`)
 | La tarjeta de señales, al final | `components/creative/PanelDeCreative.jsx:226` | — |
 
 **La tira y la tarjeta** (CF1-06, CF1-09). Calificados y Agendas son conteos: los contactos de la pieza con un puntaje
-de ICP de 75 o más (`lib/negocio/calidadDelCreativo.ts:238`, `lib/negocio/tramosDelIcp.ts:38`) y los que tienen una
+de ICP de 75 o más (`lib/negocio/calidadDelCreativo.ts:246`, `lib/negocio/tramosDelIcp.ts:38`) y los que tienen una
 cita alcanzable. Hook rate y Frecuencia de la tira son pesados, no el promedio de los promedios: las vistas sobre las
 impresiones de los anuncio-día que traían la clave, y la frecuencia de cada pieza pesada con las impresiones de sus días
 con frecuencia (`lib/negocio/lecturaDeCreative.ts:399-420`). Retención es siempre «—» con `sin_fuente`
@@ -225,7 +225,7 @@ prototipo.
 
 **Ventanas y piso.** Hoy · 7 días · 30 días · Completo (`lib/negocio/periodo.ts:83-96`), sin comparación contra la
 ventana anterior. Dos poblaciones, con la misma cantidad de días: la COHORTE de contactos por `alta_en_el_crm` para
-Calificados y Agendas (`lib/negocio/calidadDelCreativo.ts:248`) y los ANUNCIO-DÍA por fecha para todo lo de Meta
+Calificados y Agendas (`lib/negocio/calidadDelCreativo.ts:256`) y los ANUNCIO-DÍA por fecha para todo lo de Meta
 (`lib/negocio/costoDelAnuncio.ts:83-85`). Las dos cuentan días del calendario con hoy incluido, no días cerrados como
 Acquisition y Conversion. Toda tasa sobre impresiones lleva el piso de 1000 (`lib/negocio/rendimientoDelCreativo.ts:70`,
 `lib/negocio/lecturaDeCreative.ts:189-195`); el click-to-landing, el de 10 clics al enlace de su módulo
@@ -358,8 +358,10 @@ el ICP promedio de las piezas sobre el piso iba de 29,2 a 71,0 (factor 2,4), la 
 click-to-landing de 12,0 % a 91,4 % entre las ocho piezas con tasa. Esas cifras son de un período con la pauta
 detenida desde el 2026-09-14, y no se re-midieron.
 
-**El ICP por contacto** se lee del campo del CRM por su nombre exacto (`lib/negocio/calidadDelCreativo.ts:64`); Leads
-Portal lee la copia en `contactos.score`. **Las agendas por pieza** salen de `tieneCitaAlcanzable`
+**El ICP por contacto** se lee del campo del puntaje de su cliente: el que eligió en Ajustes › Clientes o, si no, el que
+se llama exactamente «Puntaje | ICP» (`lib/negocio/calidadDelCreativo.ts:64`, `lib/negocio/camposDelCrm.ts:529`), con la
+validación de la sincronización (`lib/negocio/camposDelCrm.ts:456`); un cliente sin campo no tiene «Calificados» y el
+aviso lo nombra (C6 · D4). Leads Portal lee la copia en `contactos.score`. **Las agendas por pieza** salen de `tieneCitaAlcanzable`
 (`lib/negocio/citasAlcanzables.ts:135`), con un `exists` y no un `join`: un contacto con dos citas cuenta una vez.
 
 **Lo guardado que la pantalla no dibuja**: la interacción (`postEngagement`), el CPM y el CPC de cada pieza, el ICP
@@ -475,7 +477,7 @@ conteo de contactos sale de contactos nuestros y no de `results.lead`; la retenc
 revenue y el CAC, de Business.
 
 **13 · Una cifra por contacto se cuenta por contactos, no por sus citas**: un `exists` compartido y no un `join`
-(`lib/negocio/calidadDelCreativo.ts:239-245`, `lib/negocio/citasAlcanzables.ts:135`).
+(`lib/negocio/calidadDelCreativo.ts:247-253`, `lib/negocio/citasAlcanzables.ts:135`).
 
 **14 · La ventana es una palabra de una lista cerrada**, y lo que no está se rechaza
 (`app/api/creative/route.ts:59-63`).
@@ -500,7 +502,7 @@ cifras de la tira: el 2026-10-18 dibuja las impresiones de 30 días con todas la
 
 **2 · El mismo ICP se lee distinto en dos lugares.** **Abierto, sin cambios.** La pantalla ya no dibuja el ICP
 promedio: «Calificados» usa el umbral de 75 de los tramos, con el que un cero nunca es alto. Pero `calidadDelCreativo`
-sigue promediando los ceros como ceros (`lib/negocio/calidadDelCreativo.ts:235`), Leads Portal los cuenta como «sin
+sigue promediando los ceros como ceros (`lib/negocio/calidadDelCreativo.ts:243`), Leads Portal los cuenta como «sin
 calificar» (`lib/negocio/tramosDelIcp.ts:86`), y con ese promedio decide la regla del ICP del detector, que llega al Plan
 de acción. Las dos pantallas leen además dos copias del mismo puntaje.
 
@@ -511,14 +513,14 @@ línea, debajo en la tira y en la ficha (`components/creative/PanelDeCreative.js
 
 **4 · «Hoy» dice 24 horas y calcula el día.** **Abierto.** El botón lleva de título el matiz de `PERIODOS`
 (`lib/negocio/periodo.ts:84`, `components/creative/PanelDeCreative.jsx:166`), y las dos ventanas son días del calendario
-(`lib/negocio/calidadDelCreativo.ts:248`, `lib/negocio/costoDelAnuncio.ts:83-85`). «Entregando» también depende de
+(`lib/negocio/calidadDelCreativo.ts:256`, `lib/negocio/costoDelAnuncio.ts:83-85`). «Entregando» también depende de
 `current_date` (`lib/negocio/lecturaDeCreative.ts:472`): la lectura de sólo lectura de producción corre en UTC (medido el
 2026-10-18), la sesión de la aplicación no se verificó, y el día de la empresa quedó para después
 (`docs/OTROS/futuro/el-dia-de-la-empresa.md`).
 
 **5 · La misma ventana, escrita muchas veces.** **Abierto.** `calidadDelCreativo` repite a mano el predicado de la
-cohorte en cuatro lugares (`lib/negocio/calidadDelCreativo.ts:248`, `lib/negocio/calidadDelCreativo.ts:288`,
-`lib/negocio/calidadDelCreativo.ts:305`, `lib/negocio/calidadDelCreativo.ts:356`) en vez de usar el que exporta
+cohorte en cuatro lugares (`lib/negocio/calidadDelCreativo.ts:256`, `lib/negocio/calidadDelCreativo.ts:296`,
+`lib/negocio/calidadDelCreativo.ts:313`, `lib/negocio/calidadDelCreativo.ts:364`) en vez de usar el que exporta
 `lib/negocio/recorrido.ts:201-203`. Y las impresiones y los clics de cada pieza se suman dos veces sobre las mismas
 filas: en el módulo de rendimiento, por `costoDelAnuncio` (`lib/negocio/costoDelAnuncio.ts:302-303`), y en
 `entregaDeLasPiezas` (`lib/negocio/lecturaDeCreative.ts:461-462`). Hoy dan lo mismo —las dos con `ventanaDeMetricas`—;
@@ -533,7 +535,7 @@ reportó.» sin ningún contador.
 de `costoDelAnuncio` por «el defecto de grano», y `lib/negocio/costoDelAnuncio.ts:163-170` habla de `desde` y `hasta`;
 `lib/negocio/rendimientoDelCreativo.ts:228` manda a la 296 por el `gasto is not null`, que está en
 `lib/negocio/costoDelAnuncio.ts:304`. **Cerrado** lo de las citas a esta foto: los comentarios que la citaban por línea
-quedaron fijados a un commit —`lib/negocio/calidadDelCreativo.ts:243` y `lib/autorizacion/secciones.ts:281`, a
+quedaron fijados a un commit —`lib/negocio/calidadDelCreativo.ts:251` y `lib/autorizacion/secciones.ts:281`, a
 `@63b8cd1`—, y un `git grep` del 2026-10-16 no encontró ninguna cita sin fijar a una línea de esta foto ni de la de
 Conversion.
 

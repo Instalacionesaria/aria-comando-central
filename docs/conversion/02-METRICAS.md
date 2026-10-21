@@ -126,7 +126,7 @@ el mismo hueco que `CV11-03` declara.
 **Unidad** · Los **dos términos**, siempre, no sólo la proporción.
 **Población** · La cohorte entera.
 **Rastro** · `§ 18.5:1247` del documento funcional; el patrón `puente` de
-`lib/negocio/calidadDelCreativo.ts:313-342`.
+`lib/negocio/calidadDelCreativo.ts:321-350`.
 **Estado** · **Construible hoy**: 475 de 590 (80,5 %). **No es una muestra al azar** — ver `CV1-P01`.
 
 ---

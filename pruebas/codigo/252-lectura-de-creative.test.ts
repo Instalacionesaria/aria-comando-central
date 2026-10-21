@@ -77,7 +77,7 @@ function entrada(o: Partial<EntradaDeCreative> & { campoDeIcp?: string | null } 
   return {
     calidad: {
       dias: 30, desde: null, hasta: null, congeladas: 0, puente: { con: 0, sobre: 0, sinNombre: 0 }, aviso: null,
-      campoDeIcp: o.campoDeIcp === undefined ? 'campo' : o.campoDeIcp,
+      campoDeIcp: o.campoDeIcp === undefined ? 'campo' : o.campoDeIcp, cuentasSinPuntaje: [],
       filas: [
         // «a» trajo más contactos de BOFU, pero sus anuncios son TOFU: la etapa es la de los anuncios.
         calidad({ creativo: 'a', etapa: TOFU, contactos: 5, calificados: 1, agendaron: 2 }),

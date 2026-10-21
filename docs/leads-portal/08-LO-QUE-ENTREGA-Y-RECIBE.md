@@ -131,9 +131,9 @@ pestaña publica tramos por persona. **Las dos cifras no se reconcilian, y ningu
 
 | | Creative | Leads Portal |
 |---|---|---|
-| el cero | **se promedia**: el filtro numérico acepta `0` (`lib/negocio/calidadDelCreativo.ts:225`) y entra al `avg` (`:234`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
-| de dónde lee el puntaje | del campo crudo, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:64`, `:148`) | de `contactos.score`, derivado **por identificador** (`lib/ghl/contrato.ts:313`) |
-| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:248`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
+| el cero | **se promedia**: la validación del puntaje acepta `0` (`lib/negocio/camposDelCrm.ts:456`) y entra al `avg` (`lib/negocio/calidadDelCreativo.ts:243`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
+| de dónde lee el puntaje | del campo crudo: el que eligió el cliente o, si no, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:64`, `:153`) | de `contactos.score`, derivado del elegido o, si no, **por identificador** y por nombre (`lib/ghl/contrato.ts:313`, `lib/negocio/camposDelCrm.ts:379`) |
+| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:256`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
 
 Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:61` y la
 constante de `lib/ghl/contrato.ts:313` nombran el mismo identificador—. **El día que alguien renombre
@@ -335,7 +335,7 @@ Ninguna pantalla lee de Leads Portal, y LP-4 no cambia eso. Lo que produce y otr
 ### LP08-16 · Dos fichas de la misma persona, y una sola definición de cada pieza
 
 **Rastro** · La ficha de las pestañas de operación, `components/negocio/Ficha.jsx`, y la de esta
-pestaña, que LP-3 arma sobre `perfilDeLaFicha` (`lib/negocio/ficha.ts:476`).
+pestaña, que LP-3 arma sobre `perfilDeLaFicha` (`lib/negocio/ficha.ts:481`).
 
 **Requisito** · Quien tenga las dos pestañas va a ver a la misma persona en dos fichas. Pueden
 diferir en **qué hacen** —aquélla refresca y escribe notas; ésta sólo lee (`LP05-03`)— pero

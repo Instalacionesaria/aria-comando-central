@@ -94,7 +94,7 @@ const entrega = (f: Partial<EntregaDeLaPieza> & { pieza: string; cuentaId: strin
 function entrada(o: Partial<EntradaDeCreative> = {}): EntradaDeCreative {
   return {
     calidad: {
-      dias: 30, desde: null, hasta: null, congeladas: 0, puente: { con: 0, sobre: 0, sinNombre: 0 }, aviso: null, campoDeIcp: 'campo',
+      dias: 30, desde: null, hasta: null, congeladas: 0, puente: { con: 0, sobre: 0, sinNombre: 0 }, aviso: null, campoDeIcp: 'campo', cuentasSinPuntaje: [],
       filas: [calidad({ creativo: 'a', cuentaId: P, calificados: 7 }), calidad({ creativo: 'a', cuentaId: Y, calificados: 2 })],
     } as unknown as CalidadDeLosCreativos,
     rendimiento: {

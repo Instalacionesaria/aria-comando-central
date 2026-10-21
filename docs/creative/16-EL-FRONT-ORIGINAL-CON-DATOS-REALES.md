@@ -35,7 +35,7 @@ la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volume
 | lugar del prototipo | dato | fuente | estado |
 |---|---|---|---|
 | Encabezado: «Creative», «Qué funciona, qué no, y por qué», «Plan de acción», el segmentado | el título, la bajada, el plan real del detector y los cuatro períodos | `BotonDelPlan`, `lib/negocio/periodo.ts` | real |
-| Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:143`) más el tramo | real |
+| Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:153`) más el tramo | real |
 | Tira: Agendas | contactos que agendaron | `calidadDelCreativo` | real |
 | Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:325`) | real |
 | Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:147`) | «—» |

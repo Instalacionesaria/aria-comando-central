@@ -14,8 +14,8 @@
 Hoy el tramo de ICP de un lead sale de **«Puntaje | ICP»**, un número de 0 a 100 que calcula un
 workflow de GoHighLevel y que Comando Central solo copia: `sincronizar.ts` lo deriva de los campos
 del contacto y lo guarda en `contactos.score` (`lib/negocio/sincronizar.ts:441`,
-`lib/negocio/sincronizar.ts:544-553`), con el campo designado a mano en `CAMPO_DEL_PUNTAJE`
-(`lib/ghl/contrato.ts:313`). La fórmula no está escrita en ningún archivo de este repositorio.
+`lib/negocio/sincronizar.ts:544-553`), con el campo que cada cliente elige en Ajustes › Clientes (la `098`) o, si no,
+el que designa `CAMPO_DEL_PUNTAJE` (`lib/ghl/contrato.ts:313`). La fórmula no está escrita en ningún archivo de este repositorio.
 
 La idea es que **el puntaje lo calcule Comando Central**, a partir de las mismas respuestas del
 cuestionario de calificación que ya se guardan en `contactos.campos_del_crm`
@@ -91,7 +91,7 @@ La base no dice si hay relación.
 
 La consecuencia ya está en el producto: el Leads Portal va a contar esos ceros como «sin calificar»
 (decisión del 2026-09-26), mientras Creative los **promedia** en su ICP por pieza
-(`lib/negocio/calidadDelCreativo.ts:235`). Son dos lecturas del mismo número del CRM, y las dos son
+(`lib/negocio/calidadDelCreativo.ts:243`). Son dos lecturas del mismo número del CRM, y las dos son
 defendibles porque el número no dice cuál es la correcta. Un puntaje propio no tiene ese problema:
 **si Comando Central no lo calculó, vale `null`; si lo calculó, el 0 es un 0.**
 
@@ -140,9 +140,9 @@ Tres cosas que salen de lo medido:
 - **Solo preguntas de opción cerrada.** «A quién ayuda y qué entrega» es texto libre —el formulario
   de Meta le agrega *«Se especifico o sera rechazado»* (`lib/ghl/contrato.ts:372-373`)— y pesarlo
   exigiría un modelo, que es gastar. Las URL tampoco entran. El tipo de cada campo está en
-  `negocio.campos_del_crm.tipo` (`lib/datos/esquema.ts:513`), y es lo primero que se mira.
+  `negocio.campos_del_crm.tipo` (`lib/datos/esquema.ts:518`), y es lo primero que se mira.
 - **Las opciones no están en el catálogo**: `TablaCamposDelCrm` no las guarda
-  (`lib/datos/esquema.ts:504-524`). El vocabulario de cada pregunta sale de los valores ya guardados,
+  (`lib/datos/esquema.ts:509-529`). El vocabulario de cada pregunta sale de los valores ya guardados,
   y **se mueve**: en «Video Pre-Call» el CRM renombró «Sin abrir (0%)» a «Nada» el 2026-09-08
   (`lib/negocio/consumoDelPrecall.ts:44-48`), y hoy conviven 130 y 50. Una respuesta que ninguna
   regla nombra es **«no reconocida»**, no una respuesta que vale cero.
@@ -226,9 +226,9 @@ interno entre sin tocar la pantalla, a ese archivo se le agrega una sola cosa:
   dibuja a todos como «sin calificar».
 
 **Cambiar de fuente es cambiar esa constante, y volver atrás también.** Es una constante y no una
-columna por empresa por el mismo motivo que `CAMPO_DEL_PUNTAJE`: hoy hay una sola subcuenta con
-contactos, y el día que haya otra se muda a la configuración de la empresa
-(`lib/ghl/contrato.ts:297-303`).
+columna por empresa por el mismo motivo por el que lo fue `CAMPO_DEL_PUNTAJE`: hoy hay una sola subcuenta con
+contactos. Cuando llegaron los clientes, aquélla no se mudó a la configuración de la empresa: se elige por cliente en
+su catálogo (`lib/ghl/contrato.ts:297-303`, la `098`), y una fuente por empresa podría seguir el mismo camino.
 
 La condición para que el punto sea único es que no quede otro: el 2026-09-26 el corte también estaba escrito en
 `lib/aios/leads-group.js:10@c4cf2a8`, y la maqueta del portal rotulaba sus tarjetas por su cuenta
@@ -363,9 +363,10 @@ y lo natural es que sea **ICP bajo**. Es lo que obliga a que `tramoDelPuntaje` r
 ### LPF-P06 · Qué otras cifras cambian de fuente
 
 `tramosDelIcp` garantiza el Leads Portal y nada más. Creative lee el puntaje del CRM **por su
-cuenta**, por nombre y sin pasar por `contactos.score` (`lib/negocio/calidadDelCreativo.ts:64`,
-`lib/negocio/calidadDelCreativo.ts:148`), y el Perfil del closer muestra `score` como «Calificación»
-(`lib/negocio/ficha.ts:520`). Si cambia la fuente, ¿cambian también ellas? Si no, el mismo lead va a
+cuenta** —el campo que el cliente eligió o, si no, por nombre— y sin pasar por `contactos.score`
+(`lib/negocio/calidadDelCreativo.ts:64`, `lib/negocio/calidadDelCreativo.ts:153`), aunque desde C6 · D4 con la misma
+validación que la sincronización (`lib/negocio/camposDelCrm.ts:456`), y el Perfil del closer muestra `score` como «Calificación»
+(`lib/negocio/ficha.ts:525`). Si cambia la fuente, ¿cambian también ellas? Si no, el mismo lead va a
 tener un ICP en el portal y otro en Creative y en el Closer, y eso se tiene que decir en las tres.
 
 ### LPF-P07 · Los cortes
@@ -404,7 +405,7 @@ o solo un administrador. Cambiar un peso cambia el tramo de cientos de leads de 
 - **Los rótulos y los tramos de LP-1** —ICP alto, medio, bajo y «Sin calificar»— mientras
   `LPF-P05` y `LPF-P07` no digan otra cosa.
 - **La lista del portal no lleva respuestas del cuestionario**, igual que no lleva teléfono ni correo:
-  las respuestas se ven en la ficha, como hoy en el Perfil (`lib/negocio/ficha.ts:476`).
+  las respuestas se ven en la ficha, como hoy en el Perfil (`lib/negocio/ficha.ts:481`).
 - **El Perfil del closer y sus carpetas** (`lib/ghl/contrato.ts:332-344`), salvo lo que decida
   `LPF-P06`.
 

@@ -42,7 +42,7 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { campoPorNombre, valorDelCampo, type CampoDelCrm } from './camposDelCrm.ts';
+import { campoDelPuntaje, clientesSinPuntaje, puntajeDelCampo, type CampoDelCrm, type ClienteSinPuntaje } from './camposDelCrm.ts';
 import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
 import { llaveInterna } from './idDeLaPieza.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
@@ -50,13 +50,13 @@ import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
 import { UMBRAL_ALTO } from './tramosDelIcp.ts';
 
 /**
- * El nombre del campo del CRM que trae el puntaje de encaje.
+ * El nombre del campo del CRM que trae el puntaje de encaje: el respaldo, si el cliente no eligió el suyo (`098`).
  *
  * **Exacto y no parecido**, y no es una precaución abstracta: el catálogo de esta empresa tiene
  * DIEZ campos con nombre parecido —`Pre-Score | ICP`, `Puntaje | Meta Lead Ads`,
  * `Pre-Score | Meta Lead Ads`, `Puntaje Final`, `Puntaje Survey HT`, `perfil_icp`,
  * `puntaje_encaje_icp`, `puntaje_interaccion`, `Lead Score`— y elegir el equivocado da una columna
- * llena de números plausibles sobre otra pregunta. `campoPorNombre` compara exacto por eso mismo.
+ * llena de números plausibles sobre otra pregunta. `campoDelPuntaje` compara exacto por eso mismo.
  *
  * Medido el 2026-09-18: es `9HXxl5DW6aayQgKUPiOS`, el campo más poblado de la cohorte (344 de 344
  * contactos de treinta días).
@@ -130,6 +130,11 @@ export interface CalidadDeLosCreativos {
    * existe.
    */
   campoDeIcp: string | null;
+  /**
+   * Los clientes de la ventana SIN campo del puntaje (C6 · D4). Sus piezas no tienen «Calificados»: con un cliente con
+   * campo y otro sin, el segundo recibía un cero que afirma que nadie calificó, y quedaba último en ese ranking.
+   */
+  cuentasSinPuntaje: string[];
   /** `null` ⟹ la pantalla no dibuja nada. La regla del silencio de este proyecto. */
   aviso: string | null;
 }
@@ -145,7 +150,7 @@ export async function calidadDelCreativo(
 ): Promise<CalidadDeLosCreativos> {
   /* El campo se resuelve UNA vez y se pasa a la consulta. Si no está, la columna se apaga y el
      aviso lo dice — no se consulta un identificador vacío ni se publica cero. */
-  const campoDeIcp = await campoPorNombre(CAMPO_DE_ICP);
+  const campoDeIcp = await campoDelPuntaje();
 
   const [filas, extremos, congeladas, puente] = await Promise.all([
     porCreativo(dias, campoDeIcp),
@@ -153,6 +158,8 @@ export async function calidadDelCreativo(
     congeladasDeLaVentana(dias),
     coberturaDelPuente(dias),
   ]);
+  // Los clientes de la ventana sin campo (el nivel 3): sus piezas van sin «Calificados», y el aviso los nombra.
+  const sinPuntaje = await clientesSinPuntaje(filas.map((f) => f.cuentaId));
 
   return {
     dias,
@@ -163,7 +170,8 @@ export async function calidadDelCreativo(
     puente,
     // Viaja el de la primera subcuenta: lo que se lee de acá es si el campo está, no su id (uno por cliente).
     campoDeIcp: campoDeIcp?.[0] ?? null,
-    aviso: avisoDe({ filas, congeladas, campoDeIcp: campoDeIcp?.[0] ?? null, puente }),
+    cuentasSinPuntaje: sinPuntaje.map((c) => c.cuentaId),
+    aviso: avisoDe({ filas, congeladas, campoDeIcp: campoDeIcp?.[0] ?? null, puente, sinPuntaje }),
   };
 }
 
@@ -214,15 +222,15 @@ async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promis
   const llave = llaveOSinCreativo("contactos.atribucion_primera ->> 'utmContent'");
   const anuncios = await anunciosPorNombre();
 
-  /* El puntaje sólo se castea cuando parece un número. Un valor de texto en ese campo haría que
-     `::numeric` lance `22P02` y **se lleve puesta la consulta entera, no una fila**: la pantalla de
-     una empresa en blanco por un dato raro de un contacto. El guard es del mismo tipo que el que la
-     `053` puso en el escritor del desglose, por el mismo motivo. */
+  /* El puntaje pasa por LA validación del puntaje (`puntajeUsable`), la de la sincronización: un entero de 0 a 100.
+     Hasta C6 · D4 acá entraba cualquier número —decimales, sin tope— y un campo con otra escala salía con promedio
+     acá y «Sin calificar» en Acquisition. Y sólo castea lo que ya pasó la forma: un texto en el campo no lanza `22P02`
+     ni se lleva puesta la consulta entera, el mismo guard que la `053` puso en el escritor del desglose. */
   const puntaje = campoDeIcp
-    ? sql<number | null>`nullif(${valorDelCampo(sql`contactos.campos_del_crm`, campoDeIcp)}, '')`
-    : sql<number | null>`null::text`;
+    ? puntajeDelCampo(sql`contactos.campos_del_crm`, campoDeIcp)
+    : sql<number | null>`null::int`;
 
-  const numerico = sql<boolean>`${puntaje} ~ '^[0-9]+([.][0-9]+)?$'`;
+  const numerico = sql<boolean>`${puntaje} is not null`;
 
   const filas = await datos()
     .selectFrom('contactos')
@@ -233,9 +241,9 @@ async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promis
       sql<number>`count(*)`.as('contactos'),
       sql<number>`count(*) filter (where ${numerico})`.as('conPuntaje'),
       sql<number | null>`avg((${puntaje})::numeric) filter (where ${numerico})`.as('icp'),
-      /* El `case` y no un `and` en el `filter`: PostgreSQL no promete evaluar el `~` antes que el `::numeric`, y un
-         texto en el campo lanzaría `22P02` y se llevaría la consulta entera. Ver el comentario de arriba. */
-      sql<number>`count(*) filter (where (case when ${numerico} then (${puntaje})::numeric end) >= ${UMBRAL_ALTO})`.as('calificados'),
+      /* `puntajeUsable` ya es un entero o nulo, así que la comparación no castea nada: un texto en el campo no lanza
+         `22P02`. Un nulo no es `>=` a nada, y no cuenta. Ver el comentario de arriba. */
+      sql<number>`count(*) filter (where ${puntaje} >= ${UMBRAL_ALTO})`.as('calificados'),
       /* El MISMO `exists` con `ghl_calendario_id` que `costoDelAnuncio.ts:350-353` y que
          `atribucionDelLead`. Tiene que ser el mismo, o las filas de este corte no sumarían la cifra
          grande de al lado y nadie tendría cómo saber cuál de las dos está mal.
@@ -376,6 +384,8 @@ function avisoDe(r: {
   campoDeIcp: string | null;
   /** El cruce nombre↔anuncio. `sobre` son TODOS los contactos de la ventana. Ver `coberturaDelPuente`. */
   puente: { con: number; sobre: number; sinNombre: number };
+  /** Los clientes de la ventana sin campo del puntaje (`clientesSinPuntaje`). */
+  sinPuntaje: readonly ClienteSinPuntaje[];
 }): string | null {
   const partes: string[] = [];
 
@@ -384,6 +394,19 @@ function avisoDe(r: {
       `El CRM de esta empresa no tiene un campo «${CAMPO_DE_ICP}», o cambió de nombre. Sin él no ` +
         'hay encaje que promediar: no es que los leads tengan encaje cero.',
     );
+  } else {
+    /* Cuando otro cliente sí tiene campo (el nivel 3), cada uno sin campo con su nombre y con lo que le pasa. Son dos
+       estados y mandan a lugares distintos: sin catálogo leído no hay nada que elegir todavía; con catálogo, lo que
+       falta es elegir el campo, y lo hace quien administra la empresa —quien mira Creative en general no puede—. */
+    for (const c of r.sinPuntaje) {
+      partes.push(
+        c.catalogo
+          ? `«${c.nombre}» no tiene campo del puntaje —ni uno elegido ni uno llamado «${CAMPO_DE_ICP}»—: el encaje de ` +
+              'sus piezas no se promedia. Quien administra la empresa lo elige en Ajustes › Clientes.'
+          : `Todavía no se leyó el catálogo de campos de «${c.nombre}»: se lee con la sincronización de contactos, y ` +
+              'hasta entonces el encaje de sus piezas no se promedia.',
+      );
+    }
   }
 
   /* Las congeladas, con su conteo. El texto es el de `tasaDeCancelacion` y a propósito: es la misma

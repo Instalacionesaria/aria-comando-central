@@ -71,7 +71,7 @@ import {
   type ContactoDeGhl,
   type FalloDeGhl,
 } from '../ghl/cliente.ts';
-import { camposDelPuntaje, refrescarCatalogoDeCampos, type ResumenDelCatalogo } from './camposDelCrm.ts';
+import { camposDelPuntaje, puntajeDeUnValor, refrescarCatalogoDeCampos, type ResumenDelCatalogo } from './camposDelCrm.ts';
 
 /**
  * Las etiquetas de GoHighLevel, y a qué territorio corresponde cada una.
@@ -420,7 +420,7 @@ async function guardar(
      *
      * Cero llamadas nuevas: se deriva del mismo mapa que la línea de arriba acaba de normalizar.
      * Cuál campo es el puntaje no se puede deducir —17 campos en el grupo `calificacion`, uno solo
-     * es el puntaje— así que está designado en `CAMPO_DEL_PUNTAJE`, con la medición al lado.
+     * es el puntaje— así que se elige por cliente (`098`), con `CAMPO_DEL_PUNTAJE` y el nombre de respaldo.
      *
      * ── EL MISMO PATRÓN DE LA CLAVE AUSENTE, Y ACÁ TIENE UN FILO MÁS ────
      *
@@ -536,7 +536,7 @@ async function guardar(
  *
  * ── Y EL CERO NO SE CONFUNDE CON LA AUSENCIA ────────────────────────────────
  *
- * `Number.isInteger` y no un `if (!n)`: un `0` es falsy y se iría como `null`. Medido: **47 de los
+ * Se valida el texto y no un `if (!n)`: un `0` es falsy y se iría como `null`. Medido: **47 de los
  * 471 valen exactamente 0**, y son un grupo identificable —todos entre el 21 de agosto y el 3 de
  * septiembre, ninguno reciente—. No se sabe si el CRM calculó cero o si su workflow no corrió: el
  * proveedor no dice la diferencia, así que el cero se guarda como cero.
@@ -547,9 +547,9 @@ function puntajeDelCrm(c: ContactoDeGhl, puntaje: readonly string[]): number | n
   const id = puntaje.find((p) => campos[p] !== undefined);
   const crudo = id === undefined ? undefined : campos[id];
   if (crudo === undefined) return null;
-  const n = Number(crudo);
-  if (!Number.isInteger(n) || n < 0 || n > 100) return null;
-  return n;
+  // Un entero de 0 a 100 escrito con dígitos: LA validación (C6 · D4). Creative, la pantalla del puntaje y el recálculo
+  // dicen lo mismo en SQL (`puntajeUsable`), y con dos reglas distintas una pantalla calificaba lo que otra no.
+  return puntajeDeUnValor(crudo);
 }
 
 /**

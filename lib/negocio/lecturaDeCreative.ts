@@ -45,7 +45,7 @@ import { LARGO_MAXIMO_DE_MINIATURA, enlaceDePublicacion, type Red } from './urlE
 
 /**
  * Por qué una cifra no tiene valor: `sin_contactos` —la pieza no trajo contactos en la ventana—, `sin_puntaje` —el CRM
- * no tiene el campo del ICP—, `sin_entrega` —la pieza no tuvo impresiones en la ventana—, `bajo_el_piso` —menos de 10
+ * de su cliente no tiene el campo del ICP—, `sin_entrega` —la pieza no tuvo impresiones en la ventana—, `bajo_el_piso` —menos de 10
  * clics al enlace para el click-to-landing—, `pocas_impresiones` —menos de 1000 impresiones para una tasa—, `sin_reporte` —
  * GoHighLevel no reportó esa acción para la pieza en ningún anuncio-día de la ventana, por ejemplo vistas de video en
  * una imagen, o el gasto de días con impresiones— o `sin_fuente` — lo que GoHighLevel no entrega: la retención—.
@@ -292,7 +292,7 @@ function agrupar(
 
 /** Lo que dibuja la pantalla, desde lo leído. Sin base: la prueba lo arma con números a mano. */
 export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
-  const sinPuntaje = e.calidad.campoDeIcp === null;
+  const sinPuntaje = (cuentaId: string) => e.calidad.campoDeIcp === null || e.calidad.cuentasSinPuntaje.includes(cuentaId);
   /* La pieza es (cliente, nombre) (el nivel 3): cada lectura se indexa por la `clave` (`idDeLaPieza`), la misma de las
      miniaturas y los activos, y de las que traen piezas se anota de quién es cada una y cómo se llama. */
   const id = (cuentaId: string, nombre: string) => idDeLaPieza(cuentaId, nombre, e.clientes.principal);
@@ -366,7 +366,7 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
       etapa: x?.etapa ?? q?.etapa ?? 'sin_etapa',
       estado: x?.entregando ? 'entregando' : 'sin_entrega',
       cifras: {
-        calificados: !q ? sinValor('sin_contactos') : sinPuntaje ? sinValor('sin_puntaje') : conValor(q.calificados),
+        calificados: !q ? sinValor('sin_contactos') : sinPuntaje(cuentaId) ? sinValor('sin_puntaje') : conValor(q.calificados),
         agendas: !q ? sinValor('sin_contactos') : conValor(q.agendaron),
         hookRate: sobreImpresiones(x?.vistas ?? null, hayEntrega),
         retencion: sinValor('sin_fuente'),
@@ -407,7 +407,7 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
   const impresionesConFrecuencia = conFrecuencia.reduce((s, x) => s + x.impresionesConFrecuencia, 0);
   const hay = impresiones > 0;
   const cifras: CifrasDeLaPieza = {
-    calificados: conCalidad.length === 0 ? sinValor('sin_contactos') : sinPuntaje ? sinValor('sin_puntaje') : conValor(conCalidad.reduce((s, q) => s + q.calificados, 0)),
+    calificados: conCalidad.length === 0 ? sinValor('sin_contactos') : [...calidad.keys()].every((k) => sinPuntaje(deLaPieza.get(k)!.cuentaId)) ? sinValor('sin_puntaje') : conValor(conCalidad.reduce((s, q) => s + q.calificados, 0)),
     agendas: conCalidad.length === 0 ? sinValor('sin_contactos') : conValor(conCalidad.reduce((s, q) => s + q.agendaron, 0)),
     hookRate: sobreImpresiones(sumarPares(entregas.map((x) => x.vistas)), hay),
     retencion: sinValor('sin_fuente'),

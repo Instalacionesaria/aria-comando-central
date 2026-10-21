@@ -134,8 +134,8 @@ la pantalla nueva no puede heredar sin querer.
   Si deja de valer 0, la pantalla lo avisa. Un cero nuevo querría decir que el CRM volvió a fallar,
   y esa falla se escondería dentro de una tarjeta que ya tiene gente. **Medido: 0.**
 - **La divergencia que hay que declarar:** el ICP promedio de Creative **sí** promedia los ceros. Su
-  filtro de «parece un número» (`lib/negocio/calidadDelCreativo.ts:225`) deja pasar el `0`, y el
-  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:235`). Las dos pantallas pueden
+  validación —la de la sincronización desde C6 · D4 (`lib/negocio/camposDelCrm.ts:456`)— deja pasar el `0`, y el
+  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:243`). Las dos pantallas pueden
   mostrar a los mismos contactos de forma distinta. Esta carpeta no lo arregla: lo dice en el matiz
   de la tarjeta y lo registra `14-EL-PUNTAJE-DEL-CRM.md`.
 
@@ -260,7 +260,7 @@ la pantalla nueva no puede heredar sin querer.
   comentario de `comision.ts` describe ese mismo defecto (`lib/negocio/comision.ts:26-27`).
 - **El formato de la maqueta es andamiaje:** `'$'+n.toLocaleString('en-US')`
   (`aios-command-center_1.html:4587`). La tabla de resultados guarda el monto y ninguna moneda
-  (`lib/datos/esquema.ts:866-879`).
+  (`lib/datos/esquema.ts:877-890`).
 
 ### LP03-14 · Las tarjetas no emiten `data-leads`
 

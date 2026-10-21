@@ -124,7 +124,9 @@ export default function Clientes({ sesion, conConexion = false }) {
         : { crmCuentaId: vinculo.crmCuentaId.trim(), esPrueba: vinculo.esPrueba },
     });
     setOcupado(false);
-    setAviso(r.tipo === 'datos' ? { mal: false, texto: 'Vinculación guardada.' } : { mal: true, texto: porQue(r) });
+    // Al cambiar la subcuenta, el servidor recuerda revisar el puntaje y el Perfil elegidos para la anterior.
+    const listo = r.tipo === 'datos' && r.datos.aviso ? `Vinculación guardada. ${r.datos.aviso}` : 'Vinculación guardada.';
+    setAviso(r.tipo === 'datos' ? { mal: false, texto: listo } : { mal: true, texto: porQue(r) });
     if (r.tipo === 'datos') {
       setRelectura((n) => n + 1);
       await refrescar();
