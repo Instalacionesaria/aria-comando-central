@@ -6,13 +6,19 @@
 //   1 · el tope del día        — una cuenta; si está alcanzado, **se corta acá**
 //   2 · a quién mirar          — una consulta
 //   3 · los mensajes y el transcript
-//   4 · el modelo              — acá y solo acá se gasta, UNA vez por día y por empresa
+//   4 · el modelo              — acá y solo acá se gasta, UNA vez por día y por cliente
 //   5 · los tres descartes     — peldaño, patrón inválido, ya abierto
 //   6 · la escritura           — un análisis y un hallazgo, en una transacción
 //
 // Los tres descartes del paso 5 ocurren **después** de pagar, y eso hay que decirlo sin adornos: no
 // son guardias de gasto, son guardias de calidad. Lo que acota el gasto es el tope del paso 1, que es
 // una cuenta y corre siempre.
+//
+// ── EL TOPE ES POR CLIENTE (el nivel 3, C4) ─────────────────────────────────
+//
+// La tarea `mejora` corre una vez por cliente activo, y el tope del día cuenta los hallazgos a la vista
+// del ámbito de ESE cliente: una empresa con N clientes activos hace hasta N inferencias por día, no una.
+// Con un solo cliente, la de siempre. Era «por día y por empresa» hasta que el barrido pasó a ser por cliente.
 //
 // ── SE ESCRIBE UN ANÁLISIS AUNQUE NO HAYA HALLAZGO ─────────────────────────
 //
@@ -167,7 +173,7 @@ export async function buscarUnaMejora(
     };
   });
 
-  // ── 4 · EL MODELO. Una vez por día y por empresa. ────────────────────────
+  // ── 4 · EL MODELO. Una vez por día y por cliente. ────────────────────────
   const desdeElPedido = Date.now();
   const r = await pedir({
     claveIa: e.claveIa,
@@ -189,7 +195,7 @@ export async function buscarUnaMejora(
     esquema: esquemaDeLaMejora(),
   });
 
-  /* Lo que consumió, y si falló su incidente. Uno solo por día y por empresa, así que no hace falta
+  /* Lo que consumió, y si falló su incidente. Uno solo por día y por cliente, así que no hace falta
      agruparlo como los del carril rojo. */
   await registrarUso({
     orgId: e.orgId,

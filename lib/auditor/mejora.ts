@@ -1,11 +1,11 @@
-// EL CARRIL AMARILLO: una mejora por día y por empresa, EN FRÍO.
+// EL CARRIL AMARILLO: una mejora por día y por cliente, EN FRÍO.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE ESTE CARRIL NO HACE, Y CADA UNA ES UNA DECISIÓN
 //
 //   · **No interrumpe a nadie.** No pide intervención, no escribe una nota, no toca el CRM y no apaga
 //     ningún agente. Su salida es una fila en la lista del técnico y nada más.
-//   · **No cachea.** Corre una vez por día y por empresa sobre una conversación distinta cada vez, así
+//   · **No cachea.** Corre una vez por día y por cliente sobre una conversación distinta cada vez, así
 //     que un caché **jamás acertaría** — y *«un caché que jamás acierta no es una optimización: es un
 //     recargo»*: se paga la escritura, nunca se cobra una lectura.
 //   · **No genera tarea** ni entra en ninguna cola.
@@ -55,7 +55,7 @@ export const CRITERIO_DE_LA_MEJORA = 'contexto_no_leido';
 export const DISPARO_DE_LA_MEJORA = 'mejora';
 
 /**
- * Cuántas mejoras por día y por empresa. **Una.**
+ * Cuántas mejoras por día y por cliente (el nivel 3: una empresa con N clientes activos, N). **Una.**
  *
  * No es un presupuesto: es lo que hace que la lista del técnico crezca a un ritmo que alguien puede
  * seguir. Diez por día son diez que nadie mira; una por día son cinco por semana, que es una reunión.

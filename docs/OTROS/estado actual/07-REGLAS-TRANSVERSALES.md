@@ -1,7 +1,8 @@
 # Las reglas transversales: lo que hay que saber antes de escribir una cifra nueva
 > Corte: **2026-10-18**. Producción corre el commit **`972972e`** (migraciones hasta la `078`); las citas son al árbol
-> de `dc84cb2`, que suma ocho commits locales del modelo de datos sin subir (sección «Construido en local»). Las cifras
-> de producción se midieron el 2026-10-18 entre las **15:38 y las 15:40 UTC** con `scripts/supabase.mjs leer`, sólo
+> local, que suma los commits del modelo de datos y del nivel 3 sin subir, hasta el 2026-10-20 (secciones «Construido en
+> local»). Las cifras de producción se midieron el 2026-10-18 entre las **15:38 y las 15:40 UTC** con
+> `scripts/supabase.mjs leer`, sólo
 > conteos y agregados y con el OK del usuario: de la base no salió un nombre, un correo ni un teléfono. Lo que no se
 > volvió a medir lleva su fecha; lo que no se pudo verificar está dicho como pendiente. Ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
 
@@ -28,8 +29,18 @@
 >   Negocios: construido en local encima de la Fase 0, sin subir. La regla 23 gana otra mitad (sección «el nivel 3»).
 > - **2026-10-18 · `00ccfee`..`ca5fcdc`** — el Bloque C del nivel 3: la ingesta, las credenciales y el cron por cliente
 >   (`090` a `093`), en local y sin subir (sección «el nivel 3»).
-> - **2026-10-19 · C5 · G4** — las rutas manuales (la Agenda, el tic de la ingesta y «Traer de GoHighLevel») traen a
->   cada cliente activo con lo suyo, sin migración, en local y sin subir (sección «el nivel 3»).
+> - **2026-10-19 · C5 · G4 · `3b26a1c`, `898d6f9`** — las rutas manuales (la Agenda, el tic de la ingesta y «Traer de
+>   GoHighLevel») traen a cada cliente activo con lo suyo, sin migración, en local y sin subir (sección «el nivel 3»).
+> - **2026-10-19/20 · C5 · G3, G1 y G2 · `4ab6fae`..`f7fbb88`** — Acquisition, Conversation y los detectores del gasto
+>   por cliente (`094`), la pieza de Creative es (cliente, nombre) (`095`) y el vínculo de un closer es por cliente
+>   (`096` y `097`), en local y sin subir (sección «el nivel 3»).
+> - **2026-10-20 · C6 · D1 a D5 · `976c914`..`3f66d89`** — los avisos dicen de qué cliente y qué hacer; lo que usaba
+>   las credenciales de la empresa usa las del cliente; las señales que mezclaban clientes; el puntaje y el Perfil de
+>   cada subcuenta (`098`), y la lista de chequeo con Meta en su GoHighLevel (`099`). Cada uno con los arreglos de su
+>   revisión, en local y sin subir.
+> - **2026-10-20 · C6, el cierre del plan · `e1d0c7f`..** — el cliente final lee sólo los closers de sus clientes
+>   (`100`), el gasto de cada cliente de punta a punta por el cron, la siembra local `sembrar-nivel-3` y estos
+>   documentos, con las decisiones del usuario del 2026-10-20 escritas como tomadas (sección «el nivel 3»).
 > - Las cifras: la cancelación del negocio a treinta días pasa de 32,0 % a **35,0 %** (14 de 40, § 9); las congeladas
 >   salieron de la ventana de treinta días (**0**, § 4); entraron **25 contactos** en treinta días (§ 5).
 > - **Lo que la foto anterior dejó abierto, re-verificado el 2026-10-18:** el `aviso` de Lead Flow ya tiene lector —el
@@ -1278,11 +1289,29 @@ para la base de producción; sí para el código del árbol y para la suite loca
 
 ## Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
 
-**Estado.** Los commits del 2026-10-18, `21556cd..18f61d6` y el Bloque C `00ccfee..ca5fcdc`, con las migraciones
-`085` a `099` (la `094`, de C5 · G3, del 2026-10-19; la `095`, de C5 · G1, la `096` y la `097`, de C5 · G2, la `098`, de
-C6 · D4, y la `099`, de C6 · D5, del 2026-10-20), están encima de la Fase 0 y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
+**Estado.** Los commits del 2026-10-18 (`21556cd..18f61d6` y el Bloque C, `00ccfee..ca5fcdc`), los de C5 del 2026-10-19
+y 2026-10-20 (`3b26a1c..f7fbb88`) y los de C6 del 2026-10-20 (`976c914..3f66d89` y el cierre, desde `e1d0c7f`), con las
+migraciones `085` a `100` (la `094`, de C5 · G3, del 2026-10-19; la `095`, de C5 · G1, la `096` y la `097`, de C5 · G2,
+la `098`, de C6 · D4, la `099`, de C6 · D5, y la `100`, del cierre de C6, del 2026-10-20), están encima de la Fase 0 y,
+como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
 son tres: ARIA (la organización principal), las empresas (`identidad.organizaciones`) y los clientes de cada empresa
 (`identidad.cuentas`). En pantalla se dice «Empresa» y «Cliente»; la palabra «cuenta» no aparece.
+
+**Las decisiones del usuario del 2026-10-20**, tomadas y no pendientes:
+
+- **El tope de closers es de tres por EMPRESA**, para todos sus clientes, y no de tres por cliente: cuenta personas, y
+  quien trabaja en dos clientes ocupa una sola plaza (`lib/negocio/closer.ts:238`, ya era así en el código).
+- **Los costos de cada cliente salen de SU GoHighLevel con Meta vinculado**, y un aviso dice de qué cliente es lo que
+  falta y qué hacer (D1 y D5, más abajo); la lista de chequeo no da por configurado a un cliente sin Meta en su
+  GoHighLevel.
+- **Acquisition no tiene foco por cliente**: sigue siendo de la empresa entera, y nombra al cliente que le falta.
+- **El contrato.** Las empresas les avisan a sus clientes que lo que la plataforma recopila queda en la base de ARIA.
+  Con eso queda permitido lo que el plan del nivel 3 dejaba como riesgo abierto: que la foto diaria de los negocios
+  guarde cifras por empresa y por cliente bajo la principal (`negocio.foto_de_las_empresas` y
+  `negocio.foto_de_las_cuentas`, de la `089`), sin nombres ni datos de personas. Lo que no cambia es la forma de
+  destino: el modelo de datos (local, `01-ARQUITECTURA.md`) quiere esos agregados en `analitica`, armados por un
+  proceso con permiso propio; hoy la foto lee empresa por empresa con `conOrganizacion` y escribe bajo la principal, y
+  pasa a la capa analítica en la Fase 1, con el mismo contrato de datos (`CONTRATO_DE_LA_FOTO`).
 
 - **El ámbito y la tercera variable.** `conOrganizacion` recibe la organización o un ámbito
   (`lib/datos/contexto.ts:86`, `lib/datos/contexto.ts:156`) y pone tres variables: `app.org_id`, `app.cuentas` y
@@ -1437,7 +1466,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/negocio/alcanceDelCloser.ts:276`, `app/api/admin/cuentas/route.ts:139`), sólo a quien tiene `credenciales.ver` y
   sobre su propia empresa (`lib/administracion/cuentas.ts:404`), y la pantalla del vínculo, por cliente activo, con más
   de uno (`app/api/admin/closer/route.ts:139`, `components/closer/QuienEsElCloser.jsx:359`). El tope de tres closers
-  es por EMPRESA, y queda decidido (`lib/negocio/closer.ts:233`). Lo exigen
+  es por EMPRESA: lo decidió el usuario el 2026-10-20 (`lib/negocio/closer.ts:233`). Lo exigen
   `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:345`,
   `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:436`,
   `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:488`,
@@ -1630,7 +1659,17 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/300-la-siembra-del-nivel-3.test.ts:68`, `pruebas/base/300-la-siembra-del-nivel-3.test.ts:102`,
   `pruebas/base/300-la-siembra-del-nivel-3.test.ts:130`, `pruebas/base/300-la-siembra-del-nivel-3.test.ts:163`,
   `pruebas/base/300-la-siembra-del-nivel-3.test.ts:178` y `pruebas/base/300-la-siembra-del-nivel-3.test.ts:188`.
-- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3, D4 y D5 ya no está):
+  Falta, y sólo lo puede hacer el usuario con su login, la vuelta por el navegador sobre esta siembra: como
+  superadministrador, Negocios y Ajustes › Clientes; como la administradora de `gamma`, el selector, el alta, el foco y
+  la Conexión de un cliente; como el cliente final, sólo Leads y Sales con sus datos; y todo también a 375 px.
+- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3, D4, D5 y
+  el cierre de C6 ya no está):
+  los prompts del agente (`prompts_del_agente`), los planes y la Reunión siguen siendo de la empresa, y el agente del
+  CRM es de cada subcuenta: el prompt cargado es el del agente del principal, así que el auditor y la mejora del día
+  auditan a otro cliente SIN prompt —«el prompt no está cargado»— antes que contra el de otro agente
+  (`lib/auditor/analisis.ts:107`); con dos clientes con agentes distintos, la mejora del principal es la única que lee
+  su prompt, y la mejora es una por día y por cliente (`lib/auditor/mejora.ts:58`): con N clientes activos, hasta N
+  inferencias por día;
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
   señales se cierran solas y renacen, y las decididas pierden su bloqueo; desde D3 lo mismo vale para la fuga, el

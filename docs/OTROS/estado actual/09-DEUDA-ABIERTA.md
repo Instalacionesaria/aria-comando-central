@@ -678,7 +678,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
     (`components/ajustes/Usuarios.jsx:365-366`, `components/ajustes/Empresas.jsx:145-146`).
   - Que «el auditor de IA no existe» y que `negocio.hallazgos` no tiene lector ni escritor
     (`docs/OTROS/produccion/DESPLIEGUE.md:473-476`). Tiene dos escritores
-    (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:267`), lectores en `lib/auditor/`
+    (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:273`), lectores en `lib/auditor/`
     (por ejemplo `lib/auditor/pantalla.ts:246`) y **27 filas**, detectadas entre el 2026-09-01 y el
     2026-10-06 (2026-10-18; 24 el 2026-09-28). Las dos consecuencias que el párrafo deduce sobre la cola
     «Intervenciones urgentes» cuelgan de esa premisa y no se re-midieron acá.
