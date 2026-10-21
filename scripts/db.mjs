@@ -17,6 +17,8 @@
 //   node scripts/db.mjs verificar   cuenta filas CONTRA LA BASE
 //   node scripts/db.mjs sembrar-agentes   las dos empresas sintéticas de los agentes (sólo local)
 //   node scripts/db.mjs quitar-agentes    y quitarlas: la prueba 11 exige las cinco del sembrado
+//   node scripts/db.mjs sembrar-nivel-3   la empresa `gamma` del nivel 3, con tres clientes (sólo local)
+//   node scripts/db.mjs quitar-nivel-3    y quitarla, antes de correr la suite
 //
 // `reset` imprime QUÉ FASES COMPLETÓ, nunca un "listo" liso. Escribe en dos
 // dominios con dos conexiones —migraciones como `migrador`, sembrado como
@@ -360,6 +362,31 @@ async function quitarAgentes() {
 }
 
 /**
+ * La empresa `gamma` del nivel 3 (`db/sembrado/nivel-3.ts`), para mirar en el navegador lo que el plan del nivel 3 pide
+ * verificar: Negocios, Ajustes › Clientes, el selector y el foco de la empresa, y el cliente final. Reaplicable: lo que
+ * ya existe se conserva con sus ids y se vuelve a dejar como la siembra lo deja, y los datos sintéticos se rehacen con
+ * fechas de los últimos días. NO es parte de `reset`, por lo mismo que `sembrar-agentes`: se quita antes de la suite.
+ */
+async function sembrarNivel3() {
+  const { sembrarElNivel3, SLUG_DEL_NIVEL_3 } = await import('../db/sembrado/nivel-3.ts');
+  const { cerrarClientes } = await import('../lib/datos/capa.ts');
+  try {
+    const r = await sembrarElNivel3();
+    for (const c of r.creadas) console.log(`  creada ${c}`);
+    if (r.creadas.length === 0) console.log(`  \`${SLUG_DEL_NIVEL_3}\` ya estaba: quedó como la siembra la deja, con los datos rehechos`);
+    console.log('  tres clientes, la administradora y el cliente final del segundo (con la contraseña de desarrollo)');
+    console.log('  antes de correr la suite: node scripts/db.mjs quitar-nivel-3');
+  } finally {
+    await cerrarClientes();
+  }
+}
+
+async function quitarNivel3() {
+  const { quitarElNivel3 } = await import('../db/sembrado/nivel-3.ts');
+  console.log(`  ${await quitarElNivel3()} empresa(s) quitada(s)`);
+}
+
+/**
  * Contra la base, no contra el código.
  *
  * EJECUCION § 6: "Nada se marca como terminado sin verificarlo contra la base.
@@ -586,6 +613,8 @@ const FASES = {
   verificar,
   'sembrar-agentes': sembrarAgentes,
   'quitar-agentes': quitarAgentes,
+  'sembrar-nivel-3': sembrarNivel3,
+  'quitar-nivel-3': quitarNivel3,
 };
 // `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
 // `cuentas`, `cuenta-por-omision` y `cuenta-en-negocio` van DESPUÉS de `sembrar`: comprueban que toda organización

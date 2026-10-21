@@ -172,27 +172,46 @@ export function exigirBaseLocalParaLosCasos(): void {
 // QUITAR
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/** Borra las empresas con ese prefijo y todo lo suyo (`quitarEmpresas`). */
+export async function quitarEmpresasDeLosAgentes(prefijo: string): Promise<number> {
+  exigirBaseLocalParaLosCasos();
+  return quitarEmpresas({ prefijo });
+}
+
 /**
- * Borra las empresas con ese prefijo y todo lo suyo, en las dos bases de datos lógicas.
+ * Borra las empresas de un slug —el exacto, o los que empiezan con un prefijo— y todo lo suyo, en las dos bases de
+ * datos lógicas. La usan las empresas de los agentes (por prefijo) y la del nivel 3 (`nivel-3.ts`, por su slug exacto:
+ * con un prefijo, `gamma` se llevaría las `gamma-NNN` que arma cada prueba).
  *
  * Recorre TODAS las tablas con `org_id` y no una lista escrita a mano: las etapas siguientes suman tablas
  * (las conversaciones del cerebro, las señales) y una lista se quedaría vieja sin que nada fallara hasta
  * que la empresa no se pudiera borrar. Una clave foránea que frena se resuelve con otra pasada.
  */
-export async function quitarEmpresasDeLosAgentes(prefijo: string): Promise<number> {
-  exigirBaseLocalParaLosCasos();
-  const cliente = new pg.Client({ connectionString: process.env.DATABASE_URL_ADMIN });
+export async function quitarEmpresas(cuales: { prefijo: string } | { slug: string }): Promise<number> {
+  const url = process.env.DATABASE_URL_ADMIN;
+  if (!url) throw new Error('DATABASE_URL_ADMIN no está definida.');
+  exigirAnfitrionLocal(url, {
+    quien: 'quitar las empresas sintéticas',
+    porque: 'borra todo lo de esas empresas, en las dos bases, como administrador.',
+    escotilla: 'ARIA_SEMBRADO_FORZADO',
+  });
+  const cliente = new pg.Client({ connectionString: url });
   await cliente.connect();
   try {
     const orgs = (
-      await cliente.query<{ id: string }>('select id from identidad.organizaciones where slug like $1', [`${prefijo}%`])
+      'prefijo' in cuales
+        ? await cliente.query<{ id: string }>('select id from identidad.organizaciones where slug like $1', [`${cuales.prefijo}%`])
+        : await cliente.query<{ id: string }>('select id from identidad.organizaciones where slug = $1', [cuales.slug])
     ).rows.map((f) => f.id);
     if (orgs.length === 0) return 0;
+    /* La auditoría no: es de sólo inserción (`005`, `identidad.evitar_mutacion`) y no tiene clave foránea a la
+       organización, así que sus filas quedan, como las de toda empresa que se borra. Las de los agentes no tienen
+       ninguna; la del nivel 3 sí, en cuanto alguien entra a mirarla. */
     const tablas = (
       await cliente.query<{ t: string }>(
         `select format('%I.%I', table_schema, table_name) as t from information_schema.columns
           where column_name = 'org_id' and table_schema in ('negocio', 'identidad')
-            and table_name <> 'organizaciones'
+            and table_name not in ('organizaciones', 'auditoria_accesos')
             and (table_schema, table_name) in (select table_schema, table_name from information_schema.tables where table_type = 'BASE TABLE')`,
       )
     ).rows

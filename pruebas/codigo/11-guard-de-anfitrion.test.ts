@@ -197,6 +197,8 @@ test('los llamadores del guard siguen ahí, y no hay otros', () => {
     'pruebas/base/01-controlador-transaccion.test.ts',
     // Crea empresas y personas sintéticas y borra todo lo de ellas como `postgres` (AG4).
     'db/sembrado/casos-de-los-agentes.ts',
+    // Siembra la empresa `gamma` del nivel 3, con personas que tienen la contraseña de desarrollo (C6).
+    'db/sembrado/nivel-3.ts',
     // Lee descifrada la llave de IA de la organización principal (AG4).
     'scripts/evaluar-agentes.mjs',
   ].sort();

@@ -72,6 +72,9 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // Las empresas sintéticas de los agentes (AG4): crean empresas y personas, que son identidad. Sólo en
   // local, con la misma guarda que el sembrado de desarrollo.
   'db/sembrado/casos-de-los-agentes.ts',
+  // La empresa `gamma` del nivel 3 (C6): crea la empresa, sus personas y el vínculo y la Conexión de sus
+  // clientes, que son identidad. Sólo en local, con la misma guarda que el sembrado de desarrollo.
+  'db/sembrado/nivel-3.ts',
   // El cerebro del Inicio (AG5): la llave de IA de la empresa se resuelve acá, en la ruta, y viaja como
   // dato. Nada bajo `lib/agentes/` importa la conexión de identidad.
   'app/api/executive/route.ts',
@@ -573,6 +576,12 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // aceptable por la misma razón que el sembrado de desarrollo: es idempotente POR DESTRUCCIÓN —cada corrida
   // empieza quitando todo lo del prefijo—, y la prueba 205 comprueba el EFECTO, cifra por cifra.
   'db/sembrado/casos-de-los-agentes.ts',
+  // La empresa `gamma` del nivel 3: identidad por `conIdentidad()` (la empresa, sus personas, el vínculo y la
+  // Conexión) y negocio por `conOrganizacion()` (los clientes con las funciones de Ajustes y los datos sintéticos).
+  // Qué queda a medias si la segunda mitad falla: la empresa y sus personas, con parte de sus datos. Es aceptable
+  // porque es reaplicable —otra corrida busca lo que ya está y rehace los datos—, y la prueba 300 comprueba el
+  // EFECTO de dos corridas seguidas.
+  'db/sembrado/nivel-3.ts',
   // La tanda `cerebro` de la evaluación real: escribe en identidad las sesiones de las personas sembradas y
   // en negocio lo que escribe el cerebro al preguntar (hilos, mensajes, uso). Qué queda a medias si la
   // segunda mitad falla: sesiones y hilos de una empresa sintética, que el `finally` quita con la empresa

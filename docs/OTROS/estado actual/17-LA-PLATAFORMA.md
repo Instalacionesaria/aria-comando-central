@@ -561,11 +561,11 @@ producción** (medido el 2026-10-18: la última migración aplicada es la `078`,
 | `c88b7cf` | 2 | `079`: el esquema `catalogo`, 23 tablas de referencia comunes a todas las empresas (`db/migraciones/079_el_idioma_comun.sql:25`); los roles `ingestor`, `app_ingesta` y `app_analista`, **sin login** (`db/arranque/000_cluster.sql:82-97`) |
 | `01baaf2` | 3 | `080`: `identidad.cuentas`, sus credenciales copiadas, `usuarios_cuentas` y `acuerdos`; la fase `cuentas` de `scripts/db.mjs` crea las de hoy |
 | `99f6e1e` | 4 | `081`: la bandeja de entrada, esquemas `sistema` e `ingesta`, con la puerta `ingesta.recibir` (`db/migraciones/081_la_bandeja_de_entrada.sql:122`); nada la usa todavía |
-| `ce5ed91` | 5a | `082`: `cuenta_id` nulable en 39 tablas de `negocio`, con su puente; la fase `cuenta-en-negocio` rellena las filas de hoy (`scripts/db.mjs:585`) |
+| `ce5ed91` | 5a | `082`: `cuenta_id` nulable en 39 tablas de `negocio`, con su puente; la fase `cuenta-en-negocio` rellena las filas de hoy (`scripts/db.mjs:612`) |
 | `8ad73f3` | 5b | `083`: `cuenta_id` obligatoria en 26 tablas, las claves «misma cuenta que la madre» y la política por organización **y** cuenta (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:1-8`) |
 | `dc84cb2` | 6 | `084`: `negocio.eventos`, de sólo agregar y particionada por mes (`db/migraciones/084_los_eventos.sql:117-141`), y las particiones que nacen cerradas |
 
-Las fases nuevas van en el `reset` local, después de sembrar (`scripts/db.mjs:593`). Lo que el diseño validado el
+Las fases nuevas van en el `reset` local, después de sembrar (`scripts/db.mjs:622`). Lo que el diseño validado el
 2026-10-14 no había visto y se corrigió al construirlo está escrito en el plan de subida y en los mensajes de cada
 commit; el más serio: **una partición de `negocio` no heredaba la RLS de su madre** y, leída directo, mostraba los
 eventos de todas las organizaciones; `sistema.crear_particiones` se redefinió para que nazca cerrada
@@ -630,6 +630,7 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | «Nivel 3 · C6 · la lista de chequeo del cliente, en Ajustes y con Meta en su GoHighLevel» | C6 · D5 | `099`: `foto_de_las_cuentas.meta_en_el_crm` (nula, sin relleno) y los comentarios de lo que cambió; la foto sube al contrato 2. El paso de Meta de la lista de chequeo pasa a ser «Meta vinculado en su GoHighLevel», requerido, medido con el sello de la pasada del gasto de cada cliente o con su serie; la conexión directa queda como «Miniaturas de Meta», recomendada. Ajustes › Clientes muestra la lista de cada cliente en vivo (`GET /api/admin/cuentas`, que lee de identidad sólo presencias), con qué hacer en cada paso, y Negocios suma «Agregar cliente». Con un solo cliente la lista cambia a propósito: sin Meta en su GoHighLevel, no está configurado |
 | «Nivel 3 · C6 · el cliente final lee sólo los closers de sus clientes (100)» | C6 | `100`: la política de lectura de la `093` pasa a pedir la organización entera; el cliente final lee sólo los closers de sus clientes, y su Sales le da a cada closer un rótulo, `closer-N`, en vez del uuid de la persona. La empresa, entera o enfocada en un cliente, lee y recibe lo de siempre |
 | «Nivel 3 · C6 · el gasto de cada cliente, de punta a punta por el cron» | C6 | sin migración: la 301 corre la tarea `anuncios` por la ruta del cron con su horario (`17 6 * * *`), con tres clientes y un Ad Manager de GoHighLevel falso que responde a cada token sólo con SU subcuenta y SUS campañas: las campañas, los anuncios, las métricas y la serie de la cuenta quedan en su cliente, y el sello del que no tiene Meta vinculado lo dice |
+| «Nivel 3 · C6 · la siembra local del nivel 3 (sembrar-nivel-3)» | C6 · P7 | sin migración: la fase `sembrar-nivel-3` de `scripts/db.mjs`, fuera de `reset` y sólo local, deja la empresa `gamma` con tres clientes (el principal, uno con su Conexión de prueba y uno de prueba), una administradora y un cliente final, y datos sintéticos de los dos primeros; reaplicable, y `quitar-nivel-3` la quita por su slug exacto antes de la suite |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna

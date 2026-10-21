@@ -823,7 +823,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:871`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:880`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -1268,7 +1268,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
   los esquemas `catalogo`, `sistema` e `ingesta` (`:70`), no le pide `org_id` a una partición (`:177`) y acepta
   `aplicar_aislamiento_de_cuenta` como aislamiento (`:208`).
 - **Las fases de relleno.** Como el migrador no ve filas (regla 7), las filas que ya existen reciben su cuenta con dos
-  fases de `scripts/db.mjs`: `cuentas`, como `app_identidad` (`scripts/db.mjs:478`), y `cuenta-en-negocio`, como
+  fases de `scripts/db.mjs`: `cuentas`, como `app_identidad` (`scripts/db.mjs:505`), y `cuenta-en-negocio`, como
   `app_inquilino` dentro de `conOrganizacion` (`:514`). La cuenta en negocio va en tres pasos: la `082` la agrega nula
   con un puente, la fase rellena y la `083` la vuelve obligatoria con la política por cuenta
   (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:4-21`).
@@ -1615,6 +1615,21 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:210`,
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:236` y
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:250`.
+- **La siembra local del nivel 3 (C6, `sembrar-nivel-3`, sin migración).** Para mirar en el navegador lo que las
+  pruebas miran por partes, `node scripts/db.mjs sembrar-nivel-3` (`scripts/db.mjs:370`) deja la empresa `gamma` con
+  tres clientes genéricos —el principal, un segundo con su Conexión de prueba (una subcuenta y un token inventados) y
+  uno marcado de prueba—, una persona administradora y un cliente final del segundo, y contactos, citas y resultados
+  sintéticos de los dos primeros, con la administradora designada closer en los dos (`db/sembrado/nivel-3.ts:236`,
+  `db/sembrado/nivel-3.ts:158`). Las personas, como las del sembrado: la contraseña de desarrollo y debiendo cambiarla
+  (`db/sembrado/nivel-3.ts:126`). Es reaplicable: lo que ya está se conserva con sus ids y sus sesiones, y los datos
+  sintéticos se rehacen con fechas de los últimos días. Escribe como la aplicación —el alta y la edición de un cliente,
+  el vínculo de ARIA— y sólo local. No está en `reset` (`scripts/db.mjs:622`): la prueba 11 exige exactamente el
+  sembrado de desarrollo, así que antes de la suite se quita con `quitar-nivel-3`, por su slug exacto
+  (`db/sembrado/nivel-3.ts:333`); la auditoría que deja quien la mira es de sólo inserción y queda
+  (`db/sembrado/casos-de-los-agentes.ts:214`). Lo exigen
+  `pruebas/base/300-la-siembra-del-nivel-3.test.ts:68`, `pruebas/base/300-la-siembra-del-nivel-3.test.ts:102`,
+  `pruebas/base/300-la-siembra-del-nivel-3.test.ts:130`, `pruebas/base/300-la-siembra-del-nivel-3.test.ts:163`,
+  `pruebas/base/300-la-siembra-del-nivel-3.test.ts:178` y `pruebas/base/300-la-siembra-del-nivel-3.test.ts:188`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3, D4 y D5 ya no está):
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
