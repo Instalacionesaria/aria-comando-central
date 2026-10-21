@@ -1449,14 +1449,16 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   es el foco —Tools es de la empresa entera, y la cabecera dice «Toda la empresa»— ni «el cliente del lead»: un lead
   scrapeado no tiene cliente. Uno en pausa es 400, y uno de otra empresa, de baja o que no es un id, 404, antes de leer
   ningún token (`app/api/tools/leads/enviar/route.ts:141`); a uno sin conexión se le dice qué falta con el texto del
-  cliente (`app/api/tools/leads/enviar/route.ts:157`), y la respuesta nombra al cliente sólo con más de un activo
+  cliente, y a la empresa, con uno o con varios clientes, el suyo de siempre
+  (`app/api/tools/leads/enviar/route.ts:157`), y la respuesta nombra al cliente sólo con más de un activo
   (`app/api/tools/leads/enviar/route.ts:208`). La pantalla cuenta sólo los activos (`components/tools/MisLeads.jsx:129`),
   dibuja el selector con más de uno, arrancando en el principal (`components/tools/MisLeads.jsx:400`), y manda el
   cliente sólo entonces (`components/tools/MisLeads.jsx:204`, `lib/tools/leads.ts:137`). La lista de usuarios del CRM no
   lee a un cliente de baja (`app/api/admin/closer/usuarios-crm/route.ts:57`), sin `?cuenta=` resuelve el principal
   (`app/api/admin/closer/usuarios-crm/route.ts:58`), lee el agente con su resolvedor
-  (`app/api/admin/closer/usuarios-crm/route.ts:65`) y dice la falta y el token rechazado de un cliente con su texto
-  (`app/api/admin/closer/usuarios-crm/route.ts:75`, `app/api/admin/closer/usuarios-crm/route.ts:89`). Las cuatro rutas
+  (`app/api/admin/closer/usuarios-crm/route.ts:65`) y dice la falta y el token rechazado de un cliente con su texto, y
+  los de la empresa con el suyo (`app/api/admin/closer/usuarios-crm/route.ts:75`,
+  `app/api/admin/closer/usuarios-crm/route.ts:89`). Las cuatro rutas
   de un contacto dicen la falta con el texto del cliente del contacto, y el de la empresa sólo al principal
   (`app/api/contactos/[id]/route.ts:116`, `app/api/contactos/[id]/resolver/route.ts:76`,
   `app/api/contactos/[id]/mensajes/route.ts:145`, `app/api/contactos/[id]/avanzar/route.ts:559`). Los cuatro guiones de
@@ -1475,10 +1477,12 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   cliente con subcuenta propia: no guardar las ejecuciones de ese flujo (o sacar `apiToken` de lo guardado), revisar
   quién ve ese historial y comprobar que el flujo use el `apiToken` y el `locationId` del cuerpo y no tenga la
   subcuenta de ARIA escrita adentro (desde el repositorio no se ve). Lo exigen
-  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:261`,
-  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:288`,
-  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:317`,
-  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:343`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:264`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:291`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:302`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:346`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:372`,
+  `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:397`,
   `pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:68` y
   `pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:98`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): en el detector de

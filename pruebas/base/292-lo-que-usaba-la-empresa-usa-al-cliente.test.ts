@@ -13,9 +13,12 @@
 //   · a uno sin conexión le dice qué falta con el texto DEL CLIENTE y no llama a nadie; uno en pausa es 400; uno de otra
 //     empresa, de baja o que no es un id, 404; el cliente final no llega — mutaciones: el texto de la empresa; aceptar
 //     uno en pausa; caer al principal con uno desconocido;
+//   · a la empresa sin conexión, con uno o con varios clientes, el texto DE LA EMPRESA, el de siempre — mutación: el
+//     texto del cliente también al principal;
 //   · la lista de usuarios del CRM: sin `?cuenta=`, el principal con lo de la empresa; uno de baja es 404; al que no
-//     tiene conexión, o cuyo token rechaza GoHighLevel, el texto del cliente — mutaciones: sin el filtro de baja; el
-//     texto de la empresa; el principal mal resuelto;
+//     tiene conexión, o cuyo token rechaza GoHighLevel, el texto del cliente, y a la empresa sin conexión, el suyo —
+//     mutaciones: sin el filtro de baja; el texto de la empresa; el del cliente también al principal; el principal mal
+//     resuelto;
 //   · las cuatro rutas de un contacto dicen el texto del cliente del contacto: el de la empresa para el principal, el
 //     del cliente para los demás — mutación: el texto de la empresa en cualquiera de las cuatro.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -296,6 +299,32 @@ test('un cliente sin conexión: qué le falta, con el texto del cliente, y n8n n
   assert.deepEqual(aN8n, [], 'se subieron leads de Z a otra subcuenta');
 });
 
+test('a la empresa sin conexión, Tools le dice qué falta con el texto de la empresa: con uno o con varios clientes', async () => {
+  // Las conexiones de las dos empresas, revocadas. Al principal, el texto de siempre (se arregla en Integraciones); a
+  // Z, en el mismo momento, el suyo. Con el del cliente también al principal, la empresa de un solo cliente leería
+  // «de este cliente… Ajustes › Clientes › Conexión» por una casilla que no está ahí.
+  aN8n.length = 0;
+  await admin.query(`update identidad.organizaciones_credenciales set crm_estado = 'revocada' where org_id = any($1)`, [[org, orgUno]]);
+  try {
+    const deLaEmpresa = { estado: 409, cuerpo: { codigo: 'credenciales_incompletas', detalle: TEXTO_DE_FALTA_GHL.token_revocado } };
+    const casos: [string, string, Record<string, unknown>][] = [
+      ['con un solo cliente, sin elegir', tokenUno, { ids: leadsUno }],
+      ['con un solo cliente, el principal elegido', tokenUno, { ids: leadsUno, cuentaId: pUno }],
+      ['con varios, sin elegir', tokenAdmin, { ids: leads }],
+      ['con varios, el principal elegido', tokenAdmin, { ids: leads, cuentaId: p }],
+    ];
+    for (const [quien, token, cuerpo] of casos) {
+      const r = await leerRespuesta<{ codigo: string; detalle: string }>(await subir(token, cuerpo));
+      assert.deepEqual(r, deLaEmpresa, `${quien}, a la empresa no se le dice su texto`);
+    }
+    const deZ = await leerRespuesta<{ codigo: string; detalle: string }>(await subir(tokenAdmin, { ids: leads, cuentaId: z }));
+    assert.deepEqual(deZ, { estado: 409, cuerpo: { codigo: 'credenciales_incompletas', detalle: TEXTO_DE_FALTA_GHL_DEL_CLIENTE.sin_token } });
+    assert.deepEqual(aN8n, [], 'sin conexión, n8n recibió leads');
+  } finally {
+    await admin.query(`update identidad.organizaciones_credenciales set crm_estado = 'activa' where org_id = any($1)`, [[org, orgUno]]);
+  }
+});
+
 test('uno en pausa es 400; uno de otra empresa, de baja o que no es un id, 404; nadie recibe nada', async () => {
   aN8n.length = 0;
   const enPausa = await leerRespuesta<{ codigo: string }>(await subir(tokenAdmin, { ids: leads, cuentaId: w }));
@@ -337,6 +366,31 @@ test('la lista de usuarios del CRM: el principal sin elegir, uno de baja es 404 
     assert.equal(deP.cuerpo.detalle, 'GoHighLevel rechazó el token. Hay que volver a cargarlo en Integraciones.');
   } finally {
     rechazados.clear();
+  }
+});
+
+test('a la empresa sin conexión, la lista de usuarios del CRM le dice qué falta con el texto de la empresa', async () => {
+  // Como en Tools: el principal, sin elegir o elegido, con uno o con varios clientes, recibe el texto de siempre; Z, en
+  // el mismo momento, el suyo. Y nadie llama a GoHighLevel.
+  aGhl.length = 0;
+  await admin.query(`update identidad.organizaciones_credenciales set crm_estado = 'revocada' where org_id = any($1)`, [[org, orgUno]]);
+  try {
+    const deLaEmpresa = { estado: 409, cuerpo: { codigo: 'credenciales_incompletas', detalle: TEXTO_DE_FALTA_GHL.token_revocado } };
+    const casos: [string, string, string][] = [
+      ['con un solo cliente, sin elegir', tokenUno, '/api/admin/closer/usuarios-crm'],
+      ['con un solo cliente, el principal elegido', tokenUno, `/api/admin/closer/usuarios-crm?cuenta=${pUno}`],
+      ['con varios, sin elegir', tokenAdmin, '/api/admin/closer/usuarios-crm'],
+      ['con varios, el principal elegido', tokenAdmin, `/api/admin/closer/usuarios-crm?cuenta=${p}`],
+    ];
+    for (const [quien, token, ruta] of casos) {
+      const r = await leerRespuesta<{ codigo: string; detalle: string }>(await usuariosDelCrm(pedirComo(ruta, token)));
+      assert.deepEqual(r, deLaEmpresa, `${quien}, a la empresa no se le dice su texto`);
+    }
+    const deZ = await leerRespuesta<{ codigo: string; detalle: string }>(await usuariosDelCrm(pedirComo(`/api/admin/closer/usuarios-crm?cuenta=${z}`, tokenAdmin)));
+    assert.deepEqual(deZ, { estado: 409, cuerpo: { codigo: 'credenciales_incompletas', detalle: TEXTO_DE_FALTA_GHL_DEL_CLIENTE.sin_token } });
+    assert.deepEqual(aGhl, [], 'sin conexión, se llamó a GoHighLevel');
+  } finally {
+    await admin.query(`update identidad.organizaciones_credenciales set crm_estado = 'activa' where org_id = any($1)`, [[org, orgUno]]);
   }
 });
 
