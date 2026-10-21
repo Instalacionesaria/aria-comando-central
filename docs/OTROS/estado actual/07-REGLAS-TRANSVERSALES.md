@@ -1603,6 +1603,18 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:156`,
   `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:171` y
   `pruebas/base/281-las-cifras-de-una-empresa-con-varios-clientes.test.ts:229`.
+- **El gasto de cada cliente, de punta a punta por el cron (C6, sin migración).** Lo que la 280 hace con los
+  contactos y los mensajes, la 301 lo hace con el gasto: la tarea `anuncios` por la ruta del cron con su horario, con
+  tres clientes y un Ad Manager de GoHighLevel falso que sólo responde a cada token con SU subcuenta y SUS campañas.
+  Cada unidad del barrido pide con el acceso de su cliente (`lib/negocio/barrido.ts:664`,
+  `lib/negocio/barrido.ts:773`); las campañas, los anuncios, las métricas por anuncio y la serie de la cuenta de los
+  dos que tienen Meta vinculado quedan en SU cliente, con SUS cifras, y el que no lo tiene no escribe nada y su sello
+  dice «Meta no está vinculado en GoHighLevel» (`lib/negocio/barrido.ts:1112`), con el texto que leen la lista de
+  chequeo y los avisos (`MOTIVO_SIN_META_EN_GHL`). Lo exigen
+  `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:190`,
+  `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:210`,
+  `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:236` y
+  `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:250`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3, D4 y D5 ya no está):
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
