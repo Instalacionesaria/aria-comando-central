@@ -1396,8 +1396,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `db/migraciones/097_el_closer_por_cliente_cerrar.sql:34`). «Mío» son los pares (cliente, usuario del CRM), con un
   solo corte (`lib/negocio/alcanceDelCloser.ts:110`) en la fila, las tres consultas de la Agenda, el cockpit, la
   cabecera y el Brief: el mismo id en dos subcuentas —un usuario de la agencia— son dos vínculos. La lista de closers
-  trae, por persona, todos sus vínculos y los de los clientes a la vista (`lib/negocio/alcanceDelCloser.ts:142`): el
-  alcance se arma con todos (`lib/negocio/alcanceDelCloser.ts:192`) —la política de contactos ya recorta al foco, así
+  trae, por persona, todos sus vínculos y los de los clientes a la vista (`lib/negocio/alcanceDelCloser.ts:143`): el
+  alcance se arma con todos (`lib/negocio/alcanceDelCloser.ts:193`) —la política de contactos ya recorta al foco, así
   que quien sólo trabaja en otro cliente no ve, con el foco en éste, los leads de los demás— y lo que se publica, con
   los de la vista. Sales agrupa por par (`lib/negocio/cierrePorCloser.ts:301`) y quien está vinculado sólo en otro
   cliente tiene su propio aviso (`lib/negocio/cierrePorCloser.ts:346`); la ficha del lead busca al closer por par
@@ -1434,7 +1434,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   queda con el colector atrasado; Conversion pregunta por la ventana que decidió el motivo
   (`lib/negocio/pasosDeConversion.ts:642`). Las frases entraron primero en A14-02 y CV15-02. Y los closers: el alta, la
   activación y Ajustes › Clientes dicen quiénes están vinculados en otro cliente y no en ése
-  (`lib/negocio/alcanceDelCloser.ts:275`, `app/api/admin/cuentas/route.ts:139`), sólo a quien tiene `credenciales.ver` y
+  (`lib/negocio/alcanceDelCloser.ts:276`, `app/api/admin/cuentas/route.ts:139`), sólo a quien tiene `credenciales.ver` y
   sobre su propia empresa (`lib/administracion/cuentas.ts:404`), y la pantalla del vínculo, por cliente activo, con más
   de uno (`app/api/admin/closer/route.ts:139`, `components/closer/QuienEsElCloser.jsx:359`). El tope de tres closers
   es por EMPRESA, y queda decidido (`lib/negocio/closer.ts:233`). Lo exigen
@@ -1589,6 +1589,20 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   configurado. Lo exigen `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:218`, `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:241`,
   `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:266`, `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:55`,
   `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:225` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:82`.
+- **El cliente final lee sólo los closers de sus clientes (C6, `100`).** La `093` dejaba leer la designación de los
+  closers desde cualquier ámbito de la organización, también el del cliente final: desde su cliente leía las filas de
+  todos, con el usuario del CRM de cada closer en las otras subcuentas. Desde la `100` esa política es sólo para quien
+  ve la organización entera (`db/migraciones/100_los_closers_del_cliente_final.sql:26`): la empresa, entera o enfocada
+  en un cliente, sigue leyendo todas las filas; el cliente final, por la política de la tabla, sólo las de sus
+  clientes. Y su `/api/sales` ya no le manda el uuid de ninguna persona de la empresa: cada closer va con su rótulo,
+  `closer-N`, el número de su «Closer N», el mismo en la tabla y en la pantalla (`app/api/sales/route.ts:101`,
+  `lib/negocio/lecturaDeSales.ts:313`). A la empresa, lo de siempre. Con un solo cliente, el cliente final ve los
+  mismos closers y las mismas cifras, con el rótulo en lugar del uuid. Lo exigen
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:137`,
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:146`,
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:156`,
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:171` y
+  `pruebas/base/281-las-cifras-de-una-empresa-con-varios-clientes.test.ts:229`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3, D4 y D5 ya no está):
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
@@ -1655,11 +1669,9 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   lista de usuarios del CRM es la de su subcuenta); el vínculo de la subcuenta (`cuentas/[id]/vinculo`, sólo ARIA) no
   devuelve los closers sin vincular, y un rol a medida con `cuentas.crear` y sin `credenciales.ver` no recibe sus
   nombres; con el foco en
-  un cliente, la celda de quien trabaja en otro dice «Sin vínculo con el CRM» (la fila sí lo explica); en la base, la
-  política de la `093` deja leer el `crm_usuario_id` de los otros clientes desde el ámbito de uno (la aplicación
-  publica sólo los de la vista), y `/api/sales` devuelve también al cliente final, de cada closer, el `usuarioId` y
-  los vínculos a la vista (`cuentaId` y `crmUsuarioId`, sólo los de su cliente; antes de G2 viajaba el `crmUsuarioId`
-  suelto); y el corte por par no calza entero con el índice `contactos_por_asignado` (org_id, territorio,
+  un cliente, la celda de quien trabaja en otro dice «Sin vínculo con el CRM» (la fila sí lo explica); el cliente
+  final no ve a un closer designado sólo en otro cliente, ni cuenta en su Sales lo que ése haya registrado sobre sus
+  contactos (desde la `100`, más arriba: quien trabaja un cliente se vincula en él); y el corte por par no calza entero con el índice `contactos_por_asignado` (org_id, territorio,
   crm_asignado_a), sin efecto con los volúmenes de hoy. De lo que usaba las credenciales de la empresa (D2, más arriba)
   quedan: el estado de las integraciones que el cerebro le da a quien pregunta sigue siendo el de la empresa
   (`lib/agentes/executive/caja.ts:65`), así que con varios clientes dice «CRM conectado» aunque uno activo no tenga

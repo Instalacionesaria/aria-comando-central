@@ -129,7 +129,7 @@ leyendo el calendario o los mensajes porque su conexión con GoHighLevel no est�
 clientes del alcance de quien mira (`lib/negocio/agenda.ts:428`, `lib/agentes/cabecera.ts:174`,
 `lib/negocio/ficha.ts:279`); la pantalla del vínculo dice quiénes no están vinculados en el cliente elegido
 (`components/closer/QuienEsElCloser.jsx:359`). Quien administra puede mirar como uno de ellos, y el
-servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:214-223`).
+servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:215-224`).
 
 **Lo que cuesta mirarlas.** Leer las pantallas no llama al CRM
 (`app/api/closer/mi-dia/route.ts:5`); lo que sí corre, con la pestaña a la vista, es un reloj de 10 s

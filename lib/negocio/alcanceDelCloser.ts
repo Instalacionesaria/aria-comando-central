@@ -134,8 +134,9 @@ export async function closersDeLaEmpresa(): Promise<CloserConfigurado[]> {
      desaparecían, y su Sales salía en «—» con «no hay closers configurados». Para él, cada closer es un rótulo, en su
      orden. */
   /* Una fila por (persona, cliente) desde la `096`. El `leftJoin` a las cuentas no filtra a nadie: la designación es
-     de la empresa (la `093` la deja leer desde cualquier ámbito). Dice qué vínculos están A LA VISTA, porque la
-     política de las cuentas de la sesión (`cuentas_propias_lee`) sólo deja ver las del foco o las del cliente final. */
+     de la empresa (la `093` la deja leer con la organización entera, también enfocada en un cliente; el cliente final
+     lee sólo las filas de sus clientes, `100`). Dice qué vínculos están A LA VISTA, porque la política de las cuentas
+     de la sesión (`cuentas_propias_lee`) sólo deja ver las del foco o las del cliente final. */
   const filas = await datos()
     .selectFrom('closer_asignado as ca')
     .leftJoin('usuarios as u', 'u.id', 'ca.usuario_id')

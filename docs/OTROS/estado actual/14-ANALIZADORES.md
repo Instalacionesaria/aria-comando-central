@@ -317,7 +317,7 @@ cita no se midió: el vínculo no se guarda, se calcula al leer.
   (`lib/agentes/brief/entrada.ts:145`, `lib/agentes/brief/entrada.ts:168-169`); en producción
   `negocio.briefs_del_closer` tiene **0 filas** el 2026-10-18;
 - y la **pantalla de Sales**, cuyos motivos de no venta son las llamadas HT sin cierre con una objeción de cada
-  categoría (`lib/negocio/motivosDeLasLlamadas.ts:1-24`, leído en `lib/negocio/lecturaDeSales.ts:261`).
+  categoría (`lib/negocio/motivosDeLasLlamadas.ts:1-24`, leído en `lib/negocio/lecturaDeSales.ts:262`).
 
 **Brain sigue parado**, y desde el 2026-10-12 su tabla no está en `public`: la limpieza la pasó al esquema
 `respaldo_aria_brain`, donde `analyzer_calls` tiene **108 filas**, la última creada el 2026-09-19 a las 10:00 UTC y

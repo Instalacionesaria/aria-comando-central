@@ -69,7 +69,7 @@ organización que tiene datos.
 | Revenue reportado | la suma del `monto` de esas ventas | `negocio.resultados.monto` | **$0** en 30 días |
 | Closers | una fila por closer configurado, sin ranking | `lib/negocio/cierrePorCloser.ts:236` | 3 closers, 2 registraron alguna vez |
 | Motivos de no venta | los resultados de «No le interesa» por motivo del catálogo (`lib/negocio/salidas.ts:159-167`), en la ventana | `negocio.resultados.detalle` | 1 en toda la historia, «Otro», del 2026-08-30; ninguno en 30 días |
-| La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `lib/negocio/lecturaDeSales.ts:258` y `lib/negocio/lecturaDeSales.ts:286-288` | — |
+| La cadena comercial (abajo) | `cadenaDeCierre`, `tasaDeCancelacion`, `cicloHastaLaCita` y `dineroDelMes` | `lib/negocio/lecturaDeSales.ts:259` y `lib/negocio/lecturaDeSales.ts:287-289` | — |
 
 ### Lo que la medición del 2026-10-09 agregó
 

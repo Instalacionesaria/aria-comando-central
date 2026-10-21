@@ -68,6 +68,7 @@ export interface CifrasDeSales {
 
 /** Una fila de la tabla «Closers», con las seis columnas del prototipo (S15-09). */
 export interface FilaDeCloser {
+  /** La persona. Al cliente final le llega un rótulo, `closer-N`, y no su uuid (`sinLasPersonasDeLaEmpresa`). */
   usuarioId: string;
   nombre: string;
   /** Los contactos que el CRM le asigna: la subfila «{N} contactos asignados». `null` sin vínculo. */
@@ -296,5 +297,33 @@ export async function lecturaDeSales(dias: number, zonaHoraria: string): Promise
     motivos,
     llamadas,
     pantalla: armarSales({ cancelacion, cadena, ciclo, closers, motivos, llamadas }),
+  };
+}
+
+/**
+ * Lo que se le publica al CLIENTE FINAL (el nivel 3): la misma lectura, sin el uuid de ninguna persona de la empresa.
+ *
+ * El cliente final no ve a las personas de la empresa (`086`): para él cada closer es un rótulo, «Closer N», en el
+ * orden de la lista (`closersDeLaEmpresa`). Pero cada fila viajaba con su `usuarioId`, el id de esa persona, que no le
+ * dice nada y es lo único que la nombra fuera de la pantalla. Va en su lugar `closer-N`, con la N del rótulo: las filas
+ * de `closers` y las de `pantalla` salen de la misma lista y en el mismo orden, así que la misma persona lleva el mismo
+ * rótulo en las dos, y es estable mientras no cambien los closers (es el orden de la lista, que ya lo es a propósito).
+ * Pura: la prueba la arma con filas a mano. Las cifras no cambian; los vínculos que viajan son los de su cliente.
+ */
+export function sinLasPersonasDeLaEmpresa(lectura: LecturaDeSales): LecturaDeSales {
+  const rotulo = new Map(lectura.closers.filas.map((f, i) => [f.usuarioId, `closer-${i + 1}`] as const));
+  /* Una fila de la pantalla sin su par en `closers` no puede pasar (salen de la misma lista); si pasara, viaja un
+     rótulo sin número antes que el uuid. */
+  const de = (usuarioId: string): string => rotulo.get(usuarioId) ?? 'closer';
+  return {
+    ...lectura,
+    closers: { ...lectura.closers, filas: lectura.closers.filas.map((f) => ({ ...f, usuarioId: de(f.usuarioId) })) },
+    pantalla: {
+      ...lectura.pantalla,
+      closers: {
+        ...lectura.pantalla.closers,
+        filas: lectura.pantalla.closers.filas.map((f) => ({ ...f, usuarioId: de(f.usuarioId) })),
+      },
+    },
   };
 }

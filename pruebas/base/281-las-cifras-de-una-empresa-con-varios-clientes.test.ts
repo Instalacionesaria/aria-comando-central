@@ -14,8 +14,8 @@
 //   · el puntaje de un lead de otro cliente sale del campo «Puntaje | ICP» de SU subcuenta, y una carpeta del Perfil
 //     se reconoce por su nombre — mutación: el id fijo de la subcuenta de ARIA;
 //   · «hay catálogo» es el de la subcuenta del contacto;
-//   · los closers son de la empresa: con el foco en otro cliente, o con su cliente final, se ven — mutación: sin la
-//     política de la `093`;
+//   · los closers son de la empresa: con el foco en otro cliente se ven — mutación: sin la política de la `093`; el
+//     cliente final ve los de SU cliente, no los designados sólo en otro (`100`);
 //   · el último día del costo por anuncio es el del cliente más atrasado — mutación: el `max` de todos.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -226,7 +226,7 @@ test('una carpeta del Perfil se reconoce por su nombre en otra subcuenta, y «ha
   assert.equal(await conOrganizacion(org, () => hayCatalogo(p)), false, 'el catálogo de otro cliente dijo que el de P se leyó');
 });
 
-test('los closers son de la empresa: con el foco en otro cliente, o con su cliente final, se ven', async () => {
+test('los closers son de la empresa: con el foco en otro cliente se ven; el cliente final, los de su cliente', async () => {
   const u = await unaFila<{ id: string }>(admin, `insert into identidad.usuarios (org_id, nombre) values ($1, 'Closer 281') returning id`, [org]);
   assert.ok(u);
   // Se designa en el principal, como lo hace la pantalla (el puente pone la cuenta por omisión).
@@ -234,9 +234,12 @@ test('los closers son de la empresa: con el foco en otro cliente, o con su clien
   const foco = { orgId: org, todaLaOrganizacion: true, cuentas: [y] } as const;
   const conFoco = await conOrganizacion(foco, () => closersDeLaEmpresa());
   assert.deepEqual(conFoco.map((c) => c.usuarioId), [u.id], 'con el foco en otro cliente, la empresa se quedó sin closers');
-  const clienteFinal = { orgId: org, todaLaOrganizacion: false, cuentas: [y] } as const;
-  const deSuCliente = await conOrganizacion(clienteFinal, () => closersDeLaEmpresa());
-  assert.deepEqual(deSuCliente.map((c) => c.nombre), ['Closer 1'], 'el cliente final no vio a los closers, o vio a la persona');
+  /* El cliente final lee sólo las filas de SUS clientes (`100`): el de P lo ve, con un rótulo en vez de la persona; el
+     de Y no, porque la designación es de P. Lo mide entero la 302. */
+  const deP = await conOrganizacion({ orgId: org, todaLaOrganizacion: false, cuentas: [p] } as const, () => closersDeLaEmpresa());
+  assert.deepEqual(deP.map((c) => c.nombre), ['Closer 1'], 'el cliente final no vio a los closers de su cliente, o vio a la persona');
+  const deY = await conOrganizacion({ orgId: org, todaLaOrganizacion: false, cuentas: [y] } as const, () => closersDeLaEmpresa());
+  assert.deepEqual(deY, [], 'el cliente final de Y leyó la designación de otro cliente');
 });
 
 test('el último día del costo por anuncio es el del cliente más atrasado', async () => {

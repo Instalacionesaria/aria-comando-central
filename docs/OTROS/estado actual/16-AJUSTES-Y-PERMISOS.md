@@ -567,7 +567,9 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   subcuenta la vincula ARIA, nunca la del principal ni una que ya sea de una empresa
   (`lib/administracion/cuentas.ts:212`); y Ajustes › Credenciales copia la de la empresa a su principal
   (`app/api/admin/credenciales/route.ts:277`), así que dos empresas no pueden tener la misma y cambiarla libera la
-  vieja. Los closers son de la empresa: cualquier ámbito los lee (`db/migraciones/093_los_closers_de_la_empresa.sql`).
+  vieja. Los closers son de la empresa: quien ve la organización entera los lee, también enfocado en un cliente
+  (`db/migraciones/093_los_closers_de_la_empresa.sql`); el cliente final, sólo los de sus clientes, y su Sales le
+  da un rótulo en vez del id de cada persona (`db/migraciones/100_los_closers_del_cliente_final.sql`).
 - **El puntaje y el Perfil de un cliente** (C6 · D4, `098`): debajo de la Conexión, «Puntaje y Perfil» elige cuál campo
   numérico de su GoHighLevel es el puntaje de sus leads y qué carpetas se muestran en el Perfil y en qué grupo
   (`components/ajustes/CamposDelCliente.jsx:40`). También para el principal: no son credenciales, son el catálogo de su
