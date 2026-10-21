@@ -358,7 +358,7 @@ o por una cita única (`lib/negocio/vinculoDeLlamadas.ts:1-14`), y no hay una ci
 El modelo de datos multiempresa deja la fusión de las `analizador_*` para su Fase 5
 (`docs/modelo de datos/20-PLAN-DE-SUBIDA-FASE-0.md`, carpeta local fuera de git). Fuera de `lib/analizadores/` y de
 los lectores del § 4, las tablas sólo se nombran en el esquema (`lib/datos/esquema.ts`) y en el borrado de una
-empresa (`lib/administracion/borrado.ts:170-175`, y la de las objeciones en `lib/administracion/borrado.ts:200`).
+empresa (`lib/administracion/borrado.ts:174-179`, y la de las objeciones en `lib/administracion/borrado.ts:204`).
 
 **5 · La comparación con Brain.** `scripts/comparar-con-brain.sql` lee `public.aria_brain_analyzer_calls`
 (`scripts/comparar-con-brain.sql:26-27`), que desde el 2026-10-12 ya no existe: hoy falla con «relation does not

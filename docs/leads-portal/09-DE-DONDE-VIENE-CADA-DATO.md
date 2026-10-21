@@ -43,7 +43,7 @@ leen citas agregan una tercera:
 | `negocio.campos_del_crm` | qué pregunta es cada clave de `contactos.campos_del_crm` | `db/migraciones/039_campos_del_crm.sql:124` |
 | `negocio.carpetas_del_crm` | a qué grupo va cada carpeta de campos | `db/migraciones/039_campos_del_crm.sql:75` |
 | `negocio.closer_asignado` | el puente entre el asignado del CRM y un closer nuestro | `db/migraciones/020_closer_asignado.sql:56` |
-| `identidad.usuarios` | el nombre de ese closer, que `closersDeLaEmpresa` trae con un `leftJoin` (`lib/negocio/alcanceDelCloser.ts:142`); el cliente final no ve a las personas y recibe un rótulo, «Closer 1» (`:157`) | `db/migraciones/002_organizaciones_y_usuarios.sql:72` |
+| `identidad.usuarios` | el nombre de ese closer, que `closersDeLaEmpresa` trae con un `leftJoin` (`lib/negocio/alcanceDelCloser.ts:142`); el cliente final no ve a las personas y recibe un rótulo, «Closer 1» (`:158`) | `db/migraciones/002_organizaciones_y_usuarios.sql:72` |
 | `negocio.anuncios` | el nombre del anuncio cuando `adId` cruza | `db/migraciones/050_lo_que_costo_cada_anuncio.sql:83`; la llave es `meta_anuncio_id` (`:93`) y el nombre, `nombre` (`:105`) |
 | `negocio.tareas_programadas` | si el barrido está al día (`frescuraDe`, `lib/negocio/frescura.ts:116`) | `db/migraciones/014_tareas_programadas.sql:41` |
 

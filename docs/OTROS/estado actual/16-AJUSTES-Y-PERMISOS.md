@@ -90,8 +90,8 @@ el servidor ya filtró con la misma función que decide el menú (`components/vi
 
 | Pestaña | Sección · capacidad | Qué hace | Rutas |
 |---|---|---|---|
-| Credenciales | `credenciales` · `credenciales.ver` | Carga por campo los secretos y los identificadores de la empresa; muestra el estado y los últimos cuatro caracteres, nunca el valor. Debajo, «Probar conexión» con Meta y los topes del cerebro | `app/api/admin/credenciales/route.ts:128`, `:136`, `:284`; `app/api/admin/credenciales/meta/route.ts:22`; `app/api/admin/cerebro/route.ts:25`, `:44` |
-| Empresas | `empresas` · `organizaciones.listar` | Alta, edición (nombre, zona horaria, activa) y baja de organizaciones; un alta no crea personas ni credenciales (`components/ajustes/Empresas.jsx:24-28`) | `app/api/admin/organizaciones/route.ts:80`, `:129`; `app/api/admin/organizaciones/[id]/route.ts:71`, `:197` |
+| Credenciales | `credenciales` · `credenciales.ver` | Carga por campo los secretos y los identificadores de la empresa; muestra el estado y los últimos cuatro caracteres, nunca el valor. Debajo, «Probar conexión» con Meta y los topes del cerebro | `app/api/admin/credenciales/route.ts:128`, `:138`, `:330`; `app/api/admin/credenciales/meta/route.ts:22`; `app/api/admin/cerebro/route.ts:25`, `:44` |
+| Empresas | `empresas` · `organizaciones.listar` | Alta, edición (nombre, zona horaria, activa) y baja de organizaciones; un alta no crea personas ni credenciales (`components/ajustes/Empresas.jsx:24-28`) | `app/api/admin/organizaciones/route.ts:80`, `:129`; `app/api/admin/organizaciones/[id]/route.ts:71`, `:207` |
 | Usuarios | `usuarios` · `usuarios.ver` | Alta con selector de empresa, rol, pestañas concedidas por departamento, contraseña temporal, desactivar, reactivar y borrar | `app/api/usuarios/route.ts:51`, `app/api/admin/roles/route.ts:45` y las seis de `app/api/admin/usuarios/`, que declaran `SIN_SECCION` |
 
 La configuración de comisiones fue una cuarta pestaña y se mudó a Closer → Inicio sin cambiar su autorización: sigue
@@ -435,9 +435,9 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 | Closer y Setter separados | Con `closer.ver` a secas se ve sólo Closer, y al revés | `pruebas/codigo/91-closer-y-setter.test.ts:249` |
 | El catálogo se carga | Cada capacidad del menú la carga `db/arranque/001_catalogo.sql` | `pruebas/codigo/91-closer-y-setter.test.ts:298`, `pruebas/codigo/90-fundaciones.test.ts:1306` |
 | La delegación | Sólo la plataforma otorga roles que administran personas | `pruebas/codigo/144-delegacion-de-roles.test.ts:64` |
-| Los tres roles, contra la base | El superadministrador tiene todas las de `CAPACIDADES`; Monitoreo nunca por `administrador`; el administrador administra sólo las personas de su empresa | `pruebas/base/22-los-tres-roles.test.ts:368`, `:299`, `:94` |
+| Los tres roles, contra la base | El superadministrador tiene todas las de `CAPACIDADES`; Monitoreo nunca por `administrador`; el administrador administra sólo las personas de su empresa | `pruebas/base/22-los-tres-roles.test.ts:368`, `:304`, `:94` |
 | El alcance, contra la base | Los dos ceros; el rechazo es del portero, no cosmético; el anti-encierro; el `check` acepta toda clave de `SECCIONES` | `pruebas/base/31-alcance.test.ts:127`, `:229`, `:287`, `:337` |
-| Aislamiento | Con la organización A no se ve una fila de la B; el migrador informa cero filas sin error | `pruebas/base/30-aislamiento.test.ts:114`, `:262` |
+| Aislamiento | Con la organización A no se ve una fila de la B; el migrador informa cero filas sin error | `pruebas/base/30-aislamiento.test.ts:114`, `:263` |
 | Credenciales | Sin credencial no opera y no cae a la de nadie | `pruebas/base/60-credenciales.test.ts:258` |
 | Segundo factor | La invariante del rol de plataforma, retirada; el alta voluntaria por la API | `pruebas/base/41-catalogo-de-autenticacion.test.ts:69`, `pruebas/base/43-segundo-factor.test.ts:214` |
 | Los topes y Meta | Los topes del cerebro en Ajustes; la prueba de conexión con Meta | `pruebas/base/218-los-topes-del-cerebro-en-ajustes.test.ts`, `pruebas/codigo/255-la-conexion-con-meta.test.ts` |
@@ -470,7 +470,7 @@ dos listas coinciden en producción.
   falso ya se corrigió.
 - **«Usuarios y credenciales no tienen menú».** `lib/autorizacion/secciones.ts:135-138` y el rótulo «Las dos de
   administración. Sin `menu`» (`lib/autorizacion/secciones.ts:186-187`) encabezan tres secciones, y `credenciales`
-  tiene `menu` en `:222`. `components/ajustes/Credenciales.jsx:3` hablaba de «las tres claves y los tres
+  tiene `menu` en `:231`. `components/ajustes/Credenciales.jsx:3` hablaba de «las tres claves y los tres
   identificadores»: en pantalla son cinco claves —desde las de tl;dv y Meta— y seis identificadores
   (`components/ajustes/Credenciales.jsx:40-153`). Ese comentario se **cerró el 2026-10-18 (`65669f4`)**: hoy dice
   «las cinco claves y los seis identificadores». Lo de `secciones.ts` sigue.

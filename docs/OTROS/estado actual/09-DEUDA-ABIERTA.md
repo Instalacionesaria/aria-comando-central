@@ -534,7 +534,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   Como el `?&` de las cinco no se cumplía nunca, todo contacto con alguna UTM contaba como incompleto, y la señal
   `ACQ-ATRIBUCION-UTM` del detector, que volvió el 2026-10-05 tras dormir desde AQ-4, mandaba a arreglar enlaces que
   sí llevan la campaña ([01-ACQUISITION.md](01-ACQUISITION.md), riesgo 2). Hoy cada UTM se reconoce por cualquiera de
-  sus claves (`lib/negocio/calidadDeLaAtribucion.ts:91-106`, usadas en `:137-145`): completas, 56 de 519; la señal sigue,
+  sus claves (`lib/negocio/calidadDeLaAtribucion.ts:91-106`, usadas en `:141-149`): completas, 56 de 519; la señal sigue,
   por `utmTerm`, la que menos llega. Subido a producción el mismo día.
 - **«Entregó N días» cuenta días sin impresiones.** `diasConEntrega` es `gasto is not null`
   (`lib/negocio/costoDelAnuncio.ts:304`), y hay **47 filas con gasto 0 y sin impresiones** (2026-10-18; 38 el

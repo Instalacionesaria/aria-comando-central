@@ -71,7 +71,7 @@ sólo va lo que la foto necesita:
   dinero, porque eso cruza ICP, agendas, ventas y revenue. Nueve «no es responsable de» y nueve acciones que
   requieren validación ejecutiva (`docs/acquisition/12-QUIEN-DECIDE-QUE.md:10`, `:69`). El detector las respeta:
   la concentración y la escala tocan presupuesto y van a «Requiere validación ejecutiva»
-  (`lib/agentes/detectores/acquisition.ts:135`, `:132`, `lib/agentes/plan/acquisition.ts:41-42`).
+  (`lib/agentes/detectores/acquisition.ts:135`, `:153`, `lib/agentes/plan/acquisition.ts:41-42`).
 - **Seis componentes (§ 18.3)**: Meta Data Collector, tres analizadores, Anomaly & Fatigue Detector y Attribution
   Monitor (`docs/acquisition/11-LOS-SEIS-COMPONENTES.md:9`). Desde AG9 el detector existe, y el monitor vive dentro
   de él como cinco reglas (`lib/agentes/detectores/acquisition.ts:86-92`).
@@ -141,11 +141,11 @@ que se mira (`:140`), y el comentario de la cabecera se publica desde la respues
 
 - **Inversión del total**: lo que Meta cobró en toda la cuenta en la ventana, de `negocio.gasto_de_la_cuenta`
   (`lib/negocio/embudosDeAcquisition.ts:496-507`). La de cada campaña y cada funnel suma `metricas_de_anuncio` por
-  `meta_campana_id` (`:561-571`).
+  `meta_campana_id` (`:569-579`).
 - **Inversión con contactos**: la de las campañas que alguna vez trajeron un contacto con su `campaignId`
-  (`:646-651`, `:623`). Es el único numerador de los costos de personas (`:387`, `:405`).
+  (`:654-659`, `:631`). Es el único numerador de los costos de personas (`:387`, `:405`).
 - **Contactos**: los que traen esa campaña en `atribucion_primera->>'campaignId'`, dados de alta en la ventana
-  (`:591-604`). **Agendados**: `tieneCitaAlcanzable`; **calificados**: `esCalificado`, agendó y no está descartado
+  (`:599-612`). **Agendados**: `tieneCitaAlcanzable`; **calificados**: `esCalificado`, agendó y no está descartado
   (`lib/negocio/citasAlcanzables.ts:180-182`).
 - **Clics**: `linkClick` de Meta; sin entrega son cero, con entrega y sin desglose no se saben
   (`lib/negocio/embudosDeAcquisition.ts:636`). No llevan tasa: son clics, no personas (`:372-390`).
@@ -154,13 +154,13 @@ que se mira (`:140`), y el comentario de la cabecera se publica desde la respues
 - **ICP**: promedio del puntaje de los calificados con puntaje, desde diez (`lib/negocio/embudosDeAcquisition.ts:421`),
   con los cortes 75 y 50 de `tramosDelIcp.ts` (`lib/negocio/embudosDeAcquisition.ts:603-606`).
 - **Las campañas listadas**: toda campaña con anuncios guardados, con contactos atribuidos alguna vez o con un funnel
-  asignado, no sólo las de la ventana (`lib/negocio/embudosDeAcquisition.ts:720-788`), ordenadas por inversión, contactos e identificador (`:468-473`).
+  asignado, no sólo las de la ventana (`lib/negocio/embudosDeAcquisition.ts:720-788`), ordenadas por inversión, contactos e identificador (`:476-481`).
 
 **Ventanas.** «7 días» y «30 días» son días **cerrados**: terminan en el último día cuyo total de la cuenta se
 releyó después de la medianoche de la empresa (`lib/negocio/diasCerrados.ts:14-26`,
 `lib/negocio/gastoDeLaCuenta.ts:301-349`). «Hoy» es hoy, sin costos ni flechas; «Completo» empieza en el dato más
 viejo —gasto o contacto con campaña— y termina hoy (`lib/negocio/embudosDeAcquisition.ts:43-47`). La ventana
-anterior se compara sólo si está entera (`:898-911`), y sus agendados se cuentan a la misma edad (`:943-944`). Un
+anterior se compara sólo si está entera (`:906-919`), y sus agendados se cuentan a la misma edad (`:951-952`). Un
 día está entero cuando su total de la cuenta se releyó después de terminar y el detalle por campaña cuadra con él,
 con diez centavos de tolerancia, o está declarado residuo (`lib/negocio/gastoDeLaCuenta.ts:36`, `:354-429`). Los
 costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcquisition.ts:920-921`).
@@ -184,8 +184,8 @@ costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcqu
 
 **Las señales y el plan.** La pasada del detector corre cada hora y trabaja la empresa que ya pasó las 6:00 de su
 zona sin haber corrido hoy (`lib/negocio/barrido.ts:357-371`, `lib/agentes/detectores/correr.ts:50`). Mide con la
-misma `lecturaDeAcquisition` que la pantalla (`lib/agentes/detectores/acquisition.ts:4-9`, `:210-212`) y catorce
-reglas con valores provisionales que firma un administrador (`:45-60`, `:74-170`). El plan va en cuatro grupos más
+misma `lecturaDeAcquisition` que la pantalla (`lib/agentes/detectores/acquisition.ts:4-9`, `:240-242`) y catorce
+reglas con valores provisionales que firma un administrador (`:66-81`, `:95-191`). El plan va en cuatro grupos más
 «Requiere validación ejecutiva» (`lib/agentes/plan/acquisition.ts:32-38`) y, con llave de IA, el modelo lo redacta
 dentro de esos renglones (`:19-20`). Resolver, validar y firmar tienen sus rutas y capacidades
 (`app/api/acquisition/senales/route.ts:40`, `app/api/acquisition/umbrales/route.ts:26`).
@@ -335,7 +335,7 @@ vive en un módulo que importa la base (`lib/negocio/embudosDeAcquisition.ts:22-
 contacto» diría que salieron gratis (`lib/negocio/embudosDeAcquisition.ts:289-302`).
 
 **4 · La Inversión es la de la cuenta; los costos de personas, la de las campañas con contactos.** Una campaña de
-mensajes no puede inflar el costo por contacto de las otras (`lib/negocio/embudosDeAcquisition.ts:95-100`, `:483-499`).
+mensajes no puede inflar el costo por contacto de las otras (`lib/negocio/embudosDeAcquisition.ts:95-100`, `:491-507`).
 
 **5 · Tres ceros distintos**: el medido (la cuenta dijo 0), el no pedido (`dias_sin_leer`) y el parcial (`no_cuadra`)
 (`lib/negocio/gastoDeLaCuenta.ts:275-281`, `:344-353`).

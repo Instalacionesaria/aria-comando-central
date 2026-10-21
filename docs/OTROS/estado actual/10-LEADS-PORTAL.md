@@ -125,15 +125,15 @@ cabecera que dice qué se borró y por qué (`components/views/ContactsView.jsx:
   de corregirlo (`app/api/leads-portal/route.ts:52-56`); dentro de una sola `conOrganizacion` pide la
   cohorte, **la cadena de Sales con el mismo `dias`** y la frescura de contactos y citas
   (`app/api/leads-portal/route.ts:58-71`) —y, con varios clientes, de cuál no se están trayendo los contactos y las
-  citas y qué hacer, `conexion`, al cliente final sin la ruta de Ajustes (`app/api/leads-portal/route.ts:70`, C6 · D1)—,
+  citas y qué hacer, `conexion`, al cliente final sin la ruta de Ajustes (`app/api/leads-portal/route.ts:74`, C6 · D1)—,
   y publica la comparación de las dos
   (`app/api/leads-portal/route.ts:74`) junto con tres de los cinco huecos de Sales
   (`app/api/leads-portal/route.ts:46`, `:83`).
 - `GET /api/leads-portal/[id]`: la ficha, la única respuesta con teléfono y correo. Misma capacidad
   y misma pantalla que la lista; un id mal formado, inexistente o de otra empresa da el mismo 404
-  (`app/api/leads-portal/[id]/route.ts:16-19`, `:36-45`). No refresca contra el CRM ni escribe.
+  (`app/api/leads-portal/[id]/route.ts:16-19`, `:37-46`). No refresca contra el CRM ni escribe.
 - `app/api/leads-portal/cerebro/route.ts` (AG6, 2026-10-05): la caja del cerebro del pie. Leer el panel pide
-  `tablero.ver`; preguntar y borrar un hilo, `cerebro.usar` (`app/api/leads-portal/cerebro/route.ts:43`, `:54`).
+  `tablero.ver`; preguntar y borrar un hilo, `cerebro.usar` (`app/api/leads-portal/cerebro/route.ts:43`, `:55`).
   La herramienta `cohorte_de_leads` corre `leadsDelPortal` con el período pedido y devuelve los tramos y las
   primeras filas con las claves de la lista, sin teléfono ni correo pero **con el nombre**
   (`lib/agentes/executive/adaptadores/leads.ts:4-6`, `:24-33`).
@@ -309,7 +309,7 @@ en `corrio` (medido el 2026-10-16). Las altas por semana (lunes, UTC) desde el 3
 **175 · 89 · 5 · 5 · 11 · 7 · 1** (la última, en curso); **29 desde el 2026-09-14**, cuando se pausaron las campañas
 (`docs/leads-portal/06-PERIODOS-Y-PISOS.md:152-175`), y **ninguna con campaña de Meta** desde el 2026-09-13.
 
-**La cohorte por ventana** (`docs/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md:91-106`, `:622-640`):
+**La cohorte por ventana** (`docs/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md:91-106`, `:623-641`):
 
 | ventana | contactos | agendaron | sólo congeladas | sin registrar | plantón | descartados |
 |---|---|---|---|---|---|---|
@@ -320,7 +320,7 @@ en `corrio` (medido el 2026-10-16). Las altas por semana (lunes, UTC) desde el 3
 
 Cada celda dice primero el 2026-10-18 y después el 2026-09-28. «LP-2» es la medición del 2026-09-27 a las 02:06 UTC
 con los predicados del código; la de LP-0, de las 00:10, no medía «agendó» con el predicado exacto
-(`docs/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md:342-348`).
+(`docs/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md:343-349`).
 La ventana de 30 días es móvil, así que su borde de atrás corre: la baja de 283 a 277 no es gente
 que se fue, es gente que salió de la ventana. Y «sin registrar» sube sola cuando empieza una cita:
 re-medido con la misma consulta el 2026-09-29 a las 00:15 UTC, a 30 días daba 276 contactos (salió
@@ -342,7 +342,7 @@ todas sin puntaje: 25 nulos y 3 ceros más. Ceros en los últimos 14 días: **2*
 guardián se encendió**. El 2026-09-28 la agenda a 30 días daba 78,0 % en ICP alto, 48,1 % en medio y 41,0 % en bajo,
 los tres sobre el piso; el 2026-10-18 ninguno de los tres tramos llega a diez contactos, y la tasa por tramo
 —`LP02-P01`, abierta (`docs/leads-portal/02-METRICAS.md:399-406`)— no tendría con qué publicarse a 30 días
-(`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:361-367`).
+(`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:363-369`).
 
 **Asistencia, plantón y venta.** Citas: **368** (333 el 2026-09-28; 327 el 2026-09-21,
 `lib/negocio/citasAlcanzables.ts:92`), 267 alcanzables (232); `cancelled` 179 · `confirmed` 166 · `noshow` 20 ·
@@ -355,17 +355,17 @@ los tres sobre el piso; el 2026-10-18 ninguno de los tres tramos llega a diez co
 1—, el último del 2026-09-09: los mismos siete que `lib/negocio/huecosDeSales.ts:56-63` contó el 2026-09-21.
 **Ninguna venta en la base.**
 
-**El descarte y el rechazo por ICP** (`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:264-290`): 128 contactos con
+**El descarte y el rechazo por ICP** (`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:266-292`): 128 contactos con
 alguna etiqueta de descarte el 2026-10-18 (122 el 2026-09-28). Con `icp_rechazado`, **74** (69): alto **1** · medio
 23 · bajo 46 · sin calificar 4. **El techo de 59 ya no está en pie**: el 2026-09-28 el puntaje más alto entre los
 rechazados era 59 y ninguno de los 202 contactos con 60 o más estaba rechazado; el 2026-10-18 el más alto es **81**,
 y es **1 de los 203** con 60 o más. Su alta es anterior al 2026-09-28, así que cambió su puntaje o su etiqueta, y la
 base no guarda cuál. Los de 1 a 59: 69 de 224. Reabre con fecha lo que `LP14-P02` daba por contestado
-(`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:348-353`).
+(`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:350-355`).
 
 **La ficha**, re-medida el 2026-10-18 sobre los 624, con la del 2026-09-28 al lado: teléfono **586** · 559 ·
 correo **618** · 591 · `adId` **215** · 213 · asignado en el CRM **277** · 253. Sin re-medir, del 2026-09-28 sobre
-los 594 (entre paréntesis, el 2026-09-27; `docs/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md:709-712`, `:656-661`;
+los 594 (entre paréntesis, el 2026-09-27; `docs/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md:710-713`, `:657-662`;
 `docs/leads-portal/05-LA-FICHA-DEL-LEAD.md:90`, `:263`, `:286-293`, `:383-384`): país 570 (569) · campaña 272
 (271) · creativo 506 (505) · los 213 `adId` cruzan con `negocio.anuncios` · respondieron el cuestionario 337 (336)
 · historia de mensajes leída 542 (541) · 252 asignados cruzan con uno de los 3 closers configurados (252). «Form Landing VSL»: Agendado 121 · incompleto 87 · completo sin agendar 39 · vacío 347 (346),
@@ -540,7 +540,7 @@ para ocultarlos es `LP04-P02`.
 
 **Dos de las tres personas que ven la pestaña ven acá más de lo que ven en Closer.** Están
 vinculadas a un usuario del CRM, así que en Closer su alcance es `mio`
-(`lib/negocio/alcanceDelCloser.ts:23-28`, `:182-192`); acá ven la cohorte entera —nombre, puntaje,
+(`lib/negocio/alcanceDelCloser.ts:23-28`, `:183-193`); acá ven la cohorte entera —nombre, puntaje,
 campaña y estado de los 600 con alta (2026-10-18)—. No es un dato personal nuevo: las cuatro personas activas ya
 podían leer cualquier ficha por `contactos.ver` (`docs/leads-portal/12-QUIEN-VE-QUE.md:84-136`). Pero
 la decisión «quien tenga la pestaña» se tomó con esta cifra sin medir, y hoy está medida.

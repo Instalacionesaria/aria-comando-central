@@ -287,7 +287,7 @@ documentado como aceptado.
 dice qué tareas corre cada uno (`lib/negocio/barrido.ts:168-398`). Un horario que no está en el mapa corre **todas**
 (`lib/negocio/barrido.ts:569-579`). El orden de ejecución es el de `TAREAS` (`lib/negocio/barrido.ts:95-114`). El cron toma
 sólo las empresas activas (`app/api/cron/route.ts:185`) y resuelve el token de Meta sólo en la corrida que trae `activos`
-(`app/api/cron/route.ts:154-155`, `:198`). Desde el 2026-10-03 las funciones corren en São Paulo, al lado de la base
+(`app/api/cron/route.ts:154-155`, `:205`). Desde el 2026-10-03 las funciones corren en São Paulo, al lado de la base
 (`vercel.json:3-5`, commit `97fc905`).
 
 La columna `ultimas_llamadas` de `negocio.tareas_programadas` guarda lo que costó la última corrida de cada tarea. Para la
@@ -322,7 +322,7 @@ Analizadores ni la tarea `senales` le hablan al CRM.
 **La tarea `anuncios` cuesta 8, y ahora el comentario y la medición coinciden.** El comentario cuenta «el vínculo, las
 campañas y la serie de la cuenta son unas 5 llamadas, más tres por cada campaña candidata», con 8 a 14 por día para las 1
 a 3 campañas activas (`lib/negocio/barrido.ts:285-288`); la medición del 2026-10-18 es 1 + 1 + 3 + 1 × 3 = 8. Las
-candidatas son las `ACTIVE` y las que gastaron en la última semana (`lib/negocio/recolectarAnuncios.ts:81-87`, `:590-593`).
+candidatas son las `ACTIVE` y las que gastaron en la última semana (`lib/negocio/recolectarAnuncios.ts:81-87`, `:594-597`).
 El proveedor tarda **4,55 s por llamada** en esta familia (`lib/negocio/recolectarAnuncios.ts:92-93`) y la pasada tiene su
 tope de 120 s, que ahora se comprueba antes de cada llamada (`lib/negocio/recolectarAnuncios.ts:99-107`). La campaña de
 prueba `888888` que devolvía 500 ya no se pide: el universo son las campañas de la cuenta
@@ -1059,7 +1059,7 @@ Para distinguir los motivos hace falta el código numérico del error, que `pedi
 
 **La credencial.** Dos columnas de `identidad.organizaciones_credenciales`, desde la `064` (2026-09-29): el token cifrado y
 la cuenta publicitaria `act_…`. `resolverAccesoAMeta` distingue tres faltas —sin token, token ilegible, sin cuenta— y pide
-el token primero (`lib/credenciales/resolver.ts:712-727`, `:599-627`); la cuenta se acepta con o sin el prefijo y se
+el token primero (`lib/credenciales/resolver.ts:712-727`, `:741-771`); la cuenta se acepta con o sin el prefijo y se
 normaliza (`lib/credenciales/resolver.ts:736-739`). **Medido el 2026-10-18: 0 de 13 empresas tienen el token, y 0 la
 cuenta.**
 

@@ -73,7 +73,7 @@
 
 **Rastro** · `lib/negocio/camposDelCrm.ts:318-335`.
 **Estado** · Compara por **nombre exacto, no por `ilike`** (`:302-303`); desempata por `campo_id`
-para que el denominador no cambie entre corridas (`:313-315`); y **`null` es un retorno legítimo**:
+para que el denominador no cambie entre corridas (`:325-329`); y **`null` es un retorno legítimo**:
 quien lo use *«tiene que poder decir "no sé" en vez de "cero"»* (`:298-300`).
 
 Es la regla 9 del departamento (`03-CONVERSION.md:437-443@b3ca9ad`). Los tres campos que el código ya nombra

@@ -108,15 +108,15 @@ y lo refresca cada 60 s sólo con la pestaña a la vista (`components/sales/Pane
 `lib/cadencia.ts:91`). `components/views/SalesView.jsx` es el envoltorio del prototipo, `view-scroll cre-scroll`,
 sin `estetica-op` (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-01).
 
-**La ruta.** `app/api/sales/route.ts:76-116`, un solo `GET`: pide `tablero.ver` al portero (`:79`), **rechaza** con
-400 un período que no está en la lista en vez de corregirlo (`:88-89`), y llama una vez a `lecturaDeSales` dentro de
+**La ruta.** `app/api/sales/route.ts:76-116`, un solo `GET`: pide `tablero.ver` al portero (`:80`), **rechaza** con
+400 un período que no está en la lista en vez de corregirlo (`:89-90`), y llama una vez a `lecturaDeSales` dentro de
 la organización (`:96`). La respuesta lleva los bloques de siempre —`ventanas`, `dinero`, `cancelacion`, `cadena`,
-`ciclo` y `closers`— y `pantalla`, lo que el front arma (`:110`). Los huecos de `lib/negocio/huecosDeSales.ts` ya no
+`ciclo` y `closers`— y `pantalla`, lo que el front arma (`:114`). Los huecos de `lib/negocio/huecosDeSales.ts` ya no
 viajan: cada «—» dice su motivo, y lo que no se mide está en `docs/OTROS/futuro/lo-que-sales-no-mide.md`.
 
 **La lectura.** `lib/negocio/lecturaDeSales.ts` tiene dos mitades puras —`armarCierre`
-(`lib/negocio/lecturaDeSales.ts:161`) y `armarSales` (`:209`)— y dos que leen: `lecturaDelCierre` (`:256`), con los
-closers, la cancelación, la tabla y los motivos, y `lecturaDeSales` (`:284`), que le suma el dinero, la cadena y el
+(`lib/negocio/lecturaDeSales.ts:161`) y `armarSales` (`:210`)— y dos que leen: `lecturaDelCierre` (`:257`), con los
+closers, la cancelación, la tabla y los motivos, y `lecturaDeSales` (`:285`), que le suma el dinero, la cadena y el
 ciclo. Los closers se leen una vez. Todo lo que va en `pantalla` viaja de 0 a 1; la cancelación de siempre sigue de
 0 a 100, porque la comparten Conversation, el Closer y el cerebro.
 

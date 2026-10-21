@@ -74,12 +74,12 @@ scraper» (`lib/autorizacion/secciones.ts:433-435`). Una sola capacidad, `monito
 (`db/arranque/001_catalogo.sql:103-104`, `:125`), y la bandera `soloDesdeLaPrincipal`
 (`lib/autorizacion/secciones.ts:462`). **El Panel de Incidentes** (2026-10-01) muestra los fallos del modelo de IA de
 todas las empresas, con `incidentes.ver` y la misma bandera (`lib/autorizacion/secciones.ts:467-474`). Los dos van en el
-grupo «Administración» del menú (`lib/autorizacion/secciones.ts:463`, `:464`) y, en la barra nueva, en el engranaje del pie
+grupo «Administración» del menú (`lib/autorizacion/secciones.ts:463`, `:473`) y, en la barra nueva, en el engranaje del pie
 junto a Ajustes (`lib/autorizacion/departamentos.ts:127-130`), con la ceja «MENÚ DE LA CUENTA»
 (`lib/autorizacion/departamentos.ts:142-145`).
 
 **Ya no es la única sección con `soloDesdeLaPrincipal`.** Desde el 2026-10-01 la lleva Incidentes y desde el 2026-10-08
-Client OS (`lib/autorizacion/secciones.ts:472`, `:475`). El comentario de Monitoreo decía al corte «la única»
+Client OS (`lib/autorizacion/secciones.ts:472`, `:495`). El comentario de Monitoreo decía al corte «la única»
 (`lib/autorizacion/secciones.ts:438`); desde el 2026-10-18 (`65669f4`) dice que fue la primera y que hoy son tres.
 
 **Ninguna de las tres pantallas está en el prototipo** (`aios-command-center_1.html`): Tools es la primera pantalla
@@ -218,7 +218,7 @@ persona y que quedó en el registro del servidor; ni el prompt ni la respuesta (
 `:27-47`). La ruta recorre las empresas de a cuatro con `conOrganizacion`, como Monitoreo, y una que no se lee va en
 `ilegibles` (`app/api/incidentes/route.ts:24`, `:54-76`); pide `incidentes.ver` y ser de la principal
 (`app/api/incidentes/route.ts:42-44`). La capacidad la tiene sólo el superadministrador: la familia `incidentes.%` se les
-niega a mano a `usuario` y a `administrador` (`db/arranque/001_catalogo.sql:130-135`, `:408`, `:490`). La pantalla tiene
+niega a mano a `usuario` y a `administrador` (`db/arranque/001_catalogo.sql:130-135`, `:425`, `:510`). La pantalla tiene
 ventanas de días, «sólo los nuestros» y un color por a quién le toca
 (`components/incidentes/PanelDeIncidentes.jsx:3-9`, `:15`, `:32`, `:66`).
 
@@ -426,14 +426,14 @@ No es nuevo (la línea es la misma del 2026-09-28): lo nuevo es que el 1.000 est
 
 **Comentarios que siguen describiendo el rol `monitoreo`, retirado el 2026-09-01.** El retiro está en
 `db/arranque/003_retiro_de_roles.sql:52-62`, y siguen diciendo lo contrario `app/api/monitoreo/route.ts:30-35` y `:39-40`,
-`db/arranque/001_catalogo.sql:106-118` (contra el mismo archivo en `:382-402`), `lib/autorizacion/secciones.ts:102-105` (contra
-`:429-437`), y la prueba 110 en su encabezado (`pruebas/codigo/110-monitoreo.test.ts:10-12`), dos mensajes de falla (`:57`,
-`:162-164`) y el nombre de la prueba de `:345`, mientras su cuerpo afirma que `usuario` sí la tiene (`:376-381`). En la misma
+`db/arranque/001_catalogo.sql:106-118` (contra el mismo archivo en `:399-419`), `lib/autorizacion/secciones.ts:102-105` (contra
+`:438-446`), y la prueba 110 en su encabezado (`pruebas/codigo/110-monitoreo.test.ts:10-12`), dos mensajes de falla (`:57`,
+`:163-165`) y el nombre de la prueba de `:346`, mientras su cuerpo afirma que `usuario` sí la tiene (`:377-382`). En la misma
 familia: `lib/tools/scrapers.ts:16-19` y `:7-9` describen el hub y `usuarios_scraper`; `components/monitoreo/PanelDeMonitoreo.jsx:11-12`
 dice que `app/monitoreo.css` son ochenta líneas, y son 201. **Nuevos desde el corte, cerrados el 2026-10-18 (`65669f4`):**
 `lib/autorizacion/secciones.ts:438` decía que Monitoreo es «la única sección con `soloDesdeLaPrincipal`» y ya son tres; el
 comentario de Incidentes decía que va en «Operación» (`lib/autorizacion/secciones.ts:467-470`) y va en «Administración»
-(`:464`). Hoy los dos dicen lo que hace el código. Los del rol `monitoreo` de arriba no se tocaron y siguen abiertos.
+(`:473`). Hoy los dos dicen lo que hace el código. Los del rol `monitoreo` de arriba no se tocaron y siguen abiertos.
 
 **«Leads guardados» cuenta 1.377 filas sin forma de contactar a nadie.** De los 2.343, 1.000 son anunciantes de un único
 trabajo de Facebook Ads y 377 más no traen ni correo ni teléfono (376 de Pages y 1 de Maps). Mis Leads, la tarjeta del panel

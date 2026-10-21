@@ -40,7 +40,8 @@
 >   revisión, en local y sin subir.
 > - **2026-10-20 · C6, el cierre del plan · `e1d0c7f`..** — el cliente final lee sólo los closers de sus clientes
 >   (`100`), el gasto de cada cliente de punta a punta por el cron, la siembra local `sembrar-nivel-3` y estos
->   documentos, con las decisiones del usuario del 2026-10-20 escritas como tomadas (sección «el nivel 3»).
+>   documentos, con las decisiones del usuario del 2026-10-20 escritas como tomadas (sección «el nivel 3»), y las
+>   citas que el nivel 3 había dejado apuntando a otra línea.
 > - Las cifras: la cancelación del negocio a treinta días pasa de 32,0 % a **35,0 %** (14 de 40, § 9); las congeladas
 >   salieron de la ventana de treinta días (**0**, § 4); entraron **25 contactos** en treinta días (§ 5).
 > - **Lo que la foto anterior dejó abierto, re-verificado el 2026-10-18:** el `aviso` de Lead Flow ya tiene lector —el
@@ -89,9 +90,9 @@ La tabla trae una cita que no ocurrió (empieza el 2026-10-20): las cifras de ci
 **El mapa del producto, para ubicarse.** `lib/autorizacion/secciones.ts:169-175` sigue definiendo los grupos que
 filtra `menuVisible()` —AIOS, Inteligencia, Operación, Administración y el pie—, pero desde la nueva estructura
 (`4742d74`, 2026-10-01) la barra lateral dibuja el reparto de `lib/autorizacion/departamentos.ts:50-56`: el Inicio,
-Research, Systems, Marketing, Sales y Client Success, con Credenciales, Monitoreo e Incidentes en el engranaje (`:125-128`).
+Research, Systems, Marketing, Sales y Client Success, con Credenciales, Monitoreo e Incidentes en el engranaje (`:127-130`).
 Ninguna sección de trabajo sigue sin operaciones: el Inicio (`executive`) bajó la bandera con el cerebro el 2026-10-04
-(`lib/autorizacion/secciones.ts:239`) y la única que la lleva es Client OS (`:474`). Estas reglas nacieron casi todas en
+(`lib/autorizacion/secciones.ts:239`) y la única que la lleva es Client OS (`:494`). Estas reglas nacieron casi todas en
 Operación, se ejercieron primero en Conversation y desde el 16 de septiembre las comparten todas las pantallas.
 
 ---
@@ -144,7 +145,7 @@ la derecha es historia**: desde CN-3 (2026-10-10) la pantalla ya no dibuja ningu
 | `lib/negocio/atribucionDelLead.ts:75` | `aviso` | `components/conversation/PanelDeConversation.jsx:727@6f3bdb5` |
 | `lib/negocio/consumoDelPrecall.ts:140` | `aviso` | `components/conversation/PanelDeConversation.jsx:803@6f3bdb5` |
 | `lib/auditor/sentimiento.ts:65` | `aviso` | `components/conversation/PanelDeConversation.jsx:827@6f3bdb5` y `:835@6f3bdb5` |
-| `lib/negocio/frescura.ts:58` y `:221` | `aviso` (frescura del barrido) | no re-verificado |
+| `lib/negocio/frescura.ts:58` y `:272` | `aviso` (frescura del barrido) | no re-verificado |
 
 Los otros 25 campos (38 menos los 13 de la tabla) no se auditaron uno por uno contra su lector: **no
 verificado** que todos tengan uno.
@@ -1227,7 +1228,7 @@ sin que nada fallara. **Desde el 2026-10-18 (`65669f4`)** esos textos hablan de 
 `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts:79-89` en `components/`, `lib/` y `app/` enteros, sin comentarios y
 fuera de Fundaciones, que es de la rama `feature/icp-oferta-v2` (`:16`). No exige todavía que toda la aplicación hable de tú: exige
 que nada vosee fuera de `TODAVIA_VOSEAN` (`:27-66`), los 38 archivos que vosean hoy, y que la lista no tenga entradas muertas
-(`:92-96`), así que sólo puede achicarse. El voseo del resto de la aplicación quedó contado y vigilado, no corregido
+(`:91-95`), así que sólo puede achicarse. El voseo del resto de la aplicación quedó contado y vigilado, no corregido
 ([09-DEUDA-ABIERTA.md](09-DEUDA-ABIERTA.md), sección de lo nuevo).
 
 **49 · La marca se pinta en capas, y una sola paleta.** La capa de la marca va debajo de la aplicación y la de su
@@ -1270,7 +1271,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
 - **La segunda llave de aislamiento.** Además de `org_id`, las 39 tablas de negocio de una cuenta llevan `cuenta_id`
   —la subcuenta de GoHighLevel— y una política que exige `app.cuentas`: `'*'` ve todas las cuentas de la
   organización y **sin la variable no se ve nada** (`lib/datos/contexto.ts:49-60`). La pone `conOrganizacion()` y sólo
-  ella (`:146-147`, verificada en `:160`; `pruebas/codigo/10-arquitectura.test.ts:443`), así que la regla 23 gana una
+  ella (`:207-208`, verificada en `:222`; `pruebas/codigo/10-arquitectura.test.ts:443`), así que la regla 23 gana una
   mitad: abrir el contexto de la organización ahora también abre el de sus cuentas.
 - **Los regímenes de negocio.** Cada tabla es de una cuenta, de una cuenta o de la organización, o sólo de la
   organización, y la lista es a mano porque el régimen es una decisión (`pruebas/apoyo/regimenes-de-negocio.ts:1-19`);
@@ -1280,7 +1281,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
   `aplicar_aislamiento_de_cuenta` como aislamiento (`:208`).
 - **Las fases de relleno.** Como el migrador no ve filas (regla 7), las filas que ya existen reciben su cuenta con dos
   fases de `scripts/db.mjs`: `cuentas`, como `app_identidad` (`scripts/db.mjs:505`), y `cuenta-en-negocio`, como
-  `app_inquilino` dentro de `conOrganizacion` (`:514`). La cuenta en negocio va en tres pasos: la `082` la agrega nula
+  `app_inquilino` dentro de `conOrganizacion` (`:541`). La cuenta en negocio va en tres pasos: la `082` la agrega nula
   con un puente, la fase rellena y la `083` la vuelve obligatoria con la política por cuenta
   (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:4-21`).
 - **Lo demás.** El idioma común compartido sin `org_id` (`079`), las cuentas (`080`), la bandeja de lo crudo con una

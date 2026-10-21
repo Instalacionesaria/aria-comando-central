@@ -104,8 +104,8 @@ Del mapa `HORARIOS` (`lib/negocio/barrido.ts:168-398`), indexado por la cadena l
 | `53 * * * *` | al minuto 53 | `anuncios_relleno` | 180 min | 2026-10-07 |
 | `37 * * * *` | al minuto 37 | `activos` | 180 min | 2026-10-15 |
 
-Están en `lib/negocio/barrido.ts:240-244`, `:219-223`, `:256-260`, `:275-279`, `:303-307`, `:334-338`, `:290-294` y
-`:318-322`, y en `vercel.json:6-39`. Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:332-333`). Los minutos
+Están en `lib/negocio/barrido.ts:240-244`, `:252-256`, `:289-293`, `:308-312`, `:336-340`, `:367-371`, `:323-327` y
+`:351-355`, y en `vercel.json:6-39`. Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:332-333`). Los minutos
 no son adorno: dos horarios en el mismo minuto se frenan por el candado y uno queda `frenada` sin trabajar
 (`lib/negocio/barrido.ts:246-249`, `lib/negocio/barrido.ts:270-272`), y cada horario nuevo eligió el suyo entre los
 libres (`lib/negocio/barrido.ts:321-322`, `lib/negocio/barrido.ts:349-350`). Las pruebas atan el mapa a la
@@ -153,7 +153,7 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/ba
 | `contactos` | `lib/negocio/sincronizar.ts:156` y `lib/negocio/miniaturaDelContacto.ts:159` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
 | `mensajes` | `lib/negocio/ingesta.ts:108` | camina las conversaciones por marca de agua | 1 |
 | `auditoria` | `lib/auditor/analisis.ts:332` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
-| `citas` | `lib/negocio/citas.ts:147` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:75`, `:80`) | 11 |
+| `citas` | `lib/negocio/citas.ts:147` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:75`, `:81`) | 11 |
 | `mejora` | `lib/auditor/buscarMejora.ts:149` | una mejora de prompt por día y por cliente activo (desde C4; con un solo cliente, por empresa) | 1 inferencia |
 | `anuncios` | `lib/negocio/recolectarAnuncios.ts:511` | el costo diario por anuncio y el gasto de toda la cuenta, vía GoHighLevel | 8 |
 | `anuncios_relleno` | `lib/negocio/rellenarAnuncios.ts:206` | busca qué campaña gastó en los días que no cuadran con la cuenta; con todo cuadrado no llama | 0 |
@@ -201,7 +201,7 @@ El Closer y el Setter piden la ingesta desde el navegador, cada 10 s mientras la
 `app/api/closer/agenda/refrescar/route.ts:86`) y la lista de contactos el suyo
 (`components/negocio/ListaDeContactos.jsx:234` → `app/api/contactos/sincronizar/route.ts:84`). Lo que impide que
 pestañas y cron se pisen es el pulso: un candado `.forUpdate().skipLocked()` para el reclamo y un alquiler de 10 s
-para todo lo demás (`lib/negocio/pulso.ts:12-25`, `:113`; `lib/cadencia.ts:40`). Con varios clientes (el nivel 3,
+para todo lo demás (`lib/negocio/pulso.ts:12-25`, `:114`; `lib/cadencia.ts:40`). Con varios clientes (el nivel 3,
 G4), cada una trae a los clientes activos que su pantalla lee, de a uno, con su token y en su ámbito, con el
 presupuesto mirado antes de cada uno salvo el primero; el calendario y la ingesta, con el turno por el sello del
 pulso, y la sincronización, en el orden de la sesión (`lib/negocio/traerDeLosClientes.ts:92`).
@@ -230,7 +230,7 @@ pasa por ella (`lib/deteccion/sonda.ts:119-121`).
 el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fallo` se avisa antes de mirar el umbral
 (`lib/negocio/frescura.ts:156`); `saltada`, `frenada` y `sin_tiempo` no se avisan (`lib/negocio/frescura.ts:153-154`).
 `frescuraDelAviso()` hace lo mismo con el webhook, con `llega_sin_procesar` y un umbral de 120 minutos
-(`lib/negocio/frescura.ts:260-266`, `:231`, `:258`).
+(`lib/negocio/frescura.ts:260-266`, `:282`, `:309`).
 
 **Quién la lee** (búsqueda de `frescuraDe(` en `lib/`, `app/` y `components/`, 2026-10-18): la Agenda del Closer
 (`lib/negocio/agenda.ts:364`), el chat de la ficha (`lib/negocio/ficha.ts:303`, `:303`), Leads Portal
@@ -348,7 +348,7 @@ una palabra del prompt ni de la respuesta (`db/migraciones/069_el_uso_de_la_ia.s
   suite una vez, sin fijar `TZ` (`.github/workflows/verificar.yml`). Dos archivos cambian `process.env.TZ` adentro
   (`pruebas/codigo/98-agenda.test.ts:235-239`, `pruebas/base/92-mi-dia.test.ts:816-819`).
 - **Las pruebas de agenda que dependen de la hora del día** siguen escritas igual (`pruebas/base/27-agenda.test.ts:218`,
-  `:232`, `:675`; `pruebas/base/92-mi-dia.test.ts:473`, `:486`); la 205, que fallaba de mañana, se arregló el 2026-10-07
+  `:233`, `:676`; `pruebas/base/92-mi-dia.test.ts:473`, `:486`); la 205, que fallaba de mañana, se arregló el 2026-10-07
   (`ae30048`).
 
 ### 5.2 · La CI
@@ -632,7 +632,8 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | `e1d0c7f` | C6 · cierre | `100`: la política de lectura de la `093` pasa a pedir la organización entera; el cliente final lee sólo los closers de sus clientes, y su Sales le da a cada closer un rótulo, `closer-N`, en vez del uuid de la persona. La empresa, entera o enfocada en un cliente, lee y recibe lo de siempre |
 | `700ce07` | C6 · cierre | sin migración: la 301 corre la tarea `anuncios` por la ruta del cron con su horario (`17 6 * * *`), con tres clientes y un Ad Manager de GoHighLevel falso que responde a cada token sólo con SU subcuenta y SUS campañas: las campañas, los anuncios, las métricas y la serie de la cuenta quedan en su cliente, y el sello del que no tiene Meta vinculado lo dice |
 | `e9d0511` | C6 · cierre (P7) | sin migración: la fase `sembrar-nivel-3` de `scripts/db.mjs`, fuera de `reset` y sólo local, deja la empresa `gamma` con tres clientes (el principal, uno con su Conexión de prueba y uno de prueba), una administradora y un cliente final, y datos sintéticos de los dos primeros; reaplicable, y `quitar-nivel-3` la quita por su slug exacto antes de la suite |
-| «Nivel 3 · C6 · el cierre del plan en los documentos» | C6 · cierre (P10) | sin código: 07 y este documento con todos los commits de C5 y C6 y las decisiones del usuario del 2026-10-20 escritas como tomadas (el tope de tres closers por empresa; el contrato), el tope del mejorador por cliente, y las citas viejas que señaló la auditoría |
+| `c75984c` | C6 · cierre (P10) | sin código: 07 y este documento con todos los commits de C5 y C6 y las decisiones del usuario del 2026-10-20 escritas como tomadas (el tope de tres closers por empresa; el contrato), el tope del mejorador por cliente, y las citas viejas que señaló la auditoría |
+| «Nivel 3 · C6 · el cierre: las citas que el nivel 3 dejó corridas» | C6 · cierre (P10) | sin código: 76 citas de los documentos que audita la 101, casi todas cortas (`:N` después de una cita completa), que el nivel 3 dejó apuntando a otra línea, cada una movida con su contenido comprobado. `reapuntar3.py` sólo mueve la ruta completa y la 101 sólo mira que la línea exista |
 
 **Las decisiones del usuario del 2026-10-20**, tomadas: el tope de closers es de **tres por empresa**, para todos sus
 clientes (`lib/negocio/closer.ts:238`); los costos de cada cliente salen de SU GoHighLevel con Meta vinculado; Acquisition
