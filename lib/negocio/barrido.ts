@@ -257,9 +257,9 @@ export const HORARIOS = {
 
   /* ── UNA VEZ POR DÍA: EL CARRIL AMARILLO ──────────────────────────────
 
-     Es el único horario diario del sistema, y es diario porque **el tope lo es**: una mejora por
-     día y por empresa. Ponerlo cada diez minutos no produciría más mejoras —el tope las corta— y
-     produciría ciento cuarenta consultas del tope por día para no hacer nada.
+     Es el único horario diario del sistema, y es diario porque **el tope lo es**: una mejora por día y
+     por cliente activo (con un solo cliente, por empresa). Ponerlo cada diez minutos no produciría más
+     mejoras —el tope las corta— y produciría ciento cuarenta consultas del tope por día para no hacer nada.
 
      ── LA HORA, Y POR QUÉ NO ES REDONDA ────────────────────────────────
 

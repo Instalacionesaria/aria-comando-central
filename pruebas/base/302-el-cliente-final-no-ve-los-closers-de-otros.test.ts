@@ -12,7 +12,8 @@
 //   · su `/api/sales` no trae el uuid de ninguna persona de la empresa: cada closer va con su rótulo, `closer-N`, el
 //     mismo en la tabla y en la pantalla, y el mismo en dos lecturas — mutaciones: la ruta sin
 //     `sinLasPersonasDeLaEmpresa`, y la función sin la pantalla;
-//   · la empresa recibe lo de siempre — mutación: el rótulo también para ella.
+//   · la empresa recibe lo de siempre, entera o enfocada en un cliente (el foco de su sesión) — mutaciones: el
+//     rótulo también para ella, y el rótulo para la empresa enfocada.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -20,6 +21,7 @@ import assert from 'node:assert/strict';
 import type { Client } from 'pg';
 import { cerrarTodo, conectar, unaFila } from '../apoyo/conexiones.ts';
 import { DOMINIO, leerRespuesta, pedirComo, sesionDe } from '../apoyo/closer.ts';
+import { hashDeToken } from '../../lib/autorizacion/sesion.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos, type Ambito } from '../../lib/datos/contexto.ts';
 import { GET as sales } from '../../app/api/sales/route.ts';
@@ -37,6 +39,8 @@ let w: string;
 let jefe: string;
 let tokenDeY: string;
 let tokenDeLaEmpresa: string;
+/** Otra sesión de la misma persona de la empresa, con el foco en Y. */
+let tokenDeLaEmpresaEnY: string;
 
 async function limpiar(): Promise<void> {
   const o = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = $1`, [SLUG]);
@@ -123,6 +127,8 @@ before(async () => {
   );
   tokenDeY = await sesionDe(clienteDeY);
   tokenDeLaEmpresa = await sesionDe(jefe);
+  tokenDeLaEmpresaEnY = await sesionDe(jefe);
+  await admin.query(`update identidad.sesiones set cuenta_activa = $1 where token_hash = $2`, [y, hashDeToken(tokenDeLaEmpresaEnY)]);
 });
 
 after(async () => {
@@ -171,6 +177,12 @@ test('el Sales del cliente final no trae el uuid de ninguna persona: cada closer
 test('la empresa recibe a sus closers como siempre, con su id', async () => {
   const { cuerpo } = await salesDe(tokenDeLaEmpresa);
   assert.deepEqual(cuerpo.closers.filas.map((f) => f.usuarioId), [x, w]);
+  assert.deepEqual(cuerpo.pantalla.closers.filas.map((f) => [f.usuarioId, f.nombre]), [[x, 'Closer X 302'], [w, 'Closer W 302']]);
+});
+
+test('la empresa enfocada en un cliente también los recibe con su id: el rótulo es sólo para el cliente final', async () => {
+  const { cuerpo } = await salesDe(tokenDeLaEmpresaEnY);
+  assert.deepEqual(cuerpo.closers.filas.map((f) => f.usuarioId), [x, w], 'con el foco en Y, la empresa recibió rótulos');
   assert.deepEqual(cuerpo.pantalla.closers.filas.map((f) => [f.usuarioId, f.nombre]), [[x, 'Closer X 302'], [w, 'Closer W 302']]);
 });
 

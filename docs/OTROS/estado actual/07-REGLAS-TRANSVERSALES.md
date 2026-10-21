@@ -1626,12 +1626,14 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   en un cliente, sigue leyendo todas las filas; el cliente final, por la política de la tabla, sólo las de sus
   clientes. Y su `/api/sales` ya no le manda el uuid de ninguna persona de la empresa: cada closer va con su rótulo,
   `closer-N`, el número de su «Closer N», el mismo en la tabla y en la pantalla (`app/api/sales/route.ts:101`,
-  `lib/negocio/lecturaDeSales.ts:313`). A la empresa, lo de siempre. Con un solo cliente, el cliente final ve los
-  mismos closers y las mismas cifras, con el rótulo en lugar del uuid. Lo exigen
-  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:137`,
-  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:146`,
-  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:156`,
-  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:171` y
+  `lib/negocio/lecturaDeSales.ts:313`). A la empresa, entera o enfocada en un cliente (el foco de su sesión), lo de
+  siempre. Con un solo cliente, el cliente final ve los mismos closers y las mismas cifras, con el rótulo en lugar del
+  uuid. Lo exigen
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:143`,
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:152`,
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:162`,
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:177`,
+  `pruebas/base/302-el-cliente-final-no-ve-los-closers-de-otros.test.ts:183` y
   `pruebas/base/281-las-cifras-de-una-empresa-con-varios-clientes.test.ts:229`.
 - **El gasto de cada cliente, de punta a punta por el cron (C6, sin migración).** Lo que la 280 hace con los
   contactos y los mensajes, la 301 lo hace con el gasto: la tarea `anuncios` por la ruta del cron con su horario, con
