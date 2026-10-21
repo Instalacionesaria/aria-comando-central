@@ -1498,9 +1498,12 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   los casos de cada cliente activo con su tope y el texto ganador de su agente (`lib/agentes/detectores/conversation.ts:118`,
   `lib/auditor/pantalla.ts:295`). Conversion mide a cada cliente activo contra SU cohorte, SU anterior —con la regla de
   la pantalla, `lib/negocio/pasosDeConversion.ts:224`— y el campo del formulario de SU CRM
-  (`lib/negocio/pasosDeConversion.ts:695`, `lib/agentes/detectores/conversion.ts:202`); un CRM sin el campo no frena a
-  los demás (`lib/agentes/detectores/conversion.ts:229`). Los frenos son por cliente activo
-  (`lib/agentes/detectores/clientes.ts:61`): con varios, la regla entera queda sin medición sólo si ninguno está al día,
+  (`lib/negocio/pasosDeConversion.ts:695`, `lib/agentes/detectores/conversion.ts:211`); un CRM sin el campo no frena a
+  los demás (`lib/agentes/detectores/conversion.ts:238`). Los frenos son por cliente activo
+  (`lib/agentes/detectores/clientes.ts:64`): con varios, la regla entera queda sin medición sólo si ninguno está al día,
+  también cuando los datos son de un solo cliente y otro activo no tiene nada —el freno es el del que tiene datos, y la
+  anterior del cambio de ruta de Conversion, la de SU lectura (`lib/agentes/detectores/conversion.ts:173`): con la de
+  la pantalla, otro activo sin contactos con la lectura fallando lo dejaba sin medición para siempre—,
   y el atrasado deja sin medición sólo lo suyo en el escritor —la señal sin cliente es del principal—
   (`lib/agentes/senales/escritura.ts:167`, `lib/agentes/senales/escritura.ts:203`), y el plan lo nombra
   (`lib/agentes/plan/comun.ts:116`). Uno en pausa o de baja no frena ni se mide por cliente: sus señales se cierran
@@ -1516,9 +1519,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:111`,
   `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:248`,
   `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:289`,
-  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:227`,
-  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:302` y
-  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:364`.
+  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:250`,
+  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:325`,
+  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:390` y
+  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:488`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerró C6 · D3 ya no está):
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
@@ -1543,8 +1547,13 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   el rótulo del funnel, que sólo tiene el componente —hoy la fuga es media y no llega ahí—; con varios clientes, la
   señal ya no habla de los mismos contactos que la pantalla (Acquisition, Conversion y la del técnico siguen siendo de
   la empresa: no hay foco por cliente); un cliente sin ningún sello no frena hasta su primera pasada (como la frescura
-  de la empresa); y el nombre del cliente queda escrito en el «no se pudo medir» del plan del día, así que si se
-  renombra, el plan de ese día dice el nombre viejo. Y de antes: las etiquetas cortas de los campos
+  de la empresa); Creative sigue frenando la caída de CTR, la concentración y la frecuencia con la frescura de
+  `anuncios` de la empresa, que es la del PEOR cliente activo (`lib/agentes/detectores/creative.ts:123`): un cliente
+  activo cuya lectura de anuncios falla deja esas reglas sin medición para todos mientras siga fallando —el mismo «un
+  atrasado calla a todos» que D3 cerró en Conversation y Conversion; se cierra llevándolo a
+  `frenoDeLaTarea('anuncios', …)` con `sinMedicionDeClientes`, en un frente aparte—; y el nombre del cliente queda
+  escrito en el «no se pudo medir» del plan del día, así que si se renombra, el plan de ese día dice el nombre viejo.
+  Y de antes: las etiquetas cortas de los campos
   y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
   subcuenta con otros nombres no se reconoce). De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
   empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de campaña —la decisión del 2026-10-20

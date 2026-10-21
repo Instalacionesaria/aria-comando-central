@@ -432,11 +432,15 @@ solo cliente, lo de siempre. Lo exigen `pruebas/base/284-acquisition-y-conversat
 contra SU cohorte, SU anterior y el campo del formulario de SU CRM (`lib/negocio/pasosDeConversion.ts:695`), con la
 misma regla de la anterior que la pantalla (`lib/negocio/pasosDeConversion.ts:224`): el cambio de mezcla entre
 clientes ya no parece un cambio de ruta, y un CRM sin el campo no diluye ni frena a los demás
-(`lib/agentes/detectores/conversion.ts:229`). Uno con la lectura de contactos atrasada no publica sus familias y deja
+(`lib/agentes/detectores/conversion.ts:238`). Uno con la lectura de contactos atrasada no publica sus familias y deja
 sin medición sólo lo suyo; la familia y el formulario de otro cliente llevan su id adelante y se dibujan con su nombre,
-en la tarjeta y en los cajones (`components/conversion/CajonDelPaso.jsx:263`). La pantalla sigue siendo de la empresa.
-Lo exigen `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:289` y
-`pruebas/base/295-las-senales-de-cada-cliente.test.ts:428`.
+en la tarjeta y en los cajones (`components/conversion/CajonDelPaso.jsx:263`). Con los contactos de un solo cliente y
+otro activo sin ninguno, el freno es el del que tiene contactos, y la anterior del cambio de ruta, la de SU lectura
+(`lib/agentes/detectores/conversion.ts:173`): otro activo con la lectura fallando ya no lo deja sin medición para
+siempre. La pantalla sigue siendo de la empresa. Lo exigen
+`pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:289`,
+`pruebas/base/295-las-senales-de-cada-cliente.test.ts:473` y
+`pruebas/base/295-las-senales-de-cada-cliente.test.ts:488`.
 
 ---
 
@@ -480,7 +484,7 @@ defecto que nadie notó. La base no desempata.
 **9. El § 17 sigue vacío, y la pantalla ya eligió.** No hay KPIs, umbrales ni responsables definidos por el
 negocio. Lo que se publica lo decidieron el usuario y el doc 15, con diez preguntas que se tomaron con su
 respuesta por defecto (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, § 6). Los umbrales de las
-cuatro reglas del detector siguen provisionales (`lib/agentes/detectores/conversion.ts:69`).
+cuatro reglas del detector siguen provisionales (`lib/agentes/detectores/conversion.ts:70`).
 
 **10. Si se vuelve a instrumentar, que sean eventos y no un campo por contacto.** Dos toques sobrescribibles sin
 fecha y un `% máximo visto` con 79 ceros son la demostración. La Fase 0 del modelo de datos, **construida en local
@@ -488,7 +492,7 @@ y sin subir**, ya trae la tabla para eso, `negocio.eventos` (`db/migraciones/084
 escritor (`db/migraciones/084_los_eventos.sql:14`).
 
 **11. La alarma no aparece nunca.** Sólo se dibuja con señales `critica`, y ninguna regla de Conversion lo es
-(`lib/agentes/detectores/conversion.ts:69`). Es la respuesta por defecto de `CV15-P05`: el lugar existe, vacío,
+(`lib/agentes/detectores/conversion.ts:70`). Es la respuesta por defecto de `CV15-P05`: el lugar existe, vacío,
 hasta que alguna regla merezca la alarma.
 
 **12. «Confirmados» depende de un campo del CRM sin fecha.** Sobre los calificados, la tasa cuenta a quien

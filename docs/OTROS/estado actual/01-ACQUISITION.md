@@ -393,7 +393,7 @@ El plan dice de qué cliente falta el gasto que deja sin medir los costos, con l
 (`lib/agentes/plan/acquisition.ts:162`). La pantalla no cambia: Acquisition no tiene foco por cliente. Lo exigen
 `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:111`,
 `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:156` y
-`pruebas/base/295-las-senales-de-cada-cliente.test.ts:251`; un `campaignId` de Google Ads sigue contando como pauta
+`pruebas/base/295-las-senales-de-cada-cliente.test.ts:274`; un `campaignId` de Google Ads sigue contando como pauta
 sin Meta (07, «Lo que todavía supone una subcuenta»).
 
 ---

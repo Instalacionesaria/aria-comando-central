@@ -34,8 +34,9 @@
 // diluía la cobertura del formulario de otro. Las entidades llevan el cliente adelante salvo las del principal
 // (`idConCliente`), la evidencia lo nombra y la frase dice «de su cliente». Los frenos son por cliente: uno activo con
 // la lectura de contactos atrasada, o sin una anterior que comparar, deja «sin medición» sólo lo suyo; uno cuyo CRM no
-// tiene el campo del formulario no se mide en él ni frena a nadie, salvo que ninguno lo tenga. Con un cliente, todo
-// es como siempre, letra por letra.
+// tiene el campo del formulario no se mide en él ni frena a nadie, salvo que ninguno lo tenga. También con los
+// contactos de uno solo y otro activo sin ninguno: el freno es el del que tiene contactos, y su anterior, la de SU
+// lectura. Con un cliente, todo es como siempre, letra por letra.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -165,6 +166,14 @@ export async function medirConversion(ventana: VentanaDeSenal, zona: string): Pr
      como siempre. */
   const freno = await frenoDeLaTarea('contactos', clientes);
   const unico = conContactos.length === 1 ? conContactos[0]! : null;
+  /* Con los contactos de un solo cliente activo y otro activo más, la anterior del cambio de ruta es la de SU lectura de
+     contactos y de citas: la de la pantalla mira la frescura de la empresa —el peor de los activos—, y otro cliente sin
+     contactos con la lectura fallando dejaba el cambio de ruta de éste sin medición para siempre. Su recorrido es el de
+     la pantalla, porque es el único con contactos. Con un solo activo, la anterior de la pantalla, como siempre. */
+  const anteriorDelUnico =
+    unico !== null && clientes.activos.length > 1 && clientes.activos.includes(unico)
+      ? (await recorridoDeCadaCliente(periodo, zona, [unico]))[0]!.recorridoAnterior
+      : lectura.recorridoAnterior;
   const porCliente =
     conContactos.length > 1
       ? (await recorridoDeCadaCliente(periodo, zona, clientes.activos.filter((id) => conContactos.includes(id)))).map((c) => ({
@@ -178,7 +187,7 @@ export async function medirConversion(ventana: VentanaDeSenal, zona: string): Pr
   return {
     ventana,
     recorrido: lectura.recorrido,
-    anterior: comoAnterior(lectura.recorridoAnterior),
+    anterior: comoAnterior(anteriorDelUnico),
     formulario: lectura.formulario,
     contactosAlDia: freno.alDia && !freno.atrasados.some((a) => a.id === unico),
     periodo: lectura.ventana,

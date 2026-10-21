@@ -14,12 +14,18 @@
 //     cuenta, la ventana sin el agente—, y la pasada de Conversation da una señal por cliente sin «detectó dos veces la
 //     misma huella» —mutación: el patrón sin el cliente—; con un cliente atrasado, lo de los demás se publica y sólo lo
 //     suyo queda sin medición, con su nombre en el plan —mutaciones: callar todo, el escritor sin la lista por cliente—;
+//     y el plan trae el nombre del cliente de cada renglón —mutación: `ultimoPlan` sin `clientes`—;
 //   · el escritor deja sin medición sólo lo del cliente que no se midió, también la del principal sin prefijo —
 //     mutación: sin la del principal—; la fuga de dos clientes no choca —mutación: el id sin el cliente—, y la pieza de
 //     nombre largo entra en la tabla —mutación: sin cortarla—;
 //   · `medirConversion` mide a cada cliente activo con su cohorte, su campo y su anterior;
-//   · la pantalla nombra cada entidad con su cliente y nunca con un uuid, tampoco en la evidencia — mutación:
-//     `lectura.ts` sin quitar el cliente del id.
+//   · la pantalla nombra cada entidad con su cliente y nunca con un uuid, tampoco en la evidencia — mutaciones:
+//     `lectura.ts` sin quitar el cliente del id, sin el rótulo del formulario o del conjunto de un cliente;
+//   · con los datos de un solo cliente y otro activo SIN datos (otra empresa): el otro con la lectura fallando no le
+//     apaga el cambio de ruta al que tiene datos —mutación: la anterior de la pantalla, con la frescura de la empresa—;
+//     el que tiene datos, atrasado, deja la regla entera sin medición aunque el otro esté al día —mutaciones: el freno
+//     de la empresa a secas, en Conversion y en Conversation—, y el otro sin ningún sello no es un atrasado ni sale en
+//     el plan —mutación: contar el «nunca»—.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -37,19 +43,22 @@ import { CAMPO_DEL_FORMULARIO } from '../../lib/negocio/recorrido.ts';
 import { idDeLaPiezaEnUnaSenal } from '../../lib/negocio/idDeLaPieza.ts';
 import { casosDeUnCliente } from '../../lib/auditor/pantalla.ts';
 import { ACQ, detectarEnAcquisition, medirAcquisition } from '../../lib/agentes/detectores/acquisition.ts';
-import { medirConversation } from '../../lib/agentes/detectores/conversation.ts';
-import { CNV, medirConversion } from '../../lib/agentes/detectores/conversion.ts';
+import { CONV, detectarEnConversation, medirConversation } from '../../lib/agentes/detectores/conversation.ts';
+import { CNV, detectarEnConversion, medirConversion } from '../../lib/agentes/detectores/conversion.ts';
 import { DETECTOR_DE_CONVERSATION } from '../../lib/agentes/detectores/detector-de-conversation.ts';
 import { correrLaPasada } from '../../lib/agentes/detectores/correr.ts';
 import { reconciliarSenales } from '../../lib/agentes/senales/escritura.ts';
-import { senalesDeLaPantalla } from '../../lib/agentes/senales/lectura.ts';
+import { senalesDeLaPantalla, ultimoPlan } from '../../lib/agentes/senales/lectura.ts';
 import { CATALOGO_DE_REGLAS, umbralVigente } from '../../lib/agentes/senales/umbrales.ts';
 import type { Deteccion } from '../../lib/agentes/senales/tipos.ts';
+import { textoDe as textoDeAcquisition } from '../../lib/agentes/plan/acquisition.ts';
 import { textoDeConversation } from '../../lib/agentes/plan/conversation.ts';
 import { textoDeConversion } from '../../lib/agentes/plan/conversion.ts';
 import { diaEnZona } from '../../lib/negocio/tiempo.ts';
 
 const SLUG = 'gamma-295';
+/** La otra empresa: los datos de un solo cliente, y otro activo sin nada. */
+const SLUG_DE_UNO = 'gamma-295-uno';
 const ZONA = 'America/Lima';
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 const umbral = (codigo: string) => umbralVigente(CATALOGO_DE_REGLAS.find((r) => r.codigo === codigo)!, new Map());
@@ -64,8 +73,8 @@ let nombreDeP: string;
 /** Los días cerrados de la ventana de 7 días, los de la pantalla. */
 let ventana: { desde: string; hasta: string };
 
-async function limpiar(): Promise<void> {
-  const o = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = $1`, [SLUG]);
+async function limpiar(slug = SLUG): Promise<void> {
+  const o = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = $1`, [slug]);
   if (!o) return;
   for (const t of [
     'senales', 'planes_de_accion', 'hallazgos', 'analisis_del_agente', 'resultados', 'citas', 'contactos', 'campos_del_crm',
@@ -78,13 +87,20 @@ async function limpiar(): Promise<void> {
   await admin.query(`delete from identidad.organizaciones where id = $1`, [o.id]);
 }
 
-/** Un contacto de un cliente, dado de alta hace `dias`, con su atribución y sus campos del CRM. */
-async function unContacto(cuenta: string, marca: string, dias: number, atribucion: Record<string, string> = {}, campos: Record<string, string> = {}): Promise<string> {
+/** Un contacto de un cliente, dado de alta hace `dias`, con su atribución y sus campos del CRM; `en`, su empresa. */
+async function unContacto(
+  cuenta: string,
+  marca: string,
+  dias: number,
+  atribucion: Record<string, string> = {},
+  campos: Record<string, string> = {},
+  en = org,
+): Promise<string> {
   const c = await unaFila<{ id: string }>(
     admin,
     `insert into negocio.contactos (org_id, cuenta_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, campos_del_crm)
      values ($1, $2, $3, 'Contacto 295', 'setter', now() - make_interval(days => $4), $5::jsonb, $6::jsonb) returning id`,
-    [org, cuenta, marca, dias, JSON.stringify(atribucion), JSON.stringify(campos)],
+    [en, cuenta, marca, dias, JSON.stringify(atribucion), JSON.stringify(campos)],
   );
   assert.ok(c);
   return c.id;
@@ -105,35 +121,41 @@ async function citaYVenta(cuenta: string, contacto: string, marca: string, conVe
   }
 }
 
-/** El sello de una tarea de un cliente, ahora, con su estado. */
-async function sello(cuenta: string, tarea: string, estado: string): Promise<void> {
+/** El sello de una tarea de un cliente, ahora, con su estado; `en`, su empresa. */
+async function sello(cuenta: string, tarea: string, estado: string, en = org): Promise<void> {
   await admin.query(
     `insert into negocio.tareas_programadas (org_id, cuenta_id, tarea, ultima_corrida_el, ultimo_estado) values ($1, $2, $3, now(), $4)
        on conflict (org_id, cuenta_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = excluded.ultimo_estado`,
-    [org, cuenta, tarea, estado],
+    [en, cuenta, tarea, estado],
   );
 }
 
-/** Un hallazgo abierto del auditor, detectado hace `minutos`. */
-async function hallazgos(cuenta: string, contacto: string, o: { agente: string; patron: string; minutos: number; fragmento?: string | null; cuantos?: number }): Promise<void> {
+/** Un hallazgo abierto del auditor, detectado hace `minutos`; `en`, su empresa. */
+async function hallazgos(
+  cuenta: string,
+  contacto: string,
+  o: { agente: string; patron: string; minutos: number; fragmento?: string | null; cuantos?: number; en?: string },
+): Promise<void> {
+  const en = o.en ?? org;
   const a = await unaFila<{ id: string }>(
     admin,
     `insert into negocio.analisis_del_agente (org_id, cuenta_id, contacto_id, agente, auditable, intervencion, nivel, resumen, disparo, mensajes_del_agente)
      values ($1, $2, $3, $4, true, false, 'amarillo', 'C295', 'manual', 3) returning id`,
-    [org, cuenta, contacto, o.agente],
+    [en, cuenta, contacto, o.agente],
   );
   assert.ok(a);
   await admin.query(
     `insert into negocio.hallazgos (org_id, cuenta_id, contacto_id, analisis_id, agente, titulo, patron, correccion, evidencia_agente, severidad, categoria, fragmento_prompt, detectado_el)
      select $1, $2, $3, $4, $5, 'C295 ' || $6, $6, 'Una corrección.', 'Una línea del agente.', 'amarillo', 'comportamiento', $7, now() - make_interval(mins => $8)
        from generate_series(1, $9::int)`,
-    [org, cuenta, contacto, a.id, o.agente, o.patron, o.fragmento ?? null, o.minutos, o.cuantos ?? 1],
+    [en, cuenta, contacto, a.id, o.agente, o.patron, o.fragmento ?? null, o.minutos, o.cuantos ?? 1],
   );
 }
 
 before(async () => {
   admin = await conectar('admin');
   await limpiar();
+  await limpiar(SLUG_DE_UNO);
   const o = await unaFila<{ id: string }>(
     admin,
     `insert into identidad.organizaciones (nombre, slug, zona_horaria) values ('Gamma 295', $1, $2) returning id`,
@@ -216,6 +238,7 @@ before(async () => {
 after(async () => {
   try {
     await limpiar();
+    await limpiar(SLUG_DE_UNO);
   } finally {
     await cerrarTodo();
     await cerrarClientes();
@@ -319,6 +342,9 @@ test('Conversation: una señal por cliente, agente y patrón; un cliente atrasad
     assert.ok(s.cliente === nombreDeP || s.cliente === 'Segunda 295');
     assert.equal((s.evidencia as { cliente: string }).cliente, s.cliente);
   }
+  // El plan guarda el id del cliente de cada renglón, y la lectura lo trae con su nombre: con él, el renglón dice de cuál es.
+  const plan = await conOrganizacion(org, () => ultimoPlan('conversation', '7d'));
+  assert.deepEqual(plan?.clientes, { [p]: nombreDeP, [y]: 'Segunda 295' }, 'el plan no dice de qué cliente es cada renglón');
 
   // Y se atrasa: lo de P se publica, y lo de Y queda sin medición, con su nombre en el plan.
   await sello(y, 'auditoria', 'fallo');
@@ -373,14 +399,31 @@ test('el escritor deja sin medición sólo lo del cliente que no se midió, tamb
       deteccion(familia, 'familia_de_entrada', `${y}:landing`, { familia: 'landing', cliente: y, contactos: 20, cohorte: 50 }),
       // Nacida con un solo cliente: no nombra a nadie, y es del principal.
       deteccion(CNV.cambioDeRuta, 'familia_de_entrada', 'widget', { familia: 'widget', ahora: { contactos: 10, cohorte: 50 }, antes: { contactos: 2, cohorte: 50 } }),
+      deteccion(CNV.formularioSinDatos, 'funnel', `${y}:formulario`, { cliente: y, con: 1, sobre: 20 }),
     ],
     [],
   );
-  // La pantalla: cada familia con su cliente, sin uuid; la evidencia con el nombre.
+  // La pantalla: cada familia y el formulario con su cliente, sin uuid; la evidencia con el nombre.
   const lista = await conOrganizacion(org, () => senalesDeLaPantalla('conversion', '30d', textoDeConversion));
-  assert.deepEqual(lista.map((s) => s.nombre).sort(), [`Landing con VSL (${nombreDeP})`, 'Landing con VSL (Segunda 295)', 'Widget de reserva'].sort());
+  assert.deepEqual(
+    lista.map((s) => s.nombre).sort(),
+    [`Landing con VSL (${nombreDeP})`, 'Landing con VSL (Segunda 295)', 'Widget de reserva', 'Formulario (Segunda 295)'].sort(),
+  );
   for (const s of lista) assert.doesNotMatch(`${s.nombre} ${s.texto} ${JSON.stringify(s.evidencia)}`, UUID, s.entidad.id);
   assert.equal(lista.find((s) => s.entidad.id === `${y}:landing`)!.cliente, 'Segunda 295');
+
+  // El conjunto de un cliente (Acquisition) no tiene nombre guardado: su id, con el nombre de su cliente.
+  await conOrganizacion(org, () =>
+    reconciliarSenales({
+      departamento: 'acquisition',
+      detector: 'acquisition',
+      ventana: '7d',
+      detecciones: [deteccion(ACQ.cambioBruscoConjunto, 'conjunto', 'cj295y', { conjunto: 'cj295y', cliente: y })],
+      sinMedicion: [],
+    }),
+  );
+  const conjuntos = await conOrganizacion(org, () => senalesDeLaPantalla('acquisition', '7d', textoDeAcquisition));
+  assert.deepEqual(conjuntos.map((s) => s.nombre), ['Conjunto cj295y (Segunda 295)'], 'el conjunto de un cliente no dice de cuál es');
 
   // Ni Y ni el principal se midieron en las suyas: quedan sin medición; la de P, que sí se midió, se cierra sola.
   const r = await pasada([], [{ regla: familia, cuentaId: y }, { regla: CNV.cambioDeRuta, cuentaId: p }]);
@@ -395,6 +438,8 @@ test('el escritor deja sin medición sólo lo del cliente que no se midió, tamb
       ['landing', 'cerrada_sola'],
       ['widget', 'sin_medicion'],
       [`${y}:landing`, 'sin_medicion'],
+      // El formulario de Y no está en la lista: se midió y no se detectó.
+      [`${y}:formulario`, 'cerrada_sola'],
     ].sort((a, b) => (a[0]! < b[0]! ? -1 : 1)),
   );
 });
@@ -436,4 +481,82 @@ test('Conversion mide a cada cliente activo con su cohorte, su campo y su anteri
   assert.equal(de(y).anterior, null);
   assert.equal(m.contactosAlDia, true);
   assert.deepEqual(m.atrasados, [{ id: y, nombre: 'Segunda 295' }]);
+});
+
+// ─── Los datos de un solo cliente, y otro activo sin nada ───────────────────
+
+test('con los datos de un solo cliente y otro activo sin nada, el freno y la anterior son los del que tiene datos', async () => {
+  /* Otra empresa: U, el principal, con contactos (uno viejo: su historia empieza antes de la anterior) y un hallazgo; V,
+     activo, recién dado de alta, sin contactos ni hallazgos. Con un solo cliente con datos, los detectores no miden por
+     cliente: lo de U se mide contra la empresa, que es él. */
+  const o = await unaFila<{ id: string }>(
+    admin,
+    `insert into identidad.organizaciones (nombre, slug, zona_horaria) values ('Gamma 295 de uno', $1, $2) returning id`,
+    [SLUG_DE_UNO, ZONA],
+  );
+  assert.ok(o);
+  const en = o.id;
+  const principal = await unaFila<{ id: string }>(admin, `select id from identidad.cuentas where org_id = $1 and es_por_omision`, [en]);
+  const otra = await unaFila<{ id: string }>(admin, `insert into identidad.cuentas (org_id, nombre, slug) values ($1, 'Sin datos 295', 'sin-datos-295') returning id`, [en]);
+  assert.ok(principal && otra);
+  const u = principal.id;
+  const v = otra.id;
+  await unContacto(u, 'k295u-viejo', 40, {}, {}, en);
+  const deU: string[] = [];
+  for (let i = 0; i < 3; i++) deU.push(await unContacto(u, `k295u-${i}`, 3, {}, {}, en));
+  await hallazgos(u, deU[0]!, { agente: 'chat_post_agenda', patron: 'p295_uno', minutos: 30, en });
+  const sellos = async (cuenta: string, estado: string) => {
+    for (const tarea of ['contactos', 'citas', 'auditoria']) await sello(cuenta, tarea, estado, en);
+  };
+  const conversion = () => conOrganizacion(en, () => medirConversion('7d', ZONA));
+  const conversation = () => conOrganizacion(en, () => medirConversation('7d', new Date()));
+
+  /* V con el token revocado: sus lecturas fallan. La frescura de la empresa —el peor de los activos— dice «fallando»,
+     y con ella la anterior de la pantalla no compara: el cambio de ruta de U quedaba sin medición todos los días. */
+  await sellos(u, 'corrio');
+  await sellos(v, 'fallo');
+  let m = await conversion();
+  assert.equal(m.porCliente, undefined);
+  assert.equal(m.deUnCliente, u);
+  assert.ok(m.anterior !== null, 'otro cliente sin contactos, con la lectura fallando, le apagó el cambio de ruta al que los tiene');
+  assert.equal(m.contactosAlDia, true);
+  assert.deepEqual(m.atrasados, [{ id: v, nombre: 'Sin datos 295' }]);
+  let r = detectarEnConversion(m, umbral);
+  assert.ok(!r.sinMedicion.includes(CNV.cambioDeRuta) && !r.sinMedicion.includes(CNV.familiaQueNoAgenda), r.sinMedicion.join(', '));
+  assert.ok(r.sinMedicionDeClientes?.every((x) => x.cuentaId === v));
+  let c = await conversation();
+  assert.equal(c.auditorAlDia, true);
+  assert.deepEqual(detectarEnConversation(c, umbral).sinMedicion, []);
+
+  /* U atrasado y V al día: lo de U no se publica, y como es el único con datos, la regla entera queda sin medición —no
+     sólo «lo de U»: un sello `saltada` o un cliente sin nada al día no hacen medible lo que U trajo tarde—. */
+  await sellos(u, 'fallo');
+  await sellos(v, 'corrio');
+  m = await conversion();
+  assert.equal(m.contactosAlDia, false, 'el principal atrasado publicó sus familias porque otro sin datos está al día');
+  r = detectarEnConversion(m, umbral);
+  assert.ok(r.sinMedicion.includes(CNV.familiaQueNoAgenda) && r.sinMedicion.includes(CNV.cambioDeRuta), r.sinMedicion.join(', '));
+  assert.equal(r.sinMedicionDeClientes, undefined);
+  assert.deepEqual([...r.detecciones, ...r.informativas].filter((d) => d.entidad.tipo === 'familia_de_entrada'), []);
+  c = await conversation();
+  assert.equal(c.auditorAlDia, false);
+  assert.deepEqual(detectarEnConversation(c, umbral).sinMedicion, [CONV.patronAbierto], 'el principal atrasado publicó sus patrones');
+
+  /* V sin ningún sello (el cron todavía no lo barrió) y U al día: V no es un atrasado, y el plan no lo nombra. */
+  await sellos(u, 'corrio');
+  await admin.query(`delete from negocio.tareas_programadas where org_id = $1 and cuenta_id = $2`, [en, v]);
+  m = await conversion();
+  assert.deepEqual(m.atrasados, [], 'un cliente sin ningún sello contó como atrasado');
+  c = await conversation();
+  assert.deepEqual(c.atrasados, []);
+  await admin.query(`delete from negocio.planes_de_accion where org_id = $1`, [en]);
+  const corrida = await correrLaPasada({ id: en, zonaHoraria: ZONA }, { ahora: aLas12(), detectores: [DETECTOR_DE_CONVERSATION] });
+  assert.ok(corrida.tocaba);
+  assert.deepEqual(corrida.departamentos.map((d) => [d.departamento, d.estado]), [['conversation', 'corrio']]);
+  const plan = await unaFila<{ plan: { sinMedicion: string[] } }>(
+    admin,
+    `select plan from negocio.planes_de_accion where org_id = $1 and departamento = 'conversation' and ventana = '7d'`,
+    [en],
+  );
+  assert.deepEqual(plan!.plan.sinMedicion, [], 'el plan nombró a un cliente que el cron todavía no barrió');
 });

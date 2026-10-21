@@ -15,7 +15,10 @@
 //   · un cliente sin ningún sello no cuenta, como en la frescura de la empresa: el cron todavía no lo barrió;
 //   · un cliente en pausa o de baja no frena: sus datos están congelados, no atrasados. Y no se mide por cliente: los
 //     detectores miden por cliente sólo a los activos, así que sus señales se cierran solas. Es el criterio de los tres
-//     detectores que miden por cliente (el monitor de Acquisition, Conversation y Conversion).
+//     detectores que miden por cliente (el monitor de Acquisition, Conversation y Conversion), también cuando los datos
+//     son de un solo cliente y otro activo no tiene nada: el freno es el del que tiene datos (y en Conversion, la
+//     anterior del cambio de ruta, la de SU lectura). Creative todavía no: frena todas sus reglas con la frescura de
+//     `anuncios` de la empresa, el peor de los activos (un residuo, en el 07).
 //
 // La frescura se importa al usarla: `frescura.ts` lee los horarios de `barrido.ts`, que importa la pasada, que importa
 // los detectores (el ciclo que explica `./creative.ts`).

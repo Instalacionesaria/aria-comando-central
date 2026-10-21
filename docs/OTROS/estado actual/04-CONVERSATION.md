@@ -413,9 +413,9 @@ patrón), con un id que lleva el cliente salvo el del principal (`lib/agentes/de
 hallazgos de más de un cliente, el detector lee los casos de cada cliente activo con su tope y el fragmento ganador de
 SU agente (`lib/auditor/pantalla.ts:295`), así que el `issue_source` de un cliente no sale del prompt de otro, y un
 cliente con la auditoría atrasada no calla a los demás: sólo lo suyo queda sin medición, y el plan lo nombra
-(`lib/agentes/detectores/clientes.ts:61`). La pestaña Auditoría no cambia (su texto ganador sigue siendo por patrón, de
+(`lib/agentes/detectores/clientes.ts:64`). La pestaña Auditoría no cambia (su texto ganador sigue siendo por patrón, de
 toda la empresa). Lo exigen `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:248` y
-`pruebas/base/295-las-senales-de-cada-cliente.test.ts:302`.
+`pruebas/base/295-las-senales-de-cada-cliente.test.ts:325`.
 
 ---
 

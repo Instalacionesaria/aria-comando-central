@@ -496,7 +496,7 @@ id `cvCajon` y la raíz `.cv-cajon`. Es el molde de la ficha de Creative
 
 **Las observaciones** · Las señales del paso, con el marcado `obs` (`app/aios.css:1080-1092`): `obs-t` es el
 texto, `obs-d` la revisión, `obs-m` la fecha y el estado, y `obs-n` la pérdida en contactos. «No tocar» no es
-una señal (`lib/agentes/detectores/conversion.ts:66-67`): si va como «a favor», es `CV15-P07`.
+una señal (`lib/agentes/detectores/conversion.ts:67-68`): si va como «a favor», es `CV15-P07`.
 
 **Estado** · **Construido el 2026-10-09** (CV-4): `components/conversion/CajonDelPaso.jsx`. Contesta CV4-P01: los
 cajones que sobreviven son tres.
@@ -530,13 +530,13 @@ La cifra sobre la cohorte, construida el 2026-10-08 (CV-2): `personasDeLaCohorte
 
 | entidad | paso |
 |---|---|
-| `familia_de_entrada` (`lib/agentes/detectores/conversion.ts:266`) | Landing: el reparto vive en su cajón |
-| `funnel` `formulario` (`lib/agentes/detectores/conversion.ts:365`) | Formulario |
+| `familia_de_entrada` (`lib/agentes/detectores/conversion.ts:275`) | Landing: el reparto vive en su cajón |
+| `funnel` `formulario` (`lib/agentes/detectores/conversion.ts:374`) | Formulario |
 | cualquier otra | ninguno: va sólo a la tarjeta |
 
 **La alarma** · `#cvAlarmWrap` se muestra sólo si hay alguna señal con gravedad `critica`
 (`lib/agentes/senales/tipos.ts:36`), y sólo con 7 o 30 días. **Hoy ninguna regla de Conversion es crítica**
-—son media, info, media y media (`lib/agentes/detectores/conversion.ts:69-106`)—, así que no aparece hasta que
+—son media, info, media y media (`lib/agentes/detectores/conversion.ts:70-107`)—, así que no aparece hasta que
 exista una. Su `gsub` del prototipo, «rompe el funnel · no espera al ciclo diario», es falso: las señales
 las guarda la pasada de la mañana. Pasa a «detectada en la pasada de la mañana». Cada fila: `al-t` es el
 texto, `al-d` la revisión, `al-m` «{Paso} · {fecha}», y «Ver evidencia →» abre el cajón del paso.
@@ -615,7 +615,7 @@ también `pasos` y `senales.porPaso`.
   cerrados para 7 y 30 días (`lib/agentes/executive/adaptadores/comun.ts:65`), y deja de ser falso para
   Conversion. `TAREAS_POR_SECCION.conversion`
   (`lib/agentes/executive/adaptadores/plataforma.ts:33-43`) suma las citas y los anuncios.
-- **El detector.** `medirConversion` (`lib/agentes/detectores/conversion.ts:156-189`) consume la misma
+- **El detector.** `medirConversion` (`lib/agentes/detectores/conversion.ts:157-198`) consume la misma
   lectura, como el de Acquisition. Así cumple AG-28, que pide 7 y 30 días cerrados
   (`lib/agentes/senales/tipos.ts:10-11`). La ventana anterior sale de la lectura y no del doble de días menos
   la actual.

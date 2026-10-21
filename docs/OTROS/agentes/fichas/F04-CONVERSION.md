@@ -29,8 +29,9 @@ Lo mismo que su pantalla, con la misma lectura (`app/api/conversion/route.ts:71-
 cohorte, SU anterior y el campo del formulario de SU CRM (`recorridoDeCadaCliente`, con las mismas funciones y la misma
 regla de la anterior que la pantalla); la familia y el formulario de otro cliente llevan su id adelante
 (`idConCliente`), y la frase dice «la cohorte de su cliente». Un cliente con la lectura de contactos atrasada deja sin
-medición sólo lo suyo; uno cuyo CRM no tiene el campo no se mide en él ni frena a los demás. Con un cliente, lo de
-siempre.
+medición sólo lo suyo; uno cuyo CRM no tiene el campo no se mide en él ni frena a los demás. Con los contactos de un
+solo cliente y otro activo sin ninguno, el freno es el del que tiene contactos y la anterior del cambio de ruta, la de
+SU lectura: otro activo con la lectura fallando no le apaga el cambio de ruta. Con un cliente, lo de siempre.
 
 ## Las reglas
 
