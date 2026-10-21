@@ -576,16 +576,17 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   (`app/api/admin/cuentas/[id]/campos/route.ts:94`, `app/api/admin/cuentas/[id]/campos/route.ts:104`). Corre como
   inquilino con el foco en ese cliente, sin abrir identidad, y queda auditado.
 - **La lista de chequeo de cada cliente** (C6 · D5, `099`): Ajustes › Clientes dice, por cliente, si está
-  configurado y, abierta, qué le falta y qué hacer (`components/ajustes/Clientes.jsx:224`, `components/ajustes/ListaDeChequeo.jsx:69`). Es
+  configurado y, abierta, qué le falta y qué hacer (`components/ajustes/Clientes.jsx:225`, `components/ajustes/ListaDeChequeo.jsx:69`). Es
   la misma lista que la foto y Negocios, con «Meta vinculado en su GoHighLevel» requerido y las miniaturas de Meta
   recomendadas, y llega en vivo con `GET /api/admin/cuentas` (`cuentas.ver`): la ruta lee de identidad la presencia de la
   conexión de cada cliente —sólo `is not null`, con la empresa destino en el `where`— y por eso entró a la lista de la
   escotilla y a la de los dos dominios, sin escribir en identidad (`app/api/admin/cuentas/route.ts:69`,
   `lib/cartera/configuracion.ts:132`). Ningún valor viaja: de cada paso, su clave, su nombre, si es requerido y su estado. En
   Negocios, «Agregar cliente» da de alta en cualquier empresa con `cuentas.crear` y el `orgId`, que sólo la plataforma
-  puede mandar (`components/cartera/PanelDeNegocios.jsx:338`).
+  puede mandar (`components/cartera/PanelDeNegocios.jsx:344`).
 - **Los closers que no ven a un cliente** (C6 · D1): el alta, la activación y la lista de Ajustes › Clientes dicen
   qué closers están vinculados en otro cliente y no en ése —no ven sus contactos— (`app/api/admin/cuentas/route.ts:139`,
-  `components/ajustes/Clientes.jsx:47`), sólo a quien tiene `credenciales.ver` (la capacidad de la pantalla del
+  `components/ajustes/Clientes.jsx:48`), sólo a quien tiene `credenciales.ver` (la capacidad de la pantalla del
   vínculo) y sobre su propia empresa: la plataforma operando sobre otra no recibe los nombres
-  (`lib/administracion/cuentas.ts:404`).
+  (`lib/administracion/cuentas.ts:404`). El alta desde Negocios en la empresa de la sesión los dice con el mismo texto
+  (`components/cartera/PanelDeNegocios.jsx:177`).

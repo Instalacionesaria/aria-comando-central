@@ -5,11 +5,12 @@
 //
 // Los costos de cada cliente salen de SU GoHighLevel con Meta vinculado (la decisión del usuario del 2026-10-20), y
 // la lista de chequeo lo exige. Con cuatro clientes de una empresa —P, el principal, con Meta vinculado; Y, cuya
-// pasada del gasto corrió sin el vínculo; Z, cuya pasada falló pero tiene su serie; W, sin pasada, sin serie y sin
-// su propia conexión—:
+// pasada del gasto corrió sin el vínculo; Z, cuya pasada falló pero tiene su serie; W, sin pasada, con un día de gasto
+// de hace dos meses y sin su propia conexión—, e Y y W con el sello de OTRA tarea que corrió:
 //
-//   · `medirLosPasos` mide Meta en el GoHighLevel de cada uno con el sello de SU pasada del gasto; sin un sello que
-//     corrió, con su serie; sin nada, no se sabe — mutaciones: ignorar el motivo, sin la serie;
+//   · `medirLosPasos` mide Meta en el GoHighLevel de cada uno con el sello de SU pasada del gasto —no con el de otra
+//     tarea—; sin un sello que corrió, con su serie de los últimos 30 días; sin nada, no se sabe — mutaciones: ignorar
+//     el motivo, sin la serie, sin el filtro de la tarea, sin la ventana de la serie;
 //   · el principal sin sello propio toma el sin cuenta, y sólo él — mutaciones: sin ese respaldo, el respaldo para
 //     todos;
 //   · la foto lo escribe por cliente (`meta_en_el_crm`), con el contrato 2, y `configurada` y `faltan` lo usan: es
@@ -19,6 +20,8 @@
 //   · cada cliente con SU conexión: el principal, la de la empresa; los demás, la suya, y sin la suya falta; de
 //     identidad se leen sólo los clientes de la empresa pedida — mutaciones: la de la empresa para todos, la de la
 //     empresa de la sesión y no la pedida, sin la empresa en el `where`;
+//   · la lista de la ruta usa el estado, la zona y el nicho de la fila de cada cliente: uno en pausa con todo no está
+//     configurado — mutaciones: la ruta con el estado fijo, con el nicho confirmado fijo, con la zona fija;
 //   · ningún valor de la conexión viaja: cada paso trae su clave, su nombre, si es requerido y su estado;
 //   · la plataforma ve la lista de otra empresa con su `orgId`, la de esa empresa.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -90,14 +93,14 @@ async function cliente(nombre: string, nicho: string): Promise<string> {
   return c.id;
 }
 
-/** El sello de la pasada del gasto de un cliente (o el sin cuenta, con `null`). */
-async function sello(cuenta: string | null, estado: string, motivo: string | null): Promise<void> {
+/** El sello de la pasada del gasto de un cliente (o el sin cuenta, con `null`), o el de otra tarea. */
+async function sello(cuenta: string | null, estado: string, motivo: string | null, tarea = 'anuncios'): Promise<void> {
   await admin.query(
     `insert into negocio.tareas_programadas (org_id, cuenta_id, tarea, ultima_corrida_el, ultimo_estado, ultimo_motivo)
-     values ($1, $2, 'anuncios', now(), $3, $4)
+     values ($1, $2, $5, now(), $3, $4)
      on conflict (org_id, cuenta_id, tarea) do update
        set ultima_corrida_el = excluded.ultima_corrida_el, ultimo_estado = excluded.ultimo_estado, ultimo_motivo = excluded.ultimo_motivo`,
-    [org, cuenta, estado, motivo],
+    [org, cuenta, estado, motivo, tarea],
   );
 }
 
@@ -168,6 +171,11 @@ before(async () => {
     ]);
   }
 
+  /* Otra tarea que corrió sin motivo, para Y y W, y antes que la del gasto: no dice nada del vínculo. Sin el filtro de
+     la tarea, W —sin pasada del gasto— saldría vinculado, e Y tomaría el primer sello que encuentra. */
+  await sello(y, 'corrio', null, 'contactos');
+  await sello(w, 'corrio', null, 'contactos');
+
   // La pasada del gasto: P corrió con Meta vinculado; Y corrió sin el vínculo; Z falló, pero tiene su serie; W, nada.
   await sello(p, 'corrio', null);
   await sello(y, 'corrio', MOTIVO_SIN_META_EN_GHL);
@@ -175,6 +183,11 @@ before(async () => {
   await admin.query(`insert into negocio.gasto_de_la_cuenta (org_id, cuenta_id, fecha, gasto) values ($1, $2, current_date - 3, 40)`, [
     org,
     z,
+  ]);
+  // W pautó hace dos meses: fuera de la ventana, ese día no dice que hoy tenga Meta vinculado.
+  await admin.query(`insert into negocio.gasto_de_la_cuenta (org_id, cuenta_id, fecha, gasto) values ($1, $2, current_date - 60, 25)`, [
+    org,
+    w,
   ]);
 
   const persona = await unaFila<{ id: string }>(admin, `insert into identidad.usuarios (org_id, nombre) values ($1, 'Admin 298') returning id`, [
@@ -207,7 +220,7 @@ test('Meta en el GoHighLevel de cada cliente sale del sello de SU pasada del gas
   assert.deepEqual(
     [p, y, z, w].map((c) => m.get(c)?.metaEnElCrm),
     [true, false, true, null],
-    'P corrió con el vínculo, Y sin él, Z tiene su serie y W no tiene nada: no se sabe',
+    'P corrió con el vínculo, Y sin él, Z tiene su serie y W no tiene nada: no se sabe —el sello de otra tarea o un gasto viejo lo dieron por sabido—',
   );
   assert.ok([p, y, z, w].every((c) => m.get(c)?.ultimaIngestaEl instanceof Date), 'la marca de la ingesta no es la de cada cliente');
 });
@@ -298,6 +311,35 @@ test('Ajustes › Clientes trae la lista de cada cliente en vivo, con su conexi�
     assert.equal(listaDe(despues, y).configurado, true);
   } finally {
     await sello(y, 'corrio', MOTIVO_SIN_META_EN_GHL);
+  }
+});
+
+test('la lista de la ruta usa el estado, la zona y el nicho de la fila de cada cliente', async () => {
+  // Z, que tiene todo, en pausa; W, sin elegir su zona (el `UTC` por omisión) y con el nicho sin confirmar.
+  await admin.query(`update identidad.cuentas set estado = 'pausada' where id = $1`, [z]);
+  await admin.query(
+    `update identidad.cuentas set zona_horaria = 'UTC', nicho_confirmado_el = null, nicho_confirmado_desde = null where id = $1`,
+    [w],
+  );
+  try {
+    const l = await comoLaEmpresa();
+    assert.ok(
+      listaDe(l, z).pasos.every((x) => !x.requerido || x.estado === 'ok'),
+      'Z dejó de tener todo: la prueba ya no mira sólo su estado',
+    );
+    assert.equal(listaDe(l, z).configurado, false, 'un cliente en pausa salió configurado: la ruta no usó su estado');
+    assert.deepEqual(
+      ['zona', 'nicho'].map((k) => estadoDe(l, w, k)),
+      ['falta', 'falta'],
+      'la ruta no usó la zona o el nicho de la fila de W',
+    );
+    assert.deepEqual(['zona', 'nicho'].map((k) => estadoDe(l, y, k)), ['ok', 'ok'], 'la zona o el nicho de W pasaron a otro cliente');
+  } finally {
+    await admin.query(`update identidad.cuentas set estado = 'activa' where id = $1`, [z]);
+    await admin.query(
+      `update identidad.cuentas set zona_horaria = $2, nicho_confirmado_el = now(), nicho_confirmado_desde = 'plataforma' where id = $1`,
+      [w, ZONA],
+    );
   }
 });
 

@@ -43,8 +43,9 @@ const enLista = (nombres) =>
   nombres.length <= 1 ? (nombres[0] ?? '') : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
 
 /* Los closers vinculados en otros clientes y no en éste (el nivel 3): no ven sus contactos hasta que alguien los vincule
-   aquí. Lo dice el servidor, sólo a quien ve la pantalla del vínculo. `null` sin nadie. */
-function closersSinVincular(nombres, cliente) {
+   aquí. Lo dice el servidor, sólo a quien ve la pantalla del vínculo. `null` sin nadie. Lo usa también el alta desde
+   Negocios (`components/cartera/PanelDeNegocios.jsx`): el mismo texto en las dos. */
+export function closersSinVincular(nombres, cliente) {
   if (!nombres?.length) return null;
   const uno = nombres.length === 1;
   return (

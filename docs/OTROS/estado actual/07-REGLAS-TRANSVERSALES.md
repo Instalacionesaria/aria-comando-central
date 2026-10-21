@@ -1438,11 +1438,11 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   sobre su propia empresa (`lib/administracion/cuentas.ts:404`), y la pantalla del vínculo, por cliente activo, con más
   de uno (`app/api/admin/closer/route.ts:139`, `components/closer/QuienEsElCloser.jsx:359`). El tope de tres closers
   es por EMPRESA, y queda decidido (`lib/negocio/closer.ts:233`). Lo exigen
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:344`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:435`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:487`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:547`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:594` y
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:345`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:436`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:488`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:548`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:595` y
   `pruebas/codigo/291-los-textos-de-los-avisos-por-cliente.test.ts:51`.
 - **Lo que usaba las credenciales de la empresa usa las del cliente (C6 · D2, sin migración).** «Subir a HighLevel» de
   Tools le manda a n8n el token y la location del cliente que se elige (`app/api/tools/leads/enviar/route.ts:153`): el
@@ -1579,16 +1579,16 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   requerido» (`clienteConfigurado`, `lib/cartera/pasos.ts:123`), y el tablero ya no acusa lo medido de un cliente cuya
   empresa no se pudo medir (`lib/cartera/tablero.ts:177`). **Ajustes › Clientes** muestra la lista de cada cliente,
   con qué hacer en cada paso que falta (`components/ajustes/ListaDeChequeo.jsx:69`, `components/ajustes/ListaDeChequeo.jsx:21`,
-  `components/ajustes/Clientes.jsx:224`), leída EN VIVO de `GET /api/admin/cuentas` y no de la foto: las
+  `components/ajustes/Clientes.jsx:225`), leída EN VIVO de `GET /api/admin/cuentas` y no de la foto: las
   presencias de la conexión salen de identidad, sólo `is not null` y con la empresa destino en el `where`
   (`lib/cartera/configuracion.ts:132`, `app/api/admin/cuentas/route.ts:69`), y cada paso viaja con su clave, su
   nombre, si es requerido y su estado, nada más (`app/api/admin/cuentas/route.ts:83`). La ruta entró a la lista de la
   escotilla y a la de los dos dominios, con dos lecturas. **Negocios** suma «Agregar cliente», con `cuentas.crear` y el
-  `orgId` de la empresa, que sólo la plataforma puede mandar (`components/cartera/PanelDeNegocios.jsx:338`, `components/cartera/PanelDeNegocios.jsx:164`).
+  `orgId` de la empresa, que sólo la plataforma puede mandar (`components/cartera/PanelDeNegocios.jsx:344`, `components/cartera/PanelDeNegocios.jsx:166`).
   Con un solo cliente, la lista cambia a propósito: un cliente cuyo GoHighLevel no tiene Meta vinculado deja de estar
-  configurado. Lo exigen `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:205`, `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:228`,
-  `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:253`, `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:53`,
-  `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:223` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:82`.
+  configurado. Lo exigen `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:218`, `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:241`,
+  `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:266`, `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:55`,
+  `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:225` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:82`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3, D4 y D5 ya no está):
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
@@ -1671,8 +1671,11 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   imprimen el nombre de cada cliente, que puede ser el de una persona; la lista de usuarios del CRM sigue diciendo
   «Probá de nuevo» (está en `TODAVIA_VOSEAN` de la 258), para que con un cliente no cambie ninguna letra; y Tools y la
   lista sin `?cuenta=` dependen del principal activo de la `085`, que la base no asegura contra un `update` que lo
-  desmarque (sin él, Tools da 500 y la lista, 404). De la lista de chequeo (D5,
-  más arriba) quedan: Meta en su GoHighLevel se sabe con la pasada del gasto, una vez al día (`17 6 * * *`), así que un
+  desmarque (sin él, Tools da 500 y la lista, 404). Hasta el primer cliente con subcuenta propia, ninguna de las
+  anteriores tiene efecto; con él, se mira su pantalla antes de activarlo, con su Conexión cargada.
+  De la lista de chequeo (D5, más arriba) quedan otras, y éstas rigen TAMBIÉN en una empresa de un solo cliente —D5
+  cambia su lista a propósito—, salvo las que hablan de otro cliente (el que está en pausa y el alta desde Negocios):
+  Meta en su GoHighLevel se sabe con la pasada del gasto, una vez al día (`17 6 * * *`), así que un
   cliente recién conectado queda «sin medir» —sin configurar— hasta su primera pasada, y quien vincula Meta lo sigue
   viendo en falta hasta la siguiente; una pasada que se saltó o falló no dice nada del vínculo y manda su serie de 30
   días, de modo que quien desvinculó Meta y tiene la última pasada fallida sigue «vinculado» mientras le queden días en
@@ -1683,9 +1686,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   horas» en falta, porque no se barre; Ajustes › Clientes relee la lista al cerrar la ventana de un cliente, no al
   guardar cada campo de su Conexión; quien tiene `cuentas.ver` ve la presencia de la conexión de cada cliente aunque no
   tenga `credenciales.ver` (sólo un rol a medida: el administrador tiene las dos); y «Agregar cliente» en Negocios no
-  carga la Conexión ni vincula la subcuenta: eso sigue siendo entrar a la empresa y el vínculo de ARIA. Hasta el primer
-  cliente con subcuenta propia, ninguna de estas tiene efecto; con él, se
-  mira su pantalla antes de activarlo, con su Conexión cargada.
+  carga la Conexión ni vincula la subcuenta: eso sigue siendo entrar a la empresa y el vínculo de ARIA.
 
 ---
 

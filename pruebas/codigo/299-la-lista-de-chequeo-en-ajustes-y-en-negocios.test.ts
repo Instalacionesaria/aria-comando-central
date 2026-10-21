@@ -18,6 +18,8 @@
 //   · Ajustes › Clientes dibuja la lista de cada fila y la relee al cerrar la ventana de un cliente; Negocios ofrece
 //     «Agregar cliente» con la capacidad de alta, con el `orgId` de esa empresa y el catálogo de su lista — mutaciones:
 //     sin la capacidad, sin el `orgId`;
+//   · el aviso del alta desde Negocios nombra a los closers sin vincular que trae la respuesta, con el texto de Ajustes
+//     — mutaciones: el alta de Negocios sin los closers, sin leerlos de la respuesta;
 //   · los textos hablan de tú.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -228,6 +230,19 @@ test('Negocios ofrece «Agregar cliente» con la capacidad de alta, el orgId de 
   assert.match(panel, /<FormularioDeCliente valores=\{valores\} alCambiar=\{setValores\} catalogo=\{alta\.catalogo\}/);
   // Después del alta, el tablero se relee: el cliente nuevo aparece con lo que le falta.
   assert.match(panel, /setAlta\(null\);\s*setAviso\(\{[\s\S]{0,300}\}\);\s*await refrescar\(\);/);
+});
+
+test('el aviso del alta desde Negocios nombra a los closers que no van a ver al cliente, con el texto de Ajustes', () => {
+  const panel = leer('components/cartera/PanelDeNegocios.jsx');
+  // Un solo texto: el de Ajustes › Clientes, que la 291 mira.
+  assert.match(leer('components/ajustes/Clientes.jsx'), /^export function closersSinVincular\(nombres, cliente\) \{/m);
+  assert.match(panel, /^import \{ closersSinVincular \} from '\.\.\/ajustes\/Clientes\.jsx';$/m);
+  assert.match(panel, /const sin = closersSinVincular\(r\.datos\.closersSinVincular, nombre\);/, 'el alta no lee los closers de la respuesta');
+  assert.match(
+    panel,
+    /setAviso\(\{\s*mal: false,\s*texto:[\s\S]{0,200}?`a la empresa, en Ajustes › Clientes\.\$\{sin \? ` \$\{sin\}` : ''\}`,\s*\}\);/,
+    'el aviso del alta desde Negocios no nombra a los closers sin vincular',
+  );
 });
 
 test('los textos de la lista y del alta hablan de tú', () => {

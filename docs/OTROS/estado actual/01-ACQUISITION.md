@@ -377,7 +377,7 @@ en pausa se le pide la serie sólo hasta su último día cerrado (`lib/negocio/g
 a la empresa sin el gasto entero mientras la ventana tenga días después de la pausa. Y desde C6 · D1 la nota dice,
 después de «Faltan días de gasto.», de qué cliente falta y qué hacer —Meta sin vincular en su GoHighLevel, su conexión,
 o que ya no está activo—, también con el colector atrasado, cuando el sello del barrido lo sabe
-(`lib/negocio/embudosDeAcquisition.ts:934`; `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:487`). Lo exigen
+(`lib/negocio/embudosDeAcquisition.ts:934`; `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:488`). Lo exigen
 `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:313`,
 `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:519` y
 `pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts:41`; con un solo cliente, que el freno de Meta y su

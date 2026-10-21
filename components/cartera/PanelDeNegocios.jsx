@@ -12,7 +12,8 @@
    «Agregar cliente» (C6 · D5) da de alta un cliente en esa empresa sin cambiar de sesión: `POST /api/admin/cuentas` con
    su `orgId`, que sólo la plataforma puede mandar (`empresaDestino`). El formulario es el de Ajustes › Clientes, y su
    catálogo viene con la lista de esa empresa (`GET /api/admin/cuentas?orgId=`). El cliente nace activo y sin conexión:
-   aparece enseguida en la empresa, con lo que le falta. */
+   aparece enseguida en la empresa, con lo que le falta. En la empresa de la sesión el aviso del alta nombra, como en
+   Ajustes, a los closers vinculados en otros clientes que no lo van a ver (C6 · D1). */
 
 import { Fragment, useMemo, useState } from 'react';
 import { usarLectura } from '../../lib/usarLectura.ts';
@@ -21,6 +22,7 @@ import { useSesion } from '../../app/sesion-contexto.tsx';
 import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
 import Ventana from '../Ventana.jsx';
 import FormularioDeCliente, { cuerpoDe, valoresDe } from '../ajustes/FormularioDeCliente.jsx';
+import { closersSinVincular } from '../ajustes/Clientes.jsx';
 
 /** Cómo se dice cada paso de la lista de chequeo (`lib/cartera/pasos.ts`). */
 const PASO = {
@@ -169,12 +171,16 @@ export default function PanelDeNegocios() {
       );
       return;
     }
+    const nombre = valores.nombre.trim();
+    /* Los closers vinculados en otros clientes, que no van a ver a éste: el servidor los nombra sólo cuando la empresa
+       es la de la sesión (`diceLosClosersSinVincular`), y el aviso los dice con el texto de Ajustes › Clientes. */
+    const sin = closersSinVincular(r.datos.closersSinVincular, nombre);
     setAlta(null);
     setAviso({
       mal: false,
       texto:
-        `«${valores.nombre.trim()}» agregado a ${empresa.nombre ?? 'la empresa'}. Le falta su conexión: se carga entrando ` +
-        'a la empresa, en Ajustes › Clientes.',
+        `«${nombre}» agregado a ${empresa.nombre ?? 'la empresa'}. Le falta su conexión: se carga entrando ` +
+        `a la empresa, en Ajustes › Clientes.${sin ? ` ${sin}` : ''}`,
     });
     await refrescar();
   };

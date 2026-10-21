@@ -27,7 +27,8 @@
 //     pautó en ella sin serie, o por la cobertura de su gasto— — mutaciones: listar al que no se sabe por qué, sin la
 //     serie atrasada, sin el que no está activo, la ventana actual siempre, la actual cuando decide la cobertura;
 //   · el alta, la activación y las dos listas dicen qué closers no ven a un cliente, sólo a la empresa misma —
-//     mutaciones: contar a los que ven todo, la plataforma recibe los nombres, `sinVincular` con un solo cliente.
+//     mutaciones: contar a los que ven todo, la plataforma recibe los nombres, `sinVincular` con un solo cliente; y el
+//     cliente de la lista que los nombra no pierde su lista de chequeo (D5) — mutación: los closers sin la lista.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -610,10 +611,13 @@ test('el alta, la activación y las dos listas dicen qué closers no ven a un cl
     await editarCliente(pedirComo(`/api/admin/cuentas/${alta.cuerpo.id}`, tokenK, { metodo: 'PATCH', cuerpo: { estado: 'pausada' } }), ctx(alta.cuerpo.id)),
   );
   assert.ok(!('closersSinVincular' in pausa.cuerpo));
-  const lista = await leerRespuesta<{ clientes: { id: string; closersSinVincular?: string[] }[] }>(await listarClientes(pedirComo('/api/admin/cuentas', tokenK)));
+  const lista = await leerRespuesta<{ clientes: { id: string; closersSinVincular?: string[]; listaDeChequeo?: { pasos: unknown[] } }[] }>(
+    await listarClientes(pedirComo('/api/admin/cuentas', tokenK)),
+  );
   const de = (id: string) => lista.cuerpo.clientes.find((c) => c.id === id);
   assert.ok(!('closersSinVincular' in de(alta.cuerpo.id)!), 'un cliente en pausa se marcó');
   assert.deepEqual(de(k.y)?.closersSinVincular, ['Alfa 290'], 'la lista no dice quién no ve a Y');
+  assert.ok(de(k.y)?.listaDeChequeo?.pasos.length, 'el cliente con closers sin vincular llegó sin su lista de chequeo');
   assert.ok(!('closersSinVincular' in de(k.p)!));
   const vuelta = await leerRespuesta<{ closersSinVincular?: string[] }>(
     await editarCliente(pedirComo(`/api/admin/cuentas/${alta.cuerpo.id}`, tokenK, { metodo: 'PATCH', cuerpo: { estado: 'activa' } }), ctx(alta.cuerpo.id)),
