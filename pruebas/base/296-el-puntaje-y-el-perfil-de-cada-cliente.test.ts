@@ -13,15 +13,17 @@
 //   · el elegido de Y gana sobre su «Puntaje | ICP» y no toca a P, y los congelados se recalculan al elegir —
 //     mutaciones: no excluir el nombre, no recalcular;
 //   · elegir otro campo en el principal saca la constante — mutación: anteponerla siempre;
-//   · uno por cliente: el índice, y la carrera de dos elecciones que sale 409 — mutaciones: el índice sin `where` o sin
-//     `unique`, no capturar el 23505;
+//   · uno por cliente: el índice, la carrera de dos elecciones que sale 409, y cambiar de un elegido a otro sin
+//     carrera — mutaciones: el índice sin `where` o sin `unique`, no capturar el 23505, prender antes de apagar;
 //   · el refresco no pisa lo elegido, y una carpeta sin nombre ni grupo toma el suyo cuando el nombre llega tarde;
 //   · UNA validación del puntaje: la sincronización y el SQL dicen lo mismo de cada valor, y Creative cuenta eso;
 //   · Creative promedia el elegido de cada cliente, nombra al que no tiene campo (con catálogo o sin él) y no le da un
-//     «Calificados: 0» falso;
+//     «Calificados: 0» falso; también cuando ninguno a la vista tiene campo, con varios o con el foco en uno que no es
+//     el principal (con un solo cliente, el aviso de siempre: lo exige la 157);
 //   · el Perfil sin carpetas que se muestren lo dice sin culpar al contacto, y una carpeta del contrato sí se muestra;
 //   · la ficha del portal saca del cuestionario el elegido;
-//   · la ruta: capacidades, 400, 404, el principal y el pausado, la marca de lo que ya no está, y la auditoría.
+//   · la ruta: capacidades, 400 (todo se valida antes de escribir), 404, el principal y el pausado, la marca de lo que
+//     ya no está, y la auditoría.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -47,6 +49,7 @@ import { sincronizarContactos } from '../../lib/negocio/sincronizar.ts';
 import { perfilDeLaFicha } from '../../lib/negocio/ficha.ts';
 import { fichaDelLeadDelPortal } from '../../lib/negocio/fichaDelLeadDelPortal.ts';
 import { CAMPO_DE_ICP, calidadDelCreativo } from '../../lib/negocio/calidadDelCreativo.ts';
+import { seNombranLosClientes } from '../../lib/negocio/faltaDeLosClientes.ts';
 import { lecturaDeCreative } from '../../lib/negocio/lecturaDeCreative.ts';
 import { CAMPO_DEL_PUNTAJE, NOMBRE_DEL_PUNTAJE } from '../../lib/ghl/contrato.ts';
 import { GET as verCampos, PUT as elegirCampos } from '../../app/api/admin/cuentas/[id]/campos/route.ts';
@@ -398,6 +401,13 @@ test('uno por cliente: el índice, y dos elecciones al mismo tiempo dan una sola
     await candado.end();
   }
   assert.equal((await elegir(y, { puntaje: X })).estado, 200);
+
+  // De un elegido a otro, sin carrera: el anterior se apaga antes de prender el nuevo, o el índice choca consigo mismo.
+  const cambio = await elegir(y, { puntaje: V });
+  assert.deepEqual([cambio.estado, cambio.cuerpo.puntaje?.origen, cambio.cuerpo.puntaje?.campoId], [200, 'elegido', V], JSON.stringify(cambio.cuerpo));
+  const deY = await filas<{ campo_id: string }>(admin, `select campo_id from negocio.campos_del_crm where org_id = $1 and cuenta_id = $2 and es_el_puntaje`, [org, y]);
+  assert.deepEqual(deY.map((f) => f.campo_id), [V], 'cambiar de elegido dejó dos, o ninguno');
+  assert.equal((await elegir(y, { puntaje: X })).estado, 200);
 });
 
 test('el refresco no pisa lo elegido, y una carpeta sin nombre toma su grupo cuando el nombre llega tarde', async () => {
@@ -504,6 +514,27 @@ test('Creative promedia el elegido de cada cliente y nombra al que no tiene camp
   const deP = await conOrganizacion(foco(p), () => calidadDelCreativo(30));
   assert.doesNotMatch(deP.aviso ?? '', /puntaje|catálogo/i, 'con un solo cliente con campo, el aviso habló de clientes');
   assert.deepEqual(deP.cuentasSinPuntaje, []);
+
+  // Con ninguno a la vista con campo pero con el foco en uno que no es el principal, o con varios, tampoco el texto de
+  // la empresa: «el CRM de esta empresa» no es el suyo, y diría «no tiene campo» de uno cuyo catálogo ni se leyó.
+  const deW = await conOrganizacion(foco(w), () => calidadDelCreativo(30));
+  const deZ = await conOrganizacion(foco(z), () => calidadDelCreativo(30));
+  // Varios a la vista, con la lista de un cliente final: con la organización entera, el foco es uno.
+  const deLosDos = await conOrganizacion({ orgId: org, todaLaOrganizacion: false, cuentas: [w, z] }, () => calidadDelCreativo(30));
+  assert.deepEqual([deW.campoDeIcp, deZ.campoDeIcp, deLosDos.campoDeIcp], [null, null, null]);
+  for (const a of [deW.aviso, deZ.aviso, deLosDos.aviso]) {
+    assert.doesNotMatch(a ?? '', /El CRM de esta empresa/, 'con otro cliente a la vista y ninguno con campo, el aviso habló de la empresa');
+  }
+  assert.match(deW.aviso ?? '', /«Tercera 296» no tiene campo del puntaje[^.]*\. Quien administra la empresa lo elige en Ajustes › Clientes/);
+  assert.match(deZ.aviso ?? '', /Todavía no se leyó el catálogo de campos de «Cuarta 296»/, 'sin catálogo se dijo que no hay campo');
+  assert.match(deLosDos.aviso ?? '', /Todavía no se leyó el catálogo de campos de «Cuarta 296».*«Tercera 296» no tiene campo del puntaje/);
+  // Quién cuenta como «un solo cliente»: el principal solo, también con uno de baja al lado; uno en pausa sí se nombra.
+  const nombra = (cuentas: string[]) => conOrganizacion({ orgId: org, todaLaOrganizacion: false, cuentas }, () => seNombranLosClientes());
+  assert.deepEqual(
+    [await nombra([p]), await nombra([p, deBaja]), await nombra([p, pausada]), await conOrganizacion(foco(w), () => seNombranLosClientes()), await conOrganizacion(org, () => seNombranLosClientes())],
+    [false, false, true, true, true],
+    'el principal solo, con uno de baja, con uno en pausa, el foco en otro y la empresa entera',
+  );
   await admin.query(`delete from negocio.contactos where org_id = $1 and ghl_contact_id like 'c296cre-%'`, [org]);
 });
 
@@ -547,6 +578,20 @@ test('la ruta: lee quien ve, elige quien edita, y sólo lo de ese cliente', asyn
     assert.deepEqual([m.estado, m.cuerpo.codigo], [400, 'peticion_invalida'], JSON.stringify(cuerpo));
     assert.match(m.cuerpo.detalle ?? '', porque);
   }
+  // Todo se valida antes de escribir: un puntaje bueno con una carpeta ajena no deja el puntaje elegido, ni recalculado,
+  // ni auditado (el rechazo se devuelve dentro de la transacción: una escritura anterior se commitearía).
+  const auditoriaAntes = (await filas(admin, `select 1 from identidad.auditoria_accesos where org_id = $1`, [org])).length;
+  const mezcla = await elegir(r, { puntaje: 'r296n', carpetas: [{ carpetaId: 'cp296y', grupo: null }] });
+  assert.deepEqual([mezcla.estado, mezcla.cuerpo.codigo], [400, 'peticion_invalida']);
+  assert.match(mezcla.cuerpo.detalle ?? '', /«cp296y» no está en el catálogo/);
+  const quedo = await unaFila<{ elegidos: number; puntuados: number }>(
+    admin,
+    `select (select count(*)::int from negocio.campos_del_crm where org_id = $1 and cuenta_id = $2 and es_el_puntaje) as elegidos,
+            (select count(*)::int from negocio.contactos where org_id = $1 and cuenta_id = $2 and score is not null) as puntuados`,
+    [org, r],
+  );
+  assert.deepEqual(quedo, { elegidos: 0, puntuados: 0 }, 'una carpeta ajena dejó elegido y recalculado el puntaje que venía con ella');
+  assert.equal((await filas(admin, `select 1 from identidad.auditoria_accesos where org_id = $1`, [org])).length, auditoriaAntes, 'se auditó una elección que dio 400');
   for (const id of [deBeta, deBaja, 'no-es-un-id']) {
     assert.equal((await ver(id)).estado, 404, `${id}: un cliente que la sesión no ve`);
     assert.equal((await elegir(id, { puntaje: null })).estado, 404);

@@ -343,6 +343,9 @@ test('si el campo de ICP no está en el catálogo, la columna se APAGA y lo dice
   assert.equal(f?.icpPromedio, null, 'se publicó un promedio con un campo que no existe');
   assert.equal(f?.conPuntaje, 0);
   assert.match(String(r.aviso), new RegExp(CAMPO_DE_ICP.replace('|', '\\|')), 'el aviso no nombra el campo');
+  // Con un solo cliente, el aviso de siempre (C6 · D4): ni su nombre, ni «no se leyó su catálogo» (aquí no se leyó).
+  assert.ok(String(r.aviso).startsWith('El CRM de esta empresa no tiene un campo «'), String(r.aviso));
+  assert.doesNotMatch(String(r.aviso), /Ajustes › Clientes|Todavía no se leyó|» no tiene campo del puntaje/, 'con un solo cliente el aviso habló de clientes');
 });
 
 // ─── EL PUENTE ──────────────────────────────────────────────────────────────

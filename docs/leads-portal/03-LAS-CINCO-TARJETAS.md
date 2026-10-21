@@ -135,7 +135,7 @@ la pantalla nueva no puede heredar sin querer.
   y esa falla se escondería dentro de una tarjeta que ya tiene gente. **Medido: 0.**
 - **La divergencia que hay que declarar:** el ICP promedio de Creative **sí** promedia los ceros. Su
   validación —la de la sincronización desde C6 · D4 (`lib/negocio/camposDelCrm.ts:456`)— deja pasar el `0`, y el
-  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:243`). Las dos pantallas pueden
+  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:245`). Las dos pantallas pueden
   mostrar a los mismos contactos de forma distinta. Esta carpeta no lo arregla: lo dice en el matiz
   de la tarjeta y lo registra `14-EL-PUNTAJE-DEL-CRM.md`.
 

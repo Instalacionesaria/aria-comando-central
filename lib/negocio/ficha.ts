@@ -464,15 +464,15 @@ export interface CampoDePerfil {
  * acentuada y sin acentuar, **las dos existiendo a la vez**. Agrupando por formulario, ese dato
  * aparecería dos veces con dos nombres y nadie sabría cuál mirar.
  *
- * ── Y AHORA SÍ SE LEEN, PERO SOLO LAS CARPETAS ELEGIDAS ─────────────────────
+ * ── Y AHORA SÍ SE LEEN, PERO SOLO LAS CARPETAS QUE SE MUESTRAN ──────────────
  *
  * Este comentario decía que los campos personalizados *«viven en GoHighLevel y todavía no se
  * leen»*. Ya se leen: llegaban en la misma respuesta que la sincronización ya pedía y nadie los
  * miraba. El cómo está en `db/migraciones/039_campos_del_crm.sql`.
  *
  * Lo que **no** cambió es la disciplina: no se muestran los 170. Se muestran los de las carpetas
- * que alguien eligió, y esa elección vive en `negocio.carpetas_del_crm` — una carpeta nueva en el
- * CRM nace invisible. Mostrarlos todos habría traído la atribución de campañas, los enlaces de
+ * con grupo —el del contrato o el que eligió una persona— en `negocio.carpetas_del_crm`: una carpeta
+ * que el contrato no conoce nace invisible. Mostrarlos todos habría traído la atribución de campañas, los enlaces de
  * sistema y una carpeta llamada «OLD FIELDS» a la pantalla del closer.
  *
  * **Los grupos sin campos no se dibujan** (`04` § 2), y eso lo decide la pantalla contando lo que

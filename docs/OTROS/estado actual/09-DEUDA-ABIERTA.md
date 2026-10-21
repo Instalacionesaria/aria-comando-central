@@ -781,14 +781,14 @@ el documento miente o si buscó mal.
   `docs/sales/14-LOS-CINCO-ESLABONES.md:54`. Las cinco decían 451, que dejó de ser la regla; el 2026-09-28 se
   reapuntaron a la 625 (`861b5f0`), y el 2026-10-18 la 625 sigue siendo el encabezado del § 11. La de `docs/sales/`
   la audita la prueba; las otras cuatro, no.
-- **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:184`, `lib/negocio/rendimientoDelCreativo.ts:120`
+- **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:186`, `lib/negocio/rendimientoDelCreativo.ts:120`
   y `lib/negocio/rendimientoDelCreativo.ts:238` mandan el defecto de grano a las líneas 158-165 de
   `costoDelAnuncio.ts` (157-164 el 2026-09-28: alguien sumó una y siguen sin llegar), y está hacia
   `lib/negocio/costoDelAnuncio.ts:205`; `lib/negocio/fatigaDelCreativo.ts:7` manda la frecuencia a las 89-96, y está
   hacia `lib/negocio/costoDelAnuncio.ts:124`; `lib/negocio/rendimientoDelCreativo.ts:228` manda a la 296 lo
   que está en `lib/negocio/costoDelAnuncio.ts:304`; y `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, CV-1— a la 357 de
   `costoDelAnuncio.ts` y a la 230 de `calidadDelCreativo.ts` lo que está en
-  `lib/negocio/costoDelAnuncio.ts:367` y `lib/negocio/calidadDelCreativo.ts:256`.
+  `lib/negocio/costoDelAnuncio.ts:367` y `lib/negocio/calidadDelCreativo.ts:258`.
 
 Lo que haría falta: que la auditoría sume `docs/conversion/`, `docs/acquisition/` y los comentarios
 del código, y que las citas entre documentos de carpetas distintas vayan por sección y no por línea,

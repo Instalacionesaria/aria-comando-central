@@ -60,7 +60,7 @@ export interface EntradaDelBrief {
 }
 
 /**
- * Las respuestas del formulario de cada contacto: los campos del CRM de las carpetas elegidas que tienen valor,
+ * Las respuestas del formulario de cada contacto: los campos con valor de las carpetas del CRM que se muestran,
  * en el orden del Perfil (`camposQueSeMuestran`). La misma regla para el Brief y para la marca «SIN FORMULARIO»
  * de Mi Día (`./guardar.ts`): con dos, la marca podría decir «sin formulario» de un Brief que lo usó.
  */
@@ -118,7 +118,7 @@ export async function entradaDelBrief(citaId: string, alcance: AlcanceDelCloser)
   const c = await q.executeTakeFirst();
   if (!c) return null;
 
-  // ── El formulario: los campos del CRM de las carpetas elegidas, numerados ──
+  // ── El formulario: los campos del CRM de las carpetas que se muestran, numerados ──
   const respuestas = (await formulariosDe([c.contacto_id])).get(c.contacto_id) ?? [];
   const formulario = respuestas.map((f, i): DatoDeLaEntrada => ({ fuente: `formulario:${i + 1}`, etiqueta: f.etiqueta, valor: f.valor }));
 

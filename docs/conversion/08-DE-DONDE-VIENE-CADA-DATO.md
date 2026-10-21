@@ -80,7 +80,7 @@ Es la regla 9 del departamento (`03-CONVERSION.md:437-443@b3ca9ad`). Los tres ca
 así:
 
 ```
-lib/negocio/calidadDelCreativo.ts:64   CAMPO_DE_ICP          = 'Puntaje | ICP'
+lib/negocio/calidadDelCreativo.ts:65   CAMPO_DE_ICP          = 'Puntaje | ICP'
 lib/negocio/consumoDelPrecall.ts:64    CAMPO_DEL_PRECALL     = 'Video Pre-Call'
 lib/negocio/indicadoresDeCitas.ts:208  CAMPO_DE_CONFIRMACION = 'Confirmación Agendamiento'
 ```

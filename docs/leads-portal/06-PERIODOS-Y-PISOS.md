@@ -87,7 +87,7 @@ Tres decisiones dentro de esa línea, cada una con su defecto conocido:
    `:169`). Esta pestaña tampoco: contactos, citas y resultados son `timestamptz`.
 
 > **Y por eso sus «30 días» no son los de Creative.** Creative ancla la ventana al día
-> (`lib/negocio/calidadDelCreativo.ts:256`, `current_date - make_interval(days => dias - 1)`) porque
+> (`lib/negocio/calidadDelCreativo.ts:258`, `current_date - make_interval(days => dias - 1)`) porque
 > cruza con el gasto, que sí es una fecha. Las dos ventanas difieren en hasta un día de altas en el
 > borde de atrás. **No se comparan los conteos por tramo de esta pestaña con los de Creative
 > esperando igualdad**: la comparación que tiene que dar exacta es con la cadena de Sales, que usa el

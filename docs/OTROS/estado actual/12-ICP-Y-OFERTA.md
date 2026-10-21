@@ -587,7 +587,7 @@ columna en producción rompe la pantalla sin que ninguna prueba de este reposito
 
 **La misma palabra para dos cosas.** «ICP» es el avatar de esta pantalla y el puntaje del CRM que
 usan Leads Portal, Acquisition y Creative (`docs/OTROS/futuro/icp-interno-calculado.md:3-4`,
-`lib/negocio/calidadDelCreativo.ts:64`). Una métrica «ICP por anuncio» construida sobre el avatar, o
+`lib/negocio/calidadDelCreativo.ts:65`). Una métrica «ICP por anuncio» construida sobre el avatar, o
 un avatar evaluado contra el puntaje, mezcla dos hechos que no se cruzan (§ 5).
 
 **Un corte de tiempo que es de la plataforma y no nuestro.** En `mercado/preparar` la espera (580 s)

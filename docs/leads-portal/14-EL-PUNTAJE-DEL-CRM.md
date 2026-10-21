@@ -80,7 +80,7 @@ Hay dos caminos para leer el puntaje, y hoy dan lo mismo:
 | quién | de dónde | cómo encuentra el campo | qué acepta |
 |---|---|---|---|
 | sincronización → `contactos.score` | la columna | el elegido del cliente; si no, por identificador y por nombre (`lib/negocio/camposDelCrm.ts:379`) | entero 0-100 (`lib/negocio/sincronizar.ts:544-553`) |
-| Creative | el `jsonb` | el elegido del cliente; si no, por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:64`, `lib/negocio/camposDelCrm.ts:529`) | el mismo entero 0-100, desde C6 · D4 (`lib/negocio/camposDelCrm.ts:456`, `lib/negocio/calidadDelCreativo.ts:229-233`) |
+| Creative | el `jsonb` | el elegido del cliente; si no, por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:65`, `lib/negocio/camposDelCrm.ts:529`) | el mismo entero 0-100, desde C6 · D4 (`lib/negocio/camposDelCrm.ts:456`, `lib/negocio/calidadDelCreativo.ts:231-235`) |
 
 Coinciden porque la columna, que sólo acepta enteros de 0 a 100 (`lib/negocio/sincronizar.ts:544-553`),
 tenía el 2026-09-27 los mismos 471 valores que el `jsonb` tenía el 2026-09-21
@@ -198,7 +198,7 @@ La maqueta rotula las tarjetas «Calificado alto», «Calificado medio» y **«N
 | **60** | el techo del rechazo: el 2026-09-16 la casa no rechazaba por ICP a nadie de 60 o más (0 de 67), y el máximo rechazado era 59 | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:525-541` |
 | **75** | donde saltaba el agendamiento: 75,7 % en el tramo alto contra ~51-53 % en medio y bajo | `docs/acquisition/04-CALIDAD-DEL-LEAD.md:543-555` |
 | **80** | una frase inventada del Plan de acción: «Prioriza el contacto inmediato con ICP sobre 80» | `aios-command-center_1.html:5722` |
-| ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:243` |
+| ninguno | Creative no corta: promedia | `lib/negocio/calidadDelCreativo.ts:245` |
 
 El de 80 no es un requisito: es una de las frases del Plan de acción, cuyo censo está en
 `07-EL-PLAN-DE-ACCION.md`. La frase de al lado —«el ICP alto es el 22 % del volumen pero produce el
@@ -298,7 +298,7 @@ Tres lecturas, las tres requisitos:
 ### LP14-12 · Creative promedia el cero; esta pestaña lo aparta
 
 Creative publica un **ICP promedio por pieza** que promedia todos los valores numéricos, **ceros
-incluidos** (`lib/negocio/calidadDelCreativo.ts:242-243`), y hasta el 2026-10-11 dibujaba al lado el `n` de los que
+incluidos** (`lib/negocio/calidadDelCreativo.ts:244-245`), y hasta el 2026-10-11 dibujaba al lado el `n` de los que
 tienen puntaje, que también los incluye (`components/creative/PanelDeCreative.jsx:390-391@1971ab2`); desde ese día ese
 promedio no se dibuja, y lo da el agente. Esta pestaña no
 promedia: clasifica, y el 0 va a «Sin calificar».

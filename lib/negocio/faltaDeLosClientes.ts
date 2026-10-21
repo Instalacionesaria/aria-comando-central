@@ -70,6 +70,17 @@ export function seNombra(c: { esPorOmision: boolean }, activosALaVista: number):
   return !c.esPorOmision || activosALaVista > 1;
 }
 
+/**
+ * Si un aviso de lo que se ve habla de cada cliente: si alguno a la vista se nombra (`seNombra`). Con la empresa de un
+ * cliente, o el foco en el principal solo, no, y el aviso es el de siempre. Uno de baja no cuenta: la sesión no lo ve
+ * como cliente. Es una pregunta de la vista y no de una lista, así que contesta también sin nada que listar.
+ */
+export async function seNombranLosClientes(): Promise<boolean> {
+  const clientes = await datos().selectFrom('cuentas').select(['es_por_omision', 'estado']).where('estado', '<>', 'baja').execute();
+  const activos = clientes.filter((c) => c.estado === 'activa').length;
+  return clientes.some((c) => seNombra({ esPorOmision: c.es_por_omision }, activos));
+}
+
 const esFaltaDeGhl = (motivo: string | null): motivo is FaltaParaGhl =>
   motivo !== null && Object.prototype.hasOwnProperty.call(TEXTO_DE_FALTA_GHL, motivo);
 

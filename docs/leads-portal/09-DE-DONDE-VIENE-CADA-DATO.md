@@ -293,7 +293,7 @@ select jsonb_object_agg(t, n) from (
   `enCero` (47). Y viaja `cerosRecientes`, que hoy vale 0: si aparece un cero en los últimos 14 días,
   la pantalla avisa, porque entonces el grupo dejó de ser el lote cerrado de agosto.
 - La divergencia con Creative **se declara**: su ICP promedio por pieza sí promedia los ceros
-  (`lib/negocio/calidadDelCreativo.ts:243`). Las dos cifras están bien por separado y miden cosas
+  (`lib/negocio/calidadDelCreativo.ts:245`). Las dos cifras están bien por separado y miden cosas
   distintas; lo que no puede pasar es que alguien las compare sin saberlo. El detalle, en
   `14-EL-PUNTAJE-DEL-CRM.md`.
 
@@ -536,7 +536,7 @@ Conversation: «el CRM no registró reproducción».
   estado del formulario. **Los 174 sin grupo no viajan**, salvo esa última: ahí están la atribución
   de campañas y los enlaces del sistema (`lib/ghl/contrato.ts:243-245`).
 - **La excepción, dicha:** «Form Landing VSL» vive en la carpeta «📁 Score | ICP», que no tiene
-  grupo (`docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:823`; no está en
+  grupo (`docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:825`; no está en
   `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:332-344`, ni la eligió nadie en Ajustes › Clientes), y se lee **por nombre**, con
   `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`, `:258`). Es el único campo sin grupo que
   viaja, y viaja nombrado, no por pertenecer a una carpeta. La prueba de LP-3 «un campo sin grupo no

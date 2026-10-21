@@ -333,7 +333,7 @@ acciones y siete secciones:
   (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304`) porque habla de la pieza: el formato y el
   *Creative Profile*, que no llegan de ningún lado. Lo que esta ficha muestra en «Creative» es el
   nombre que viene en `utmContent`, que A8-07 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`)
-  llama anuncio y que Creative usa como llave (`lib/negocio/calidadDelCreativo.ts:222`). El rótulo
+  llama anuncio y que Creative usa como llave (`lib/negocio/calidadDelCreativo.ts:224`). El rótulo
   no promete más que eso.
 
   Los huecos salen de `huecosDelLeadsPortal.ts` con su fecha: el VSL, fit e intent, ubicación,

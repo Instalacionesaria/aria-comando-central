@@ -1368,8 +1368,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   módulo puro que también lee el navegador: el nombre si la pieza es del principal —con un cliente, siempre: la clave,
   las huellas y la pantalla de siempre— y `<cuenta>:<nombre>` si es de otro; quien agrupa sin saber cuál es el
   principal usa una llave interna aparte (`lib/negocio/idDeLaPieza.ts:116`). La calidad agrupa por cliente
-  (`lib/negocio/calidadDelCreativo.ts:259`) y cruza un contacto sólo con un anuncio de SU cliente
-  (`lib/negocio/calidadDelCreativo.ts:361`); el rendimiento, la fatiga y la entrega, también
+  (`lib/negocio/calidadDelCreativo.ts:261`) y cruza un contacto sólo con un anuncio de SU cliente
+  (`lib/negocio/calidadDelCreativo.ts:363`); el rendimiento, la fatiga y la entrega, también
   (`lib/negocio/rendimientoDelCreativo.ts:347`, `lib/negocio/fatigaDelCreativo.ts:164`,
   `lib/negocio/lecturaDeCreative.ts:474`). Los leads y la miniatura de un contacto son del cliente de su ANUNCIO, y sólo
   sin el anuncio en la dimensión, del contacto (`lib/negocio/costoDelAnuncio.ts:358`,
@@ -1415,19 +1415,19 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/codigo/289-el-vinculo-del-closer-por-cliente.test.ts:30`.
 - **Los avisos dicen de qué cliente y qué hacer (C6 · D1, sin migración).** La decisión del usuario del 2026-10-20: los
   costos de cada cliente salen de SU GoHighLevel con Meta vinculado, y un aviso dice de qué cliente es y qué hacer. Un
-  módulo hoja lo lee de los sellos del barrido (`lib/negocio/faltaDeLosClientes.ts:81`): un cliente ACTIVO cuyo sello
+  módulo hoja lo lee de los sellos del barrido (`lib/negocio/faltaDeLosClientes.ts:92`): un cliente ACTIVO cuyo sello
   más nuevo de las tareas del CRM que dicen algo del acceso (`lib/negocio/faltaDeLosClientes.ts:55`) es `saltada` con un
-  código de la falta, salvo que un pulso posterior diga que alguien ya trajo (`lib/negocio/faltaDeLosClientes.ts:120`).
+  código de la falta, salvo que un pulso posterior diga que alguien ya trajo (`lib/negocio/faltaDeLosClientes.ts:131`).
   El principal se nombra sólo con más de un cliente activo a la vista (`lib/negocio/faltaDeLosClientes.ts:69`): con uno
   solo no cambia ningún texto ni ninguna clave. El aviso tiene un prefijo neutro («no está lista»: un token ilegible no
   falta) y el texto del código —el de la empresa para el principal, el del cliente para los demás; al cliente final,
-  sin Ajustes— (`lib/negocio/faltaDeLosClientes.ts:155`). Lo dicen la agenda vacía, en vez de «Todavía no se leyó el
+  sin Ajustes— (`lib/negocio/faltaDeLosClientes.ts:166`). Lo dicen la agenda vacía, en vez de «Todavía no se leyó el
   calendario» para siempre, y con citas `sinConexion` (`lib/negocio/agenda.ts:428`, `lib/negocio/agenda.ts:313`); la
   cabecera de Mi Día, DESPUÉS de las citas sin registrar (`lib/agentes/cabecera.ts:174`), las dos sólo de los clientes
-  del alcance de quien mira (`lib/negocio/faltaDeLosClientes.ts:130`); el chat de la ficha, del cliente del contacto
+  del alcance de quien mira (`lib/negocio/faltaDeLosClientes.ts:141`); el chat de la ficha, del cliente del contacto
   (`lib/negocio/ficha.ts:279`), y Leads, arriba (`app/api/leads-portal/route.ts:70`). Acquisition y Conversion nombran,
   después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué —Meta sin vincular en su
-  GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:193`): los que pautaron sin
+  GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:204`): los que pautaron sin
   serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:984`,
   `lib/negocio/gastoDeLaCuenta.ts:487`), así que también cuando la serie de un cliente dejó de escribirse y la empresa
   queda con el colector atrasado; Conversion pregunta por la ventana que decidió el motivo
@@ -1541,8 +1541,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   puntaje de TODOS los contactos del cliente se recalcula desde lo guardado, congelados incluidos, en la misma
   transacción y sin llamar al CRM (`app/api/admin/cuentas/[id]/campos/route.ts:135`, `lib/negocio/camposDelCrm.ts:800`).
   Creative no le da «Calificados: 0» al cliente sin campo (`lib/negocio/lecturaDeCreative.ts:295`) y lo nombra,
-  separando «no se leyó su catálogo» de «no tiene campo» (`lib/negocio/calidadDelCreativo.ts:162`,
-  `lib/negocio/calidadDelCreativo.ts:401`). La pantalla avisa cuando el elegido dejó de ser numérico o no vino en la
+  separando «no se leyó su catálogo» de «no tiene campo» (`lib/negocio/calidadDelCreativo.ts:164`,
+  `lib/negocio/calidadDelCreativo.ts:407`), también cuando ningún cliente a la vista tiene campo, si hay más de uno o
+  el foco está en uno que no es el principal; con un solo cliente a la vista —la empresa de un cliente, o el foco en el
+  principal—, el aviso de siempre (`lib/negocio/faltaDeLosClientes.ts:78`, `lib/negocio/calidadDelCreativo.ts:396`). La pantalla avisa cuando el elegido dejó de ser numérico o no vino en la
   última lectura del catálogo —lo borraron en GoHighLevel, o el cliente se vinculó a otra subcuenta—
   (`lib/negocio/camposDelCrm.ts:703`), y el vínculo lo recuerda al cambiar la subcuenta
   (`app/api/admin/cuentas/[id]/vinculo/route.ts:82`). El refresco del catálogo no pisa lo elegido, y una carpeta sin
@@ -1552,14 +1554,15 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   culpar al contacto (`lib/negocio/ficha.ts:561`, `lib/negocio/camposDelCrm.ts:576`). Dos elecciones al mismo tiempo:
   la segunda es 409 (`app/api/admin/cuentas/[id]/campos/route.ts:148`). Todo auditado —`puntaje_elegido`,
   `puntaje_por_su_nombre` y `carpeta_del_perfil_elegida`, sin el cuerpo— (`lib/autenticacion/auditoria.ts:158`). Lo
-  exigen `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:284`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:316`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:329`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:363`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:456`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:476`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:518` y
-  `pruebas/codigo/297-el-puntaje-y-el-perfil-se-eligen-en-la-conexion.test.ts:36`.
+  exigen `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:287`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:319`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:332`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:366`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:466`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:486`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:549`,
+  `pruebas/codigo/297-el-puntaje-y-el-perfil-se-eligen-en-la-conexion.test.ts:36` y, el aviso de un solo cliente,
+  `pruebas/base/157-calidad-del-creativo.test.ts:333`.
 - **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3 y D4 ya no está):
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
@@ -1600,7 +1603,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   cliente sin carpetas que se muestren, y elegir o cambiar grupos cambia la huella de los Briefs de sus citas, que se
   vuelven a preparar con IA; Acquisition no dice qué cliente no tiene puntaje (sus leads van a «Sin calificar»); con un
   campo elegido en la subcuenta de ARIA, el cuestionario de la ficha del portal muestra «Puntaje | ICP» como una
-  respuesta más; elige quien tiene `credenciales.editar`, no `cuentas.editar`; y la `098` puede cambiar dos cosas con
+  respuesta más; elige quien tiene `credenciales.editar`, no `cuentas.editar`; con el foco en el principal de una
+  empresa de varios clientes y sin campo, Creative dice el aviso de la empresa (el principal solo no se nombra, como en
+  los demás avisos), y con varios a la vista, ninguno con campo y ninguna pieza en la ventana, no dice nada del campo
+  (no hay columna que explicar); y la `098` puede cambiar dos cosas con
   un solo cliente —el tercer «falta» de una empresa con catálogo y ninguna carpeta con grupo, y las cifras de Creative
   con un valor que no es un entero de 0 a 100—, que se miden antes de subir. De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
   empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de campaña —la decisión del 2026-10-20

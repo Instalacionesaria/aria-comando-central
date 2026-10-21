@@ -43,6 +43,7 @@ import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
 import { campoDelPuntaje, clientesSinPuntaje, puntajeDelCampo, type CampoDelCrm, type ClienteSinPuntaje } from './camposDelCrm.ts';
+import { seNombranLosClientes } from './faltaDeLosClientes.ts';
 import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
 import { llaveInterna } from './idDeLaPieza.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
@@ -158,8 +159,9 @@ export async function calidadDelCreativo(
     congeladasDeLaVentana(dias),
     coberturaDelPuente(dias),
   ]);
-  // Los clientes de la ventana sin campo (el nivel 3): sus piezas van sin «Calificados», y el aviso los nombra.
-  const sinPuntaje = await clientesSinPuntaje(filas.map((f) => f.cuentaId));
+  // Los clientes de la ventana sin campo (el nivel 3): sus piezas van sin «Calificados», y el aviso los nombra salvo con
+  // un solo cliente a la vista (`seNombranLosClientes`), que se queda con el de siempre.
+  const [sinPuntaje, nombrar] = await Promise.all([clientesSinPuntaje(filas.map((f) => f.cuentaId)), seNombranLosClientes()]);
 
   return {
     dias,
@@ -171,7 +173,7 @@ export async function calidadDelCreativo(
     // Viaja el de la primera subcuenta: lo que se lee de acá es si el campo está, no su id (uno por cliente).
     campoDeIcp: campoDeIcp?.[0] ?? null,
     cuentasSinPuntaje: sinPuntaje.map((c) => c.cuentaId),
-    aviso: avisoDe({ filas, congeladas, campoDeIcp: campoDeIcp?.[0] ?? null, puente, sinPuntaje }),
+    aviso: avisoDe({ filas, congeladas, campoDeIcp: campoDeIcp?.[0] ?? null, puente, sinPuntaje, nombrar }),
   };
 }
 
@@ -386,18 +388,22 @@ function avisoDe(r: {
   puente: { con: number; sobre: number; sinNombre: number };
   /** Los clientes de la ventana sin campo del puntaje (`clientesSinPuntaje`). */
   sinPuntaje: readonly ClienteSinPuntaje[];
+  /** Si el aviso habla de cada cliente (`seNombranLosClientes`): no con la empresa de un cliente o el foco en el principal. */
+  nombrar: boolean;
 }): string | null {
   const partes: string[] = [];
 
-  if (r.campoDeIcp === null) {
+  if (r.campoDeIcp === null && !r.nombrar) {
     partes.push(
       `El CRM de esta empresa no tiene un campo «${CAMPO_DE_ICP}», o cambió de nombre. Sin él no ` +
         'hay encaje que promediar: no es que los leads tengan encaje cero.',
     );
   } else {
-    /* Cuando otro cliente sí tiene campo (el nivel 3), cada uno sin campo con su nombre y con lo que le pasa. Son dos
-       estados y mandan a lugares distintos: sin catálogo leído no hay nada que elegir todavía; con catálogo, lo que
-       falta es elegir el campo, y lo hace quien administra la empresa —quien mira Creative en general no puede—. */
+    /* Con otro cliente con campo, o con varios a la vista aunque ninguno lo tenga (el nivel 3), cada uno sin campo con
+       su nombre y con lo que le pasa: «el CRM de esta empresa» no es el de cada uno, y diría «no tiene campo» de uno
+       cuyo catálogo ni se leyó. Son dos estados y mandan a lugares distintos: sin catálogo leído no hay nada que elegir
+       todavía; con catálogo, lo que falta es elegir el campo, y lo hace quien administra la empresa —quien mira
+       Creative en general no puede—. Sin piezas en la ventana no hay columna que explicar, y no se dice nada. */
     for (const c of r.sinPuntaje) {
       partes.push(
         c.catalogo

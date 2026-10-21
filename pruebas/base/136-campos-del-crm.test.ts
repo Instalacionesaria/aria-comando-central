@@ -200,7 +200,7 @@ test('un valor numérico llega como texto y uno vacío NO entra al mapa', () => 
 
 // ─── 2 · El Perfil: qué se dibuja y qué no ───────────────────────────────────
 
-test('el Perfil muestra los campos con valor de las carpetas elegidas, y nada más', async () => {
+test('el Perfil muestra los campos con valor de las carpetas con grupo, y nada más', async () => {
   await limpiar();
   await sembrarCatalogo(alfa);
 
