@@ -13,12 +13,31 @@
 // La plataforma puede operar sobre otra empresa con `orgId` —el tablero de Negocios agrega clientes sin conmutar la
 // sesión—, con la misma condición que el alta de personas (`empresaDestino`). Lo que no se puede desde acá: escribir
 // la subcuenta del CRM o la marca de prueba. Eso es `[id]/vinculo`, sólo la plataforma.
+//
+// ── LA LISTA DE CHEQUEO, EN VIVO (C6 · D5) ──────────────────────────────────
+//
+// Cada cliente de la lista lleva lo que le falta para estar configurado (`listaDeChequeo`), con la misma lista que el
+// tablero de Negocios y la foto (`lib/cartera/pasos.ts`), pero leída AHORA y no de la foto del día: quien acaba de
+// cargar un token tiene que ver el paso en verde. Dos lecturas, en este orden:
+//
+//   1. las presencias de la conexión de cada cliente, de identidad (`leerLosClientesDe`): el rol del inquilino no
+//      tiene ni `select` sobre las credenciales. Sólo `is not null`, nunca un valor, y con la empresa destino en el
+//      `where`, ya autorizada por `empresaDestino`;
+//   2. la lista, y lo que se mide en la base —sus datos de las últimas 24 horas y Meta en su GoHighLevel
+//      (`medirLosPasos`)—, en el contexto de la empresa entera, como siempre.
+//
+// Las dos son lecturas: si la segunda falla no queda nada a medias. Lo que viaja de cada paso es su clave, su nombre,
+// si es requerido y su estado: ningún valor de la conexión.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { autorDelCambio } from '../../../../lib/autorizacion/sesion.ts';
+import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../../../lib/datos/contexto.ts';
+import { leerLosClientesDe } from '../../../../lib/cartera/configuracion.ts';
+import { medirLosPasos } from '../../../../lib/cartera/medicion.ts';
+import { listaDeChequeoDelCliente } from '../../../../lib/cartera/pasos.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 import { esZonaValida } from '../../../../lib/negocio/zonas.ts';
 import { closersDeLaEmpresa, closersSinVinculoEn } from '../../../../lib/negocio/alcanceDelCloser.ts';
@@ -38,7 +57,7 @@ export const PANTALLA = 'clientes';
 /** La empresa entera, con todos sus clientes: lo único desde lo que se da de alta y se lista. */
 const entera = (orgId: string) => ({ orgId, todaLaOrganizacion: true, cuentas: '*' as const });
 
-/** Los clientes de la empresa, y el catálogo que necesita su formulario. */
+/** Los clientes de la empresa, con su lista de chequeo, y el catálogo que necesita su formulario. */
 export async function GET(peticion: Request): Promise<Response> {
   const contexto = await exigir(peticion, ['cuentas.ver'], PANTALLA);
   if (contexto instanceof Response) return contexto;
@@ -46,15 +65,36 @@ export async function GET(peticion: Request): Promise<Response> {
   const destino = empresaDestino(contexto, new URL(peticion.url).searchParams.get('orgId'));
   if (destino === null) return rechazo('no_encontrado');
 
+  // 1 · Las presencias de la conexión de cada cliente de ESA empresa. Ver el encabezado.
+  const conexion = new Map((await conIdentidad((db) => leerLosClientesDe(db, destino))).map((c) => [c.id, c]));
+  const ahora = Date.now();
+
   const cuerpo = await conOrganizacion(entera(destino), async () => {
     const clientes = await listarCuentas();
+    const medidos = await medirLosPasos();
     /* Por cliente ACTIVO, los closers vinculados en otro y no en éste: no ven sus contactos (C6). Uno en pausa no se
        barre ni se trabaja, y lo dice su activación. Con un solo cliente nunca hay nadie. */
     const closers = diceLosClosersSinVincular(contexto, destino) ? await closersDeLaEmpresa() : null;
     return {
       clientes: clientes.map((c) => {
+        /* La zona, el nicho y el estado, de la fila que se lista; la conexión, de identidad. Un cliente dado de alta
+           entre las dos lecturas todavía no tiene nada cargado: sin su fila, nada está. */
+        const suya = conexion.get(c.id);
+        const listaDeChequeo = listaDeChequeoDelCliente(
+          {
+            estado: c.estado,
+            zonaHoraria: c.zonaHoraria,
+            nichoConfirmado: c.nichoConfirmado,
+            crmConectado: suya?.crmConectado ?? false,
+            calendario: suya?.calendario ?? false,
+            meta: suya?.meta ?? false,
+            aviso: suya?.aviso ?? false,
+          },
+          medidos.get(c.id),
+          ahora,
+        );
         const sin = closers === null || c.estado !== 'activa' ? [] : closersSinVinculoEn(c.id, closers);
-        return sin.length > 0 ? { ...c, closersSinVincular: sin.map((k) => k.nombre) } : c;
+        return sin.length > 0 ? { ...c, listaDeChequeo, closersSinVincular: sin.map((k) => k.nombre) } : { ...c, listaDeChequeo };
       }),
       catalogo: await catalogoDelCliente(),
     };

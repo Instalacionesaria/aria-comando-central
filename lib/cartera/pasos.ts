@@ -9,11 +9,23 @@
 //
 //   · `ok`: está;
 //   · `falta`: no está, y se dice cuál;
-//   · `sin_medir`: no se pudo saber (la medición de la empresa falló). No es un «falta»: no se acusa de algo que no se
-//     midió.
+//   · `sin_medir`: no se pudo saber (la medición de la empresa falló, o todavía no hay con qué). No es un «falta»: no
+//     se acusa de algo que no se midió.
 //
-// Configurado = todos los pasos REQUERIDOS en `ok`. Los recomendados se dicen, y no cuentan.
-// Pura y sin base: la prueba la 271.
+// Configurado = todos los pasos REQUERIDOS en `ok`, y el cliente activo (`clienteConfigurado`). Los recomendados se
+// dicen, y no cuentan. La misma lista la usan la foto diaria (el contrato del agente), el tablero de Negocios y Ajustes
+// › Clientes (`listaDeChequeoDelCliente`, en vivo).
+//
+// ── LOS DOS PASOS DE META (el nivel 3, C6 · D5, 2026-10-20) ─────────────────
+//
+// Los costos de cada cliente salen de SU GoHighLevel con Meta vinculado (la decisión del usuario del 2026-10-20): la
+// pasada del gasto lee la serie del Ad Manager de su subcuenta. Por eso `meta_en_el_crm` es REQUERIDO, y se MIDE —con
+// el sello de esa pasada o con su serie de gasto (`metaEnElCrmDe`, `lib/cartera/medicion.ts`)—, no se lee de una
+// credencial. La conexión DIRECTA con Meta (`meta`, su token y su cuenta publicitaria) sólo trae las miniaturas y los
+// activos de los anuncios: queda recomendada, con ese nombre. Cambiar esta lista cambia el significado de
+// `configurada` y de `faltan` en la foto: sube `CONTRATO_DE_LA_FOTO` (la 271 lo vigila).
+//
+// Pura y sin base: la prueban la 271 y la 299.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export type EstadoDelPaso = 'ok' | 'falta' | 'sin_medir';
@@ -24,7 +36,8 @@ export const PASOS_DEL_CLIENTE = [
   { clave: 'zona', nombre: 'Zona horaria', requerido: true },
   { clave: 'nicho', nombre: 'Nicho confirmado', requerido: true },
   { clave: 'datos', nombre: 'Datos de las últimas 24 horas', requerido: true },
-  { clave: 'meta', nombre: 'Meta conectado', requerido: false },
+  { clave: 'meta_en_el_crm', nombre: 'Meta vinculado en su GoHighLevel', requerido: true },
+  { clave: 'meta', nombre: 'Miniaturas de Meta', requerido: false },
   { clave: 'aviso', nombre: 'Avisos del CRM', requerido: false },
 ] as const;
 
@@ -43,32 +56,45 @@ export const DATOS_AL_DIA_MS = 24 * 3600_000;
 /** `UTC` es el valor por omisión de la columna: quiere decir «nadie lo dijo», no «está en UTC». */
 const zonaElegida = (zona: string): boolean => zona !== '' && zona !== 'UTC';
 
+/** Lo que se sabe de un cliente por su configuración: presencias de su conexión, su zona y su nicho. */
 export interface LoQueSeSabeDeUnCliente {
   crmConectado: boolean;
   calendario: boolean;
+  /** La conexión directa con Meta (las miniaturas). No es de donde salen los costos: ése es `metaEnElCrm`. */
   meta: boolean;
   aviso: boolean;
   zonaHoraria: string;
   nichoConfirmado: boolean;
 }
 
+/** Lo que se MIDE de un cliente en la base, y no se lee de su configuración (`medirLosPasos`). */
+export interface LoMedidoDeUnCliente {
+  /** La marca de agua de su ingesta: `null` = nunca entró nada. */
+  ultimaIngestaEl: Date | null;
+  /** Si su GoHighLevel tiene Meta vinculado (`metaEnElCrmDe`): `null` = todavía no se sabe. */
+  metaEnElCrm: boolean | null;
+}
+
 /**
  * Los pasos de un cliente.
  *
- * @param ultimaIngestaEl la marca de agua de su ingesta: `null` = nunca entró nada; `undefined` = no se pudo medir.
+ * @param medido lo medido en la base; `undefined` = no se pudo medir (la medición de su empresa falló, o la foto no lo
+ *   tiene): lo medido queda `sin_medir`, nunca `falta`.
  */
 export function pasosDelCliente(
   c: LoQueSeSabeDeUnCliente,
-  ultimaIngestaEl: Date | null | undefined,
+  medido: LoMedidoDeUnCliente | undefined,
   ahora: number,
 ): Record<PasoDelCliente, EstadoDelPaso> {
   const si = (b: boolean): EstadoDelPaso => (b ? 'ok' : 'falta');
+  const ingesta = medido?.ultimaIngestaEl;
   return {
     crm: si(c.crmConectado),
     calendario: si(c.calendario),
     zona: si(zonaElegida(c.zonaHoraria)),
     nicho: si(c.nichoConfirmado),
-    datos: ultimaIngestaEl === undefined ? 'sin_medir' : si(ultimaIngestaEl !== null && ahora - ultimaIngestaEl.getTime() <= DATOS_AL_DIA_MS),
+    datos: medido === undefined ? 'sin_medir' : si(ingesta != null && ahora - ingesta.getTime() <= DATOS_AL_DIA_MS),
+    meta_en_el_crm: medido === undefined || medido.metaEnElCrm === null ? 'sin_medir' : si(medido.metaEnElCrm),
     meta: si(c.meta),
     aviso: si(c.aviso),
   };
@@ -90,7 +116,41 @@ export function configurado(
   return lista.every((p) => !p.requerido || pasos[p.clave] === 'ok');
 }
 
+/**
+ * Un cliente configurado: activo y con todos sus requeridos en `ok`. Uno en pausa o de baja no se barre ni se mira, así
+ * que no cuenta como configurado aunque tenga todo. La regla es una: la usan la foto, el tablero y Ajustes › Clientes.
+ */
+export function clienteConfigurado(estado: string, pasos: Readonly<Record<PasoDelCliente, EstadoDelPaso>>): boolean {
+  return estado === 'activa' && configurado(pasos, PASOS_DEL_CLIENTE);
+}
+
 /** Lo que falta, por clave, en el orden de la lista: requeridos y recomendados. Lo no medido no se acusa. */
 export function faltan(pasos: Readonly<Record<string, EstadoDelPaso>>, lista: readonly { clave: string }[]): string[] {
   return lista.filter((p) => pasos[p.clave] === 'falta').map((p) => p.clave);
+}
+
+/** Un paso de la lista como lo dibuja Ajustes › Clientes: nada más que esto viaja (ningún valor de la conexión). */
+export interface PasoDeLaLista {
+  clave: PasoDelCliente;
+  nombre: string;
+  requerido: boolean;
+  estado: EstadoDelPaso;
+}
+
+export interface ListaDeChequeo {
+  configurado: boolean;
+  pasos: PasoDeLaLista[];
+}
+
+/** La lista de chequeo de un cliente, en el orden de `PASOS_DEL_CLIENTE`, con su estado y si está configurado. */
+export function listaDeChequeoDelCliente(
+  c: LoQueSeSabeDeUnCliente & { estado: string },
+  medido: LoMedidoDeUnCliente | undefined,
+  ahora: number,
+): ListaDeChequeo {
+  const pasos = pasosDelCliente(c, medido, ahora);
+  return {
+    configurado: clienteConfigurado(c.estado, pasos),
+    pasos: PASOS_DEL_CLIENTE.map((p) => ({ clave: p.clave, nombre: p.nombre, requerido: p.requerido, estado: pasos[p.clave] })),
+  };
 }

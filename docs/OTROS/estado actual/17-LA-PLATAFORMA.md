@@ -280,7 +280,7 @@ de `public` a `respaldo_aria_brain`. Medido el 2026-10-18: en `public` hay **0**
 base**: la misma revisión del 2026-10-12 dejó permisos de producción por corregir, revisados ese día, con su plan fuera
 del repositorio a propósito.
 
-**Las `aria_cc_*`.** `lib/datos/esquema.ts:2254-2259` tipa seis; en producción hay seis, y no son las mismas:
+**Las `aria_cc_*`.** `lib/datos/esquema.ts:2256-2261` tipa seis; en producción hay seis, y no son las mismas:
 `aria_cc_scraper_mediciones` **sigue sin existir** (`to_regclass` nulo, 2026-10-18) aunque el código la escribe
 (`lib/tools/medicion.ts:65`, `:94`, dentro de un `catch`, `lib/tools/medicion.ts:71-76`), y `aria_cc_icp_oferta`
 existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`). El detalle es de
@@ -627,6 +627,7 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | «Nivel 3 · C6 · lo que usaba las credenciales de la empresa usa las del cliente» | C6 · D2 | sin migración: «Subir a HighLevel» de Tools manda a n8n el token y la subcuenta del cliente elegido (sin elegir, el principal; uno en pausa es 400, uno ajeno o de baja, 404), y la pantalla muestra el selector sólo con más de un cliente activo; la lista de usuarios del CRM no lee a uno de baja; Tools, esa lista y las cuatro rutas de un contacto dicen la falta de un cliente con su texto; los guiones de medición miden a cada cliente con su token, y con un cliente miden lo mismo (medir-gasto suma S0, si Meta está vinculado); la 277 lista quién pide la de la empresa. Al webhook de n8n viaja el token de cada cliente: un riesgo que decide el usuario (07) |
 | «Nivel 3 · C6 · las señales que mezclaban clientes» | C6 · D3 | sin migración: con varios clientes, el ICP, la fuga y el monitor de Acquisition, los patrones de Conversation y las familias y el formulario de Conversion se miden dentro de cada cliente, con el id de siempre para el principal y `<cuenta>:` para otro; el conjunto pasa al freno de Meta; los frenos son por cliente activo —también con los datos de uno solo y otro sin nada, con la anterior del cambio de ruta de su lectura— y el escritor deja sin medición sólo lo del cliente atrasado; la pantalla y el plan dicen de qué cliente es cada señal, nunca con un uuid; la pieza de nombre largo se corta en la señal y ya no hace fallar la pasada de Creative. Con un solo cliente, ninguna huella ni ningún texto cambia |
 | «Nivel 3 · C6 · el puntaje y el Perfil de cada subcuenta, configurables» | C6 · D4 | `098`: `campos_del_crm.es_el_puntaje` (uno por cliente, con un índice único parcial) y `carpetas_del_crm.grupo_elegido_el`. Ajustes › Clientes › «Puntaje y Perfil», también para el principal, elige el campo del puntaje y el grupo de cada carpeta; sin elegir, cada subcuenta resuelve lo de antes, id por id. Una sola validación del puntaje (la de la sincronización) también en Creative; al elegir se recalculan todos los contactos del cliente, congelados incluidos; Creative no da «Calificados: 0» al cliente sin campo y lo nombra, también si ninguno a la vista tiene campo (con un solo cliente a la vista, el aviso de siempre); el elegido que ya no está se avisa; el Perfil dice cuando ninguna carpeta se muestra |
+| «Nivel 3 · C6 · la lista de chequeo del cliente, en Ajustes y con Meta en su GoHighLevel» | C6 · D5 | `099`: `foto_de_las_cuentas.meta_en_el_crm` (nula, sin relleno) y los comentarios de lo que cambió; la foto sube al contrato 2. El paso de Meta de la lista de chequeo pasa a ser «Meta vinculado en su GoHighLevel», requerido, medido con el sello de la pasada del gasto de cada cliente o con su serie; la conexión directa queda como «Miniaturas de Meta», recomendada. Ajustes › Clientes muestra la lista de cada cliente en vivo (`GET /api/admin/cuentas`, que lee de identidad sólo presencias), con qué hacer en cada paso, y Negocios suma «Agregar cliente». Con un solo cliente la lista cambia a propósito: sin Meta en su GoHighLevel, no está configurado |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
@@ -658,6 +659,9 @@ cliente): la `098` **antes** de su código, que nombra las dos columnas nuevas e
 antes la `098` no cambia nada. Con un solo cliente por empresa y nada elegido, nada cambia, salvo dos cosas que se
 miden antes con `supabase.mjs leer`: el tercer «falta» del Perfil de una empresa con catálogo y ninguna carpeta con
 grupo, y las cifras de Creative si algún valor del puntaje no es un entero de 0 a 100 (el plan local, paso 8.12).
+C6 · D5 (la lista de chequeo): la `099` **antes** de su código —el código nuevo escribe `meta_en_el_crm` en la foto, y
+sin la columna la tarea `foto` fallaría—; con el código de antes la `099` no cambia nada (la columna queda nula y los
+comentarios sólo se leen). La foto todavía no está en producción, así que nace en el contrato 2.
 
 **El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
 (`app/api/cron/route.ts:230`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los

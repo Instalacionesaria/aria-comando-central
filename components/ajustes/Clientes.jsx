@@ -14,6 +14,10 @@
  *
  * Los botones salen de lo que el servidor responde en la sesión (`puedeCrearClientes`, `puedeEditarClientes`), con la
  * capacidad exacta de cada operación: un botón que va a recibir 403 no se ofrece.
+ *
+ * Cada fila dice si el cliente está configurado y, abierta, qué le falta y qué hacer (`ListaDeChequeo`, C6 · D5): el
+ * dato es el de ahora, no el de la foto del día. Al cerrar la ventana de un cliente la lista se relee, para que lo que se
+ * cargó en su Conexión se vea en verde.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useState } from 'react';
@@ -23,6 +27,7 @@ import Ventana from '../Ventana.jsx';
 import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
 import FormularioDeCliente, { cuerpoDe, valoresDe } from './FormularioDeCliente.jsx';
 import ConexionDelCliente from './ConexionDelCliente.jsx';
+import ListaDeChequeo, { ResumenDeLaLista } from './ListaDeChequeo.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede hacer esto con los clientes.',
@@ -76,6 +81,15 @@ export default function Clientes({ sesion, conConexion = false }) {
      con el fondo, y guardar no la cierra. */
   const [relectura, setRelectura] = useState(0);
   const [cabeceraVisible, setCabeceraVisible] = useState(false);
+  // Los clientes con su lista de chequeo abierta.
+  const [abiertas, setAbiertas] = useState(() => new Set());
+  const conmutar = (id) =>
+    setAbiertas((antes) => {
+      const ahora = new Set(antes);
+      if (ahora.has(id)) ahora.delete(id);
+      else ahora.add(id);
+      return ahora;
+    });
 
   const nombreDelNicho = (clave) => catalogo?.nichos.find((n) => n.clave === clave)?.nombre ?? clave;
 
@@ -205,8 +219,14 @@ export default function Clientes({ sesion, conConexion = false }) {
                   <span className="rs">sin nicho</span>
                 )}
               </div>
-              <div>
+              <div className="aj-estado">
                 <span className={`chip ${c.crmVinculado ? 'ok' : 'warn'}`}>{c.crmVinculado ? 'Vinculado' : 'Sin vincular'}</span>
+                <ResumenDeLaLista cliente={c} />
+                {c.listaDeChequeo ? (
+                  <button type="button" className="aj-ver" aria-expanded={abiertas.has(c.id)} onClick={() => conmutar(c.id)}>
+                    {abiertas.has(c.id) ? 'Ocultar la lista' : 'Ver la lista'}
+                  </button>
+                ) : null}
               </div>
               <div className="num aj-acciones">
                 {sesion?.puedeEditarClientes ? (
@@ -236,6 +256,11 @@ export default function Clientes({ sesion, conConexion = false }) {
                   </>
                 ) : null}
               </div>
+              {abiertas.has(c.id) ? (
+                <div className="aj-fila-entera">
+                  <ListaDeChequeo cliente={c} />
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -254,6 +279,8 @@ export default function Clientes({ sesion, conConexion = false }) {
             setAlta(null);
             setEditando(null);
             setCabeceraVisible(false);
+            // Lo que se cargó en su Conexión cambia su lista de chequeo: se relee al cerrar.
+            void refrescar();
           }}
         >
           <FormularioDeCliente valores={valores} alCambiar={setValores} catalogo={catalogo} prefijo={editando ? 'ed-cli' : 'cli'} />

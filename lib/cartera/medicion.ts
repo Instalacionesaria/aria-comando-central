@@ -14,12 +14,17 @@
 //     copia acá diría «35 calificados» de gente distinta que la pantalla;
 //   · nulo no es cero: un cliente sin serie de gasto tiene gasto nulo, no cero; un cliente sin filas no aparece y
 //     la foto lo dice con su configuración.
+//
+// Lo que la lista de chequeo MIDE —la marca de la ingesta y Meta en su GoHighLevel— sale de `medirLosPasos`, que usan
+// también Ajustes › Clientes en vivo: la foto y la pantalla lo miden igual.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { esCalificado, tieneCitaAlcanzable } from '../negocio/citasAlcanzables.ts';
+import { MOTIVO_SIN_META_EN_GHL } from '../negocio/faltaDeLosClientes.ts';
 import { VENTANA_DIAS } from './contrato.ts';
+import type { LoMedidoDeUnCliente } from './pasos.ts';
 
 export interface MedidaDeUnCliente {
   contactos: number;
@@ -36,6 +41,8 @@ export interface MedidaDeUnCliente {
   gasto30d: string | null;
   ultimaIngestaEl: Date | null;
   ultimaAltaEl: Date | null;
+  /** Si su GoHighLevel tiene Meta vinculado (`metaEnElCrmDe`). Nulo = todavía no se sabe. */
+  metaEnElCrm: boolean | null;
 }
 
 export interface MedidaDeUnaEmpresa {
@@ -58,7 +65,64 @@ const VACIA: MedidaDeUnCliente = {
   gasto30d: null,
   ultimaIngestaEl: null,
   ultimaAltaEl: null,
+  metaEnElCrm: null,
 };
+
+/**
+ * Si el GoHighLevel de un cliente tiene Meta vinculado, con lo que ya está escrito. Pura.
+ *
+ *   · el sello de su pasada del gasto (`anuncios`, una vez al día) que CORRIÓ es la respuesta: sin el vínculo, el
+ *     barrido deja `MOTIVO_SIN_META_EN_GHL` en su motivo (`motivoDeLoIncompleto`, que junta varias causas con «; »);
+ *     con el vínculo, la pasada siguió y el motivo no lo dice;
+ *   · sin un sello que corrió —nunca corrió, o se saltó o falló, y eso no dice nada del vínculo—, su serie de gasto en
+ *     la ventana: la serie sólo entra por el Ad Manager de su GoHighLevel, así que tenerla es tener el vínculo;
+ *   · sin ninguna de las dos, no se sabe (`null`): la lista lo deja `sin_medir`, no lo acusa.
+ *
+ * El sello gana sobre la serie: un cliente que desvinculó Meta conserva días viejos en la ventana.
+ */
+export function metaEnElCrmDe(
+  sello: { estado: string; motivo: string | null } | undefined,
+  conSerieDeGasto: boolean,
+): boolean | null {
+  if (sello?.estado === 'corrio') return !(sello.motivo ?? '').includes(MOTIVO_SIN_META_EN_GHL);
+  return conSerieDeGasto ? true : null;
+}
+
+/**
+ * Lo que la lista de chequeo mide en la base, por cliente: la marca de agua de su ingesta y si su GoHighLevel tiene
+ * Meta vinculado. Un cliente sin ninguna fila sale con la marca nula y Meta sin saber. **Corre dentro de
+ * `conOrganizacion` con la organización entera.** La usan la foto (`medirLaEmpresa`) y la lista en vivo de Ajustes ›
+ * Clientes (`app/api/admin/cuentas/route.ts`).
+ */
+export async function medirLosPasos(): Promise<Map<string, LoMedidoDeUnCliente>> {
+  const clientes = await datos().selectFrom('cuentas').select(['id', 'es_por_omision']).execute();
+  const pulso = await sql<{ cuenta_id: string; marca: Date | null }>`
+    select p.cuenta_id, max(p.marca_el) as marca from negocio.ingesta_pulso p group by p.cuenta_id`.execute(datos());
+  const conSerie = await sql<{ cuenta_id: string }>`
+    select distinct g.cuenta_id from negocio.gasto_de_la_cuenta g where g.fecha >= current_date - ${VENTANA_DIAS}::int`.execute(
+    datos(),
+  );
+  const sellos = await datos()
+    .selectFrom('tareas_programadas')
+    .select(['cuenta_id', 'ultimo_estado', 'ultimo_motivo'])
+    .where('tarea', '=', 'anuncios')
+    .execute();
+
+  const marcas = new Map(pulso.rows.map((f) => [f.cuenta_id, f.marca]));
+  const serie = new Set(conSerie.rows.map((f) => f.cuenta_id));
+  const medidos = new Map<string, LoMedidoDeUnCliente>();
+  for (const c of clientes) {
+    /* El sello del cliente. El principal sin sello propio toma el sin cuenta, como la frescura y los avisos
+       (`faltaDelGastoDe`): los de antes del barrido por cliente eran del trabajo con las credenciales de la empresa. */
+    const sello =
+      sellos.find((s) => s.cuenta_id === c.id) ?? (c.es_por_omision ? sellos.find((s) => s.cuenta_id === null) : undefined);
+    medidos.set(c.id, {
+      ultimaIngestaEl: marcas.get(c.id) ?? null,
+      metaEnElCrm: metaEnElCrmDe(sello && { estado: sello.ultimo_estado, motivo: sello.ultimo_motivo }, serie.has(c.id)),
+    });
+  }
+  return medidos;
+}
 
 /** Mide la empresa del contexto. **Corre dentro de `conOrganizacion` con la organización entera.** */
 export async function medirLaEmpresa(): Promise<MedidaDeUnaEmpresa> {
@@ -101,8 +165,7 @@ export async function medirLaEmpresa(): Promise<MedidaDeUnaEmpresa> {
      where g.fecha >= current_date - ${dias}::int
      group by g.cuenta_id`.execute(datos());
 
-  const pulso = await sql<{ cuenta_id: string; marca: Date | null }>`
-    select p.cuenta_id, max(p.marca_el) as marca from negocio.ingesta_pulso p group by p.cuenta_id`.execute(datos());
+  const pasos = await medirLosPasos();
 
   const empresa = await sql<{ ia: number; incidentes: number; senales: number }>`
     select (select count(*)::int from negocio.uso_de_ia u where u.creado_el >= now() - make_interval(days => ${dias})) as ia,
@@ -132,7 +195,7 @@ export async function medirLaEmpresa(): Promise<MedidaDeUnaEmpresa> {
     Object.assign(de(f.cuenta_id), { ventas30d: f.ventas, ventas30dPrevias: f.previas, monto30d: f.monto, compradores: f.compradores });
   }
   for (const f of gasto.rows) de(f.cuenta_id).gasto30d = f.gasto;
-  for (const f of pulso.rows) de(f.cuenta_id).ultimaIngestaEl = f.marca;
+  for (const [id, m] of pasos) Object.assign(de(id), { ultimaIngestaEl: m.ultimaIngestaEl, metaEnElCrm: m.metaEnElCrm });
   const e = empresa.rows[0]!;
   return { porCliente, iaLlamadas30d: e.ia, incidentes30d: e.incidentes, senalesAbiertas: e.senales };
 }

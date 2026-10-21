@@ -23,6 +23,7 @@ import { medirLaEmpresa, MEDIDA_SIN_FILAS, type MedidaDeUnaEmpresa } from './med
 import {
   PASOS_DE_LA_EMPRESA,
   PASOS_DEL_CLIENTE,
+  clienteConfigurado,
   configurado,
   faltan,
   pasosDeLaEmpresa,
@@ -73,7 +74,7 @@ export function filasDeUnaEmpresa(
   const base = { org_id: principal, dia, organizacion_ref: e.id, contrato: CONTRATO_DE_LA_FOTO };
   const clientes = e.clientes.map((c) => {
     const m = medida ? (medida.porCliente.get(c.id) ?? MEDIDA_SIN_FILAS) : null;
-    const pasos = pasosDelCliente(c, m ? m.ultimaIngestaEl : undefined, ahora);
+    const pasos = pasosDelCliente(c, m ?? undefined, ahora);
     return {
       ...base,
       cuenta_ref: c.id,
@@ -92,7 +93,7 @@ export function filasDeUnaEmpresa(
       calendario: c.calendario,
       meta: c.meta,
       aviso_del_crm: c.aviso,
-      configurada: c.estado === 'activa' && configurado(pasos, PASOS_DEL_CLIENTE),
+      configurada: clienteConfigurado(c.estado, pasos),
       faltan: faltan(pasos, PASOS_DEL_CLIENTE),
       medida: m !== null,
       motivo_sin_medir: m === null ? motivo : null,
@@ -108,6 +109,8 @@ export function filasDeUnaEmpresa(
       gasto_30d: m?.gasto30d ?? null,
       ultima_ingesta_el: m?.ultimaIngestaEl ?? null,
       ultima_alta_el: m?.ultimaAltaEl ?? null,
+      // Desde el contrato 2 (la `099`): requerido para `configurada`. Nulo = no se sabe, o la empresa no se midió.
+      meta_en_el_crm: m?.metaEnElCrm ?? null,
     };
   });
 

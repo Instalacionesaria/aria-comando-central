@@ -218,3 +218,15 @@
 .aj-acciones { display: flex; gap: 6px; justify-content: flex-end; }
 /* La vinculación con el CRM, sólo de ARIA: separada del resto del formulario, porque es de la plataforma. */
 .aj-bloque { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+/* La lista de chequeo de cada cliente (C6 · D5): la píldora en la fila y, abierta, la lista a todo el ancho. */
+.aj-estado { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.aj-ver { border: 0; background: transparent; padding: 0; font: inherit; font-size: 11px; color: var(--accent); cursor: pointer; }
+.aj-fila-entera { grid-column: 1 / -1; }
+.aj-chequeo { padding: 6px 0 2px; display: flex; flex-direction: column; gap: 6px; }
+.aj-chequeo ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.aj-paso { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; color: var(--txt-dim); line-height: 1.5; }
+.aj-paso b { color: var(--txt); font-weight: 600; }
+.aj-marca { flex: 0 0 14px; text-align: center; }
+.aj-paso.ok .aj-marca { color: var(--ok); }
+.aj-paso.falta .aj-marca { color: var(--warn); }
+.aj-paso.sin_medir .aj-marca { color: var(--txt-faint); }

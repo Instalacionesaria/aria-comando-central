@@ -72,9 +72,12 @@ function empresa(id: string, clientes: ConfiguracionDeUnCliente[], extra: Partia
   };
 }
 
+/** La medida de cada cliente: al día y con Meta vinculado en su GoHighLevel, salvo lo que diga `porCliente`. */
 function medida(porCliente: Record<string, Partial<MedidaDeUnCliente>>): MedidaDeUnaEmpresa {
   return {
-    porCliente: new Map(Object.entries(porCliente).map(([id, m]) => [id, { ...MEDIDA_SIN_FILAS, ultimaIngestaEl: HACE_UNA_HORA, ...m }])),
+    porCliente: new Map(
+      Object.entries(porCliente).map(([id, m]) => [id, { ...MEDIDA_SIN_FILAS, ultimaIngestaEl: HACE_UNA_HORA, metaEnElCrm: true, ...m }]),
+    ),
     iaLlamadas30d: 0,
     incidentes30d: 0,
     senalesAbiertas: 0,

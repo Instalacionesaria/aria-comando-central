@@ -51,6 +51,14 @@
   visibility: hidden;
 }
 
+/* «Agregar cliente» y «Entrar», juntos en la última celda. */
+.neg-acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .mon-tabla tr.neg-cliente td {
   background: var(--bg-panel);
 }

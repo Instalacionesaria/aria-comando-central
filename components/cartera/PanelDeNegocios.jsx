@@ -7,12 +7,20 @@
 
    La configuración es la de ahora; las cifras, las de la foto del día, que dice de cuándo es (`lib/cartera/tablero.ts`).
    Una cifra que no se midió es «—», nunca un cero. «Entrar» cambia a esa empresa, como el selector de la barra.
-   «Descargar» arma un CSV con lo que está a la vista. */
+   «Descargar» arma un CSV con lo que está a la vista.
+
+   «Agregar cliente» (C6 · D5) da de alta un cliente en esa empresa sin cambiar de sesión: `POST /api/admin/cuentas` con
+   su `orgId`, que sólo la plataforma puede mandar (`empresaDestino`). El formulario es el de Ajustes › Clientes, y su
+   catálogo viene con la lista de esa empresa (`GET /api/admin/cuentas?orgId=`). El cliente nace activo y sin conexión:
+   aparece enseguida en la empresa, con lo que le falta. */
 
 import { Fragment, useMemo, useState } from 'react';
 import { usarLectura } from '../../lib/usarLectura.ts';
 import { pedir } from '../../lib/http/cliente.ts';
+import { useSesion } from '../../app/sesion-contexto.tsx';
 import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
+import Ventana from '../Ventana.jsx';
+import FormularioDeCliente, { cuerpoDe, valoresDe } from '../ajustes/FormularioDeCliente.jsx';
 
 /** Cómo se dice cada paso de la lista de chequeo (`lib/cartera/pasos.ts`). */
 const PASO = {
@@ -21,7 +29,8 @@ const PASO = {
   zona: 'zona horaria',
   nicho: 'nicho',
   datos: 'datos al día',
-  meta: 'Meta',
+  meta_en_el_crm: 'Meta en su GoHighLevel',
+  meta: 'miniaturas de Meta',
   aviso: 'avisos del CRM',
   llave_de_ia: 'llave de IA',
   un_cliente: 'un cliente listo',
@@ -92,10 +101,17 @@ export default function PanelDeNegocios() {
   const { datos, situacion, causa, refrescar } = usarLectura('/api/negocios', {
     sinRespuesta: 'No se pudo contactar al servidor: no es que no haya negocios.',
   });
+  const sesion = useSesion();
   const [nicho, setNicho] = useState('');
   const [soloLoQueFalta, setSoloLoQueFalta] = useState(false);
   const [abiertas, setAbiertas] = useState(() => new Set());
   const [aviso, setAviso] = useState(null);
+  /* El alta de un cliente en una empresa: `{ empresa, catalogo }` mientras la ventana está abierta (el catálogo llega
+     después), el formulario y su propio aviso, que se ve dentro de la ventana. */
+  const [alta, setAlta] = useState(null);
+  const [valores, setValores] = useState(valoresDe(null));
+  const [ocupado, setOcupado] = useState(false);
+  const [avisoDelAlta, setAvisoDelAlta] = useState(null);
 
   /* El filtro va sobre los clientes: una empresa queda si su nicho es ése o si tiene un cliente de ese nicho, y al
      abrirla se ven sólo esos clientes. «Sólo lo que falta» deja lo que no está listo, en los dos niveles. */
@@ -123,11 +139,44 @@ export default function PanelDeNegocios() {
     setAviso(null);
     const r = await pedir('/api/auth/sesion', { metodo: 'PATCH', cuerpo: { orgId: e.id } });
     if (r.tipo !== 'datos') {
-      setAviso(`No se pudo entrar a ${e.nombre ?? 'esa empresa'}.`);
+      setAviso({ mal: true, texto: `No se pudo entrar a ${e.nombre ?? 'esa empresa'}.` });
       return;
     }
     // La sesión entera cambió: se recarga, como al cambiar de empresa desde la barra.
     window.location.reload();
+  };
+
+  const abrirElAlta = async (e) => {
+    setAviso(null);
+    setAvisoDelAlta(null);
+    setValores(valoresDe(null));
+    setAlta({ empresa: e, catalogo: null });
+    // El catálogo del formulario (nichos, modelos, países, monedas) viene con la lista de clientes de esa empresa.
+    const r = await pedir(`/api/admin/cuentas?orgId=${encodeURIComponent(e.id)}`);
+    if (r.tipo === 'datos') setAlta((a) => (a && a.empresa.id === e.id ? { ...a, catalogo: r.datos.catalogo } : a));
+    else setAvisoDelAlta('No se pudo leer el catálogo: el nicho, el país y la moneda no se pueden elegir. Cierra y vuelve a intentarlo.');
+  };
+
+  const agregar = async () => {
+    const { empresa } = alta;
+    setOcupado(true);
+    setAvisoDelAlta(null);
+    const r = await pedir('/api/admin/cuentas', { metodo: 'POST', cuerpo: { ...cuerpoDe(valores), orgId: empresa.id } });
+    setOcupado(false);
+    if (r.tipo !== 'datos') {
+      setAvisoDelAlta(
+        r.tipo === 'sin_respuesta' ? 'No llegó al servidor. No se agregó nada.' : (r.detalle ?? `No se pudo agregar el cliente (${r.estado}).`),
+      );
+      return;
+    }
+    setAlta(null);
+    setAviso({
+      mal: false,
+      texto:
+        `«${valores.nombre.trim()}» agregado a ${empresa.nombre ?? 'la empresa'}. Le falta su conexión: se carga entrando ` +
+        'a la empresa, en Ajustes › Clientes.',
+    });
+    await refrescar();
   };
 
   if (!datos) {
@@ -152,9 +201,9 @@ export default function PanelDeNegocios() {
         </div>
       ) : null}
       {aviso ? (
-        <div className="fd-aviso mal" role="status">
-          <i>⚠</i>
-          <span>{aviso}</span>
+        <div className={`fd-aviso ${aviso.mal ? 'mal' : 'bien'}`} role="status">
+          <i>{aviso.mal ? '⚠' : '✓'}</i>
+          <span>{aviso.texto}</span>
         </div>
       ) : null}
 
@@ -285,11 +334,18 @@ export default function PanelDeNegocios() {
                               ))}
                         </td>
                         <td>
-                          {e.esPrincipal ? null : (
-                            <button type="button" className="fd-btn-menor" onClick={() => void entrar(e)}>
-                              Entrar
-                            </button>
-                          )}
+                          <span className="neg-acciones">
+                            {sesion?.puedeCrearClientes && e.activa ? (
+                              <button type="button" className="fd-btn-menor" onClick={() => void abrirElAlta(e)}>
+                                Agregar cliente
+                              </button>
+                            ) : null}
+                            {e.esPrincipal ? null : (
+                              <button type="button" className="fd-btn-menor" onClick={() => void entrar(e)}>
+                                Entrar
+                              </button>
+                            )}
+                          </span>
                         </td>
                       </tr>
                       {abierta
@@ -337,6 +393,32 @@ export default function PanelDeNegocios() {
           </div>
         ) : null}
       </div>
+
+      {alta ? (
+        <Ventana
+          titulo={`Agregar un cliente a ${alta.empresa.nombre ?? 'la empresa'}`}
+          subtitulo="Un negocio de esa empresa, con su propia subcuenta de GoHighLevel. Nace activo y sin conexión."
+          alCerrar={() => setAlta(null)}
+        >
+          <FormularioDeCliente valores={valores} alCambiar={setValores} catalogo={alta.catalogo} prefijo="neg-cli" />
+          {avisoDelAlta ? (
+            <div className="fd-aviso mal" role="status">
+              <i>⚠</i>
+              <span>{avisoDelAlta}</span>
+            </div>
+          ) : null}
+          <div className="aj-fila">
+            <button
+              type="button"
+              className="fd-btn"
+              disabled={valores.nombre.trim().length === 0 || ocupado}
+              onClick={() => void agregar()}
+            >
+              {ocupado ? 'Agregando…' : 'Agregar cliente'}
+            </button>
+          </div>
+        </Ventana>
+      ) : null}
     </>
   );
 }

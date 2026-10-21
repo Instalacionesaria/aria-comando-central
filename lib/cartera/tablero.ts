@@ -25,7 +25,15 @@
 import type { ConfiguracionDeLosNegocios, ConfiguracionDeUnCliente, ConfiguracionDeUnaEmpresa } from './configuracion.ts';
 import type { FilaDeLaFotoDeUnCliente, FilaDeLaFotoDeUnaEmpresa, FotoDeLosNegocios } from './lectura.ts';
 import { nichoDeLaEmpresa } from './foto.ts';
-import { PASOS_DE_LA_EMPRESA, PASOS_DEL_CLIENTE, configurado, faltan, pasosDeLaEmpresa, pasosDelCliente } from './pasos.ts';
+import {
+  PASOS_DE_LA_EMPRESA,
+  PASOS_DEL_CLIENTE,
+  clienteConfigurado,
+  configurado,
+  faltan,
+  pasosDeLaEmpresa,
+  pasosDelCliente,
+} from './pasos.ts';
 import { HORARIOS } from '../negocio/barrido.ts';
 import { PISO_DE_UNA_TASA } from '../negocio/indicadoresDeCitas.ts';
 
@@ -163,8 +171,13 @@ function cifrasDeLaEmpresa(f: FilaDeLaFotoDeUnaEmpresa): EmpresaDelTablero['cifr
 
 /** Un cliente, con su configuración en vivo y sus cifras de la foto. */
 function clienteVivo(c: ConfiguracionDeUnCliente, f: FilaDeLaFotoDeUnCliente | undefined, ahora: number): ClienteDelTablero {
-  // Sin fila en la foto no se sabe si sus datos están al día: `sin_medir`, que no se acusa.
-  const pasos = pasosDelCliente(c, f ? (f.ultima_ingesta_el === null ? null : new Date(f.ultima_ingesta_el)) : undefined, ahora);
+  /* Lo medido —sus datos al día y Meta en su GoHighLevel— es de la foto. Sin fila, o con la fila de una empresa que no
+     se pudo medir, no se sabe: `sin_medir`, que no se acusa (la foto lo escribe igual, `filasDeUnaEmpresa`). */
+  const medido =
+    f && f.medida
+      ? { ultimaIngestaEl: f.ultima_ingesta_el === null ? null : new Date(f.ultima_ingesta_el), metaEnElCrm: f.meta_en_el_crm }
+      : undefined;
+  const pasos = pasosDelCliente(c, medido, ahora);
   return {
     id: c.id,
     nombre: c.nombre,
@@ -175,7 +188,7 @@ function clienteVivo(c: ConfiguracionDeUnCliente, f: FilaDeLaFotoDeUnCliente | u
     nichoConfirmado: c.nichoConfirmado,
     pais: c.pais,
     moneda: c.moneda,
-    configurado: c.estado === 'activa' && configurado(pasos, PASOS_DEL_CLIENTE),
+    configurado: clienteConfigurado(c.estado, pasos),
     faltan: faltan(pasos, PASOS_DEL_CLIENTE),
     cifras: f ? cifrasDelCliente(f) : null,
   };

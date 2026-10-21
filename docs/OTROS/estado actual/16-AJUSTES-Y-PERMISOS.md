@@ -236,8 +236,8 @@ sesión; no decide ningún permiso.
 (82 el 2026-09-28), **82** declaran `PANTALLA` y **29** están en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:522-656`):
 son exactamente, archivo por archivo, los que no la declaran (comparadas las dos listas con `diff`). No llaman a
 `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**, las mismas: `salud` y `login`, que son
-las públicas (`pruebas/apoyo/autorizados.ts:752-760`), y la sonda, el cron y el aviso del CRM, que van con secreto
-propio (`pruebas/apoyo/autorizados.ts:902-946`).
+las públicas (`pruebas/apoyo/autorizados.ts:761-769`), y la sonda, el cron y el aviso del CRM, que van con secreto
+propio (`pruebas/apoyo/autorizados.ts:911-955`).
 
 **Rechazos registrados.** En toda la historia de `identidad.auditoria_accesos`, 3 `permiso_denegado` y 0
 `seccion_denegada`; **ninguno** desde el 2026-09-28 (consulta del 2026-10-18 agrupada por `accion`).
@@ -281,7 +281,7 @@ restringe por sección, dársela sería dársela a todos los administradores (`d
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:754-759`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
+(`pruebas/apoyo/autorizados.ts:763-768`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
 origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con N=16384, r=8, p=1
 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login exitoso (`lib/autenticacion/freno.ts:85-96`).
 
@@ -443,7 +443,7 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 | Los topes y Meta | Los topes del cerebro en Ajustes; la prueba de conexión con Meta | `pruebas/base/218-los-topes-del-cerebro-en-ajustes.test.ts`, `pruebas/codigo/255-la-conexion-con-meta.test.ts` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` sigue vacía: no hay ninguna excepción viva
-(`pruebas/apoyo/autorizados.ts:862-869`).
+(`pruebas/apoyo/autorizados.ts:871-878`).
 
 **Un cruce que el código anuncia y no se encontró.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en las dos
@@ -575,8 +575,17 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   lo ve de sólo lectura (`puedeEditar`), y un cliente de otra empresa o de baja es 404
   (`app/api/admin/cuentas/[id]/campos/route.ts:94`, `app/api/admin/cuentas/[id]/campos/route.ts:104`). Corre como
   inquilino con el foco en ese cliente, sin abrir identidad, y queda auditado.
+- **La lista de chequeo de cada cliente** (C6 · D5, `099`): Ajustes › Clientes dice, por cliente, si está
+  configurado y, abierta, qué le falta y qué hacer (`components/ajustes/Clientes.jsx:224`, `components/ajustes/ListaDeChequeo.jsx:69`). Es
+  la misma lista que la foto y Negocios, con «Meta vinculado en su GoHighLevel» requerido y las miniaturas de Meta
+  recomendadas, y llega en vivo con `GET /api/admin/cuentas` (`cuentas.ver`): la ruta lee de identidad la presencia de la
+  conexión de cada cliente —sólo `is not null`, con la empresa destino en el `where`— y por eso entró a la lista de la
+  escotilla y a la de los dos dominios, sin escribir en identidad (`app/api/admin/cuentas/route.ts:69`,
+  `lib/cartera/configuracion.ts:132`). Ningún valor viaja: de cada paso, su clave, su nombre, si es requerido y su estado. En
+  Negocios, «Agregar cliente» da de alta en cualquier empresa con `cuentas.crear` y el `orgId`, que sólo la plataforma
+  puede mandar (`components/cartera/PanelDeNegocios.jsx:338`).
 - **Los closers que no ven a un cliente** (C6 · D1): el alta, la activación y la lista de Ajustes › Clientes dicen
-  qué closers están vinculados en otro cliente y no en ése —no ven sus contactos— (`app/api/admin/cuentas/route.ts:99`,
-  `components/ajustes/Clientes.jsx:42`), sólo a quien tiene `credenciales.ver` (la capacidad de la pantalla del
+  qué closers están vinculados en otro cliente y no en ése —no ven sus contactos— (`app/api/admin/cuentas/route.ts:139`,
+  `components/ajustes/Clientes.jsx:47`), sólo a quien tiene `credenciales.ver` (la capacidad de la pantalla del
   vínculo) y sobre su propia empresa: la plataforma operando sobre otra no recibe los nombres
   (`lib/administracion/cuentas.ts:404`).

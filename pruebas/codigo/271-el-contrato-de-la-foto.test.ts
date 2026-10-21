@@ -5,8 +5,11 @@
 //
 // La foto la va a leer un agente que saca conclusiones, y un agente no pregunta qué quiso decir una columna:
 //
-//   · las columnas del contrato son las de la `089`, y cada una tiene su comentario, que es el diccionario del agente
-//     — mutación: una columna sin `comment on`;
+//   · las columnas del contrato son las de la `089` y las que suman las que la amplían (la `099`), y cada una tiene su
+//     comentario, que es el diccionario del agente — mutación: una columna sin `comment on`;
+//   · el diccionario dice la lista de hoy: el último comentario de `faltan` nombra exactamente las claves de
+//     `PASOS_DEL_CLIENTE`, y el de `contrato` llega hasta `CONTRATO_DE_LA_FOTO`; cambiar la lista sin subir el contrato
+//     lo delata la foto fija de la lista — mutaciones: un paso de más, el contrato en 1 (C6 · D5);
 //   · ninguna columna nombra a una persona, ni a un contacto, ni a un id del CRM;
 //   · un solo escritor, `lib/cartera/foto.ts` — mutación: un segundo `insertInto('foto_de_las_…')`;
 //   · la configuración lee PRESENCIAS de identidad: cada cifrado o hash que nombra es un `is not null`, y no toca el
@@ -21,24 +24,37 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ConfiguracionDeUnaEmpresa, ConfiguracionDeUnCliente } from '../../lib/cartera/configuracion.ts';
-import { COLUMNAS_DE_LAS_CUENTAS, COLUMNAS_DE_LAS_EMPRESAS } from '../../lib/cartera/contrato.ts';
+import { COLUMNAS_DE_LAS_CUENTAS, COLUMNAS_DE_LAS_EMPRESAS, CONTRATO_DE_LA_FOTO } from '../../lib/cartera/contrato.ts';
 import { diaDeLaFoto, filasDeUnaEmpresa, nichoDeLaEmpresa } from '../../lib/cartera/foto.ts';
 import { MEDIDA_SIN_FILAS } from '../../lib/cartera/medicion.ts';
 import { PASOS_DEL_CLIENTE, configurado, faltan, pasosDelCliente } from '../../lib/cartera/pasos.ts';
 import { HORARIOS, TAREAS_DE_LA_PLATAFORMA } from '../../lib/negocio/barrido.ts';
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
-const leer = (ruta: string) => readFileSync(join(RAIZ, ruta), 'utf8');
+const leer = (ruta: string) => readFileSync(join(RAIZ, ruta), 'utf8').replace(/\r\n/g, '\n');
 const MIGRACION = leer('db/migraciones/089_la_foto_de_los_negocios.sql');
+/** Las que la amplían, en su orden: la 099 suma `meta_en_el_crm` y reescribe los comentarios que cambiaron (contrato 2). */
+const AMPLIACIONES = [leer('db/migraciones/099_meta_en_el_crm_de_cada_cliente.sql')];
+const TODAS = [MIGRACION, ...AMPLIACIONES];
 
-/** Las columnas de un `create table` de la migración, en su orden. */
+/** Las columnas de un `create table` de la 089, en su orden, y después las que suman las ampliaciones. */
 function columnasDe(tabla: string): string[] {
   const m = new RegExp(`create table if not exists negocio\\.${tabla} \\(([\\s\\S]*?)\\n\\);`).exec(MIGRACION);
   assert.ok(m, `no encontré la tabla ${tabla} en la 089`);
-  return m[1]!
+  const creadas = m[1]!
     .split('\n')
     .map((l) => /^\s{2}([a-z_0-9]+)\s/.exec(l)?.[1])
     .filter((c): c is string => c !== undefined && c !== 'primary' && c !== 'check');
+  const sumadas = AMPLIACIONES.flatMap((sql) =>
+    [...sql.matchAll(new RegExp(`^alter table negocio\\.${tabla} add column if not exists ([a-z_0-9]+) `, 'gm'))].map((x) => x[1]!),
+  );
+  return [...creadas, ...sumadas];
+}
+
+/** El ÚLTIMO comentario de una columna, el que queda en la base y lee el agente. */
+function comentarioDe(tabla: string, columna: string): string | undefined {
+  const patron = new RegExp(`^comment on column negocio\\.${tabla}\\.${columna} is\\s+'((?:[^']|'')*)'`, 'gm');
+  return TODAS.flatMap((sql) => [...sql.matchAll(patron)].map((x) => x[1]!)).at(-1);
 }
 
 function archivos(dir: string): string[] {
@@ -51,16 +67,38 @@ function archivos(dir: string): string[] {
   return salida;
 }
 
-test('las columnas del contrato son las de la 089, y cada una tiene su comentario', () => {
+test('las columnas del contrato son las de la 089 y sus ampliaciones, y cada una tiene su comentario', () => {
   for (const [tabla, contrato] of [
     ['foto_de_las_empresas', COLUMNAS_DE_LAS_EMPRESAS],
     ['foto_de_las_cuentas', COLUMNAS_DE_LAS_CUENTAS],
   ] as const) {
     assert.deepEqual(columnasDe(tabla), [...contrato], `${tabla}: la migración y el contrato no dicen lo mismo`);
     assert.match(MIGRACION, new RegExp(`^comment on table negocio\\.${tabla} is`, 'm'), `${tabla} no tiene su comentario`);
-    const comentadas = new Set([...MIGRACION.matchAll(new RegExp(`^comment on column negocio\\.${tabla}\\.([a-z_0-9]+) is`, 'gm'))].map((x) => x[1]));
-    const sin = contrato.filter((c) => !comentadas.has(c));
+    const sin = contrato.filter((c) => comentarioDe(tabla, c) === undefined);
     assert.deepEqual(sin, [], `${tabla}: columnas sin comentario, que el agente leería sin saber qué son`);
+  }
+});
+
+test('el diccionario de la foto dice la lista de chequeo de hoy, y el contrato que la nombra', () => {
+  // La foto fija de la lista: cambiarla cambia lo que significan `configurada` y `faltan`. Quien la cambie tiene que
+  // subir `CONTRATO_DE_LA_FOTO`, escribir su versión en el comentario de `contrato` y el de `faltan` en una migración
+  // nueva, y recién ahí cambiar esta línea.
+  assert.deepEqual(
+    PASOS_DEL_CLIENTE.map((p) => `${p.clave}${p.requerido ? '' : '?'}`),
+    ['crm', 'calendario', 'zona', 'nicho', 'datos', 'meta_en_el_crm', 'meta?', 'aviso?'],
+    'la lista de chequeo cambió: sube CONTRATO_DE_LA_FOTO y los comentarios de faltan y contrato',
+  );
+  assert.equal(CONTRATO_DE_LA_FOTO, 2);
+
+  const deFaltan = comentarioDe('foto_de_las_cuentas', 'faltan');
+  const claves = /\(([a-z_, ]+)\)/.exec(deFaltan ?? '')?.[1]?.split(', ');
+  assert.deepEqual(claves, PASOS_DEL_CLIENTE.map((p) => p.clave), 'el comentario de `faltan` no nombra las claves de la lista');
+  assert.match(String(comentarioDe('foto_de_las_cuentas', 'configurada')), /Meta vinculado en su GoHighLevel/);
+
+  // El comentario de `contrato` dice cada versión hasta la de hoy, y ninguna más.
+  for (const tabla of ['foto_de_las_empresas', 'foto_de_las_cuentas']) {
+    const versiones = [...String(comentarioDe(tabla, 'contrato')).matchAll(/(?:^|\. )(\d+): /g)].map((x) => Number(x[1]));
+    assert.equal(Math.max(...versiones), CONTRATO_DE_LA_FOTO, `${tabla}: el comentario de contrato no llega a la versión de hoy`);
   }
 });
 
@@ -107,15 +145,17 @@ test('el horario de la foto es de la plataforma, y la ruta no descifra credencia
 
 const AHORA = Date.parse('2026-10-18T12:00:00Z');
 const LISTO = { crmConectado: true, calendario: true, meta: false, aviso: false, zonaHoraria: 'America/Lima', nichoConfirmado: true };
+/** Lo medido de un cliente con Meta vinculado en su GoHighLevel, con la marca de su ingesta. */
+const medido = (ultimaIngestaEl: Date | null) => ({ ultimaIngestaEl, metaEnElCrm: true });
 
 test('la lista de chequeo: UTC no es una zona elegida, lo no medido no se acusa, y lo recomendado no cuenta', () => {
-  const al_dia = pasosDelCliente(LISTO, new Date(AHORA - 3600_000), AHORA);
-  assert.equal(configurado(al_dia, PASOS_DEL_CLIENTE), true, 'sin Meta ni aviso, que son recomendados, igual está configurado');
+  const al_dia = pasosDelCliente(LISTO, medido(new Date(AHORA - 3600_000)), AHORA);
+  assert.equal(configurado(al_dia, PASOS_DEL_CLIENTE), true, 'sin las miniaturas ni el aviso, que son recomendados, igual está configurado');
   assert.deepEqual(faltan(al_dia, PASOS_DEL_CLIENTE), ['meta', 'aviso']);
 
-  assert.equal(pasosDelCliente({ ...LISTO, zonaHoraria: 'UTC' }, new Date(AHORA), AHORA).zona, 'falta');
-  assert.equal(pasosDelCliente(LISTO, new Date(AHORA - 25 * 3600_000), AHORA).datos, 'falta', 'datos de ayer cuentan como al día');
-  assert.equal(pasosDelCliente(LISTO, null, AHORA).datos, 'falta');
+  assert.equal(pasosDelCliente({ ...LISTO, zonaHoraria: 'UTC' }, medido(new Date(AHORA)), AHORA).zona, 'falta');
+  assert.equal(pasosDelCliente(LISTO, medido(new Date(AHORA - 25 * 3600_000)), AHORA).datos, 'falta', 'datos de ayer cuentan como al día');
+  assert.equal(pasosDelCliente(LISTO, medido(null), AHORA).datos, 'falta');
 
   const sinMedir = pasosDelCliente(LISTO, undefined, AHORA);
   assert.equal(sinMedir.datos, 'sin_medir');

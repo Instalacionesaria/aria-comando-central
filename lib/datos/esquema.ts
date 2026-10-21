@@ -2118,7 +2118,7 @@ export interface TablaFotoDeLasEmpresas {
   senales_abiertas: number | null;
 }
 
-/** La foto de los negocios por cliente (089). `cuenta_ref` es el cliente medido, no una llave de aislamiento. */
+/** La foto de los negocios por cliente (089, y la 099). `cuenta_ref` es el cliente medido, no una llave de aislamiento. */
 export interface TablaFotoDeLasCuentas {
   org_id: ColumnaInquilino;
   dia: ColumnType<string, string, string>;
@@ -2157,6 +2157,8 @@ export interface TablaFotoDeLasCuentas {
   gasto_30d: string | null;
   ultima_ingesta_el: Date | null;
   ultima_alta_el: Date | null;
+  /** Meta vinculado en su GoHighLevel, de donde salen sus costos (`099`, contrato 2). Nulo = no se sabe. */
+  meta_en_el_crm: boolean | null;
 }
 
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */

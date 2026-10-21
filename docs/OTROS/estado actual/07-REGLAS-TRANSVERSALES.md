@@ -823,7 +823,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:862`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:871`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -1279,7 +1279,8 @@ para la base de producción; sí para el código del árbol y para la suite loca
 ## Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
 
 **Estado.** Los commits del 2026-10-18, `21556cd..18f61d6` y el Bloque C `00ccfee..ca5fcdc`, con las migraciones
-`085` a `095` (la `094`, de C5 · G3, del 2026-10-19; la `095`, de C5 · G1, del 2026-10-20), están encima de la Fase 0 y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
+`085` a `099` (la `094`, de C5 · G3, del 2026-10-19; la `095`, de C5 · G1, la `096` y la `097`, de C5 · G2, la `098`, de
+C6 · D4, y la `099`, de C6 · D5, del 2026-10-20), están encima de la Fase 0 y, como ella, **no en producción**: suben después de su aprobación, en el orden del plan de subida local. Los niveles
 son tres: ARIA (la organización principal), las empresas (`identidad.organizaciones`) y los clientes de cada empresa
 (`identidad.cuentas`). En pantalla se dice «Empresa» y «Cliente»; la palabra «cuenta» no aparece.
 
@@ -1302,12 +1303,12 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   sus pantallas (`lib/autorizacion/portero.ts:227`, `lib/autorizacion/cliente.ts:23`).
 - **La foto de los negocios, con un solo escritor.** `negocio.foto_de_las_empresas` y `negocio.foto_de_las_cuentas`
   viven bajo la principal, que un disparador exige (`db/migraciones/089_la_foto_de_los_negocios.sql:126`); no guardan
-  nombres, y nulo es «sin medir». Las escribe sólo `tomarLaFoto` (`lib/cartera/foto.ts:159`), en la tarea `foto` del
+  nombres, y nulo es «sin medir». Las escribe sólo `tomarLaFoto` (`lib/cartera/foto.ts:162`), en la tarea `foto` del
   cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:120`, horario en `lib/negocio/barrido.ts:382`).
-  Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:76`.
+  Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:114`.
 - **El tablero de Negocios.** La primera entrada de Client Success, sólo del superadministrador y desde la principal
   (`app/api/negocios/route.ts:33`): la configuración en vivo, leída de identidad como presencias
-  (`lib/cartera/configuracion.ts:70`), y las cifras de la foto (`lib/cartera/tablero.ts:296`). Las cifras de arriba no
+  (`lib/cartera/configuracion.ts:73`), y las cifras de la foto (`lib/cartera/tablero.ts:309`). Las cifras de arriba no
   cuentan a ARIA ni a los clientes de prueba, y nunca suman monedas distintas.
 - **La ingesta es de UN cliente (Bloque C).** Todo lo que entra del CRM o de Meta se escribe en el ámbito de su
   cliente, con un tipo que lo exige (`AmbitoDeUnCliente`, `lib/negocio/ambitoDelCliente.ts:26`): con la empresa entera
@@ -1433,7 +1434,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   queda con el colector atrasado; Conversion pregunta por la ventana que decidió el motivo
   (`lib/negocio/pasosDeConversion.ts:642`). Las frases entraron primero en A14-02 y CV15-02. Y los closers: el alta, la
   activación y Ajustes › Clientes dicen quiénes están vinculados en otro cliente y no en ése
-  (`lib/negocio/alcanceDelCloser.ts:275`, `app/api/admin/cuentas/route.ts:99`), sólo a quien tiene `credenciales.ver` y
+  (`lib/negocio/alcanceDelCloser.ts:275`, `app/api/admin/cuentas/route.ts:139`), sólo a quien tiene `credenciales.ver` y
   sobre su propia empresa (`lib/administracion/cuentas.ts:404`), y la pantalla del vínculo, por cliente activo, con más
   de uno (`app/api/admin/closer/route.ts:139`, `components/closer/QuienEsElCloser.jsx:359`). El tope de tres closers
   es por EMPRESA, y queda decidido (`lib/negocio/closer.ts:233`). Lo exigen
@@ -1563,7 +1564,32 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:549`,
   `pruebas/codigo/297-el-puntaje-y-el-perfil-se-eligen-en-la-conexion.test.ts:36` y, el aviso de un solo cliente,
   `pruebas/base/157-calidad-del-creativo.test.ts:333`.
-- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3 y D4 ya no está):
+- **La lista de chequeo del cliente, en Ajustes y con Meta en su GoHighLevel (C6 · D5, `099`).** Los costos de cada
+  cliente salen de SU GoHighLevel con Meta vinculado (la decisión del 2026-10-20), y la lista de chequeo miraba otra
+  cosa: su paso «Meta conectado» era la conexión DIRECTA con Meta, que sólo trae las miniaturas, así que un cliente sin
+  costos salía «configurado». Desde D5 el paso es «Meta vinculado en su GoHighLevel», **requerido**
+  (`lib/cartera/pasos.ts:39`), y la conexión directa queda como «Miniaturas de Meta», recomendada
+  (`lib/cartera/pasos.ts:40`). No se lee de una credencial: se MIDE con el sello de la pasada del gasto del
+  cliente —corrió con el vínculo, o corrió sin él y dejó `MOTIVO_SIN_META_EN_GHL`—, y sin un sello que corrió, con su
+  serie de gasto de 30 días; sin nada, «sin medir», que no se acusa (`lib/cartera/medicion.ts:83`). El principal sin sello
+  propio toma el sin cuenta, como los avisos (`lib/cartera/medicion.ts:118`). Lo mismo mide la foto y la
+  lista en vivo (`medirLosPasos`, `lib/cartera/medicion.ts:97`); la foto lo guarda en `meta_en_el_crm`
+  (`lib/cartera/foto.ts:113`) y sube al **contrato 2**: cambian `configurada`, `faltan` y, de la empresa,
+  `cuentas_configuradas`, y la `099` reescribe sus comentarios. Configurado sigue siendo «activo y con todo lo
+  requerido» (`clienteConfigurado`, `lib/cartera/pasos.ts:123`), y el tablero ya no acusa lo medido de un cliente cuya
+  empresa no se pudo medir (`lib/cartera/tablero.ts:177`). **Ajustes › Clientes** muestra la lista de cada cliente,
+  con qué hacer en cada paso que falta (`components/ajustes/ListaDeChequeo.jsx:69`, `components/ajustes/ListaDeChequeo.jsx:21`,
+  `components/ajustes/Clientes.jsx:224`), leída EN VIVO de `GET /api/admin/cuentas` y no de la foto: las
+  presencias de la conexión salen de identidad, sólo `is not null` y con la empresa destino en el `where`
+  (`lib/cartera/configuracion.ts:132`, `app/api/admin/cuentas/route.ts:69`), y cada paso viaja con su clave, su
+  nombre, si es requerido y su estado, nada más (`app/api/admin/cuentas/route.ts:83`). La ruta entró a la lista de la
+  escotilla y a la de los dos dominios, con dos lecturas. **Negocios** suma «Agregar cliente», con `cuentas.crear` y el
+  `orgId` de la empresa, que sólo la plataforma puede mandar (`components/cartera/PanelDeNegocios.jsx:338`, `components/cartera/PanelDeNegocios.jsx:164`).
+  Con un solo cliente, la lista cambia a propósito: un cliente cuyo GoHighLevel no tiene Meta vinculado deja de estar
+  configurado. Lo exigen `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:205`, `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:228`,
+  `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:253`, `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:53`,
+  `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:223` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:82`.
+- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerraron C6 · D3, D4 y D5 ya no está):
   las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
   Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
   señales se cierran solas y renacen, y las decididas pierden su bloqueo; desde D3 lo mismo vale para la fuga, el
@@ -1611,7 +1637,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   con un valor que no es un entero de 0 a 100—, que se miden antes de subir. De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
   empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de campaña —la decisión del 2026-10-20
   es que Acquisition no pasa a ser por cliente: el gasto de cada uno sale de SU GoHighLevel con Meta vinculado, y la
-  nota dice de quién y qué hacer—, y si el sello no sabe por qué (un cliente sin ningún sello, una pasada que falló) la
+  nota dice de quién y qué hacer; desde D5 su lista de chequeo tampoco lo da por configurado—, y si el sello no sabe por qué (un cliente sin ningún sello, una pasada que falló) la
   nota sigue con «Faltan días de gasto.» sola; «Meta no vinculado» sale del sello de `anuncios`, que corre una vez al
   día, así que se lee hasta la pasada siguiente, y con un `campaignId` de Google Ads de un cliente sin Meta vinculado
   la frase dice «vincúlalo en GoHighLevel» aunque pague en Google; la cabecera de Acquisition no lo dice (no depende
@@ -1645,7 +1671,20 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   imprimen el nombre de cada cliente, que puede ser el de una persona; la lista de usuarios del CRM sigue diciendo
   «Probá de nuevo» (está en `TODAVIA_VOSEAN` de la 258), para que con un cliente no cambie ninguna letra; y Tools y la
   lista sin `?cuenta=` dependen del principal activo de la `085`, que la base no asegura contra un `update` que lo
-  desmarque (sin él, Tools da 500 y la lista, 404). Hasta el primer cliente con subcuenta propia, ninguna de estas tiene efecto; con él, se
+  desmarque (sin él, Tools da 500 y la lista, 404). De la lista de chequeo (D5,
+  más arriba) quedan: Meta en su GoHighLevel se sabe con la pasada del gasto, una vez al día (`17 6 * * *`), así que un
+  cliente recién conectado queda «sin medir» —sin configurar— hasta su primera pasada, y quien vincula Meta lo sigue
+  viendo en falta hasta la siguiente; una pasada que se saltó o falló no dice nada del vínculo y manda su serie de 30
+  días, de modo que quien desvinculó Meta y tiene la última pasada fallida sigue «vinculado» mientras le queden días en
+  la ventana; el sello de `anuncios_relleno` no se mira; un cliente que pauta sólo en Google Ads no queda nunca
+  configurado (es la decisión: su GoHighLevel tiene que tener Meta); la foto de antes de la `099` (contrato 1) no trae
+  `meta_en_el_crm`, así que hasta la primera foto nueva Negocios dice ese paso «sin medir» y ningún cliente cuenta como
+  configurado (sólo en local: la foto no está en producción); un cliente en pausa sale con «Datos de las últimas 24
+  horas» en falta, porque no se barre; Ajustes › Clientes relee la lista al cerrar la ventana de un cliente, no al
+  guardar cada campo de su Conexión; quien tiene `cuentas.ver` ve la presencia de la conexión de cada cliente aunque no
+  tenga `credenciales.ver` (sólo un rol a medida: el administrador tiene las dos); y «Agregar cliente» en Negocios no
+  carga la Conexión ni vincula la subcuenta: eso sigue siendo entrar a la empresa y el vínculo de ARIA. Hasta el primer
+  cliente con subcuenta propia, ninguna de estas tiene efecto; con él, se
   mira su pantalla antes de activarlo, con su Conexión cargada.
 
 ---

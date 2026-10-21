@@ -460,6 +460,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // sólo tiene la plataforma, más `esDeLaPrincipal` una línea después del portero; y el `update` nombra la
   // organización además del id.
   'app/api/admin/cuentas/[id]/vinculo/route.ts',
+  // La lista de chequeo en vivo de Ajustes › Clientes (C6 · D5): lee de identidad si cada cliente tiene su conexión
+  // cargada —sólo presencias, `is not null`, nunca un valor (`leerLosClientesDe`)—, porque el rol del inquilino no tiene
+  // ni `select` sobre las credenciales. La empresa va en el `where` y la elige `empresaDestino` después del portero
+  // (`cuentas.ver`): la de la sesión, o —sólo la plataforma— la que pide con `orgId`. El alta de ese archivo no la usa.
+  'app/api/admin/cuentas/route.ts',
   // La conexión de un cliente que no es el principal: su token y su calendario del CRM, su Meta y el secreto de su
   // aviso, en `identidad.cuentas_credenciales`. La misma escotilla que `app/api/admin/credenciales/route.ts`, con su
   // misma capacidad (`credenciales.ver`/`.editar`); el cliente se busca por (organización efectiva, id) antes de
@@ -736,6 +741,10 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // El tablero de Negocios: identidad para la configuración, negocio para la foto de la principal. **Qué queda a medias
   // si la segunda mitad falla: nada, porque NO ESCRIBE.** Son dos lecturas.
   'app/api/negocios/route.ts',
+  // Ajustes › Clientes (C6 · D5): el GET lee de identidad las presencias de la conexión de cada cliente y después, por
+  // `conOrganizacion()`, la lista y lo que se mide. **Qué queda a medias si la segunda mitad falla: nada, porque el GET
+  // NO ESCRIBE**: son dos lecturas. El POST del mismo archivo (el alta) no abre identidad: escribe sólo por el inquilino.
+  'app/api/admin/cuentas/route.ts',
 ];
 
 /**

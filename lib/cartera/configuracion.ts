@@ -14,9 +14,12 @@
 //   · sin las organizaciones de control de la sonda (`SLUGS_DE_CONTROL`), con la misma constante que
 //     `listarOrganizaciones`: dos listas que tienen que coincidir se desincronizan.
 //
-// Las credenciales de la cuenta por omisión salen de `organizaciones_credenciales`, que es donde las escribe Ajustes
-// hoy; las de los demás clientes, de `cuentas_credenciales`. Cuando la ingesta sea por cliente (el Bloque C), las dos
-// van a coincidir.
+// Las credenciales de la cuenta por omisión salen de `organizaciones_credenciales`, que es donde las escribe Ajustes ›
+// Credenciales; las de los demás clientes, de `cuentas_credenciales`. Es la regla de los resolvedores
+// (`lib/credenciales/resolver.ts`): el principal usa las de la empresa, y los demás las suyas.
+//
+// La lista de chequeo en vivo de Ajustes › Clientes lee lo mismo de UNA empresa (`leerLosClientesDe`): la misma
+// consulta, con la empresa en el `where`, porque corre con la `Trx` de identidad y sin la política que la acote.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -96,6 +99,43 @@ export async function leerLaConfiguracion(db: Trx): Promise<ConfiguracionDeLosNe
        order by o.es_principal desc, o.nombre, o.id`.execute(db)
   ).rows;
 
+  const clientes = await leerLosClientes(db);
+
+  const principal = empresas.find((e) => e.es_principal);
+  if (!principal) throw new Error('leerLaConfiguracion: no hay organización principal a la vista');
+  return {
+    principal: { id: principal.id, zonaHoraria: principal.zona_horaria },
+    empresas: empresas.map((e) => ({
+      id: e.id,
+      slug: e.slug,
+      nombre: e.nombre,
+      activa: e.activa,
+      esPrincipal: e.es_principal,
+      pais: e.pais,
+      nichoPrincipal: e.nicho_principal,
+      precioMensual: e.precio_mensual,
+      zonaHoraria: e.zona_horaria,
+      altaEl: e.creada_el,
+      llaveDeIa: e.llave_de_ia,
+      usuarios: e.usuarios,
+      usuariosLimitados: e.usuarios_limitados,
+      clientes: clientes.filter((c) => c.orgId === e.id).map(({ orgId: _empresa, ...c }) => c),
+    })),
+  };
+}
+
+/**
+ * Los clientes de UNA empresa, con las presencias de su conexión: lo que la lista de chequeo en vivo de Ajustes ›
+ * Clientes necesita de identidad. **Con la `Trx` de identidad**, y la empresa la elige quien llama, ya autorizada
+ * (`empresaDestino`).
+ */
+export async function leerLosClientesDe(db: Trx, orgId: string): Promise<ConfiguracionDeUnCliente[]> {
+  return (await leerLosClientes(db, orgId)).map(({ orgId: _empresa, ...c }) => c);
+}
+
+/** Los clientes de todas las empresas, o de una, con su empresa al lado. Sólo presencias. */
+async function leerLosClientes(db: Trx, orgId?: string): Promise<(ConfiguracionDeUnCliente & { orgId: string })[]> {
+  const deLaEmpresa = orgId === undefined ? sql`` : sql`where c.org_id = ${orgId}`;
   const clientes = (
     await sql<{
       id: string;
@@ -134,48 +174,27 @@ export async function leerLaConfiguracion(db: Trx): Promise<ConfiguracionDeLosNe
         from identidad.cuentas c
         left join identidad.cuentas_credenciales cc on cc.cuenta_id = c.id
         left join identidad.organizaciones_credenciales oc on oc.org_id = c.org_id
+       ${deLaEmpresa}
        order by c.es_por_omision desc, c.alta_el, c.id`.execute(db)
   ).rows;
-
-  const principal = empresas.find((e) => e.es_principal);
-  if (!principal) throw new Error('leerLaConfiguracion: no hay organización principal a la vista');
-  return {
-    principal: { id: principal.id, zonaHoraria: principal.zona_horaria },
-    empresas: empresas.map((e) => ({
-      id: e.id,
-      slug: e.slug,
-      nombre: e.nombre,
-      activa: e.activa,
-      esPrincipal: e.es_principal,
-      pais: e.pais,
-      nichoPrincipal: e.nicho_principal,
-      precioMensual: e.precio_mensual,
-      zonaHoraria: e.zona_horaria,
-      altaEl: e.creada_el,
-      llaveDeIa: e.llave_de_ia,
-      usuarios: e.usuarios,
-      usuariosLimitados: e.usuarios_limitados,
-      clientes: clientes
-        .filter((c) => c.org_id === e.id)
-        .map((c) => ({
-          id: c.id,
-          nombre: c.nombre,
-          estado: c.estado,
-          esPrueba: c.es_prueba,
-          esPorOmision: c.es_por_omision,
-          nicho: c.nicho,
-          nichoConfirmado: c.nicho_confirmado,
-          modeloDeNegocio: c.modelo_de_negocio,
-          pais: c.pais,
-          moneda: c.moneda,
-          zonaHoraria: c.zona_horaria,
-          altaEl: c.alta_el,
-          crmVinculado: c.crm_vinculado,
-          crmConectado: c.crm_conectado,
-          calendario: c.calendario,
-          meta: c.meta,
-          aviso: c.aviso,
-        })),
-    })),
-  };
+  return clientes.map((c) => ({
+    orgId: c.org_id,
+    id: c.id,
+    nombre: c.nombre,
+    estado: c.estado,
+    esPrueba: c.es_prueba,
+    esPorOmision: c.es_por_omision,
+    nicho: c.nicho,
+    nichoConfirmado: c.nicho_confirmado,
+    modeloDeNegocio: c.modelo_de_negocio,
+    pais: c.pais,
+    moneda: c.moneda,
+    zonaHoraria: c.zona_horaria,
+    altaEl: c.alta_el,
+    crmVinculado: c.crm_vinculado,
+    crmConectado: c.crm_conectado,
+    calendario: c.calendario,
+    meta: c.meta,
+    aviso: c.aviso,
+  }));
 }
