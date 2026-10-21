@@ -170,12 +170,16 @@ export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
  *
  * @param ventana Días de calendario `[desde, hasta]`, los dos incluidos, en vez de los últimos `dias` hasta
  *   hoy: la misma que recibe `recorridoDelLead`, para que el corte se diga una sola vez para las dos.
+ * @param cuentaId El formulario de UN cliente (el nivel 3, C6 · D3): con el campo de SU subcuenta y su cohorte. Un
+ *   cliente cuyo CRM no tiene el campo da `campoDelFormulario: null`, y su gente no diluye la cobertura de otro. Sin él,
+ *   el de toda la empresa, como siempre.
  */
 export async function embudoDelFormulario(
   dias = DIAS_DE_LA_TASA,
   ventana: DiasDeCalendario | null = null,
+  cuentaId: string | null = null,
 ): Promise<EmbudoDelFormulario> {
-  const campo = await campoPorNombre(CAMPO_DEL_FORMULARIO);
+  const campo = await campoPorNombre(CAMPO_DEL_FORMULARIO, cuentaId ?? undefined);
   const corte = await corteDeEpoca(dias, ventana);
 
   /* Sin el campo, el bloque entero se apaga **y lo dice**. No publica ceros: que el CRM no tenga
@@ -224,6 +228,7 @@ export async function embudoDelFormulario(
       sql<string | null>`max(alta_en_el_crm) filter (where ${valor} is not null)::date::text`.as('ultimo'),
     ])
     .where(cohorteDeLaLectura('contactos', dias, ventana))
+    .$if(cuentaId !== null, (q) => q.where('contactos.cuenta_id', '=', cuentaId!))
     .executeTakeFirst();
 
   const cohorte = Number(f?.cohorte ?? 0);

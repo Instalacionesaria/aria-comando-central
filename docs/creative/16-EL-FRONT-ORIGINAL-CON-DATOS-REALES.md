@@ -40,7 +40,7 @@ la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volume
 | Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:325`) | real |
 | Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:147`) | «—» |
 | Tira: Alcance | **impresiones** (desvío) | `rendimientoDelCreativo` | real |
-| Tira: Frecuencia | impresiones sobre alcance, pesada por impresiones | `metricas_de_anuncio`, como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:141`) | real |
+| Tira: Frecuencia | impresiones sobre alcance, pesada por impresiones | `metricas_de_anuncio`, como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:142`) | real |
 | Barra «Ordenar por» | Calificados, Agendas, Hook rate, Impresiones | el servidor | real |
 | Grupos «Funciona» / «No funciona» | contra el promedio de la etapa | el servidor | real |
 | Tarjeta: miniatura | `videoUrl` de la primera atribución | `negocio.miniaturas_del_contacto`, completada con `GET /contacts/{id}` | real desde CF-1 |
@@ -179,7 +179,7 @@ de los promedios; Retención, «—». La celda del criterio de orden elegido ll
 **Fórmula** · Calificados: los contactos de la pieza con `tramoDelPuntaje` alto, sobre el mismo puntaje que lee
 `calidadDelCreativo` (el campo «Puntaje | ICP», `CAMPO_DE_ICP`, `lib/negocio/calidadDelCreativo.ts:64`). Hook rate: la
 suma de `videoView` sobre la suma de impresiones de los anuncio-días con la clave. Frecuencia: impresiones sobre
-alcance, pesada por impresiones como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:141-166`).
+alcance, pesada por impresiones como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:142-167`).
 
 **Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
 

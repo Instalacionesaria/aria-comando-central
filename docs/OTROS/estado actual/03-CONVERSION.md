@@ -34,7 +34,7 @@ entró **un solo contacto**, el 2026-10-16, y la tarea `contactos` siguió corri
 > - **2026-10-11 · `d9c10e5`** — CF-4 de Creative: el comentario del cajón deja de decir que el de Creative tiene su
 >   `id` (`components/conversion/CajonDelPaso.jsx:19-20`). Sólo comentario.
 > - **2026-10-11 · `fefffa1`** — CF-5 de Creative: la cita de `lib/negocio/recorridoDelLead.ts` a la foto de Creative
->   queda fijada a su commit (`lib/negocio/recorridoDelLead.ts:159`). Sólo comentario.
+>   queda fijada a su commit (`lib/negocio/recorridoDelLead.ts:163`). Sólo comentario.
 > - **2026-10-16 · `693a383..dc84cb2`, construido en local, sin subir** — la Fase 0 del modelo de datos: `contactos`
 >   y `citas` reciben `cuenta_id` (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:123-127`), y nace
 >   `negocio.eventos`, de sólo agregar, en el que nada escribe todavía (`db/migraciones/084_los_eventos.sql:6-7`,
@@ -85,7 +85,7 @@ Estado de las cinco promesas del § 18.16, con su fecha:
 | campaña y anuncio de origen | **llega**: `adId` en 215 de 624 contactos, `utmContent` en 508 | `atribucion_primera`, medido el 2026-10-18 (213 y 506 de 594 el 2026-09-28) |
 | calidad del tráfico | **no está definida**: el documento no dice qué es | `docs/conversion/07-LO-QUE-ENTREGA-Y-RECIBE.md:36` |
 | CTR | **llega**, por anuncio y por día | `negocio.metricas_de_anuncio` |
-| *landing page views* | **llega, y Conversion la publica desde el 2026-10-09**: «Vistas de landing, según Meta», sin tasa. El desglose de acciones empieza el 2026-08-18 (re-medido el 2026-10-18), y `landingPageView` y `omniLandingPageView` valían lo mismo en las 221 filas que traían las dos el 2026-10-08 | `lib/negocio/pasosDeConversion.ts:479` |
+| *landing page views* | **llega, y Conversion la publica desde el 2026-10-09**: «Vistas de landing, según Meta», sin tasa. El desglose de acciones empieza el 2026-08-18 (re-medido el 2026-10-18), y `landingPageView` y `omniLandingPageView` valían lo mismo en las 221 filas que traían las dos el 2026-10-08 | `lib/negocio/pasosDeConversion.ts:498` |
 | audiencia y placement | **no llega**: GoHighLevel sólo agrupa por día, semana o mes | del 2026-09-20, no re-medido: `docs/conversion/07-LO-QUE-ENTREGA-Y-RECIBE.md:39` |
 
 Las vistas de landing son un agregado de Meta por anuncio y por día: no son sesiones ni se pueden cruzar con
@@ -113,7 +113,7 @@ la frase de la cabecera del departamento (`app/api/conversion/route.ts:48-51`). 
 usó (`app/api/conversion/route.ts:96-115`). El lector del navegador exige el período, sin valor por omisión
 (`lib/negocio/vistaDeConversion.ts:51`).
 
-**La lectura.** `lecturaDeConversion` (`lib/negocio/pasosDeConversion.ts:544`) compone lo que ya se medía y no
+**La lectura.** `lecturaDeConversion` (`lib/negocio/pasosDeConversion.ts:563`) compone lo que ya se medía y no
 lo recalcula:
 
 - la ventana, con `bordesDelPeriodo` (`lib/negocio/diasCerrados.ts:82`): «7 días» y «30 días» son días
@@ -123,10 +123,10 @@ lo recalcula:
   y 30 días las dos pantallas cuentan a la misma gente;
 - el reparto, con `recorridoDelLead`, y el formulario, con `embudoDelFormulario`, sobre esa ventana;
 - una pasada por la cohorte —agendó, calificó, confirmó, canceló, la cohorte hasta el corte y las citas
-  congeladas— (`lib/negocio/pasosDeConversion.ts:427`), y la de la ventana anterior a la misma edad;
-- las vistas de landing de Meta (`lib/negocio/pasosDeConversion.ts:510`).
+  congeladas— (`lib/negocio/pasosDeConversion.ts:446`), y la de la ventana anterior a la misma edad;
+- las vistas de landing de Meta (`lib/negocio/pasosDeConversion.ts:529`).
 
-`armarPasos` (`lib/negocio/pasosDeConversion.ts:259`) arma con eso la tira y las cinco tarjetas, con sus
+`armarPasos` (`lib/negocio/pasosDeConversion.ts:278`) arma con eso la tira y las cinco tarjetas, con sus
 variaciones y su lectura; todo viaja de 0 a 1. El cerebro (`pasos_de_conversion`, `recorrido_de_los_leads`,
 `formulario_de_la_landing`, `lib/agentes/executive/adaptadores/conversion.ts:19`) y el detector leen la misma
 lectura, así que lo que dicen de una cifra es lo que la pantalla dibuja.
@@ -158,7 +158,7 @@ orden (`components/conversion/PanelDeConversion.jsx:189`):
 siete familias (`components/conversion/CajonDelPaso.jsx:113`), Formulario con lo empezado, lo completado, la tasa
 y los tres estados del campo (`components/conversion/CajonDelPaso.jsx:163`), y Agenda con agendados,
 calificados, tasa, confirmados, cancelaron y no calificados (`components/conversion/CajonDelPaso.jsx:226`). Las
-observaciones van sólo en los pasos a los que apunta una regla (`components/conversion/CajonDelPaso.jsx:257`).
+observaciones van sólo en los pasos a los que apunta una regla (`components/conversion/CajonDelPaso.jsx:258`).
 
 Las frases de los huecos y los motivos son una lista cerrada (`components/conversion/comun.jsx:41`), la del
 `CV15-02`; el navegador no calcula y multiplica por 100 en un solo lugar (`components/conversion/comun.jsx:77`).
@@ -352,8 +352,8 @@ no se publica: la fila del cajón lleva el conteo de agendados, no una tasa (`li
 **4. El vocabulario de `Form Landing VSL` es cerrado y hay que tratarlo como cerrado.**
 
 Tres valores exactos (`lib/negocio/recorrido.ts:234-238`). Un cuarto valor sólo se ve contándolo: la consulta lo
-cuenta (`lib/negocio/embudoDelFormulario.ts:215-217`) y el aviso lo nombra
-(`lib/negocio/embudoDelFormulario.ts:304-309`).
+cuenta (`lib/negocio/embudoDelFormulario.ts:219-221`) y el aviso lo nombra
+(`lib/negocio/embudoDelFormulario.ts:309-314`).
 
 **5. Los siete hosts no son la misma página y no se pueden sumar.**
 
@@ -378,14 +378,14 @@ Conversion la del VSL de la landing, y hoy no puede (regla 1).
 
 `PISO_DE_UNA_TASA = 10` (`lib/negocio/indicadoresDeCitas.ts:329`), sobre el denominador. Muerde en las tasas de
 la ventana corta: el 2026-10-18, en 7 días hay un contacto y la tasa de agenda dice «—»; en la finalización del
-formulario, sobre los que lo empezaron (`lib/negocio/embudoDelFormulario.ts:251`); y en confirmados y cancelaron,
+formulario, sobre los que lo empezaron (`lib/negocio/embudoDelFormulario.ts:256`); y en confirmados y cancelaron,
 sobre los calificados. La porción de cada familia va sin piso, porque es un conteo exacto.
 
 **9. Ninguna cifra puede llevar un identificador de GoHighLevel escrito a mano.**
 
-`campoPorNombre()` (`lib/negocio/camposDelCrm.ts:315-330`) es la única puerta: compara por nombre exacto y
+`campoPorNombre()` (`lib/negocio/camposDelCrm.ts:318-335`) es la única puerta: compara por nombre exacto y
 devuelve `null` —no cero— si alguien renombra el campo. Conversion entra por ahí para el formulario
-(`lib/negocio/embudoDelFormulario.ts:178`) y para la confirmación, y sin el campo la cifra es un hueco.
+(`lib/negocio/embudoDelFormulario.ts:182`) y para la confirmación, y sin el campo la cifra es un hueco.
 
 **10. Por familia se publican conteos, no tasas.** La tasa de agenda por recorrido salió circular: las familias
 cuya dirección se escribe al reservar dan 100 % porque estar en la fila y haber agendado son el mismo hecho
@@ -397,7 +397,7 @@ sólo 47 de esos contactos tenían una cita alcanzable (2026-09-28). Sale del pr
 contradicción en la columna «Con cita».
 
 **12. «No hubo gente» no es «no hay dato».** Una ventana vacía es falta de tráfico, y el aviso lo dice con esas
-palabras (`lib/negocio/recorridoDelLead.ts:250-260`); la nota empieza con «Sin contactos en este período».
+palabras (`lib/negocio/recorridoDelLead.ts:254-264`); la nota empieza con «Sin contactos en este período».
 
 **Y tres que nacieron con el front del prototipo, el 2026-10-08:**
 
@@ -412,7 +412,7 @@ no son personas y no llevan tasa. Contra la ventana anterior comparan los contac
 landing (con las dos cohortes en el piso); los agendados, a la misma edad y sin citas congeladas en la anterior;
 las vistas, por su cuenta, con el gasto entero y el desglose completo en las dos ventanas. **Nunca** comparan el
 formulario, los calificados, los no calificados, los confirmados ni los que cancelaron: el descarte y la
-confirmación no tienen fecha (`lib/negocio/pasosDeConversion.ts:259`, `CV15-20`).
+confirmación no tienen fecha (`lib/negocio/pasosDeConversion.ts:278`, `CV15-20`).
 
 **15. El servidor calcula; el navegador dibuja.** Las tasas, las caídas y las variaciones con su lectura llegan
 hechas; el navegador sólo les da formato, multiplica por 100 en un solo lugar
@@ -421,12 +421,22 @@ hechas; el navegador sólo les da formato, multiplica por 100 en un solo lugar
 
 **16. Con varios clientes (el nivel 3, C5 · G3), las vistas no son las de otro cliente.** Si un cliente pautó en la
 ventana sin Meta conectado, sus vistas no las leyó nadie: no se publica la suma de los demás ni el cero que midió la
-cuenta de otro, y la nota dice «Faltan días de gasto» (`lib/negocio/pasosDeConversion.ts:523`). Y con un cliente sin su
-gasto en la ventana o en la anterior, las vistas no comparan, diciendo por qué (`lib/negocio/pasosDeConversion.ts:598`,
-`lib/negocio/pasosDeConversion.ts:608`). Desde C6 · D1, la nota dice después de «Faltan días de gasto» de qué cliente
-falta y qué hacer, preguntando por la ventana que decidió el motivo (`lib/negocio/pasosDeConversion.ts:631`). Con un
+cuenta de otro, y la nota dice «Faltan días de gasto» (`lib/negocio/pasosDeConversion.ts:542`). Y con un cliente sin su
+gasto en la ventana o en la anterior, las vistas no comparan, diciendo por qué (`lib/negocio/pasosDeConversion.ts:609`,
+`lib/negocio/pasosDeConversion.ts:619`). Desde C6 · D1, la nota dice después de «Faltan días de gasto» de qué cliente
+falta y qué hacer, preguntando por la ventana que decidió el motivo (`lib/negocio/pasosDeConversion.ts:642`). Con un
 solo cliente, lo de siempre. Lo exigen `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts` y
 `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:566`.
+
+**17. Las señales, por cliente (C6 · D3).** Con contactos de más de un cliente, el detector mide a cada cliente activo
+contra SU cohorte, SU anterior y el campo del formulario de SU CRM (`lib/negocio/pasosDeConversion.ts:695`), con la
+misma regla de la anterior que la pantalla (`lib/negocio/pasosDeConversion.ts:224`): el cambio de mezcla entre
+clientes ya no parece un cambio de ruta, y un CRM sin el campo no diluye ni frena a los demás
+(`lib/agentes/detectores/conversion.ts:229`). Uno con la lectura de contactos atrasada no publica sus familias y deja
+sin medición sólo lo suyo; la familia y el formulario de otro cliente llevan su id adelante y se dibujan con su nombre,
+en la tarjeta y en los cajones (`components/conversion/CajonDelPaso.jsx:263`). La pantalla sigue siendo de la empresa.
+Lo exigen `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:289` y
+`pruebas/base/295-las-senales-de-cada-cliente.test.ts:428`.
 
 ---
 
@@ -445,7 +455,7 @@ conectada (`lib/negocio/embudoDelFormulario.ts:142-143@b2dcdf5`). Ahora dice que
 **3. La fila «Landing con VSL» de septiembre es casi toda circular, y no lleva la marca.** El 2026-09-28, en 30
 días, eran 43 contactos, 37 capturados al reservar (86 %). El cajón marca sólo la fila registrada entera
 (`components/conversion/CajonDelPaso.jsx:113`), y el aviso del servidor nombra las de un 90 % o más
-(`lib/negocio/recorridoDelLead.ts:273-275`): esta fila sale sin marca, y sus agendados se leen como conversión de
+(`lib/negocio/recorridoDelLead.ts:277-279`): esta fila sale sin marca, y sus agendados se leen como conversión de
 la landing. Su rótulo (`lib/negocio/recorrido.ts:70-73`) describe agosto. No se re-midió con la ventana de hoy.
 
 **4. Cerrado el 2026-10-09.** «Hoy» decía en su `title` «las últimas 24 horas» y medía el día de calendario. El
@@ -470,7 +480,7 @@ defecto que nadie notó. La base no desempata.
 **9. El § 17 sigue vacío, y la pantalla ya eligió.** No hay KPIs, umbrales ni responsables definidos por el
 negocio. Lo que se publica lo decidieron el usuario y el doc 15, con diez preguntas que se tomaron con su
 respuesta por defecto (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, § 6). Los umbrales de las
-cuatro reglas del detector siguen provisionales (`lib/agentes/detectores/conversion.ts:47`).
+cuatro reglas del detector siguen provisionales (`lib/agentes/detectores/conversion.ts:69`).
 
 **10. Si se vuelve a instrumentar, que sean eventos y no un campo por contacto.** Dos toques sobrescribibles sin
 fecha y un `% máximo visto` con 79 ceros son la demostración. La Fase 0 del modelo de datos, **construida en local
@@ -478,7 +488,7 @@ y sin subir**, ya trae la tabla para eso, `negocio.eventos` (`db/migraciones/084
 escritor (`db/migraciones/084_los_eventos.sql:14`).
 
 **11. La alarma no aparece nunca.** Sólo se dibuja con señales `critica`, y ninguna regla de Conversion lo es
-(`lib/agentes/detectores/conversion.ts:47`). Es la respuesta por defecto de `CV15-P05`: el lugar existe, vacío,
+(`lib/agentes/detectores/conversion.ts:69`). Es la respuesta por defecto de `CV15-P05`: el lugar existe, vacío,
 hasta que alguna regla merezca la alarma.
 
 **12. «Confirmados» depende de un campo del CRM sin fecha.** Sobre los calificados, la tasa cuenta a quien

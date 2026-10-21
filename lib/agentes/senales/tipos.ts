@@ -19,7 +19,12 @@ export type VentanaDeSenal = (typeof VENTANAS_DE_LAS_SENALES)[number];
  * en su `check` (`094`).
  *
  * `pieza`: su identificador, `idDeLaPieza` (`lib/negocio/idDeLaPieza.ts`): el nombre normalizado si es del cliente
- * principal —con uno solo, siempre—, y `<cuenta>:<nombre>` si es de otro (el nivel 3).
+ * principal —con uno solo, siempre—, y `<cuenta>:<nombre>` si es de otro (el nivel 3); en una señal, cortado si no entra
+ * en los 200 caracteres de la tabla (`idDeLaPiezaEnUnaSenal`).
+ *
+ * Con la misma convención (`idConCliente`, C6 · D3), lo que se mide dentro de un cliente con varios: `par_de_etapas`,
+ * `patron`, `familia_de_entrada` y el `funnel` `formulario` son los de siempre para el principal y llevan `<cuenta>:`
+ * adelante para otro. El juego de entidades no cambia.
  */
 export const ENTIDADES_DE_SENAL = [
   'campana', 'conjunto', 'anuncio', 'pieza', 'funnel', 'par_de_etapas', 'familia_de_entrada',
@@ -65,6 +70,17 @@ export interface Deteccion {
   /** En foto: lo que midió la función, con ids y cifras (AG-28). */
   evidencia: unknown;
   issueSource?: IssueSource | null;
+}
+
+/**
+ * Una regla que no se pudo medir en UN cliente (el nivel 3, C6 · D3): su lectura está atrasada, o no tiene contra qué
+ * comparar. Sólo las señales de ese cliente quedan «sin medición»; las de los demás, que sí se midieron, se cierran
+ * solas si no se detectaron. `cliente` es su nombre, para decirlo en el plan.
+ */
+export interface SinMedicionDeUnCliente {
+  regla: string;
+  cuentaId: string;
+  cliente: string;
 }
 
 /** Una detección que no llegó al piso: se cuenta en el plan, con su detalle (AG-27). */

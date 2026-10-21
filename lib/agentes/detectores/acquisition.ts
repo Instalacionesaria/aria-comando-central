@@ -28,16 +28,37 @@
 // por calificado y el gasto sin crecimiento agregado— se mide dentro de cada cliente (`clienteDe`), y lo que
 // era de la `empresa` pasa a ser de su `cliente`. Con un solo cliente el mapa va vacío y todo es como siempre. Y hay
 // dos frenos: un cliente que pautó sin Meta deja a la empresa sin costos (`sinCostos`), pero no apaga lo que sólo lee
-// Meta —sin entrega, la concentración y el costo por mil— de los demás (`faltanDiasDeMeta`, `anteriorDeMeta`).
+// Meta —sin entrega, la concentración, el costo por mil y el cambio brusco del conjunto— de los demás
+// (`faltanDiasDeMeta`, `anteriorDeMeta`).
+//
+// Desde C6 · D3 se miden también dentro de su cliente las tres que comparaban contra toda la empresa: el ICP de una
+// campaña contra SU funnel EN SU cliente, la fuga de un funnel contra los otros funnels DE SU cliente (con el
+// identificador de `idConCliente`: el de siempre para el principal) y el monitor de atribución, por cliente, sobre los
+// clientes ACTIVOS con campañas que tienen denominador en la ventana: uno sin gente, en pausa o de baja se salta, y la
+// regla queda sin medición sólo si ninguno tiene denominador, como la de la empresa. El conjunto lee Meta —su gente
+// llega por `utmTerm`, que es un id de Meta— y pasa al freno de Meta. El costo por contacto, el gasto sin crecimiento y
+// la escala siguen con el de los costos: necesitan la ventana anterior de la pantalla, que con un cliente sin Meta no
+// se lee (la decisión del 2026-10-20: el gasto de cada cliente sale de SU GoHighLevel con Meta vinculado); el plan dice
+// de qué cliente falta el gasto y qué hacer (`porQueNoSeMidio`).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
 import { datos } from '../../datos/contexto.ts';
 import { FUNNELS, type Funnel } from '../../negocio/funnelDeLaCampana.ts';
-import { costo, lecturaDeAcquisition, type Cifras, type EmbudosDeAcquisition } from '../../negocio/embudosDeAcquisition.ts';
+import {
+  CIFRAS_VACIAS,
+  costo,
+  lecturaDeAcquisition,
+  promedioDelIcp,
+  sumar,
+  type Cifras,
+  type EmbudosDeAcquisition,
+} from '../../negocio/embudosDeAcquisition.ts';
 import { calidadDeLaAtribucion, type CalidadDeLaAtribucion, type PuntoDeAtribucion } from '../../negocio/calidadDeLaAtribucion.ts';
+import { idConCliente } from '../../negocio/idDeLaPieza.ts';
 import { PISO_DE_UNA_SENAL, type DebajoDelPiso, type Deteccion, type VentanaDeSenal } from '../senales/tipos.ts';
 import type { ReglaDelCatalogo } from '../senales/umbrales.ts';
+import { clientesDeLaEmpresa } from './clientes.ts';
 
 // ─── Las reglas ─────────────────────────────────────────────────────────────
 
@@ -120,7 +141,7 @@ export const REGLAS_DE_ACQUISITION: readonly ReglaDelCatalogo[] = [
     unidad: 'puntos',
     denominador: 'calificados con puntaje',
     gravedad: 'media',
-    porque: 'Quince puntos de ICP bajo el promedio de su funnel separan un tramo del otro.',
+    porque: 'Quince puntos de ICP bajo el promedio de su funnel (con varios clientes, el de su funnel en su cliente) separan un tramo del otro.',
   },
   {
     codigo: ACQ.escalaPorCalificado,
@@ -138,7 +159,7 @@ export const REGLAS_DE_ACQUISITION: readonly ReglaDelCatalogo[] = [
     unidad: 'puntos_porcentuales',
     denominador: 'contactos',
     gravedad: 'media',
-    porque: 'Quince puntos menos de paso de contacto a agendado que en los otros funnels, con 10 en la etapa de origen, es una fuga del funnel y no del mercado.',
+    porque: 'Quince puntos menos de paso de contacto a agendado que en los otros funnels (con varios clientes, los de su cliente), con 10 en la etapa de origen, es una fuga del funnel y no del mercado.',
   },
   {
     codigo: ACQ.cpmAbrupto,
@@ -165,7 +186,7 @@ export const REGLAS_DE_ACQUISITION: readonly ReglaDelCatalogo[] = [
     unidad: 'proporcion' as const,
     denominador: p.denominador,
     gravedad: 'media' as const,
-    porque: 'Es el mismo corte del monitor de atribución: si se pierde el origen de más de uno de cada diez, ya no se puede decir qué anuncio trae más.',
+    porque: 'Es el mismo corte del monitor de atribución (con varios clientes, el de cada uno): si se pierde el origen de más de uno de cada diez, ya no se puede decir qué anuncio trae más.',
   })),
 ];
 
@@ -202,8 +223,17 @@ export interface MedidaDeAcquisition {
    * solo cliente es `embudos.sinComparacion === 'faltan_dias'`; con varios, un cliente sin Meta no lo prende.
    */
   faltanDiasDeMeta: boolean;
-  /** La anterior de lo que sólo lee Meta: la de las `impresiones`. Con un solo cliente, `embudos.anterior`. */
+  /** La anterior de lo que sólo lee Meta: la de las `impresiones` y los `conjuntos`. Con un solo cliente, `embudos.anterior`. */
   anteriorDeMeta: Ventana | null;
+  /**
+   * (C6 · D3) El monitor de atribución de cada cliente ACTIVO con campañas (`clienteDe`), sobre los mismos días. VACÍO con
+   * `clienteDe` vacío: el monitor es el de la empresa (`atribucion`), como siempre.
+   */
+  atribucionPorCliente: ReadonlyMap<string, CalidadDeLaAtribucion>;
+  /** (C6 · D3) El cliente de cada conjunto, por sus anuncios. VACÍO con `clienteDe` vacío. */
+  clienteDelConjunto: ReadonlyMap<string, string>;
+  /** (C6 · D3) El cliente por omisión: lo suyo lleva el identificador de siempre (`idConCliente`). */
+  principal: string | null;
 }
 
 /** Corre dentro de `conOrganizacion`. */
@@ -221,7 +251,14 @@ export async function medirAcquisition(ventana: VentanaDeSenal, zona: string): P
        and a.meta_campana_id is not null
        and coalesce(m.impresiones, 0) > 0
      group by 1`.execute(datos());
-  const anterior = embudos.anterior;
+  /* El monitor de cada cliente (C6 · D3), con campañas de varios: sólo los ACTIVOS. Uno en pausa o de baja no se mide
+     —sus señales se cierran solas—, y el que no tiene gente en la ventana se salta al detectar. En serie: es una sola
+     transacción. */
+  const clientes = clienteDe.size > 0 ? await clientesDeLaEmpresa() : null;
+  const atribucionPorCliente = new Map<string, CalidadDeLaAtribucion>();
+  for (const cliente of [...new Set(clienteDe.values())].sort()) {
+    if (clientes?.activos.includes(cliente)) atribucionPorCliente.set(cliente, await calidadDeLaAtribucion(dias, embudos.ventana, cliente));
+  }
   return {
     ventana,
     embudos,
@@ -230,12 +267,26 @@ export async function medirAcquisition(ventana: VentanaDeSenal, zona: string): P
     entrega: entregaDe(filas.rows, hasta),
     // El costo por mil sólo lee Meta: compara contra la anterior de Meta, que un cliente sin Meta no apaga.
     impresiones: anteriorDeMeta === null ? null : await impresionesPorCampana(embudos.ventana, anteriorDeMeta),
-    conjuntos: anterior === null || ventana !== '7d' ? null : await cifrasPorConjunto(embudos.ventana, anterior),
+    // El conjunto también (C6 · D3): su gasto es de Meta y su gente llega por `utmTerm`, el id del conjunto en Meta.
+    conjuntos: anteriorDeMeta === null || ventana !== '7d' ? null : await cifrasPorConjunto(embudos.ventana, anteriorDeMeta),
     atribucion: await calidadDeLaAtribucion(dias, embudos.ventana),
     clienteDe,
     faltanDiasDeMeta,
     anteriorDeMeta,
+    atribucionPorCliente,
+    clienteDelConjunto: clienteDe.size > 0 ? await clienteDeCadaConjunto() : new Map(),
+    principal: clientes?.principal ?? null,
   };
+}
+
+/** El cliente de cada conjunto (C6 · D3): el de sus anuncios, la cuenta de Meta que los leyó. */
+async function clienteDeCadaConjunto(): Promise<Map<string, string>> {
+  const r = await sql<{ conjunto: string; cliente: string }>`
+    select meta_conjunto_id as conjunto, min(cuenta_id::text) as cliente
+      from negocio.anuncios
+     where meta_conjunto_id is not null
+     group by 1`.execute(datos());
+  return new Map(r.rows.map((f) => [f.conjunto, f.cliente]));
 }
 
 type Ventana = { desde: string; hasta: string };
@@ -550,9 +601,25 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
   // ── El ICP de una campaña, bajo el de su funnel ──
   {
     const u = umbral(ACQ.icpEntreCampanas);
+    /* Con campañas de varios clientes (C6 · D3), el promedio es el de SU funnel EN SU cliente: con el de la empresa, una
+       campaña de un cliente cuyo público puntúa distinto quedaba bajo un promedio que no es el suyo —o tapada por él—.
+       Con la misma fórmula de la pantalla (`promedioDelIcp`) sobre las cifras de sus campañas. Con un cliente, la cifra
+       de la pantalla, sin volver a sumarla. */
+    const enSuCliente = new Map<string, Cifras>();
+    if (m.clienteDe.size > 0) {
+      for (const c of embudos.campanas) {
+        if (c.funnel === null) continue;
+        const clave = `${m.clienteDe.get(c.campana) ?? ''}·${c.funnel}`;
+        enSuCliente.set(clave, sumar(enSuCliente.get(clave) ?? CIFRAS_VACIAS, m.actual.get(c.campana) ?? CIFRAS_VACIAS));
+      }
+    }
     for (const c of embudos.campanas) {
       if (c.funnel === null) continue;
-      const delFunnel = embudos.funnels[c.funnel].calificados.icp.promedio;
+      const cliente = m.clienteDe.get(c.campana) ?? null;
+      const delFunnel =
+        m.clienteDe.size === 0
+          ? embudos.funnels[c.funnel].calificados.icp.promedio
+          : promedioDelIcp(enSuCliente.get(`${cliente ?? ''}·${c.funnel}`) ?? CIFRAS_VACIAS);
       const propio = c.cifras.calificados.icp.promedio;
       const conPuntaje = actualDe(c.campana)?.conPuntaje ?? 0;
       /* Bajo el piso de puntajes la pantalla no publica el promedio, y sin él no se sabe si la regla se
@@ -574,7 +641,16 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
         causasPosibles: ['puede deberse a la segmentación', 'puede deberse a un mensaje que atrae a otro público'],
         perdidaContactos: null,
         umbral: u,
-        evidencia: { ventana: m.ventana, periodo, campana: c.campana, funnel: c.funnel, promedioDelFunnel: redondear(delFunnel, 1), promedio: redondear(propio, 1), conPuntaje },
+        evidencia: {
+          ventana: m.ventana,
+          periodo,
+          campana: c.campana,
+          funnel: c.funnel,
+          ...(cliente === null ? {} : { cliente }),
+          promedioDelFunnel: redondear(delFunnel, 1),
+          promedio: redondear(propio, 1),
+          conPuntaje,
+        },
       });
     }
   }
@@ -632,21 +708,41 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
   // ── El paso de contacto a agendado de un funnel, bajo el de los otros ──
   {
     const u = umbral(ACQ.fugaEntreEtapas);
-    const porFunnel = new Map<Funnel, { contactos: number; agendados: number }>();
-    for (const f of FUNNELS) {
-      const etapas = embudos.funnels[f].etapas;
-      const contactos = etapas.find((e) => e.etapa === 'contactos')?.valor ?? null;
-      const agendados = etapas.find((e) => e.etapa === 'agendados')?.valor ?? null;
-      if (contactos !== null && agendados !== null) porFunnel.set(f, { contactos, agendados });
+    type Paso = { contactos: number; agendados: number };
+    /* Con campañas de varios clientes (C6 · D3), los funnels de cada cliente se comparan entre sí: los otros funnels de
+       la empresa son la gente de otro cliente, con otra oferta y otra agenda. Con un cliente, las cifras de la pantalla. */
+    const grupos = new Map<string | null, Map<Funnel, Paso>>();
+    if (m.clienteDe.size === 0) {
+      const porFunnel = new Map<Funnel, Paso>();
+      for (const f of FUNNELS) {
+        const etapas = embudos.funnels[f].etapas;
+        const contactos = etapas.find((e) => e.etapa === 'contactos')?.valor ?? null;
+        const agendados = etapas.find((e) => e.etapa === 'agendados')?.valor ?? null;
+        if (contactos !== null && agendados !== null) porFunnel.set(f, { contactos, agendados });
+      }
+      grupos.set(null, porFunnel);
+    } else {
+      const conFunnel = embudos.campanas.filter((c) => c.funnel !== null);
+      for (const [cliente, suyas] of agruparPorCliente(m, conFunnel, (c) => c.campana)) {
+        const porFunnel = new Map<Funnel, Paso>(FUNNELS.map((f) => [f, { contactos: 0, agendados: 0 }]));
+        for (const c of suyas) {
+          const x = m.actual.get(c.campana) ?? CIFRAS_VACIAS;
+          const p = porFunnel.get(c.funnel!)!;
+          porFunnel.set(c.funnel!, { contactos: p.contactos + x.contactos, agendados: p.agendados + x.agendados });
+        }
+        grupos.set(cliente, porFunnel);
+      }
     }
-    for (const [f, propio] of porFunnel) {
+    const funnelsDeCadaCliente = [...grupos].flatMap(([cliente, porFunnel]) => [...porFunnel].map(([f, propio]) => ({ cliente, porFunnel, f, propio })));
+    for (const { cliente, porFunnel, f, propio } of funnelsDeCadaCliente) {
       const otros = [...porFunnel.entries()].filter(([g]) => g !== f).reduce((s, [, x]) => ({ contactos: s.contactos + x.contactos, agendados: s.agendados + x.agendados }), { contactos: 0, agendados: 0 });
       if (otros.contactos < PISO_DE_UNA_SENAL || propio.contactos === 0) continue;
       const tasaPropia = propio.agendados / propio.contactos;
       const tasaDeLosOtros = otros.agendados / otros.contactos;
       const debajo = tasaDeLosOtros - tasaPropia;
       if (debajo < u.valor) continue;
-      const entidad = { tipo: 'par_de_etapas' as const, id: `${f}:contactos>agendados` };
+      // El par de SU cliente: el de siempre para el principal, con el cliente adelante para otro (`idConCliente`).
+      const entidad = { tipo: 'par_de_etapas' as const, id: idConCliente(cliente, `${f}:contactos>agendados`, m.principal) };
       if (propio.contactos < PISO_DE_UNA_SENAL) {
         salida.debajoDelPiso.push({ regla: ACQ.fugaEntreEtapas, entidad, muestra: propio.contactos });
         continue;
@@ -666,7 +762,7 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
         // Los que habrían agendado con la tasa de los otros funnels (A6-11).
         perdidaContactos: Math.max(0, Math.round(debajo * propio.contactos)),
         umbral: u,
-        evidencia: { ventana: m.ventana, periodo, funnel: f, propio, otros },
+        evidencia: { ventana: m.ventana, periodo, funnel: f, ...(cliente === null ? {} : { cliente }), propio, otros },
       });
     }
   }
@@ -709,8 +805,11 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
   }
 
   // ── Un conjunto cambia de golpe su gasto o su costo por contacto (sólo en 7 días) ──
+  /* Sólo lee Meta (C6 · D3): su gasto es de los anuncios y su gente llega por `utmTerm`, el id del conjunto en Meta. El
+     freno es el de Meta, y la anterior, la suya (`conjuntos` se lee con `anteriorDeMeta`): un cliente que pauta sin Meta
+     no lo apaga para los demás. Con un solo cliente, `conjuntos` existe justo cuando la pantalla compara con costos. */
   if (m.ventana === '7d') {
-    if (!comparable || !conCostos || m.conjuntos === null) {
+    if (m.faltanDiasDeMeta || m.conjuntos === null) {
       salida.sinMedicion.push(ACQ.cambioBruscoConjunto);
     } else {
       const u = umbral(ACQ.cambioBruscoConjunto);
@@ -742,43 +841,69 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
           causasPosibles: ['puede deberse a un cambio de presupuesto o de puja', 'puede deberse a que el conjunto volvió a la fase de aprendizaje'],
           perdidaContactos: null,
           umbral: u,
-          evidencia: { ventana: m.ventana, periodo, anterior, conjunto, ...x },
+          evidencia: {
+            ventana: m.ventana,
+            periodo,
+            anterior: m.anteriorDeMeta,
+            conjunto,
+            ...(m.clienteDelConjunto.has(conjunto) ? { cliente: m.clienteDelConjunto.get(conjunto)! } : {}),
+            ...x,
+          },
         });
       }
     }
   }
 
   // ── El monitor de atribución: cada punto con su cifra y lo que deja de valer ──
+  /* Con campañas de varios clientes (C6 · D3), el de cada cliente ACTIVO con campañas (`atribucionPorCliente`): sumados,
+     el cliente chico con la atribución rota quedaba tapado por el grande. Un cliente sin denominador en la ventana —sin
+     gente, en pausa o de baja— se salta: no frena la regla de los demás. Queda sin medición sólo si ninguno lo tiene,
+     como la de la empresa. Los contactos de un cliente que nunca tuvo campañas no entran en ninguna proporción. */
+  const monitores: [string | null, CalidadDeLaAtribucion][] = m.clienteDe.size === 0 ? [[null, m.atribucion]] : [...m.atribucionPorCliente];
   for (const punto of PUNTOS_DEL_MONITOR) {
-    const p = m.atribucion.puntos.find((x) => x.clave === punto.clave);
-    // Sin denominador no hay nada que medir: hoy, las ventas (no hay ninguna reportada).
-    if (!p || p.sobre === 0) {
-      salida.sinMedicion.push(punto.regla);
-      continue;
+    let medido = false;
+    for (const [cliente, atribucion] of monitores) {
+      const p = atribucion.puntos.find((x) => x.clave === punto.clave);
+      // Sin denominador no hay nada que medir: hoy, las ventas (no hay ninguna reportada).
+      if (!p || p.sobre === 0) continue;
+      medido = true;
+      const u = umbral(punto.regla);
+      // `utm_incompletas` cuenta lo roto: su cobertura es lo que queda entero.
+      const cobertura = punto.clave === 'utm_incompletas' ? 1 - p.cuantos / p.sobre : p.cuantos / p.sobre;
+      if (cobertura >= u.valor) continue;
+      if (p.sobre < PISO_DE_UNA_SENAL) {
+        salida.debajoDelPiso.push({ regla: punto.regla, entidad: entidadDeLaCuenta(cliente), muestra: p.sobre });
+        continue;
+      }
+      salida.detecciones.push({
+        ...base,
+        regla: punto.regla,
+        entidad: entidadDeLaCuenta(cliente),
+        metrica: `cobertura_${punto.clave}`,
+        lineaBase: null,
+        valorActual: redondear(cobertura, 4),
+        cambioPct: null,
+        muestra: p.sobre,
+        gravedad: 'media',
+        revisionRecomendada:
+          cliente === null
+            ? 'Revisa cómo llegan los datos de origen de los contactos antes de comparar anuncios.'
+            : 'Revisa cómo llegan los datos de origen de los contactos de este cliente antes de comparar sus anuncios.',
+        perdidaContactos: null,
+        umbral: u,
+        evidencia: {
+          ventana: m.ventana,
+          periodo,
+          ...(cliente === null ? {} : { cliente }),
+          punto: p.clave,
+          titulo: p.titulo,
+          cuantos: p.cuantos,
+          sobre: p.sobre,
+          consecuencia: p.consecuencia,
+        },
+      });
     }
-    const u = umbral(punto.regla);
-    // `utm_incompletas` cuenta lo roto: su cobertura es lo que queda entero.
-    const cobertura = punto.clave === 'utm_incompletas' ? 1 - p.cuantos / p.sobre : p.cuantos / p.sobre;
-    if (cobertura >= u.valor) continue;
-    if (p.sobre < PISO_DE_UNA_SENAL) {
-      salida.debajoDelPiso.push({ regla: punto.regla, entidad: { tipo: 'empresa', id: 'empresa' }, muestra: p.sobre });
-      continue;
-    }
-    salida.detecciones.push({
-      ...base,
-      regla: punto.regla,
-      entidad: { tipo: 'empresa', id: 'empresa' },
-      metrica: `cobertura_${punto.clave}`,
-      lineaBase: null,
-      valorActual: redondear(cobertura, 4),
-      cambioPct: null,
-      muestra: p.sobre,
-      gravedad: 'media',
-      revisionRecomendada: 'Revisa cómo llegan los datos de origen de los contactos antes de comparar anuncios.',
-      perdidaContactos: null,
-      umbral: u,
-      evidencia: { ventana: m.ventana, periodo, punto: p.clave, titulo: p.titulo, cuantos: p.cuantos, sobre: p.sobre, consecuencia: p.consecuencia },
-    });
+    if (!medido) salida.sinMedicion.push(punto.regla);
   }
 
   return salida;

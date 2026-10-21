@@ -9,13 +9,18 @@
 // al cliente —el detector lo hace con piezas de dos clientes o más, como la pantalla—, y si no su nombre. Lo mismo un
 // anuncio: «Anuncio (Cliente)» con la evidencia. Nunca un uuid. El rótulo de un funnel lo pone la pantalla, que ya lo
 // tiene.
+//
+// Lo que se mide dentro de un cliente (C6 · D3) lleva el cliente adelante en su identificador cuando no es del principal
+// (`idConCliente`): una familia, un patrón, el formulario y un conjunto se nombran sin él, con «(Cliente)» cuando la
+// evidencia lo nombra. Y la señal trae aparte el nombre de su cliente (`cliente`) y su evidencia con el nombre en vez del
+// id, para que la tarjeta, «Ver evidencia» y los cajones de Conversion digan de cuál es.
 // Lo que no tiene nombre —un conjunto, una campaña que GoHighLevel no listó— viaja sin él y la pantalla dibuja el
 // identificador.
 
 import { datos } from '../../datos/contexto.ts';
 import { NOMBRE_DEL_AGENTE } from '../../auditor/vista.ts';
 import { clienteDeCadaCampana } from '../../negocio/embudosDeAcquisition.ts';
-import { nombreDeLaPieza, rotuloDeLaPieza } from '../../negocio/idDeLaPieza.ts';
+import { nombreDeLaPieza, partirIdConCliente, rotuloDeLaPieza } from '../../negocio/idDeLaPieza.ts';
 import { ROTULOS, type Familia } from '../../negocio/recorrido.ts';
 import { CATALOGO_DE_REGLAS, umbralesFirmados, umbralVigente } from './umbrales.ts';
 import type { DepartamentoConSenales, Deteccion, Gravedad, VentanaDeSenal } from './tipos.ts';
@@ -26,6 +31,11 @@ export interface SenalParaMostrar {
   entidad: Deteccion['entidad'];
   /** El nombre de la entidad, o `null` si no tiene uno que mostrar. */
   nombre: string | null;
+  /**
+   * El nombre del cliente que nombra su evidencia (el nivel 3, C6 · D3); con un cliente, nunca viene. Es el que la
+   * pantalla antepone cuando la frase no lo dice (los cajones de Conversion, el funnel de una fuga). Sólo viene con él.
+   */
+  cliente?: string;
   gravedad: Gravedad;
   confianza: 'alta' | 'media';
   estado: 'abierta' | 'vista' | 'sin_medicion';
@@ -39,6 +49,7 @@ export interface SenalParaMostrar {
   requiereValidacionEjecutiva: boolean;
   /** En foto: con qué valor se calculó y si era provisional (AG-33). */
   umbral: { valor: number; provisional: boolean };
+  /** Lo que midió la regla. Su `cliente` llega con el nombre y no con el id: «Ver evidencia» la dibuja tal cual. */
   evidencia: unknown;
   ultimaDeteccion: string;
 }
@@ -97,11 +108,13 @@ export async function senalesDeLaPantalla(
       // Sin esto, la frase de Conversation perdía de dónde parece venir el error al leerla (lo vio la 235).
       issueSource: f.issue_source as Deteccion['issueSource'],
     };
+    const delCliente = clienteDeLaEvidencia(f.evidencia);
     return {
       id: f.id,
       regla: f.regla,
       entidad: deteccion.entidad,
-      nombre: nombreDe(deteccion.entidad, campanas, anuncios, clientes, clienteDeLaEvidencia(f.evidencia) ?? clienteDeLaCampana.get(f.entidad_id) ?? null),
+      nombre: nombreDe(deteccion.entidad, campanas, anuncios, clientes, delCliente ?? clienteDeLaCampana.get(f.entidad_id) ?? null),
+      ...(delCliente !== null && clientes.has(delCliente) ? { cliente: clientes.get(delCliente)! } : {}),
       gravedad: f.gravedad,
       confianza: f.confianza,
       estado: f.estado as SenalParaMostrar['estado'],
@@ -113,7 +126,8 @@ export async function senalesDeLaPantalla(
       periodo: deteccion.periodo,
       requiereValidacionEjecutiva: f.requiere_validacion_ejecutiva,
       umbral: deteccion.umbral,
-      evidencia: f.evidencia,
+      // Nunca un uuid (AG-21): el cliente de la evidencia, por su nombre. La frase ya se armó con la de verdad.
+      evidencia: delCliente !== null && clientes.has(delCliente) ? { ...(f.evidencia as object), cliente: clientes.get(delCliente) } : f.evidencia,
       ultimaDeteccion: f.ultima_deteccion_el.toISOString(),
     };
   });
@@ -127,7 +141,10 @@ export async function senalesDeLaPantalla(
   return salida;
 }
 
-/** El último plan guardado del departamento en esa ventana: el de hoy, o el último día que corrió. */
+/**
+ * El último plan guardado del departamento en esa ventana: el de hoy, o el último día que corrió. Con renglones de varios
+ * clientes (C6 · D3), `clientes` trae el nombre de cada uno: el renglón guarda su id, y la pantalla dice de cuál es.
+ */
 export async function ultimoPlan(departamento: DepartamentoConSenales, ventana: VentanaDeSenal) {
   const f = await datos()
     .selectFrom('planes_de_accion')
@@ -138,6 +155,18 @@ export async function ultimoPlan(departamento: DepartamentoConSenales, ventana: 
     .limit(1)
     .executeTakeFirst();
   if (!f) return null;
+  const ids = new Set(
+    ((f.plan as { grupos?: { renglones?: { cliente?: unknown }[] }[] } | null)?.grupos ?? [])
+      .flatMap((g) => g.renglones ?? [])
+      .map((r) => r.cliente)
+      .filter((c): c is string => typeof c === 'string'),
+  );
+  const clientes =
+    ids.size === 0
+      ? null
+      : Object.fromEntries(
+          (await datos().selectFrom('cuentas').select(['id', 'nombre']).where('id', 'in', [...ids]).execute()).map((c) => [c.id, c.nombre]),
+        );
   return {
     dia: dia(f.dia)!,
     plan: f.plan,
@@ -145,6 +174,7 @@ export async function ultimoPlan(departamento: DepartamentoConSenales, ventana: 
     bajoElPiso: f.bajo_el_piso,
     bajoElPisoDetalle: f.bajo_el_piso_detalle,
     actualizado: f.actualizado_el.toISOString(),
+    ...(clientes === null ? {} : { clientes }),
   };
 }
 
@@ -207,17 +237,32 @@ function nombreDe(
       // Su nombre, sin el id del cliente que lleva cuando no es del principal; con el de la evidencia, «nombre · cliente».
       return rotuloDeLaPieza(nombreDeLaPieza(entidad.id), delCliente === null ? null : (clientes.get(delCliente) ?? null));
     }
-    case 'familia_de_entrada':
-      // La familia por su rótulo de pantalla (Conversion): «Landing con VSL», no `landing`.
-      return ROTULOS[entidad.id as Familia]?.titulo ?? entidad.id;
-    case 'patron': {
-      // `agente:patron`: se nombra por el agente del CRM, como la pantalla (LeadFlow, AppFlow).
-      const agente = entidad.id.split(':')[0]!;
-      return (NOMBRE_DEL_AGENTE as Readonly<Record<string, string>>)[agente] ?? agente;
+    case 'familia_de_entrada': {
+      // La familia por su rótulo de pantalla (Conversion): «Landing con VSL», no `landing`; sin el cliente de su id.
+      const familia = partirIdConCliente(entidad.id).resto;
+      return conSuCliente(ROTULOS[familia as Familia]?.titulo ?? familia, clientes, delCliente);
     }
+    case 'patron': {
+      // `agente:patron`: se nombra por el agente del CRM, como la pantalla (LeadFlow, AppFlow); sin el cliente de su id.
+      const agente = partirIdConCliente(entidad.id).resto.split(':')[0]!;
+      return conSuCliente((NOMBRE_DEL_AGENTE as Readonly<Record<string, string>>)[agente] ?? agente, clientes, delCliente);
+    }
+    case 'funnel':
+      // El formulario de la landing (Conversion): sin nombre con un cliente, como siempre; con varios, el suyo.
+      return delCliente !== null && partirIdConCliente(entidad.id).resto === 'formulario' ? conSuCliente('Formulario', clientes, delCliente) : null;
+    case 'conjunto':
+      // Un conjunto no tiene nombre guardado: la pantalla dibuja su id. Con su cliente (C6 · D3), «Conjunto N (Cliente)».
+      return delCliente !== null && clientes.has(delCliente) ? conSuCliente(`Conjunto ${entidad.id}`, clientes, delCliente) : null;
     default:
+      // El par de etapas de una fuga: el rótulo de su funnel lo pone la pantalla, con el cliente de `cliente`.
       return null;
   }
+}
+
+/** «Nombre (Cliente)» si la evidencia nombra a un cliente que se conoce; si no, el nombre de siempre. */
+function conSuCliente(nombre: string, clientes: ReadonlyMap<string, string>, delCliente: string | null): string {
+  const cliente = delCliente === null ? undefined : clientes.get(delCliente);
+  return cliente === undefined ? nombre : `${nombre} (${cliente})`;
 }
 
 const numero = (v: string | number | null) => (v === null ? null : Number(v));

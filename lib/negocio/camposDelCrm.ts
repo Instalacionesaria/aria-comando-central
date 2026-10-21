@@ -310,13 +310,18 @@ export async function camposQueSeMuestran(): Promise<CampoMostrable[]> {
  * sólo puede estar el de la suya. Con uno solo elegido, los contactos de los demás clientes contaban como «sin
  * responder» y el aviso callaba, porque el campo «estaba».
  *
+ * Con `cuentaId` (C6 · D3), el de esa subcuenta sola: un detector que mide a cada cliente con lo suyo sabe así que
+ * un cliente no tiene el campo, en vez de contar a su gente como «sin responder» junto a la de otro que sí lo tiene.
+ *
  * Se corre dentro de `conOrganizacion(`.
  */
-export async function campoPorNombre(nombre: string): Promise<CampoDelCrm | null> {
-  const filas = await datos()
+export async function campoPorNombre(nombre: string, cuentaId?: string): Promise<CampoDelCrm | null> {
+  let consulta = datos()
     .selectFrom('campos_del_crm')
     .select(['cuenta_id', 'campo_id'])
-    .where('nombre', '=', nombre)
+    .where('nombre', '=', nombre);
+  if (cuentaId !== undefined) consulta = consulta.where('cuenta_id', '=', cuentaId);
+  const filas = await consulta
     /* El desempate estable, dentro de cada subcuenta. Dos campos con el mismo nombre en carpetas distintas son
        posibles —el CRM no lo impide— y sin orden la cifra tomaría uno u otro según cómo devolviera el motor,
        cambiando de denominador entre corridas sin que nada falle. */

@@ -764,7 +764,7 @@ da error. No hace nada» (`:13`).
 dicen cuándo se mudan a una columna de la organización.
 
 **27 · Leer el catálogo no cambia lo que se muestra.** `campoPorNombre`
-(`lib/negocio/camposDelCrm.ts:315`) existe para que agregar un indicador no cambie lo que el closer ve.
+(`lib/negocio/camposDelCrm.ts:318`) existe para que agregar un indicador no cambie lo que el closer ve.
 
 **28 · Un módulo que comparten el servidor y el navegador no puede importar nada que toque la base.**
 `lib/negocio/periodo.ts:25-34`, forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:244`.
@@ -1339,19 +1339,19 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   agrupa por (campaña, cliente) (`lib/negocio/atribucionDelLead.ts:176`), y cada fila dice su cliente cuando las
   campañas de la ventana son de más de uno (`lib/negocio/atribucionDelLead.ts:213`); las campañas de Acquisition y de la
   herramienta del cerebro, igual, con el cliente de sus anuncios, el que la listó o el de sus contactos
-  (`lib/negocio/embudosDeAcquisition.ts:712`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
-  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:673`)
-  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:919`); sólo uno con
+  (`lib/negocio/embudosDeAcquisition.ts:720`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
+  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:681`)
+  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:927`); sólo uno con
   métricas y sin serie frena lo que lee Meta —«sin entrega», la concentración y el costo por mil, con su anterior
-  aparte— (`lib/negocio/embudosDeAcquisition.ts:818`, `lib/negocio/embudosDeAcquisition.ts:904`): un cliente sin Meta no
+  aparte— (`lib/negocio/embudosDeAcquisition.ts:826`, `lib/negocio/embudosDeAcquisition.ts:912`): un cliente sin Meta no
   apaga lo de los demás. Las vistas de Conversion no son la suma ni el cero de otro cliente
-  (`lib/negocio/pasosDeConversion.ts:523`), y no comparan con un cliente sin su gasto en ninguna de las dos ventanas
-  (`lib/negocio/pasosDeConversion.ts:598`, `lib/negocio/pasosDeConversion.ts:608`). En el detector, lo que es de una
-  cuenta publicitaria se mide dentro de su cliente (`lib/agentes/detectores/acquisition.ts:318`): la crítica de «sin
-  entrega» es del `cliente` cuyas campañas no entregan (`lib/agentes/detectores/acquisition.ts:371`), la entidad nueva
+  (`lib/negocio/pasosDeConversion.ts:542`), y no comparan con un cliente sin su gasto en ninguna de las dos ventanas
+  (`lib/negocio/pasosDeConversion.ts:609`, `lib/negocio/pasosDeConversion.ts:619`). En el detector, lo que es de una
+  cuenta publicitaria se mide dentro de su cliente (`lib/agentes/detectores/acquisition.ts:369`): la crítica de «sin
+  entrega» es del `cliente` cuyas campañas no entregan (`lib/agentes/detectores/acquisition.ts:422`), la entidad nueva
   de la `094` (`db/migraciones/094_el_cliente_en_acquisition.sql:33`), que la pantalla nombra
-  (`lib/agentes/senales/lectura.ts:197`); y toda señal de campaña dice su cliente con varios, «Campaña (Cliente)», con
-  el cliente de la pantalla (`lib/agentes/senales/lectura.ts:104`). El funnel se guarda en el cliente de su campaña
+  (`lib/agentes/senales/lectura.ts:227`); y toda señal de campaña dice su cliente con varios, «Campaña (Cliente)», con
+  el cliente de la pantalla (`lib/agentes/senales/lectura.ts:116`). El funnel se guarda en el cliente de su campaña
   (`lib/negocio/funnelDeLaCampana.ts:100`) y la base lo exige (`db/migraciones/094_el_cliente_en_acquisition.sql:52`).
   La serie atrasada y «métricas sin serie» miran sólo a los clientes activos (`lib/negocio/gastoDeLaCuenta.ts:316`): uno
   en pausa dejaba la empresa atrasada para siempre. Y la cobertura de la ventana le pide a uno en pausa su serie sólo
@@ -1364,10 +1364,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:519` y
   `pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts:41`.
 - **La pieza de Creative es (cliente, nombre) (C5 · G1, `095`).** Los clientes de una empresa comparten la convención
-  de nombres, y su «hook 1» son dos piezas. El identificador es `idDeLaPieza` (`lib/negocio/idDeLaPieza.ts:35`), en un
+  de nombres, y su «hook 1» son dos piezas. El identificador es `idDeLaPieza` (`lib/negocio/idDeLaPieza.ts:58`), en un
   módulo puro que también lee el navegador: el nombre si la pieza es del principal —con un cliente, siempre: la clave,
   las huellas y la pantalla de siempre— y `<cuenta>:<nombre>` si es de otro; quien agrupa sin saber cuál es el
-  principal usa una llave interna aparte (`lib/negocio/idDeLaPieza.ts:51`). La calidad agrupa por cliente
+  principal usa una llave interna aparte (`lib/negocio/idDeLaPieza.ts:116`). La calidad agrupa por cliente
   (`lib/negocio/calidadDelCreativo.ts:251`) y cruza un contacto sólo con un anuncio de SU cliente
   (`lib/negocio/calidadDelCreativo.ts:353`); el rendimiento, la fatiga y la entrega, también
   (`lib/negocio/rendimientoDelCreativo.ts:347`, `lib/negocio/fatigaDelCreativo.ts:164`,
@@ -1377,10 +1377,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/negocio/lecturaDeCreative.ts:343`), la pieza dice su cliente (`lib/negocio/lecturaDeCreative.ts:365`) —la
   tarjeta en su propia línea (`components/creative/PanelDeCreative.jsx:396`), la ficha en «Qué es»— y «Funciona» compara
   cada pieza con las de su etapa EN SU CLIENTE (`lib/negocio/lecturaDeCreative.ts:248`), como la señal del ICP
-  (`lib/agentes/detectores/creative.ts:304`); la concentración es sobre el gasto de su cliente
-  (`lib/agentes/detectores/creative.ts:220`), la evidencia nombra al cliente (`lib/agentes/detectores/creative.ts:185`)
+  (`lib/agentes/detectores/creative.ts:306`); la concentración es sobre el gasto de su cliente
+  (`lib/agentes/detectores/creative.ts:222`), la evidencia nombra al cliente (`lib/agentes/detectores/creative.ts:187`)
   y la pantalla nombra la señal «nombre · cliente» y la del anuncio «Anuncio (Cliente)»
-  (`lib/agentes/senales/lectura.ts:206`, `lib/agentes/senales/lectura.ts:200`). El cerebro nunca lee un uuid: la clave
+  (`lib/agentes/senales/lectura.ts:236`, `lib/agentes/senales/lectura.ts:230`). El cerebro nunca lee un uuid: la clave
   y los criterios viajan con el rótulo (`lib/agentes/executive/adaptadores/creative.ts:30`). El link manual es de
   (cliente, pieza) (`db/migraciones/095_la_pieza_es_de_un_cliente.sql:32`): la ruta valida el cliente contra los que ve
   la sesión y, sin decirlo, usa el principal (`app/api/creative/enlace/route.ts:68`); el 404 nombra al cliente sólo
@@ -1428,10 +1428,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/negocio/ficha.ts:274`), y Leads, arriba (`app/api/leads-portal/route.ts:70`). Acquisition y Conversion nombran,
   después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué —Meta sin vincular en su
   GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:193`): los que pautaron sin
-  serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:976`,
+  serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:984`,
   `lib/negocio/gastoDeLaCuenta.ts:487`), así que también cuando la serie de un cliente dejó de escribirse y la empresa
   queda con el colector atrasado; Conversion pregunta por la ventana que decidió el motivo
-  (`lib/negocio/pasosDeConversion.ts:631`). Las frases entraron primero en A14-02 y CV15-02. Y los closers: el alta, la
+  (`lib/negocio/pasosDeConversion.ts:642`). Las frases entraron primero en A14-02 y CV15-02. Y los closers: el alta, la
   activación y Ajustes › Clientes dicen quiénes están vinculados en otro cliente y no en ése
   (`lib/negocio/alcanceDelCloser.ts:275`, `app/api/admin/cuentas/route.ts:99`), sólo a quien tiene `credenciales.ver` y
   sobre su propia empresa (`lib/administracion/cuentas.ts:404`), y la pantalla del vínculo, por cliente activo, con más
@@ -1485,17 +1485,66 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:397`,
   `pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:68` y
   `pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:98`.
-- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18, no arreglado): en el detector de
-  Acquisition, el ICP y la fuga entre etapas comparan contra el
-  promedio de un funnel que mezcla clientes, el monitor de atribución es una proporción de la empresa (un cliente chico
-  con la atribución rota queda tapado) y el cambio brusco del conjunto sigue con el freno de los costos; las señales no
-  llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); un `campaignId`
-  numérico de Google Ads cuenta como pauta sin Meta; en Creative, el identificador de una pieza depende de cuál es el
-  principal (si algún día se mueve `es_por_omision`, sus señales se cierran solas y renacen, y las decididas pierden su
-  bloqueo), una pieza de un cliente que no es el principal suma 37 caracteres a su `entidad_id` (tope 200, `072`: un
-  nombre de más de 163 haría fallar la pasada de Creative), si el gasto de un cliente no cuadra la concentración queda
+- **Las señales que mezclaban clientes (C6 · D3, sin migración).** Lo que se mide dentro de un cliente lleva el
+  identificador de la pieza: el de siempre para el principal y `<cuenta>:<id>` para otro (`lib/negocio/idDeLaPieza.ts:44`),
+  así que al sumar un cliente no se cierra ni renace ninguna señal del principal. Acquisition compara el ICP de una
+  campaña con SU funnel EN SU cliente, con la fórmula de la pantalla (`lib/agentes/detectores/acquisition.ts:608`,
+  `lib/negocio/embudosDeAcquisition.ts:421`); la fuga, con los otros funnels de su cliente
+  (`lib/agentes/detectores/acquisition.ts:714`); el monitor de atribución, por cliente ACTIVO con campañas
+  (`lib/agentes/detectores/acquisition.ts:258`, `lib/negocio/calidadDeLaAtribucion.ts:124`), y uno sin denominador en la
+  ventana se salta: la regla queda sin medición sólo si ninguno lo tiene (`lib/agentes/detectores/acquisition.ts:862`);
+  el conjunto, que lee Meta, con el freno y la anterior de Meta (`lib/agentes/detectores/acquisition.ts:812`). Conversation
+  agrupa por (cliente, agente, patrón) (`lib/agentes/detectores/conversation.ts:157`) y, con hallazgos de varios, lee
+  los casos de cada cliente activo con su tope y el texto ganador de su agente (`lib/agentes/detectores/conversation.ts:118`,
+  `lib/auditor/pantalla.ts:295`). Conversion mide a cada cliente activo contra SU cohorte, SU anterior —con la regla de
+  la pantalla, `lib/negocio/pasosDeConversion.ts:224`— y el campo del formulario de SU CRM
+  (`lib/negocio/pasosDeConversion.ts:695`, `lib/agentes/detectores/conversion.ts:202`); un CRM sin el campo no frena a
+  los demás (`lib/agentes/detectores/conversion.ts:229`). Los frenos son por cliente activo
+  (`lib/agentes/detectores/clientes.ts:61`): con varios, la regla entera queda sin medición sólo si ninguno está al día,
+  y el atrasado deja sin medición sólo lo suyo en el escritor —la señal sin cliente es del principal—
+  (`lib/agentes/senales/escritura.ts:167`, `lib/agentes/senales/escritura.ts:203`), y el plan lo nombra
+  (`lib/agentes/plan/comun.ts:116`). Uno en pausa o de baja no frena ni se mide por cliente: sus señales se cierran
+  solas. El plan de Acquisition dice de qué cliente falta el gasto y qué hacer, con la frase de la pantalla, cuando eso
+  deja sin medir los costos (`lib/agentes/plan/acquisition.ts:162`). La pantalla nombra «Landing con VSL (Cliente)»,
+  «LeadFlow (Cliente)», «Formulario (Cliente)» y «Conjunto N (Cliente)» (`lib/agentes/senales/lectura.ts:240`), la
+  evidencia con el nombre del cliente (`lib/agentes/senales/lectura.ts:130`), la fuga con el rótulo de su funnel
+  (`components/senales/SenalesDelDepartamento.jsx:102`), y los cajones de Conversion y el plan, el cliente de cada
+  renglón (`components/conversion/CajonDelPaso.jsx:263`, `lib/agentes/senales/lectura.ts:158`). Y la pieza de nombre
+  largo se corta en la señal con una huella del entero (`lib/negocio/idDeLaPieza.ts:95`,
+  `lib/agentes/detectores/creative.ts:179`): ya no hace fallar la pasada de Creative. Con un cliente, todo como siempre.
+  Lo exigen `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:63`,
+  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:111`,
+  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:248`,
+  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:289`,
+  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:227`,
+  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:302` y
+  `pruebas/base/295-las-senales-de-cada-cliente.test.ts:364`.
+- **Lo que todavía supone una subcuenta** (encontrado por la revisión del 2026-10-18; lo que cerró C6 · D3 ya no está):
+  las señales no llevan `cuenta_id` (son de la organización: las pantallas de señales abren la empresa entera); en
+  Creative, el identificador de una pieza depende de cuál es el principal (si algún día se mueve `es_por_omision`, sus
+  señales se cierran solas y renacen, y las decididas pierden su bloqueo; desde D3 lo mismo vale para la fuga, el
+  patrón, la familia y el formulario de otro cliente), si el gasto de un cliente no cuadra la concentración queda
   sin medir para todos (`gastoCuadra` es de la empresa), y un anuncio fuera de la dimensión con leads de dos clientes
-  los junta en uno de los dos; las etiquetas cortas de los campos
+  los junta en uno de los dos. De las señales por cliente (D3) quedan: un `campaignId` numérico de Google Ads sigue
+  contando como pauta sin Meta y frena los costos de la empresa, porque la atribución no distingue de verdad de qué
+  plataforma es la campaña —`adSource` llega en 139 de los 169 contactos con `campaignId` y siempre dice `facebook`
+  (`docs/acquisition/08`, A8-09), nunca se midió qué manda GoHighLevel para un lead de Google Ads, y ni la base sembrada
+  ni las pruebas tienen uno—: hace falta medir un contacto de Google Ads real antes de distinguirlo; el costo por
+  contacto, el gasto sin crecimiento y la escala siguen frenados por un cliente que pauta sin Meta —necesitan la
+  anterior de la pantalla, y la decisión del 2026-10-20 es que el gasto sale de SU GoHighLevel con Meta vinculado—, y el
+  plan dice de quién y qué hacer; el monitor de atribución mide sólo a los clientes con campañas: los contactos de uno
+  sólo orgánico no entran en ninguna proporción, y con campañas de un solo cliente (`clienteDe` vacío) sigue la
+  proporción de la empresa, con el orgánico mezclado; con las campañas de un solo cliente que no es el principal, la
+  fuga lleva el id sin su cliente (Acquisition no sabe cuál es) y el día que otro cliente pauta se cierra y renace una
+  vez; dentro de un cliente, el tope de doscientos casos del auditor sigue (como con uno); la herramienta de los
+  patrones del cerebro agrupa por agente y patrón (`lib/agentes/executive/adaptadores/conversation.ts:43`) y junta los
+  homónimos de dos clientes, sobre los doscientos casos de toda la empresa; la clave de un tema de la Reunión lleva el uuid del cliente cuando la entidad es de otro (como la pieza:
+  opaca, el modelo sólo la devuelve); el nombre de una fuga fuera de la pantalla (cabecera, Reunión, redacción) no trae
+  el rótulo del funnel, que sólo tiene el componente —hoy la fuga es media y no llega ahí—; con varios clientes, la
+  señal ya no habla de los mismos contactos que la pantalla (Acquisition, Conversion y la del técnico siguen siendo de
+  la empresa: no hay foco por cliente); un cliente sin ningún sello no frena hasta su primera pasada (como la frescura
+  de la empresa); y el nombre del cliente queda escrito en el «no se pudo medir» del plan del día, así que si se
+  renombra, el plan de ese día dice el nombre viejo. Y de antes: las etiquetas cortas de los campos
   y el puntaje y las carpetas de otra subcuenta se reconocen por su NOMBRE, porque nacen del mismo snapshot (una
   subcuenta con otros nombres no se reconoce). De los avisos (C6 · D1, más arriba) quedan: un cliente activo que pauta sin su serie sigue dejando a la
   empresa entera sin costos ni flechas en Acquisition mientras traiga contactos de campaña —la decisión del 2026-10-20

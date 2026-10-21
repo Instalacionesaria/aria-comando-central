@@ -154,7 +154,7 @@ Tres cosas que salen de lo medido:
 ### LPF-02 · Los campos se nombran, y se resuelven con `campoPorNombre`
 
 Las reglas guardan el nombre del campo y lo resuelven a su identificador con `campoPorNombre`
-(`lib/negocio/camposDelCrm.ts:315`), el mismo mecanismo que ya usan Creative, el precall, el
+(`lib/negocio/camposDelCrm.ts:318`), el mismo mecanismo que ya usan Creative, el precall, el
 formulario y la confirmación. Es lo que una persona puede leer y verificar en una pantalla, y la
 comparación es exacta (`lib/negocio/camposDelCrm.ts:302-303`).
 
@@ -163,7 +163,7 @@ El precio es el que el archivo declara: *«si alguien renombra ese campo en el C
 **sin campo** y se dice en el aviso; no que el lead pierde esos puntos en silencio.
 
 Y un detalle que obliga a algo más: cuando dos campos tienen el mismo nombre, `campoPorNombre`
-desempata por identificador y toma uno (`lib/negocio/camposDelCrm.ts:319-325`). Para una cifra es
+desempata por identificador y toma uno (`lib/negocio/camposDelCrm.ts:325-331`). Para una cifra es
 correcto; para una regla escrita a mano, no, porque el catálogo tiene una versión vieja del mismo
 cuestionario. **Un nombre que casa con más de un campo se rechaza al guardar la regla**, en vez de
 dejar que el desempate elija.

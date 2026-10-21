@@ -160,7 +160,7 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/ba
 | `activos` | `lib/negocio/recolectarActivos.ts:192` | la miniatura y el post de cada anuncio, de Meta | `saltada`: sin token de Meta |
 | `analizadores` | `lib/analizadores/tarea.ts:75` | descubre, analiza, completa fichas y clasifica objeciones | 2 |
 | `reintentos` | `lib/analizadores/tarea.ts:231` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:207`) | 0 |
-| `senales` | `lib/agentes/detectores/correr.ts:131` | la pasada diaria de los detectores y el Plan de acción de cada departamento | 8 (las redacciones) |
+| `senales` | `lib/agentes/detectores/correr.ts:143` | la pasada diaria de los detectores y el Plan de acción de cada departamento | 8 (las redacciones) |
 
 - **`contactos` va antes de `mensajes`, y eso es corrección, no gusto** (`lib/negocio/barrido.ts:192-196`; prueba en
   `pruebas/codigo/99-cron.test.ts:150`). `auditoria` va después de `mensajes` para no juzgar un transcript incompleto
@@ -237,8 +237,8 @@ el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fal
 (`app/api/leads-portal/route.ts:65-66`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
 **comentario de la cabecera** de cada departamento (`lib/agentes/cabecera.ts:127`, `lib/agentes/cabecera.ts:175`,
 `lib/agentes/cabecera.ts:185`), los detectores, que no publican lo que no pueden medir
-(`lib/agentes/detectores/creative.ts:122`, `lib/agentes/detectores/conversion.ts:120`,
-`lib/agentes/detectores/conversation.ts:90`), y una herramienta del cerebro que lee la frescura de las tareas
+(`lib/agentes/detectores/creative.ts:123`; Conversion y Conversation, por cliente activo desde C6 · D3,
+`lib/agentes/detectores/clientes.ts:65`), y una herramienta del cerebro que lee la frescura de las tareas
 (`lib/agentes/executive/adaptadores/plataforma.ts:58`). **Lo que nadie lee es el motivo del sello**:
 `ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:779`).
 
@@ -625,6 +625,7 @@ para que ARIA los vea a todos en un tablero. Las reglas que suma están en
 | «Nivel 3 · C5 · el vínculo de un closer es por cliente (096)» y «Nivel 3 · C5 · la clave del closer por cliente (097)» | C5 · G2 | `096`: la clave (org, cliente, persona) y el único del vínculo por cliente, junto a los viejos; `097`: los cierra. El vínculo de un closer con el CRM es de un cliente: «mío» son los pares (cliente, usuario del CRM) en los cinco cortes; Sales y la ficha, por par, y quien trabaja en otro cliente tiene su aviso; el tope sigue en tres personas por empresa; la ruta y la pantalla eligen el cliente (sin él, el principal), y uno ajeno o de baja es 404 |
 | «Nivel 3 · C6 · los avisos dicen de qué cliente y qué hacer» | C6 · D1 | sin migración: la agenda, la cabecera de Mi Día, el chat y Leads dicen de qué cliente no está lista la conexión con GoHighLevel y qué hacer, con el texto de su código y sólo del alcance de quien mira; Acquisition y Conversion nombran, después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué (también con el colector atrasado); el alta, la activación, Ajustes › Clientes y la pantalla del vínculo dicen qué closers no ven a un cliente; el tope de tres closers por empresa queda decidido. Con un solo cliente, ninguna respuesta cambia |
 | «Nivel 3 · C6 · lo que usaba las credenciales de la empresa usa las del cliente» | C6 · D2 | sin migración: «Subir a HighLevel» de Tools manda a n8n el token y la subcuenta del cliente elegido (sin elegir, el principal; uno en pausa es 400, uno ajeno o de baja, 404), y la pantalla muestra el selector sólo con más de un cliente activo; la lista de usuarios del CRM no lee a uno de baja; Tools, esa lista y las cuatro rutas de un contacto dicen la falta de un cliente con su texto; los guiones de medición miden a cada cliente con su token, y con un cliente miden lo mismo (medir-gasto suma S0, si Meta está vinculado); la 277 lista quién pide la de la empresa. Al webhook de n8n viaja el token de cada cliente: un riesgo que decide el usuario (07) |
+| «Nivel 3 · C6 · las señales que mezclaban clientes» | C6 · D3 | sin migración: con varios clientes, el ICP, la fuga y el monitor de Acquisition, los patrones de Conversation y las familias y el formulario de Conversion se miden dentro de cada cliente, con el id de siempre para el principal y `<cuenta>:` para otro; el conjunto pasa al freno de Meta; los frenos son por cliente activo y el escritor deja sin medición sólo lo del cliente atrasado; la pantalla y el plan dicen de qué cliente es cada señal, nunca con un uuid; la pieza de nombre largo se corta en la señal y ya no hace fallar la pasada de Creative. Con un solo cliente, ninguna huella ni ningún texto cambia |
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
 corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
@@ -649,7 +650,9 @@ hoy cada empresa tiene uno. C6 · D1 (los avisos por cliente) no tiene migració
 G3, cuyos vínculos por cliente y frenos del gasto lee; con un solo cliente por empresa ninguna respuesta cambia.
 C6 · D2 (lo que usaba las credenciales de la empresa) tampoco tiene migración: sube con C3 ya desplegado (usa los
 resolvedores por cliente) y, antes del primer cliente con subcuenta propia, con el flujo de n8n de Tools revisado
-(no guardar el token de cada cliente en el historial de sus ejecuciones).
+(no guardar el token de cada cliente en el historial de sus ejecuciones). C6 · D3 (las señales por cliente) tampoco
+tiene migración: escribe la entidad `cliente` del monitor, así que sube con la `094` aplicada (después de G3), y lee los
+sellos por cliente de C4; con un solo cliente por empresa ninguna huella cambia.
 
 **El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
 (`app/api/cron/route.ts:230`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los

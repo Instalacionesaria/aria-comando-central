@@ -31,7 +31,7 @@ import { useState } from 'react';
 import Ventana from '../Ventana.jsx';
 import { Valor } from '../cerebro/Evidencia.jsx';
 import { decidirSenal, firmarUmbral } from '@/lib/negocio/vistaDeSenales';
-import { nombreDeLaPieza } from '@/lib/negocio/idDeLaPieza';
+import { nombreDeLaPieza, partirIdConCliente } from '@/lib/negocio/idDeLaPieza';
 
 const DEPARTAMENTOS = {
   acquisition: { nombre: 'Acquisition', cerrados: true, conPerdida: true },
@@ -93,22 +93,29 @@ function fechaCorta(iso) {
 /**
  * El nombre de la entidad: el de la campaña o el anuncio si el proveedor lo mandó, el rótulo del funnel, el de
  * la pieza, el del cliente (el nivel 3), o nada (la empresa entera). Un conjunto no tiene nombre guardado: se dibuja
- * su identificador.
+ * su identificador. `cliente` es el nombre del cliente de la señal o del renglón, con varios (C6 · D3).
  */
-function nombreDe(entidad, nombres, funnels, delServidor = null) {
+function nombreDe(entidad, nombres, funnels, delServidor = null, cliente = null) {
   if (entidad.tipo === 'empresa') return null;
+  /* Una fuga entre etapas: el rótulo de su funnel lo tiene la pantalla, y con varios clientes se le suma el suyo. Va antes
+     del nombre del servidor, que no conoce los rótulos. El id de otro cliente lleva su uuid adelante: se lee sin él. */
+  if (entidad.tipo === 'par_de_etapas') {
+    const resto = partirIdConCliente(entidad.id).resto;
+    const funnel = funnels[resto.split(':')[0]]?.nombre ?? resto;
+    return cliente ? `${funnel} (${cliente})` : funnel;
+  }
   // El que resolvió el servidor con `negocio.campanas` y `negocio.anuncios`, que conocen también lo que no tiene datos en la ventana.
   if (delServidor) return delServidor;
   if (entidad.tipo === 'campana') return nombres.get(entidad.id) ?? `Campaña ${entidad.id}`;
   if (entidad.tipo === 'anuncio') return nombres.get(entidad.id) ?? `Anuncio ${entidad.id}`;
-  if (entidad.tipo === 'par_de_etapas') return funnels[entidad.id.split(':')[0]]?.nombre ?? entidad.id;
   if (entidad.tipo === 'conjunto') return `Conjunto ${entidad.id}`;
   /* Un patrón del auditor: en la tarjeta, el agente que resolvió el servidor (arriba); en el plan, nada, porque el
-     grupo ya es el agente y la frase trae el título del patrón. Su id (`agente:patron`) no se lee. */
-  if (entidad.tipo === 'patron') return null;
+     grupo ya es el agente y la frase trae el título del patrón —con varios clientes, el cliente: dos renglones iguales
+     son de dos clientes—. Su id (`agente:patron`) no se lee. */
+  if (entidad.tipo === 'patron') return cliente;
   /* Lo mismo con una familia de entrada o el formulario (Conversion): la tarjeta los nombra con lo que resolvió el
-     servidor; el plan, por la frase, que ya los trae. */
-  if (entidad.tipo === 'familia_de_entrada' || (entidad.tipo === 'funnel' && entidad.id === 'formulario')) return null;
+     servidor; el plan, por la frase, que ya los trae, y con varios clientes, por el cliente. */
+  if (entidad.tipo === 'familia_de_entrada' || (entidad.tipo === 'funnel' && partirIdConCliente(entidad.id).resto === 'formulario')) return cliente;
   // Un cliente (el nivel 3): el nombre que resolvió el servidor; si no llegó, el rótulo y nunca el uuid.
   if (entidad.tipo === 'cliente') return nombres.get(entidad.id) ?? 'Cliente';
   /* Una pieza (el nivel 3): el rótulo que resolvió el servidor para una señal viva —«nombre · cliente» con varios—; si
@@ -162,6 +169,8 @@ function CuerpoDelPlan({ d, senales, nombres, funnels }) {
   const p = guardado.plan;
   // La frase que redactó el modelo para cada renglón, si la hay; si no, la de la plantilla con su revisión.
   const redactadas = guardado.redaccion?.renglones ?? {};
+  // El nombre del cliente de cada renglón, con varios (C6 · D3): el renglón guarda su id.
+  const clienteDe = (r) => (r.cliente ? (guardado.clientes?.[r.cliente] ?? null) : null);
   const conRenglones = p.grupos.filter((g) => g.renglones.length > 0);
   return (
     <>
@@ -170,7 +179,7 @@ function CuerpoDelPlan({ d, senales, nombres, funnels }) {
         <div key={g.clave} className={`reco-group ${CLASE_DEL_GRUPO[g.clave] ?? ''}`.trim()}>
           <h4>{g.titulo}</h4>
           {g.renglones.map((r, i) => {
-            const nombre = nombreDe(r.entidad, nombres, funnels);
+            const nombre = nombreDe(r.entidad, nombres, funnels, null, clienteDe(r));
             const redactada = redactadas[`${g.clave}:${i}`];
             return (
               <div key={`${r.regla}:${r.entidad.tipo}:${r.entidad.id}`} className={`reco-item ${CLASE_DEL_GRUPO[g.clave] ?? ''}`.trim()}>
@@ -211,7 +220,7 @@ export function TarjetaDeSenales({ departamento, senales, puede, nombres = SIN_N
         <p className="sen-nota">Ninguna señal abierta en los {ultimos(d, senales.ventana)}.</p>
       ) : (
         senales.lista.map((s) => (
-          <Senal key={s.id} departamento={departamento} s={s} puede={puede} nombre={nombreDe(s.entidad, nombres, funnels, s.nombre)} regla={senales.reglas.find((r) => r.codigo === s.regla)} alCambiar={alCambiar} />
+          <Senal key={s.id} departamento={departamento} s={s} puede={puede} nombre={nombreDe(s.entidad, nombres, funnels, s.nombre, s.cliente ?? null)} regla={senales.reglas.find((r) => r.codigo === s.regla)} alCambiar={alCambiar} />
         ))
       )}
     </div>

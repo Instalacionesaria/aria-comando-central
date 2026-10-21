@@ -33,8 +33,12 @@ empresa sin costos (`sinCostos`), pero sólo un cliente con métricas y sin seri
 entrega», la concentración y el costo por mil— (`faltanDiasDeMeta`, con su anterior `anteriorDeMeta`): un cliente sin
 Meta no tiene anuncios que sumar, y no apaga lo de los demás. Con un solo cliente los dos frenos son el de siempre. Lo
 exigen `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts` y
-`pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts`. Quedan por empresa el ICP y la fuga entre
-campañas (comparan contra el promedio de un funnel que mezcla clientes) y el monitor de atribución.
+`pruebas/codigo/285-los-detectores-del-gasto-por-cliente.test.ts`. Desde C6 · D3 también el ICP (contra su funnel EN
+SU cliente), la fuga (contra los otros funnels de su cliente, con el id de `idConCliente`) y el monitor de atribución
+(de cada cliente activo con campañas; el que no tiene denominador en la ventana se salta) se miden dentro de su
+cliente, y el cambio brusco del conjunto pasa al freno de Meta. El costo por contacto, el gasto sin crecimiento y la
+escala siguen con el freno de los costos, y el plan dice de qué cliente falta el gasto y qué hacer. Lo exigen
+`pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts` y `pruebas/base/295-las-senales-de-cada-cliente.test.ts`.
 
 ## Las reglas, con su umbral provisional
 

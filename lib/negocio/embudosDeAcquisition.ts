@@ -408,10 +408,18 @@ export function armarGrupo(
         medio: actual.medio,
         bajo: actual.bajo,
         sinCalificar: actual.sinCalificar,
-        promedio: actual.conPuntaje >= PISO_DE_UNA_TASA ? actual.sumaDePuntajes / actual.conPuntaje : null,
+        promedio: promedioDelIcp(actual),
       },
     },
   };
+}
+
+/**
+ * El ICP promedio de unas cifras: el de los calificados con puntaje, con el piso de una tasa. Es la fórmula de la
+ * pantalla, y la del detector cuando compara una campaña con su funnel EN SU CLIENTE (C6 · D3): una sola definición.
+ */
+export function promedioDelIcp(c: Pick<Cifras, 'sumaDePuntajes' | 'conPuntaje'>): number | null {
+  return c.conPuntaje >= PISO_DE_UNA_TASA ? c.sumaDePuntajes / c.conPuntaje : null;
 }
 
 /** Una campaña del universo, con lo que se sabe de ella. */

@@ -8,7 +8,8 @@
 // entrega, el CPM, el costo por contacto, los cambios por conjunto— es de Acquisition (`./acquisition.ts`), y
 // Creative no publica ni una señal con esas entidades. La pieza se identifica por su cliente y su nombre normalizado
 // (`idDeLaPieza`, `lib/negocio/idDeLaPieza.ts`), el mismo identificador con que la pantalla agrupa: el nombre si es del
-// principal —con un cliente, la huella de siempre—, `<cuenta>:<nombre>` si es de otro.
+// principal —con un cliente, la huella de siempre—, `<cuenta>:<nombre>` si es de otro. Un nombre que no entra en los 200
+// caracteres de la tabla se corta con una huella del entero (`idDeLaPiezaEnUnaSenal`): sin eso la pasada fallaba entera.
 //
 // ── CON VARIOS CLIENTES (el nivel 3) ─────────────────────────────────────────
 //
@@ -36,7 +37,7 @@ import { fatigaDelCreativo, type FatigaDeLosCreativos } from '../../negocio/fati
 import { ventanaDeMetricas } from '../../negocio/costoDelAnuncio.ts';
 import { diasSinCuadrar } from '../../negocio/gastoDeLaCuenta.ts';
 import { clientesDeCreative, llaveDelCreativo } from '../../negocio/creativo.ts';
-import { idDeLaPieza } from '../../negocio/idDeLaPieza.ts';
+import { idDeLaPiezaEnUnaSenal } from '../../negocio/idDeLaPieza.ts';
 import { type DebajoDelPiso, type Deteccion, type VentanaDeSenal } from '../senales/tipos.ts';
 import type { ReglaDelCatalogo } from '../senales/umbrales.ts';
 
@@ -173,8 +174,9 @@ const redondear = (x: number, decimales = 2) => Math.round(x * 10 ** decimales) 
 export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detecciones: Deteccion[]; debajoDelPiso: DebajoDelPiso[]; sinMedicion: string[] } {
   const salida = { detecciones: [] as Deteccion[], debajoDelPiso: [] as DebajoDelPiso[], sinMedicion: [] as string[] };
   const base = { periodo: m.periodo, datosDesde: null, destino: null, requiereValidacionEjecutiva: false, perdidaContactos: null };
-  /* El identificador de una pieza (el nivel 3): su nombre si es del principal, con su cliente si es de otro. */
-  const id = (cuentaId: string, creativo: string) => idDeLaPieza(cuentaId, creativo, m.principal);
+  /* El identificador de una pieza (el nivel 3): su nombre si es del principal, con su cliente si es de otro; con un nombre
+     que no entra en la tabla, cortado (C6 · D3: si no, la pasada entera fallaba). */
+  const id = (cuentaId: string, creativo: string) => idDeLaPiezaEnUnaSenal(cuentaId, creativo, m.principal);
   /* Con piezas de dos clientes o más, la evidencia nombra al cliente: la frase lo dice y la pantalla rotula la señal. */
   const clientes = new Set([
     ...m.calidad.filas.filter((f) => f.creativo !== null).map((f) => f.cuentaId),

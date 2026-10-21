@@ -370,7 +370,7 @@ Acquisition necesita es el otro: un **puntaje por contacto**. No se cruzan en ni
 
 ### 4.2 · El campo se lee por nombre, y eso tiene un precio declarado
 
-- **Rastro:** `lib/negocio/camposDelCrm.ts:315` (`campoPorNombre`)
+- **Rastro:** `lib/negocio/camposDelCrm.ts:318` (`campoPorNombre`)
 - **Estado:** el mecanismo existe y ya lo usan dos cifras de producción
   (`consumoDelPrecall.ts:150`, `indicadoresDeCitas.ts:248`).
 

@@ -6,7 +6,8 @@
 //
 // Lo del nivel 3 tiene los valores de un solo cliente por omisión: `clienteDe` vacío, y los dos frenos de Meta
 // iguales a los de la pantalla (`faltanDiasDeMeta` cuando la pantalla dice `faltan_dias`; `anteriorDeMeta`, su
-// `anterior`). Así la 221 mide lo de siempre sin nombrarlos.
+// `anterior`). Así la 221 mide lo de siempre sin nombrarlos. Lo de C6 · D3 —el monitor de cada cliente, el cliente de
+// cada conjunto y el principal— va vacío por omisión: lo usa la 294.
 
 import type { MedidaDeAcquisition } from '../../lib/agentes/detectores/acquisition.ts';
 import type { PuntoDeAtribucion } from '../../lib/negocio/calidadDeLaAtribucion.ts';
@@ -47,6 +48,12 @@ export function medida(e: {
   clienteDe?: [string, string][];
   /** El freno de Meta. Por omisión, el de la pantalla: `faltan_dias` o el gasto incompleto. */
   faltanDiasDeMeta?: boolean;
+  /** (C6 · D3) Los puntos del monitor de cada cliente activo. Por omisión, ninguno. */
+  atribucionPorCliente?: [string, Partial<Record<PuntoDeAtribucion['clave'], [number, number]>>][];
+  /** (C6 · D3) El cliente de cada conjunto. Por omisión, ninguno. */
+  clienteDelConjunto?: [string, string][];
+  /** (C6 · D3) El cliente por omisión. Por omisión, ninguno: con varios clientes, todo lleva su cliente adelante. */
+  principal?: string | null;
 }): MedidaDeAcquisition {
   const actual = new Map(e.actual.map(([id, c]) => [id, cifras(c)]));
   const previa = e.previa === null ? null : new Map((e.previa ?? []).map(([id, c]) => [id, cifras(c)]));
@@ -62,6 +69,16 @@ export function medida(e: {
   });
   const faltanDiasDeMeta = e.faltanDiasDeMeta ?? (e.sinComparacion === 'faltan_dias' || e.sinCostos === 'gasto_incompleto');
   const claves: PuntoDeAtribucion['clave'][] = ['leads_con_anuncio', 'citas_con_anuncio', 'ventas_con_anuncio', 'utm_incompletas', 'sin_campana'];
+  const monitor = (puntos: Partial<Record<PuntoDeAtribucion['clave'], [number, number]>> | undefined) => ({
+    dias: 30,
+    puntos: claves.map((clave) => {
+      // UTM cuenta lo roto: por omisión, ninguna incompleta.
+      const [cuantos, sobre] = puntos?.[clave] ?? (clave === 'utm_incompletas' ? [0, 100] : [100, 100]);
+      return { clave, titulo: `Título de ${clave}`, cuantos, sobre, proporcion: null, consecuencia: `consecuencia de ${clave}` };
+    }),
+    fueraDeAlcance: [],
+    aviso: null,
+  });
   return {
     ventana: e.ventana ?? '30d',
     embudos,
@@ -70,18 +87,12 @@ export function medida(e: {
     entrega: new Map((e.entrega ?? []).map(([id, dias]) => [id, { diasSinEntregar: dias, ultimaEntrega: '2026-09-19' }])),
     impresiones: previa ? new Map(e.impresiones ?? []) : null,
     conjuntos: previa && (e.ventana ?? '30d') === '7d' ? new Map(e.conjuntos ?? []) : null,
-    atribucion: {
-      dias: 30,
-      puntos: claves.map((clave) => {
-        // UTM cuenta lo roto: por omisión, ninguna incompleta.
-        const [cuantos, sobre] = e.puntos?.[clave] ?? (clave === 'utm_incompletas' ? [0, 100] : [100, 100]);
-        return { clave, titulo: `Título de ${clave}`, cuantos, sobre, proporcion: null, consecuencia: `consecuencia de ${clave}` };
-      }),
-      fueraDeAlcance: [],
-      aviso: null,
-    },
+    atribucion: monitor(e.puntos),
     clienteDe: new Map(e.clienteDe ?? []),
     faltanDiasDeMeta,
     anteriorDeMeta: faltanDiasDeMeta ? null : embudos.anterior,
+    atribucionPorCliente: new Map((e.atribucionPorCliente ?? []).map(([cliente, puntos]) => [cliente, monitor(puntos)])),
+    clienteDelConjunto: new Map(e.clienteDelConjunto ?? []),
+    principal: e.principal ?? null,
   };
 }

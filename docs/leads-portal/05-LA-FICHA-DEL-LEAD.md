@@ -186,7 +186,7 @@ acciones y siete secciones:
   vocabulario cerrado de tres valores (`lib/negocio/recorrido.ts:234-238`). **No está en el grupo
   `calificacion`:** vive en la carpeta vieja «Score | ICP», que quedó fuera del perfil a propósito
   (`lib/ghl/contrato.ts:262-265`). Se lee por nombre con `campoPorNombre`
-  (`lib/negocio/camposDelCrm.ts:315-330`), como ya hace Conversion
+  (`lib/negocio/camposDelCrm.ts:318-335`), como ya hace Conversion
   (`lib/negocio/recorrido.ts:257-268`).
 - **Medido:** Agendado **121** · Form incompleto sin agendar **87** · Form completo sin agendar **39**
   · vacío **346**. **No se escribe desde el 2026-08-31**

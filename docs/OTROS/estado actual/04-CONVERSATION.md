@@ -199,10 +199,10 @@ porciones del ICP lo llevan sobre el total de quienes agendaron (`lib/negocio/le
 sentimiento sobre los juzgados (`lib/negocio/lecturaDeConversation.ts:155-164`). El piso se aplica en la lectura, no
 en las funciones, que comparten otras pantallas.
 
-**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:125`) con las
+**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:132`) con las
 señales que trae la ruta (`components/conversation/PanelDeConversation.jsx:141`): el plan de la pasada de la mañana,
 de 7 días con «7 días» y de 30 con los otros tres (`app/api/auditoria/route.ts:76`). El detector tiene una sola regla,
-`CONV-PATRON-ABIERTO` (`lib/agentes/detectores/conversation.ts:36-49`): traduce los hallazgos abiertos del auditor,
+`CONV-PATRON-ABIERTO` (`lib/agentes/detectores/conversation.ts:49-62`): traduce los hallazgos abiertos del auditor,
 no mide. La tarjeta de señales sigue en el modo Auditoría.
 
 **El cerebro.** Seis herramientas en `lib/agentes/executive/adaptadores/conversation.ts` —`auditoria_de_agentes`,
@@ -347,7 +347,7 @@ conversó antes de agendar, no si el agente la rescató.
 **Y del supervisor (§11, §14, §15)**: el prompt y su versión, con `prompts_del_agente` y `versiones_del_prompt` en 0
 filas (2026-10-18); la segunda evaluación del §11.3; `effectiveness_score` y `confidence` del §11.7; y el §14 entero
 —ningún hallazgo tiene `resuelto_el` (2026-10-18)—. El `issue_source` del §11.4 no se guarda en los hallazgos, pero
-desde AG13 el detector lo deduce al publicar cada señal (`lib/agentes/detectores/conversation.ts:51-56`). El canal
+desde AG13 el detector lo deduce al publicar cada señal (`lib/agentes/detectores/conversation.ts:64-69`). El canal
 hacia Executive del §15 es hoy la tabla común de señales y el cerebro, no una tarjeta inventada.
 
 ---
@@ -407,6 +407,15 @@ campañas homónimas de dos clientes son dos filas, y cada fila dice su cliente 
 empresa y no lleva cliente. Con un solo cliente, o con el foco en uno, la fila y las claves del cerebro son las de
 siempre. Ninguna pantalla dibuja hoy esa tabla: viaja en el cuerpo de `GET /api/auditoria` y en la herramienta
 `atribucion_del_lead`. Lo exige `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:206`.
+
+**16 · El patrón es de un cliente (C6 · D3).** El agente del CRM es de cada subcuenta: la señal es por (cliente, agente,
+patrón), con un id que lleva el cliente salvo el del principal (`lib/agentes/detectores/conversation.ts:157`). Con
+hallazgos de más de un cliente, el detector lee los casos de cada cliente activo con su tope y el fragmento ganador de
+SU agente (`lib/auditor/pantalla.ts:295`), así que el `issue_source` de un cliente no sale del prompt de otro, y un
+cliente con la auditoría atrasada no calla a los demás: sólo lo suyo queda sin medición, y el plan lo nombra
+(`lib/agentes/detectores/clientes.ts:61`). La pestaña Auditoría no cambia (su texto ganador sigue siendo por patrón, de
+toda la empresa). Lo exigen `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:248` y
+`pruebas/base/295-las-senales-de-cada-cliente.test.ts:302`.
 
 ---
 

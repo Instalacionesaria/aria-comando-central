@@ -22,6 +22,7 @@
 
 import type { ParaElPlan } from '../detectores/correr.ts';
 import { ACQ, DIAS_DE_HISTORIA_DE_LA_ENTREGA } from '../detectores/acquisition.ts';
+import type { FaltaDelGasto, FaltaDelGastoDeUnCliente } from '../../negocio/faltaDeLosClientes.ts';
 import type { Deteccion } from '../senales/tipos.ts';
 import { anteriores, armarPlan, numero, porcentaje, puntos, type FormatoDelPlan, type PlanDelDepartamento } from './comun.ts';
 
@@ -75,11 +76,12 @@ export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
       // Medida dentro de su cliente (el nivel 3), la evidencia lo nombra.
       return `Se lleva el ${porcentaje(d.valorActual)} del gasto ${ev.cliente ? 'de su cliente en' : 'de'} la ventana, entre ${numero((ev.campanas as unknown[] | undefined)?.length)} campañas con gasto.`;
     case ACQ.icpEntreCampanas:
-      return `Su ICP promedio está ${numero((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del de su funnel: ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} calificados con puntaje.`;
+      // Medido contra su funnel en su cliente (C6 · D3), la evidencia lo nombra.
+      return `Su ICP promedio está ${numero((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del de su funnel${ev.cliente ? ' en su cliente' : ''}: ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} calificados con puntaje.`;
     case ACQ.escalaPorCalificado:
       return `Su costo por calificado está ${porcentaje(d.cambioPct)} por debajo del ${ev.cliente ? 'de su cliente' : 'de la empresa'}: ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} calificados.`;
     case ACQ.fugaEntreEtapas:
-      return `El paso de contacto a agendado está ${puntos((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del de los otros funnels: ${porcentaje(d.valorActual)} contra ${porcentaje(d.lineaBase)}, sobre ${numero(d.muestra)} contactos.`;
+      return `El paso de contacto a agendado está ${puntos((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del de los otros funnels${ev.cliente ? ' de su cliente' : ''}: ${porcentaje(d.valorActual)} contra ${porcentaje(d.lineaBase)}, sobre ${numero(d.muestra)} contactos.`;
     case ACQ.cpmAbrupto:
       return `El costo por mil impresiones subió ${porcentaje(d.cambioPct)} contra ${anteriores(ventana)}: de ${numero(d.lineaBase)} a ${numero(d.valorActual)}, sobre ${numero(d.muestra)} impresiones.`;
     case ACQ.cambioBruscoConjunto: {
@@ -95,9 +97,11 @@ export function textoDe(d: Deteccion, ventana: ParaElPlan['ventana']): string {
       const consecuencia = typeof ev.consecuencia === 'string' ? `; ${paraUnaPersona(ev.consecuencia)}` : '.';
       const cuantos = Number(ev.cuantos ?? 0);
       const sobre = Number(ev.sobre ?? 0);
+      // El de un cliente (C6 · D3): la entidad es él, y la frase dice que la cifra es suya.
+      const deEste = d.entidad.tipo === 'cliente';
       return d.regla === ACQ.atribucionUtm
-        ? `${numero(cuantos)} de ${numero(sobre)} contactos con UTM traen algunas y no las cinco (${porcentaje(1 - (d.valorActual ?? 0))})${consecuencia}`
-        : `${String(ev.titulo ?? d.metrica)}: ${porcentaje(d.valorActual)}, ${numero(cuantos)} de ${numero(sobre)}${consecuencia}`;
+        ? `${numero(cuantos)} de ${numero(sobre)} contactos con UTM${deEste ? ' de este cliente' : ''} traen algunas y no las cinco (${porcentaje(1 - (d.valorActual ?? 0))})${consecuencia}`
+        : `${String(ev.titulo ?? d.metrica)}${deEste ? ' en este cliente' : ''}: ${porcentaje(d.valorActual)}, ${numero(cuantos)} de ${numero(sobre)}${consecuencia}`;
     }
     default:
       return `${d.metrica}: ${numero(d.valorActual)}.`;
@@ -135,6 +139,35 @@ const NO_SE_MIDIO: Record<string, string> = {
   [ACQ.atribucionUtm]: 'las UTM incompletas: ningún contacto de la ventana trae UTM',
   [ACQ.atribucionSinCampana]: 'cuántos contactos conservan la campaña: no entró ningún contacto en la ventana',
 };
+
+/**
+ * Por qué falta el gasto de un cliente, en la frase de la nota de la pantalla (`components/acquisition/PanelDeAcquisition.jsx`,
+ * `FRASE`): la misma, para que el plan y la pantalla no digan dos cosas. Va en minúscula y sin el punto, porque el plan
+ * la suma a una lista.
+ */
+export const FRASE_DE_LA_FALTA: Readonly<Record<FaltaDelGasto, string>> = {
+  meta_sin_vincular: 'el GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel',
+  sin_conexion: 'la conexión de {cliente} con GoHighLevel no está lista. {detalle}',
+  no_activo: '{cliente} ya no está activo: su gasto no se lee',
+};
+
+/** Las reglas que el gasto incompleto de un cliente deja sin medir: las de los costos de la empresa. */
+const LAS_DE_LOS_COSTOS: readonly string[] = [ACQ.cplSostenido, ACQ.gastoSinCrecimiento, ACQ.escalaPorCalificado];
+
+/**
+ * De qué cliente falta el gasto y qué hacer, cuando eso deja sin medir alguna regla de los costos (el nivel 3, C6 · D3):
+ * los porqués genéricos del plan —«falta el gasto de algún día cerrado»— no decían de quién. Sale de lo que ya dice la
+ * pantalla (`gasto.faltaPorCliente`), que sólo nombra a alguien con más de un cliente: con uno, vacío. Pura.
+ */
+export function porQueFaltaElGasto(sinMedicion: readonly string[], falta: readonly FaltaDelGastoDeUnCliente[] | undefined): string[] {
+  if (!falta?.length || !sinMedicion.some((r) => LAS_DE_LOS_COSTOS.includes(r))) return [];
+  return falta.map((f) =>
+    FRASE_DE_LA_FALTA[f.falta]
+      .replace(/\{(\w+)\}/g, (_, k: string) => String((f as unknown as Record<string, unknown>)[k] ?? ''))
+      .trim()
+      .replace(/\.$/, ''),
+  );
+}
 
 /** El formato de Acquisition: sus cuatro grupos y la validación ejecutiva (A6-17, A6-22). */
 export const FORMATO_DE_ACQUISITION: FormatoDelPlan<GrupoDelPlan> = {

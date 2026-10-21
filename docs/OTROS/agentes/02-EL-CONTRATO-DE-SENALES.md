@@ -54,7 +54,21 @@ normalizado si la pieza es del cliente principal —con un solo cliente, siempre
 `<cuenta>:<nombre>` si es de otro, porque dos clientes comparten la convención de nombres. Con piezas de dos clientes o
 más, Creative mide dentro de cada cliente (la concentración sobre su gasto, el ICP contra su etapa en él) y la evidencia
 nombra al cliente (`cliente`); la pantalla muestra la pieza «nombre · cliente» y el anuncio «Anuncio (Cliente)». Nunca
-un uuid: ni en la tarjeta, ni en el plan, ni en el cerebro.
+un uuid: ni en la tarjeta, ni en el plan, ni en el cerebro. En una señal, el id de una pieza se corta si no entra en
+los 200 caracteres de `entidad_id` (`idDeLaPiezaEnUnaSenal`): conserva su comienzo y cierra con «…» y una huella corta
+del nombre entero; sin eso, el nombre largo de una pieza de otro cliente hacía fallar la pasada de Creative entera.
+
+Lo que se mide **dentro de un cliente** con varios (el nivel 3, C6 · D3) usa la misma convención que la pieza
+(`idConCliente`, en el mismo módulo): el id de siempre para el principal y `<cuenta>:<id>` para otro. Son la fuga de un
+funnel (`par_de_etapas`, entre los funnels de su cliente), el patrón del auditor (`patron`, por cliente, agente y
+patrón), la familia de entrada y el formulario de Conversion (`familia_de_entrada` y el `funnel` `formulario`, contra la
+cohorte y el campo de su cliente). Al sumar un cliente no se cierra ni renace ninguna señal del principal, ni pierde su
+bloqueo la que alguien decidió; el id no depende de ninguna bandera de datos, sólo de quién es. Con varios, la
+evidencia nombra al cliente (`cliente`, su id) —también la del ICP de una campaña, el monitor de atribución, que pasa a
+ser de la entidad `cliente`, y el conjunto—, y la pantalla dice «Landing con VSL (Cliente)», «LeadFlow (Cliente)»,
+«Formulario (Cliente)», «Conjunto N (Cliente)» o, para una fuga, «Funnel (Cliente)», con el rótulo del funnel que sólo
+tiene la pantalla. La señal que lee una pantalla trae aparte el nombre de su cliente y su evidencia con ese nombre en
+vez del id, y el plan guarda el id del cliente de cada renglón y la lectura lo devuelve con su nombre (`clientes`).
 
 ## AG-22 · La huella y la reconciliación diaria
 
@@ -88,6 +102,19 @@ deja de bloquear y nace una fila nueva. Sobre una viva no hay decisión que resp
 solas» —eso afirmaría que la regla dejó de cumplirse cuando en realidad dejó de poder medirse—. Se decide
 con la frescura de la tarea que alimenta la regla (`frescuraDe`, `lib/negocio/frescura.ts:116`). Cuando la
 fuente vuelve, la señal vuelve a `abierta` o pasa a `cerrada_sola`, según lo que se mida.
+
+**Con varios clientes (el nivel 3, C6 · D3), la fuente que no llegó puede ser la de UN cliente.** La frescura de la
+empresa es la del peor cliente activo, y como freno de toda una regla dejaba a todos sin publicar por uno: un cliente
+activo con el token revocado callaba para siempre a Conversation y a Conversion. Ahora el freno es por cliente activo
+(`frenoDeLaTarea`): la regla entera queda sin medición sólo si ningún activo está al día —con un cliente, el freno de
+siempre—; si alguno lo está, el detector publica lo de los demás y devuelve `sinMedicionDeClientes` (regla, cliente), y
+el escritor deja `sin_medicion` sólo las señales de ese cliente —por la entidad `cliente`, el `cliente` de la evidencia o
+el prefijo del id; una sin cliente es del principal— y cierra solas las de los demás que no se detectaron. El plan lo
+dice con su nombre («en «Cliente», …»). Un cliente en pausa o de baja no frena —sus datos están congelados, no
+atrasados— y no se mide por cliente: sus señales se cierran solas. Un cliente sin denominador en la ventana no frena el
+monitor de atribución de los demás: se salta, y la regla queda sin medición sólo si ninguno lo tiene. Lo que falta de
+un cliente que deja a la empresa sin costos —el gasto sin Meta vinculado— sigue frenando toda la regla de los costos
+(la decisión del 2026-10-20), y el plan dice de qué cliente y qué hacer (`porQueNoSeMidio`), con la frase de la pantalla.
 
 ## AG-24 · «Vista»
 

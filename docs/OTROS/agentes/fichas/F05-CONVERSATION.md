@@ -20,6 +20,12 @@ patrón ya elegido —el del hallazgo más reciente—, por agente del CRM (Lead
 los detectados dentro de la ventana de la señal: **7 o 30 días**, como los demás detectores (AG-28). Esta ficha
 decía 14 días; la ventana de la señal manda. Sin la tarea del auditor al día, la regla va a «sin medición».
 
+**Con varios clientes (el nivel 3, C6 · D3)**, el agente es de cada subcuenta: con hallazgos de más de un cliente se
+leen los casos de cada cliente activo (`casosDeUnCliente`), con el tope de la pantalla dentro de su cliente y el texto
+ganador de su agente, y la señal es por (cliente, agente, patrón), con el id de siempre para el principal y el
+cliente adelante para otro (`idConCliente`). El freno es por cliente: uno con la auditoría atrasada no publica lo suyo
+y sólo sus señales quedan «sin medición»; la regla entera, sólo si ninguno está al día. Con un cliente, lo de siempre.
+
 ## Qué produce
 
 Una señal por agente y patrón (`CONV-PATRON-ABIERTO`, entidad `patron` con id `agente:patron`), con cuántas

@@ -2,7 +2,7 @@
 // umbrales vigentes de la empresa y arma el plan. Aparte de `./acquisition.ts` para que el plan
 // (`../plan/acquisition.ts`) pueda importar las reglas sin un ciclo con la pasada.
 
-import { armarPlanDeAcquisition, type PlanDeAcquisition } from '../plan/acquisition.ts';
+import { armarPlanDeAcquisition, porQueFaltaElGasto, type PlanDeAcquisition } from '../plan/acquisition.ts';
 import { redactarPlan } from '../plan/redaccion.ts';
 import { CATALOGO_DE_REGLAS, umbralVigente } from '../senales/umbrales.ts';
 import type { Detector } from './correr.ts';
@@ -18,7 +18,10 @@ export const DETECTOR_DE_ACQUISITION: Detector = {
       if (!regla) throw new Error(`acquisition: «${codigo}» no está en el catálogo`);
       return umbralVigente(regla, c.firmados);
     };
-    return { ...detectarEnAcquisition(medida, umbral), periodo: medida.embudos.ventana };
+    const r = detectarEnAcquisition(medida, umbral);
+    // De qué cliente falta el gasto que dejó sin medir los costos (C6 · D3). Con un cliente, nada.
+    const porQue = porQueFaltaElGasto(r.sinMedicion, medida.embudos.gasto.faltaPorCliente);
+    return { ...r, periodo: medida.embudos.ventana, ...(porQue.length > 0 ? { porQueNoSeMidio: porQue } : {}) };
   },
   armarPlan: armarPlanDeAcquisition,
   redactar: (plan, c) => redactarPlan({ plan: plan as PlanDeAcquisition, ...c }),

@@ -17,6 +17,7 @@
 
 import type { ParaElPlan } from '../detectores/correr.ts';
 import { CNV, LE_TOCA, NO_TOCAR } from '../detectores/conversion.ts';
+import { partirIdConCliente } from '../../negocio/idDeLaPieza.ts';
 import { ROTULOS, type Familia } from '../../negocio/recorrido.ts';
 import type { Deteccion } from '../senales/tipos.ts';
 import { anteriores, armarPlan, numero, porcentaje, puntos, type FormatoDelPlan, type PlanDelDepartamento } from './comun.ts';
@@ -40,7 +41,9 @@ function grupoDe(d: Deteccion): GrupoDelPlanDeConversion {
 }
 
 const AREA: Record<string, string> = { conversion: 'Conversion', acquisition: 'Acquisition', conversation: 'Conversation' };
-const titulo = (d: Deteccion) => ROTULOS[d.entidad.id as Familia]?.titulo ?? d.entidad.id;
+/** La familia, de la evidencia o del identificador sin el cliente (C6 · D3): el uuid nunca llega a la frase. */
+const familiaDe = (d: Deteccion) => ((d.evidencia as { familia?: string } | null)?.familia ?? partirIdConCliente(d.entidad.id).resto) as Familia;
+const titulo = (d: Deteccion) => ROTULOS[familiaDe(d)]?.titulo ?? familiaDe(d);
 
 interface EvidenciaDeFamilia {
   contactos?: number;
@@ -52,23 +55,27 @@ interface EvidenciaDeFamilia {
   con?: number;
   sobre?: number;
   empezaron?: number;
+  /** El cliente, con varios (C6 · D3): la cohorte es la suya. */
+  cliente?: string;
 }
 
 export function textoDeConversion(d: Deteccion, ventana: ParaElPlan['ventana']): string {
   const ev = (d.evidencia ?? {}) as EvidenciaDeFamilia;
+  // Con varios clientes (C6 · D3), cada uno se midió contra su cohorte: la frase lo dice.
+  const laCohorte = ev.cliente ? 'la cohorte de su cliente' : 'la cohorte';
   switch (d.regla) {
     case CNV.familiaQueNoAgenda: {
-      const leToca = LE_TOCA[d.entidad.id as Familia];
-      return `«${titulo(d)}» agenda el ${porcentaje(d.valorActual)} de sus ${numero(ev.contactos)} contactos, ${puntos((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo de la cohorte (${porcentaje(d.lineaBase)} de ${numero(ev.cohorte)}).${leToca ? ` Le toca a ${AREA[leToca]}.` : ''}`;
+      const leToca = LE_TOCA[familiaDe(d)];
+      return `«${titulo(d)}» agenda el ${porcentaje(d.valorActual)} de sus ${numero(ev.contactos)} contactos, ${puntos((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo de ${laCohorte} (${porcentaje(d.lineaBase)} de ${numero(ev.cohorte)}).${leToca ? ` Le toca a ${AREA[leToca]}.` : ''}`;
     }
     case CNV.cambioDeRuta:
-      return `«${titulo(d)}» es ahora el ${porcentaje(d.valorActual)} de la cohorte, contra el ${porcentaje(d.lineaBase)} en ${anteriores(ventana)} (${numero(ev.ahora?.contactos)} de ${numero(ev.ahora?.cohorte)}, antes ${numero(ev.antes?.contactos)} de ${numero(ev.antes?.cohorte)}).`;
+      return `«${titulo(d)}» es ahora el ${porcentaje(d.valorActual)} de ${laCohorte}, contra el ${porcentaje(d.lineaBase)} en ${anteriores(ventana)} (${numero(ev.ahora?.contactos)} de ${numero(ev.ahora?.cohorte)}, antes ${numero(ev.antes?.contactos)} de ${numero(ev.antes?.cohorte)}).`;
     case CNV.formularioAbandono:
       return `De ${numero(ev.empezaron)} que empezaron el formulario, lo terminó el ${porcentaje(d.valorActual)}. Le toca a Conversion.`;
     case CNV.formularioSinDatos:
-      return `Sólo ${numero(ev.con)} de ${numero(ev.sobre)} contactos de la cohorte traen el formulario (${porcentaje(d.valorActual)}): lo que la pantalla dice de él no vale para esta ventana.`;
+      return `Sólo ${numero(ev.con)} de ${numero(ev.sobre)} contactos de ${laCohorte} traen el formulario (${porcentaje(d.valorActual)}): lo que la pantalla dice de él no vale para esta ventana.`;
     case NO_TOCAR:
-      return `«${titulo(d)}» agenda el ${porcentaje(d.valorActual)} de sus ${numero(ev.contactos)} contactos, igual o mejor que la cohorte (${porcentaje(d.lineaBase)}).`;
+      return `«${titulo(d)}» agenda el ${porcentaje(d.valorActual)} de sus ${numero(ev.contactos)} contactos, igual o mejor que ${laCohorte} (${porcentaje(d.lineaBase)}).`;
     default:
       return `${d.metrica}: ${numero(d.valorActual)}.`;
   }

@@ -19,6 +19,12 @@ export interface RenglonDelPlan {
   revision: string;
   /** Las hipótesis de la regla: la redacción sólo puede nombrar éstas como causa. */
   causas: readonly string[];
+  /**
+   * El cliente que nombra la evidencia, por su id (el nivel 3, C6 · D3): con varios, dos renglones de la misma familia o
+   * del mismo patrón son de dos clientes, y la pantalla dice de cuál (`ultimoPlan` trae los nombres). Sólo si la nombra:
+   * con un cliente el renglón es el de siempre. No va a la redacción.
+   */
+  cliente?: string;
 }
 
 export interface PlanDelDepartamento<G extends string = string> {
@@ -61,6 +67,7 @@ export function armarPlan<G extends string>(f: FormatoDelPlan<G>, p: ParaElPlan)
   const peso = new Map<RenglonDelPlan, number>();
   // Lo vigente y, después, lo informativo (que no es señal y sólo vive en el plan).
   for (const d of [...p.vigentes, ...(p.informativas ?? [])]) {
+    const cliente = (d.evidencia as { cliente?: unknown } | null)?.cliente;
     const renglon: RenglonDelPlan = {
       regla: d.regla,
       entidad: d.entidad,
@@ -70,6 +77,7 @@ export function armarPlan<G extends string>(f: FormatoDelPlan<G>, p: ParaElPlan)
       texto: f.textoDe(d, p.ventana),
       revision: d.revisionRecomendada,
       causas: d.causasPosibles,
+      ...(typeof cliente === 'string' ? { cliente } : {}),
     };
     peso.set(renglon, f.desempate?.(d) ?? 0);
     grupos.find((g) => g.clave === f.grupoDe(d))!.renglones.push(renglon);
@@ -100,7 +108,17 @@ export function armarPlan<G extends string>(f: FormatoDelPlan<G>, p: ParaElPlan)
     periodo: p.periodo ?? null,
     grupos,
     debajoDelPiso: p.debajoDelPiso.length,
-    sinMedicion: p.sinMedicion.map((r) => f.noSeMidio[r] ?? r),
+    sinMedicion: [
+      ...p.sinMedicion.map((r) => f.noSeMidio[r] ?? r),
+      /* Lo que no se pudo medir en un cliente (el nivel 3, C6 · D3), con su nombre, una vez: la regla entera sin
+         medición ya lo dice de todos. Y después, de quién es lo que falta y qué hacer. Con un cliente, nada de esto. */
+      ...new Set(
+        (p.sinMedicionDeClientes ?? [])
+          .filter((x) => !p.sinMedicion.includes(x.regla))
+          .map((x) => `en «${x.cliente}», ${f.noSeMidio[x.regla] ?? x.regla}`),
+      ),
+      ...(p.porQueNoSeMidio ?? []),
+    ],
     fueraDelTope,
   };
 }

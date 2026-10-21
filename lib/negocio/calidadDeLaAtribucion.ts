@@ -114,10 +114,14 @@ const traeLaUtm = (k: (typeof LAS_CINCO_UTM)[number]) =>
  *   ahora. Es la ventana del detector de Acquisition (`lib/agentes/detectores/acquisition.ts`): los mismos días
  *   cerrados que `embudosDeAcquisition`, para que ninguna pantalla mezcle dos «7 días» (F03, A11-06). La
  *   pantalla sigue con la ventana móvil.
+ * @param cuentaId El monitor de UN cliente (el nivel 3, C6 · D3): sus contactos, sus citas y sus ventas. Es el del
+ *   detector con varios clientes: sumados, un cliente chico con la atribución rota quedaba tapado por uno grande. Sin
+ *   él, el de la empresa, como siempre: la pantalla y el cerebro no cambian.
  */
 export async function calidadDeLaAtribucion(
   dias = DIAS_DE_LA_TASA,
   ventana: { desde: string; hasta: string } | null = null,
+  cuentaId: string | null = null,
 ): Promise<CalidadDeLaAtribucion> {
   /* La misma regla que `embudosDeAcquisition` para un día de calendario: desde la medianoche de `desde`
      hasta antes de la de `hasta + 1`. */
@@ -145,6 +149,7 @@ export async function calidadDeLaAtribucion(
       ...LAS_CINCO_UTM.map((k) => sql<number>`count(*) filter (where ${traeLaUtm(k)})`.as(k)),
     ])
     .where(en('c.alta_en_el_crm'))
+    .$if(cuentaId !== null, (q) => q.where('c.cuenta_id', '=', cuentaId!))
     .executeTakeFirst();
 
   const citas = await datos()
@@ -159,6 +164,7 @@ export async function calidadDeLaAtribucion(
     /* Por `inicio_el` y no por `alta_en_el_crm`: una cita se ubica por CUÁNDO ES, que es la misma
        regla que `atribucionDelLead` aplica al historial de la ficha. */
     .where(en('ci.inicio_el'))
+    .$if(cuentaId !== null, (q) => q.where('c.cuenta_id', '=', cuentaId!))
     .executeTakeFirst();
 
   const ventas = await datos()
@@ -175,6 +181,7 @@ export async function calidadDeLaAtribucion(
        `check` de la migración 011, y es el mismo corte que usa `comision.ts` para contar ventas.
        Dos formas distintas de contar la misma cosa es cómo dos pantallas terminan discrepando. */
     .where('r.salida', '=', 'venta')
+    .$if(cuentaId !== null, (q) => q.where('c.cuenta_id', '=', cuentaId!))
     .executeTakeFirst();
 
   const n = (v: unknown) => Number(v ?? 0);

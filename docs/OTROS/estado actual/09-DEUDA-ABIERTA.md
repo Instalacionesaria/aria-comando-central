@@ -542,7 +542,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   corrigió de su lado (`lib/negocio/rendimientoDelCreativo.ts:223-236`) y
   `pruebas/base/99-costo-del-anuncio.test.ts:207-220` no cubre el caso.
 - **«Landing con VSL» es circular y no se marca.** La marca exige el 90 %
-  (`components/conversion/PanelDeConversion.jsx:347@b2dcdf5`, `lib/negocio/recorridoDelLead.ts:273-275`) y la
+  (`components/conversion/PanelDeConversion.jsx:347@b2dcdf5`, `lib/negocio/recorridoDelLead.ts:277-279`) y la
   fila da 86 % a 30 días según [03-CONVERSION.md](03-CONVERSION.md) (no re-medido); su rótulo
   (`lib/negocio/recorrido.ts:70-73`) describe el recorrido de agosto. Desde CV-4 (2026-10-09) la tabla vive en el
   cajón de Landing, y la marca «registrada al reservar» va sólo en la fila registrada entera; la del 86 % sigue
@@ -679,7 +679,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   - Que «el auditor de IA no existe» y que `negocio.hallazgos` no tiene lector ni escritor
     (`docs/OTROS/produccion/DESPLIEGUE.md:473-476`). Tiene dos escritores
     (`lib/auditor/escritura.ts:295`, `lib/auditor/buscarMejora.ts:267`), lectores en `lib/auditor/`
-    (por ejemplo `lib/auditor/pantalla.ts:244`) y **27 filas**, detectadas entre el 2026-09-01 y el
+    (por ejemplo `lib/auditor/pantalla.ts:246`) y **27 filas**, detectadas entre el 2026-09-01 y el
     2026-10-06 (2026-10-18; 24 el 2026-09-28). Las dos consecuencias que el párrafo deduce sobre la cola
     «Intervenciones urgentes» cuelgan de esa premisa y no se re-midieron acá.
   - Que `serie_agotada` es un sabor pendiente de conectar

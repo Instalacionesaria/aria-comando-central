@@ -40,6 +40,7 @@ import {
   type DebajoDelPiso,
   type DepartamentoConSenales,
   type Deteccion,
+  type SinMedicionDeUnCliente,
   VENTANAS_DE_LAS_SENALES,
   type VentanaDeSenal,
   huellaDe,
@@ -62,6 +63,17 @@ export interface ResultadoDelDetector {
   detecciones: readonly Deteccion[];
   /** Las reglas cuya fuente no llegó: lo suyo que no se detectó queda `sin_medicion`. */
   sinMedicion: readonly string[];
+  /**
+   * Con varios clientes (el nivel 3, C6 · D3), las reglas que no se pudieron medir en UN cliente —su lectura atrasada,
+   * o sin contra qué comparar—: sólo lo de ese cliente queda `sin_medicion`, y el plan lo dice con su nombre. Con un
+   * solo cliente no viene.
+   */
+  sinMedicionDeClientes?: readonly SinMedicionDeUnCliente[];
+  /**
+   * Lo que el plan suma, tal cual, a lo que no se pudo medir: de quién es lo que falta y qué hacer (Acquisition: de qué
+   * cliente falta el gasto, C6 · D3). Con un solo cliente no viene.
+   */
+  porQueNoSeMidio?: readonly string[];
   debajoDelPiso: readonly DebajoDelPiso[];
   /**
    * Renglones del plan que NO son señales: no se reconcilian ni se guardan en `negocio.senales`, sólo van al
@@ -197,6 +209,7 @@ export async function correrLaPasada(
             ventana,
             detecciones: medido.detecciones,
             sinMedicion: medido.sinMedicion,
+            ...(medido.sinMedicionDeClientes?.length ? { sinMedicionDeClientes: medido.sinMedicionDeClientes } : {}),
           });
           const debajoDelPiso = [...medido.debajoDelPiso, ...r.debajoDelPiso];
           const decididas = new Set(r.decididas);

@@ -109,6 +109,8 @@ export interface CasoDelPatron {
   hallazgoId: string;
   patron: string;
   agente: Agente;
+  /** El cliente del hallazgo, por su id de `identidad.cuentas` (el nivel 3): el de su contacto. */
+  cuentaId: string;
   contactoId: string;
   contacto: string;
   /** El título del caso. Lo que cambia entre casos del mismo patrón. */
@@ -285,15 +287,33 @@ async function contarPorAgente(): Promise<
  */
 /** La ventana de los cinco `first_value`: el hallazgo más reciente de cada patrón. */
 const VENTANA_DEL_PATRON = sql`over (partition by h.patron order by h.detectado_el desc)`;
+/**
+ * La de los casos de UN cliente (el nivel 3, C6 · D3): dentro de su cliente —el `where` va antes que la ventana— y por
+ * agente y patrón, que es como agrupa el detector de Conversation. La de la pantalla no lleva el agente: dos agentes con
+ * el mismo código compartían el fragmento ganador. Sólo la lee el detector con varios clientes.
+ */
+const VENTANA_DEL_PATRON_DE_UN_CLIENTE = sql`over (partition by h.agente, h.patron order by h.detectado_el desc)`;
 
-async function casosDeLosPatrones(): Promise<CasoDelPatron[]> {
-  const filas = await datos()
+/**
+ * Los casos abiertos de UN cliente, para el detector de Conversation con varios clientes (el nivel 3, C6 · D3): con el
+ * tope de la pantalla dentro de su cliente —el de toda la empresa dejaba afuera los del cliente chico detrás de los
+ * doscientos del grande— y con el texto ganador elegido dentro de su cliente, por agente y patrón: el fragmento de un
+ * cliente no es el `issue_source` de otro. La pantalla no cambia. **Corre dentro de `conOrganizacion(`.**
+ */
+export async function casosDeUnCliente(cuentaId: string): Promise<CasoDelPatron[]> {
+  return casosDeLosPatrones(cuentaId);
+}
+
+async function casosDeLosPatrones(deUnCliente: string | null = null): Promise<CasoDelPatron[]> {
+  const ventana = deUnCliente === null ? VENTANA_DEL_PATRON : VENTANA_DEL_PATRON_DE_UN_CLIENTE;
+  let consulta = datos()
     .selectFrom('hallazgos as h')
     .innerJoin('contactos as c', (j) => j.onRef('c.id', '=', 'h.contacto_id'))
     .select([
       'h.id as hallazgo_id',
       'h.patron',
       'h.agente',
+      'h.cuenta_id',
       'h.contacto_id',
       'c.nombre as contacto',
       'h.titulo',
@@ -308,16 +328,15 @@ async function casosDeLosPatrones(): Promise<CasoDelPatron[]> {
        * nombre el constructor la pone al final de la sentencia —después del `order by`— y PostgreSQL
        * la rechaza con un `42601`; y escribir el `over (…)` cinco veces serían cinco copias del
        * mismo criterio de desempate, que es como una de ellas termina ordenando al revés. */
-      sql<string | null>`first_value(h.diagnostico) ${VENTANA_DEL_PATRON}`.as('diagnostico'),
-      sql<string>`first_value(h.correccion) ${VENTANA_DEL_PATRON}`.as('correccion'),
-      sql<string | null>`first_value(h.fragmento_prompt) ${VENTANA_DEL_PATRON}`.as('fragmento_prompt'),
-      sql<string | null>`first_value(h.prompt_seccion) ${VENTANA_DEL_PATRON}`.as('prompt_seccion'),
-      sql<string | null>`first_value(h.prompt_hash) ${VENTANA_DEL_PATRON}`.as('prompt_hash'),
+      sql<string | null>`first_value(h.diagnostico) ${ventana}`.as('diagnostico'),
+      sql<string>`first_value(h.correccion) ${ventana}`.as('correccion'),
+      sql<string | null>`first_value(h.fragmento_prompt) ${ventana}`.as('fragmento_prompt'),
+      sql<string | null>`first_value(h.prompt_seccion) ${ventana}`.as('prompt_seccion'),
+      sql<string | null>`first_value(h.prompt_hash) ${ventana}`.as('prompt_hash'),
     ])
-    .where('h.resuelto_el', 'is', null)
-    .orderBy('h.detectado_el', 'desc')
-    .limit(TOPE_DE_CASOS)
-    .execute();
+    .where('h.resuelto_el', 'is', null);
+  if (deUnCliente !== null) consulta = consulta.where('h.cuenta_id', '=', deUnCliente);
+  const filas = await consulta.orderBy('h.detectado_el', 'desc').limit(TOPE_DE_CASOS).execute();
 
   /* El hash de HOY, recalculado del texto de cada prompt. Se lee una vez para toda la lista: leerlo
      por caso serían doscientas consultas para comparar contra dos textos. */
@@ -327,6 +346,7 @@ async function casosDeLosPatrones(): Promise<CasoDelPatron[]> {
     hallazgoId: f.hallazgo_id,
     patron: f.patron,
     agente: f.agente as Agente,
+    cuentaId: f.cuenta_id,
     contactoId: f.contacto_id,
     contacto: f.contacto,
     titulo: f.titulo,

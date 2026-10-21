@@ -66,7 +66,7 @@ Las ventanas son rodantes, `now()` menos los días. El cerebro tiene `lead_flow`
 (`lib/agentes/executive/adaptadores/conversation.ts`). Desde CN-2 la ruta lee esos bloques de una sola lectura,
 `lecturaDeConversation`, publica además la `pantalla` que arma, y el cerebro suma `conversation_en_cifras`
 (`docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, CN1-15 y CN1-16). El detector tiene una regla, `CONV-PATRON-ABIERTO`
-(`lib/agentes/detectores/conversation.ts:36`).
+(`lib/agentes/detectores/conversation.ts:49`).
 
 ## 4 · Los agentes, en los datos
 

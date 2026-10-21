@@ -25,6 +25,13 @@ Lo mismo que su pantalla, con la misma lectura (`app/api/conversion/route.ts:71-
 - `recorridoAnterior`: el reparto de la ventana anterior, para el cambio de ruta. Hasta ese día eran
   `recorridoDelLead(dias)` y `embudoDelFormulario(dias)`, con los días de calendario hasta hoy.
 
+**Con varios clientes (el nivel 3, C6 · D3)**, con contactos de más de uno, cada cliente activo se mide contra SU
+cohorte, SU anterior y el campo del formulario de SU CRM (`recorridoDeCadaCliente`, con las mismas funciones y la misma
+regla de la anterior que la pantalla); la familia y el formulario de otro cliente llevan su id adelante
+(`idConCliente`), y la frase dice «la cohorte de su cliente». Un cliente con la lectura de contactos atrasada deja sin
+medición sólo lo suyo; uno cuyo CRM no tiene el campo no se mide en él ni frena a los demás. Con un cliente, lo de
+siempre.
+
 ## Las reglas
 
 | código | qué detecta | umbral provisional | piso | gravedad | entidad | destino |

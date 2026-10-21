@@ -45,7 +45,7 @@ sin entrega—; el 2026-10-18 ninguna pieza está «Entregando» y la ventana de
 >   `lib/negocio/`, `lib/meta/`, `components/` ni `app/`.
 > - **2026-10-18** — esta foto: las cifras re-medidas, y el anexo del 2026-10-15 integrado.
 > - **2026-10-20 · nivel 3, C5 · G1, construido en local, sin subir** — la pieza es (cliente, nombre): su identificador
->   lleva el cliente cuando no es del principal (`lib/negocio/idDeLaPieza.ts:35`), el link manual es de (cliente,
+>   lleva el cliente cuando no es del principal (`lib/negocio/idDeLaPieza.ts:58`), el link manual es de (cliente,
 >   pieza) (`095`) y, con piezas de dos clientes, la tarjeta dice el cliente y «Funciona» compara dentro de cada uno
 >   (07, «La pieza de Creative es (cliente, nombre)»). Con un solo cliente, la pantalla es la de esta foto.
 
@@ -104,7 +104,7 @@ contactos y, desde el 2026-10-15, lo leído de Meta— (`lib/negocio/lecturaDeCr
 `pantalla` viaja de 0 a 1; el navegador multiplica por 100 en un solo lugar (`components/creative/comun.jsx:76`). La
 pieza es el nombre del anuncio normalizado, la misma llave de los tres módulos (`lib/negocio/creativo.ts:53-55`), en el
 cliente de sus anuncios o de sus contactos (el nivel 3): su `clave` es el nombre si es del principal —con un cliente,
-siempre— y `<cuenta>:<nombre>` si es de otro (`lib/negocio/idDeLaPieza.ts:35`).
+siempre— y `<cuenta>:<nombre>` si es de otro (`lib/negocio/idDeLaPieza.ts:58`).
 
 **Lo que dibuja**, en el orden del panel, y lo que se sabe el 2026-10-18 a 30 días —el período con que abre
 (`lib/negocio/periodo.ts:109`)—, deducido de la medición de ese día (no leído de la pantalla):
@@ -231,12 +231,12 @@ Acquisition y Conversion. Toda tasa sobre impresiones lleva el piso de 1000 (`li
 `lib/negocio/lecturaDeCreative.ts:189-195`); el click-to-landing, el de 10 clics al enlace de su módulo
 (`lib/negocio/lecturaDeCreative.ts:388-393`). La tira y la tarjeta no dibujan tasas sobre contactos.
 
-**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:125`) con las señales
+**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:132`) con las señales
 que trae la ruta (`components/creative/PanelDeCreative.jsx:131`): el plan de 7 días con «7 días» y el de 30 con «30 días»;
 con «Hoy» y «Completo» no hay plan (`app/api/creative/route.ts:67`). El detector tiene cuatro reglas —la caída del CTR,
 la concentración del gasto, la frecuencia alta y el ICP de la pieza contra su etapa—
-(`lib/agentes/detectores/creative.ts:43-48`) y mide con los mismos tres módulos y los mismos días que la pantalla
-(`lib/agentes/detectores/creative.ts:111-118`); el plan las reparte en cuatro grupos
+(`lib/agentes/detectores/creative.ts:44-49`) y mide con los mismos tres módulos y los mismos días que la pantalla
+(`lib/agentes/detectores/creative.ts:112-119`); el plan las reparte en cuatro grupos
 (`lib/agentes/plan/creative.ts:24-29`). El comentario de la cabecera mira la frescura de la tarea `anuncios`
 (`lib/agentes/cabecera.ts:110`) y el cuadre del gasto de las campañas contra el de la cuenta
 (`lib/agentes/cabecera.ts:123-131`); no mira `activos`.
@@ -364,7 +364,7 @@ Portal lee la copia en `contactos.score`. **Las agendas por pieza** salen de `ti
 
 **Lo guardado que la pantalla no dibuja**: la interacción (`postEngagement`), el CPM y el CPC de cada pieza, el ICP
 promedio, la tasa de agenda, las congeladas y la cobertura del puente, todo en `calidad` y `rendimiento`; y del
-detector, la frecuencia por anuncio de 7 días (`lib/agentes/detectores/creative.ts:141`). El link manual de cada pieza
+detector, la frecuencia por anuncio de 7 días (`lib/agentes/detectores/creative.ts:142`). El link manual de cada pieza
 (`negocio.enlaces_de_pieza`, `db/migraciones/063_el_enlace_de_la_pieza.sql:29`; de cada cliente desde la `095`) manda sobre la miniatura en «Ver en…»
 (`lib/negocio/lecturaDeCreative.ts:378`), y el 2026-10-18 no hay ninguno cargado. De `negocio.activos_de_anuncio`, el
 tipo de objeto del creativo y el motivo de cada anuncio sin miniatura (`db/migraciones/078_el_activo_del_anuncio.sql:26-34`)
@@ -553,7 +553,7 @@ Sales o Conversion, y nada lo dice.
 
 **11 · «Calificados» decía dos cosas.** **Cerrado en CF-5.** En la tira son los contactos de ICP alto
 (`lib/negocio/calidadDelCreativo.ts:90-94`); la frase de la regla del ICP del Plan de acción decía «sobre N calificados con
-puntaje» para los que traen el puntaje, cualquiera sea (`lib/agentes/detectores/creative.ts:326`). Desde el 2026-10-11
+puntaje» para los que traen el puntaje, cualquiera sea (`lib/agentes/detectores/creative.ts:328`). Desde el 2026-10-11
 dice «sobre N contactos con puntaje» (`lib/agentes/plan/creative.ts:61`).
 
 **12 · Textos que la miniatura volvió falsos.** **Cerrado en CF-5.** La lista de lo que GoHighLevel no da decía que la
@@ -561,7 +561,7 @@ miniatura no tenía ruta, y viajaba así al cerebro en `rendimiento_de_piezas`
 (`lib/agentes/executive/adaptadores/creative.ts:122`); ahora dice que llega por el «Video Url» y sólo para las piezas
 cuyos contactos la traen (`lib/negocio/rendimientoDelCreativo.ts:160-164`). El comentario del barrido que lista qué
 tareas informan un motivo nombra `contactos` y `activos` (`lib/negocio/barrido.ts:808-809`), y el detector ya no dice
-que su promedio de ICP lo muestra la pantalla (`lib/agentes/detectores/creative.ts:290-295`).
+que su promedio de ICP lo muestra la pantalla (`lib/agentes/detectores/creative.ts:292-297`).
 
 **13 · La miniatura no se vio cargar.** **Abierto** (`CF1-P06`). No se sabe si la imagen de `facebook.com/ads/image`
 carga sin sesión ni cuánto dura. Si no carga, la tarjeta queda con el fondo y sin frase (`components/creative/Miniatura.jsx:16-20`),

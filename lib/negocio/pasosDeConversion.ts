@@ -53,6 +53,7 @@ import {
 import type { ClaveDePeriodo } from './periodo.ts';
 import { cohorteEntre } from './recorrido.ts';
 import { recorridoDelLead, type RecorridoDeLosLeads } from './recorridoDelLead.ts';
+import { partirIdConCliente } from './idDeLaPieza.ts';
 
 // ─── Los tipos ──────────────────────────────────────────────────────────────
 
@@ -210,8 +211,26 @@ export function variacionEnPuntos(actual: number | null, anterior: number | null
  */
 export function pasoDeLaSenal(entidad: { tipo: string; id: string }): ClaveDePaso | null {
   if (entidad.tipo === 'familia_de_entrada') return 'sesiones';
-  if (entidad.tipo === 'funnel' && entidad.id === 'formulario') return 'form';
+  // El formulario de otro cliente lleva su id adelante (el nivel 3, `idConCliente`): es el mismo paso.
+  if (entidad.tipo === 'funnel' && partirIdConCliente(entidad.id).resto === 'formulario') return 'form';
   return null;
+}
+
+/**
+ * Si se compara contra la anterior (CV15-20), y por qué no. Pura: es la regla de la pantalla, y la del detector de
+ * Conversion para cada cliente (C6 · D3) —una sola regla para las dos—. Con un día sin cerrar, no; con la lectura de
+ * contactos o de citas atrasada, no; con la historia empezando después de la anterior, tampoco.
+ */
+export function comparaLaAnterior(e: {
+  cerrados: boolean;
+  alDia: boolean;
+  primero: string | null;
+  candidata: DiasDeCalendario;
+}): { anterior: DiasDeCalendario | null; sinComparacion: SinComparacionDeConversion | null } {
+  if (!e.cerrados) return { anterior: null, sinComparacion: 'periodo' };
+  if (!e.alDia) return { anterior: null, sinComparacion: 'faltan_contactos' };
+  if (e.primero !== null && e.primero > e.candidata.desde) return { anterior: null, sinComparacion: 'sin_historia' };
+  return { anterior: e.candidata, sinComparacion: null };
 }
 
 const SIN: Variacion = { tipo: 'sin_comparacion' };
@@ -561,17 +580,9 @@ export async function lecturaDeConversion(
 
   /* Si se compara (CV15-20). La frescura se importa al usarla, como en los detectores: con una importación
      estática, `frescura → barrido → correr → detectores` cerraría un ciclo el día que un detector use esto. */
-  let sinComparacion: SinComparacionDeConversion | null = null;
-  let anterior: DiasDeCalendario | null = null;
-  if (!b.cerrados) {
-    sinComparacion = 'periodo';
-  } else {
-    const { frescuraDe } = await import('./frescura.ts');
-    const alDia = (await frescuraDe('contactos')).estado === 'al_dia' && (await frescuraDe('citas')).estado === 'al_dia';
-    if (!alDia) sinComparacion = 'faltan_contactos';
-    else if (primero !== null && primero > b.anteriorCandidata.desde) sinComparacion = 'sin_historia';
-    else anterior = b.anteriorCandidata;
-  }
+  const { frescuraDe } = await import('./frescura.ts');
+  const alDia = b.cerrados && (await frescuraDe('contactos')).estado === 'al_dia' && (await frescuraDe('citas')).estado === 'al_dia';
+  const { sinComparacion, anterior } = comparaLaAnterior({ cerrados: b.cerrados, alDia, primero, candidata: b.anteriorCandidata });
 
   // La anterior, a la MISMA edad que la actual: sus contactos llevan `dias` días más en la base.
   const previa = anterior === null ? null : await personasDeLaCohorte(anterior, periodo.dias, null, campoDeConfirmacion);
@@ -660,4 +671,49 @@ export async function pasosDeConversion(
   zona: string,
 ): Promise<PasosDeConversion> {
   return (await lecturaDeConversion(periodo, zona)).pasos;
+}
+
+/** El reparto, la anterior y el formulario de UN cliente (el nivel 3, C6 · D3). */
+export interface CohorteDeUnCliente {
+  cuentaId: string;
+  recorrido: RecorridoDeLosLeads;
+  formulario: EmbudoDelFormulario;
+  /** La anterior que SU lectura compara (`comparaLaAnterior`), o `null`. */
+  anterior: DiasDeCalendario | null;
+  recorridoAnterior: RecorridoDeLosLeads | null;
+}
+
+/**
+ * La cohorte de cada cliente, para el detector de Conversion con contactos de varios (el nivel 3, C6 · D3). Cada uno se
+ * mide contra lo suyo: con la cohorte de la empresa, una familia de un cliente se comparaba con la gente de otro, el
+ * cambio de mezcla entre clientes parecía un cambio de ruta, y la gente de un cliente cuyo CRM no tiene el campo del
+ * formulario diluía la cobertura del otro. Los MISMOS días que la pantalla (`bordesDelPeriodo` con el primer contacto de
+ * la empresa), la misma regla de la anterior (`comparaLaAnterior`) con SU lectura de contactos y de citas y SU primer
+ * contacto, y las mismas funciones de la pantalla con su cuenta. La pantalla sigue siendo de la empresa. Corre dentro de
+ * `conOrganizacion`.
+ */
+export async function recorridoDeCadaCliente(
+  periodo: { clave: ClaveDePeriodo; dias: number },
+  zona: string,
+  cuentas: readonly string[],
+): Promise<CohorteDeUnCliente[]> {
+  const primeros = new Map(
+    (
+      await sql<{ cuenta_id: string; desde: string | null }>`
+        select cuenta_id, to_char(min(alta_en_el_crm)::date, 'YYYY-MM-DD') as desde from negocio.contactos group by cuenta_id`.execute(datos())
+    ).rows.map((f) => [f.cuenta_id, f.desde]),
+  );
+  const primeroDeLaEmpresa = [...primeros.values()].filter((d): d is string => d !== null).sort()[0] ?? null;
+  const b = await bordesDelPeriodo(periodo, zona, primeroDeLaEmpresa);
+  const { frescuraDe } = await import('./frescura.ts');
+  const salida: CohorteDeUnCliente[] = [];
+  for (const cuentaId of cuentas) {
+    const recorrido = await recorridoDelLead(periodo.dias, b.ventana, cuentaId);
+    const formulario = await embudoDelFormulario(periodo.dias, b.ventana, cuentaId);
+    const alDia =
+      b.cerrados && (await frescuraDe('contactos', cuentaId)).estado === 'al_dia' && (await frescuraDe('citas', cuentaId)).estado === 'al_dia';
+    const { anterior } = comparaLaAnterior({ cerrados: b.cerrados, alDia, primero: primeros.get(cuentaId) ?? null, candidata: b.anteriorCandidata });
+    salida.push({ cuentaId, recorrido, formulario, anterior, recorridoAnterior: anterior === null ? null : await recorridoDelLead(periodo.dias, anterior, cuentaId) });
+  }
+  return salida;
 }

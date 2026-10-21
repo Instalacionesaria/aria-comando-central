@@ -137,13 +137,17 @@ function puesto(f: Familia): number {
  * @param ventana Días de calendario `[desde, hasta]`, los dos incluidos, en vez de los últimos `dias` hasta
  *   hoy: los días cerrados de `bordesDelPeriodo`, los mismos que corta Acquisition (CV15-21 de
  *   `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Con ella, `dias` sólo viaja en la respuesta.
+ * @param cuentaId La cohorte de UN cliente (el nivel 3, C6 · D3): la del detector de Conversion, que mide a cada cliente
+ *   contra su cohorte. El corte de época sigue siendo el de la empresa. Sin él, la de toda la empresa, como siempre.
  */
 export async function recorridoDelLead(
   dias = DIAS_DE_LA_TASA,
   ventana: DiasDeCalendario | null = null,
+  cuentaId: string | null = null,
 ): Promise<RecorridoDeLosLeads> {
   const familia = familiaDelRecorrido('contactos');
-  const enLaCohorte = cohorteDeLaLectura('contactos', dias, ventana);
+  const deLaVentana = cohorteDeLaLectura('contactos', dias, ventana);
+  const enLaCohorte = cuentaId === null ? deLaVentana : sql<boolean>`(${deLaVentana} and contactos.cuenta_id = ${cuentaId})`;
 
   const [filas, extremos, corte] = await Promise.all([
     datos()

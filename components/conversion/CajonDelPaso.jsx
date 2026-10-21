@@ -252,12 +252,15 @@ function agenda(p) {
 /**
  * Las señales del paso, con el marcado `obs` del prototipo (`obsBlock`, línea 4309). Sólo en los pasos a los que
  * apunta una regla, y con 7 o 30 días: con «Hoy» o «Completo» no hay señales que mirar. En Landing, las familias
- * de «No tocar» del plan van como «a favor» (CV15-P07): no son señales, y no se pueden resolver.
+ * de «No tocar» del plan van como «a favor» (CV15-P07): no son señales, y no se pueden resolver. Con varios clientes
+ * (C6 · D3), cada renglón empieza por el nombre de su cliente: dos «Landing con VSL» son de dos clientes.
  */
 function Observaciones({ clave, p }) {
   if (!CON_REGLAS.has(clave) || p.senales.ventana === null) return null;
   const malas = senalesDelPaso(p.senales, clave);
   const buenas = clave === 'sesiones' ? (p.senales.plan?.plan.grupos.find((g) => g.clave === 'no_tocar')?.renglones ?? []) : [];
+  const delPlan = (r) => (r.cliente ? (p.senales.plan?.clientes?.[r.cliente] ?? null) : null);
+  const conSuCliente = (cliente, texto) => (cliente ? `${cliente}: ${texto}` : texto);
   const aRevisar = malas.filter((s) => s.estado !== 'sin_medicion').length;
   return (
     <div>
@@ -273,7 +276,7 @@ function Observaciones({ clave, p }) {
           <div className={CLASE_DE_OBS[s.gravedad] ?? 'obs'} key={s.id}>
             <span className="obs-dot" />
             <div>
-              <div className="obs-t">{s.texto}</div>
+              <div className="obs-t">{conSuCliente(s.cliente, s.texto)}</div>
               <div className="obs-d">{s.revision}</div>
               <div className="obs-m">
                 {fechaCorta(s.ultimaDeteccion)} · {ESTADO_DE_LA_SENAL[s.estado] ?? s.estado}
@@ -291,7 +294,7 @@ function Observaciones({ clave, p }) {
           <div className="obs good" key={`${r.regla}:${r.entidad.tipo}:${r.entidad.id}`}>
             <span className="obs-dot" />
             <div>
-              <div className="obs-t">{r.texto}</div>
+              <div className="obs-t">{conSuCliente(delPlan(r), r.texto)}</div>
               <div className="obs-m">señal a favor</div>
             </div>
           </div>

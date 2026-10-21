@@ -9,7 +9,9 @@
 //
 //   · lo detectado que ya existe se actualiza —nunca nace dos veces—; lo nuevo nace `abierta`;
 //   · lo que existía y no se detectó se cierra solo si la regla se pudo medir, o queda `sin_medicion` si
-//     su fuente dejó de llegar: cerrarlo afirmaría que la condición se fue cuando sólo dejó de poder verse;
+//     su fuente dejó de llegar: cerrarlo afirmaría que la condición se fue cuando sólo dejó de poder verse.
+//     Con varios clientes (el nivel 3, C6 · D3), la fuente que no llegó puede ser la de UN cliente: entonces
+//     quedan sin medición sólo las señales de ese cliente, y las de los demás se cierran solas como siempre;
 //   · lo que una persona descartó o resolvió no renace mientras la condición siga: la pasada lo encuentra,
 //     anota que se volvió a ver y no crea otra. Si la condición se apaga se anota la fecha, y si vuelve
 //     después es un hecho nuevo. Si la gravedad SUBE, también es un hecho nuevo: la decisión se tomó sobre
@@ -22,12 +24,14 @@
 
 import { sql } from 'kysely';
 import { datos } from '../../datos/contexto.ts';
+import { partirIdConCliente } from '../../negocio/idDeLaPieza.ts';
 import {
   type DebajoDelPiso,
   type DepartamentoConSenales,
   type Deteccion,
   type Gravedad,
   PISO_DE_UNA_SENAL,
+  type SinMedicionDeUnCliente,
   type VentanaDeSenal,
   confianzaDe,
   huellaDe,
@@ -42,6 +46,11 @@ export interface PasadaDeUnDepartamento {
   detecciones: readonly Deteccion[];
   /** Las reglas cuya fuente no llegó en esta pasada: lo suyo que no se detectó queda `sin_medicion`. */
   sinMedicion: readonly string[];
+  /**
+   * Las reglas que no se pudieron medir en UN cliente (el nivel 3, C6 · D3): queda `sin_medicion` sólo lo de ese
+   * cliente. Con un solo cliente no viene, y todo es como siempre.
+   */
+  sinMedicionDeClientes?: readonly Pick<SinMedicionDeUnCliente, 'regla' | 'cuentaId'>[];
 }
 
 export interface ResumenDeLaReconciliacion {
@@ -87,7 +96,7 @@ export async function reconciliarSenales(p: PasadaDeUnDepartamento): Promise<Res
   // Las que bloquean su huella en este departamento y esta ventana.
   const existentes = await db
     .selectFrom('senales')
-    .select(['id', 'huella', 'regla', 'estado', 'gravedad'])
+    .select(['id', 'huella', 'regla', 'estado', 'gravedad', 'entidad_tipo', 'entidad_id', 'evidencia'])
     .where('departamento', '=', p.departamento)
     .where('ventana', '=', p.ventana)
     .where((w) =>
@@ -147,11 +156,25 @@ export async function reconciliarSenales(p: PasadaDeUnDepartamento): Promise<Res
     resumen.actualizadas += 1;
   }
 
+  /* Lo que no se pudo medir en un cliente (el nivel 3): de qué cliente es cada señal. Una sin cliente —sin prefijo, sin
+     `cliente` en la evidencia— es del principal: con un cliente, de la empresa, y con varios, la convención de
+     `idConCliente`. Una nacida con un solo cliente no nombra a nadie y también es suya. */
+  const deClientes = p.sinMedicionDeClientes ?? [];
+  const principal =
+    deClientes.length === 0
+      ? null
+      : ((await db.selectFrom('cuentas').select('id').where('es_por_omision', '=', true).executeTakeFirst())?.id ?? null);
+  const sinFuenteEnSuCliente = (s: (typeof existentes)[number]) => {
+    if (deClientes.length === 0) return false;
+    const cliente = clienteDeLaSenal(s) ?? principal;
+    return deClientes.some((x) => x.regla === s.regla && x.cuentaId === cliente);
+  };
+
   // Lo que había y hoy no se detectó.
   const ahora = new Date();
   for (const previa of existentes) {
     if (detectadas.has(previa.huella)) continue;
-    const sinFuente = p.sinMedicion.includes(previa.regla);
+    const sinFuente = p.sinMedicion.includes(previa.regla) || sinFuenteEnSuCliente(previa);
     if ((DECIDIDAS as readonly string[]).includes(previa.estado)) {
       // Sin fuente no se puede afirmar que la condición se apagó: la decisión sigue bloqueando.
       if (sinFuente) continue;
@@ -171,6 +194,17 @@ export async function reconciliarSenales(p: PasadaDeUnDepartamento): Promise<Res
   }
 
   return resumen;
+}
+
+/**
+ * El cliente de una señal guardada, o `null` si no nombra ninguno: la entidad `cliente` es él; si no, el que nombra su
+ * evidencia; si no, el prefijo de su identificador (`idConCliente`).
+ */
+export function clienteDeLaSenal(s: { entidad_tipo: string; entidad_id: string; evidencia: unknown }): string | null {
+  if (s.entidad_tipo === 'cliente') return s.entidad_id;
+  const deLaEvidencia = (s.evidencia as { cliente?: unknown } | null)?.cliente;
+  if (typeof deLaEvidencia === 'string') return deLaEvidencia;
+  return partirIdConCliente(s.entidad_id).cuentaId;
 }
 
 /** Las columnas que dicen qué se midió y cómo se juzgó: las mismas al nacer y al actualizar. */

@@ -25,14 +25,36 @@
 //
 // Lo que no se puede medir no se publica: sin la lectura de contactos al día, las reglas del recorrido van a
 // «sin medición»; sin el campo del formulario en el CRM, las del formulario.
+//
+// ── CON VARIOS CLIENTES (el nivel 3, C6 · D3) ────────────────────────────────
+//
+// Con contactos de más de un cliente, cada cliente activo se mide contra SU cohorte, SU anterior y el campo del
+// formulario de SU CRM (`recorridoDeCadaCliente`): contra la de la empresa, una familia de un cliente competía con la
+// gente de otro, el cambio de mezcla entre clientes parecía un cambio de ruta, y la gente de un CRM sin el campo
+// diluía la cobertura del formulario de otro. Las entidades llevan el cliente adelante salvo las del principal
+// (`idConCliente`), la evidencia lo nombra y la frase dice «de su cliente». Los frenos son por cliente: uno activo con
+// la lectura de contactos atrasada, o sin una anterior que comparar, deja «sin medición» sólo lo suyo; uno cuyo CRM no
+// tiene el campo del formulario no se mide en él ni frena a nadie, salvo que ninguno lo tenga. Con un cliente, todo
+// es como siempre, letra por letra.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { sql } from 'kysely';
+import { datos } from '../../datos/contexto.ts';
 import type { RecorridoDeLosLeads } from '../../negocio/recorridoDelLead.ts';
 import type { EmbudoDelFormulario } from '../../negocio/embudoDelFormulario.ts';
-import { lecturaDeConversion } from '../../negocio/pasosDeConversion.ts';
+import { idConCliente } from '../../negocio/idDeLaPieza.ts';
+import { lecturaDeConversion, recorridoDeCadaCliente } from '../../negocio/pasosDeConversion.ts';
 import type { Familia } from '../../negocio/recorrido.ts';
-import { PISO_DE_UNA_SENAL, type DebajoDelPiso, type DepartamentoConSenales, type Deteccion, type VentanaDeSenal } from '../senales/tipos.ts';
+import {
+  PISO_DE_UNA_SENAL,
+  type DebajoDelPiso,
+  type DepartamentoConSenales,
+  type Deteccion,
+  type SinMedicionDeUnCliente,
+  type VentanaDeSenal,
+} from '../senales/tipos.ts';
 import type { ReglaDelCatalogo } from '../senales/umbrales.ts';
+import { clientesDeLaEmpresa, frenoDeLaTarea } from './clientes.ts';
 
 export const CNV = {
   familiaQueNoAgenda: 'CNV-FAMILIA-QUE-NO-AGENDA',
@@ -103,10 +125,28 @@ export interface MedidaDeConversion {
   /** La ventana anterior, de igual largo y justo antes. `null` si la lectura no compara: el cambio de ruta no se mide. */
   anterior: { filas: Pick<RecorridoDeLosLeads['filas'][number], 'familia' | 'contactos'>[]; cohorte: number } | null;
   formulario: Pick<EmbudoDelFormulario, 'cobertura' | 'finalizacion' | 'campoDelFormulario'>;
-  /** Si la lectura de contactos del CRM está al día. */
+  /** Si la regla entera se puede medir: la lectura de contactos del CRM al día (con varios activos, la de alguno). */
   contactosAlDia: boolean;
   periodo: { desde: string; hasta: string };
+  /** (C6 · D3) Con contactos de más de un cliente, la cohorte de cada cliente activo. Ausente con uno. */
+  porCliente?: readonly CohorteDeUnClienteEnLaSenal[];
+  /** (C6 · D3) Con contactos de un solo cliente, cuál: sus entidades llevan su id adelante si no es el principal. */
+  deUnCliente?: string | null;
+  /** (C6 · D3) El cliente por omisión: sus entidades llevan el identificador de siempre (`idConCliente`). */
+  principal?: string | null;
+  /** (C6 · D3) Los clientes activos con la lectura de contactos atrasada o fallando: sus familias no se publican. */
+  atrasados?: readonly { id: string; nombre: string }[];
 }
+
+/** Lo que se mide de UN cliente (C6 · D3): lo mismo que de la empresa, con lo suyo. */
+export interface CohorteDeUnClienteEnLaSenal extends Pick<MedidaDeConversion, 'recorrido' | 'anterior' | 'formulario'> {
+  cuentaId: string;
+  /** Su nombre, para decir en el plan qué no se pudo medir de él. */
+  nombre: string;
+}
+
+const comoAnterior = (previa: Pick<RecorridoDeLosLeads, 'filas' | 'cohorte'> | null): MedidaDeConversion['anterior'] =>
+  previa === null ? null : { filas: previa.filas.map((f) => ({ familia: f.familia, contactos: f.contactos })), cohorte: previa.cohorte };
 
 /**
  * Corre dentro de `conOrganizacion`.
@@ -114,30 +154,103 @@ export interface MedidaDeConversion {
  * @param zona La de la empresa (`identidad.organizaciones.zona_horaria`): cuándo termina su día, para los días cerrados.
  */
 export async function medirConversion(ventana: VentanaDeSenal, zona: string): Promise<MedidaDeConversion> {
-  const lectura = await lecturaDeConversion({ clave: ventana, dias: ventana === '7d' ? 7 : 30 }, zona);
-  // La frescura al medir, por el ciclo de módulos que explica `./creative.ts`.
-  const { frescuraDe } = await import('../../negocio/frescura.ts');
-  const contactos = await frescuraDe('contactos');
-  const previa = lectura.recorridoAnterior;
+  const periodo = { clave: ventana, dias: ventana === '7d' ? 7 : 30 } as const;
+  const lectura = await lecturaDeConversion(periodo, zona);
+  const clientes = await clientesDeLaEmpresa();
+  // De qué clientes hay contactos, alguna vez (C6 · D3): con más de uno, cada cliente activo se mide con lo suyo.
+  const conContactos = (await sql<{ cuenta_id: string }>`select distinct cuenta_id from negocio.contactos order by 1`.execute(datos())).rows.map(
+    (f) => f.cuenta_id,
+  );
+  /* El freno, por cliente activo (`frenoDeLaTarea`). Con los contactos de un solo cliente y ése atrasado, toda la regla,
+     como siempre. */
+  const freno = await frenoDeLaTarea('contactos', clientes);
+  const unico = conContactos.length === 1 ? conContactos[0]! : null;
+  const porCliente =
+    conContactos.length > 1
+      ? (await recorridoDeCadaCliente(periodo, zona, clientes.activos.filter((id) => conContactos.includes(id)))).map((c) => ({
+          cuentaId: c.cuentaId,
+          nombre: clientes.nombres.get(c.cuentaId) ?? 'Cliente sin nombre',
+          recorrido: c.recorrido,
+          anterior: comoAnterior(c.recorridoAnterior),
+          formulario: c.formulario,
+        }))
+      : null;
   return {
     ventana,
     recorrido: lectura.recorrido,
-    anterior: previa === null ? null : { filas: previa.filas.map((f) => ({ familia: f.familia, contactos: f.contactos })), cohorte: previa.cohorte },
+    anterior: comoAnterior(lectura.recorridoAnterior),
     formulario: lectura.formulario,
-    contactosAlDia: contactos.estado === 'al_dia',
+    contactosAlDia: freno.alDia && !freno.atrasados.some((a) => a.id === unico),
     periodo: lectura.ventana,
+    ...(porCliente === null ? { deUnCliente: unico } : { porCliente }),
+    principal: clientes.principal,
+    atrasados: freno.atrasados,
   };
 }
 
 type Umbral = (codigo: string) => { valor: number; provisional: boolean };
 const redondear = (x: number, d = 4) => Math.round(x * 10 ** d) / 10 ** d;
 
-export function detectarEnConversion(
-  m: MedidaDeConversion,
+type DeteccionesDeConversion = {
+  detecciones: Deteccion[];
+  informativas: Deteccion[];
+  debajoDelPiso: DebajoDelPiso[];
+  sinMedicion: string[];
+  sinMedicionDeClientes?: SinMedicionDeUnCliente[];
+};
+
+export function detectarEnConversion(m: MedidaDeConversion, umbral: Umbral): DeteccionesDeConversion {
+  const principal = m.principal ?? null;
+  const atrasados = m.atrasados ?? [];
+  const deClientes: SinMedicionDeUnCliente[] = [];
+  const noSeMidio = (regla: string, c: { id: string; nombre: string }) => {
+    if (!deClientes.some((x) => x.regla === regla && x.cuentaId === c.id)) deClientes.push({ regla, cuentaId: c.id, cliente: c.nombre });
+  };
+  let salida: DeteccionesDeConversion;
+  if (!m.porCliente) {
+    // Con contactos de un solo cliente, la cohorte de la empresa es la suya: lo de siempre, con su identificador.
+    salida = detectarEnUnaCohorte(m, umbral, { cuentaId: m.deUnCliente ?? null, nombrar: false, principal });
+  } else {
+    salida = { detecciones: [], informativas: [], debajoDelPiso: [], sinMedicion: [] };
+    // Ningún activo al día: no se puede decir nada de ninguna familia, como siempre.
+    if (!m.contactosAlDia) salida.sinMedicion.push(CNV.familiaQueNoAgenda, CNV.cambioDeRuta);
+    const tarde = new Set(atrasados.map((a) => a.id));
+    for (const c of m.porCliente) {
+      const alDia = m.contactosAlDia && !tarde.has(c.cuentaId);
+      const suya = detectarEnUnaCohorte({ ...c, ventana: m.ventana, periodo: m.periodo, contactosAlDia: alDia }, umbral, { cuentaId: c.cuentaId, nombrar: true, principal });
+      salida.detecciones.push(...suya.detecciones);
+      salida.informativas.push(...suya.informativas);
+      salida.debajoDelPiso.push(...suya.debajoDelPiso);
+      // Sin una anterior que SU lectura compare, el cambio de ruta de ese cliente no se mide; el de los demás, sí.
+      if (alDia && suya.sinMedicion.includes(CNV.cambioDeRuta)) noSeMidio(CNV.cambioDeRuta, { id: c.cuentaId, nombre: c.nombre });
+    }
+    /* Un CRM sin el campo del formulario es una falta de ese cliente, no una lectura atrasada: no se mide en él y no
+       frena a los demás. Sólo si ninguno lo tiene, como siempre. */
+    if (m.porCliente.every((c) => c.formulario.campoDelFormulario === null)) salida.sinMedicion.push(CNV.formularioAbandono, CNV.formularioSinDatos);
+  }
+  // Los activos con la lectura de contactos atrasada: sus familias y su cambio de ruta quedan sin medición.
+  if (m.contactosAlDia) {
+    for (const a of atrasados) {
+      noSeMidio(CNV.familiaQueNoAgenda, a);
+      noSeMidio(CNV.cambioDeRuta, a);
+    }
+  }
+  return deClientes.length > 0 ? { ...salida, sinMedicionDeClientes: deClientes } : salida;
+}
+
+/**
+ * Las reglas sobre UNA cohorte: la de la empresa, o la de un cliente (C6 · D3). Con `nombrar`, la evidencia y la revisión
+ * dicen «su cliente»; sin él, son las de siempre. El identificador lleva el cliente adelante si no es el principal.
+ */
+function detectarEnUnaCohorte(
+  m: Pick<MedidaDeConversion, 'ventana' | 'recorrido' | 'anterior' | 'formulario' | 'contactosAlDia' | 'periodo'>,
   umbral: Umbral,
-): { detecciones: Deteccion[]; informativas: Deteccion[]; debajoDelPiso: DebajoDelPiso[]; sinMedicion: string[] } {
+  cliente: { cuentaId: string | null; nombrar: boolean; principal: string | null },
+): DeteccionesDeConversion {
   const salida = { detecciones: [] as Deteccion[], informativas: [] as Deteccion[], debajoDelPiso: [] as DebajoDelPiso[], sinMedicion: [] as string[] };
   const base = { periodo: m.periodo, datosDesde: null, requiereValidacionEjecutiva: false };
+  const id = (x: string) => idConCliente(cliente.cuentaId, x, cliente.principal);
+  const suCliente = cliente.nombrar && cliente.cuentaId !== null ? { cliente: cliente.cuentaId } : {};
   const cohorte = m.recorrido.cohorte;
   const agendaronTodos = m.recorrido.filas.reduce((s, f) => s + f.agendaron, 0);
 
@@ -150,12 +263,12 @@ export function detectarEnConversion(
     for (const f of m.recorrido.filas) {
       // «Sin rastro» no es un recorrido: no se sabe por dónde entró nadie, y nadie puede actuar sobre eso.
       if (LE_TOCA[f.familia] === null) continue;
-      const entidad = { tipo: 'familia_de_entrada' as const, id: f.familia };
+      const entidad = { tipo: 'familia_de_entrada' as const, id: id(f.familia) };
       const circular = f.contactos > 0 && f.capturadaAlReservar / f.contactos >= PORCION_CIRCULAR;
       if (circular) continue;
       const tasa = f.contactos > 0 ? f.agendaron / f.contactos : 0;
       const debajo = tasaDeLaCohorte - tasa;
-      const evidencia = { ventana: m.ventana, familia: f.familia, contactos: f.contactos, agendaron: f.agendaron, cohorte, agendaronEnLaCohorte: agendaronTodos, capturadaAlReservar: f.capturadaAlReservar };
+      const evidencia = { ventana: m.ventana, ...suCliente, familia: f.familia, contactos: f.contactos, agendaron: f.agendaron, cohorte, agendaronEnLaCohorte: agendaronTodos, capturadaAlReservar: f.capturadaAlReservar };
       if (f.contactos < PISO_DE_UNA_SENAL) {
         if (debajo >= u.valor) salida.debajoDelPiso.push({ regla: CNV.familiaQueNoAgenda, entidad, muestra: f.contactos });
         continue;
@@ -178,7 +291,9 @@ export function detectarEnConversion(
               : leToca === 'conversation'
                 ? ['puede deberse a lo que pasa en la conversación después de entrar']
                 : ['puede deberse a la página o al video por los que entra'],
-          revisionRecomendada: 'Revisa ese recorrido: agenda bastante menos que el resto de la cohorte.',
+          revisionRecomendada: cliente.nombrar
+            ? 'Revisa ese recorrido: agenda bastante menos que el resto de la cohorte de su cliente.'
+            : 'Revisa ese recorrido: agenda bastante menos que el resto de la cohorte.',
           perdidaContactos: f.contactos - f.agendaron,
           destino: leToca === 'conversion' ? null : leToca,
           umbral: u,
@@ -223,7 +338,7 @@ export function detectarEnConversion(
         salida.detecciones.push({
           ...base,
           regla: CNV.cambioDeRuta,
-          entidad: { tipo: 'familia_de_entrada', id: f.familia },
+          entidad: { tipo: 'familia_de_entrada', id: id(f.familia) },
           metrica: 'porcion_de_la_cohorte',
           lineaBase: redondear(porcionAntes),
           valorActual: redondear(porcionAhora),
@@ -236,7 +351,7 @@ export function detectarEnConversion(
           destino: null,
           requiereValidacionEjecutiva: true,
           umbral: uRuta,
-          evidencia: { ventana: m.ventana, familia: f.familia, ahora: { contactos: f.contactos, cohorte }, antes: { contactos: antes.get(f.familia) ?? 0, cohorte: anterior.cohorte } },
+          evidencia: { ventana: m.ventana, ...suCliente, familia: f.familia, ahora: { contactos: f.contactos, cohorte }, antes: { contactos: antes.get(f.familia) ?? 0, cohorte: anterior.cohorte } },
         });
       }
     }
@@ -247,7 +362,7 @@ export function detectarEnConversion(
     salida.sinMedicion.push(CNV.formularioAbandono, CNV.formularioSinDatos);
   } else {
     const { con, sobre } = m.formulario.cobertura;
-    const entidad = { tipo: 'funnel' as const, id: 'formulario' };
+    const entidad = { tipo: 'funnel' as const, id: id('formulario') };
     const uSin = umbral(CNV.formularioSinDatos);
     if (sobre >= PISO_DE_UNA_SENAL && con / sobre < uSin.valor) {
       salida.detecciones.push({
@@ -265,7 +380,7 @@ export function detectarEnConversion(
         perdidaContactos: null,
         destino: null,
         umbral: uSin,
-        evidencia: { ventana: m.ventana, con, sobre },
+        evidencia: { ventana: m.ventana, ...suCliente, con, sobre },
       });
     }
     // `finalizacion` llega en porcentaje y nula bajo el piso de 10 que empezaron.
@@ -287,7 +402,7 @@ export function detectarEnConversion(
         perdidaContactos: Math.round(con * (1 - fin / 100)),
         destino: null,
         umbral: uAbandono,
-        evidencia: { ventana: m.ventana, empezaron: con, finalizacion: fin },
+        evidencia: { ventana: m.ventana, ...suCliente, empezaron: con, finalizacion: fin },
       });
     }
   }

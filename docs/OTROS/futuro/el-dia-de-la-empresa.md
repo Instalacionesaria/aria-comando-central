@@ -19,10 +19,10 @@ Dónde, en `current_date`:
   (`lib/negocio/costoDelAnuncio.ts:367`). Desde el 2026-10-08 Conversion corta con `cohorteEntre`
   (`lib/negocio/recorrido.ts:214-217`), la de Acquisition: días cerrados, pero el borde de cada día sigue en UTC.
 - La ventana del gasto (`lib/negocio/costoDelAnuncio.ts:84`), sin tope arriba.
-- El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:117`,
+- El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:118`,
   `lib/agentes/detectores/conversion.ts:122@02d9207`; desde el 2026-10-08 el de Conversion son los días cerrados de
   `bordesDelPeriodo`), y el de Conversation en días UTC de JavaScript
-  (`lib/agentes/detectores/conversation.ts:81`).
+  (`lib/agentes/detectores/conversation.ts:101`).
 - El último día cerrado de Acquisition, que desde la `076` se mide sobre la serie de la cuenta
   (`lib/negocio/gastoDeLaCuenta.ts:320` y la cota de atraso de `:325`).
 

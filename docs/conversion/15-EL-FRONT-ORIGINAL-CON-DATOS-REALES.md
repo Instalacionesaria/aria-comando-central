@@ -60,7 +60,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | lugar del prototipo | dato | fuente | medido |
 |---|---|---|---|
 | Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:116`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:111`) | — |
-| Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:125-132`) | sólo con 7 y 30 días |
+| Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:132-139`) | sólo con 7 y 30 días |
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
 | Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:100`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
@@ -71,17 +71,17 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | Panel 3 · Calificados | agendados sin etiqueta de descarte, sobre los agendados | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:157-161`), como A14-07 | **35** de 63, 56 % |
 | Panel 3 · No calificados | agendados descartados | la resta | **28** de 63, 44 % |
 | Panel 3 · «% de contacto a cita útil» | calificados sobre la cohorte | igual | 35 de 105, 33 % |
-| Nota de cobertura | cuántos contactos traen por dónde entraron, y el rango | `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:217`) | — |
-| 01 Landing | la cohorte; «Vistas, según Meta» y «Por la landing» | lo de arriba, más la porción de la familia `landing` (`lib/negocio/recorridoDelLead.ts:201-204`) | 105 · 462 |
+| Nota de cobertura | cuántos contactos traen por dónde entraron, y el rango | `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:221`) | — |
+| 01 Landing | la cohorte; «Vistas, según Meta» y «Por la landing» | lo de arriba, más la porción de la familia `landing` (`lib/negocio/recorridoDelLead.ts:205-208`) | 105 · 462 |
 | 02 VSL | hueco | — | — |
-| 03 Formulario | `con` sobre la cohorte hasta el corte; «Lo completan» | `embudoDelFormulario` (`lib/negocio/embudoDelFormulario.ts:174-263`) | «—» en 7 y 30 días |
+| 03 Formulario | `con` sobre la cohorte hasta el corte; «Lo completan» | `embudoDelFormulario` (`lib/negocio/embudoDelFormulario.ts:177-268`) | «—» en 7 y 30 días |
 | 04 Agenda | agendados sobre la cohorte; «Calificados» y «Confirmados» | lo de arriba, más `CAMPO_DE_CONFIRMACION` (`lib/negocio/indicadoresDeCitas.ts:208`) | 60 % · 56 % · 18 de 35 |
 | 05 Gracias | hueco | es el precall, de Appointment Flow (`docs/conversion/04-LOS-CAJONES.md:100-105`) | — |
 | Cajón de Landing | la tabla de las siete familias, que hasta CV-4 fue el bloque principal | `recorridoDelLead` | — |
 | Cajón de Formulario | los tres estados y la contradicción con las citas, que hasta CV-4 fueron el segundo bloque | `embudoDelFormulario` | — |
 | Cajón de Agenda | agendados, calificados, tasa, confirmados, cancelaron y no calificados | CV15-18 | 63 · 35 · 56 % · 18 · 12 · 28 |
 | Alarma | las señales `critica` | `senales.lista` | ninguna: no hay reglas críticas |
-| Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:201`) | — |
+| Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:210`) | — |
 
 ### Lo que la medición del 2026-10-08 agregó
 
@@ -345,7 +345,7 @@ leer.», «Faltan días de gasto.», «Falta gasto de algunas campañas.», «Si
 comparan: hay citas congeladas.», «Cruza el corte del {corte}.» y, en «Completo», «{N} contactos sin alta no
 entran.».
 
-**Rastro** · `con` y `sobre` salen de `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:217`). La
+**Rastro** · `con` y `sobre` salen de `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:221`). La
 cobertura va arriba de cualquier reparto: es el § 18.5.
 
 **Estado** · **Construido el 2026-10-09** (CV-4): la «Nota» del panel.
@@ -378,7 +378,7 @@ contacto». Sus dos `.jmx`:
 
 - «Vistas, según Meta»: la cifra de CV15-07, con su flecha si compara;
 - «Por la landing»: la porción de la familia `landing` sobre la cohorte. Sin piso, porque es un conteo
-  sobre otro (`lib/negocio/recorridoDelLead.ts:201-204`). Su flecha es en puntos y **neutra**: que la
+  sobre otro (`lib/negocio/recorridoDelLead.ts:205-208`). Su flecha es en puntos y **neutra**: que la
   landing gane o pierda porción es un cambio de ruta, no algo bueno o malo.
 
 **Qué no es** · «Por la landing» no dice «vio la landing». La familia de septiembre es casi toda circular
@@ -416,7 +416,7 @@ corte del 2026-08-31.
   (`docs/OTROS/estado actual/03-CONVERSION.md:368@b3ca9ad`), y `docs/conversion/05-PERIODOS-Y-PISOS.md:81-97`
   pide no publicarlas como una sola serie.
 - **Sus `jmx`** · «Lo completan»: la `finalizacion` del embudo, con el piso sobre `con`
-  (`lib/negocio/embudoDelFormulario.ts:251`). «Tiempo medio»: «—».
+  (`lib/negocio/embudoDelFormulario.ts:256`). «Tiempo medio»: «—».
 - **Nunca lleva flecha**, mientras el campo esté muerto y la ventana actual termine después del corte. La
   anterior de 30 días cae casi entera antes del corte, y la actual entera después: sin esta regla la flecha
   bajaría 100 %, en rojo, sin que nada cambie.
@@ -496,7 +496,7 @@ id `cvCajon` y la raíz `.cv-cajon`. Es el molde de la ficha de Creative
 
 **Las observaciones** · Las señales del paso, con el marcado `obs` (`app/aios.css:1080-1092`): `obs-t` es el
 texto, `obs-d` la revisión, `obs-m` la fecha y el estado, y `obs-n` la pérdida en contactos. «No tocar» no es
-una señal (`lib/agentes/detectores/conversion.ts:44-45`): si va como «a favor», es `CV15-P07`.
+una señal (`lib/agentes/detectores/conversion.ts:66-67`): si va como «a favor», es `CV15-P07`.
 
 **Estado** · **Construido el 2026-10-09** (CV-4): `components/conversion/CajonDelPaso.jsx`. Contesta CV4-P01: los
 cajones que sobreviven son tres.
@@ -530,13 +530,13 @@ La cifra sobre la cohorte, construida el 2026-10-08 (CV-2): `personasDeLaCohorte
 
 | entidad | paso |
 |---|---|
-| `familia_de_entrada` (`lib/agentes/detectores/conversion.ts:153`) | Landing: el reparto vive en su cajón |
-| `funnel` `formulario` (`lib/agentes/detectores/conversion.ts:250`) | Formulario |
+| `familia_de_entrada` (`lib/agentes/detectores/conversion.ts:266`) | Landing: el reparto vive en su cajón |
+| `funnel` `formulario` (`lib/agentes/detectores/conversion.ts:365`) | Formulario |
 | cualquier otra | ninguno: va sólo a la tarjeta |
 
 **La alarma** · `#cvAlarmWrap` se muestra sólo si hay alguna señal con gravedad `critica`
-(`lib/agentes/senales/tipos.ts:31`), y sólo con 7 o 30 días. **Hoy ninguna regla de Conversion es crítica**
-—son media, info, media y media (`lib/agentes/detectores/conversion.ts:47-84`)—, así que no aparece hasta que
+(`lib/agentes/senales/tipos.ts:36`), y sólo con 7 o 30 días. **Hoy ninguna regla de Conversion es crítica**
+—son media, info, media y media (`lib/agentes/detectores/conversion.ts:69-106`)—, así que no aparece hasta que
 exista una. Su `gsub` del prototipo, «rompe el funnel · no espera al ciclo diario», es falso: las señales
 las guarda la pasada de la mañana. Pasa a «detectada en la pasada de la mañana». Cada fila: `al-t` es el
 texto, `al-d` la revisión, `al-m` «{Paso} · {fecha}», y «Ver evidencia →» abre el cajón del paso.
@@ -615,7 +615,7 @@ también `pasos` y `senales.porPaso`.
   cerrados para 7 y 30 días (`lib/agentes/executive/adaptadores/comun.ts:65`), y deja de ser falso para
   Conversion. `TAREAS_POR_SECCION.conversion`
   (`lib/agentes/executive/adaptadores/plataforma.ts:33-43`) suma las citas y los anuncios.
-- **El detector.** `medirConversion` (`lib/agentes/detectores/conversion.ts:116-130`) consume la misma
+- **El detector.** `medirConversion` (`lib/agentes/detectores/conversion.ts:156-189`) consume la misma
   lectura, como el de Acquisition. Así cumple AG-28, que pide 7 y 30 días cerrados
   (`lib/agentes/senales/tipos.ts:10-11`). La ventana anterior sale de la lectura y no del doble de días menos
   la actual.
