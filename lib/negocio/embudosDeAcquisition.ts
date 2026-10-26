@@ -225,6 +225,11 @@ export interface CampanaDeAcquisition {
   /** Si GoHighLevel la listó (`065`). Sólo una conocida se puede asignar a un funnel (`066`). */
   conocida: boolean;
   /**
+   * Lo que trae Meta directo de la campaña (`102`): si de verdad entrega (`estadoEfectivo`), su presupuesto en la moneda
+   * de su cuenta, y su objetivo. Ausente si la campaña no se leyó de Meta (lo traído de GoHighLevel no lo tenía).
+   */
+  entrega?: EntregaDeLaCampana;
+  /**
    * Si alguna vez trajo un contacto con su `campaignId` en la atribución. Sin eso, sus etapas de personas se
    * dibujan «—» y no 0: no se sabe cuánta gente trajo (A14-19).
    */
@@ -422,12 +427,22 @@ export function promedioDelIcp(c: Pick<Cifras, 'sumaDePuntajes' | 'conPuntaje'>)
   return c.conPuntaje >= PISO_DE_UNA_TASA ? c.sumaDePuntajes / c.conPuntaje : null;
 }
 
+/** Lo que Meta directo dice de una campaña: si entrega, cuánto puede gastar y para qué. */
+export interface EntregaDeLaCampana {
+  estadoEfectivo: string | null;
+  presupuestoDiario: number | null;
+  presupuestoTotal: number | null;
+  moneda: string | null;
+  objetivo: string | null;
+}
+
 /** Una campaña del universo, con lo que se sabe de ella. */
 export interface CampanaConocida {
   campana: string;
   nombre: string | null;
   estado: string | null;
   conocida: boolean;
+  entrega?: EntregaDeLaCampana;
   conContactos: boolean;
   funnel: Funnel | null;
   /** El nombre de su cliente, sólo con campañas de más de un cliente (ver `CampanaDeAcquisition`). */
@@ -523,11 +538,12 @@ export function armarEmbudos(entrada: {
     total,
     funnels,
     sinFunnel: grupo('sin_funnel', campanas.filter((c) => c.funnel === null)),
-    campanas: campanas.map(({ campana, nombre, estado, conocida, conContactos, funnel, cifras, cliente }) => ({
+    campanas: campanas.map(({ campana, nombre, estado, conocida, entrega, conContactos, funnel, cifras, cliente }) => ({
       campana,
       nombre,
       estado,
       conocida,
+      ...(entrega === undefined ? {} : { entrega }),
       conContactos,
       funnel,
       cifras,
@@ -733,6 +749,18 @@ async function universoDeCampanas(): Promise<{ campanas: CampanaConocida[]; clie
       nombre: f.nombre,
       estado: f.estado,
       conocida: f.conocida,
+      // Sólo lo que vino de Meta directo: una campaña de GoHighLevel no tiene ni estado efectivo ni moneda.
+      ...(f.estado_efectivo !== null || f.moneda !== null
+        ? {
+            entrega: {
+              estadoEfectivo: f.estado_efectivo,
+              presupuestoDiario: f.presupuesto_diario === null ? null : Number(f.presupuesto_diario),
+              presupuestoTotal: f.presupuesto_total === null ? null : Number(f.presupuesto_total),
+              moneda: f.moneda,
+              objetivo: f.objetivo,
+            },
+          }
+        : {}),
       conContactos: conContactos.has(f.campana),
       funnel: funnels.get(f.campana) ?? null,
     };
@@ -763,7 +791,18 @@ function deVariosClientes(filas: readonly { campana: string; cliente: string | n
 
 /** Las campañas del universo, con su nombre y estado de `negocio.campanas` y su cliente (ver `universoDeCampanas`). */
 async function filasDelUniverso() {
-  const filas = await sql<{ campana: string; nombre: string | null; estado: string | null; conocida: boolean; cliente: string | null }>`
+  const filas = await sql<{
+    campana: string;
+    nombre: string | null;
+    estado: string | null;
+    conocida: boolean;
+    cliente: string | null;
+    estado_efectivo: string | null;
+    presupuesto_diario: string | null;
+    presupuesto_total: string | null;
+    moneda: string | null;
+    objetivo: string | null;
+  }>`
     with todas as (
       select meta_campana_id as campana, cuenta_id, 1 as orden from negocio.anuncios where meta_campana_id is not null
       union
@@ -781,6 +820,7 @@ async function filasDelUniverso() {
        group by campana
     )
     select u.campana, k.nombre, k.estado, (k.meta_campana_id is not null) as conocida,
+           k.estado_efectivo, k.presupuesto_diario, k.presupuesto_total, k.moneda, k.objetivo,
            coalesce(u.de_meta, k.cuenta_id::text, u.de_contactos, u.de_funnel) as cliente
       from universo u
       left join negocio.campanas k on k.meta_campana_id = u.campana`.execute(datos());

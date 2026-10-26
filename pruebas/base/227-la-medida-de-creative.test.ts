@@ -31,7 +31,7 @@ import type { Deteccion } from '../../lib/agentes/senales/tipos.ts';
 
 let esc: Escenario;
 const MARCA = '55555227';
-let selloOriginal: { ultima_corrida_el: Date; ultimo_estado: string } | null = null;
+let sellosOriginales: { cuenta_id: string | null; ultima_corrida_el: Date; ultimo_estado: string; ultimo_motivo: string | null }[] = [];
 
 async function limpiar(): Promise<void> {
   await esc.admin.query(`delete from negocio.senales where org_id = $1 and departamento = 'creative'`, [esc.org]);
@@ -39,32 +39,39 @@ async function limpiar(): Promise<void> {
   await esc.admin.query('delete from negocio.anuncios where meta_anuncio_id like $1', [`${MARCA}%`]);
 }
 
+/* Todos los sellos de anuncios de la empresa: el sin cuenta y el de cada cliente. Desde el barrido por cliente (C4) la
+   frescura prefiere el sello del cliente, y un cron de otra prueba deja el del principal (`saltada`, sin Meta). */
 async function sellarAnuncios(estado: string): Promise<void> {
   await esc.admin.query(
     `insert into negocio.tareas_programadas (org_id, tarea, ultima_corrida_el, ultimo_estado) values ($1, 'anuncios', now(), $2)
        on conflict (org_id, cuenta_id, tarea) do update set ultima_corrida_el = now(), ultimo_estado = $2`,
     [esc.org, estado],
   );
+  await esc.admin.query(`update negocio.tareas_programadas set ultima_corrida_el = now(), ultimo_estado = $2 where org_id = $1 and tarea = 'anuncios'`, [
+    esc.org,
+    estado,
+  ]);
 }
 
 before(async () => {
   esc = await montar('MedidaCreative');
   await limpiar();
-  const r = await esc.admin.query(`select ultima_corrida_el, ultimo_estado from negocio.tareas_programadas where org_id = $1 and tarea = 'anuncios'`, [esc.org]);
-  selloOriginal = r.rows[0] ?? null;
+  const r = await esc.admin.query(
+    `select cuenta_id, ultima_corrida_el, ultimo_estado, ultimo_motivo from negocio.tareas_programadas where org_id = $1 and tarea = 'anuncios'`,
+    [esc.org],
+  );
+  sellosOriginales = r.rows;
 });
 
 after(async () => {
   await limpiar();
-  // El sello de la empresa vuelve a como estaba: otras pruebas leen su frescura.
-  if (selloOriginal) {
-    await esc.admin.query(`update negocio.tareas_programadas set ultima_corrida_el = $2, ultimo_estado = $3 where org_id = $1 and tarea = 'anuncios'`, [
-      esc.org,
-      selloOriginal.ultima_corrida_el,
-      selloOriginal.ultimo_estado,
-    ]);
-  } else {
-    await esc.admin.query(`delete from negocio.tareas_programadas where org_id = $1 and tarea = 'anuncios'`, [esc.org]);
+  // Los sellos de la empresa vuelven a como estaban: otras pruebas leen su frescura.
+  await esc.admin.query(`delete from negocio.tareas_programadas where org_id = $1 and tarea = 'anuncios'`, [esc.org]);
+  for (const s of sellosOriginales) {
+    await esc.admin.query(
+      `insert into negocio.tareas_programadas (org_id, cuenta_id, tarea, ultima_corrida_el, ultimo_estado, ultimo_motivo) values ($1, $2, 'anuncios', $3, $4, $5)`,
+      [esc.org, s.cuenta_id, s.ultima_corrida_el, s.ultimo_estado, s.ultimo_motivo],
+    );
   }
   await cerrarTodo();
   await cerrarClientes();

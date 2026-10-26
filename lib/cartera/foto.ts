@@ -110,7 +110,7 @@ export function filasDeUnaEmpresa(
       ultima_ingesta_el: m?.ultimaIngestaEl ?? null,
       ultima_alta_el: m?.ultimaAltaEl ?? null,
       // Desde el contrato 2 (la `099`): requerido para `configurada`. Nulo = no se sabe, o la empresa no se midió.
-      meta_en_el_crm: m?.metaEnElCrm ?? null,
+      meta_leido: m?.metaLeido ?? null,
     };
   });
 

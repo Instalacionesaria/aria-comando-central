@@ -9,7 +9,7 @@
 //   · Meta en el GoHighLevel de un cliente sale del sello de su pasada del gasto —también cuando el motivo junta otras
 //     causas con «; »—, el sello gana sobre la serie, y sin ninguno de los dos no se sabe — mutaciones: comparar el
 //     motivo entero, la serie antes que el sello, «no se sabe» como «no»;
-//   · `meta_en_el_crm` es requerido, y lo no medido no se acusa ni se da por bueno — mutación: el paso recomendado;
+//   · `meta_leido` es requerido, y lo no medido no se acusa ni se da por bueno — mutación: el paso recomendado;
 //   · la lista viaja en el orden de `PASOS_DEL_CLIENTE`, y un cliente en pausa no está configurado aunque tenga todo
 //     — mutación: sin el estado;
 //   · el tablero lee lo medido de la foto, y la fila de una empresa que no se pudo medir no acusa nada — mutaciones:
@@ -33,7 +33,7 @@ import type { ConfiguracionDeUnCliente, ConfiguracionDeUnaEmpresa } from '../../
 import { CONTRATO_DE_LA_FOTO } from '../../lib/cartera/contrato.ts';
 import { filasDeUnaEmpresa } from '../../lib/cartera/foto.ts';
 import type { FilaDeLaFotoDeUnCliente, FilaDeLaFotoDeUnaEmpresa, FotoDeLosNegocios } from '../../lib/cartera/lectura.ts';
-import { MEDIDA_SIN_FILAS, metaEnElCrmDe, type MedidaDeUnaEmpresa } from '../../lib/cartera/medicion.ts';
+import { MEDIDA_SIN_FILAS, metaLeidoDe, type MedidaDeUnaEmpresa } from '../../lib/cartera/medicion.ts';
 import {
   PASOS_DE_LA_EMPRESA,
   PASOS_DEL_CLIENTE,
@@ -43,7 +43,7 @@ import {
   pasosDelCliente,
 } from '../../lib/cartera/pasos.ts';
 import { armarElTablero } from '../../lib/cartera/tablero.ts';
-import { MOTIVO_SIN_META_EN_GHL } from '../../lib/negocio/faltaDeLosClientes.ts';
+import { MOTIVO_META_RECHAZADA } from '../../lib/negocio/faltaDeLosClientes.ts';
 import { motivoDeLoIncompleto } from '../../lib/negocio/barrido.ts';
 
 const leer = (ruta: string) => sinComentarios(readFileSync(join(RAIZ, ruta), 'utf8'));
@@ -52,52 +52,67 @@ const AHORA = Date.parse('2026-10-20T15:00:00Z');
 const HACE_UNA_HORA = new Date(AHORA - 3600_000);
 const LISTO = { crmConectado: true, calendario: true, meta: true, aviso: true, zonaHoraria: 'America/Lima', nichoConfirmado: true };
 
-test('Meta en su GoHighLevel: el sello de su pasada del gasto, después su serie, y si no, no se sabe', () => {
+test('las campañas leídas de Meta: el sello de su pasada de anuncios, después su gasto, y si no, no se sabe', () => {
   const corrio = (motivo: string | null) => ({ estado: 'corrio', motivo });
-  assert.equal(metaEnElCrmDe(corrio(null), false), true, 'la pasada corrió con el vínculo');
-  assert.equal(metaEnElCrmDe(corrio(MOTIVO_SIN_META_EN_GHL), true), false, 'la serie vieja ganó al sello de hoy');
+  assert.equal(metaLeidoDe(corrio(null), false), true, 'la pasada corrió');
+  assert.equal(metaLeidoDe(corrio(MOTIVO_META_RECHAZADA), true), false, 'el gasto viejo ganó al sello de hoy');
   // El motivo que de verdad escribe el barrido, también juntado con otras causas.
-  const sinVinculo = motivoDeLoIncompleto({ vinculo: { estado: 'disconnected', cuentaId: null }, atrasado: true });
-  assert.ok(sinVinculo?.includes('; '), 'el barrido ya no junta las causas: revisar cómo se lee el motivo');
-  assert.equal(metaEnElCrmDe(corrio(sinVinculo), false), false, 'con otra causa al lado, no se leyó el vínculo');
-  const conVinculo = motivoDeLoIncompleto({ vinculo: { estado: 'connected', cuentaId: 'act_1' }, residuos: ['2026-10-18'] });
-  assert.equal(metaEnElCrmDe(corrio(conVinculo), false), true, 'otra causa sin la del vínculo se leyó como Meta sin vincular');
-  // Un sello que no corrió no dice nada del vínculo: manda la serie, y sin ella no se sabe.
-  for (const estado of ['saltada', 'fallo', 'frenada', 'sin_tiempo']) {
-    assert.equal(metaEnElCrmDe({ estado, motivo: MOTIVO_SIN_META_EN_GHL }, true), true, `${estado} con serie`);
-    assert.equal(metaEnElCrmDe({ estado, motivo: null }, false), null, `${estado} sin serie se dio por sabido`);
+  const rechazada = motivoDeLoIncompleto({
+    modo: 'diario',
+    cuentas: [
+      { act: 'act_1', falla: 'token', ilegibles: 0 },
+      { act: 'act_2', falla: 'cupo', ilegibles: 3 },
+    ],
+  });
+  assert.ok(rechazada?.includes('; '), 'el barrido ya no junta las causas: revisar cómo se lee el motivo');
+  assert.equal(metaLeidoDe(corrio(rechazada), false), false, 'con otra causa al lado, no se vio la conexión rechazada');
+  const sinRechazo = motivoDeLoIncompleto({ modo: 'diario', cuentas: [{ act: 'act_1', falla: 'cupo', ilegibles: 0 }] });
+  assert.equal(metaLeidoDe(corrio(sinRechazo), false), true, 'el cupo se leyó como la conexión caída');
+  // Saltada (sin Meta conectado, o con la conexión caída) y fallo dicen que no se lee, aunque haya gasto viejo.
+  for (const estado of ['saltada', 'fallo']) assert.equal(metaLeidoDe({ estado, motivo: null }, true), false, estado);
+  // Frenada y sin tiempo no dicen nada: manda el gasto, y sin él no se sabe.
+  for (const estado of ['frenada', 'sin_tiempo']) {
+    assert.equal(metaLeidoDe({ estado, motivo: null }, true), true, `${estado} con gasto`);
+    assert.equal(metaLeidoDe({ estado, motivo: null }, false), null, `${estado} sin gasto se dio por sabido`);
   }
-  assert.equal(metaEnElCrmDe(undefined, true), true);
-  assert.equal(metaEnElCrmDe(undefined, false), null, '«no se sabe» se dijo «no»');
+  assert.equal(metaLeidoDe(undefined, true), true);
+  assert.equal(metaLeidoDe(undefined, false), null, '«no se sabe» se dijo «no»');
 });
 
-test('Meta en su GoHighLevel es requerido, y lo no medido ni se acusa ni se da por bueno', () => {
-  const con = (metaEnElCrm: boolean | null) => pasosDelCliente(LISTO, { ultimaIngestaEl: HACE_UNA_HORA, metaEnElCrm }, AHORA);
-  assert.deepEqual([configurado(con(true), PASOS_DEL_CLIENTE), faltan(con(true), PASOS_DEL_CLIENTE)], [true, []]);
+test('Meta conectado es requerido; las campañas leídas, recomendadas; lo no medido ni se acusa ni se da por bueno', () => {
+  const con = (meta: boolean, metaLeido: boolean | null) => pasosDelCliente({ ...LISTO, meta }, { ultimaIngestaEl: HACE_UNA_HORA, metaLeido }, AHORA);
+  assert.deepEqual([configurado(con(true, true), PASOS_DEL_CLIENTE), faltan(con(true, true), PASOS_DEL_CLIENTE)], [true, []]);
   assert.deepEqual(
-    [configurado(con(false), PASOS_DEL_CLIENTE), faltan(con(false), PASOS_DEL_CLIENTE)],
-    [false, ['meta_en_el_crm']],
-    'sin Meta en su GoHighLevel quedó configurado',
+    [configurado(con(false, true), PASOS_DEL_CLIENTE), faltan(con(false, true), PASOS_DEL_CLIENTE)],
+    [false, ['meta']],
+    'sin Meta conectado quedó configurado',
   );
-  assert.equal(con(null).meta_en_el_crm, 'sin_medir');
-  assert.deepEqual([configurado(con(null), PASOS_DEL_CLIENTE), faltan(con(null), PASOS_DEL_CLIENTE)], [false, []]);
-  // Sin medida (la empresa no se pudo medir), lo medido queda sin medir; la conexión directa no lo reemplaza.
+  // Conectado y con las campañas sin leer: configurado (es recomendado), pero se dice.
+  assert.deepEqual([configurado(con(true, false), PASOS_DEL_CLIENTE), faltan(con(true, false), PASOS_DEL_CLIENTE)], [true, ['meta_leido']]);
+  assert.equal(con(true, null).meta_leido, 'sin_medir');
+  // Sin medida (la empresa no se pudo medir), lo medido queda sin medir; lo conectado se lee de la configuración.
   const sinMedida = pasosDelCliente(LISTO, undefined, AHORA);
-  assert.deepEqual([sinMedida.datos, sinMedida.meta_en_el_crm, sinMedida.meta], ['sin_medir', 'sin_medir', 'ok']);
-  // La conexión directa con Meta es sólo las miniaturas: recomendada.
-  assert.equal(configurado(pasosDelCliente({ ...LISTO, meta: false }, { ultimaIngestaEl: HACE_UNA_HORA, metaEnElCrm: true }, AHORA), PASOS_DEL_CLIENTE), true);
+  assert.deepEqual([sinMedida.datos, sinMedida.meta_leido, sinMedida.meta], ['sin_medir', 'sin_medir', 'ok']);
+  assert.deepEqual(
+    PASOS_DEL_CLIENTE.filter((p) => p.clave === 'meta' || p.clave === 'meta_leido').map((p) => [p.clave, p.nombre, p.requerido]),
+    [
+      ['meta', 'Meta conectado', true],
+      ['meta_leido', 'Campañas leídas de Meta', false],
+    ],
+  );
 });
 
 test('la lista viaja en su orden, con lo justo, y un cliente en pausa no está configurado', () => {
-  const medido = { ultimaIngestaEl: HACE_UNA_HORA, metaEnElCrm: false };
+  const medido = { ultimaIngestaEl: HACE_UNA_HORA, metaLeido: false };
   const l = listaDeChequeoDelCliente({ ...LISTO, estado: 'activa' }, medido, AHORA);
   assert.deepEqual(
     l.pasos.map((p) => [p.clave, p.nombre, p.requerido]),
     PASOS_DEL_CLIENTE.map((p) => [p.clave, p.nombre, p.requerido]),
   );
   assert.ok(l.pasos.every((p) => Object.keys(p).sort().join() === 'clave,estado,nombre,requerido'));
-  assert.deepEqual([l.configurado, l.pasos.find((p) => p.clave === 'meta_en_el_crm')?.estado], [false, 'falta']);
-  const todo = { ultimaIngestaEl: HACE_UNA_HORA, metaEnElCrm: true };
+  // Las campañas que no se leen son recomendadas: el cliente sigue configurado, y se dice.
+  assert.deepEqual([l.configurado, l.pasos.find((p) => p.clave === 'meta_leido')?.estado], [true, 'falta']);
+  const todo = { ultimaIngestaEl: HACE_UNA_HORA, metaLeido: true };
   assert.equal(listaDeChequeoDelCliente({ ...LISTO, estado: 'activa' }, todo, AHORA).configurado, true);
   assert.equal(listaDeChequeoDelCliente({ ...LISTO, estado: 'pausada' }, todo, AHORA).configurado, false, 'uno en pausa quedó configurado');
 });
@@ -156,11 +171,12 @@ function fotoDe(medidas: [ConfiguracionDeUnaEmpresa, MedidaDeUnaEmpresa | null][
 }
 
 test('el tablero lee lo medido de la foto, y la fila de una empresa sin medir no acusa nada', () => {
-  const uno = empresa('uno', [cliente('con'), cliente('sin')]);
+  // «sin»: sin Meta conectado (requerido) y con sus campañas sin leer (recomendado).
+  const uno = empresa('uno', [cliente('con'), cliente('sin', { meta: false })]);
   const medida: MedidaDeUnaEmpresa = {
     porCliente: new Map([
-      ['con', { ...MEDIDA_SIN_FILAS, ultimaIngestaEl: HACE_UNA_HORA, metaEnElCrm: true }],
-      ['sin', { ...MEDIDA_SIN_FILAS, ultimaIngestaEl: HACE_UNA_HORA, metaEnElCrm: false }],
+      ['con', { ...MEDIDA_SIN_FILAS, ultimaIngestaEl: HACE_UNA_HORA, metaLeido: true }],
+      ['sin', { ...MEDIDA_SIN_FILAS, ultimaIngestaEl: HACE_UNA_HORA, metaLeido: false }],
     ]),
     iaLlamadas30d: 0,
     incidentes30d: 0,
@@ -168,7 +184,7 @@ test('el tablero lee lo medido de la foto, y la fila de una empresa sin medir no
   };
   const foto = fotoDe([[uno, medida]]);
   assert.deepEqual(
-    foto.cuentas.map((c) => [c.cuenta_ref, c.meta_en_el_crm, c.configurada]),
+    foto.cuentas.map((c) => [c.cuenta_ref, c.meta_leido, c.configurada]),
     [
       ['con', true, true],
       ['sin', false, false],
@@ -177,14 +193,20 @@ test('el tablero lee lo medido de la foto, y la fila de una empresa sin medir no
   const t = armarElTablero(foto, { principal: { id: 'aria', zonaHoraria: 'America/Lima' }, empresas: [uno] }, AHORA);
   const [con, sin] = t.empresas[0]!.detalle;
   assert.deepEqual([con!.configurado, con!.faltan], [true, []]);
-  assert.deepEqual([sin!.configurado, sin!.faltan], [false, ['meta_en_el_crm']], 'el tablero no leyó Meta en su GoHighLevel de la foto');
+  assert.deepEqual([sin!.configurado, sin!.faltan], [false, ['meta', 'meta_leido']], 'el tablero no leyó de la foto lo de Meta');
   assert.equal(t.empresas[0]!.clientes.configurados, 1);
 
   // La empresa no se pudo medir: su fila está, sin medir, y el tablero no acusa los datos ni Meta.
   const sinMedir = armarElTablero(fotoDe([[uno, null]]), { principal: { id: 'aria', zonaHoraria: 'America/Lima' }, empresas: [uno] }, AHORA);
   for (const c of sinMedir.empresas[0]!.detalle) {
     assert.ok(c.cifras && !c.cifras.medida, 'la fila no quedó sin medir');
-    assert.deepEqual([c.configurado, c.faltan], [false, []], 'a un cliente de una empresa sin medir se le acusó lo que no se midió');
+    // Lo MEDIDO (datos, campañas leídas) no se acusa; lo que dice la configuración en vivo (Meta conectado), sí.
+    assert.equal(c.configurado, false);
+    assert.deepEqual(
+      c.faltan.filter((f) => f === 'datos' || f === 'meta_leido'),
+      [],
+      'a un cliente de una empresa sin medir se le acusó lo que no se midió',
+    );
   }
 });
 
@@ -201,7 +223,7 @@ test('cada paso tiene su nombre en Negocios y su «qué hacer» en Ajustes', () 
   const deAjustes = leer('components/ajustes/ListaDeChequeo.jsx');
   assert.deepEqual(clavesDe(deAjustes, 'export const QUE_HACER = {'), claves, 'un paso de la lista sin su «qué hacer» en Ajustes');
   // Lo que se mide puede quedar sin medir, y eso se explica.
-  assert.deepEqual(clavesDe(deAjustes, 'export const SIN_MEDIR = {'), ['datos', 'meta_en_el_crm']);
+  assert.deepEqual(clavesDe(deAjustes, 'export const SIN_MEDIR = {'), ['datos', 'meta_leido']);
   const deNegocios = leer('components/cartera/PanelDeNegocios.jsx');
   assert.deepEqual(
     clavesDe(deNegocios, 'const PASO = {').sort(),
@@ -249,5 +271,5 @@ test('los textos de la lista y del alta hablan de tú', () => {
   for (const ruta of ['components/ajustes/ListaDeChequeo.jsx', 'components/cartera/PanelDeNegocios.jsx', 'components/ajustes/Clientes.jsx']) {
     assert.equal(VOSEO.exec(leer(ruta)), null, `${ruta} vosea`);
   }
-  assert.match(leer('components/ajustes/ListaDeChequeo.jsx'), /'Vincula Meta en su GoHighLevel: de ahí salen sus costos\./);
+  assert.match(leer('components/ajustes/ListaDeChequeo.jsx'), /Conecta Meta en \$\{dondeSeCarga\(c\)\} y asígnale su cuenta publicitaria: de ahí salen sus costos/);
 });

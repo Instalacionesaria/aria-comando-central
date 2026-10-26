@@ -22,7 +22,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { esCalificado, tieneCitaAlcanzable } from '../negocio/citasAlcanzables.ts';
-import { MOTIVO_SIN_META_EN_GHL } from '../negocio/faltaDeLosClientes.ts';
+import { MOTIVO_META_RECHAZADA } from '../negocio/faltaDeLosClientes.ts';
 import { VENTANA_DIAS } from './contrato.ts';
 import type { LoMedidoDeUnCliente } from './pasos.ts';
 
@@ -41,8 +41,8 @@ export interface MedidaDeUnCliente {
   gasto30d: string | null;
   ultimaIngestaEl: Date | null;
   ultimaAltaEl: Date | null;
-  /** Si su GoHighLevel tiene Meta vinculado (`metaEnElCrmDe`). Nulo = todavía no se sabe. */
-  metaEnElCrm: boolean | null;
+  /** Si su GoHighLevel tiene Meta vinculado (`metaLeidoDe`). Nulo = todavía no se sabe. */
+  metaLeido: boolean | null;
 }
 
 export interface MedidaDeUnaEmpresa {
@@ -65,32 +65,33 @@ const VACIA: MedidaDeUnCliente = {
   gasto30d: null,
   ultimaIngestaEl: null,
   ultimaAltaEl: null,
-  metaEnElCrm: null,
+  metaLeido: null,
 };
 
 /**
- * Si el GoHighLevel de un cliente tiene Meta vinculado, con lo que ya está escrito. Pura.
+ * Si las campañas de un cliente se están leyendo de Meta (Meta directo), con lo que ya está escrito. Pura.
  *
- *   · el sello de su pasada del gasto (`anuncios`, una vez al día) que CORRIÓ es la respuesta: sin el vínculo, el
- *     barrido deja `MOTIVO_SIN_META_EN_GHL` en su motivo (`motivoDeLoIncompleto`, que junta varias causas con «; »);
- *     con el vínculo, la pasada siguió y el motivo no lo dice;
- *   · sin un sello que corrió —nunca corrió, o se saltó o falló, y eso no dice nada del vínculo—, su serie de gasto en
- *     la ventana: la serie sólo entra por el Ad Manager de su GoHighLevel, así que tenerla es tener el vínculo;
+ *   · el sello de su pasada de anuncios (`anuncios`, una vez al día) es la respuesta: `corrio` sin que Meta rechazara
+ *     la conexión (`MOTIVO_META_RECHAZADA`, que el barrido deja en el motivo) = sí; `saltada` (sin Meta conectado, o con
+ *     la conexión caída) o `fallo` (Meta no devolvió nada) = no;
+ *   · sin sello —nunca corrió, o quedó `sin_tiempo` o `frenada`, que no dicen nada—, su gasto en la ventana: el gasto
+ *     sólo entra por su conexión con Meta, así que tenerlo es que se lee;
  *   · sin ninguna de las dos, no se sabe (`null`): la lista lo deja `sin_medir`, no lo acusa.
  *
- * El sello gana sobre la serie: un cliente que desvinculó Meta conserva días viejos en la ventana.
+ * El sello gana sobre el gasto: un cliente que desconectó Meta conserva días viejos en la ventana.
  */
-export function metaEnElCrmDe(
+export function metaLeidoDe(
   sello: { estado: string; motivo: string | null } | undefined,
   conSerieDeGasto: boolean,
 ): boolean | null {
-  if (sello?.estado === 'corrio') return !(sello.motivo ?? '').includes(MOTIVO_SIN_META_EN_GHL);
+  if (sello?.estado === 'corrio') return !(sello.motivo ?? '').includes(MOTIVO_META_RECHAZADA);
+  if (sello?.estado === 'saltada' || sello?.estado === 'fallo') return false;
   return conSerieDeGasto ? true : null;
 }
 
 /**
- * Lo que la lista de chequeo mide en la base, por cliente: la marca de agua de su ingesta y si su GoHighLevel tiene
- * Meta vinculado. Un cliente sin ninguna fila sale con la marca nula y Meta sin saber. **Corre dentro de
+ * Lo que la lista de chequeo mide en la base, por cliente: la marca de agua de su ingesta y si sus campañas se están
+ * leyendo de Meta. Un cliente sin ninguna fila sale con la marca nula y Meta sin saber. **Corre dentro de
  * `conOrganizacion` con la organización entera.** La usan la foto (`medirLaEmpresa`) y la lista en vivo de Ajustes ›
  * Clientes (`app/api/admin/cuentas/route.ts`).
  */
@@ -118,7 +119,7 @@ export async function medirLosPasos(): Promise<Map<string, LoMedidoDeUnCliente>>
       sellos.find((s) => s.cuenta_id === c.id) ?? (c.es_por_omision ? sellos.find((s) => s.cuenta_id === null) : undefined);
     medidos.set(c.id, {
       ultimaIngestaEl: marcas.get(c.id) ?? null,
-      metaEnElCrm: metaEnElCrmDe(sello && { estado: sello.ultimo_estado, motivo: sello.ultimo_motivo }, serie.has(c.id)),
+      metaLeido: metaLeidoDe(sello && { estado: sello.ultimo_estado, motivo: sello.ultimo_motivo }, serie.has(c.id)),
     });
   }
   return medidos;
@@ -195,7 +196,7 @@ export async function medirLaEmpresa(): Promise<MedidaDeUnaEmpresa> {
     Object.assign(de(f.cuenta_id), { ventas30d: f.ventas, ventas30dPrevias: f.previas, monto30d: f.monto, compradores: f.compradores });
   }
   for (const f of gasto.rows) de(f.cuenta_id).gasto30d = f.gasto;
-  for (const [id, m] of pasos) Object.assign(de(id), { ultimaIngestaEl: m.ultimaIngestaEl, metaEnElCrm: m.metaEnElCrm });
+  for (const [id, m] of pasos) Object.assign(de(id), { ultimaIngestaEl: m.ultimaIngestaEl, metaLeido: m.metaLeido });
   const e = empresa.rows[0]!;
   return { porCliente, iaLlamadas30d: e.ia, incidentes30d: e.incidentes, senalesAbiertas: e.senales };
 }

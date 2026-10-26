@@ -46,7 +46,7 @@ function cliente(id: string, extra: Partial<ConfiguracionDeUnCliente> = {}): Con
     crmVinculado: true,
     crmConectado: true,
     calendario: true,
-    meta: false,
+    meta: true,
     aviso: false,
     ...extra,
   };
@@ -76,7 +76,7 @@ function empresa(id: string, clientes: ConfiguracionDeUnCliente[], extra: Partia
 function medida(porCliente: Record<string, Partial<MedidaDeUnCliente>>): MedidaDeUnaEmpresa {
   return {
     porCliente: new Map(
-      Object.entries(porCliente).map(([id, m]) => [id, { ...MEDIDA_SIN_FILAS, ultimaIngestaEl: HACE_UNA_HORA, metaEnElCrm: true, ...m }]),
+      Object.entries(porCliente).map(([id, m]) => [id, { ...MEDIDA_SIN_FILAS, ultimaIngestaEl: HACE_UNA_HORA, metaLeido: true, ...m }]),
     ),
     iaLlamadas30d: 0,
     incidentes30d: 0,
@@ -168,7 +168,7 @@ test('la configuración es la de ahora y las cifras las de la foto', () => {
   const hoy = empresa('uno', [cliente('uno-1'), cliente('uno-nuevo')]);
   const t = armarElTablero(fotoDe([[enLaFoto, medida({ 'uno-1': { contactosNuevos30d: 5 } })]]), config(hoy), AHORA);
   const [viejo, nuevo] = t.empresas[0]!.detalle;
-  assert.deepEqual([viejo!.configurado, viejo!.faltan, viejo!.cifras?.contactosNuevos30d], [true, ['meta', 'aviso'], 5]);
+  assert.deepEqual([viejo!.configurado, viejo!.faltan, viejo!.cifras?.contactosNuevos30d], [true, ['aviso'], 5]);
   assert.equal(nuevo!.cifras, null, 'un cliente que no está en la foto salió con cifras');
   assert.ok(!nuevo!.faltan.includes('datos'), 'se acusó de datos viejos a un cliente que no se midió');
   assert.equal(nuevo!.configurado, false, 'lo no medido se dio por bueno');

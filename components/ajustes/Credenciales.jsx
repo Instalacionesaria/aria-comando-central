@@ -31,12 +31,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import AvisoDelCrm from './AvisoDelCrm.jsx';
 import ConexionConMeta from './ConexionConMeta.jsx';
+import ConectarConMeta from './ConectarConMeta.jsx';
 
 /* Los campos, en el orden en que se muestran: primero lo que hace falta para que las pestañas
  * Closer y Setter traigan datos, después lo de Fundaciones, y al final lo opcional.
  *
  * `secreto: true` → nunca se recibe su valor; se ve el estado y una vista previa.
  * `secreto: false` → identificador de una cuenta ajena, se recibe y se muestra completo. */
+/** Los dos campos del token de Meta pegado a mano: van plegados, debajo de «Conectar con Meta». */
+const DE_META_A_MANO = ['metaToken', 'metaCuentaId'];
+
 const CAMPOS = [
   {
     entrada: 'crmToken',
@@ -402,7 +406,7 @@ export default function Credenciales() {
           nunca se toma la de otra, ni una global del servidor. Sin la credencial que
           corresponde, la parte que la necesita no funciona y lo dice.
         </p>
-        <div className="fd-rejilla dos">{CAMPOS.map(tarjeta)}</div>
+        <div className="fd-rejilla dos">{CAMPOS.filter((c) => !DE_META_A_MANO.includes(c.entrada)).map(tarjeta)}</div>
 
         {/* ── EL AVISO DEL CRM, DEBAJO Y NO COMO UNA TARJETA MÁS ─────────────
             Las tarjetas de arriba son todas la misma forma —un campo, un valor, guardar— y esto no
@@ -414,8 +418,20 @@ export default function Credenciales() {
           alGenerar={() => void cargar()}
         />
 
-        {/* Probar el token de Meta: cargarlo no dice si sirve (`ConexionConMeta`). */}
-        <ConexionConMeta cargado={Boolean(datos?.meta?.cargado)} />
+        {/* Meta directo: «Conectar con Meta» y a qué cliente va cada cuenta publicitaria. */}
+        <ConectarConMeta />
+
+        {/* El token pegado a mano, de antes del botón: un respaldo mientras cada negocio conecta. Plegado. */}
+        <details className="pr-box">
+          <summary className="dw-sec-t">Avanzado: un token de Meta pegado a mano</summary>
+          <p className="aj-intro">
+            Sólo si todavía no puedes usar «Conectar con Meta». El token se usa igual que una conexión, para el cliente
+            principal, hasta que conectes por el botón.
+          </p>
+          <div className="fd-rejilla dos">{CAMPOS.filter((c) => DE_META_A_MANO.includes(c.entrada)).map(tarjeta)}</div>
+          {/* Probar el token pegado: cargarlo no dice si sirve (`ConexionConMeta`). */}
+          <ConexionConMeta cargado={Boolean(datos?.meta?.cargado)} />
+        </details>
       </>
     );
   }

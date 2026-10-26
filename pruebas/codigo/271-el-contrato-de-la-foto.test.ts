@@ -33,8 +33,14 @@ import { HORARIOS, TAREAS_DE_LA_PLATAFORMA } from '../../lib/negocio/barrido.ts'
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
 const leer = (ruta: string) => readFileSync(join(RAIZ, ruta), 'utf8').replace(/\r\n/g, '\n');
 const MIGRACION = leer('db/migraciones/089_la_foto_de_los_negocios.sql');
-/** Las que la amplían, en su orden: la 099 suma `meta_en_el_crm` y reescribe los comentarios que cambiaron (contrato 2). */
-const AMPLIACIONES = [leer('db/migraciones/099_meta_en_el_crm_de_cada_cliente.sql')];
+/**
+ * Las que la amplían, en su orden: la 099 suma `meta_en_el_crm` y reescribe los comentarios que cambiaron (contrato 2);
+ * la 103 la renombra `meta_leido` y vuelve a escribir los comentarios (contrato 3, Meta directo).
+ */
+const AMPLIACIONES = [
+  leer('db/migraciones/099_meta_en_el_crm_de_cada_cliente.sql'),
+  leer('db/migraciones/103_meta_conectado_en_la_foto.sql'),
+];
 const TODAS = [MIGRACION, ...AMPLIACIONES];
 
 /** Las columnas de un `create table` de la 089, en su orden, y después las que suman las ampliaciones. */
@@ -45,10 +51,15 @@ function columnasDe(tabla: string): string[] {
     .split('\n')
     .map((l) => /^\s{2}([a-z_0-9]+)\s/.exec(l)?.[1])
     .filter((c): c is string => c !== undefined && c !== 'primary' && c !== 'check');
-  const sumadas = AMPLIACIONES.flatMap((sql) =>
-    [...sql.matchAll(new RegExp(`^alter table negocio\\.${tabla} add column if not exists ([a-z_0-9]+) `, 'gm'))].map((x) => x[1]!),
-  );
-  return [...creadas, ...sumadas];
+  let columnas = [...creadas];
+  for (const sql of AMPLIACIONES) {
+    columnas.push(...[...sql.matchAll(new RegExp(`^alter table negocio\\.${tabla} add column if not exists ([a-z_0-9]+) `, 'gm'))].map((x) => x[1]!));
+    // Un renombre (la 103) deja la columna en su lugar, con el nombre nuevo.
+    for (const x of sql.matchAll(new RegExp(`alter table negocio\\.${tabla} rename column ([a-z_0-9]+) to ([a-z_0-9]+)`, 'g'))) {
+      columnas = columnas.map((c) => (c === x[1] ? x[2]! : c));
+    }
+  }
+  return columnas;
 }
 
 /** El ÚLTIMO comentario de una columna, el que queda en la base y lee el agente. */
@@ -85,10 +96,10 @@ test('el diccionario de la foto dice la lista de chequeo de hoy, y el contrato q
   // nueva, y recién ahí cambiar esta línea.
   assert.deepEqual(
     PASOS_DEL_CLIENTE.map((p) => `${p.clave}${p.requerido ? '' : '?'}`),
-    ['crm', 'calendario', 'zona', 'nicho', 'datos', 'meta_en_el_crm', 'meta?', 'aviso?'],
+    ['crm', 'calendario', 'zona', 'nicho', 'datos', 'meta', 'meta_leido?', 'aviso?'],
     'la lista de chequeo cambió: sube CONTRATO_DE_LA_FOTO y los comentarios de faltan y contrato',
   );
-  assert.equal(CONTRATO_DE_LA_FOTO, 2);
+  assert.equal(CONTRATO_DE_LA_FOTO, 3);
 
   const deFaltan = comentarioDe('foto_de_las_cuentas', 'faltan');
   const claves = /\(([a-z_, ]+)\)/.exec(deFaltan ?? '')?.[1]?.split(', ');
@@ -144,14 +155,14 @@ test('el horario de la foto es de la plataforma, y la ruta no descifra credencia
 // ─── Lo puro ─────────────────────────────────────────────────────────────────
 
 const AHORA = Date.parse('2026-10-18T12:00:00Z');
-const LISTO = { crmConectado: true, calendario: true, meta: false, aviso: false, zonaHoraria: 'America/Lima', nichoConfirmado: true };
-/** Lo medido de un cliente con Meta vinculado en su GoHighLevel, con la marca de su ingesta. */
-const medido = (ultimaIngestaEl: Date | null) => ({ ultimaIngestaEl, metaEnElCrm: true });
+const LISTO = { crmConectado: true, calendario: true, meta: true, aviso: false, zonaHoraria: 'America/Lima', nichoConfirmado: true };
+/** Lo medido de un cliente con sus campañas leídas de Meta, con la marca de su ingesta. */
+const medido = (ultimaIngestaEl: Date | null) => ({ ultimaIngestaEl, metaLeido: true });
 
 test('la lista de chequeo: UTC no es una zona elegida, lo no medido no se acusa, y lo recomendado no cuenta', () => {
   const al_dia = pasosDelCliente(LISTO, medido(new Date(AHORA - 3600_000)), AHORA);
-  assert.equal(configurado(al_dia, PASOS_DEL_CLIENTE), true, 'sin las miniaturas ni el aviso, que son recomendados, igual está configurado');
-  assert.deepEqual(faltan(al_dia, PASOS_DEL_CLIENTE), ['meta', 'aviso']);
+  assert.equal(configurado(al_dia, PASOS_DEL_CLIENTE), true, 'sin el aviso, que es recomendado, igual está configurado');
+  assert.deepEqual(faltan(al_dia, PASOS_DEL_CLIENTE), ['aviso']);
 
   assert.equal(pasosDelCliente({ ...LISTO, zonaHoraria: 'UTC' }, medido(new Date(AHORA)), AHORA).zona, 'falta');
   assert.equal(pasosDelCliente(LISTO, medido(new Date(AHORA - 25 * 3600_000)), AHORA).datos, 'falta', 'datos de ayer cuentan como al día');

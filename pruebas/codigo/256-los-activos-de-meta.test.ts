@@ -200,7 +200,7 @@ test('la tarea `activos`: sola en el minuto 37, cada hora, y su corte se lee en 
     [['37 * * * *', ['activos'], 60]],
   );
 
-  assert.match(String(motivoDeLoIncompleto({ pedidos: 3, guardados: 0, conMiniatura: 0, corte: 'token' })), /rechazó el token/);
+  assert.match(String(motivoDeLoIncompleto({ pedidos: 3, guardados: 0, conMiniatura: 0, corte: 'token' })), /rechazó la conexión/);
   assert.match(String(motivoDeLoIncompleto({ pedidos: 3, guardados: 1, conMiniatura: 1, corte: 'tiempo' })), /hora siguiente/);
   assert.equal(motivoDeLoIncompleto({ pedidos: 3, guardados: 3, conMiniatura: 2, corte: null }), null);
 

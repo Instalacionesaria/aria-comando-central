@@ -115,6 +115,11 @@ export interface PiezaDeCreative {
     landing: Cifra;
     clickToLanding: Cifra;
     anunciosDeLaPieza: { anuncioId: string; impresiones: number | null; gasto: number | null }[];
+    /**
+     * La curva del video (Meta directo, `102`): de cada 1 reproducción, cuántas llegaron al 25, 50, 75 y 100 %. `null`
+     * sin video de Meta en la ventana (lo traído de GoHighLevel no lo tenía) o con menos reproducciones que el piso.
+     */
+    curvaDelVideo: { p25: number; p50: number; p75: number; p100: number; reproducciones: number } | null;
   };
 }
 
@@ -166,6 +171,22 @@ export interface EntregaDeLaPieza {
   primerDia: string | null;
   ultimoDia: string | null;
   entregando: boolean;
+  /** Lo del video de Meta directo en la ventana: las sumas de cada cuartil y de las reproducciones. `null` sin video. */
+  video: { p25: number; p50: number; p75: number; p100: number; reproducciones: number } | null;
+}
+
+/** Cuántas reproducciones hacen falta para dar la retención de una pieza: con menos, un video de 3 vistas manda. */
+export const PISO_DE_REPRODUCCIONES = 100;
+
+/** La retención y la curva del video de una pieza, con su piso. */
+function retencionDe(v: EntregaDeLaPieza['video']): { cifra: Cifra; curva: PiezaDeCreative['ficha']['curvaDelVideo'] } {
+  if (v === null || v.reproducciones === 0) return { cifra: sinValor('sin_fuente'), curva: null };
+  if (v.reproducciones < PISO_DE_REPRODUCCIONES) return { cifra: sinValor('bajo_el_piso'), curva: null };
+  const r = v.reproducciones;
+  return {
+    cifra: conValor(v.p100 / r),
+    curva: { p25: v.p25 / r, p50: v.p50 / r, p75: v.p75 / r, p100: v.p100 / r, reproducciones: r },
+  };
 }
 
 export interface EntradaDeCreative {
@@ -369,7 +390,8 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
         calificados: !q ? sinValor('sin_contactos') : sinPuntaje(cuentaId) ? sinValor('sin_puntaje') : conValor(q.calificados),
         agendas: !q ? sinValor('sin_contactos') : conValor(q.agendaron),
         hookRate: sobreImpresiones(x?.vistas ?? null, hayEntrega),
-        retencion: sinValor('sin_fuente'),
+        // Meta directo: la parte de las reproducciones que llegó al final. Sin video de Meta, sin fuente.
+        retencion: retencionDe(x?.video ?? null).cifra,
         impresiones: hayEntrega ? conValor(x!.impresiones) : sinValor('sin_entrega'),
         frecuencia: !hayEntrega ? sinValor('sin_entrega') : x!.frecuencia !== null ? conValor(x!.frecuencia) : sinValor('sin_reporte'),
       },
@@ -392,6 +414,7 @@ export function armarCreative(e: EntradaDeCreative): PantallaDeCreativeArmada {
             ? conValor(r.clickToLanding.tasa / 100)
             : sinValor(r.clickToLanding.anuncioDiasConLaClave === 0 ? 'sin_reporte' : 'bajo_el_piso'),
         anunciosDeLaPieza: (r?.anunciosDeLaPieza ?? []).map((a) => ({ anuncioId: a.anuncioId, impresiones: a.impresiones, gasto: a.gasto })),
+        curvaDelVideo: retencionDe(x?.video ?? null).curva,
       },
     };
   });
@@ -470,6 +493,11 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
       sql<string | null>`max(m.fecha) filter (where m.impresiones > 0)::text`.as('ultimoDia'),
       /* Los últimos 3 días del calendario, hoy incluido: la convención de `ventanaDeMetricas`. */
       sql<boolean>`coalesce(max(m.fecha) filter (where m.impresiones > 0) > current_date - 3, false)`.as('entregando'),
+      // El video de Meta directo (`102`): sólo los anuncio-día que traen las reproducciones, para que los cuartiles y su
+      // denominador sean de los mismos días.
+      ...(['p25', 'p50', 'p75', 'p100', 'reproducciones'] as const).map((k) =>
+        sql<string | null>`sum((m.video ->> ${k})::numeric) filter (where ${enVentana} and m.video ? 'reproducciones')`.as(`v_${k}`),
+      ),
     ])
     .groupBy(['a.cuenta_id', pieza])
     .execute();
@@ -521,6 +549,17 @@ export async function entregaDeLasPiezas(dias: number): Promise<EntregaDeLaPieza
     primerDia: f.primerDia,
     ultimoDia: f.ultimoDia,
     entregando: Boolean(f.entregando),
+    video: (() => {
+      const v = f as unknown as Record<string, string | null>;
+      if (v.v_reproducciones === null || v.v_reproducciones === undefined) return null;
+      return {
+        p25: Number(v.v_p25 ?? 0),
+        p50: Number(v.v_p50 ?? 0),
+        p75: Number(v.v_p75 ?? 0),
+        p100: Number(v.v_p100 ?? 0),
+        reproducciones: Number(v.v_reproducciones),
+      };
+    })(),
   }));
 }
 

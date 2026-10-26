@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { bootAios } from '@/lib/aios';
+import { irALaVista } from '../lib/aios/shell.js';
+import { hayResultadoDeMeta } from '../lib/meta/retorno.ts';
 import { useSesion } from '../app/sesion-contexto.tsx';
 
 import IconSprite from './IconSprite';
@@ -73,6 +75,18 @@ export default function CommandCenter() {
   // confusión.
   const visibles = (sesion?.menu ?? []).flatMap((g) => g.secciones.map((s) => s.clave));
   const arranque = sesion?.arranque?.seccion.clave;
+
+  /* De vuelta de «Conectar con Meta» (`/meta/retorno`): se abre Ajustes en la pestaña desde la que se conectó, donde
+     espera el resultado (`lib/meta/retorno.ts`). Una sola vez, cuando la pantalla de Ajustes ya está dibujada. */
+  const conAjustes = visibles.includes('credenciales');
+  const yaVolvio = useRef(false);
+  useEffect(() => {
+    if (yaVolvio.current || !conAjustes) return;
+    const pestana = hayResultadoDeMeta();
+    if (pestana === null) return;
+    yaVolvio.current = true;
+    irALaVista('credenciales', { pestana });
+  }, [conAjustes]);
 
   return (
     <>

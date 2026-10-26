@@ -535,8 +535,8 @@ sin estar**: el 2026-10-18 `gh api …/branches/main` da `protected: false` ([17
 
 **La corrección que dejó la tercera.** No alcanza con preguntar qué LEE el arranque: hay que preguntar
 **qué TOCA la columna nueva, en cualquier sentido** —un `insert` que la nombra rompe igual que un
-`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:175`; el barrido de
-citas va a la hora y tres, `lib/negocio/barrido.ts:259`).
+`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:176`; el barrido de
+citas va a la hora y tres, `lib/negocio/barrido.ts:260`).
 
 **La comprobación de treinta segundos, antes de cada `git push`:**
 
@@ -1132,7 +1132,7 @@ revisión adversarial con dos escépticos por hallazgo, que ejecutaron la funci�
 2026-09-18): «una marca de agua no puede describir un conjunto con agujeros». La ventana ahora sale de
 lo que FALTA. **Y volvió con el gasto**: el colector pedía 13 de las 61 campañas de la cuenta, el sello decía `corrio`
 y una campaña de mensajes no entraba nunca; la `076` (`22ec755`, 2026-10-07) lee la serie de toda la cuenta y el
-sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:1160-1163`).
+sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:1161-1164`).
 
 ## M · Un comentario que afirma sin medir
 
@@ -1197,7 +1197,7 @@ y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas
 `d715b2a`, 2026-10-05) es una tabla común para los cuatro departamentos: la huella —departamento, regla, entidad,
 ventana— impide que una señal descartada renazca mientras su condición siga, la entidad es un id y no un nombre, y no
 hay texto libre de personas (`db/migraciones/072_las_senales.sql:15-26`); con menos de 10 no hay señal
-(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:371-377`),
+(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:372-378`),
 y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:77` y
 `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:101`. **Y las dos excepciones con datos de personas tienen
 su regla:** el Brief del closer es el agente que manda al modelo datos de una persona (`lib/agentes/brief/entrada.ts:14`),
@@ -1334,8 +1334,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **La foto de los negocios, con un solo escritor.** `negocio.foto_de_las_empresas` y `negocio.foto_de_las_cuentas`
   viven bajo la principal, que un disparador exige (`db/migraciones/089_la_foto_de_los_negocios.sql:126`); no guardan
   nombres, y nulo es «sin medir». Las escribe sólo `tomarLaFoto` (`lib/cartera/foto.ts:162`), en la tarea `foto` del
-  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:119`, horario en `lib/negocio/barrido.ts:389`).
-  Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:114`.
+  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:120`, horario en `lib/negocio/barrido.ts:390`).
+  Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:125`.
 - **El tablero de Negocios.** La primera entrada de Client Success, sólo del superadministrador y desde la principal
   (`app/api/negocios/route.ts:33`): la configuración en vivo, leída de identidad como presencias
   (`lib/cartera/configuracion.ts:73`), y las cifras de la foto (`lib/cartera/tablero.ts:309`). Las cifras de arriba no
@@ -1351,10 +1351,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (organización, cliente) (`lib/credenciales/resolver.ts:66`), y sin las suyas FALTAN, nunca caen a las de la empresa.
   Quien quiere la de la empresa lo escribe (`'la_de_la_empresa'`). El aviso del CRM entra al cliente de su secreto
   (`app/api/avisos/crm/route.ts:150`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:81`.
-- **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:130`) corren una vez por cliente
+- **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:131`) corren una vez por cliente
   activo, con sus credenciales, que la ruta resuelve por cliente (`app/api/cron/route.ts:242`); las de la empresa, una
-  vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:701`), con el presupuesto mirado antes de
-  cada una (`lib/negocio/barrido.ts:740`), y cada sello con su cliente. La frescura de una pantalla es la de su
+  vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:702`), con el presupuesto mirado antes de
+  cada una (`lib/negocio/barrido.ts:741`), y cada sello con su cliente. La frescura de una pantalla es la de su
   cliente, o la del peor activo a la vista (`lib/negocio/frescura.ts:200`).
 - **Las rutas manuales traen a cada cliente (C5 · G4).** «Traer del calendario», el tic de la ingesta y «Traer de
   GoHighLevel» traen a los clientes ACTIVOS que su pantalla lee (`lib/autorizacion/ambito.ts:70`): las tres leen la
@@ -1370,11 +1370,11 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   agrupa por (campaña, cliente) (`lib/negocio/atribucionDelLead.ts:176`), y cada fila dice su cliente cuando las
   campañas de la ventana son de más de uno (`lib/negocio/atribucionDelLead.ts:213`); las campañas de Acquisition y de la
   herramienta del cerebro, igual, con el cliente de sus anuncios, el que la listó o el de sus contactos
-  (`lib/negocio/embudosDeAcquisition.ts:720`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
-  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:681`)
-  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:927`); sólo uno con
+  (`lib/negocio/embudosDeAcquisition.ts:736`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
+  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:697`)
+  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:967`); sólo uno con
   métricas y sin serie frena lo que lee Meta —«sin entrega», la concentración y el costo por mil, con su anterior
-  aparte— (`lib/negocio/embudosDeAcquisition.ts:826`, `lib/negocio/embudosDeAcquisition.ts:912`): un cliente sin Meta no
+  aparte— (`lib/negocio/embudosDeAcquisition.ts:866`, `lib/negocio/embudosDeAcquisition.ts:952`): un cliente sin Meta no
   apaga lo de los demás. Las vistas de Conversion no son la suma ni el cero de otro cliente
   (`lib/negocio/pasosDeConversion.ts:542`), y no comparan con un cliente sin su gasto en ninguna de las dos ventanas
   (`lib/negocio/pasosDeConversion.ts:609`, `lib/negocio/pasosDeConversion.ts:619`). En el detector, lo que es de una
@@ -1402,12 +1402,12 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/negocio/calidadDelCreativo.ts:261`) y cruza un contacto sólo con un anuncio de SU cliente
   (`lib/negocio/calidadDelCreativo.ts:363`); el rendimiento, la fatiga y la entrega, también
   (`lib/negocio/rendimientoDelCreativo.ts:347`, `lib/negocio/fatigaDelCreativo.ts:164`,
-  `lib/negocio/lecturaDeCreative.ts:474`). Los leads y la miniatura de un contacto son del cliente de su ANUNCIO, y sólo
+  `lib/negocio/lecturaDeCreative.ts:502`). Los leads y la miniatura de un contacto son del cliente de su ANUNCIO, y sólo
   sin el anuncio en la dimensión, del contacto (`lib/negocio/costoDelAnuncio.ts:358`,
   `lib/negocio/miniaturaDelContacto.ts:210`). Con piezas de dos clientes o más en la lectura
-  (`lib/negocio/lecturaDeCreative.ts:343`), la pieza dice su cliente (`lib/negocio/lecturaDeCreative.ts:365`) —la
+  (`lib/negocio/lecturaDeCreative.ts:364`), la pieza dice su cliente (`lib/negocio/lecturaDeCreative.ts:386`) —la
   tarjeta en su propia línea (`components/creative/PanelDeCreative.jsx:396`), la ficha en «Qué es»— y «Funciona» compara
-  cada pieza con las de su etapa EN SU CLIENTE (`lib/negocio/lecturaDeCreative.ts:248`), como la señal del ICP
+  cada pieza con las de su etapa EN SU CLIENTE (`lib/negocio/lecturaDeCreative.ts:269`), como la señal del ICP
   (`lib/agentes/detectores/creative.ts:306`); la concentración es sobre el gasto de su cliente
   (`lib/agentes/detectores/creative.ts:222`), la evidencia nombra al cliente (`lib/agentes/detectores/creative.ts:187`)
   y la pantalla nombra la señal «nombre · cliente» y la del anuncio «Anuncio (Cliente)»
@@ -1446,20 +1446,20 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/codigo/289-el-vinculo-del-closer-por-cliente.test.ts:30`.
 - **Los avisos dicen de qué cliente y qué hacer (C6 · D1, sin migración).** La decisión del usuario del 2026-10-20: los
   costos de cada cliente salen de SU GoHighLevel con Meta vinculado, y un aviso dice de qué cliente es y qué hacer. Un
-  módulo hoja lo lee de los sellos del barrido (`lib/negocio/faltaDeLosClientes.ts:92`): un cliente ACTIVO cuyo sello
-  más nuevo de las tareas del CRM que dicen algo del acceso (`lib/negocio/faltaDeLosClientes.ts:55`) es `saltada` con un
-  código de la falta, salvo que un pulso posterior diga que alguien ya trajo (`lib/negocio/faltaDeLosClientes.ts:131`).
-  El principal se nombra sólo con más de un cliente activo a la vista (`lib/negocio/faltaDeLosClientes.ts:69`): con uno
+  módulo hoja lo lee de los sellos del barrido (`lib/negocio/faltaDeLosClientes.ts:96`): un cliente ACTIVO cuyo sello
+  más nuevo de las tareas del CRM que dicen algo del acceso (`lib/negocio/faltaDeLosClientes.ts:59`) es `saltada` con un
+  código de la falta, salvo que un pulso posterior diga que alguien ya trajo (`lib/negocio/faltaDeLosClientes.ts:135`).
+  El principal se nombra sólo con más de un cliente activo a la vista (`lib/negocio/faltaDeLosClientes.ts:73`): con uno
   solo no cambia ningún texto ni ninguna clave. El aviso tiene un prefijo neutro («no está lista»: un token ilegible no
   falta) y el texto del código —el de la empresa para el principal, el del cliente para los demás; al cliente final,
-  sin Ajustes— (`lib/negocio/faltaDeLosClientes.ts:166`). Lo dicen la agenda vacía, en vez de «Todavía no se leyó el
+  sin Ajustes— (`lib/negocio/faltaDeLosClientes.ts:170`). Lo dicen la agenda vacía, en vez de «Todavía no se leyó el
   calendario» para siempre, y con citas `sinConexion` (`lib/negocio/agenda.ts:428`, `lib/negocio/agenda.ts:313`); la
   cabecera de Mi Día, DESPUÉS de las citas sin registrar (`lib/agentes/cabecera.ts:174`), las dos sólo de los clientes
-  del alcance de quien mira (`lib/negocio/faltaDeLosClientes.ts:141`); el chat de la ficha, del cliente del contacto
+  del alcance de quien mira (`lib/negocio/faltaDeLosClientes.ts:145`); el chat de la ficha, del cliente del contacto
   (`lib/negocio/ficha.ts:279`), y Leads, arriba (`app/api/leads-portal/route.ts:70`). Acquisition y Conversion nombran,
   después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué —Meta sin vincular en su
-  GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:204`): los que pautaron sin
-  serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:984`,
+  GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:207`): los que pautaron sin
+  serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:1024`,
   `lib/negocio/gastoDeLaCuenta.ts:487`), así que también cuando la serie de un cliente dejó de escribirse y la empresa
   queda con el colector atrasado; Conversion pregunta por la ventana que decidió el motivo
   (`lib/negocio/pasosDeConversion.ts:642`). Las frases entraron primero en A14-02 y CV15-02. Y los closers: el alta, la
@@ -1471,8 +1471,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:345`,
   `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:436`,
   `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:488`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:548`,
-  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:595` y
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:545`,
+  `pruebas/base/290-los-avisos-dicen-de-que-cliente.test.ts:592` y
   `pruebas/codigo/291-los-textos-de-los-avisos-por-cliente.test.ts:51`.
 - **Lo que usaba las credenciales de la empresa usa las del cliente (C6 · D2, sin migración).** «Subir a HighLevel» de
   Tools le manda a n8n el token y la location del cliente que se elige (`app/api/tools/leads/enviar/route.ts:153`): el
@@ -1520,7 +1520,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   identificador de la pieza: el de siempre para el principal y `<cuenta>:<id>` para otro (`lib/negocio/idDeLaPieza.ts:44`),
   así que al sumar un cliente no se cierra ni renace ninguna señal del principal. Acquisition compara el ICP de una
   campaña con SU funnel EN SU cliente, con la fórmula de la pantalla (`lib/agentes/detectores/acquisition.ts:608`,
-  `lib/negocio/embudosDeAcquisition.ts:421`); la fuga, con los otros funnels de su cliente
+  `lib/negocio/embudosDeAcquisition.ts:426`); la fuga, con los otros funnels de su cliente
   (`lib/agentes/detectores/acquisition.ts:714`); el monitor de atribución, por cliente ACTIVO con campañas
   (`lib/agentes/detectores/acquisition.ts:258`, `lib/negocio/calidadDeLaAtribucion.ts:124`), y uno sin denominador en la
   ventana se salta: la regla queda sin medición sólo si ninguno lo tiene (`lib/agentes/detectores/acquisition.ts:862`);
@@ -1557,8 +1557,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **El puntaje y el Perfil de cada subcuenta, configurables (C6 · D4, `098`).** Cuál campo del CRM es el puntaje del
   lead y qué carpetas se muestran en el Perfil se reconocían solos —por el id de la subcuenta de ARIA o por el nombre
   del snapshot—, y un cliente con otros nombres se quedaba sin puntaje y sin Perfil. Desde la `098` se eligen cliente por
-  cliente en Ajustes › Clientes › «Puntaje y Perfil» (`components/ajustes/ConexionDelCliente.jsx:115`,
-  `components/ajustes/ConexionDelCliente.jsx:222`), también para el principal, con `credenciales.ver` para leer y
+  cliente en Ajustes › Clientes › «Puntaje y Perfil» (`components/ajustes/ConexionDelCliente.jsx:116`,
+  `components/ajustes/ConexionDelCliente.jsx:230`), también para el principal, con `credenciales.ver` para leer y
   `credenciales.editar` para elegir (`app/api/admin/cuentas/[id]/campos/route.ts:94`,
   `app/api/admin/cuentas/[id]/campos/route.ts:104`), y viven en el catálogo de cada subcuenta:
   `campos_del_crm.es_el_puntaje`, uno por cliente con un índice único parcial, y `carpetas_del_crm.grupo_elegido_el`
@@ -1571,11 +1571,11 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `lib/negocio/camposDelCrm.ts:456`); hasta acá Creative promediaba decimales y valores de más de 100. Al elegir, el
   puntaje de TODOS los contactos del cliente se recalcula desde lo guardado, congelados incluidos, en la misma
   transacción y sin llamar al CRM (`app/api/admin/cuentas/[id]/campos/route.ts:135`, `lib/negocio/camposDelCrm.ts:800`).
-  Creative no le da «Calificados: 0» al cliente sin campo (`lib/negocio/lecturaDeCreative.ts:295`) y lo nombra,
+  Creative no le da «Calificados: 0» al cliente sin campo (`lib/negocio/lecturaDeCreative.ts:316`) y lo nombra,
   separando «no se leyó su catálogo» de «no tiene campo» (`lib/negocio/calidadDelCreativo.ts:164`,
   `lib/negocio/calidadDelCreativo.ts:407`), también cuando ningún cliente a la vista tiene campo, si hay más de uno o
   el foco está en uno que no es el principal; con un solo cliente a la vista —la empresa de un cliente, o el foco en el
-  principal—, el aviso de siempre (`lib/negocio/faltaDeLosClientes.ts:78`, `lib/negocio/calidadDelCreativo.ts:396`). La pantalla avisa cuando el elegido dejó de ser numérico o no vino en la
+  principal—, el aviso de siempre (`lib/negocio/faltaDeLosClientes.ts:82`, `lib/negocio/calidadDelCreativo.ts:396`). La pantalla avisa cuando el elegido dejó de ser numérico o no vino en la
   última lectura del catálogo —lo borraron en GoHighLevel, o el cliente se vinculó a otra subcuenta—
   (`lib/negocio/camposDelCrm.ts:703`), y el vínculo lo recuerda al cambiar la subcuenta
   (`app/api/admin/cuentas/[id]/vinculo/route.ts:82`). El refresco del catálogo no pisa lo elegido, y una carpeta sin
@@ -1602,14 +1602,14 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/cartera/pasos.ts:40`). No se lee de una credencial: se MIDE con el sello de la pasada del gasto del
   cliente —corrió con el vínculo, o corrió sin él y dejó `MOTIVO_SIN_META_EN_GHL`—, y sin un sello que corrió, con su
   serie de gasto de 30 días; sin nada, «sin medir», que no se acusa (`lib/cartera/medicion.ts:83`). El principal sin sello
-  propio toma el sin cuenta, como los avisos (`lib/cartera/medicion.ts:118`). Lo mismo mide la foto y la
-  lista en vivo (`medirLosPasos`, `lib/cartera/medicion.ts:97`); la foto lo guarda en `meta_en_el_crm`
+  propio toma el sin cuenta, como los avisos (`lib/cartera/medicion.ts:119`). Lo mismo mide la foto y la
+  lista en vivo (`medirLosPasos`, `lib/cartera/medicion.ts:98`); la foto lo guarda en `meta_en_el_crm`
   (`lib/cartera/foto.ts:113`) y sube al **contrato 2**: cambian `configurada`, `faltan` y, de la empresa,
   `cuentas_configuradas`, y la `099` reescribe sus comentarios. Configurado sigue siendo «activo y con todo lo
-  requerido» (`clienteConfigurado`, `lib/cartera/pasos.ts:123`), y el tablero ya no acusa lo medido de un cliente cuya
+  requerido» (`clienteConfigurado`, `lib/cartera/pasos.ts:128`), y el tablero ya no acusa lo medido de un cliente cuya
   empresa no se pudo medir (`lib/cartera/tablero.ts:177`). **Ajustes › Clientes** muestra la lista de cada cliente,
   con qué hacer en cada paso que falta (`components/ajustes/ListaDeChequeo.jsx:69`, `components/ajustes/ListaDeChequeo.jsx:21`,
-  `components/ajustes/Clientes.jsx:225`), leída EN VIVO de `GET /api/admin/cuentas` y no de la foto: las
+  `components/ajustes/Clientes.jsx:228`), leída EN VIVO de `GET /api/admin/cuentas` y no de la foto: las
   presencias de la conexión salen de identidad, sólo `is not null` y con la empresa destino en el `where`
   (`lib/cartera/configuracion.ts:132`, `app/api/admin/cuentas/route.ts:69`), y cada paso viaja con su clave, su
   nombre, si es requerido y su estado, nada más (`app/api/admin/cuentas/route.ts:83`). La ruta entró a la lista de la
@@ -1617,8 +1617,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `orgId` de la empresa, que sólo la plataforma puede mandar (`components/cartera/PanelDeNegocios.jsx:344`, `components/cartera/PanelDeNegocios.jsx:166`).
   Con un solo cliente, la lista cambia a propósito: un cliente cuyo GoHighLevel no tiene Meta vinculado deja de estar
   configurado. Lo exigen `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:218`, `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:241`,
-  `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:266`, `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:55`,
-  `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:225` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:82`.
+  `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:287`, `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:55`,
+  `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:247` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:93`.
 - **El cliente final lee sólo los closers de sus clientes (C6, `100`).** La `093` dejaba leer la designación de los
   closers desde cualquier ámbito de la organización, también el del cliente final: desde su cliente leía las filas de
   todos, con el usuario del CRM de cada closer en las otras subcuentas. Desde la `100` esa política es sólo para quien
@@ -1638,10 +1638,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **El gasto de cada cliente, de punta a punta por el cron (C6, sin migración).** Lo que la 280 hace con los
   contactos y los mensajes, la 301 lo hace con el gasto: la tarea `anuncios` por la ruta del cron con su horario, con
   tres clientes y un Ad Manager de GoHighLevel falso que sólo responde a cada token con SU subcuenta y SUS campañas.
-  Cada unidad del barrido pide con el acceso de su cliente (`lib/negocio/barrido.ts:709`,
-  `lib/negocio/barrido.ts:773`); las campañas, los anuncios, las métricas por anuncio y la serie de la cuenta de los
+  Cada unidad del barrido pide con el acceso de su cliente (`lib/negocio/barrido.ts:710`,
+  `lib/negocio/barrido.ts:774`); las campañas, los anuncios, las métricas por anuncio y la serie de la cuenta de los
   dos que tienen Meta vinculado quedan en SU cliente, con SUS cifras, y el que no lo tiene no escribe nada y su sello
-  dice «Meta no está vinculado en GoHighLevel» (`lib/negocio/barrido.ts:1162`), con el texto que leen la lista de
+  dice «Meta no está vinculado en GoHighLevel» (`lib/negocio/barrido.ts:1163`), con el texto que leen la lista de
   chequeo y los avisos (`MOTIVO_SIN_META_EN_GHL`). Lo exigen
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:190`,
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:210`,

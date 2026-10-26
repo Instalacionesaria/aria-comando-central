@@ -31,7 +31,7 @@ import { RAIZ, sinComentarios } from '../apoyo/fuente.ts';
 import { VOSEO } from '../apoyo/voseo.ts';
 import {
   LO_RESUELVE_LA_EMPRESA,
-  MOTIVO_SIN_META_EN_GHL,
+  MOTIVO_META_RECHAZADA,
   TAREAS_DEL_CRM,
   avisoSinConexion,
   delAlcance,
@@ -39,7 +39,7 @@ import {
 } from '../../lib/negocio/faltaDeLosClientes.ts';
 import { TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE, type FaltaParaGhl } from '../../lib/credenciales/resolver.ts';
 import { closersSinVinculoEn, type CloserConfigurado } from '../../lib/negocio/alcanceDelCloser.ts';
-import { TAREAS_DEL_CLIENTE, motivoDeLoIncompleto } from '../../lib/negocio/barrido.ts';
+import { TAREAS_DEL_CLIENTE, TAREAS_DE_META, motivoDeLoIncompleto } from '../../lib/negocio/barrido.ts';
 import { diceLosClosersSinVincular } from '../../lib/administracion/cuentas.ts';
 
 const leer = (ruta: string) => sinComentarios(readFileSync(join(RAIZ, ruta), 'utf8'));
@@ -111,7 +111,11 @@ test('los closers sin vínculo en un cliente son los vinculados en otro, no los 
 });
 
 test('el texto de Meta es el que sella el barrido, y las tareas del CRM son las de su guardia', () => {
-  assert.equal(motivoDeLoIncompleto({ vinculo: { estado: 'disconnected' } }), MOTIVO_SIN_META_EN_GHL, 'el barrido sella otro texto: el aviso de Acquisition nunca lo encontraría');
+  // Meta directo: una conexión que Meta rechazó deja este texto en el sello, que es el que buscan los avisos.
+  assert.ok(
+    String(motivoDeLoIncompleto({ modo: 'diario', cuentas: [{ act: 'act_1', falla: 'token', ilegibles: 0 }] })).includes(MOTIVO_META_RECHAZADA),
+    'el barrido sella otro texto: el aviso de Acquisition nunca lo encontraría',
+  );
   for (const t of TAREAS_DEL_CRM) assert.ok(TAREAS_DEL_CLIENTE.includes(t), `${t} no es una tarea de un cliente`);
   /* El guardia: las tareas que NO pasan por la credencial del CRM están escritas como `tarea !== '…'` antes de
      `acceso.tipo !== 'listo'`. Las de un cliente que quedan son las que sellan `saltada` con un código de la falta. */
@@ -120,6 +124,8 @@ test('el texto de Meta es el que sella el barrido, y las tareas del CRM son las 
   const inicio = barrido.lastIndexOf('if (', fin);
   assert.ok(inicio !== -1 && fin > inicio, 'no se encontró el guardia de la credencial del CRM');
   const exentas = [...barrido.slice(inicio, fin).matchAll(/tarea !== '(\w+)'/g)].map((m) => m[1]!);
+  // Y las de Meta (Meta directo), exentas por `!esDeMeta(tarea)`: le hablan a Meta, no al CRM.
+  if (/!esDeMeta\(tarea\) &&/.test(barrido.slice(inicio, fin))) exentas.push(...TAREAS_DE_META);
   assert.ok(exentas.length >= 5, 'no se leyeron las tareas exentas del guardia');
   assert.deepEqual(
     [...TAREAS_DEL_CRM].sort(),
@@ -140,8 +146,9 @@ test('los textos nuevos hablan de tú, con su forma exacta', () => {
   const panelDeAcquisition = leer('components/acquisition/PanelDeAcquisition.jsx');
   const comun = leer('components/conversion/comun.jsx');
   for (const fuente of [panelDeAcquisition, comun]) {
-    assert.ok(fuente.includes("metaSinVincular: 'El GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel.'"));
-    assert.ok(fuente.includes("sinConexion: 'La conexión de {cliente} con GoHighLevel no está lista. {detalle}'"));
+    // Meta directo: el gasto sale de la conexión con Meta, y lo que se dice es conectarla o volver a conectarla.
+    assert.ok(fuente.includes("metaSinConectar: '{cliente} no tiene Meta conectado: conéctalo en Ajustes.'"));
+    assert.ok(fuente.includes("metaCaida: 'La conexión de {cliente} con Meta se cayó: vuelve a conectar Meta en Ajustes.'"));
     assert.ok(fuente.includes("noActivo: '{cliente} ya no está activo: su gasto no se lee.'"));
   }
   const clientes = leer('components/ajustes/Clientes.jsx');

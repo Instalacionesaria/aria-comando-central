@@ -156,9 +156,37 @@ test('nadie navega a un destino sin validarlo', () => {
     // el día que alguien navegue con un valor de un parámetro, esta lista lo obliga a decidir.
     //
     // Y desde «Conectar con Meta», el retorno de Meta: vuelve a `/` con un literal, después de canjear el código
-    // (`app/meta/retorno/page.tsx`). Ningún valor de la URL de Meta llega al destino.
-    ['app/entrar/page.tsx', 'app/guardia.tsx', 'app/meta/retorno/page.tsx', 'components/MenuDeUsuario.jsx'].sort(),
+    // (`app/meta/retorno/page.tsx`). Ningún valor de la URL de Meta llega al destino. Y el botón, que va al diálogo de
+    // Meta con la URL que arma el servidor, sólo si es la del diálogo (`DIALOGO_DE_META`, abajo se exige).
+    [
+      'app/entrar/page.tsx',
+      'app/guardia.tsx',
+      'app/meta/retorno/page.tsx',
+      'components/MenuDeUsuario.jsx',
+      'components/ajustes/ConectarConMeta.jsx',
+    ].sort(),
     'un archivo nuevo navega por su cuenta: si el destino viene de un parámetro, tiene que ' +
       'pasar por destinoSeguro()',
   );
 });
+
+test('«Conectar con Meta» sólo navega al diálogo de Meta', async () => {
+  // La URL la arma el servidor; aun así la pantalla no va a ningún otro lado: un error o un servidor comprometido no
+  // pueden mandar a quien conecta a una página que imite el login de Meta.
+  const { readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { RAIZ } = await import('../apoyo/fuente.ts');
+  const fuente = readFileSync(join(RAIZ, 'components/ajustes/ConectarConMeta.jsx'), 'utf8');
+  const patron = /const DIALOGO_DE_META = (\/.+\/);/.exec(fuente)?.[1];
+  assert.ok(patron, 'no se encontró DIALOGO_DE_META');
+  const dialogo = new Function(`return ${patron}`)() as RegExp;
+  assert.ok(dialogo.test('https://www.facebook.com/v23.0/dialog/oauth?client_id=1'));
+  for (const otra of ['https://www.facebook.com.evil.test/v23.0/dialog/oauth?x', 'http://www.facebook.com/v23.0/dialog/oauth?x', 'https://evil.test/?https://www.facebook.com/v23.0/dialog/oauth?']) {
+    assert.ok(!dialogo.test(otra), `la pantalla navegaría a ${otra}`);
+  }
+  assert.ok(
+    fuente.includes('DIALOGO_DE_META.test(r.datos.url)) {') && fuente.includes('window.location.assign(r.datos.url);'),
+    'la pantalla navega sin mirar que sea el diálogo de Meta',
+  );
+});
+

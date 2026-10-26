@@ -175,7 +175,7 @@ function clienteVivo(c: ConfiguracionDeUnCliente, f: FilaDeLaFotoDeUnCliente | u
      se pudo medir, no se sabe: `sin_medir`, que no se acusa (la foto lo escribe igual, `filasDeUnaEmpresa`). */
   const medido =
     f && f.medida
-      ? { ultimaIngestaEl: f.ultima_ingesta_el === null ? null : new Date(f.ultima_ingesta_el), metaEnElCrm: f.meta_en_el_crm }
+      ? { ultimaIngestaEl: f.ultima_ingesta_el === null ? null : new Date(f.ultima_ingesta_el), metaLeido: f.meta_leido }
       : undefined;
   const pasos = pasosDelCliente(c, medido, ahora);
   return {

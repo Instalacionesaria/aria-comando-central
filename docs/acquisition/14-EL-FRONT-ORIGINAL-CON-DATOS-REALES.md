@@ -92,8 +92,8 @@ documento y no en la pantalla. Los huecos usan **sólo** estas frases:
 | la ventana anterior no está entera (`sin_historia`) | «Sin historia para comparar.» |
 | «Hoy» no publica costos (`sinCostos: hoy`) | «Hoy, sin costos.» |
 | una campaña que GoHighLevel no listó, y que por eso no se puede asignar | «No figura en Meta» |
-| con varios clientes, después de «Faltan días de gasto.»: la pasada del gasto de ese cliente corrió y su GoHighLevel no tiene Meta vinculado (`gasto.faltaPorCliente`, `meta_sin_vincular`) | «El GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel.» |
-| con varios clientes, después de «Faltan días de gasto.»: la conexión de ese cliente con GoHighLevel no está lista (`sin_conexion`) | «La conexión de {cliente} con GoHighLevel no está lista. {detalle}» |
+| con varios clientes, después de «Faltan días de gasto.»: ese cliente no tiene ninguna cuenta publicitaria de Meta asignada (`gasto.faltaPorCliente`, `meta_sin_conectar`; Meta directo) | «{cliente} no tiene Meta conectado: conéctalo en Ajustes.» |
+| con varios clientes, después de «Faltan días de gasto.»: Meta rechazó la conexión de ese cliente —se quitó la integración o venció— (`meta_caida`; Meta directo) | «La conexión de {cliente} con Meta se cayó: vuelve a conectar Meta en Ajustes.» |
 | con varios clientes, después de «Faltan días de gasto.»: ese cliente está en pausa o de baja y no se lee (`no_activo`) | «{cliente} ya no está activo: su gasto no se lee.» |
 
 Las seis de abajo entraron al construir (AQ-4): sin ellas, un fallo al asignar, la primera carga, la

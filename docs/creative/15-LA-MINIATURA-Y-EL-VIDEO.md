@@ -67,7 +67,7 @@ app sólo maneja su propia cuenta, el acceso estándar a `ads_read` alcanza, **s
 miniatura vigente. Empate: el `meta_anuncio_id` menor. El post se elige igual y por separado: el anuncio más visto
 puede no tener post y otro sí. Si Meta no tiene miniatura vigente para la pieza, la de sus contactos (CF1-12).
 **Estado** · **Construido el 2026-10-15** (M-3), en `activosDeLasPiezas` (`lib/negocio/recolectarActivos.ts:158`) y
-en la tarjeta (`lib/negocio/lecturaDeCreative.ts:353`). **Desvío**: sin ventana. La pantalla nueva no tiene «la
+en la tarjeta (`lib/negocio/lecturaDeCreative.ts:374`). **Desvío**: sin ventana. La pantalla nueva no tiene «la
 tabla de la subasta» y la miniatura de los contactos tampoco depende del período (CF1-12); con ventana, la imagen de
 una pieza cambiaría al cambiar de «7 días» a «30 días» sin que la pieza cambie. Diseñado el 2026-09-29 como «Planificado (CR-7)». **Por qué una regla y no «la primera»**: con seis anuncios por
 pieza, «la primera» es la que la base devuelve primero, y eso cambia sin que nadie lo decida.
@@ -195,9 +195,9 @@ producción antes del push. Las etapas postergadas están detalladas, paso por p
 | CR-1 | El link manual por pieza: tabla `negocio.enlaces_de_pieza`, validador de URL, ruta `PUT`/`DELETE` con `credenciales.editar` y auditoría | nada | hecho, 2026-09-29 |
 | CR-2 | El cajón de la pieza con sus anuncios | nada | hecho, 2026-09-29 |
 | CR-3 | La credencial de Meta en Ajustes: `meta_token_cifrado` y `meta_cuenta_id`, con el molde de `db/migraciones/057_llave_de_tldv.sql:1-29` y `resolverAccesoAlAnalizador`; quedó en `resolverAccesoAMeta` (`lib/credenciales/resolver.ts:749`), migración 064 | nada | hecho, 2026-09-29 |
-| M-1 | «Probar conexión» en Ajustes: el cliente de lectura `pedirAMeta` (`lib/meta/graph.ts:83`) y la prueba de tres pasos `probarConexionConMeta` (`lib/meta/conexion.ts:37`), por `POST /api/admin/credenciales/meta` con `credenciales.editar` | CR-3 | hecho, 2026-10-15 (`cce2d56`) |
+| M-1 | «Probar conexión» en Ajustes: el cliente de lectura `pedirAMeta` (`lib/meta/graph.ts:87`) y la prueba de tres pasos `probarConexionConMeta` (`lib/meta/conexion.ts:37`), por `POST /api/admin/credenciales/meta` con `credenciales.editar` | CR-3 | hecho, 2026-10-15 (`cce2d56`) |
 | CR-4 | Medir contra Meta con el token ya cargado: qué campos llegan, si `source` se entrega, cuánto dura una URL | **el token, cargado por la persona del equipo** | esperando el token; «Probar conexión» ya mide si sirve |
-| CR-5 + CR-6 = M-2 | La tabla `negocio.activos_de_anuncio` (`078`), la lectura por lotes `leerCreativos` (`lib/meta/anuncios.ts:102`), el escritor único `recolectarActivos` (`lib/negocio/recolectarActivos.ts:195`) y la tarea horaria `activos` (`lib/negocio/barrido.ts:358`), `saltada` sin token (`lib/negocio/barrido.ts:744`) | CR-3 | hecho, 2026-10-15, sin medir: se diseñó para no depender de lo que CR-4 conteste |
+| CR-5 + CR-6 = M-2 | La tabla `negocio.activos_de_anuncio` (`078`), la lectura por lotes `leerCreativos` (`lib/meta/anuncios.ts:102`), el escritor único `recolectarActivos` (`lib/negocio/recolectarActivos.ts:195`) y la tarea horaria `activos` (`lib/negocio/barrido.ts:359`), `saltada` sin token (`lib/negocio/barrido.ts:745`) | CR-3 | hecho, 2026-10-15, sin medir: se diseñó para no depender de lo que CR-4 conteste |
 | CR-7 = M-3 | La miniatura y el post de Meta en la tarjeta y la ficha de Creative, antes que los de los contactos. Falta la miniatura de cada anuncio dentro del cajón y «N activos distintos» (`C15-09`) | M-2 | hecho en parte, 2026-10-15 |
 | CR-8 | La ruta del click, `app/api/creative/anuncios/[id]/route.ts`, y el reproductor | CR-6 | postergado el 2026-09-30 |
 | CR-9 | Los huecos dinámicos y los documentos al día | todo | postergado el 2026-09-30 |

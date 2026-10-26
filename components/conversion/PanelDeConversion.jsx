@@ -52,7 +52,7 @@ const FRASE_DE_LAS_VISTAS = {
   sin_desglose: FRASE.sinDesglose,
 };
 /* La frase de cada falta de un cliente (`vistas.faltaPorCliente`, el nivel 3). El servidor dice cuál; acá se elige. */
-const FRASE_DE_LA_FALTA = { meta_sin_vincular: FRASE.metaSinVincular, sin_conexion: FRASE.sinConexion, no_activo: FRASE.noActivo };
+const FRASE_DE_LA_FALTA = { meta_sin_conectar: FRASE.metaSinConectar, meta_caida: FRASE.metaCaida, no_activo: FRASE.noActivo };
 
 export default function PanelDeConversion() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);

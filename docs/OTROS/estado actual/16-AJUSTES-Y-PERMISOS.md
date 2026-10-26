@@ -77,7 +77,7 @@ pestaña y sin conmutador (`components/ajustes/Empresas.jsx:6-19`).
 
 **La entrada.** La sección `credenciales`, rotulada «Ajustes», tiene `menu` en el grupo `Pie`
 (`lib/autorizacion/secciones.ts:228-231`). La vista es `components/views/AjustesView.jsx` y se monta sólo bajo la
-clave `credenciales` (`components/CommandCenter.jsx:54`). Desde la nueva estructura (E10, 2026-10-02) Ajustes, el Panel
+clave `credenciales` (`components/CommandCenter.jsx:56`). Desde la nueva estructura (E10, 2026-10-02) Ajustes, el Panel
 de Monitoreo e Incidentes van en el engranaje del pie de la barra lateral, que muestra todas las que la persona vea
 (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-14`); antes el pie dibujaba sólo la primera
 (`components/Nav.jsx:128@b532a78`). En la segunda edición, el mismo día, las tres pantallas llevan la cabecera con la
@@ -327,7 +327,7 @@ se guarda solo y un `null` explícito lo borra (`app/api/admin/credenciales/rout
 de la `064` (`db/migraciones/064_la_llave_de_meta.sql:28` y `:31`), aplicada el 2026-09-30 a las 16:15 UTC.
 
 **Meta, y «Probar conexión» (2026-10-15).** El token es el de un usuario del sistema del Business Manager, sólo de
-lectura (`components/ajustes/Credenciales.jsx:118-129`). Cargarlo no dice si sirve, así que debajo de las credenciales
+lectura (`components/ajustes/Credenciales.jsx:122-133`). Cargarlo no dice si sirve, así que debajo de las credenciales
 hay un botón que lo prueba en tres pasos —el token, la cuenta publicitaria y la lectura de los anuncios— sin escribir
 nada (`components/ajustes/ConexionConMeta.jsx:3-10`, `lib/meta/conexion.ts:37`). La ruta es un `POST` aunque no
 escribe, pide `credenciales.editar` y llama a Meta fuera de la transacción de identidad
@@ -349,7 +349,7 @@ Medido el 2026-10-18: `negocio.topes_del_executive` tiene **1 fila**, con 50 y 3
 (`app/api/admin/organizaciones/[id]/route.ts:114-115`), y la lista marca «Sin zona horaria» a toda empresa en `UTC`,
 el valor por omisión de la columna (`components/ajustes/Empresas.jsx:332-344`). Desde los agentes pesa más: el día de
 los topes, el de la pasada de los detectores, que corre a cada empresa después de las 6:00 de su zona
-(`lib/negocio/barrido.ts:364-373`), y el de la Reunión. Medido el 2026-10-18: de las 11 activas, **9 en `UTC`**, 1 en
+(`lib/negocio/barrido.ts:365-374`), y el de la Reunión. Medido el 2026-10-18: de las 11 activas, **9 en `UTC`**, 1 en
 `America/Lima` y 1 en `America/Santo_Domingo`; las 2 inactivas, en `UTC`. Desde el 2026-09-28 no hubo ningún
 `organizacion_editada`. Las 9 en `UTC` no tienen datos de negocio; el plan para llevar las ventanas al día de la
 empresa está diagnosticado y dejado para después (`docs/OTROS/futuro/el-dia-de-la-empresa.md`).
@@ -450,7 +450,7 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 direcciones». La de código → tabla está (`pruebas/base/22-los-tres-roles.test.ts:368-375`), y la de sección → archivo
 que la carga (`pruebas/codigo/91-closer-y-setter.test.ts:298`); una que lea `identidad.permisos` y busque filas
 ausentes de `CAPACIDADES`, no, con `grep` de `CAPACIDADES` y de `identidad.permisos` sobre `pruebas/` (2026-09-28, no
-repetido). La que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:365-372`, cruza la tabla con el rol de
+repetido). La que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:366-373`, cruza la tabla con el rol de
 plataforma. Y `pruebas/codigo/110-monitoreo.test.ts:6-7` se apoya en ese cruce como si existiera. Hoy no muerde: las
 dos listas coinciden en producción.
 
@@ -472,7 +472,7 @@ dos listas coinciden en producción.
   administración. Sin `menu`» (`lib/autorizacion/secciones.ts:186-187`) encabezan tres secciones, y `credenciales`
   tiene `menu` en `:231`. `components/ajustes/Credenciales.jsx:3` hablaba de «las tres claves y los tres
   identificadores»: en pantalla son cinco claves —desde las de tl;dv y Meta— y seis identificadores
-  (`components/ajustes/Credenciales.jsx:40-153`). Ese comentario se **cerró el 2026-10-18 (`65669f4`)**: hoy dice
+  (`components/ajustes/Credenciales.jsx:44-157`). Ese comentario se **cerró el 2026-10-18 (`65669f4`)**: hoy dice
   «las cinco claves y los seis identificadores». Lo de `secciones.ts` sigue.
 - **«Sólo alcanzable desde `debe_configurar_2fo`».** `app/api/auth/2fo/configurar/route.ts:6-8` y `:36-39`. Una
   sesión `activa` sí llega, porque `ESTADOS.activa` es `null` y habilita toda ruta (`lib/autorizacion/estados.ts:71`),
@@ -578,7 +578,7 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   (`app/api/admin/cuentas/[id]/campos/route.ts:94`, `app/api/admin/cuentas/[id]/campos/route.ts:104`). Corre como
   inquilino con el foco en ese cliente, sin abrir identidad, y queda auditado.
 - **La lista de chequeo de cada cliente** (C6 · D5, `099`): Ajustes › Clientes dice, por cliente, si está
-  configurado y, abierta, qué le falta y qué hacer (`components/ajustes/Clientes.jsx:225`, `components/ajustes/ListaDeChequeo.jsx:69`). Es
+  configurado y, abierta, qué le falta y qué hacer (`components/ajustes/Clientes.jsx:228`, `components/ajustes/ListaDeChequeo.jsx:69`). Es
   la misma lista que la foto y Negocios, con «Meta vinculado en su GoHighLevel» requerido y las miniaturas de Meta
   recomendadas, y llega en vivo con `GET /api/admin/cuentas` (`cuentas.ver`): la ruta lee de identidad la presencia de la
   conexión de cada cliente —sólo `is not null`, con la empresa destino en el `where`— y por eso entró a la lista de la
@@ -588,7 +588,7 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   puede mandar (`components/cartera/PanelDeNegocios.jsx:344`).
 - **Los closers que no ven a un cliente** (C6 · D1): el alta, la activación y la lista de Ajustes › Clientes dicen
   qué closers están vinculados en otro cliente y no en ése —no ven sus contactos— (`app/api/admin/cuentas/route.ts:139`,
-  `components/ajustes/Clientes.jsx:48`), sólo a quien tiene `credenciales.ver` (la capacidad de la pantalla del
+  `components/ajustes/Clientes.jsx:49`), sólo a quien tiene `credenciales.ver` (la capacidad de la pantalla del
   vínculo) y sobre su propia empresa: la plataforma operando sobre otra no recibe los nombres
   (`lib/administracion/cuentas.ts:404`). El alta desde Negocios en la empresa de la sesión los dice con el mismo texto
   (`components/cartera/PanelDeNegocios.jsx:177`).

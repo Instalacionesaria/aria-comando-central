@@ -39,8 +39,8 @@ import { DOMINIO, leerRespuesta, pedirComo, sesionDe } from '../apoyo/closer.ts'
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { hashDeToken } from '../../lib/autorizacion/sesion.ts';
-import { TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE, type FaltaParaGhl } from '../../lib/credenciales/resolver.ts';
-import { LO_RESUELVE_LA_EMPRESA, MOTIVO_SIN_META_EN_GHL, avisoSinConexion, faltaDelGastoDe } from '../../lib/negocio/faltaDeLosClientes.ts';
+import { TEXTO_DE_FALTA_CUENTAS_DE_META, TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE, type FaltaParaGhl } from '../../lib/credenciales/resolver.ts';
+import { LO_RESUELVE_LA_EMPRESA, MOTIVO_META_RECHAZADA, avisoSinConexion, faltaDelGastoDe } from '../../lib/negocio/faltaDeLosClientes.ts';
 import { agendaDelCloser, porQueNoHayCitasHoy, type Agenda } from '../../lib/negocio/agenda.ts';
 import type { AlcanceDelCloser } from '../../lib/negocio/alcanceDelCloser.ts';
 import { comentarioDelCloser } from '../../lib/agentes/cabecera.ts';
@@ -490,23 +490,20 @@ test('Acquisition nombra al cliente que deja el gasto incompleto, sólo cuando s
   // Sin sellos no se sabe por qué: la nota de siempre.
   assert.deepEqual((await leer()).embudos.gasto, { deLaCuenta: null, motivo: 'dias_sin_leer' }, 'se nombró a un cliente sin saber por qué');
 
-  // La pasada del gasto de Y corrió sin Meta vinculado en su GoHighLevel.
-  await sello(a, a.y, 'anuncios', 'corrio', MOTIVO_SIN_META_EN_GHL, 30);
+  // La pasada de anuncios de Y quedó saltada: no tiene Meta conectado.
+  await sello(a, a.y, 'anuncios', 'saltada', TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta, 30);
   const sinMeta = await leer();
   assert.equal(sinMeta.embudos.sinCostos, 'gasto_incompleto');
-  assert.deepEqual(sinMeta.embudos.gasto.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_vincular' }]);
+  assert.deepEqual(sinMeta.embudos.gasto.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_conectar' }]);
 
-  // Su conexión no está lista: lo más nuevo de sus tareas del CRM es `saltada`.
+  /* Desde Meta directo, la conexión con GoHighLevel ya no decide el gasto: una tarea del CRM saltada de Y no cambia lo
+     que se dice del gasto de Y. */
   await sello(a, a.y, 'contactos', 'saltada', 'sin_subcuenta', 5);
-  assert.deepEqual((await leer()).embudos.gasto.faltaPorCliente, [
-    { cliente: 'Segunda 290', falta: 'sin_conexion', que: 'sin_subcuenta', detalle: TEXTO_DE_FALTA_GHL_DEL_CLIENTE.sin_subcuenta },
-  ]);
-  // El principal, con el texto de la empresa.
-  await sello(a, a.p, 'contactos', 'saltada', 'token_vencido', 1);
+  assert.deepEqual((await leer()).embudos.gasto.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_conectar' }]);
+  // Una conexión que Meta rechazó (el principal): «vuelve a conectar».
+  await sello(a, a.p, 'anuncios', 'corrio', MOTIVO_META_RECHAZADA, 1);
   try {
-    assert.deepEqual(await conOrganizacion(a.org, () => faltaDelGastoDe([a.p])), [
-      { cliente: a.nombreP, falta: 'sin_conexion', que: 'token_vencido', detalle: TEXTO_DE_FALTA_GHL.token_vencido },
-    ]);
+    assert.deepEqual(await conOrganizacion(a.org, () => faltaDelGastoDe([a.p])), [{ cliente: a.nombreP, falta: 'meta_caida' }]);
   } finally {
     await sinSellos(a, a.p);
   }
@@ -518,7 +515,7 @@ test('Acquisition nombra al cliente que deja el gasto incompleto, sólo cuando s
       (await leer()).embudos.gasto.faltaPorCliente?.map((f) => [f.cliente, f.falta]),
       [
         ['Pausada 290', 'no_activo'],
-        ['Segunda 290', 'sin_conexion'],
+        ['Segunda 290', 'meta_sin_conectar'],
       ],
       'el cliente en pausa que frena los costos no se nombra',
     );
@@ -533,49 +530,49 @@ test('Acquisition nombra al cliente que deja el gasto incompleto, sólo cuando s
   const contexto = { zona: ZONA, usuarioId: '00000000-0000-0000-0000-000000000000', secciones: ['acquisition'], deLaRuta: SIN_DATOS_DE_LA_RUTA };
   const r = await conOrganizacion(a.org, () => ejecutarHerramienta('embudos_de_acquisition', { periodo: '7d' }, herramientasPara(['acquisition']), contexto));
   const datos = (r as { datos: { gasto: { faltaPorCliente?: { cliente: string; falta: string }[] } } }).datos;
-  assert.deepEqual(datos.gasto.faltaPorCliente?.map((f) => f.falta), ['sin_conexion'], 'el cerebro no recibe de qué cliente falta el gasto');
+  assert.deepEqual(datos.gasto.faltaPorCliente?.map((f) => f.falta), ['meta_sin_conectar'], 'el cerebro no recibe de qué cliente falta el gasto');
   await sinSellos(a, a.y);
 });
 
 test('con un solo cliente, Acquisition no nombra a nadie aunque el sello lo sepa', async () => {
   await contacto(u, u.p, 'u290p-1', 'setter', { campaignId: '2900201', campaign: 'Única' }, 3);
-  await sello(u, u.p, 'anuncios', 'corrio', MOTIVO_SIN_META_EN_GHL, 30);
+  await sello(u, u.p, 'anuncios', 'saltada', TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta, 30);
   const r = await conOrganizacion(u.org, () => lecturaDeAcquisition(PERIODO, ZONA));
   assert.equal(r.embudos.sinCostos, 'gasto_incompleto');
   assert.ok(!('faltaPorCliente' in r.embudos.gasto), 'con un solo cliente la nota cambió');
 });
 
 test('la serie que dejó de escribirse: el colector atrasado también nombra al cliente', async () => {
-  await sello(b, b.y, 'anuncios', 'corrio', MOTIVO_SIN_META_EN_GHL, 30);
+  await sello(b, b.y, 'anuncios', 'saltada', TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta, 30);
   const r = await conOrganizacion(b.org, () => lecturaDeAcquisition(PERIODO, ZONA));
   assert.equal(r.embudos.gasto.motivo, 'colector_atrasado');
-  assert.deepEqual(r.embudos.gasto.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_vincular' }], 'con la serie atrasada, la nota no dice de quién');
+  assert.deepEqual(r.embudos.gasto.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_conectar' }], 'con la serie atrasada, la nota no dice de quién');
   // Conversion, con el mismo motivo.
   const v = (await conOrganizacion(b.org, () => lecturaDeConversion(PERIODO, ZONA))).pasos.cifras.vistas;
   assert.equal(v.motivo, 'colector_atrasado');
-  assert.deepEqual(v.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_vincular' }]);
+  assert.deepEqual(v.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_conectar' }]);
 
   /* Métricas viejas y ninguna serie: la empresa queda atrasada con la ventana entera —el gasto de la ventana no dice
      nada—, y la nota tiene que nombrarlo igual. */
-  await sello(s, s.y, 'anuncios', 'corrio', MOTIVO_SIN_META_EN_GHL, 30);
+  await sello(s, s.y, 'anuncios', 'saltada', TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta, 30);
   const sinSerie = await conOrganizacion(s.org, () => lecturaDeAcquisition(PERIODO, 'UTC'));
   assert.equal(sinSerie.embudos.gasto.motivo, 'colector_atrasado');
   assert.equal(sinSerie.embudos.sinCostos, 'gasto_incompleto');
-  assert.deepEqual(sinSerie.embudos.gasto.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_vincular' }], 'con la ventana entera y la serie atrasada, la nota no dice de quién');
+  assert.deepEqual(sinSerie.embudos.gasto.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_conectar' }], 'con la ventana entera y la serie atrasada, la nota no dice de quién');
 });
 
 test('Conversion nombra al cliente de la ventana que decidió el motivo, la actual o la anterior', async () => {
-  await sello(a, a.y, 'anuncios', 'corrio', MOTIVO_SIN_META_EN_GHL, 30);
+  await sello(a, a.y, 'anuncios', 'saltada', TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta, 30);
   try {
     const actual = (await conOrganizacion(a.org, () => lecturaDeConversion(PERIODO, ZONA))).pasos.cifras.vistas;
     assert.equal(actual.motivo, 'dias_sin_leer');
-    assert.deepEqual(actual.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_vincular' }]);
+    assert.deepEqual(actual.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_conectar' }]);
 
     // Los contactos de Y, en la ventana anterior: la actual está entera y la anterior no compara por Y.
     await admin.query(`update negocio.contactos set alta_en_el_crm = now() - interval '10 days' where org_id = $1 and cuenta_id = $2`, [a.org, a.y]);
     const anterior = (await conOrganizacion(a.org, () => lecturaDeConversion(PERIODO, ZONA))).pasos.cifras.vistas;
     assert.equal(anterior.motivo, 'dias_sin_leer');
-    assert.deepEqual(anterior.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_vincular' }], 'con la anterior incompleta, no se dijo de quién');
+    assert.deepEqual(anterior.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_conectar' }], 'con la anterior incompleta, no se dijo de quién');
   } finally {
     await admin.query(`update negocio.contactos set alta_en_el_crm = now() - interval '3 days' where org_id = $1 and cuenta_id = $2`, [a.org, a.y]);
     await sinSellos(a, a.y);
@@ -585,11 +582,11 @@ test('Conversion nombra al cliente de la ventana que decidió el motivo, la actu
 
   /* La cobertura de la anterior decide: la serie de Y, entera en la actual —el gasto de la ventana está— y con un hueco
      en la anterior. A Y se le pregunta por la anterior, que es donde le falta; por la actual no le falta nada. */
-  await sello(h, h.y, 'anuncios', 'corrio', MOTIVO_SIN_META_EN_GHL, 30);
+  await sello(h, h.y, 'anuncios', 'saltada', TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta, 30);
   assert.equal((await conOrganizacion(h.org, () => lecturaDeAcquisition(PERIODO, ZONA))).embudos.gasto.motivo, null, 'la ventana actual no está entera: no es el caso de la anterior');
   const porLaCuenta = (await conOrganizacion(h.org, () => lecturaDeConversion(PERIODO, ZONA))).pasos.cifras.vistas;
   assert.equal(porLaCuenta.motivo, 'dias_sin_leer');
-  assert.deepEqual(porLaCuenta.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_vincular' }], 'con la anterior sin su gasto entero, se le preguntó por la actual');
+  assert.deepEqual(porLaCuenta.faltaPorCliente, [{ cliente: 'Segunda 290', falta: 'meta_sin_conectar' }], 'con la anterior sin su gasto entero, se le preguntó por la actual');
 });
 
 test('el alta, la activación y las dos listas dicen qué closers no ven a un cliente', async () => {

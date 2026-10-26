@@ -161,7 +161,7 @@ conversación (`components/cerebro/ReunionDeHoy.jsx:46-52`), sin llamar al model
   abierta con el período que está mirando la pantalla, y contesta en un panel que sube
   (`components/ConsultaAlCerebro.jsx:3-25`, `components/cerebro/PanelDelCerebro.jsx:3-11`). En el teléfono no se
   dibuja (`components/ConsultaAlCerebro.jsx:24-25`). Va montada después de `<main>` en el armazón
-  (`components/CommandCenter.jsx:104-106`).
+  (`components/CommandCenter.jsx:118-120`).
 - **El comentario de la cabecera** de cada departamento, que sale de reglas sin modelo (`D-12`); en Closer, las citas
   sin registrar de quien mira (`lib/agentes/cabecera.ts:16-23`). Ver [13-SETTER-Y-CLOSER.md](13-SETTER-Y-CLOSER.md).
 
@@ -240,7 +240,7 @@ escribió, con su origen —Inicio, pie o Reunión— (`db/migraciones/071_las_c
    (`lib/agentes/reunion/temas.ts:146-236`).
 
 La calcula la tarea `senales` del cron, al minuto 23 de cada hora, para las empresas a las que les toca su mañana
-(`lib/negocio/barrido.ts:370-378`); la guarda por empresa y día local en `negocio.reuniones_del_dia`
+(`lib/negocio/barrido.ts:371-379`); la guarda por empresa y día local en `negocio.reuniones_del_dia`
 (`db/migraciones/075_la_reunion_de_hoy.sql:18-26`), y con llave el modelo la redacta: la frase que no pasa se descarta
 y el tema conserva su plantilla (`lib/agentes/reunion/redaccion.ts:7-20`).
 

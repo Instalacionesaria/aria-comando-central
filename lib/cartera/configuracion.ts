@@ -167,8 +167,11 @@ async function leerLosClientes(db: Trx, orgId?: string): Promise<(ConfiguracionD
                   else cc.crm_token_cifrado is not null and cc.crm_estado = 'activa' end as crm_conectado,
              case when c.es_por_omision then oc.crm_calendario_id is not null
                   else cc.crm_calendario_id is not null end as calendario,
-             case when c.es_por_omision then oc.meta_token_cifrado is not null and oc.meta_cuenta_id is not null
-                  else cc.meta_token_cifrado is not null and cc.meta_cuenta_id is not null end as meta,
+             -- Meta directo (101): conectado = al menos una cuenta publicitaria asignada a este cliente, leída por una
+             -- conexión activa. Sólo presencias: ningún token se lee.
+             exists (select 1 from identidad.cuentas_publicitarias_de_meta p
+                       join identidad.conexiones_de_meta x on x.org_id = p.org_id and x.id = p.conexion_id
+                      where p.org_id = c.org_id and p.cuenta_id = c.id and x.estado = 'activa') as meta,
              case when c.es_por_omision then oc.aviso_secreto_hash is not null
                   else cc.aviso_secreto_hash is not null end as aviso
         from identidad.cuentas c

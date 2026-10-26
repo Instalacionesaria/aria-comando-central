@@ -146,8 +146,8 @@ const NO_SE_MIDIO: Record<string, string> = {
  * la suma a una lista.
  */
 export const FRASE_DE_LA_FALTA: Readonly<Record<FaltaDelGasto, string>> = {
-  meta_sin_vincular: 'el GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel',
-  sin_conexion: 'la conexión de {cliente} con GoHighLevel no está lista. {detalle}',
+  meta_sin_conectar: '{cliente} no tiene Meta conectado: conéctalo en Ajustes',
+  meta_caida: 'la conexión de {cliente} con Meta se cayó: vuelve a conectar Meta en Ajustes',
   no_activo: '{cliente} ya no está activo: su gasto no se lee',
 };
 

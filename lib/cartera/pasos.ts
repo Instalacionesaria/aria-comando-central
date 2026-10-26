@@ -16,14 +16,19 @@
 // dicen, y no cuentan. La misma lista la usan la foto diaria (el contrato del agente), el tablero de Negocios y Ajustes
 // › Clientes (`listaDeChequeoDelCliente`, en vivo).
 //
-// ── LOS DOS PASOS DE META (el nivel 3, C6 · D5, 2026-10-20) ─────────────────
+// ── LOS DOS PASOS DE META (Meta directo, M4, 2026-10-26) ────────────────────
 //
-// Los costos de cada cliente salen de SU GoHighLevel con Meta vinculado (la decisión del usuario del 2026-10-20): la
-// pasada del gasto lee la serie del Ad Manager de su subcuenta. Por eso `meta_en_el_crm` es REQUERIDO, y se MIDE —con
-// el sello de esa pasada o con su serie de gasto (`metaEnElCrmDe`, `lib/cartera/medicion.ts`)—, no se lee de una
-// credencial. La conexión DIRECTA con Meta (`meta`, su token y su cuenta publicitaria) sólo trae las miniaturas y los
-// activos de los anuncios: queda recomendada, con ese nombre. Cambiar esta lista cambia el significado de
-// `configurada` y de `faltan` en la foto: sube `CONTRATO_DE_LA_FOTO` (la 271 lo vigila).
+// Desde Meta directo los costos, las campañas y los anuncios de cada cliente salen de SU conexión con Meta («Conectar
+// con Meta»), no del Ad Manager de su GoHighLevel (contrato 3, `103`):
+//
+//   · `meta`, «Meta conectado», REQUERIDO: al menos una cuenta publicitaria asignada al cliente y leída por una
+//     conexión activa. Se lee de la configuración en vivo, sin ningún token (`lib/cartera/configuracion.ts`);
+//   · `meta_leido`, «Campañas leídas de Meta», recomendado y MEDIDO con el sello de su pasada de anuncios o su gasto
+//     en la ventana (`metaLeidoDe`, `lib/cartera/medicion.ts`): dice si la lectura anda, no si se conectó.
+//
+// Hasta el contrato 2 el requerido era «Meta vinculado en su GoHighLevel» (`meta_en_el_crm`, la 099) y `meta` era la
+// conexión directa sólo para las miniaturas. Cambiar esta lista cambia el significado de `configurada` y de `faltan`
+// en la foto: sube `CONTRATO_DE_LA_FOTO` (la 271 lo vigila).
 //
 // Pura y sin base: la prueban la 271 y la 299.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -36,8 +41,8 @@ export const PASOS_DEL_CLIENTE = [
   { clave: 'zona', nombre: 'Zona horaria', requerido: true },
   { clave: 'nicho', nombre: 'Nicho confirmado', requerido: true },
   { clave: 'datos', nombre: 'Datos de las últimas 24 horas', requerido: true },
-  { clave: 'meta_en_el_crm', nombre: 'Meta vinculado en su GoHighLevel', requerido: true },
-  { clave: 'meta', nombre: 'Miniaturas de Meta', requerido: false },
+  { clave: 'meta', nombre: 'Meta conectado', requerido: true },
+  { clave: 'meta_leido', nombre: 'Campañas leídas de Meta', requerido: false },
   { clave: 'aviso', nombre: 'Avisos del CRM', requerido: false },
 ] as const;
 
@@ -60,7 +65,7 @@ const zonaElegida = (zona: string): boolean => zona !== '' && zona !== 'UTC';
 export interface LoQueSeSabeDeUnCliente {
   crmConectado: boolean;
   calendario: boolean;
-  /** La conexión directa con Meta (las miniaturas). No es de donde salen los costos: ése es `metaEnElCrm`. */
+  /** Meta conectado: una cuenta publicitaria asignada y leída por una conexión activa. De ahí salen sus costos. */
   meta: boolean;
   aviso: boolean;
   zonaHoraria: string;
@@ -71,8 +76,8 @@ export interface LoQueSeSabeDeUnCliente {
 export interface LoMedidoDeUnCliente {
   /** La marca de agua de su ingesta: `null` = nunca entró nada. */
   ultimaIngestaEl: Date | null;
-  /** Si su GoHighLevel tiene Meta vinculado (`metaEnElCrmDe`): `null` = todavía no se sabe. */
-  metaEnElCrm: boolean | null;
+  /** Si sus campañas se están leyendo de Meta (`metaLeidoDe`): `null` = todavía no se sabe. */
+  metaLeido: boolean | null;
 }
 
 /**
@@ -94,7 +99,7 @@ export function pasosDelCliente(
     zona: si(zonaElegida(c.zonaHoraria)),
     nicho: si(c.nichoConfirmado),
     datos: medido === undefined ? 'sin_medir' : si(ingesta != null && ahora - ingesta.getTime() <= DATOS_AL_DIA_MS),
-    meta_en_el_crm: medido === undefined || medido.metaEnElCrm === null ? 'sin_medir' : si(medido.metaEnElCrm),
+    meta_leido: medido === undefined || medido.metaLeido === null ? 'sin_medir' : si(medido.metaLeido),
     meta: si(c.meta),
     aviso: si(c.aviso),
   };

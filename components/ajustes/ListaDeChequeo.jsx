@@ -27,9 +27,9 @@ export const QUE_HACER = {
   zona: () => 'Elige su zona horaria en Editar: decide qué es «hoy» para sus números.',
   nicho: () => 'Elige su nicho y confírmalo en Editar.',
   datos: () => 'No entró nada de su GoHighLevel en las últimas 24 horas: revisa su conexión.',
-  meta_en_el_crm: () =>
-    'Vincula Meta en su GoHighLevel: de ahí salen sus costos. Se ve aquí después de la próxima lectura del gasto, una vez al día.',
-  meta: (c) => `Opcional: conecta Meta directo en ${dondeSeCarga(c)} para ver las miniaturas de sus anuncios.`,
+  meta: (c) =>
+    `Conecta Meta en ${dondeSeCarga(c)} y asígnale su cuenta publicitaria: de ahí salen sus costos, sus campañas y sus anuncios.`,
+  meta_leido: () => 'Sus campañas no se están leyendo de Meta: revisa su conexión con Meta en Ajustes.',
   aviso: (c) =>
     c.esPorOmision
       ? 'Opcional: configura el aviso del CRM en Ajustes › Credenciales para recibir sus mensajes al instante.'
@@ -39,7 +39,7 @@ export const QUE_HACER = {
 /** Lo que se dice de un paso que todavía no se pudo medir. */
 export const SIN_MEDIR = {
   datos: 'Todavía no se pudo medir.',
-  meta_en_el_crm: 'Todavía no se sabe: se ve con la próxima lectura de su gasto, una vez al día.',
+  meta_leido: 'Todavía no se sabe: se ve con la próxima lectura de sus campañas, una vez al día.',
 };
 
 const MARCA = { ok: '✓', falta: '✗', sin_medir: '…' };

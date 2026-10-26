@@ -84,7 +84,7 @@ const rend = (f: Partial<FilaDeRendimiento> & { creativo: string; cuentaId: stri
   }) as FilaDeRendimiento;
 const entrega = (f: Partial<EntregaDeLaPieza> & { pieza: string; cuentaId: string }): EntregaDeLaPieza => ({
   impresiones: 0, clics: 0, vistas: null, clicsAlEnlace: null, landing: null, frecuencia: null, impresionesConFrecuencia: 0, etapa: 'TOFU',
-  primerDia: '2026-10-01', ultimoDia: '2026-10-18', entregando: true, ...f,
+  primerDia: '2026-10-01', ultimoDia: '2026-10-18', entregando: true, video: null, ...f,
 });
 
 /**

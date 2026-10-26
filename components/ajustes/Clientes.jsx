@@ -28,6 +28,7 @@ import AvisoDesactualizado from '../negocio/AvisoDesactualizado.jsx';
 import FormularioDeCliente, { cuerpoDe, valoresDe } from './FormularioDeCliente.jsx';
 import ConexionDelCliente from './ConexionDelCliente.jsx';
 import ListaDeChequeo, { ResumenDeLaLista } from './ListaDeChequeo.jsx';
+import ResultadoDeMeta from './ResultadoDeMeta.jsx';
 
 const MOTIVOS = {
   sin_permiso: 'Tu usuario no puede hacer esto con los clientes.',
@@ -170,6 +171,8 @@ export default function Clientes({ sesion, conConexion = false }) {
   return (
     <>
       <AvisoDesactualizado causa={causa} alReintentar={refrescar} />
+      {/* De vuelta de «Conectar con Meta» desde la Conexión de un cliente: el resultado, una vez. */}
+      <ResultadoDeMeta />
       <p className="aj-intro">
         Cada cliente es <b>un negocio de la empresa</b>, con su propia subcuenta de GoHighLevel. Con un cliente elegido
         arriba, Leads y Sales muestran sólo ese cliente.

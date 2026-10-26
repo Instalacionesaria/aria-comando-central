@@ -94,13 +94,13 @@ const FRASE = {
   sinHistoria: 'Sin historia para comparar.',
   hoySinCostos: 'Hoy, sin costos.',
   noFigura: 'No figura en Meta',
-  metaSinVincular: 'El GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel.',
-  sinConexion: 'La conexión de {cliente} con GoHighLevel no está lista. {detalle}',
+  metaSinConectar: '{cliente} no tiene Meta conectado: conéctalo en Ajustes.',
+  metaCaida: 'La conexión de {cliente} con Meta se cayó: vuelve a conectar Meta en Ajustes.',
   noActivo: '{cliente} ya no está activo: su gasto no se lee.',
 };
 
 /* La frase de cada falta de un cliente (`gasto.faltaPorCliente`, el nivel 3). El servidor dice cuál; acá se elige. */
-const FRASE_DE_LA_FALTA = { meta_sin_vincular: 'metaSinVincular', sin_conexion: 'sinConexion', no_activo: 'noActivo' };
+const FRASE_DE_LA_FALTA = { meta_sin_conectar: 'metaSinConectar', meta_caida: 'metaCaida', no_activo: 'noActivo' };
 
 /** Completa los `{cliente}` y `{detalle}` de una frase, como el `poner` de Conversion. */
 const poner = (frase, valores) => frase.replace(/\{(\w+)\}/g, (_, k) => String(valores[k] ?? ''));
@@ -133,6 +133,30 @@ const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
 /** Los estados que manda GoHighLevel, en castellano. Uno desconocido se muestra tal cual. */
 const ESTADOS = { ACTIVE: 'Activa', PAUSED: 'Pausada', ARCHIVED: 'Archivada', DELETED: 'Borrada' };
+/* Por qué una campaña activa no entrega, en palabras (el `effective_status` de Meta directo). Lo que no está acá se
+   dibuja como lo manda Meta. */
+const ENTREGA = {
+  ACTIVE: 'entregando',
+  PAUSED: 'pausada',
+  CAMPAIGN_PAUSED: 'campaña en pausa',
+  ADSET_PAUSED: 'conjunto en pausa',
+  IN_PROCESS: 'en proceso',
+  WITH_ISSUES: 'con problemas',
+  PENDING_REVIEW: 'en revisión',
+  DISAPPROVED: 'rechazada',
+  PENDING_BILLING_INFO: 'falta el pago',
+  ARCHIVED: 'archivada',
+  DELETED: 'borrada',
+};
+
+/** El presupuesto de una campaña de Meta directo, en su moneda: «S/ 50 por día», «USD 900 en total», o nada. */
+function presupuestoDe(e) {
+  if (!e) return '';
+  const monto = (n) => `${e.moneda ?? ''} ${Math.round(n).toLocaleString('es')}`.trim();
+  if (e.presupuestoDiario !== null) return `${monto(e.presupuestoDiario)} por día`;
+  if (e.presupuestoTotal !== null) return `${monto(e.presupuestoTotal)} en total`;
+  return '';
+}
 
 export default function PanelDeAcquisition() {
   const [periodo, setPeriodo] = useState(PERIODO_POR_OMISION);
@@ -639,7 +663,15 @@ function Pie({ c, puedeAsignar, alCambiar }) {
   const [guardando, setGuardando] = useState(null);
   const [fallo, setFallo] = useState('');
 
-  const enMeta = c.conocida ? `${c.estado ? `${ESTADOS[c.estado] ?? c.estado} · ` : ''}Meta` : FRASE.noFigura;
+  /* Con Meta directo, el estado que importa es el efectivo —si de verdad entrega— y el presupuesto. Sin él, el de
+     siempre. */
+  const entrega = c.entrega?.estadoEfectivo ? (ENTREGA[c.entrega.estadoEfectivo] ?? c.entrega.estadoEfectivo) : null;
+  const presupuesto = presupuestoDe(c.entrega);
+  const enMeta = c.conocida
+    ? entrega
+      ? `${entrega}${presupuesto ? ` · ${presupuesto}` : ''} · Meta`
+      : `${c.estado ? `${ESTADOS[c.estado] ?? c.estado} · ` : ''}Meta`
+    : FRASE.noFigura;
   const deMeta = c.conContactos ? enMeta : `${enMeta} · ${FRASE.sinContactos}`;
   /* Con campañas de más de un cliente (el nivel 3), el pie dice de cuál es: dos clientes pueden llamar igual a las
      suyas. Con uno solo no llega `cliente`, y el pie es el de siempre. */

@@ -16,11 +16,14 @@
 //   · 2 (2026-10-20, la 099, C6 · D5): `configurada` exige Meta vinculado en el GoHighLevel del cliente —de donde salen
 //     sus costos—, medido en la columna nueva `meta_en_el_crm`, y `faltan` suma esa clave. `meta` sigue siendo la
 //     conexión directa con Meta (las miniaturas), recomendada. Con eso cambian también `cuentas_configuradas` y
-//     `configurada` de la empresa, que cuentan a los clientes configurados.
+//     `configurada` de la empresa, que cuentan a los clientes configurados;
+//   · 3 (2026-10-26, la 103, Meta directo): los costos salen de la conexión con Meta de cada cliente. `meta` pasa a ser
+//     «Meta conectado», REQUERIDO; `meta_en_el_crm` se renombra `meta_leido` («Campañas leídas de Meta», recomendado y
+//     medido). Cambian `configurada`, `faltan`, `cuentas_configuradas` y `configurada` de la empresa.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** La versión del contrato. Sube cuando una columna cambia de significado, no cuando se agrega una. */
-export const CONTRATO_DE_LA_FOTO = 2;
+export const CONTRATO_DE_LA_FOTO = 3;
 
 export const COLUMNAS_DE_LAS_EMPRESAS = [
   'org_id', 'dia', 'organizacion_ref', 'contrato', 'tomada_el', 'es_principal', 'activa', 'pais', 'nicho', 'nicho_origen',
@@ -36,8 +39,8 @@ export const COLUMNAS_DE_LAS_CUENTAS = [
   'crm_conectado', 'calendario', 'meta', 'aviso_del_crm', 'configurada', 'faltan', 'medida', 'motivo_sin_medir',
   'contactos', 'contactos_nuevos_30d', 'contactos_nuevos_30d_previos', 'agendaron_30d', 'calificados_30d',
   'ventas_30d', 'ventas_30d_previas', 'monto_30d', 'compradores', 'gasto_30d', 'ultima_ingesta_el', 'ultima_alta_el',
-  // La 099 (contrato 2).
-  'meta_en_el_crm',
+  // La 099 (contrato 2), renombrada en la 103 (contrato 3).
+  'meta_leido',
 ] as const;
 
 /** Cuántos días mira la foto hacia atrás en cada cifra «de 30 días», y la ventana anterior para comparar. */

@@ -26,6 +26,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import AvisoDelCrm from './AvisoDelCrm.jsx';
 import CamposDelCliente from './CamposDelCliente.jsx';
+import ConectarConMeta from './ConectarConMeta.jsx';
 
 /** Lo que se carga de un cliente. `estado` = secreto (se ve su estado); `valor` = identificador (se ve entero). */
 const CAMPOS = [
@@ -211,7 +212,7 @@ export default function ConexionDelCliente({ cliente, relectura = 0, alMostrarCa
             <span>{causa}</span>
           </div>
         ) : null}
-        {CAMPOS.map(fila)}
+        {CAMPOS.filter((c) => !c.entrada.startsWith('meta')).map(fila)}
         <AvisoDelCrm
           ruta={ruta}
           configurado={datos.avisoSecretoConfigurado === true}
@@ -219,6 +220,13 @@ export default function ConexionDelCliente({ cliente, relectura = 0, alMostrarCa
           alMostrarCabecera={alMostrarCabecera}
         />
       </div>
+      {/* Meta directo: el Meta de este cliente, o las cuentas que la empresa le asignó. */}
+      <ConectarConMeta cliente={cliente} />
+      {/* El token pegado a mano, de antes del botón: un respaldo, plegado. */}
+      <details className="aj-bloque">
+        <summary className="dw-sec-t">Avanzado: un token de Meta pegado a mano</summary>
+        {CAMPOS.filter((c) => c.entrada.startsWith('meta')).map(fila)}
+      </details>
       <CamposDelCliente cliente={cliente} />
     </>
   );

@@ -102,8 +102,8 @@ producción sigue pendiente.
 ## 2 · Qué hay hoy en pantalla
 
 **La sección.** `lib/autorizacion/secciones.ts:342-347`: clave `sales`, nombre «Closing», capacidad `tablero.ver`.
-La vista se registra en `components/CommandCenter.jsx:46` y se dibujan sólo las secciones visibles de la sesión
-(`components/CommandCenter.jsx:67-74`). El panel pide `/api/sales` al montarse (`components/sales/PanelDeSales.jsx:75`)
+La vista se registra en `components/CommandCenter.jsx:48` y se dibujan sólo las secciones visibles de la sesión
+(`components/CommandCenter.jsx:69-76`). El panel pide `/api/sales` al montarse (`components/sales/PanelDeSales.jsx:75`)
 y lo refresca cada 60 s sólo con la pestaña a la vista (`components/sales/PanelDeSales.jsx:100`,
 `lib/cadencia.ts:91`). `components/views/SalesView.jsx` es el envoltorio del prototipo, `view-scroll cre-scroll`,
 sin `estetica-op` (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-01).

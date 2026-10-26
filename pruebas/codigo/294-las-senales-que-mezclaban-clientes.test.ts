@@ -348,8 +348,8 @@ test('el paso de una señal de Conversion se lee sin el cliente de su id', () =>
 // ─── El plan y la pantalla ──────────────────────────────────────────────────
 
 test('el plan de Acquisition dice de qué cliente falta el gasto, con la frase de la pantalla', () => {
-  const falta = [{ cliente: 'Beta', falta: 'meta_sin_vincular' as const }];
-  assert.deepEqual(porQueFaltaElGasto([ACQ.cplSostenido], falta), ['el GoHighLevel de Beta no tiene Meta vinculado: vincúlalo en GoHighLevel']);
+  const falta = [{ cliente: 'Beta', falta: 'meta_sin_conectar' as const }];
+  assert.deepEqual(porQueFaltaElGasto([ACQ.cplSostenido], falta), ['Beta no tiene Meta conectado: conéctalo en Ajustes']);
   assert.deepEqual(porQueFaltaElGasto([ACQ.sinEntrega], falta), [], 'el gasto de un cliente no frena lo que sólo lee Meta');
   assert.deepEqual(porQueFaltaElGasto([ACQ.cplSostenido], []), []);
   const plan = armarPlanDeAcquisition({
@@ -363,11 +363,11 @@ test('el plan de Acquisition dice de qué cliente falta el gasto, con la frase d
   });
   assert.deepEqual(plan.sinMedicion, [
     'el costo por contacto contra la ventana anterior: falta el gasto de algún día cerrado',
-    'el GoHighLevel de Beta no tiene Meta vinculado: vincúlalo en GoHighLevel',
+    'Beta no tiene Meta conectado: conéctalo en Ajustes',
   ]);
   // La misma frase que la nota de la pantalla, en minúscula y sin el punto.
   const panel = readFileSync(join(RAIZ, 'components/acquisition/PanelDeAcquisition.jsx'), 'utf8');
-  for (const [clave, enLaPantalla] of [['meta_sin_vincular', 'metaSinVincular'], ['sin_conexion', 'sinConexion'], ['no_activo', 'noActivo']] as const) {
+  for (const [clave, enLaPantalla] of [['meta_sin_conectar', 'metaSinConectar'], ['meta_caida', 'metaCaida'], ['no_activo', 'noActivo']] as const) {
     const frase = new RegExp(`${enLaPantalla}: '([^']+)'`).exec(panel)?.[1];
     assert.ok(frase, enLaPantalla);
     assert.equal(FRASE_DE_LA_FALTA[clave], (frase[0]!.toLowerCase() + frase.slice(1)).replace(/\.$/, ''), clave);

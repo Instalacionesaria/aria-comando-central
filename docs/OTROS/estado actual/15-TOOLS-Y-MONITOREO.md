@@ -449,7 +449,7 @@ sigue verde. Las rutas de Tools y del panel siguen sin probarse contra una tabla
 `DELETE` sobre las tres (medido el 2026-09-28; no se volvió a medir).
 
 **Los dos paneles consultan todas las empresas al entrar a la aplicación, no al abrir la pestaña.** Todas las vistas visibles
-se montan juntas (`components/CommandCenter.jsx:89-101`) y los dos paneles cargan al montarse
+se montan juntas (`components/CommandCenter.jsx:103-115`) y los dos paneles cargan al montarse
 (`components/monitoreo/PanelDeMonitoreo.jsx:68-70`, `components/incidentes/PanelDeIncidentes.jsx:53-55`): son 11
 transacciones por panel en cada entrada de quien los ve, y crece con cada empresa. La franja del saldo ya no tiene ese
 problema desde E11: se monta en cada visita a Prospección o al Scraper (`components/views/ToolsView.jsx:106-111`).

@@ -84,9 +84,9 @@ por lista blanca** (`AG-45`) con los avisos y los huecos de la función tal cual
 | herramienta | función | sección (capacidad) | como la ruta | qué viaja además |
 |---|---|---|---|---|
 | `embudos_de_acquisition` | `embudosDeAcquisition(periodo, zona)` | acquisition (`tablero.ver`) | `app/api/acquisition/route.ts:67` | `sinCostos`, `sinComparacion`, cobertura; tasas `null` bajo el piso |
-| `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `lib/negocio/lecturaDeCreative.ts:538` | el aviso si falta el campo del ICP |
-| `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `lib/negocio/lecturaDeCreative.ts:539` | sus huecos |
-| `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `lib/negocio/lecturaDeCreative.ts:540` | el umbral «no calibrado» |
+| `calidad_de_piezas` | `calidadDelCreativo(periodo.dias)` | creative (`tablero.ver`) | `lib/negocio/lecturaDeCreative.ts:577` | el aviso si falta el campo del ICP |
+| `rendimiento_de_piezas` | `rendimientoDelCreativo(periodo.dias)` | creative | `lib/negocio/lecturaDeCreative.ts:578` | sus huecos |
+| `fatiga_de_piezas` | `fatigaDelCreativo(periodo.dias)` | creative | `lib/negocio/lecturaDeCreative.ts:579` | el umbral «no calibrado» |
 | `creative_en_cifras` | `lecturaDeCreative(periodo.dias).pantalla`, desde el 2026-10-11 | creative | `app/api/creative/route.ts:74` | lo que dibuja la pantalla, de 0 a 1 y con el motivo de cada «—»; de la miniatura y del enlace de cada pieza, sólo si los hay: **sin las URLs** |
 | `pasos_de_conversion` | `lecturaDeConversion(periodo, zona).pasos`, desde el 2026-10-08 | conversion (`tablero.ver`) | `app/api/conversion/route.ts:79` | la tira y los cinco pasos, en días cerrados |
 | `recorrido_de_los_leads` | `lecturaDeConversion(periodo, zona).recorrido`; hasta el 2026-10-08, `recorridoDelLead(periodo.dias)` | conversion (`tablero.ver`) | `app/api/conversion/route.ts:79` | conteos, no tasas |

@@ -150,8 +150,8 @@ documento, no en la pantalla. Los huecos, los motivos y los estados usan **sólo
 | la ventana anterior no está entera (`sin_historia`) | «Sin historia para comparar.» |
 | la lectura de contactos o de citas está atrasada (`faltan_contactos`) | «Faltan contactos por leer.» |
 | a las vistas les falta algún día de gasto, o el colector está atrasado | «Faltan días de gasto.» |
-| con varios clientes, después de «Faltan días de gasto.»: la pasada del gasto de ese cliente corrió y su GoHighLevel no tiene Meta vinculado (`vistas.faltaPorCliente`, `meta_sin_vincular`) | «El GoHighLevel de {cliente} no tiene Meta vinculado: vincúlalo en GoHighLevel.» |
-| con varios clientes, después de «Faltan días de gasto.»: la conexión de ese cliente con GoHighLevel no está lista (`sin_conexion`) | «La conexión de {cliente} con GoHighLevel no está lista. {detalle}» |
+| con varios clientes, después de «Faltan días de gasto.»: ese cliente no tiene ninguna cuenta publicitaria de Meta asignada (`vistas.faltaPorCliente`, `meta_sin_conectar`; Meta directo) | «{cliente} no tiene Meta conectado: conéctalo en Ajustes.» |
+| con varios clientes, después de «Faltan días de gasto.»: Meta rechazó la conexión de ese cliente —se quitó la integración o venció— (`meta_caida`; Meta directo) | «La conexión de {cliente} con Meta se cayó: vuelve a conectar Meta en Ajustes.» |
 | con varios clientes, después de «Faltan días de gasto.»: ese cliente está en pausa o de baja y no se lee (`no_activo`) | «{cliente} ya no está activo: su gasto no se lee.» |
 | las vistas: el detalle por campaña no cuadra con la cuenta (`no_cuadra`) | «Falta gasto de algunas campañas.» |
 | las vistas: el desglose de Meta no cubre la ventana o la anterior (`sin_desglose`) | «Sin desglose de Meta.» |
@@ -590,7 +590,7 @@ la invariante. La ruta de Conversion corta con esa ventana desde el 2026-10-08 (
 `lib/negocio/embudosDeAcquisition.ts`:
 
 - **una pura**, probada sin base: `armarPasos`, `variacionEnPuntos` y `pasoDeLaSenal`. Importa `tasa` y
-  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:289-292` y `:316-325`), y no las copia;
+  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:294-297` y `:316-325`), y no las copia;
 - **una de lectura**, probada contra la base: una sola pasada por los contactos de la cohorte y la suma de
   las vistas. Compone `recorridoDelLead` y `embudoDelFormulario`, que reciben la ventana explícita, y no
   recalcula lo que ya calculan, con una excepción: en la ventana anterior, la pasada cuenta la cohorte junto con

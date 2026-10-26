@@ -160,7 +160,17 @@ export default function FichaDelCreativo({ pieza, criterio, gana, unica, manual,
           <div>
             <div className="dw-sec-t">Retención y guion</div>
             <div className="dw-block">
-              <div className="dw-empty">{FRASE.sinFuente}</div>
+              {f.curvaDelVideo ? (
+                /* Meta directo: de cada 100 reproducciones, cuántas llegaron a cada cuartil. El guion sigue sin fuente. */
+                <div className="out-grid cr-datos">
+                  {['p25', 'p50', 'p75', 'p100'].map((k) => (
+                    <Caja key={k} rotulo={`Vio el ${k.slice(1)} %`} valor={pf(f.curvaDelVideo[k])} />
+                  ))}
+                  <Caja rotulo="Reproducciones" valor={corto(f.curvaDelVideo.reproducciones)} />
+                </div>
+              ) : (
+                <div className="dw-empty">{FRASE.sinFuente}</div>
+              )}
             </div>
           </div>
 

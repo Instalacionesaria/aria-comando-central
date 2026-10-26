@@ -62,7 +62,7 @@ const rend = (f: Partial<FilaDeRendimiento> & { creativo: string }): FilaDeRendi
 /** Sin decirlo, las impresiones con frecuencia son todas las de la pieza si trae frecuencia, y ninguna si no. */
 const entrega = (f: Partial<EntregaDeLaPieza> & { pieza: string }): EntregaDeLaPieza => ({
   cuentaId: P, impresiones: 0, clics: 0, vistas: null, clicsAlEnlace: null, landing: null, frecuencia: null, etapa: null,
-  primerDia: '2026-09-01', ultimoDia: '2026-10-05', entregando: false,
+  primerDia: '2026-09-01', ultimoDia: '2026-10-05', entregando: false, video: null,
   impresionesConFrecuencia: f.frecuencia === null || f.frecuencia === undefined ? 0 : (f.impresiones ?? 0),
   ...f,
 });

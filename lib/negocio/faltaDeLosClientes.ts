@@ -7,7 +7,7 @@
 // tiene pulso, y la agenda decía «Todavía no se leyó el calendario… Usá «Traer del calendario»» para siempre, con un
 // botón que no lo arregla. Y Acquisition decía «Faltan días de gasto.» sin decir de quién ni por qué. Los dos hechos ya
 // estaban escritos en la base: el barrido sella cada tarea de cada cliente, y una credencial que falta deja la tarea
-// `saltada` con el CÓDIGO de la falta (`lib/negocio/barrido.ts:773`), y la pasada del gasto sin Meta vinculado en
+// `saltada` con el CÓDIGO de la falta (`lib/negocio/barrido.ts:774`), y la pasada del gasto sin Meta vinculado en
 // GoHighLevel deja su motivo en el sello de `anuncios` (`motivoDeLoIncompleto`).
 //
 // Este módulo los lee y los dice con el nombre del cliente y lo que hay que hacer: el texto de CADA código, que ya dice
@@ -41,15 +41,19 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { datos } from '../datos/contexto.ts';
-import { TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE, type FaltaParaGhl } from '../credenciales/resolver.ts';
+import { TEXTO_DE_FALTA_CUENTAS_DE_META, TEXTO_DE_FALTA_GHL, TEXTO_DE_FALTA_GHL_DEL_CLIENTE, type FaltaParaGhl } from '../credenciales/resolver.ts';
 import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
 import type { Tarea } from './barrido.ts';
 
-/** El motivo que el barrido sella en `anuncios` cuando Meta no está vinculado en el GoHighLevel del cliente. */
-export const MOTIVO_SIN_META_EN_GHL = 'Meta no está vinculado en GoHighLevel: no se leyó el gasto';
+/**
+ * El motivo que el barrido sella en `anuncios` cuando Meta rechazó la conexión de una cuenta publicitaria del cliente
+ * (Meta directo: el negocio quitó la integración, o venció). Lo leen la lista de chequeo y los avisos.
+ */
+export const MOTIVO_META_RECHAZADA = 'Meta rechazó la conexión: hay que volver a conectar Meta en Ajustes';
 
 /** Las tareas de un cliente que pasan por el guardia de la credencial del CRM del barrido. */
-export const TAREAS_DEL_CRM = ['contactos', 'mensajes', 'citas', 'anuncios', 'anuncios_relleno'] as const satisfies readonly Tarea[];
+// Desde Meta directo, `anuncios` y `anuncios_relleno` le hablan a Meta con la conexión del cliente, no al CRM.
+export const TAREAS_DEL_CRM = ['contactos', 'mensajes', 'citas'] as const satisfies readonly Tarea[];
 
 /** Los estados del sello que dicen algo del acceso. `sin_tiempo` y `frenada` no: la tarea ni lo intentó. */
 const DICEN_DEL_ACCESO = ['saltada', 'corrio', 'fallo'];
@@ -179,21 +183,20 @@ export function avisoSinConexion(
 }
 
 /**
- * Por qué falta el gasto de un cliente (Acquisition y Conversion):
+ * Por qué falta el gasto de un cliente (Acquisition y Conversion). Desde Meta directo el gasto sale de su conexión con
+ * Meta, no de su GoHighLevel:
  *
- *   · `meta_sin_vincular`: la pasada del gasto corrió y su GoHighLevel no tiene Meta vinculado;
- *   · `sin_conexion`: la conexión del cliente con GoHighLevel no está lista; `que` es el código y `detalle` su texto,
- *     el de la empresa para el principal y el del cliente para los demás;
+ *   · `meta_sin_conectar`: el cliente no tiene ninguna cuenta publicitaria de Meta asignada (la pasada quedó `saltada`);
+ *   · `meta_caida`: la tiene, pero Meta rechazó la conexión (se quitó la integración o venció): hay que volver a
+ *     conectar;
  *   · `no_activo`: el cliente está en pausa o de baja, y el barrido no lo lee.
  */
-export type FaltaDelGasto = 'meta_sin_vincular' | 'sin_conexion' | 'no_activo';
+export type FaltaDelGasto = 'meta_sin_conectar' | 'meta_caida' | 'no_activo';
 
 export interface FaltaDelGastoDeUnCliente {
   /** El nombre del cliente. */
   cliente: string;
   falta: FaltaDelGasto;
-  que?: FaltaParaGhl;
-  detalle?: string;
 }
 
 /**
@@ -209,10 +212,9 @@ export async function faltaDelGastoDe(cuentas: readonly string[]): Promise<Falta
   const nombrados = clientes.filter((c) => ids.has(c.id) && seNombra({ esPorOmision: c.es_por_omision }, activos));
   if (nombrados.length === 0) return [];
 
-  const sinConexion = await clientesSinConexion();
   const anuncios = await datos()
     .selectFrom('tareas_programadas')
-    .select(['cuenta_id', 'ultimo_motivo'])
+    .select(['cuenta_id', 'ultimo_estado', 'ultimo_motivo'])
     .where('tarea', '=', 'anuncios')
     .execute();
 
@@ -222,13 +224,19 @@ export async function faltaDelGastoDe(cuentas: readonly string[]): Promise<Falta
       lista.push({ cliente: c.nombre, falta: 'no_activo' });
       continue;
     }
-    const s = sinConexion.find((x) => x.id === c.id);
-    if (s) {
-      lista.push({ cliente: c.nombre, falta: 'sin_conexion', que: s.que, detalle: textoDeLaFalta(s) });
-      continue;
-    }
+    /* El sello de su pasada de anuncios dice por qué. El principal sin sello propio toma el sin cuenta, como la
+       frescura: los de antes del barrido por cliente eran del trabajo con las credenciales de la empresa. */
     const sello = anuncios.find((a) => a.cuenta_id === c.id) ?? (c.es_por_omision ? anuncios.find((a) => a.cuenta_id === null) : undefined);
-    if (sello?.ultimo_motivo?.includes(MOTIVO_SIN_META_EN_GHL)) lista.push({ cliente: c.nombre, falta: 'meta_sin_vincular' });
+    const motivo = sello?.ultimo_motivo ?? '';
+    if (sello?.ultimo_estado === 'saltada' && motivo === TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta) {
+      lista.push({ cliente: c.nombre, falta: 'meta_sin_conectar' });
+    } else if (
+      (sello?.ultimo_estado === 'saltada' &&
+        (motivo === TEXTO_DE_FALTA_CUENTAS_DE_META.conexion_de_meta_caida || motivo === TEXTO_DE_FALTA_CUENTAS_DE_META.token_de_meta_ilegible)) ||
+      motivo.includes(MOTIVO_META_RECHAZADA)
+    ) {
+      lista.push({ cliente: c.nombre, falta: 'meta_caida' });
+    }
   }
   return lista.sort((a, b) => a.cliente.localeCompare(b.cliente, 'es'));
 }

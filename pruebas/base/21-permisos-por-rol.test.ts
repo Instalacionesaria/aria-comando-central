@@ -234,8 +234,9 @@ test('toda tabla de identidad es ACCESIBLE por al menos un rol', async () => {
       where n.nspname = 'identidad' and c.relkind in ('r', 'p') order by c.relname`,
   );
   // Quince desde la `080`: las once de siempre más las cuentas, sus credenciales, qué cuentas ve cada usuario y los
-  // acuerdos (modelo multiempresa, Fase 0).
-  assert.equal(tablas.length, 15, 'son quince tablas de identidad');
+  // acuerdos (modelo multiempresa, Fase 0). Dieciocho desde la `101` (Meta directo): las conexiones de Meta, sus cuentas
+  // publicitarias y los viajes de OAuth.
+  assert.equal(tablas.length, 18, 'son dieciocho tablas de identidad');
 
   for (const { relname } of tablas) {
     const f = await unaFila<{ alcanzable: boolean }>(

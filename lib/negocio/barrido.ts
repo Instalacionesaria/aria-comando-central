@@ -40,6 +40,7 @@ import { ingerirMensajes } from './ingesta.ts';
 import { sincronizarContactos } from './sincronizar.ts';
 import { completarMiniaturas } from './miniaturaDelContacto.ts';
 import { recolectarDeMeta } from './recolectarDeMeta.ts';
+import { MOTIVO_META_RECHAZADA } from './faltaDeLosClientes.ts';
 import { recolectarActivos, type ResultadoDeActivos } from './recolectarActivos.ts';
 import { barrerCitas } from './citas.ts';
 import { ambitoDeUnCliente, cuentaDe, porOmisionDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
@@ -1184,9 +1185,9 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
   const activos = r as { corte?: unknown; conMiniatura?: unknown };
   if (typeof activos.conMiniatura === 'number') {
     const CORTE_DE_META: Record<string, string> = {
-      token: 'Meta rechazó el token: hay que generarlo de nuevo y cargarlo en Ajustes',
-      permiso: 'al token de Meta le falta un permiso o la cuenta asignada: revisar el usuario del sistema',
-      no_existe: 'Meta no encuentra la cuenta publicitaria: revisar el act_… en Ajustes',
+      token: MOTIVO_META_RECHAZADA,
+      permiso: 'a la conexión con Meta le falta un permiso o la cuenta publicitaria: hay que volver a conectar Meta',
+      no_existe: 'Meta no encuentra la cuenta publicitaria: revisar la conexión en Ajustes',
       cupo: 'Meta limitó las llamadas: lo que faltó se pide en la hora siguiente',
       sin_respuesta: 'Meta no contestó: lo que faltó se pide en la hora siguiente',
       otro: 'Meta rechazó el pedido: lo que faltó se pide en la hora siguiente',
@@ -1230,7 +1231,7 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
   const meta = r as { modo?: unknown; cuentas?: unknown };
   if ((meta.modo === 'diario' || meta.modo === 'historia') && Array.isArray(meta.cuentas)) {
     const FALLA: Record<string, string> = {
-      token: 'Meta rechazó la conexión: hay que volver a conectar Meta en Ajustes',
+      token: MOTIVO_META_RECHAZADA,
       permiso: 'a la conexión con Meta le falta un permiso o la cuenta publicitaria: hay que volver a conectar Meta',
       no_existe: 'Meta no encuentra la cuenta publicitaria: revisar la conexión en Ajustes',
       cupo: 'Meta limitó las llamadas: lo que faltó se pide en la próxima corrida',

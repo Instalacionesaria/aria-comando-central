@@ -64,13 +64,17 @@ export function fallaDeMeta(r: Exclude<Respuesta<unknown>, { tipo: 'datos' }>): 
 
 /** Lo que se le dice a quien carga el token, por motivo. Textos nuestros, sin el mensaje de Meta. */
 export const TEXTO_DE_FALLA_DE_META: Readonly<Record<FallaDeMeta, string>> = {
-  token: 'Meta rechazó el token: venció, se revocó o no está completo. Hay que generarlo de nuevo y volver a cargarlo.',
+  /* Valen para las dos formas de conectar (Meta directo): «Conectar con Meta» —lo normal— y el token pegado a mano
+     —el respaldo—. Por eso dicen primero qué hacer con el botón. */
+  token:
+    'Meta rechazó la conexión: se quitó la integración en el Business Manager, venció o no está completa. Vuelve a ' +
+    'conectar Meta en Ajustes (o, si usas un token pegado a mano, genéralo de nuevo y cárgalo).',
   permiso:
-    'El token no tiene permiso para esto. Revisa en el Business Manager que el usuario del sistema tenga asignada la ' +
-    'cuenta publicitaria (y la Página) y que el token tenga ads_read, pages_read_engagement y pages_show_list.',
+    'La conexión con Meta no tiene permiso para esto. Vuelve a conectar Meta y marca la cuenta publicitaria al aceptar ' +
+    '(con un token pegado a mano: que el usuario del sistema tenga asignada la cuenta y el permiso ads_read).',
   no_existe:
-    'Meta no encuentra la cuenta publicitaria con ese token. Revisa el número act_… (el del Administrador de anuncios) ' +
-    'y que la cuenta esté asignada al usuario del sistema.',
+    'Meta no encuentra la cuenta publicitaria con esa conexión. Vuelve a conectar Meta y marca esa cuenta al aceptar ' +
+    '(con un token pegado a mano: revisa el número act_… del Administrador de anuncios).',
   cupo: 'Meta limitó las llamadas por un rato. No hay que hacer nada: se reintenta solo.',
   sin_respuesta: 'Meta no contestó a tiempo. Prueba de nuevo en unos minutos.',
   otro: 'Meta rechazó el pedido por un motivo que no es el token ni los permisos. Prueba de nuevo; si sigue, avisa a desarrollo.',

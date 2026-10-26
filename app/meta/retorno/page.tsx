@@ -17,6 +17,10 @@ import { useEffect, useState } from 'react';
 import { pedir } from '../../../lib/http/cliente.ts';
 import { dejarResultadoDeMeta, desdeDondeSeConecto } from '../../../lib/meta/retorno.ts';
 
+/* El canje declara `maxDuration = 90` (tres llamadas a Meta): el navegador espera más, o mostraría un fallo sobre una
+   conexión que el servidor está por guardar bien (la regla de `ESPERA_MS` en `lib/http/cliente.ts`). */
+const ESPERA_DEL_CANJE_MS = 100_000;
+
 const CANCELADO = 'No se conectó Meta: el diálogo se cerró o se canceló antes de aceptar.';
 
 export default function RetornoDeMeta() {
@@ -40,7 +44,7 @@ export default function RetornoDeMeta() {
       return;
     }
     void (async () => {
-      const r = await pedir<{ cuentasConectadas: number }>('/api/admin/meta/canje', { metodo: 'POST', cuerpo: { code, state } });
+      const r = await pedir<{ cuentasConectadas: number }>('/api/admin/meta/canje', { metodo: 'POST', cuerpo: { code, state }, espera: ESPERA_DEL_CANJE_MS });
       if (r.tipo === 'datos') {
         const n = r.datos.cuentasConectadas;
         volver(

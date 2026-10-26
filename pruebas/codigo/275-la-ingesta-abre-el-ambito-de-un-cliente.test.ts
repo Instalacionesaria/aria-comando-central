@@ -30,8 +30,7 @@ const DE_UN_CLIENTE = [
   'lib/negocio/entregas.ts',
   'lib/negocio/citas.ts',
   'lib/negocio/miniaturaDelContacto.ts',
-  'lib/negocio/recolectarAnuncios.ts',
-  'lib/negocio/rellenarAnuncios.ts',
+  'lib/negocio/recolectarDeMeta.ts',
   'lib/negocio/recolectarActivos.ts',
   'lib/auditor/analisis.ts',
   'lib/auditor/buscarMejora.ts',
@@ -71,9 +70,10 @@ test('releer los contactos abre el ámbito del cliente, y el barrido despacha ca
   for (const llamada of [
     /releerContactos\(elAmbito\(\)/,
     /ingerirMensajes\(elAmbito\(\)/,
-    /recolectarAnuncios\(elAmbito\(\)/,
-    /rellenarAnuncios\(elAmbito\(\)/,
-    /recolectarActivos\(elAmbito\(\)/,
+    // Meta directo: el diario, la historia y los activos, con el cliente.
+    /recolectarDeMeta\(elAmbito\(\), meta\.cuentas, 'diario'/,
+    /recolectarDeMeta\(elAmbito\(\), meta\.cuentas, 'historia'/,
+    /activosDeLasCuentas\(elAmbito\(\)/,
     /barrerCitas\(elAmbito\(\)/,
     /auditar\(org, elAmbito\(\)/,
     /mejorar\(org, elAmbito\(\)/,
