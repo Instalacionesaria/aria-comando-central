@@ -1,0 +1,67 @@
+/* Las páginas públicas que pide Meta (Meta directo, M6): privacidad, condiciones, borrado de datos y el estado de un
+ * borrado. Se ven sin sesión y sin la hoja del centro de mando, así que cada token lleva su respaldo, como la entrada. */
+
+.legal {
+  min-height: 100dvh;
+  padding: 48px 16px 64px;
+  background: var(--bg, #05080d);
+  color: var(--txt, #dbe7f4);
+  font-family: var(--font-ui, system-ui, sans-serif);
+  line-height: 1.6;
+}
+
+.legal-hoja {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.legal-marca {
+  display: block;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--accent, #35e0d2);
+  margin-bottom: 12px;
+}
+
+.legal h1 {
+  font-size: 26px;
+  line-height: 1.25;
+  margin: 0 0 6px;
+}
+
+.legal-fecha {
+  font-size: 13px;
+  color: var(--txt-dim, #8aa0b8);
+  margin: 0 0 32px;
+}
+
+.legal h2 {
+  font-size: 17px;
+  margin: 32px 0 8px;
+}
+
+.legal p,
+.legal li {
+  font-size: 15px;
+}
+
+.legal ul {
+  padding-left: 20px;
+}
+
+.legal a {
+  color: var(--accent, #35e0d2);
+}
+
+.legal-pie {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line, rgba(148, 197, 255, 0.08));
+  font-size: 13px;
+  color: var(--txt-dim, #8aa0b8);
+}
+
+.legal-pie a + a {
+  margin-left: 16px;
+}

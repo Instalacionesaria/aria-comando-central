@@ -238,14 +238,16 @@ test('la empresa conecta: el secreto va en el cuerpo, todo con su prueba, y con 
     assert.ok(new URL(l.url).searchParams.get('appsecret_proof'), `${l.url} sin appsecret_proof`);
   }
 
-  const conexion = await unaFila<{ token_cifrado: string; negocio_de_meta_id: string; cuenta_id: string | null; origen: string }>(
+  const conexion = await unaFila<{ token_cifrado: string; negocio_de_meta_id: string; cuenta_id: string | null; origen: string; usuario_de_meta_id: string | null }>(
     admin,
-    `select token_cifrado, negocio_de_meta_id, cuenta_id, origen from identidad.conexiones_de_meta where org_id = $1`,
+    `select token_cifrado, negocio_de_meta_id, cuenta_id, origen, usuario_de_meta_id from identidad.conexiones_de_meta where org_id = $1`,
     [org],
   );
   assert.ok(conexion);
   assert.equal(descifrar(conexion.token_cifrado), 'bisu-agencia');
   assert.deepEqual([conexion.negocio_de_meta_id, conexion.cuenta_id, conexion.origen], [NEGOCIO_AGENCIA, null, 'oauth']);
+  // El id en la app del dueño del token (`104`): con él la encuentran los avisos de Meta (M6).
+  assert.equal(conexion.usuario_de_meta_id, '1', 'la conexión no guardó a quién pertenece el token');
   assert.deepEqual(await cuentasDeLaOrg(), {
     act_3040000000011: { cliente: null, negocio: NEGOCIO_AGENCIA },
     act_3040000000012: { cliente: null, negocio: NEGOCIO_AGENCIA },

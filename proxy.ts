@@ -51,6 +51,7 @@ import type { NextRequest } from 'next/server';
 // arrastrar `pg` y el agrupador de conexiones a este archivo. Ver el comentario de `COOKIE_SESION`
 // en `lib/autorizacion/cookie.ts`.
 import { COOKIE_SESION } from './lib/autorizacion/cookie.ts';
+import { esCaminoPublico } from './lib/autorizacion/caminosPublicos.ts';
 
 /** La pantalla de entrada. Es la única página que se ve sin sesión. */
 export const CAMINO_ENTRAR = '/entrar';
@@ -61,6 +62,7 @@ export function proxy(peticion: NextRequest): NextResponse {
   const hayCookie = peticion.cookies.has(COOKIE_SESION);
 
   const { pathname } = peticion.nextUrl;
+  if (esCaminoPublico(pathname)) return NextResponse.next();
   const enEntrar = pathname === CAMINO_ENTRAR || pathname.startsWith(`${CAMINO_ENTRAR}/`);
 
   // Sin cookie, a la entrada.

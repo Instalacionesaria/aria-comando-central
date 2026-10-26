@@ -178,6 +178,13 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'app/api/admin/meta/canje/route.ts',
   'app/api/admin/meta/cuentas/[act]/route.ts',
   'app/api/admin/meta/conexiones/[id]/route.ts',
+  // Los dos avisos de Meta (Meta directo, M6): encuentran las conexiones por el id en la app de quien firmó, que puede
+  // tenerlas en varias organizaciones —por eso no filtran por una—, las revocan o las borran, y anotan el pedido de
+  // borrado (`104`). Lo leído de negocio lo borra el recolector de Meta, con el ámbito de cada cliente. Y la página
+  // pública del estado de un borrado, que sólo busca un pedido por el sha256 de su código.
+  'app/api/meta/desautorizado/route.ts',
+  'app/api/meta/borrado/route.ts',
+  'app/meta/borrado/[codigo]/page.tsx',
   // ── Etapa 8 ──────────────────────────────────────────────────────────────────
   // El portero, para emitir `permiso_denegado`. La auditoría es una tabla de identidad, y en el
   // paso 5 el portero ya resolvió la sesión — así que sabe de qué organización se trata y filtra
@@ -965,6 +972,18 @@ export const RUTAS_CON_SECRETO_PROPIO: readonly string[] = [
   //
   // Y también con el guardia de «la variable no está definida» ANTES de comparar, igual que el cron.
   'app/api/avisos/crm/route.ts',
+  // ── Meta directo, M6 · los dos avisos de Meta ─────────────────────────────
+  //
+  // La cuarta y la quinta, deliberadas por las mismas dos razones: **no pueden pasar por el portero** —las llama Meta,
+  // sin sesión, cuando un negocio quita la app o pide borrar sus datos, y Meta exige las dos URL para aprobar la app— y
+  // **no pueden ser públicas**: cualquiera podría revocar o borrar las conexiones de otro.
+  //
+  // Su autenticación es la firma del `signed_request` que manda Meta: el HMAC-SHA256 de los datos con el secreto de la
+  // app (`META_APP_SECRET`), comparado con `timingSafeEqual` en la ruta, con el guardia de «el secreto no está» antes, y
+  // las longitudes comparadas antes de llamarlo. Lo que hay que saber para firmar es el secreto de la app, que nunca
+  // sale del servidor.
+  'app/api/meta/desautorizado/route.ts',
+  'app/api/meta/borrado/route.ts',
 ];
 
 /**

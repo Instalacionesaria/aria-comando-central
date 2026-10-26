@@ -115,6 +115,8 @@ export async function guardarConexionDeMeta(
     cuentaId: string | null;
     tokenCifrado: string;
     negocio: string | null;
+    /** El id en la app del dueño del token (`104`). */
+    usuarioDeMeta: string | null;
     usuarioId: string;
     cuentas: readonly CuentaConectada[];
   },
@@ -127,6 +129,7 @@ export async function guardarConexionDeMeta(
       cuenta_id: cuentaId,
       token_cifrado: datos.tokenCifrado,
       negocio_de_meta_id: datos.negocio,
+      usuario_de_meta_id: datos.usuarioDeMeta,
       origen: 'oauth',
       estado: 'activa',
       conectada_por: datos.usuarioId,
@@ -137,6 +140,7 @@ export async function guardarConexionDeMeta(
         .where('origen', '=', 'oauth')
         .doUpdateSet({
           token_cifrado: datos.tokenCifrado,
+          usuario_de_meta_id: datos.usuarioDeMeta,
           estado: 'activa',
           conectada_por: datos.usuarioId,
           conectada_el: new Date(),

@@ -86,6 +86,7 @@ export async function POST(peticion: Request): Promise<Response> {
       cuentaId: viaje.cuenta_id,
       tokenCifrado: cifrar(canje.token),
       negocio: negocio.negocio,
+      usuarioDeMeta: negocio.usuario,
       usuarioId: contexto.usuarioId,
       cuentas: cuentas.cuentas,
     });

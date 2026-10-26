@@ -545,6 +545,10 @@ export const SIN_PANTALLA: readonly string[] = [
      única salida sería igualar capacidades, que es la escalada silenciosa que esa regla impide—.
      Es el mismo motivo, palabra por palabra, por el que el cron está en esta lista. */
   'app/api/avisos/crm/route.ts',
+  /* ── LOS AVISOS DE META (Meta directo, M6) ───────────────────────
+     No muestran nada y su único cliente es Meta: el mismo motivo que el aviso del CRM y el cron. */
+  'app/api/meta/desautorizado/route.ts',
+  'app/api/meta/borrado/route.ts',
   // El login. No pertenece a una pantalla: es la puerta.
   'app/api/auth/login/route.ts',
   // El segundo factor: son trámites de la propia cuenta, no de una pantalla del producto.

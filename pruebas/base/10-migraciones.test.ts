@@ -675,7 +675,11 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
   //
   // Las conexiones con Meta de «Conectar con Meta», sus cuentas publicitarias (y a qué cliente va cada una) y el
   // `state` del viaje a Meta. Las tres sólo para identidad: un token no se lee desde el inquilino.
-  const DIECIOCHO_TABLAS_DE_IDENTIDAD = [
+  //
+  // ── Y DIECINUEVE, CON LA `104` (Meta directo, M6) ──────────────────────────
+  //
+  // Los pedidos de borrado de datos que reenvía Meta, con el hash de su código: sólo identidad, como las otras tres.
+  const DIECINUEVE_TABLAS_DE_IDENTIDAD = [
     'acuerdos',
     'auditoria_accesos',
     'conexiones_de_meta',
@@ -685,6 +689,7 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
     'estados_de_oauth',
     'organizaciones',
     'organizaciones_credenciales',
+    'pedidos_de_borrado_de_meta',
     'permisos',
     'roles',
     'roles_permisos',
@@ -697,8 +702,8 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
   ];
   assert.deepEqual(
     r.filter((t) => t.nspname === 'identidad').map((t) => t.relname).sort(),
-    DIECIOCHO_TABLAS_DE_IDENTIDAD,
-    'el conjunto de tablas de identidad cambió: son dieciocho y se otorgan a mano, una por una',
+    DIECINUEVE_TABLAS_DE_IDENTIDAD,
+    'el conjunto de tablas de identidad cambió: son diecinueve y se otorgan a mano, una por una',
   );
 
   for (const t of r) {

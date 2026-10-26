@@ -37,6 +37,14 @@ export function appDeMeta(): AppDeMeta {
 }
 
 /**
+ * Sólo el secreto de la app, o `null` sin él: los avisos que manda Meta (desautorización y borrado de datos, M6) sólo
+ * necesitan verificar la firma, y no deben depender del `config_id` del diálogo.
+ */
+export function secretoDeLaApp(): string | null {
+  return process.env.META_APP_SECRET?.trim() || null;
+}
+
+/**
  * El `appsecret_proof` de un token: HMAC-SHA256 del token con el secreto de la app, en hexadecimal. Meta lo exige a los
  * tokens de su app cuando la app tiene activado «Requerir el secreto de la app», y lo recomienda siempre: un token
  * robado sin el secreto no sirve. Sólo vale para tokens emitidos por NUESTRA app (los de conexiones `oauth`); un token
@@ -52,8 +60,16 @@ export function pruebaDelSecreto(token: string, secreto = appDeMeta().secreto): 
  * `verificarOrigen` compara— y nunca del pedido: un `Host` falsificado no puede mandar el código a otro lado.
  */
 export function urlDeRetorno(): string {
+  return urlPublica('/meta/retorno');
+}
+
+/**
+ * Una URL nuestra que se le da a Meta (el retorno del diálogo, la página de estado de un borrado): siempre desde
+ * `DOMINIO_ESPERADO`, nunca desde el pedido.
+ */
+export function urlPublica(camino: string): string {
   const dominio = process.env.DOMINIO_ESPERADO?.trim();
-  if (!dominio) throw new Error('falta DOMINIO_ESPERADO: sin él no hay adónde volver de Meta');
+  if (!dominio) throw new Error('falta DOMINIO_ESPERADO: sin él no hay una URL nuestra que darle a Meta');
   const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(dominio);
-  return `${local ? 'http' : 'https'}://${dominio}/meta/retorno`;
+  return `${local ? 'http' : 'https'}://${dominio}${camino}`;
 }

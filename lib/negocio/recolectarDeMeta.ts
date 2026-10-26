@@ -400,6 +400,42 @@ async function totalDelCliente(desde: string, hasta: string): Promise<void> {
   `.execute(datos());
 }
 
+/**
+ * Borra lo que se leyó de Meta de unas cuentas publicitarias en UN cliente —un pedido de borrado de datos que reenvió
+ * Meta (M6)— y rehace su total diario con las cuentas que le quedan. Quien llama lo recorre por cada cliente de la
+ * organización: lo leído queda en el cliente al que la cuenta estaba asignada al leerse, que puede no ser el de hoy. Vive
+ * acá porque este archivo es el único que escribe estas tablas (la 180), y abre el ámbito del cliente como toda la
+ * ingesta (la 275).
+ *
+ * Se borra: el desglose, los anuncios (con sus métricas y sus activos, en cascada), los conjuntos, las campañas (con su
+ * funnel asignado, en cascada: era de una campaña que ya no está) y el gasto por cuenta. El total del cliente
+ * (`gasto_de_la_cuenta`) se borra en los días que esas cuentas tenían y se vuelve a sumar de las que quedan; un día sin
+ * ninguna queda sin fila, que es «no leído», no un cero. Los contactos no se tocan: su atribución (`adId`) viene de
+ * GoHighLevel, no de Meta. Todo en una transacción: o se borra entero en este cliente, o nada.
+ */
+export async function borrarLoLeidoDeMeta(ambito: AmbitoDeUnCliente, acts: readonly string[]): Promise<void> {
+  if (acts.length === 0) return;
+  const lista = [...acts];
+  await conOrganizacion(ambito, async () => {
+    const rango = await sql<{ desde: string | null; hasta: string | null }>`
+      select to_char(min(fecha), 'YYYY-MM-DD') as desde, to_char(max(fecha), 'YYYY-MM-DD') as hasta
+        from negocio.gasto_por_cuenta_publicitaria
+       where act_id = any(${lista}::text[])`.execute(datos());
+    await sql`
+      delete from negocio.metricas_por_desglose d
+       using negocio.anuncios a
+       where a.org_id = d.org_id and a.meta_anuncio_id = d.meta_anuncio_id and a.act_id = any(${lista}::text[])`.execute(datos());
+    await datos().deleteFrom('anuncios').where('act_id', 'in', lista).execute();
+    await datos().deleteFrom('conjuntos_de_anuncios').where('act_id', 'in', lista).execute();
+    await datos().deleteFrom('campanas').where('act_id', 'in', lista).execute();
+    await datos().deleteFrom('gasto_por_cuenta_publicitaria').where('act_id', 'in', lista).execute();
+    const { desde, hasta } = rango.rows[0] ?? { desde: null, hasta: null };
+    if (desde === null || hasta === null) return;
+    await sql`delete from negocio.gasto_de_la_cuenta where fuente = 'meta' and fecha between ${desde}::date and ${hasta}::date`.execute(datos());
+    await totalDelCliente(desde, hasta);
+  });
+}
+
 /** Lo de cada anuncio por día y desglose. */
 export async function guardarDesglose(desglose: Desglose, filas: readonly FilaDeDesglose[]): Promise<void> {
   const ahora = new Date();

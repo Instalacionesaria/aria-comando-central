@@ -55,11 +55,17 @@ export async function canjearCodigo(code: string): Promise<Canje> {
  * De qué negocio es el token: el `client_business_id` del portfolio que conectó. Con un token de usuario (si la
  * configuración no fuera la del usuario del sistema) no viene, y queda nulo.
  */
-export async function negocioDelToken(token: string): Promise<{ tipo: 'listo'; negocio: string | null } | { tipo: 'falla'; motivo: FallaDeMeta }> {
+export async function negocioDelToken(
+  token: string,
+): Promise<{ tipo: 'listo'; negocio: string | null; usuario: string | null } | { tipo: 'falla'; motivo: FallaDeMeta }> {
   const r = await pedirAMeta<{ id?: string; client_business_id?: string }>('me', token, { fields: 'id,client_business_id' }, { conPrueba: true });
   if (r.tipo !== 'datos') return { tipo: 'falla', motivo: fallaDeMeta(r) };
   const negocio = r.datos.client_business_id;
-  return { tipo: 'listo', negocio: typeof negocio === 'string' && /^\d{1,30}$/.test(negocio) ? negocio : null };
+  const usuario = r.datos.id;
+  // El id en la app del dueño del token (`104`): con él se encuentran sus conexiones cuando Meta avisa que quitaron la
+  // app o que piden borrar sus datos.
+  const id = (v: unknown) => (typeof v === 'string' && /^\d{1,30}$/.test(v) ? v : null);
+  return { tipo: 'listo', negocio: id(negocio), usuario: id(usuario) };
 }
 
 /** Una cuenta publicitaria tal como la devuelve Meta, ya validada. */

@@ -2058,6 +2058,8 @@ export interface TablaConexionesDeMeta {
   conectada_el: Generated<Date>;
   ultimo_error: string | null;
   ultimo_error_el: Date | null;
+  /** El id en la app del dueño del token (104): con él se encuentran sus conexiones cuando Meta avisa. */
+  usuario_de_meta_id: Generated<string | null>;
 }
 
 /** Cada cuenta publicitaria que una conexión de Meta puede leer, y a qué cliente va (101). */
@@ -2077,6 +2079,16 @@ export interface TablaCuentasPublicitariasDeMeta {
 }
 
 /** El `state` del viaje a Meta, como hash y de un solo uso (101). */
+/** Cada pedido de borrado de datos que reenvió Meta (104), por el sha256 de su código de confirmación. */
+export interface TablaPedidosDeBorradoDeMeta {
+  codigo_hash: string;
+  usuario_de_meta_id: string;
+  pedido_el: Generated<Date>;
+  conexiones: number;
+  cuentas: number;
+  borrado_el: Date | null;
+}
+
 export interface TablaEstadosDeOauth {
   hash: string;
   org_id: string;
@@ -2303,6 +2315,7 @@ export interface BaseDeDatos {
   conexiones_de_meta: TablaConexionesDeMeta;
   cuentas_publicitarias_de_meta: TablaCuentasPublicitariasDeMeta;
   estados_de_oauth: TablaEstadosDeOauth;
+  pedidos_de_borrado_de_meta: TablaPedidosDeBorradoDeMeta;
   acuerdos: TablaAcuerdos;
   participacion_en_benchmarks: VistaParticipacionEnBenchmarks;
 
