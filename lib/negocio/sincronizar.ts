@@ -71,7 +71,15 @@ import {
   type ContactoDeGhl,
   type FalloDeGhl,
 } from '../ghl/cliente.ts';
-import { camposDelPuntaje, puntajeDeUnValor, refrescarCatalogoDeCampos, type ResumenDelCatalogo } from './camposDelCrm.ts';
+import {
+  camposDelCuadrante,
+  camposDelPuntaje,
+  puntajeDeUnValor,
+  recalcularLosCuadrantes,
+  refrescarCatalogoDeCampos,
+  type ResumenDelCatalogo,
+} from './camposDelCrm.ts';
+import { cuadranteDeUnValor, type Cuadrante } from './cuadrantesDelIcp.ts';
 
 /**
  * Las etiquetas de GoHighLevel, y a qué territorio corresponde cada una.
@@ -172,8 +180,9 @@ export async function sincronizarContactos(acceso: {
   // Se recorren las etiquetas en orden de precedencia y se queda el PRIMER territorio que le
   // toque a cada contacto. `vistos` es lo que hace que el closer gane sobre el setter.
   const vistos = new Set<string>();
-  // El campo del puntaje en la subcuenta de este cliente (el nivel 3), una vez por pasada.
+  // El campo del puntaje y el del cuadrante en la subcuenta de este cliente (el nivel 3), una vez por pasada.
   const puntaje = await camposDelPuntaje();
+  const cuadrante = await camposDelCuadrante();
 
   for (const { etiqueta, territorio } of ETIQUETAS) {
     const r = await todosLosContactosPorEtiqueta(acceso, etiqueta);
@@ -187,7 +196,7 @@ export async function sincronizarContactos(acceso: {
       if (vistos.has(c.id)) continue;
       vistos.add(c.id);
 
-      const guardado = await guardar(c, territorio, puntaje);
+      const guardado = await guardar(c, territorio, puntaje, cuadrante);
       if (guardado === true) resumen.guardados[territorio] += 1;
       else resumen.salteados.push({ id: c.id, porque: guardado });
     }
@@ -226,6 +235,10 @@ export async function sincronizarContactos(acceso: {
      exactamente una llamada. Poner `0` ahí haría que el reporte del cron subestime el gasto justo
      en las corridas que fallan, que son las que se miran. */
   resumen.llamadas += resumen.catalogoDeCampos?.llamadas ?? 1;
+  /* El cuadrante, desde lo guardado, cada vez que el catálogo se releyó: la pasada de arriba escribió los contactos con
+     los ids del campo de ANTES de releer, y la primera después de la `105` no los conocía (el catálogo no tenía
+     claves). Cero llamadas al CRM. Ver `recalcularLosCuadrantes`. */
+  if (resumen.catalogoDeCampos !== null && !resumen.catalogoDeCampos.saltado) await recalcularLosCuadrantes();
 
   // Si no vino NI UN contacto, la pregunta siguiente siempre es la misma: ¿estarán mal los
   // nombres de las etiquetas? Se contesta antes de que alguien la haga.
@@ -364,6 +377,8 @@ async function guardar(
   territorio: Territorio | null,
   // Los ids del campo del puntaje, uno por subcuenta (`camposDelPuntaje`): se buscan una vez por pasada.
   puntaje: readonly string[],
+  // Los del campo del cuadrante (`camposDelCuadrante`), igual. Vacío = todavía no se conoce: no se escribe.
+  cuadrante: readonly string[],
 ): Promise<true | string> {
   const nombre = nombreDe(c);
   // La columna `nombre` es obligatoria. Un contacto sin nombre se saltea CON MOTIVO en vez de
@@ -439,6 +454,13 @@ async function guardar(
      * Así que `0` se guarda como `0` y la ausencia como `null`, que son los dos ceros que este
      * proyecto separa en todas partes. Colapsarlos acá sería decidir por el CRM. */
     ...(c.customFields === undefined ? {} : { score: puntajeDelCrm(c, puntaje) }),
+    /* ── Y EL CUADRANTE DEL ICP, DE LOS MISMOS CAMPOS (la `105`) ──────────
+     *
+     * Con la misma salvedad de la clave ausente, y una más: sin los ids del campo tampoco se escribe. La primera pasada
+     * después de subir corre con un catálogo sin claves, y escribir `null` ahí borraría la clasificación de todos hasta
+     * que `recalcularLosCuadrantes` la devolviera al final de la corrida — y en una ficha abierta en ese momento, la
+     * borraría sin que nada la devolviera. Un valor que no es ninguna de las cuatro palabras va como `null`. */
+    ...(c.customFields === undefined || cuadrante.length === 0 ? {} : { cuadrante: cuadranteDelCrm(c, cuadrante) }),
     /* ── DE DÓNDE VINO EL LEAD Y CUÁNDO ENTRÓ ─────────────────────────────
      *
      * Las cinco llegan en esta misma respuesta y hasta la migración `048` se descartaban al
@@ -499,6 +521,8 @@ async function guardar(
            que es peor que no mostrarlo. Es el mismo argumento que `etiquetas` y `territorio`, que se
            pisan por lo mismo. */
         ...('score' in valores ? { score: valores.score } : {}),
+        // El cuadrante, por lo mismo que el puntaje: el CRM lo recalcula y una columna escrita sólo al nacer envejece.
+        ...('cuadrante' in valores ? { cuadrante: valores.cuadrante } : {}),
         /* Las cinco de la `048` son hechos de GoHighLevel, así que se pisan — «lo que decide
            GoHighLevel se pisa; lo que decidimos acá, no». Y con la misma salvedad que los campos:
            sólo si la respuesta las traía. */
@@ -553,6 +577,20 @@ function puntajeDelCrm(c: ContactoDeGhl, puntaje: readonly string[]): number | n
 }
 
 /**
+ * El cuadrante del ICP que el CRM calculó para el lead, listo para la columna: una de las cuatro claves, o `null`.
+ *
+ * Normaliza en vez de confiar por lo mismo que el puntaje valida: la columna tiene un `check` con las cuatro claves (la
+ * `105`), así que «Prioriza» tal cual —la opción como la escribe el CRM— rompería el `insert`, y con él la tarea de
+ * contactos de cada diez minutos. Lo que no es ninguna de las cuatro se pierde como `null` para este contacto, y lo
+ * cuenta el guardián del Leads Portal.
+ */
+function cuadranteDelCrm(c: ContactoDeGhl, cuadrante: readonly string[]): Cuadrante | null {
+  const campos = camposDelContacto(c);
+  const id = cuadrante.find((p) => campos[p] !== undefined);
+  return id === undefined ? null : cuadranteDeUnValor(campos[id]);
+}
+
+/**
  * Refrescar UN contacto contra el CRM. Es la llamada que cuesta abrir la ficha.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -597,7 +635,7 @@ export async function refrescarUnContacto(
   const etiquetas = r.datos.tags ?? [];
   const territorio = ETIQUETAS.find((e) => etiquetas.includes(e.etiqueta))?.territorio ?? null;
 
-  const guardado = await guardar(r.datos, territorio, await camposDelPuntaje());
+  const guardado = await guardar(r.datos, territorio, await camposDelPuntaje(), await camposDelCuadrante());
   if (guardado !== true) return { tipo: 'salteado', motivo: guardado };
   return { tipo: 'listo', territorio };
 }

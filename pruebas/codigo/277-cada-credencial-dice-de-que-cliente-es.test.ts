@@ -155,6 +155,9 @@ const PIDEN_LA_DE_LA_EMPRESA: readonly string[] = [
   'app/api/contactos/[id]/resolver/route.ts',
   'app/api/contactos/[id]/mensajes/route.ts',
   'app/api/contactos/[id]/avanzar/route.ts',
+  // La medición del cuadrante del ICP (Q0, 2026-10-26), sólo contra una base SIN clientes —producción antes de la `080`—,
+  // donde cada empresa es una subcuenta y su credencial es la única. Con clientes, mide a cada uno con la suya.
+  'scripts/medir-cuadrante.mjs',
 ];
 
 test('quien pide la de la empresa está escrito, y la lista no tiene entradas muertas', () => {

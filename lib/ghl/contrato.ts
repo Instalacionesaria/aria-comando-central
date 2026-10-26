@@ -315,6 +315,23 @@ export const CAMPO_DEL_PUNTAJE = '9HXxl5DW6aayQgKUPiOS';
 /** El nombre exacto del campo del puntaje: con él se encuentra en la subcuenta de cada cliente. */
 export const NOMBRE_DEL_PUNTAJE = 'Puntaje | ICP';
 
+/**
+ * La CLAVE (`fieldKey`) del campo que trae el cuadrante del ICP: Prioriza, Valida, Financia o Descarta. Va a
+ * `contactos.cuadrante` (la `105`) y reemplaza al puntaje en todas las pantallas desde el 2026-10-26.
+ *
+ * ── POR CLAVE, Y NO POR ID NI POR NOMBRE ────────────────────────────────────
+ *
+ * El id es de la subcuenta —en la de cada cliente el mismo campo tiene otro— y el nombre lo edita cualquiera; la clave
+ * se elige al crear el campo y no se edita (medido el 2026-10-21, memoria del proyecto). Así el campo se reconoce solo
+ * en todos los clientes y nadie lo elige en Ajustes, que era lo que el puntaje necesitaba (la `098`).
+ *
+ * Medido el 2026-10-26 (`scripts/medir-cuadrante.mjs`) en la subcuenta de ARIA: el campo es `2KWcgxbUPK2Vmtsxd8qz`,
+ * «Cuadrante de Clasificacion», `RADIO`, con las opciones `Prioriza`, `Valida`, `Financia`, `Descarta`. **Y hay otro
+ * que no es éste**: `contact.cuadrante` («cuadrante», `SINGLE_OPTIONS`: Prioridad, Educar, Nutrir, Descartar). Por eso
+ * la comparación es exacta: uno «parecido» daría leads clasificados por la pregunta equivocada.
+ */
+export const CLAVE_DEL_CUADRANTE = 'contact.cuadrante_de_clasificacion';
+
 /** Una carpeta de campos personalizados, y a qué grupo del Perfil van sus campos. */
 export interface CarpetaDelPerfil {
   /** El `parentId` que traen los campos de esa carpeta. */

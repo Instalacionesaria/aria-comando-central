@@ -58,6 +58,11 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // activos y la credencial de cada uno, y después de a uno. Sólo `GET`; claves y hosts, nunca valores, y una
   // clave con forma de secreto —`/integration` trae el token de la Página— se nombra y no se sigue.
   'scripts/medir-activos-en-ghl.mjs',
+  // El quinto, con el mismo argumento (2026-10-26, ICP en cuadrantes · Q0): mide en la subcuenta de cada cliente el
+  // campo `contact.cuadrante_de_clasificacion` —su id, tipo y opciones— y cuántos de los contactos más nuevos traen
+  // cada una de las cuatro palabras. Sólo `GET`; un valor que no es una de las cuatro se cuenta por su largo, nunca se
+  // imprime.
+  'scripts/medir-cuadrante.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
   // El sembrado de desarrollo escribe organizaciones y usuarios, que son identidad.

@@ -693,6 +693,11 @@ export interface CampoDelCrm {
   tipo: string;
   /** El `position` dentro de su carpeta. Llega fraccionario: se midió `12.5`. */
   posicion: number;
+  /**
+   * El `fieldKey` (`contact.algo`): la identidad del campo entre subcuentas, que no cambia al renombrarlo (la `105`).
+   * `null` si no vino: medido el 2026-10-26, lo traen los 207 campos de la subcuenta de ARIA.
+   */
+  clave: string | null;
 }
 
 /**
@@ -739,6 +744,7 @@ export async function camposPersonalizados(acceso: {
       carpetaId: f.parentId as string,
       tipo: typeof f.dataType === 'string' && f.dataType !== '' ? f.dataType : 'DESCONOCIDO',
       posicion: typeof f.position === 'number' && Number.isFinite(f.position) ? f.position : 0,
+      clave: typeof f.fieldKey === 'string' && f.fieldKey.trim() !== '' ? f.fieldKey.trim() : null,
     }));
 }
 

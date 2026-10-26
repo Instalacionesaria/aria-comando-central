@@ -382,6 +382,9 @@ export interface TablaContactos {
    *
    * `null` = el CRM no lo trae para ese contacto: 119 de 590, medido el 2026-09-21. **No es un
    * cero**, y los 47 que valen `0` sí lo son.
+   *
+   * **Desde la `105` (2026-10-26) nadie lo lee**: el ICP es `cuadrante`. Se sigue escribiendo como antes y queda
+   * guardado por decisión del usuario; ninguna pantalla lo dibuja.
    */
   score: number | null;
   /**
@@ -474,6 +477,11 @@ export interface TablaContactos {
   creado_el: Generated<Date>;
   // Las columnas estándar del modelo (084): nulas hasta que el normalizador (Fase 1) las escriba.
   etapa_estandar: string | null;
+  /**
+   * El cuadrante del ICP (clave foránea a `catalogo.cuadrantes`). Desde la `105` lo escribe `sincronizar.ts` con el
+   * campo `contact.cuadrante_de_clasificacion` del CRM —una de las cuatro claves de `lib/negocio/cuadrantesDelIcp.ts`—
+   * y se PISA en cada corrida, como `score`. `null` = Sin clasificar. Reemplaza a `score` en todas las pantallas.
+   */
   cuadrante: string | null;
   puntaje: number | null;
   canal_de_entrada: string | null;
@@ -530,6 +538,11 @@ export interface TablaCamposDelCrm {
    */
   posicion: ColumnType<string, number | string | undefined, number | string | undefined>;
   visto_el: Generated<Date>;
+  /**
+   * El `fieldKey` de GoHighLevel (la `105`): la identidad del campo entre subcuentas. Es de GoHighLevel, así que el
+   * refresco la pisa. `null` = una fila de antes de la `105`: el catálogo sin ninguna clave se relee (`estaFresco`).
+   */
+  clave: string | null;
   /**
    * NUESTRA (`098`): el campo que esta subcuenta usa como puntaje del lead, elegido en Ajustes › Clientes. Uno por
    * cliente (un índice único parcial). `false` en todos = se reconoce por id o por nombre (`camposDelPuntaje`). El

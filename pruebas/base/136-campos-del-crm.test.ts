@@ -346,6 +346,9 @@ test('el catálogo se lee una vez, aplica el contrato, y no vuelve a pedirse mie
               dataType: 'SINGLE_OPTIONS',
               position: 2,
               documentType: 'field',
+              /* GoHighLevel manda la clave en todos (207 de 207, medido el 2026-10-26). Sin ninguna, el catálogo se
+                 relee en cada corrida: es lo que la `105` hace con uno leído antes de guardarlas. */
+              fieldKey: 'contact.ticket_promedio',
             },
             {
               id: CAMPO_ESCONDIDO,
@@ -354,6 +357,7 @@ test('el catálogo se lee una vez, aplica el contrato, y no vuelve a pedirse mie
               dataType: 'TEXT',
               position: 1,
               documentType: 'field',
+              fieldKey: 'contact.last_utm_source',
             },
           ],
         }),

@@ -53,7 +53,15 @@
 import { sql, type RawBuilder } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { camposPersonalizados, nombreDeCarpeta } from '../ghl/cliente.ts';
-import { CAMPO_DEL_PUNTAJE, CARPETAS_DEL_PERFIL, ETIQUETAS_CORTAS, NOMBRE_DEL_PUNTAJE, type CarpetaDelPerfil } from '../ghl/contrato.ts';
+import {
+  CAMPO_DEL_PUNTAJE,
+  CARPETAS_DEL_PERFIL,
+  CLAVE_DEL_CUADRANTE,
+  ETIQUETAS_CORTAS,
+  NOMBRE_DEL_PUNTAJE,
+  type CarpetaDelPerfil,
+} from '../ghl/contrato.ts';
+import { CON_TILDE, ESPACIOS, LOS_CUATRO, SIN_TILDE } from './cuadrantesDelIcp.ts';
 
 /**
  * Cuánto vale el catálogo antes de releerlo. **Un día.**
@@ -169,10 +177,13 @@ export async function refrescarCatalogoDeCampos(acceso: {
         carpeta_id: d.carpetaId,
         tipo: d.tipo,
         posicion: d.posicion,
+        clave: d.clave,
         visto_el: sql<Date>`now()`,
       } as never)
       .onConflict((oc) =>
         oc.columns(['org_id', 'campo_id']).doUpdateSet({
+          // La clave es de GoHighLevel, como el nombre y el tipo: se pisa (la `105`).
+          clave: d.clave,
           /* `carpeta_id` SÍ se pisa: un campo que alguien mueve a otra carpeta en el CRM tiene que
              seguir a su carpeta, y si eso lo saca de las que se muestran, deja de verse. Es lo
              correcto — la regla de `sincronizar.ts`: lo que decide GoHighLevel se pisa. */
@@ -210,7 +221,7 @@ export async function refrescarCatalogoDeCampos(acceso: {
 async function estaFresco(): Promise<boolean> {
   const r = await datos()
     .selectFrom('campos_del_crm')
-    .select(({ fn }) => fn.max('visto_el').as('ultimo'))
+    .select(({ fn }) => [fn.max('visto_el').as('ultimo'), fn.count('clave').as('conClave')])
     .executeTakeFirst();
 
   const ultimo = r?.ultimo ?? null;
@@ -218,6 +229,10 @@ async function estaFresco(): Promise<boolean> {
   // fresco: es uno que nunca se leyó, y son los dos casos en los que la pantalla dice cosas
   // distintas (ver `FALTA.perfil` en `ficha.ts`).
   if (ultimo === null) return false;
+  /* Un catálogo sin NINGUNA clave se leyó antes de la `105`: sin ella el campo del cuadrante no se encuentra y todos
+     los leads quedan «Sin clasificar» hasta un día después de subir. Se relee ya. «Ninguna» y no «alguna sin clave»: un
+     campo que GoHighLevel mandara sin `fieldKey` haría releer en cada corrida, y eso es el gasto que el tope evita. */
+  if (Number(r?.conClave ?? 0) === 0) return false;
   return Date.now() - new Date(ultimo).getTime() < FRESCURA_MS;
 }
 
@@ -803,6 +818,76 @@ export async function recalcularLosPuntajes(cuentaId: string): Promise<number> {
     .updateTable('contactos')
     .set({ score: puntajeDelCampo(sql`campos_del_crm`, ids) } as never)
     .where('cuenta_id', '=', cuentaId)
+    .executeTakeFirst();
+  return Number(r.numUpdatedRows);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EL CUADRANTE DEL ICP (la `105`, 2026-10-26)
+//
+// Reemplaza al puntaje en todas las pantallas. Su campo NO se elige: se reconoce por la clave (`CLAVE_DEL_CUADRANTE`),
+// que es la misma en la subcuenta de cada cliente. Y su valor pasa por una sola normalización, en las dos capas:
+// `cuadranteDeUnValor` (`cuadrantesDelIcp.ts`) para la sincronización y `cuadranteUsable`, acá, para el recálculo.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Los ids del campo del cuadrante, uno por subcuenta a la vista: los de la clave `CLAVE_DEL_CUADRANTE`. Vacío = ningún
+ * cliente a la vista tiene el campo, o su catálogo es de antes de la `105` (sin claves todavía). En `conOrganizacion(`.
+ */
+export async function camposDelCuadrante(): Promise<readonly string[]> {
+  const filas = await datos()
+    .selectFrom('campos_del_crm')
+    .select(['cuenta_id', 'campo_id'])
+    .where('clave', '=', CLAVE_DEL_CUADRANTE)
+    // Uno por subcuenta, con el desempate estable de `campoPorNombre`: GoHighLevel no deja dos campos con la misma
+    // clave, pero si el catálogo guardara uno borrado y su reemplazo, se toma siempre el mismo.
+    .orderBy('cuenta_id')
+    .orderBy('campo_id')
+    .execute();
+  const porCliente = new Map<string, string>();
+  for (const f of filas) if (!porCliente.has(f.cuenta_id)) porCliente.set(f.cuenta_id, f.campo_id);
+  return [...porCliente.values()];
+}
+
+/** `ESPACIOS` como una cadena de SQL: `btrim` recorta cualquiera de sus caracteres. */
+const ESPACIOS_SQL = sql.lit(ESPACIOS);
+
+/**
+ * `cuadranteDeUnValor` en SQL: la clave del cuadrante de un valor, o nulo. Recorta los mismos espacios, quita las
+ * mismas tildes y pasa a minúscula, en el mismo orden; la prueba 310 compara las dos con los mismos valores.
+ */
+export function cuadranteUsable(valor: RawBuilder<string | null>): RawBuilder<string | null> {
+  const normalizado = sql`lower(translate(btrim(${valor}, ${ESPACIOS_SQL}), ${sql.lit(CON_TILDE)}, ${sql.lit(SIN_TILDE)}))`;
+  return sql<string | null>`(case when ${normalizado} in (${sql.join(LOS_CUATRO.map((c) => sql.lit(c)))}) then ${normalizado} end)`;
+}
+
+/**
+ * Reclasifica los contactos a la vista desde lo ya guardado en `campos_del_crm`, con el campo del cuadrante que
+ * resuelve ahora. Cero llamadas al CRM. Devuelve cuántos cambiaron.
+ *
+ * Lo llama la sincronización después de releer el catálogo (`sincronizarContactos`). Hace falta por el orden de las
+ * cosas: la pasada guarda los contactos ANTES de releer el catálogo, así que la primera después de subir la `105` los
+ * escribe sin saber todavía cuál es el campo —el catálogo no tenía claves— y los deja como estaban. Ésta los clasifica
+ * en la misma corrida, también a los congelados, que la sincronización ya no trae.
+ *
+ * Sólo escribe las filas que cambian (`is distinct from`): corre una vez por día por cliente, y reescribir todos los
+ * contactos para dejarlos igual sería trabajo y filas muertas por nada. Sin campo a la vista no toca nada: un catálogo
+ * que todavía no lo tiene no es un catálogo que diga «nadie está clasificado».
+ */
+export async function recalcularLosCuadrantes(): Promise<number> {
+  const ids = await camposDelCuadrante();
+  if (ids.length === 0) return 0;
+  const nuevo = cuadranteUsable(valorDelCampo(sql`campos_del_crm`, ids as CampoDelCrm));
+  const r = await datos()
+    .updateTable('contactos')
+    .set({ cuadrante: nuevo } as never)
+    // Sólo los clientes cuyo catálogo tiene el campo: el de otro, sin releer todavía, no dice que nadie esté clasificado.
+    .where(
+      'cuenta_id',
+      'in',
+      datos().selectFrom('campos_del_crm').select('cuenta_id').where('clave', '=', CLAVE_DEL_CUADRANTE),
+    )
+    .where(sql<boolean>`cuadrante is distinct from ${nuevo}`)
     .executeTakeFirst();
   return Number(r.numUpdatedRows);
 }
