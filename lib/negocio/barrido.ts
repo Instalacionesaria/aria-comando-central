@@ -100,7 +100,7 @@ export const TAREAS = [
   'citas',
   'mejora',
   'anuncios',
-  // Después de `anuncios`: rellena lo que la pasada diaria dejó sin cuadrar. Sola en su horario.
+  // Después de `anuncios`: la historia de 12 meses de Meta, de a tramos. Sola en su horario.
   'anuncios_relleno',
   // La miniatura de cada anuncio, de Meta y no del CRM. Sola en su horario.
   'activos',
@@ -319,12 +319,12 @@ export const HORARIOS = {
     umbralMinutos: 180,
   },
 
-  /* ── EL RELLENO DEL GASTO, CADA HORA Y SOLO (`076`) ──────────────────────
+  /* ── LA HISTORIA DEL GASTO, CADA HORA Y SOLA (Meta directo) ──────────────
 
-     Busca qué campaña gastó en los días cerrados que no cuadran con la cuenta. La primera vez son cientos de
-     llamadas —61 campañas a unos 3 a 4,5 s cada una—, así que va solo en su horario, con su propio
-     presupuesto (`FIN_DEL_RELLENO_MS`), y cada corrida sigue donde quedó la anterior. Cuando todo cuadra no
-     hace ninguna llamada.
+     Trae los 12 meses de cada cuenta publicitaria de Meta, de a 30 días por cuenta y por corrida, hacia atrás desde el
+     día más viejo que ya tiene (`recolectarDeMeta`, modo `historia`). Con el nivel de acceso «Limited» de la app, la
+     cuota no da para todo de una vez: va sola en su horario y cada corrida sigue donde quedó la anterior. Con los 12
+     meses completos no hace ninguna llamada. Hasta Meta directo era el relleno del cuadre de GoHighLevel (`076`).
 
      El minuto 53 porque no lo usa nadie (el 3, el 7, el 17, el 23, el 41 y los múltiplos de diez ya están), y
      dos corridas en el mismo minuto se frenan por el candado. El umbral respeta la regla: 2 × 60 + 60 = 180. */
@@ -1111,20 +1111,12 @@ async function releerContactos(
 export function motivoDeLoIncompleto(resultado: unknown): string | null {
   if (typeof resultado !== 'object' || resultado === null) return null;
   const r = resultado as {
-    atrasado?: unknown;
-    huecos?: unknown;
-    ilegibles?: unknown;
-    accionesIlegibles?: unknown;
     llaveRechazada?: unknown;
     sinTiempo?: unknown;
     saturado?: unknown;
     paginaLlena?: unknown;
     descubrimiento?: unknown;
-    nombres?: unknown;
     departamentosQueFallaron?: unknown;
-    vinculo?: unknown;
-    cuenta?: unknown;
-    residuos?: unknown;
   };
   const partes: string[] = [];
 
@@ -1155,19 +1147,6 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     partes.push(`${r.sinTiempo} llamada(s) quedaron para la próxima corrida por tiempo`);
   }
 
-  /* El gasto de Meta (`076`). Sin vínculo, la pasada no escribe nada a propósito —un vacío del proveedor
-     guardado como cero sería permanente—, y sin esta línea el sello quedaba limpio sobre una pasada que no
-     leyó el gasto. */
-  const v = r.vinculo as { estado?: unknown } | null | undefined;
-  if (v != null && v.estado !== 'connected') {
-    partes.push('Meta no está vinculado en GoHighLevel: no se leyó el gasto');
-  }
-  const cuenta = r.cuenta as { tipo?: unknown } | null | undefined;
-  if (cuenta?.tipo === 'fallo') partes.push('GoHighLevel no devolvió el gasto de la cuenta: no se renovó en esta pasada');
-  if (Array.isArray(r.residuos) && r.residuos.length > 0) {
-    partes.push(`${r.residuos.length} día(s) con gasto de la cuenta que ninguna campaña listada explica`);
-  }
-
   /* Las miniaturas de los contactos (CF1-11): el cupo, la credencial, un GoHighLevel que no contesta o el tiempo cortan
      la pasada, y lo que faltó se
      pide en la siguiente. Sin esta línea el sello quedaba limpio sobre una pasada que no terminó. */
@@ -1195,35 +1174,6 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     };
     const texto = typeof activos.corte === 'string' ? CORTE_DE_META[activos.corte] : undefined;
     if (texto) partes.push(texto);
-  }
-
-  if (r.atrasado === true) partes.push('se agotó el presupuesto y quedaron días sin pedir');
-  if (Array.isArray(r.huecos) && r.huecos.length > 0) {
-    partes.push(`${r.huecos.length} par(es) (campaña, día) sin datos`);
-  }
-  // Un solo ilegible ya es la firma de que el proveedor cambió una clave. No lleva umbral.
-  if (typeof r.ilegibles === 'number' && r.ilegibles > 0) {
-    partes.push(`${r.ilegibles} fila(s) que el proveedor mandó y no se pudieron leer`);
-  }
-  /* Rama aparte de la de arriba, y no un contador sumado: una fila ilegible significa que se
-     escribieron MENOS filas, y un valor ilegible que se escribieron todas con un dato de menos.
-     Colapsarlos haría que el primero, que es el grave, se pierda adentro del segundo. */
-  if (typeof r.accionesIlegibles === 'number' && r.accionesIlegibles > 0) {
-    partes.push(`${r.accionesIlegibles} valor(es) del desglose de acciones que no se pudieron leer`);
-  }
-  /* Los nombres de las campañas (`065`). Un fallo no tumba la pasada —las métricas ya se
-     escribieron—, pero sin esta línea el sello quedaba limpio sobre una tabla de nombres que no se
-     renovó. Y una lista recortada por el tope de páginas se dice, por la misma regla de siempre:
-     una lista corta que se ve completa es peor que una que falla.
-
-     El texto no promete que queden los de antes: la primera lectura de una empresa también puede
-     fallar, y entonces la tabla está vacía. */
-  const n = r.nombres as { tipo?: unknown; corto?: unknown } | null | undefined;
-  if (n?.tipo === 'fallo') {
-    partes.push('GoHighLevel no devolvió los nombres de las campañas: no se renovaron en esta pasada');
-  }
-  if (n?.tipo === 'leidas' && n.corto === true) {
-    partes.push('la lista de campañas vino recortada: puede faltar algún nombre');
   }
 
   /* Meta directo (`anuncios` y `anuncios_relleno`): lo de cada cuenta publicitaria que no se completó. La conexión

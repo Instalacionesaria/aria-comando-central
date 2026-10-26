@@ -5,7 +5,7 @@
 > `services.leadconnectorhq.com`, cabecera `Version: 2021-07-28`.
 >
 > Este documento es a la vez **fuente** y **corrección**. Desmiente dos afirmaciones publicadas:
-> `lib/ghl/anuncios.ts:41-46` y `db/migraciones/050_lo_que_costo_cada_anuncio.sql:52-58`.
+> `3bd2d58:lib/ghl/anuncios.ts:41-46` y `db/migraciones/050_lo_que_costo_cada_anuncio.sql:52-58`.
 >
 > Cada «no» de acá trae el código de error del intento, para que nadie vuelva a sondear una ruta que
 > ya devolvió 404.
@@ -14,7 +14,7 @@
 
 ## 1 · Lo que estaba escrito, y por qué era falso
 
-`lib/ghl/anuncios.ts:41-46`, literal:
+`3bd2d58:lib/ghl/anuncios.ts:41-46`, literal:
 
 > «Ninguna métrica de video: reproducciones, cuartiles 25/50/75/100, tiempo medio visto, retención de
 > tres y de seis segundos. Tampoco `link clicks`, `link CTR` ni `landing page views`, ni el activo
@@ -98,7 +98,7 @@ A nivel de **cuenta** (`/reporting`) los valores son **números**; a nivel de **
 /reporting/list     "results":{"linkClick":"18","videoView":"328","landingPageView":"16"}
 ```
 
-`numero()` (`lib/ghl/anuncios.ts:141`) ya aguanta las dos formas. Lo que **no** puede hacer el lector
+`numero()` (`3bd2d58:lib/ghl/anuncios.ts:141`) ya aguanta las dos formas. Lo que **no** puede hacer el lector
 es escribir cero cuando un valor no se deja leer: tiene que contarlo, por el mismo motivo por el que
 `metricasPorAnuncio` cuenta `ilegibles`.
 
@@ -186,7 +186,7 @@ hay campo que pedir.
 § 18.12 no tiene fuente por esta vía. Tampoco edad, género, dispositivo, plataforma ni país.
 
 Y ojo con el otro sentido: `groupBy` **existe en `/reporting` y se ignora en `/reporting/list`**. Ya
-estaba medido y está escrito en `lib/ghl/anuncios.ts:37-39`: con un rango de tres días devuelve una
+estaba medido y está escrito en `3bd2d58:lib/ghl/anuncios.ts:37-39`: con un rango de tres días devuelve una
 fila agregada por anuncio, no tres. El grano diario por anuncio se consigue pidiendo un día por
 llamada, que es lo que el colector hace.
 
@@ -488,7 +488,7 @@ empresa empezara a lanzar desde GoHighLevel, habría que volver a medir `C14-16`
 La respuesta de `GET /integration` trae, dentro de `pages[]`, una clave `accessToken`: **el token de
 acceso de la Página de Facebook conectada**, emitido por Meta para la aplicación de GoHighLevel. La
 sonda lo detecta por el nombre de la clave y no lo imprime; el cliente de la aplicación sólo cuenta las
-páginas y no guarda ese campo (`lib/ghl/anuncios.ts:263-265`).
+páginas y no guarda ese campo (`3bd2d58:lib/ghl/anuncios.ts:263-265`).
 
 **Decisión del 2026-09-29: no se usa.** Es una credencial de otra aplicación: usarla desde la nuestra
 es actuar en nombre de GoHighLevel sin serlo, lo que puede ir contra los términos de Meta y de

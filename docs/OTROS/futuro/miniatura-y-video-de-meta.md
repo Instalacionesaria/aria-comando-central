@@ -141,7 +141,7 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
   - un anuncio cuyo `account_id` no es la cuenta cargada se descarta (`cuenta_ajena`, `C15-11`):
     `negocio.anuncios` no guarda la cuenta, así que la comparación es contra `meta_cuenta_id`;
   - toda URL pasa por `medioPermitido` antes de escribirse; la que no pasa, no se guarda;
-  - presupuesto de tiempo como `PRESUPUESTO_MS` (`lib/negocio/recolectarAnuncios.ts:107`), y la marca
+  - presupuesto de tiempo como `PRESUPUESTO_MS` (`3bd2d58:lib/negocio/recolectarAnuncios.ts:107`), y la marca
     de «incompleto» si no alcanza.
 - **Pruebas, cada una con su mutación**: una miniatura ausente es `null` y no `''`; la segunda pasada
   reescribe; un 500 en un anuncio no tumba a los demás; un host fuera de la lista no se escribe; la

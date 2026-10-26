@@ -23,7 +23,7 @@ import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { ambitoDeUnCliente, cuentaDe, porOmisionDe, type AmbitoDeUnCliente } from '../../lib/negocio/ambitoDelCliente.ts';
 import { conElPulso } from '../../lib/negocio/pulso.ts';
-import { guardarSerie } from '../../lib/negocio/recolectarAnuncios.ts';
+import { guardarDias } from '../../lib/negocio/recolectarDeMeta.ts';
 import { sincronizarContactos } from '../../lib/negocio/sincronizar.ts';
 
 const SLUG = 'gamma-274';
@@ -37,7 +37,7 @@ let y: string;
 async function limpiar(): Promise<void> {
   const o = await unaFila<{ id: string }>(admin, `select id from identidad.organizaciones where slug = $1`, [SLUG]);
   if (!o) return;
-  for (const t of ['contactos', 'ingesta_pulso', 'gasto_de_la_cuenta', 'campos_del_crm', 'carpetas_del_crm']) {
+  for (const t of ['contactos', 'ingesta_pulso', 'gasto_por_cuenta_publicitaria', 'gasto_de_la_cuenta', 'campos_del_crm', 'carpetas_del_crm']) {
     await admin.query(`delete from negocio.${t} where org_id = $1`, [o.id]);
   }
   await admin.query(`delete from identidad.cuentas where org_id = $1 and not es_por_omision`, [o.id]);
@@ -142,7 +142,12 @@ test('el pulso y el gasto que se escriben en el ámbito de un cliente quedan en 
     resultado: null,
   }));
   assert.equal(r.corrio, true);
-  await conOrganizacion(x, () => guardarSerie([{ dia: '2026-10-01', gasto: 12.5, impresiones: 100, clics: 3, cpc: null, cpm: null, alcance: null, frecuencia: null }]));
+  // El escritor del gasto es el de Meta directo (M3): la cuenta publicitaria y, con ella, el total del cliente.
+  await conOrganizacion(x, () =>
+    guardarDias('act_274', 'PEN', '2026-10-01', '2026-10-01', [
+      { fecha: '2026-10-01', gasto: 12.5, impresiones: 100, clics: 3, alcance: null, frecuencia: null, cpm: null, moneda: 'PEN' },
+    ]),
+  );
   const pulso = await filas<{ cuenta_id: string }>(admin, `select cuenta_id from negocio.ingesta_pulso where org_id = $1`, [org]);
   const gasto = await filas<{ cuenta_id: string }>(admin, `select cuenta_id from negocio.gasto_de_la_cuenta where org_id = $1`, [org]);
   assert.deepEqual(pulso, [{ cuenta_id: cuentaDe(x) }]);

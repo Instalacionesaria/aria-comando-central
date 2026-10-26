@@ -1,24 +1,22 @@
-// El gasto de TODA la cuenta publicitaria (`076`) y qué falta leer para que el gasto por campaña cuadre con él.
+// El gasto de TODA la cuenta (`076`) y si el gasto por anuncio cuadra con él: lo que comparten Acquisition, la economía
+// y los detectores para saber si una ventana tiene el gasto entero, y por qué no.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // «COMPLETO» QUIERE DECIR «CUADRA CON LA CUENTA», NO «EL DÍA TIENE FILAS»
 //
 // Hasta el 2026-10-07 un día de gasto estaba completo si tenía alguna fila de métricas. Así se escondió la
-// fuga: el colector pedía 13 de las 61 campañas, las 12 pausadas dejaban una fila nula por día, y la única que
-// gastó —una campaña de mensajes, sin contactos atribuidos— no entraba nunca. La app decía 0 en 7 días y el
-// Administrador de anuncios 200,19.
+// fuga: el colector de GoHighLevel pedía 13 de las 61 campañas, y la única que gastó —una campaña de mensajes,
+// sin contactos atribuidos— no entraba nunca. La app decía 0 en 7 días y el Administrador de anuncios 200,19.
 //
-// Ahora la referencia es la serie diaria de la cuenta (`serieDeLaCuenta`), que coincide al centavo con el
-// Administrador de anuncios. Un día está completo cuando la suma por anuncio cuadra con ella. Y un día que
-// cuadra prueba, sin ninguna llamada, que no gastó ninguna campaña que no se leyó ese día: el gasto nunca es
-// negativo.
+// La referencia es el total diario de la cuenta (`gasto_de_la_cuenta`). Un día está completo cuando tiene su total,
+// releído después de terminar, y la suma por anuncio lo explica.
 //
-// Este archivo tiene dos mitades:
-//
-//   · **Las decisiones del colector, puras**: qué día cuadra, qué lectura es final, qué consultas hacen falta.
-//     Fechas como texto `YYYY-MM-DD` y el reloj de afuera, así que se prueban sin base y en cualquier zona.
-//   · **Las lecturas de cobertura** que comparten Acquisition, la economía y los detectores: si una ventana
-//     tiene el gasto entero, y por qué no.
+// Desde Meta directo (M3) las dos mitades salen de la misma pasada de la Marketing API —el total por cuenta
+// publicitaria y el detalle por anuncio—, así que un día que Meta devolvió llega con las dos. El cuadre queda como
+// control: un día que no cuadra es un anuncio que Meta no dio en el detalle, y la pantalla lo dice en vez de mostrar
+// un gasto corto. Lo que hacía el colector de GoHighLevel para cuadrar —pedir por campaña, por rango y por día,
+// redescubrir y declarar residuos (`lecturas_de_gasto`)— se retiró con su lectura (M5); `residuo_el` sólo queda en
+// los días que declaró antes.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql, type RawBuilder } from 'kysely';
@@ -29,245 +27,11 @@ import { datos } from '../datos/contexto.ts';
  *
  * Medido el 2026-10-07: la campaña de mensajes del 30-sep al 6-oct suma 200,19 por anuncio y la serie 200,19
  * para la cuenta; del 7-sep al 6-oct la serie suma 2.234,55, igual al Administrador de anuncios. Al centavo.
- * Lo que queda es el redondeo: el proveedor manda el gasto de cada anuncio con dos decimales, así que la suma
- * de N anuncios puede alejarse medio centavo por anuncio del total redondeado. Diez centavos cubren veinte
- * anuncios con entrega en un día, el doble de lo que esta cuenta mueve.
+ * Lo que queda es el redondeo: Meta manda el gasto de cada anuncio con dos decimales, así que la suma de N
+ * anuncios puede alejarse medio centavo por anuncio del total redondeado. Diez centavos cubren veinte anuncios
+ * con entrega en un día.
  */
 export const TOLERANCIA_DEL_CUADRE = 0.1;
-
-const DIA_MS = 86_400_000;
-
-/** Un instante, como su día en UTC. */
-export function diaUtc(t: number): string {
-  return new Date(t).toISOString().slice(0, 10);
-}
-
-/** Un `YYYY-MM-DD` corrido `n` días. Por UTC, así que no depende de la zona del proceso. */
-export function sumarDias(dia: string, n: number): string {
-  return diaUtc(Date.parse(`${dia}T00:00:00Z`) + n * DIA_MS);
-}
-
-/**
- * Desde cuándo una lectura de `dia` es FINAL: las 00:00 UTC de dos días después.
- *
- * Ahí el día terminó en cualquier huso —de UTC−12 a UTC+14—, así que nada que se lea después lo verá a medias.
- * No sabemos en qué zona está la cuenta publicitaria (la API no lo dice), y por eso la cota es la del peor caso.
- */
-export function finSeguro(dia: string): number {
-  return Date.parse(`${dia}T00:00:00Z`) + 2 * DIA_MS;
-}
-
-/** Si el detalle por anuncio de un día explica el total de la cuenta. Sin total, nunca. */
-export function cuadra(cuenta: number | null, detalle: number): boolean {
-  if (cuenta === null) return false;
-  // En centavos, para que la suma de flotantes no deje un `0.1000000001` del lado equivocado de la cota.
-  return Math.abs(Math.round(cuenta * 100) - Math.round(detalle * 100)) <= Math.round(TOLERANCIA_DEL_CUADRE * 100);
-}
-
-// ─── Lo que el colector sabe de un día y de un par ───────────────────────────
-
-/** Una fila de `negocio.gasto_de_la_cuenta`, con los instantes en milisegundos. */
-export interface DiaDeLaSerie {
-  gasto: number | null;
-  leidoEl: number;
-  cambioEl: number | null;
-  redescubiertoEl: number | null;
-  residuoEl: number | null;
-}
-
-/** Una fila de `negocio.lecturas_de_gasto`. */
-export interface LecturaDeGasto {
-  gasto: number;
-  leidoEl: number;
-  porRango: boolean;
-}
-
-/** Todo lo que hace falta para decidir qué pedir. La arma el colector leyendo la base; acá no se lee nada. */
-export interface FotoDelGasto {
-  /** Las campañas de la cuenta (`negocio.campanas`) más las que tienen anuncios guardados. */
-  universo: readonly string[];
-  serie: ReadonlyMap<string, DiaDeLaSerie>;
-  /** La suma por anuncio de cada día, con el mismo filtro que `cifrasPorCampana`: anuncios con campaña. */
-  detalle: ReadonlyMap<string, number>;
-  /** Por campaña, y adentro por día. */
-  lecturas: ReadonlyMap<string, ReadonlyMap<string, LecturaDeGasto>>;
-}
-
-/**
- * Si una lectura de un par ya no va a cambiar.
- *
- *   · Leída antes de `finSeguro`, pudo ver el día a medias.
- *   · Con gasto, y leída antes de que el total del día cambiara (`cambio_el`): Meta corrigió hacia atrás, y lo
- *     que esa campaña gastó puede ser otra cifra. Un cero leído antes de una corrección se conserva: que la
- *     corrección le cree gasto a una campaña que no gastó termina en el residuo, que lo redescubre una vez.
- */
-export function lecturaFinal(l: LecturaDeGasto, dia: string, serie: DiaDeLaSerie | undefined): boolean {
-  if (l.leidoEl < finSeguro(dia)) return false;
-  if (l.gasto > 0 && serie?.cambioEl != null && l.leidoEl < serie.cambioEl) return false;
-  return true;
-}
-
-/**
- * En qué está un día, para el relleno:
- *
- *   · `sin_serie`: no tiene total de la cuenta, o el que tiene se leyó antes de que el día terminara;
- *   · `cuadra`: el detalle explica el total. Las campañas no leídas ese día no gastaron;
- *   · `pendiente`: no cuadra y a alguna campaña le falta una lectura final;
- *   · `por_redescubrir`: no cuadra con todas las campañas leídas, y es la primera vez. Sus ceros se borran y
- *     se vuelven a descubrir: un vacío del proveedor pudo ser un silencio y no un cero;
- *   · `nuevo_residuo`: lo mismo, después de redescubrirlo. Se declara residuo;
- *   · `residuo`: ya declarado. Gasto de la cuenta que ninguna campaña listada explica (una campaña borrada).
- */
-export type EstadoDelDia = 'sin_serie' | 'cuadra' | 'pendiente' | 'por_redescubrir' | 'nuevo_residuo' | 'residuo';
-
-export function estadoDelDia(foto: FotoDelGasto, dia: string): EstadoDelDia {
-  const s = foto.serie.get(dia);
-  if (!s || s.leidoEl < finSeguro(dia)) return 'sin_serie';
-  if (cuadra(s.gasto, foto.detalle.get(dia) ?? 0)) return 'cuadra';
-  if (s.residuoEl !== null) return 'residuo';
-  const falta = foto.universo.some((c) => {
-    const l = foto.lecturas.get(c)?.get(dia);
-    return !l || !lecturaFinal(l, dia, s);
-  });
-  if (falta) return 'pendiente';
-  return s.redescubiertoEl === null ? 'por_redescubrir' : 'nuevo_residuo';
-}
-
-// ─── Las consultas que faltan ────────────────────────────────────────────────
-
-/**
- * Una llamada al proveedor:
- *
- *   · `dia`: las métricas por anuncio de una campaña en un día. Se guardan como métrica diaria;
- *   · `rango`: el total de una campaña en varios días. **Nunca se guarda como métrica**: sólo decide si esos
- *     días son ceros probados o si hay que bajar a semanas, y de las semanas a los días.
- */
-export type Consulta =
-  | { tipo: 'dia'; campana: string; dia: string }
-  | {
-      tipo: 'rango';
-      campana: string;
-      desde: string;
-      hasta: string;
-      /** Los días del rango que esta campaña tiene sin leer. Son los únicos que el resultado puede resolver. */
-      dias: readonly string[];
-      /** Lo que esta campaña ya tiene leído en el rango: el total del rango lo incluye. */
-      conocido: number;
-    };
-
-/** Cuántos días tiene, como mucho, un rango que se resuelve pidiendo sus días de a uno. */
-export const DIAS_POR_SEMANA = 7;
-
-/**
- * Lo que una campaña tiene leído, y FINAL, en un rango. Una lectura que no es final no cuenta: su cifra puede
- * haber cambiado, y descontarla del total podría dejar en cero un día que gastó. Si el total la incluye, el
- * rango sale con gasto y se parte, que cuesta llamadas pero nunca escribe un cero falso.
- */
-function conocidoEn(foto: FotoDelGasto, campana: string, desde: string, hasta: string): number {
-  let suma = 0;
-  for (const [dia, l] of foto.lecturas.get(campana) ?? []) {
-    if (dia >= desde && dia <= hasta && lecturaFinal(l, dia, foto.serie.get(dia))) suma += l.gasto;
-  }
-  return suma;
-}
-
-/**
- * Las consultas que resuelven los días `pendiente` de la lista, antes de partir ningún rango.
- *
- * Por cada (campaña, día) sin lectura final:
- *   · si la lectura que tiene gastó, se vuelve a pedir ese día: ya se sabe que gastó, un rango no ahorra nada;
- *   · si no, entra en un rango de la campaña, del primero al último de sus días sin leer.
- *
- * Un rango puede cruzar días que ya cuadran, o en que la campaña ya está leída: el total los incluye, y por eso
- * viaja `conocido`. Lo que falta es el total menos lo conocido, y un día que cuadra no le suma nada a una campaña
- * sin leer, porque cuadrar prueba que no gastó.
- */
-export function consultasIniciales(foto: FotoDelGasto, pendientes: readonly string[]): Consulta[] {
-  const cola: Consulta[] = [];
-  const sinLeer = new Map<string, string[]>();
-  for (const dia of pendientes) {
-    const s = foto.serie.get(dia);
-    for (const campana of foto.universo) {
-      const l = foto.lecturas.get(campana)?.get(dia);
-      if (l && lecturaFinal(l, dia, s)) continue;
-      if (l && l.gasto > 0) cola.push({ tipo: 'dia', campana, dia });
-      else sinLeer.set(campana, [...(sinLeer.get(campana) ?? []), dia]);
-    }
-  }
-  for (const [campana, dias] of sinLeer) {
-    const orden = [...dias].sort();
-    const desde = orden[0]!;
-    const hasta = orden[orden.length - 1]!;
-    cola.push({ tipo: 'rango', campana, desde, hasta, dias: orden, conocido: conocidoEn(foto, campana, desde, hasta) });
-  }
-  return ordenar(cola);
-}
-
-/**
- * Qué hacer con el total de un rango:
- *
- *   · si lo que falta —el total menos lo conocido— no pasa la tolerancia, los días sin leer son **ceros
- *     probados**;
- *   · si gastó y el rango es de una semana o menos, se piden sus días sin leer, de a uno;
- *   · si gastó y es más largo, se parte en semanas desde el final, y cada semana con días sin leer es un rango.
- */
-export function partirRango(
-  foto: FotoDelGasto,
-  consulta: Extract<Consulta, { tipo: 'rango' }>,
-  total: number,
-): { ceros: readonly string[] } | { siguientes: Consulta[] } {
-  if (Math.round((total - consulta.conocido) * 100) <= Math.round(TOLERANCIA_DEL_CUADRE * 100)) {
-    return { ceros: consulta.dias };
-  }
-  const largo = (Date.parse(`${consulta.hasta}T00:00:00Z`) - Date.parse(`${consulta.desde}T00:00:00Z`)) / DIA_MS + 1;
-  if (largo <= DIAS_POR_SEMANA) {
-    return { siguientes: ordenar(consulta.dias.map((dia) => ({ tipo: 'dia' as const, campana: consulta.campana, dia }))) };
-  }
-  const siguientes: Consulta[] = [];
-  for (let hasta = consulta.hasta; hasta >= consulta.desde; hasta = sumarDias(hasta, -DIAS_POR_SEMANA)) {
-    const inicio = sumarDias(hasta, -(DIAS_POR_SEMANA - 1));
-    const desde = inicio > consulta.desde ? inicio : consulta.desde;
-    const dias = consulta.dias.filter((d) => d >= desde && d <= hasta);
-    if (dias.length === 0) continue;
-    siguientes.push({
-      tipo: 'rango',
-      campana: consulta.campana,
-      desde,
-      hasta,
-      dias,
-      conocido: conocidoEn(foto, consulta.campana, desde, hasta),
-    });
-  }
-  return { siguientes: ordenar(siguientes) };
-}
-
-/**
- * El orden de la cola: **lo más nuevo primero**, y en el mismo final, lo más largo primero.
- *
- * Lo más nuevo primero porque es lo que la pantalla muestra: «7 días» se completa antes que agosto. Y en el
- * mismo final los rangos largos van antes que las semanas y los días, porque un rango que da cero resuelve de
- * una llamada lo que los días resolverían de a uno.
- */
-export function ordenar(cola: readonly Consulta[]): Consulta[] {
-  const fin = (c: Consulta) => (c.tipo === 'dia' ? c.dia : c.hasta);
-  const inicio = (c: Consulta) => (c.tipo === 'dia' ? c.dia : c.desde);
-  return [...cola].sort(
-    (a, b) =>
-      fin(b).localeCompare(fin(a)) ||
-      inicio(a).localeCompare(inicio(b)) ||
-      a.campana.localeCompare(b.campana),
-  );
-}
-
-/**
- * Los pares que la pasada diaria pide SIEMPRE: hoy, ayer y anteayer de las campañas candidatas, en ese orden.
- *
- * Hoy primero porque es lo único que sólo esta pasada pide: anteayer lo cubre también el relleno, que nunca toca
- * un día más nuevo que hoy−2. Ayer y hoy quedan como foto a medias hasta que se releen.
- */
-export function paresDelTramoFijo(hoy: string, candidatas: readonly string[]): { campana: string; dia: string }[] {
-  return [0, 1, 2].flatMap((atras) => candidatas.map((campana) => ({ campana, dia: sumarDias(hoy, -atras) })));
-}
 
 // ─── Las lecturas de cobertura ───────────────────────────────────────────────
 
@@ -482,7 +246,7 @@ export async function diasSinCuadrar(enLaVentana: (alias: string) => RawBuilder<
  * la empresa queda con el colector atrasado, pero en la ventana todavía tiene días de su serie, así que
  * `pautaSinLeerEn` no lo lista y sólo esta lista lo encuentra; lo mismo uno con métricas viejas y ninguna serie, que deja
  * la ventana entera y la empresa atrasada. El que no cuadra (`no_cuadra`) no está: su total está, y lo que falta lo
- * busca el relleno. Corre dentro de `conOrganizacion`.
+ * relee la pasada diaria de Meta, que vuelve sobre los últimos 28 días. Corre dentro de `conOrganizacion`.
  */
 export async function clientesConLaSerieIncompleta(desde: string, hasta: string, dias: number, zona: string): Promise<string[]> {
   const r = await sql<{ cuenta_id: string }>`

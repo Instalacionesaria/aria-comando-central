@@ -24,7 +24,7 @@ Dónde, en `current_date`:
   `bordesDelPeriodo`), y el de Conversation en días UTC de JavaScript
   (`lib/agentes/detectores/conversation.ts:101`).
 - El último día cerrado de Acquisition, que desde la `076` se mide sobre la serie de la cuenta
-  (`lib/negocio/gastoDeLaCuenta.ts:320` y la cota de atraso de `:325`).
+  (`lib/negocio/gastoDeLaCuenta.ts:84` y la cota de atraso de `:325`).
 
 Y dos que se ven directo en pantalla, fuera de las ventanas:
 
@@ -63,7 +63,7 @@ cualquier hora, y una de código que prohíba `current_date` y los `::date` sin 
 **Parte B, Acquisition, después de medir:**
 
 - Su último día cerrado convive con el colector de anuncios, que guarda el día de la cuenta publicitaria
-  (`lib/negocio/gastoDeLaCuenta.ts:54`: la API no expone esa zona). Medido el 2026-10-07: las sumas por día
+  (`3bd2d58:lib/negocio/gastoDeLaCuenta.ts:54`: la API no expone esa zona). Medido el 2026-10-07: las sumas por día
   de la serie coinciden al centavo con el Administrador de anuncios en 7 y 30 días, así que el día del
   proveedor es el de la cuenta; su zona sigue sin saberse.
 - Los escenarios de Lima y Los Ángeles de la 181 (`pruebas/base/181-embudos-de-acquisition.test.ts:740-741` y

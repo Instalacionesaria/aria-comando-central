@@ -130,7 +130,7 @@ prohibición al lado. Es la diferencia entre postergar un requisito y borrarlo.
 | `17-CONECTAR-META-PASO-A-PASO.md` | — | La guía para la persona del equipo que conecta Meta: la app, el usuario del sistema, el token de sólo lectura, la carga en Ajustes, «Probar conexión» y qué hacer con cada falla. Escrita el 2026-10-15 para mandarse tal cual |
 
 **Si se va a leer uno solo, que sea el `14`.** No porque sea el más importante para el producto, sino
-porque es el que cambia lo que ya estaba escrito: `lib/ghl/anuncios.ts:41-46` y
+porque es el que cambia lo que ya estaba escrito: `3bd2d58:lib/ghl/anuncios.ts:41-46` y
 `db/migraciones/050_lo_que_costo_cada_anuncio.sql:52-58` **declararon imposible** un conjunto de
 métricas que sí llega, por anuncio y por día, en una llamada que el sistema ya hace todos los días.
 

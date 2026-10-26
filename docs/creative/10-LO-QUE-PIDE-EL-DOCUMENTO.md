@@ -86,7 +86,7 @@ Y del grupo «Interacción» del mismo § 18.7 —*«CTR. Link CTR. CPC. Landing
 Click-to-landing rate.»*— los **tres que faltaban** ahora llegan: `Link CTR` (`C2-11`),
 `Landing page view rate` (`C2-12`) y `Click-to-landing rate` (`C2-13`).
 
-> **Esto es la corrección más grande que trae esta carpeta.** `lib/ghl/anuncios.ts:41-46` contaba
+> **Esto es la corrección más grande que trae esta carpeta.** `3bd2d58:lib/ghl/anuncios.ts:41-46` contaba
 > *«las seis del § 18.7 «video y creativo» más dos de «interacción»»* como imposibles. Son **tres**
 > las de interacción y **las tres llegan**; de las seis de video, **dos** llegan. Ver `14`.
 

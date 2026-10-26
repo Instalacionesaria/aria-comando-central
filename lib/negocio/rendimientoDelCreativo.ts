@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // ESTAS CIFRAS ESTABAN DECLARADAS IMPOSIBLES, Y LLEGABAN DESDE EL PRIMER DÍA
 //
-// `lib/ghl/anuncios.ts` afirmaba que esta vía no daba «ninguna métrica de video… tampoco `link
+// El colector de GoHighLevel (`lib/ghl/anuncios.ts`, retirado con Meta directo) afirmaba que esa vía no daba «ninguna métrica de video… tampoco `link
 // clicks`, `link CTR` ni `landing page views`». De esas ocho cosas, cuatro venían en un campo
 // anidado —`results`— que `numero()` convertía en nulo. La migración `053` le dio columna y el
 // colector la escribe; esto es lo que se puede publicar con ella.

@@ -168,7 +168,7 @@ decía «tres cabeceras distintas»; con tres familias y dos valores, nunca lo f
 | Contactos, etiquetas, campos, usuarios | `2021-07-28` | `lib/ghl/cliente.ts:33` |
 | Conversaciones y mensajes | `2021-04-15` | `lib/ghl/conversaciones.ts:49` |
 | Calendarios y citas | `2021-04-15` | `lib/ghl/calendarios.ts:114` |
-| **Anuncios (nueva)** | `2021-07-28` | `lib/ghl/anuncios.ts:92` |
+| **Anuncios (nueva)** | `2021-07-28` | `3bd2d58:lib/ghl/anuncios.ts:92` |
 
 ### La tabla completa
 
@@ -188,22 +188,22 @@ decía «tres cabeceras distintas»; con tres familias y dos valores, nunca lo f
 | 12 | `GET /conversations/{id}/messages` | 1 por conversación nuestra que se movió | tope 6 por ciclo (`lib/negocio/ingesta.ts:71`) | `lib/ghl/conversaciones.ts:232` |
 | 13 | `GET /conversations/messages/{id}` | tercera pasada de entregas | 2 por ciclo (`lib/negocio/entregas.ts:53`) | `lib/ghl/conversaciones.ts:294` |
 | 14 | `POST /conversations/messages` | enviar desde el chat | por acción de una persona | `lib/ghl/conversaciones.ts:419` |
-| 15 | `GET /ad-publishing/facebook/integration` | cron `anuncios` y `anuncios_relleno`, el «paso 0» y **una compuerta**: sin `connected` no se escribe nada | 1 por pasada diaria; el relleno, sólo si hay días pendientes (`lib/negocio/rellenarAnuncios.ts:280-294`) | `lib/ghl/anuncios.ts:250` |
-| 16 | `GET /ad-publishing/facebook/reporting/list` | cron `anuncios`: un día por llamada, para las campañas candidatas; cron `anuncios_relleno`: **un rango por campaña**, que suma | régimen: 3 por día (1 candidata × 3 días); el relleno, 0 cuando todo cuadra | `lib/ghl/anuncios.ts:519` (día) y `lib/ghl/anuncios.ts:553` (rango) |
-| 17 | `GET /ad-publishing/facebook/entity` | cron `anuncios`, nivel `CAMPAIGN`, al principio de cada pasada (desde el 2026-09-30) | 1 por página; una página con las 62 campañas | `lib/ghl/anuncios.ts:327` |
-| 18 | `GET /ad-publishing/facebook/reporting` | cron `anuncios` y `anuncios_relleno` (desde el 2026-10-07): **la serie diaria de toda la cuenta**, la referencia del gasto | 3 por pasada diaria (60 días en tramos de 20) | `lib/ghl/anuncios.ts:621` |
+| 15 | `GET /ad-publishing/facebook/integration` | cron `anuncios` y `anuncios_relleno`, el «paso 0» y **una compuerta**: sin `connected` no se escribe nada | 1 por pasada diaria; el relleno, sólo si hay días pendientes (`3bd2d58:lib/negocio/rellenarAnuncios.ts:280-294`) | `3bd2d58:lib/ghl/anuncios.ts:250` |
+| 16 | `GET /ad-publishing/facebook/reporting/list` | cron `anuncios`: un día por llamada, para las campañas candidatas; cron `anuncios_relleno`: **un rango por campaña**, que suma | régimen: 3 por día (1 candidata × 3 días); el relleno, 0 cuando todo cuadra | `3bd2d58:lib/ghl/anuncios.ts:519` (día) y `3bd2d58:lib/ghl/anuncios.ts:553` (rango) |
+| 17 | `GET /ad-publishing/facebook/entity` | cron `anuncios`, nivel `CAMPAIGN`, al principio de cada pasada (desde el 2026-09-30) | 1 por página; una página con las 62 campañas | `3bd2d58:lib/ghl/anuncios.ts:327` |
+| 18 | `GET /ad-publishing/facebook/reporting` | cron `anuncios` y `anuncios_relleno` (desde el 2026-10-07): **la serie diaria de toda la cuenta**, la referencia del gasto | 3 por pasada diaria (60 días en tramos de 20) | `3bd2d58:lib/ghl/anuncios.ts:621` |
 
 Hasta el 2026-09-28 la 17 y la 18 no tenían llamador, y la 16 se pedía sólo para las 13 campañas que aparecían en nuestra
-atribución. **La `076` cambió las tres** (`lib/negocio/recolectarAnuncios.ts:22-39`): el universo son las campañas de la
+atribución. **La `076` cambió las tres** (`3bd2d58:lib/negocio/recolectarAnuncios.ts:22-39`): el universo son las campañas de la
 cuenta que lista la 17, la referencia es el total diario de la 18, y la 16 se pide de dos maneras —un día para guardar
 métricas, un rango para probar con una sola llamada que una campaña no gastó—. Dos restricciones del proveedor que
 gobiernan el diseño, medidas el 2026-10-07: la serie **corta en 25 filas sin decirlo**, por eso se pide en tramos de 20
-días (`lib/ghl/anuncios.ts:586-597`), y **omite los días sin gasto**, que dentro de un tramo leído son un cero medido
-(`lib/ghl/anuncios.ts:610-615`). El detalle, en `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:515-547`.
+días (`3bd2d58:lib/ghl/anuncios.ts:586-597`), y **omite los días sin gasto**, que dentro de un tramo leído son un cero medido
+(`3bd2d58:lib/ghl/anuncios.ts:610-615`). El detalle, en `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:515-547`.
 
 Las 17 rutas son 18 operaciones porque la 3 y la 4 comparten ruta. Las cuatro de anuncios las alcanza
 el mismo Private Integration Token que ya usaba el barrido, bajo el alcance `adPublishing`
-(`lib/ghl/anuncios.ts:11-20`, sondeado el 2026-09-16).
+(`3bd2d58:lib/ghl/anuncios.ts:11-20`, sondeado el 2026-09-16).
 
 Y una URL que **no es API**: el widget de reserva `https://api.leadconnectorhq.com/widget/booking/{calendarId}`
 (`lib/ghl/agendar.ts:43`). Sólo se arma como enlace; la de reagendar lleva `?event_id=` y su ausencia
@@ -256,9 +256,9 @@ Instagram y 128 registros de llamada**, el 10 % del tráfico de nuestros contact
 (`lib/ghl/entrega.ts:225-231`). Del 2026-09-14, no re-medido: es una decisión de producto de ese día.
 
 **`GET /ad-publishing/facebook/reporting/list` (nueva).** Lee 14 claves por fila y guarda 13
-(`lib/ghl/anuncios.ts:484-499`). La que se lee y **no** se guarda es `leads`, que no es el conteo de
+(`3bd2d58:lib/ghl/anuncios.ts:484-499`). La que se lee y **no** se guarda es `leads`, que no es el conteo de
 Meta sino el nuestro dando un rodeo por el proveedor: 16 de 16 coincidencias el 2026-09-16 y 14 de 15
-el 2026-09-19 (`lib/ghl/anuncios.ts:426-441`). Tampoco entran `sales`, `revenue` ni `averageRevenue`
+el 2026-09-19 (`3bd2d58:lib/ghl/anuncios.ts:426-441`). Tampoco entran `sales`, `revenue` ni `averageRevenue`
 (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:208-223`). Y `results` —el desglose de acciones de
 Meta— se tiraba entero hasta el 2026-09-19 porque `numero()` convertía el objeto en nulo; desde
 `7660d2a` va a `metricas_de_anuncio.acciones` (`db/migraciones/053_el_desglose_que_ya_llegaba.sql:13-32`).
@@ -266,8 +266,8 @@ Medido el 2026-09-28: 275 de las 3.318 filas tenían desglose, y 237 de las 263 
 2026-10-18, 708 de 4.918.
 
 **`GET /ad-publishing/facebook/reporting` (con llamador desde el 2026-10-07).** Lee gasto, impresiones, clics, CPC, CPM,
-alcance y frecuencia por día (`lib/ghl/anuncios.ts:626`, `:648-657`); se guardan gasto, impresiones y clics. `conversions` y
-`costPerConversion` vienen en cero en todo el período y no se leen (`lib/ghl/anuncios.ts:617-619`).
+alcance y frecuencia por día (`3bd2d58:lib/ghl/anuncios.ts:626`, `:648-657`); se guardan gasto, impresiones y clics. `conversions` y
+`costPerConversion` vienen en cero en todo el período y no se leen (`3bd2d58:lib/ghl/anuncios.ts:617-619`).
 
 ### El costo de las carpetas, que conviene mirar
 
@@ -303,7 +303,7 @@ La columna `ultimas_llamadas` de `negocio.tareas_programadas` guarda lo que cost
 | `mejora` | `17 6 * * *` | 06:17 | 1 (1) | el modelo | `lib/negocio/barrido.ts:297-301` |
 | **`anuncios`** | `17 6 * * *` | 06:18 | **8** (40) | GoHighLevel | `lib/negocio/barrido.ts:284-301` |
 | `analizadores` | `41 * * * *` | 14:41 | 2 (4) | tl;dv y el modelo | `lib/negocio/barrido.ts:316-320` |
-| **`anuncios_relleno`** (nueva, `076`) | `53 * * * *` | 14:53 | **0** | GoHighLevel, sólo si un día no cuadra | `lib/negocio/barrido.ts:322-335` |
+| **`anuncios_relleno`** (nueva, `076`) | `53 * * * *` | 14:53 | **0** | GoHighLevel, sólo si un día no cuadra | `3bd2d58:lib/negocio/barrido.ts:322-335` |
 | `reintentos` | `7 10 * * *` | 10:07 | 0 (0) | el modelo | `lib/negocio/barrido.ts:344-348` |
 | **`senales`** (nueva, `072`) | `23 * * * *` | 11:23 | 40, sumadas las 11 empresas | el modelo (la redacción del plan) | `lib/negocio/barrido.ts:375-379` |
 | **`activos`** (nueva, `078`) | `37 * * * *` | 14:37 | **0**: `saltada` en las 11, sin token | **Meta** | `lib/negocio/barrido.ts:350-363` |
@@ -311,7 +311,7 @@ La columna `ultimas_llamadas` de `negocio.tareas_programadas` guarda lo que cost
 Las tareas que no le hablan al CRM —`auditoria`, `mejora`, `analizadores`, `reintentos`, `senales` y `activos`— no se
 saltean por falta del token de GoHighLevel (`lib/negocio/barrido.ts:764-777`); `activos` se saltea por falta del de Meta,
 con su texto (`lib/negocio/barrido.ts:788-795`). Una tarea que corrió y dejó trabajo sin hacer lo dice en el motivo del
-sello (`lib/negocio/barrido.ts:1111-1250`): el 2026-10-18 las diez tareas que corrieron para la empresa conectada tenían el
+sello (`lib/negocio/barrido.ts:1111-1200`): el 2026-10-18 las diez tareas que corrieron para la empresa conectada tenían el
 motivo **vacío**, o sea completas (consulta: `ultimo_motivo is null`; los textos no se leyeron).
 
 **Piso diario sólo por el cron, contra GoHighLevel: (8 + 1) × 144 + 11 × 24 + 8 = 1.568 llamadas** (el 2026-09-28 eran
@@ -322,18 +322,18 @@ Analizadores ni la tarea `senales` le hablan al CRM.
 **La tarea `anuncios` cuesta 8, y ahora el comentario y la medición coinciden.** El comentario cuenta «el vínculo, las
 campañas y la serie de la cuenta son unas 5 llamadas, más tres por cada campaña candidata», con 8 a 14 por día para las 1
 a 3 campañas activas (`lib/negocio/barrido.ts:293-296`); la medición del 2026-10-18 es 1 + 1 + 3 + 1 × 3 = 8. Las
-candidatas son las `ACTIVE` y las que gastaron en la última semana (`lib/negocio/recolectarAnuncios.ts:81-87`, `:594-597`).
-El proveedor tarda **4,55 s por llamada** en esta familia (`lib/negocio/recolectarAnuncios.ts:92-93`) y la pasada tiene su
-tope de 120 s, que ahora se comprueba antes de cada llamada (`lib/negocio/recolectarAnuncios.ts:99-107`). La campaña de
+candidatas son las `ACTIVE` y las que gastaron en la última semana (`3bd2d58:lib/negocio/recolectarAnuncios.ts:81-87`, `:594-597`).
+El proveedor tarda **4,55 s por llamada** en esta familia (`3bd2d58:lib/negocio/recolectarAnuncios.ts:92-93`) y la pasada tiene su
+tope de 120 s, que ahora se comprueba antes de cada llamada (`3bd2d58:lib/negocio/recolectarAnuncios.ts:99-107`). La campaña de
 prueba `888888` que devolvía 500 ya no se pide: el universo son las campañas de la cuenta
-(`lib/negocio/recolectarAnuncios.ts:122-128`).
+(`3bd2d58:lib/negocio/recolectarAnuncios.ts:122-128`).
 
 **El relleno del gasto cuesta cero en régimen y cientos la primera vez.** Busca, cada hora, qué campaña gastó en los días
 cerrados que no cuadran con la cuenta: un rango por campaña, partido en semanas y en días sólo donde hubo gasto
-(`lib/negocio/rellenarAnuncios.ts:15-22`). La primera vez son cientos de llamadas —61 campañas a unos 3 a 4,5 s—, por eso va
-solo en su horario y con su propio fin de reloj, 250 s (`lib/negocio/barrido.ts:322-330`,
-`lib/negocio/rellenarAnuncios.ts:58-66`); cuando no queda nada pendiente no llama ni al vínculo
-(`lib/negocio/rellenarAnuncios.ts:280-282`). El 2026-10-18 corrió con 0 llamadas.
+(`3bd2d58:lib/negocio/rellenarAnuncios.ts:15-22`). La primera vez son cientos de llamadas —61 campañas a unos 3 a 4,5 s—, por eso va
+solo en su horario y con su propio fin de reloj, 250 s (`3bd2d58:lib/negocio/barrido.ts:322-330`,
+`3bd2d58:lib/negocio/rellenarAnuncios.ts:58-66`); cuando no queda nada pendiente no llama ni al vínculo
+(`3bd2d58:lib/negocio/rellenarAnuncios.ts:280-282`). El 2026-10-18 corrió con 0 llamadas.
 
 **La miniatura de cada contacto cuesta una llamada, una sola vez.** Va dentro de `contactos`, después de sincronizar
 (`lib/negocio/barrido.ts:1094-1098`): hasta 50 contactos por pasada, sólo los que llegaron con `adId`, con 15 s por pedido y
@@ -373,12 +373,12 @@ de leads de Tools y «Probar conexión» de Meta.
 - El código exacto del proveedor al pasarse del límite **sigue sin confirmar**
   (`lib/ghl/cliente.ts:264-266`). **Lo que cambió desde el 2026-09-15:** la familia de anuncios es la
   primera del repositorio que reintenta el `429` — tres veces, esperando 1,2, 2,4 y 4,8 s
-  (`lib/ghl/anuncios.ts:139-169`)—, y a propósito fuera de `pedirExterno`, porque ahí un reintento
-  automático podría mandarle dos veces el mismo mensaje a una persona (`lib/ghl/anuncios.ts:130-132`).
-  `Retry-After` sigue sin leerse (`lib/ghl/anuncios.ts:150-152`). Las otras catorce operaciones siguen
+  (`3bd2d58:lib/ghl/anuncios.ts:139-169`)—, y a propósito fuera de `pedirExterno`, porque ahí un reintento
+  automático podría mandarle dos veces el mismo mensaje a una persona (`3bd2d58:lib/ghl/anuncios.ts:130-132`).
+  `Retry-After` sigue sin leerse (`3bd2d58:lib/ghl/anuncios.ts:150-152`). Las otras catorce operaciones siguen
   sin red. La pasada de miniaturas **no reintenta el 429: corta** y deja lo que falta para la siguiente
   (`lib/negocio/miniaturaDelContacto.ts:26-29`), y Meta tampoco reintenta: un cupo agotado corta la pasada de activos y
-  la hora siguiente sigue (`lib/negocio/barrido.ts:1183-1198`).
+  la hora siguiente sigue (`lib/negocio/barrido.ts:1162-1177`).
 
 El comparador que el proyecto guarda: la plataforma anterior corrió a ~7 peticiones por minuto y por
 pestaña —420 por hora— y GoHighLevel lo toleró (`lib/negocio/barrido.ts:217-220`). Estamos un orden de
@@ -812,10 +812,10 @@ de Avanzar tampoco lo trajo: ningún resultado registrado desde el 2026-09-09.
 | **Listar las carpetas de campos personalizados** | Cuatro formas probadas el 2026-09-07, las cuatro fallan (`lib/ghl/cliente.ts:666-683`). Sólo una por una, por su id. |
 | **Filtrar conversaciones por etiqueta** | `GET /conversations/search` **ignora el filtro** y devuelve las 15.808 de la cuenta (`lib/ghl/conversaciones.ts:6-9`). De ahí sale el diseño por marca de agua. |
 | **Paginar citas** | `calendarId` es obligatorio y **no acepta `limit`**: todo parámetro desconocido da 422 nombrándolo (`lib/ghl/calendarios.ts:25-45`). El barrido cuesta 1 + N calendarios. |
-| ~~**Gasto, impresiones, alcance, CPM, CTR**~~ | **CORREGIDO el 2026-09-16: sí llegan.** La foto anterior buscó campos personalizados con esos nombres, no los encontró y concluyó que no había vía. Es el error de método de la advertencia 3: el Ad Manager de GoHighLevel los devuelve y el token del CRM lo alcanza (`lib/ghl/anuncios.ts:11-25`). Lo que ya está guardado, en la § 9. |
-| **Las métricas finas del video** | Cuartiles 25/50/75/100, tiempo medio visto, retención de seis segundos, *thruplay*: `fields` es un enum cerrado de once valores y todo lo demás da 422 (`lib/ghl/anuncios.ts:64-68`). |
-| **Placement y desgloses demográficos** | `groupBy` sólo acepta `day`, `week` y `month` (`lib/ghl/anuncios.ts:70`). |
-| **El activo creativo** (§ 5.1 *Creative Profile*) | `/entity?entityType=AD` devuelve sólo nombre e identificadores, y `/creatives`, `/videos` y `/posts` dan 404 (`lib/ghl/anuncios.ts:72-74`; el detalle en `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:251-265`). |
+| ~~**Gasto, impresiones, alcance, CPM, CTR**~~ | **CORREGIDO el 2026-09-16: sí llegan.** La foto anterior buscó campos personalizados con esos nombres, no los encontró y concluyó que no había vía. Es el error de método de la advertencia 3: el Ad Manager de GoHighLevel los devuelve y el token del CRM lo alcanza (`3bd2d58:lib/ghl/anuncios.ts:11-25`). Lo que ya está guardado, en la § 9. |
+| **Las métricas finas del video** | Cuartiles 25/50/75/100, tiempo medio visto, retención de seis segundos, *thruplay*: `fields` es un enum cerrado de once valores y todo lo demás da 422 (`3bd2d58:lib/ghl/anuncios.ts:64-68`). |
+| **Placement y desgloses demográficos** | `groupBy` sólo acepta `day`, `week` y `month` (`3bd2d58:lib/ghl/anuncios.ts:70`). |
+| **El activo creativo** (§ 5.1 *Creative Profile*) | `/entity?entityType=AD` devuelve sólo nombre e identificadores, y `/creatives`, `/videos` y `/posts` dan 404 (`3bd2d58:lib/ghl/anuncios.ts:72-74`; el detalle en `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:251-265`). |
 | **`visitor_id` / `session_id`** (§ 16.2, pruebas 2 y 3) | No hay campo. Lo más cercano es `gaClientId` (42 contactos, eran 37) y `fbp` (70, eran 63) dentro de la atribución de primer toque (en cualquiera de los dos toques, 57 y 89): identificadores de sesión ajenos. |
 | ~~**El ad set como identificador**~~ | **CORREGIDO el 2026-09-16: sí llega**, como `utmTerm`. Esta fila decía que el ad set venía «sólo como nombre», y era falso: los 9 valores distintos de entonces cruzaron **9 de 9** contra los 200 conjuntos de `/entity` (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:28-30`; la misma migración nombra el error de esta fila en `db/migraciones/050_lo_que_costo_cada_anuncio.sql:45-49`), y la `050` guarda esa llave con su nombre verdadero en `negocio.anuncios.meta_conjunto_id` (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:95-101`). El 2026-09-28: `utmTerm` en 274 contactos, 11 valores, 10 de ellos de 18 dígitos y uno de texto que no es un identificador. Contra nuestra dimensión cruzan 6 de 11, pero esa tabla sólo tenía los conjuntos de los anuncios que aparecieron en el reporte y **20 de sus 79 anuncios seguían sin conjunto**; el cruce contra `/entity` no se re-midió: desde el 2026-09-30 `/entity` se pide, pero sólo al nivel de campaña. |
 
@@ -832,7 +832,7 @@ de Avanzar tampoco lo trajo: ningún resultado registrado desde el 2026-09-09.
 | **La grabación de la llamada** | `attachments[0]` en 128 de 128. | `leerMensaje` no lee `attachments`. |
 | **Una venta marcada en el CRM** | `venta_ganada` en 2 contactos el 2026-10-18 (1 el 2026-09-28; § 4). | Sales cuenta sólo lo que registra Avanzar. |
 | **El catálogo real de etiquetas** | `GET /locations/{loc}/tags` está implementado (`lib/ghl/cliente.ts:450`). | Sólo se llama cuando la búsqueda trae cero contactos. Nunca se ejecutó en régimen. |
-| ~~**La estructura y la serie de la cuenta**~~ | `estructuraDeAnuncios` y `serieDeLaCuenta` (`lib/ghl/anuncios.ts:327` y `lib/ghl/anuncios.ts:621`). | **Ya se piden**: la estructura desde el 2026-09-30 y la serie desde el 2026-10-07, que es la referencia del gasto y la única vía al **CPM** agregado (`lib/ghl/anuncios.ts:604-609`). El CPM se pide y no se guarda: `negocio.gasto_de_la_cuenta` tiene gasto, impresiones y clics (`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:23-53`). |
+| ~~**La estructura y la serie de la cuenta**~~ | `estructuraDeAnuncios` y `serieDeLaCuenta` (`3bd2d58:lib/ghl/anuncios.ts:327` y `3bd2d58:lib/ghl/anuncios.ts:621`). | **Ya se piden**: la estructura desde el 2026-09-30 y la serie desde el 2026-10-07, que es la referencia del gasto y la única vía al **CPM** agregado (`3bd2d58:lib/ghl/anuncios.ts:604-609`). El CPM se pide y no se guarda: `negocio.gasto_de_la_cuenta` tiene gasto, impresiones y clics (`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:23-53`). |
 
 ---
 
@@ -897,10 +897,10 @@ atribución.** Decía que no había gasto desde el 2026-09-14 y que lo exacto er
 con la medición que la motivó: el 2026-10-07 la app decía 0 en 7 días y 865,58 en 30, y el Administrador de anuncios de
 la misma cuenta decía 200,19 y 2.234,55 (`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:6-10`). Lo que sí era cierto:
 desde el 2026-09-18 las filas de esas 13 campañas venían sin métricas —estaban pausadas— y un vacío del proveedor no es un
-cero (`lib/ghl/anuncios.ts:172-177`).
+cero (`3bd2d58:lib/ghl/anuncios.ts:172-177`).
 
 **Cómo cuadra ahora.** Un día está completo cuando la suma por anuncio coincide con el total de la cuenta
-(`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:12-17`), con una tolerancia de 0,10 (`lib/negocio/gastoDeLaCuenta.ts:36`,
+(`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:12-17`), con una tolerancia de 0,10 (`lib/negocio/gastoDeLaCuenta.ts:34`,
 `:61`). Lo ya leído se anota por (campaña, día), y un cero se prueba con una sola llamada por rango
 (`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:64-85`). Meta corrige hacia atrás: un total que cambia marca
 `cambio_el` y lo leído antes se vuelve a pedir (`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:41-43`). Un día que no
@@ -910,8 +910,8 @@ Hoy hay uno.
 
 **El vínculo con Meta ya deja rastro, y es una compuerta.** El 2026-09-28 el colector lo preguntaba cada día y no lo guardaba
 en ningún lado. Desde la `076`, sin `connected` la pasada no escribe nada —un vacío guardado como cero sería permanente—
-(`lib/negocio/recolectarAnuncios.ts:551-558`), y el sello lo dice: «Meta no está vinculado en GoHighLevel: no se leyó el
-gasto» (`lib/negocio/barrido.ts:1158-1164`). El 2026-10-18 la tarea `anuncios` de la empresa conectada corrió a las 06:18 UTC
+(`3bd2d58:lib/negocio/recolectarAnuncios.ts:551-558`), y el sello lo dice: «Meta no está vinculado en GoHighLevel: no se leyó el
+gasto» (`3bd2d58:lib/negocio/barrido.ts:1158-1164`). El 2026-10-18 la tarea `anuncios` de la empresa conectada corrió a las 06:18 UTC
 con el motivo vacío, o sea que **el vínculo estaba `connected`** (deducido del motivo vacío; el texto no se leyó).
 
 ### El embudo por anuncio, con su costo (del 2026-09-29, no re-medido)
@@ -937,14 +937,14 @@ trazabilidad del § 16.2 —*«capturar UTMs y `meta_ad_id`»*— sigue cumplido
 ### Qué agrega Meta directo, exactamente
 
 1. ~~**El denominador de costo**~~ — **llega por GoHighLevel**, de toda la cuenta, con impresiones, clics, alcance, CTR,
-   CPC y frecuencia por anuncio y por día. El CPM agregado lo trae la serie de la cuenta (`lib/ghl/anuncios.ts:604-609`),
+   CPC y frecuencia por anuncio y por día. El CPM agregado lo trae la serie de la cuenta (`3bd2d58:lib/ghl/anuncios.ts:604-609`),
    que se pide y no se guarda.
 2. ~~**El `adSetId` como identificador**~~ — **llega**, como `utmTerm` (§ 8 A).
 3. **La miniatura y el post de cada anuncio** — **construido el 2026-10-15, dormido**: la tarea `activos` lee de Meta el
    creativo de cada anuncio y guarda la miniatura vigente y el enlace al post (§ 11). Por GoHighLevel la única imagen es la
    del contacto que llegó desde un anuncio de Instagram: 3 de 526 contactos pedidos la traen (medido el 2026-10-18).
 4. **El video y las métricas finas** — **siguen sin llegar por ninguna vía construida**: el archivo del video, cuartiles,
-   tiempo medio visto, retención de seis segundos y los desgloses por ubicación y demografía (`lib/ghl/anuncios.ts:62-74`).
+   tiempo medio visto, retención de seis segundos y los desgloses por ubicación y demografía (`3bd2d58:lib/ghl/anuncios.ts:62-74`).
    El plan dejó el video para después de medir con el primer token real (CR-8 y CR-9,
    `docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md:193-204`). Lo que sí llega del lado del video es `videoView`, con 90 % de
    cobertura en su medición del 2026-09-18 (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md:66-73`) y una definición
@@ -1020,7 +1020,7 @@ Cada uno es un hueco medido, no una suposición.
    informe no lo llamó. Si alcanza, el `opportunity_id` del § 5.4 está a una llamada de distancia.
 
 6. ~~**Si Meta sigue vinculado hoy.**~~ **Cerrado por deducción el 2026-10-18.** Desde la `076` el sello de `anuncios`
-   dice cuando el vínculo no está `connected` (`lib/negocio/barrido.ts:1158-1164`), y el de ese día estaba vacío (§ 9).
+   dice cuando el vínculo no está `connected` (`3bd2d58:lib/negocio/barrido.ts:1158-1164`), y el de ese día estaba vacío (§ 9).
 
 7. ~~**Por qué no hay gasto desde el 2026-09-14.**~~ **Era falso: hubo** (703,38 hasta el 2026-10-18, § 9). Las 13
    campañas que se pedían sí estaban sin entregar; otra, de mensajes, gastaba y no se pedía. Lo que sigue abierto es
@@ -1083,7 +1083,7 @@ entregaron hace menos, hasta 200 por pasada y con 90 s de presupuesto (`lib/nego
 (`lib/negocio/recolectarActivos.ts:74-94`). Guarda en `negocio.activos_de_anuncio`, una fila por anuncio leído, también sin
 miniatura, con su motivo (`db/migraciones/078_el_activo_del_anuncio.sql:21-49`). Sin token se sella `saltada` con su texto,
 sin llamar a nadie (`lib/negocio/barrido.ts:788-795`); un token rechazado, un permiso que falta o el cupo cortan la pasada
-y el sello dice qué hacer (`lib/negocio/barrido.ts:1183-1198`). Creative toma la miniatura y el post de Meta antes que los
+y el sello dice qué hacer (`lib/negocio/barrido.ts:1162-1177`). Creative toma la miniatura y el post de Meta antes que los
 del contacto (`lib/negocio/lecturaDeCreative.ts:584-585`).
 
 **Medido el 2026-10-18:** `negocio.activos_de_anuncio` tiene **0 filas**, y la tarea `activos` está `saltada` en las 11

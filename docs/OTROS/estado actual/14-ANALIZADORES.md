@@ -284,7 +284,7 @@ esperas (`docs/OTROS/analizadores/ANALIZADORES.md:302-303`), y hay 10 completos 
 último sello es `corrio`, 2026-10-18 15:41 UTC, sin motivo y con **2 llamadas a proveedores**; la cuenta es la de
 `lib/analizadores/tarea.ts:188-197`, que desde AG11 suma también las pedidas de objeciones. En las otras 10 empresas
 activas, `saltada` por falta de la llave de tl;dv. **Que haya corrido cada hora no está verificado**: el sello guarda
-sólo la última corrida (`lib/negocio/barrido.ts:1353-1386`).
+sólo la última corrida (`lib/negocio/barrido.ts:1303-1336`).
 
 **El reintento de las 5**, `'7 10 * * *'` (`lib/negocio/barrido.ts:344-348`): último sello en `aria`, `corrio`
 2026-10-18 10:07 UTC con 0 llamadas; en las otras 10, `saltada`.
@@ -344,7 +344,7 @@ escribe sólo el estado y el error (`lib/analizadores/datos.ts:336-344`)—, per
 historial no se puede recalcular entero: a los 44 análisis copiados les faltan los dos contadores de caché (§ 4).
 
 **2 · La historia de las corridas.** `negocio.tareas_programadas` guarda la última de cada (empresa, tarea)
-(`lib/negocio/barrido.ts:1353-1386`), así que no hay forma de contar cuántas corridas hubo, ni cuántas fallaron, ni
+(`lib/negocio/barrido.ts:1303-1336`), así que no hay forma de contar cuántas corridas hubo, ni cuántas fallaron, ni
 cuántas quedaron cortas. Hoy se reconstruye a mano con `creado_el` y `tomada_el`, como el silencio del 13 al 18 (§ 4).
 
 **3 · El mapa de nombres de reunión → tipo.** Lo tiene el equipo y es la condición para construir la clasificación
@@ -445,7 +445,7 @@ No está verificado si es el negocio o la rúbrica; con `negocio.resultados` en 
 hay contra qué compararlo.
 
 **El motivo del sello se escribe y no lo lee nadie.** `motivoDeLoIncompleto` arma frases como «tl;dv rechazó la
-llave: hay que volver a cargarla» (`lib/negocio/barrido.ts:1136-1156`), y el bucle dice que eso «tiene que poder leerse
+llave: hay que volver a cargarla» (`lib/negocio/barrido.ts:1128-1148`), y el bucle dice que eso «tiene que poder leerse
 desde la pantalla de monitoreo sin abrir un registro» (`lib/negocio/barrido.ts:849-860`). Ningún archivo de `lib/`,
 `app/` o `components/` lee `ultimo_motivo` fuera del que lo escribe (`grep`, 2026-10-18; sólo lo nombra
 `lib/datos/esquema.ts`). Desde AG15 la cabecera sí dice si la tarea nunca corrió, falló o está atrasada (§ 2), pero

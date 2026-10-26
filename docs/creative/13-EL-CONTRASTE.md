@@ -82,7 +82,7 @@ de explicabilidad; los nombres son lo más grave de la pantalla (`C9-04`).
 
 ### 3.1 · El documento cree que el video es imposible sin Meta; el código lo escribió; y es falso a medias
 
-`lib/ghl/anuncios.ts:41-46` y `db/migraciones/050:52-58` declararon imposibles ocho cosas. **Cuatro
+`3bd2d58:lib/ghl/anuncios.ts:41-46` y `db/migraciones/050:52-58` declararon imposibles ocho cosas. **Cuatro
 llegan hoy**, por anuncio y por día, en una llamada que el cron ya hace. Ver `14`.
 
 ### 3.2 · El documento pone a Creative en dos lugares a la vez

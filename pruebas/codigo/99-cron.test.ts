@@ -277,62 +277,6 @@ test('el camino del cron empieza con `/api/`, que es lo único que el proxy no r
 
 // ─── EL SELLO DICE QUÉ LE FALTÓ A UNA PASADA QUE IGUAL CORRIÓ ───────────────
 
-test('una pasada truncada NO se sella igual que una completa', () => {
-  /* ══ EL SELLO ES EL ÚNICO REGISTRO QUE SOBREVIVE A LA CORRIDA ══════════════
-   *
-   * `atrasado` y `huecos` viajaban en el resumen y **no llegaban a ninguna parte**: el sello decía
-   * `corrio` con el motivo en nulo, así que una pasada que se quedó sin presupuesto se veía igual
-   * que una completa desde la pantalla de monitoreo.
-   *
-   * No puede sellarse como `fallo` —corrió, y marcarla así haría que el cron la reintentara— pero
-   * tampoco como una completa. El motivo es el campo libre que tiene, y es donde va. */
-  assert.match(
-    String(motivoDeLoIncompleto({ atrasado: true, huecos: [], ilegibles: 0 })),
-    /presupuesto/,
-    'una ventana truncada no dejó rastro en el sello',
-  );
-  assert.match(
-    String(motivoDeLoIncompleto({ atrasado: false, huecos: [{ campana: '888888', dia: '2026-09-18' }] })),
-    /1 par/,
-    'los huecos no llegan al sello',
-  );
-  // Un solo ilegible ya es la firma de que el proveedor cambió una clave: no lleva umbral.
-  assert.match(String(motivoDeLoIncompleto({ ilegibles: 1 })), /no se pudieron leer/);
-});
-
-test('un valor ilegible del desglose se informa APARTE de una fila ilegible', () => {
-  /* Los dos dicen cosas distintas y por eso son dos ramas y no un contador sumado:
-     `ilegibles` = se escribieron MENOS filas, porque el proveedor renombró `adId`.
-     `accionesIlegibles` = se escribieron todas, con un tipo de acción de menos.
-     Sumarlos haría que el primero —el grave— se pierda adentro del segundo. */
-  const soloDesglose = String(motivoDeLoIncompleto({ accionesIlegibles: 3 }));
-  assert.match(soloDesglose, /desglose/, 'el desglose ilegible no llega al sello');
-  assert.doesNotMatch(soloDesglose, /fila\(s\)/, 'se informó como si fueran filas perdidas');
-
-  const losDos = String(motivoDeLoIncompleto({ ilegibles: 1, accionesIlegibles: 3 }));
-  assert.match(losDos, /1 fila/, 'la fila ilegible desapareció cuando también había valores');
-  assert.match(losDos, /3 valor/, 'el valor ilegible desapareció cuando también había filas');
-});
-
-test('los nombres de campaña que fallaron o vinieron recortados se DICEN en el sello', () => {
-  /* Un fallo de los nombres no tumba la pasada (`recolectarAnuncios`), así que el sello decía
-     `corrio` sin más sobre una tabla de nombres que no se renovó. Y una lista recortada por el tope
-     de páginas es una lista corta que se ve completa. */
-  assert.match(
-    String(motivoDeLoIncompleto({ nombres: { tipo: 'fallo', porque: 'rechazado' } })),
-    /nombres de las campañas/,
-    'un fallo de los nombres no llegó al sello',
-  );
-  assert.match(
-    String(motivoDeLoIncompleto({ nombres: { tipo: 'leidas', campanas: 61, corto: true } })),
-    /recortada/,
-    'una lista de campañas recortada no llegó al sello',
-  );
-  // Y la otra mitad: leídos enteros, o no pedidos, no hay nada que decir.
-  assert.equal(motivoDeLoIncompleto({ nombres: { tipo: 'leidas', campanas: 61, corto: false } }), null);
-  assert.equal(motivoDeLoIncompleto({ nombres: null }), null);
-});
-
 test('la pasada de los detectores dice en el sello cuántos departamentos no terminaron', () => {
   /* Un departamento que falló no dejó su plan y se reintenta la hora siguiente (AG-35). La tarea «corrió»
      —otros terminaron—, así que sin esta línea el sello quedaba limpio sobre una pasada incompleta. */
@@ -340,20 +284,10 @@ test('la pasada de los detectores dice en el sello cuántos departamentos no ter
   assert.equal(motivoDeLoIncompleto({ tocaba: true, departamentosQueFallaron: 0 }), null);
 });
 
-test('el gasto de Meta dice en el sello si no está vinculado, si la serie falló o si hay residuos (`076`)', () => {
-  /* Sin vínculo la pasada no escribe nada, a propósito: un vacío del proveedor guardado como cero sería
-     permanente. Sin esta línea el sello quedaba limpio sobre una pasada que no leyó el gasto. */
-  assert.match(String(motivoDeLoIncompleto({ vinculo: { estado: 'disconnected', cuentaId: null } })), /Meta no está vinculado/);
-  assert.equal(motivoDeLoIncompleto({ vinculo: { estado: 'connected', cuentaId: 'act_1' } }), null);
-  // El relleno que no tuvo nada que hacer no preguntó por el vínculo: nulo, y nada que decir.
-  assert.equal(motivoDeLoIncompleto({ vinculo: null, residuos: [], huecos: [], atrasado: false }), null);
-  assert.match(String(motivoDeLoIncompleto({ cuenta: { tipo: 'fallo', porque: 'rechazado' } })), /gasto de la cuenta/);
-  assert.match(String(motivoDeLoIncompleto({ residuos: ['2026-09-10'] })), /1 día\(s\) con gasto de la cuenta que ninguna campaña/);
-});
-
-test('el relleno del gasto corre SOLO en su horario, y cada hora', () => {
-  /* Busca entre 61 campañas: la primera vez son cientos de llamadas. Compartiendo la corrida con la pasada
-     diaria, la guardia de tiempo lo cortaría siempre. Mutación: sumarlo a `17 6 * * *`. */
+test('la historia del gasto corre SOLA en su horario, y cada hora', () => {
+  /* Los 12 meses de Meta, de a tramos de 30 días por cuenta (Meta directo): la primera vez son decenas de llamadas por
+     cliente. Compartiendo la corrida con la pasada diaria, la guardia de tiempo la cortaría siempre. Mutación: sumarla
+     a `17 6 * * *`. (Hasta Meta directo era el relleno del cuadre de GoHighLevel, `076`.) */
   const suyos = Object.entries(HORARIOS).filter(([, h]) => (h.tareas as readonly string[]).includes('anuncios_relleno'));
   assert.deepEqual(
     suyos.map(([horario, h]) => [horario, h.tareas, h.cadenciaMinutos]),

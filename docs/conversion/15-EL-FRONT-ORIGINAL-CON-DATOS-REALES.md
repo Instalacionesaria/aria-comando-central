@@ -275,7 +275,7 @@ cosas que no son.
 ### CV15-07 · Las vistas de landing son una cifra de Meta, y no llevan tasa
 
 **Qué es** · La suma de `landingPageView` de la ventana, de **todas** las campañas de la cuenta: el mismo
-filtro `meta_campana_id is not null` que el detalle del gasto (`lib/negocio/gastoDeLaCuenta.ts:384`). Una
+filtro `meta_campana_id is not null` que el detalle del gasto (`lib/negocio/gastoDeLaCuenta.ts:148`). Una
 campaña de mensajes no trae la clave y suma cero, así que no hace falta filtrar por funnel.
 
 **Fórmula** · La de A14-05 de Acquisition, con dos diferencias, una para cada lado:

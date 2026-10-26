@@ -3,7 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // POR QUÉ ESTO ES DE CÓDIGO Y NO DE COMPORTAMIENTO
 //
-// `pruebas/base/99-anuncios.test.ts` prueba lo que el colector escribe en `negocio.campanas`, y
+// `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts` prueba lo que el recolector de Meta escribe en
+// `negocio.campanas`, y
 // `pruebas/base/180-el-funnel-de-la-campana.test.ts` lo que la ruta escribe en
 // `negocio.funnels_de_campana`. Ninguna de las dos puede ver a un SEGUNDO escritor: si mañana otro
 // archivo inserta campañas o asigna funnels por su cuenta, las dos siguen en verde.
@@ -11,7 +12,7 @@
 // Y cada tabla tiene una regla que un segundo escritor se saltearía:
 //
 //   · en `campanas`, el nombre se conserva con `coalesce` y el estado se reescribe plano (`065`), y
-//     eso lo hace su escritor, `guardarCampanas`. Uno nuevo que no lo supiera borraría nombres, o
+//     eso lo hace su escritor, `guardarEstructura`. Uno nuevo que no lo supiera borraría nombres, o
 //     dejaría estados viejos con sello nuevo;
 //   · en `funnels_de_campana`, cada asignación y cada quita dejan su fila de auditoría en la misma
 //     transacción. **Eso NO lo hace el escritor**: lo hace quien lo llama —la ruta
@@ -36,20 +37,16 @@ function escribe(tabla: string, fuente: string): boolean {
   return kysely.test(fuente) || crudo.test(fuente);
 }
 
-/* Desde Meta directo (M3), el escritor de las campañas y del gasto es el recolector de Meta. El de GoHighLevel
-   (`recolectarAnuncios.ts`, y el relleno que escribe a través de él) queda TOLERADO hasta su retiro (M5): el cron ya no
-   lo llama, pero el código existe. La lista de tolerados es explícita para que no crezca sin que nadie lo decida. */
-const DE_GOHIGHLEVEL_HASTA_SU_RETIRO = ['lib/negocio/recolectarAnuncios.ts'];
+/* Desde Meta directo (M3), el escritor de las campañas y del gasto es el recolector de Meta; el de GoHighLevel se
+   retiró en M5. La lista de tolerados es explícita para que no crezca sin que nadie lo decida, y hoy está vacía. */
 
 const ESCRITORES = [
-  { tabla: 'campanas', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: DE_GOHIGHLEVEL_HASTA_SU_RETIRO },
+  { tabla: 'campanas', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: [] as string[] },
   /* El total del cliente por día (`076`): lo escribe el recolector de Meta, sumando sus cuentas publicitarias. */
-  { tabla: 'gasto_de_la_cuenta', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: DE_GOHIGHLEVEL_HASTA_SU_RETIRO },
+  { tabla: 'gasto_de_la_cuenta', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: [] as string[] },
   { tabla: 'conjuntos_de_anuncios', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: [] as string[] },
   { tabla: 'gasto_por_cuenta_publicitaria', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: [] as string[] },
   { tabla: 'metricas_por_desglose', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: [] as string[] },
-  /* Las lecturas por campaña del cuadre de GoHighLevel: sólo su recolector, hasta que se retiren. */
-  { tabla: 'lecturas_de_gasto', escritor: 'lib/negocio/recolectarAnuncios.ts', tolerados: [] as string[] },
   { tabla: 'funnels_de_campana', escritor: 'lib/negocio/funnelDeLaCampana.ts', tolerados: [] as string[] },
 ];
 
@@ -81,6 +78,15 @@ for (const { tabla, escritor, tolerados } of ESCRITORES) {
     );
   });
 }
+
+test('nadie escribe `negocio.lecturas_de_gasto`: el cuadre de GoHighLevel se retiró (M5)', () => {
+  /* La tabla se queda hasta que una migración la quite, después de producción; lo que la escribía —pedir por campaña,
+     por rango y por día para cuadrar el gasto— no tiene sentido con Meta directo, que da el detalle y el total juntos. */
+  const escritores = archivosFuente(['app', 'lib', 'scripts'])
+    .filter((a) => escribe('lecturas_de_gasto', a.limpio))
+    .map((a) => a.ruta);
+  assert.deepEqual(escritores, [], 'volvió un escritor del cuadre de GoHighLevel');
+});
 
 test('todo el que asigna o quita un funnel, lo audita con su acción', () => {
   const PARES = [

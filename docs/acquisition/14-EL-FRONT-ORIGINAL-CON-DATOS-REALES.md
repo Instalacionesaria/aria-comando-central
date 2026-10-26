@@ -40,7 +40,7 @@ Decidido por el usuario el 2026-09-30:
 | Calificados | agendados sin etiqueta de descarte | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:157-161`) |
 | ICP % y barra alto/medio/bajo | puntaje de los calificados | `contactos.score`, con los cortes de `lib/negocio/tramosDelIcp.ts` |
 | Deltas | la misma cifra en la ventana anterior del mismo largo | el mismo cálculo, corrido una ventana antes, con los agendados a la misma edad (A14-11) |
-| Nombre de la campaña | nombre en Meta | `negocio.campanas` (`065`), que el colector llena desde GoHighLevel (`lib/ghl/anuncios.ts:327`) |
+| Nombre de la campaña | nombre en Meta | `negocio.campanas` (`065`), que el colector llena desde GoHighLevel (`3bd2d58:lib/ghl/anuncios.ts:327`) |
 | Nota bajo las cifras | cuántos leads traen campaña | `lib/negocio/embudosDeAcquisition.ts`, con la misma ventana que el resto de la pantalla (A14-12) |
 
 ---

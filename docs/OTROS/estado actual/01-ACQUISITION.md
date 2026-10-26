@@ -87,9 +87,9 @@ sólo va lo que la foto necesita:
 - **Tres vistas por rol (§ 18.15)** y el reporte para Executive (§ 18.17), cuyo ejemplo dice «91 % de leads con
   meta_ad_id válido».
 - **Diez pendientes técnicos (§ 18.19)** (`docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:189-202`). El 1
-  (confirmar campos) está medido uno por uno (`lib/ghl/anuncios.ts:62-74`); el 2 (frecuencia) es una pasada diaria
+  (confirmar campos) está medido uno por uno (`3bd2d58:lib/ghl/anuncios.ts:62-74`); el 2 (frecuencia) es una pasada diaria
   a las 06:17 UTC que relee hoy y los dos días anteriores (`lib/negocio/barrido.ts:297`,
-  `lib/negocio/recolectarAnuncios.ts:62`) más un relleno cada hora (`lib/negocio/barrido.ts:331`); el 3 (guardar
+  `3bd2d58:lib/negocio/recolectarAnuncios.ts:62`) más un relleno cada hora (`lib/negocio/barrido.ts:331`); el 3 (guardar
   por día) es `negocio.metricas_de_anuncio` (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:230-232`) y, desde
   la `076`, el total diario de la cuenta (`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:23`); el 4 tiene los
   dos toques pero no su historia; el 5 (UTM) lo mide el monitor (su defecto, cerrado, en el § 7, riesgo 2); el 6 y el 7 están
@@ -158,11 +158,11 @@ que se mira (`:140`), y el comentario de la cabecera se publica desde la respues
 
 **Ventanas.** «7 días» y «30 días» son días **cerrados**: terminan en el último día cuyo total de la cuenta se
 releyó después de la medianoche de la empresa (`lib/negocio/diasCerrados.ts:14-26`,
-`lib/negocio/gastoDeLaCuenta.ts:301-349`). «Hoy» es hoy, sin costos ni flechas; «Completo» empieza en el dato más
+`lib/negocio/gastoDeLaCuenta.ts:65-113`). «Hoy» es hoy, sin costos ni flechas; «Completo» empieza en el dato más
 viejo —gasto o contacto con campaña— y termina hoy (`lib/negocio/embudosDeAcquisition.ts:43-47`). La ventana
 anterior se compara sólo si está entera (`:906-919`), y sus agendados se cuentan a la misma edad (`:951-952`). Un
 día está entero cuando su total de la cuenta se releyó después de terminar y el detalle por campaña cuadra con él,
-con diez centavos de tolerancia, o está declarado residuo (`lib/negocio/gastoDeLaCuenta.ts:36`, `:354-429`). Los
+con diez centavos de tolerancia, o está declarado residuo (`lib/negocio/gastoDeLaCuenta.ts:34`, `:354-429`). Los
 costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcquisition.ts:960-961`).
 
 **Lo que dibuja hoy, deducido** del código sobre lo medido el 2026-10-18 (§ 4). El último día cerrado es el
@@ -176,9 +176,9 @@ costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcqu
   —la anterior también fue cero—, Clics 2, «0 de 1 leads traen campaña».
 - **«Completo»** empieza el 2026-08-11, el alta del primer contacto con campaña, una semana antes del primer día de
   gasto guardado (2026-08-18). A la ventana le faltan esos siete días de la serie, así que **nunca publica costos**
-  y la nota dice «Faltan días de gasto.» (`lib/negocio/gastoDeLaCuenta.ts:430-435`,
+  y la nota dice «Faltan días de gasto.» (`lib/negocio/gastoDeLaCuenta.ts:194-199`,
   `lib/negocio/embudosDeAcquisition.ts:960-961`): riesgo 3. Su Inversión es la suma por campaña, 7.100,17, porque
-  sin todos los días no hay total de la cuenta (`lib/negocio/gastoDeLaCuenta.ts:439`).
+  sin todos los días no hay total de la cuenta (`lib/negocio/gastoDeLaCuenta.ts:203`).
 - **«Sin funnel»** lista **29 campañas**: las 28 con anuncios guardados y una con contactos y sin anuncios. 13
   tienen contactos atribuidos; las 16 restantes dibujan «—» en sus personas.
 
@@ -295,7 +295,7 @@ calendario sin él), el ad set en `utmTerm` y el cambio de anuncio entre los dos
 ## 5 · Datos que faltan, y de dónde tendrían que venir
 
 **1 · De Meta, lo que GoHighLevel no pasa.** Cuartiles de video, tiempo visto, placement, desgloses demográficos y
-el activo creativo: `fields` es un enum cerrado y `groupBy` sólo acepta día, semana o mes (`lib/ghl/anuncios.ts:62-74`);
+el activo creativo: `fields` es un enum cerrado y `groupBy` sólo acepta día, semana o mes (`3bd2d58:lib/ghl/anuncios.ts:62-74`);
 el estado de entrega por anuncio tampoco llega (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:60-63`). Meta
 directo existe desde el 2026-10-15 (`078`, tarea `activos` cada hora, `lib/negocio/barrido.ts:359`), pero sólo lee
 la miniatura y el post de cada anuncio, para Creative, y espera el token de la empresa.
@@ -338,7 +338,7 @@ contacto» diría que salieron gratis (`lib/negocio/embudosDeAcquisition.ts:294-
 mensajes no puede inflar el costo por contacto de las otras (`lib/negocio/embudosDeAcquisition.ts:95-100`, `:491-507`).
 
 **5 · Tres ceros distintos**: el medido (la cuenta dijo 0), el no pedido (`dias_sin_leer`) y el parcial (`no_cuadra`)
-(`lib/negocio/gastoDeLaCuenta.ts:275-281`, `:344-353`).
+(`lib/negocio/gastoDeLaCuenta.ts:39-45`, `:344-353`).
 
 **6 · Días cerrados, y se compara sólo lo entero.** Una ventana con un día a medias compararía seis días y medio
 contra siete (`lib/negocio/embudosDeAcquisition.ts:33-42`); la anterior, con los agendados a la misma edad
@@ -362,7 +362,7 @@ queda «sin medición» en vez de cerrarse sola (`lib/agentes/detectores/acquisi
 validación ejecutiva.
 
 **12 · El colector reconcilia y no olvida**: pide lo que falta, reescribe lo que Meta corrige y un fallo nunca se
-guarda como cero (`lib/negocio/recolectarAnuncios.ts:11-20`, `db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:68-70`).
+guarda como cero (`3bd2d58:lib/negocio/recolectarAnuncios.ts:11-20`, `db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:68-70`).
 
 **13 · Con varios clientes (el nivel 3, C5 · G3), lo de una cuenta publicitaria es de su cliente.** Cada campaña dice de
 qué cliente es cuando las campañas son de más de uno (`lib/negocio/embudosDeAcquisition.ts:736`); con uno solo, la fila
@@ -373,7 +373,7 @@ detector sólo frena lo que lee Meta con un cliente que tiene métricas y no ser
 crecimiento dentro de cada cliente (`lib/agentes/detectores/acquisition.ts:369`). El funnel de una campaña se guarda en
 su cliente (`lib/negocio/funnelDeLaCampana.ts:100`). Toda señal de campaña se nombra «Campaña (Cliente)» —en la
 tarjeta, la cabecera y la Reunión—, con el cliente de la pantalla (`lib/agentes/senales/lectura.ts:116`). A un cliente
-en pausa se le pide la serie sólo hasta su último día cerrado (`lib/negocio/gastoDeLaCuenta.ts:398`): pausarlo no deja
+en pausa se le pide la serie sólo hasta su último día cerrado (`lib/negocio/gastoDeLaCuenta.ts:162`): pausarlo no deja
 a la empresa sin el gasto entero mientras la ventana tenga días después de la pausa. Y desde C6 · D1 la nota dice,
 después de «Faltan días de gasto.», de qué cliente falta y qué hacer —Meta sin vincular en su GoHighLevel, su conexión,
 o que ya no está activo—, también con el colector atrasado, cuando el sello del barrido lo sabe
@@ -446,7 +446,7 @@ contra la versión del 2026-09-15: con ésta caen en otro texto.
 **10 · Comentarios del código que no decían la verdad. Cerrado el 2026-10-18 (`65669f4`).**
 `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea `anuncios` «del cron de las 17:06 UTC», y es
 a las 06:17 (`lib/negocio/barrido.ts:297`); `lib/negocio/costoDelAnuncio.ts:471` decía que «el colector pide hoy y los
-tres anteriores», y pide hoy y los dos anteriores (`lib/negocio/recolectarAnuncios.ts:62`). Los dos seguían igual que
+tres anteriores», y pide hoy y los dos anteriores (`3bd2d58:lib/negocio/recolectarAnuncios.ts:62`). Los dos seguían igual que
 el 2026-09-28 al corte; ese mismo día se corrigieron, y hoy dicen 06:17 UTC y «hoy y los dos anteriores». Antes ya
 se habían cerrado el de las «52 llamadas» de `barrido.ts` (hoy `lib/negocio/barrido.ts:293-296`, con el costo de la `076`) y el de
 `comoDia` en `costoDelAnuncio.ts`, que ya saca las fechas como texto (`lib/negocio/costoDelAnuncio.ts:418-420`).

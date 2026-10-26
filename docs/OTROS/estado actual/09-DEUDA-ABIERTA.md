@@ -478,11 +478,11 @@ verificado acá contra el código, otra vez el 2026-10-18:
   ventana de 30 días no cayó bajo el piso de 10, como se temía el 2026-09-28: tiene 25.
 - **«Meta desconectado» contra «no se invirtió»: Cerrada a medias el 2026-10-07 (`22ec755`).** El colector ya
   preguntaba el vínculo (`lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), y desde la `076` el sello lo dice:
-  «Meta no está vinculado en GoHighLevel: no se leyó el gasto» (`lib/negocio/barrido.ts:1161-1164`). Lo que falta es
+  «Meta no está vinculado en GoHighLevel: no se leyó el gasto» (`3bd2d58:lib/negocio/barrido.ts:1161-1164`). Lo que falta es
   quien lea el sello (§ 11): ninguna pantalla lo muestra.
 - **Sólo se pedían las campañas de nuestra atribución: Cerrada el 2026-10-07 (`22ec755`).** Antes, 13 de las 61
   campañas de la cuenta (`lib/negocio/recolectarAnuncios.ts:261-320@d17e029`); hoy se piden las activas y las que
-  gastaron en la última semana (`lib/negocio/recolectarAnuncios.ts:597`), el relleno busca lo que la cuenta dice que
+  gastaron en la última semana (`3bd2d58:lib/negocio/recolectarAnuncios.ts:597`), el relleno busca lo que la cuenta dice que
   gastó otra campaña, y `negocio.campanas` tiene 62 filas (2026-10-18).
 - **Ninguna campaña está asignada a un funnel.** `negocio.funnels_de_campana` tiene **0 filas** el 2026-10-18: los
   tres funnels de Acquisition se calculan sobre campañas sin asignar. Asignarlas era la primera tarea del usuario
@@ -568,7 +568,7 @@ Un comentario falso es un defecto de primera clase: quien lo lee para decidir, d
 sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
 
 - **Cerrada el 2026-10-07 (`22ec755`).** `lib/negocio/barrido.ts:243-245@d17e029` contaba **52 llamadas por día**
-  «por cuatro días» cuando se releían dos (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:62`); con la
+  «por cuatro días» cuando se releían dos (`DIAS_QUE_SE_RELEEN`, `3bd2d58:lib/negocio/recolectarAnuncios.ts:62`); con la
   `076` el comentario se reescribió con el costo nuevo, 8 a 14 llamadas por día (`lib/negocio/barrido.ts:293-296`).
 - **Cerrada el 2026-10-18 (`65669f4`).** `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea
   `anuncios` en «el cron de las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:274`), y hoy dice eso.
@@ -731,7 +731,7 @@ y eso es una decisión, no un arreglo. Acá no se repite ningún nombre: se dice
   Meta» y su propia cabecera (`docs/acquisition/00-MAPA.md:16-18`) dice que se mide.
   `docs/acquisition/13-EL-CONTRASTE.md:164-170`, `docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:216-217`
   y `docs/acquisition/11-LOS-SEIS-COMPONENTES.md:40` siguen poniendo la credencial de Meta como el
-  freno, que `3d96e8c` desmintió (`lib/ghl/anuncios.ts:4-25`). `A1-06` remite al gran total de
+  freno, que `3d96e8c` desmintió (`3bd2d58:lib/ghl/anuncios.ts:4-25`). `A1-06` remite al gran total de
   `A1-07` (`docs/acquisition/01-LOS-TRES-EMBUDOS.md:169`), que son las etiquetas
   (`docs/acquisition/01-LOS-TRES-EMBUDOS.md:171`); el gran total es `A1-14`
   (`docs/acquisition/01-LOS-TRES-EMBUDOS.md:275`).

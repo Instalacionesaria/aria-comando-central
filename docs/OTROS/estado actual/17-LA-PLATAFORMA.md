@@ -118,7 +118,7 @@ configuración:
   una tarea diaria (`lib/negocio/barrido.ts:365-370`);
 - un horario ausente o desconocido corre **todas** las tareas y lo dice con `horarioDesconocido`
   (`lib/negocio/barrido.ts:610-620`, prueba en `pruebas/codigo/99-cron.test.ts:227`);
-- el relleno corre sólo en su horario, cada hora (`pruebas/codigo/99-cron.test.ts:354`).
+- el relleno corre sólo en su horario, cada hora (`3bd2d58:pruebas/codigo/99-cron.test.ts:354`).
 
 El plan de Vercel es **Pro, confirmado el 2026-08-28** (`lib/negocio/barrido.ts:186`); con Hobby, un horario más
 frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:180-182`).
@@ -128,7 +128,7 @@ frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:180-
 - **Es reconciliación, no una cola** (`lib/negocio/barrido.ts:15-24`).
 - **La sonda va primero**, en su propio `try/catch` (`lib/negocio/barrido.ts:649-667`).
 - **Las empresas van por sello más viejo**, y las que nunca corrieron o quedaron `sin_tiempo`, antes que todas
-  (`lib/negocio/barrido.ts:669-705`, `lib/negocio/barrido.ts:1337`).
+  (`lib/negocio/barrido.ts:669-705`, `lib/negocio/barrido.ts:1287`).
 - **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:424`). Es un guardia
   parcial: una sola llamada colgada puede esperar 240 s y Vercel corta la función a los 300
   (`lib/negocio/barrido.ts:411-422`). Los Analizadores y la pasada de los detectores, que corren solos, tienen hasta
@@ -137,7 +137,7 @@ frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:180-
   piden el token del CRM (`lib/negocio/barrido.ts:764-772`); cada una se saltea con su propio texto si le falta lo suyo
   (`lib/negocio/barrido.ts:779-801`).
 - **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca un `+1`
-  (`lib/negocio/barrido.ts:1353-1394`). Los estados son `corrio`, `saltada`, `frenada`, `sin_tiempo` y `fallo`
+  (`lib/negocio/barrido.ts:1303-1344`). Los estados son `corrio`, `saltada`, `frenada`, `sin_tiempo` y `fallo`
   (`lib/negocio/barrido.ts:151-152`). La pasada de los detectores es la excepción: a la empresa a la que no le tocaba,
   no la sella (`lib/negocio/barrido.ts:986-1005`).
 
@@ -155,8 +155,8 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/ba
 | `auditoria` | `lib/auditor/analisis.ts:332` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
 | `citas` | `lib/negocio/citas.ts:147` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:75`, `:81`) | 11 |
 | `mejora` | `lib/auditor/buscarMejora.ts:149` | una mejora de prompt por día y por cliente activo (desde C4; con un solo cliente, por empresa) | 1 inferencia |
-| `anuncios` | `lib/negocio/recolectarAnuncios.ts:511` | el costo diario por anuncio y el gasto de toda la cuenta, vía GoHighLevel | 8 |
-| `anuncios_relleno` | `lib/negocio/rellenarAnuncios.ts:206` | busca qué campaña gastó en los días que no cuadran con la cuenta; con todo cuadrado no llama | 0 |
+| `anuncios` | `3bd2d58:lib/negocio/recolectarAnuncios.ts:511` | el costo diario por anuncio y el gasto de toda la cuenta, vía GoHighLevel | 8 |
+| `anuncios_relleno` | `3bd2d58:lib/negocio/rellenarAnuncios.ts:206` | busca qué campaña gastó en los días que no cuadran con la cuenta; con todo cuadrado no llama | 0 |
 | `activos` | `lib/negocio/recolectarActivos.ts:195` | la miniatura y el post de cada anuncio, de Meta | `saltada`: sin token de Meta |
 | `analizadores` | `lib/analizadores/tarea.ts:75` | descubre, analiza, completa fichas y clasifica objeciones | 2 |
 | `reintentos` | `lib/analizadores/tarea.ts:231` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:207`) | 0 |
@@ -165,10 +165,10 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/ba
 - **`contactos` va antes de `mensajes`, y eso es corrección, no gusto** (`lib/negocio/barrido.ts:200-204`; prueba en
   `pruebas/codigo/99-cron.test.ts:150`). `auditoria` va después de `mensajes` para no juzgar un transcript incompleto
   (`lib/negocio/barrido.ts:230-235`).
-- **`anuncios` relee hoy y los dos días anteriores** (`lib/negocio/recolectarAnuncios.ts:62`), porque Meta corrige
-  hacia atrás (`lib/negocio/recolectarAnuncios.ts:11-19`). Desde la `076` lee también el gasto de toda la cuenta, y lo
+- **`anuncios` relee hoy y los dos días anteriores** (`3bd2d58:lib/negocio/recolectarAnuncios.ts:62`), porque Meta corrige
+  hacia atrás (`3bd2d58:lib/negocio/recolectarAnuncios.ts:11-19`). Desde la `076` lee también el gasto de toda la cuenta, y lo
   que no cuadra lo busca el relleno con su propio presupuesto (`lib/negocio/barrido.ts:293-296`,
-  `lib/negocio/rellenarAnuncios.ts:66`). Su detalle es de [01-ACQUISITION.md](01-ACQUISITION.md) y
+  `3bd2d58:lib/negocio/rellenarAnuncios.ts:66`). Su detalle es de [01-ACQUISITION.md](01-ACQUISITION.md) y
   [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md).
 - **`activos` corre cada hora** porque la URL de la miniatura vence, y sin token se sella `saltada` sin llamar a nadie
   (`lib/negocio/barrido.ts:350-355`). Su detalle es de [02-CREATIVE.md](02-CREATIVE.md).
@@ -458,7 +458,7 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 
 - **La protección de rama en `main`** con `verificar` requerido (§ 5.2).
 - **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a propósito
-  (`lib/negocio/barrido.ts:1295`, `lib/negocio/barrido.ts:883-893`), así que su resultado vive sólo en la respuesta
+  (`lib/negocio/barrido.ts:1245`, `lib/negocio/barrido.ts:883-893`), así que su resultado vive sólo en la respuesta
   del cron. `negocio.control_aislamiento` tiene sus dos filas de control.
 - **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente (`docs/OTROS/produccion/DESPLIEGUE.md:241-243`,
   `:444`); sin él, la sonda que detecte una fuga sale como `fallo` en la respuesta del cron
@@ -483,8 +483,8 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 
 ## 9 · Reglas de la plataforma
 
-1. **Reconciliación, no cola** (`lib/negocio/barrido.ts:22-24`, `lib/negocio/recolectarAnuncios.ts:11-19`).
-2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`** (`lib/negocio/barrido.ts:1343-1394`).
+1. **Reconciliación, no cola** (`lib/negocio/barrido.ts:22-24`, `3bd2d58:lib/negocio/recolectarAnuncios.ts:11-19`).
+2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`** (`lib/negocio/barrido.ts:1293-1344`).
 3. **Un horario desconocido corre todo y lo dice** (`lib/negocio/barrido.ts:604-609`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`
    (`lib/negocio/barrido.ts:159-174`).

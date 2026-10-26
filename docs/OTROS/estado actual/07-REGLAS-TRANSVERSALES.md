@@ -617,7 +617,7 @@ prueba de código lo hace cumplir.
 | `negocio.citas` | `lib/negocio/citas.ts` (el barrido) | `pruebas/codigo/147-un-solo-escritor-de-citas.test.ts` |
 | `negocio.resultados` | `lib/negocio/avanzar.ts:1` — «Avanzar: el ÚNICO lugar donde se registra un resultado» | `pruebas/codigo/132-avanzar-sin-respuesta.test.ts` |
 | El sello del setter | — | `pruebas/codigo/112-sello-del-setter.test.ts` |
-| Las cuatro de Acquisition (2026-09-30) | `lib/negocio/recolectarAnuncios.ts` y `lib/negocio/funnelDeLaCampana.ts` | `pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:57` |
+| Las cuatro de Acquisition (2026-09-30) | `lib/negocio/recolectarAnuncios.ts` y `lib/negocio/funnelDeLaCampana.ts` | `pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:54` |
 | `negocio.enlaces_de_pieza` (2026-09-29) | el link manual de Creative | `pruebas/codigo/179-url-externa.test.ts:86` |
 | `negocio.uso_de_ia` y las tablas de los agentes (2026-10-04) | `lib/agentes/uso.ts` y uno por tabla | `pruebas/codigo/198-el-transporte-de-los-agentes.test.ts:484` |
 | `negocio.hallazgos` (sigue siendo del auditor) | `lib/auditor/` | `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:132` |
@@ -835,7 +835,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:889`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:884`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -1132,7 +1132,7 @@ revisión adversarial con dos escépticos por hallazgo, que ejecutaron la funci�
 2026-09-18): «una marca de agua no puede describir un conjunto con agujeros». La ventana ahora sale de
 lo que FALTA. **Y volvió con el gasto**: el colector pedía 13 de las 61 campañas de la cuenta, el sello decía `corrio`
 y una campaña de mensajes no entraba nunca; la `076` (`22ec755`, 2026-10-07) lee la serie de toda la cuenta y el
-sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:1161-1164`).
+sello dice cuándo Meta no está vinculado (`3bd2d58:lib/negocio/barrido.ts:1161-1164`).
 
 ## M · Un comentario que afirma sin medir
 
@@ -1209,7 +1209,7 @@ remota (`pruebas/codigo/203-el-sembrado-de-los-agentes-es-local.test.ts:47`). Me
 
 **46 · Cada tabla de Acquisition tiene un escritor, y quien asigna un funnel lo audita.** `campanas`,
 `gasto_de_la_cuenta` y `lecturas_de_gasto` las escribe el colector y `funnels_de_campana` su módulo
-(`pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:57`, `e77d31f`, 2026-09-30). Es la regla 10 aplicada a un
+(`pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:54`, `e77d31f`, 2026-09-30). Es la regla 10 aplicada a un
 departamento entero. Medido el 2026-10-18: `negocio.funnels_de_campana` tiene **0 filas** —ninguna campaña asignada—.
 
 **47 · Dos regímenes de ventana, y el día es el de la empresa.** Las ventanas de `lib/negocio/periodo.ts` son móviles
@@ -1384,9 +1384,9 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/agentes/senales/lectura.ts:227`); y toda señal de campaña dice su cliente con varios, «Campaña (Cliente)», con
   el cliente de la pantalla (`lib/agentes/senales/lectura.ts:116`). El funnel se guarda en el cliente de su campaña
   (`lib/negocio/funnelDeLaCampana.ts:100`) y la base lo exige (`db/migraciones/094_el_cliente_en_acquisition.sql:52`).
-  La serie atrasada y «métricas sin serie» miran sólo a los clientes activos (`lib/negocio/gastoDeLaCuenta.ts:316`): uno
+  La serie atrasada y «métricas sin serie» miran sólo a los clientes activos (`lib/negocio/gastoDeLaCuenta.ts:80`): uno
   en pausa dejaba la empresa atrasada para siempre. Y la cobertura de la ventana le pide a uno en pausa su serie sólo
-  hasta su último día cerrado (`lib/negocio/gastoDeLaCuenta.ts:398`): cortada a mitad de la ventana, dejaba a la empresa
+  hasta su último día cerrado (`lib/negocio/gastoDeLaCuenta.ts:162`): cortada a mitad de la ventana, dejaba a la empresa
   sin costos ni flechas, y lo que sólo lee Meta sin medir, hasta que la ventana dejara atrás ese día. Con un solo
   cliente, el freno de Meta y su anterior son los de siempre. Lo exigen
   `pruebas/base/284-acquisition-y-conversation-con-varios-clientes.test.ts:206`,
@@ -1460,7 +1460,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué —Meta sin vincular en su
   GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:207`): los que pautaron sin
   serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:1024`,
-  `lib/negocio/gastoDeLaCuenta.ts:487`), así que también cuando la serie de un cliente dejó de escribirse y la empresa
+  `lib/negocio/gastoDeLaCuenta.ts:251`), así que también cuando la serie de un cliente dejó de escribirse y la empresa
   queda con el colector atrasado; Conversion pregunta por la ventana que decidió el motivo
   (`lib/negocio/pasosDeConversion.ts:642`). Las frases entraron primero en A14-02 y CV15-02. Y los closers: el alta, la
   activación y Ajustes › Clientes dicen quiénes están vinculados en otro cliente y no en ése
@@ -1496,10 +1496,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   medición miden a cada cliente activo con su token (`scripts/medir-cita.mjs:96`, `scripts/medir-contacto.mjs:126`,
   `scripts/medir-activos-en-ghl.mjs:161`) y siguen midiendo lo que medían con un cliente: medir-cita termina en el
   primer cliente con citas (`scripts/medir-cita.mjs:87`) y medir-gasto mide sólo la empresa principal
-  (`scripts/medir-gasto-de-la-cuenta.mjs:129`), con S0 —si Meta está vinculado en el GoHighLevel de cada cliente— antes
-  de la serie (`scripts/medir-gasto-de-la-cuenta.mjs:184`), los tokens después del OK
-  (`scripts/medir-gasto-de-la-cuenta.mjs:161`) y S4 sólo con la corrida acotada a un cliente
-  (`scripts/medir-gasto-de-la-cuenta.mjs:143`). Quien pide la de la empresa a propósito está escrito, uno por uno —el
+  (`3bd2d58:scripts/medir-gasto-de-la-cuenta.mjs:129`), con S0 —si Meta está vinculado en el GoHighLevel de cada cliente— antes
+  de la serie (`3bd2d58:scripts/medir-gasto-de-la-cuenta.mjs:184`), los tokens después del OK
+  (`3bd2d58:scripts/medir-gasto-de-la-cuenta.mjs:161`) y S4 sólo con la corrida acotada a un cliente
+  (`3bd2d58:scripts/medir-gasto-de-la-cuenta.mjs:143`). Quien pide la de la empresa a propósito está escrito, uno por uno —el
   cron, «Probar conexión» de Meta y la caída de las cuatro rutas de un contacto—, y cada uso nuevo se suma en el mismo
   commit (`pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:148`). Con un solo cliente, todo como
   siempre, salvo S0 en medir-gasto (un guion manual: una llamada más). **Un riesgo que decide el usuario:** con un
@@ -1514,8 +1514,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:346`,
   `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:372`,
   `pruebas/base/292-lo-que-usaba-la-empresa-usa-al-cliente.test.ts:397`,
-  `pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:68` y
-  `pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:98`.
+  `3bd2d58:pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:68` y
+  `3bd2d58:pruebas/codigo/293-tools-y-los-guiones-por-cliente.test.ts:98`.
 - **Las señales que mezclaban clientes (C6 · D3, sin migración).** Lo que se mide dentro de un cliente lleva el
   identificador de la pieza: el de siempre para el principal y `<cuenta>:<id>` para otro (`lib/negocio/idDeLaPieza.ts:44`),
   así que al sumar un cliente no se cierra ni renace ninguna señal del principal. Acquisition compara el ICP de una
@@ -1641,7 +1641,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   Cada unidad del barrido pide con el acceso de su cliente (`lib/negocio/barrido.ts:710`,
   `lib/negocio/barrido.ts:774`); las campañas, los anuncios, las métricas por anuncio y la serie de la cuenta de los
   dos que tienen Meta vinculado quedan en SU cliente, con SUS cifras, y el que no lo tiene no escribe nada y su sello
-  dice «Meta no está vinculado en GoHighLevel» (`lib/negocio/barrido.ts:1163`), con el texto que leen la lista de
+  dice «Meta no está vinculado en GoHighLevel» (`3bd2d58:lib/negocio/barrido.ts:1163`), con el texto que leen la lista de
   chequeo y los avisos (`MOTIVO_SIN_META_EN_GHL`). Lo exigen
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:190`,
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:210`,

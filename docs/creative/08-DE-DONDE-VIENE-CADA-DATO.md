@@ -85,7 +85,7 @@ diez campos con nombre parecido.
 
 ### Cómo se midió la ausencia de uso
 
-`lib/ghl/anuncios.ts:421` hace `resultadosDeMeta: numero(o.results)`. `results` es un **objeto** y
+`3bd2d58:lib/ghl/anuncios.ts:421` hace `resultadosDeMeta: numero(o.results)`. `results` es un **objeto** y
 `numero()` (`:141`) devuelve `null` para todo lo que no sea número o cadena, así que el campo es
 **`null` siempre** — hasta el 2026-09-18, cuando el campo pasó a llamarse `acciones` y a leerse con
 un desenvolvedor que cuenta lo ilegible en vez de escribir cero.
@@ -174,7 +174,7 @@ cuartiles, si algún día llegan, sí serían columnas tipadas y no `jsonb`: dos
 
 ## 6 · Lo que esta medición corrige de lo ya publicado
 
-### C8-30 · `lib/ghl/anuncios.ts:41-46` afirma lo contrario de lo medido
+### C8-30 · `3bd2d58:lib/ghl/anuncios.ts:41-46` afirma lo contrario de lo medido
 
 Declara imposibles ocho cosas; **cuatro llegan hoy** (`C8-11` a `C8-14`). Es documentación de código
 vivo, no registro histórico, así que **se reescribe**.

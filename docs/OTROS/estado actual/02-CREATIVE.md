@@ -177,7 +177,7 @@ Meta y después la imagen de los contactos (`lib/negocio/lecturaDeCreative.ts:37
   pisar lo guardado (`lib/negocio/miniaturaDelContacto.ts:180-187`). Cada pedido espera hasta 15 s y la pasada entera
   hasta 60 (`lib/negocio/miniaturaDelContacto.ts:48`, `lib/negocio/miniaturaDelContacto.ts:51`); un 429, un 401 o un
   GoHighLevel que no contesta la cortan (`lib/negocio/miniaturaDelContacto.ts:126-130`), y el sello de la tarea dice
-  por qué (`lib/negocio/barrido.ts:1171-1181`). La miniatura de la pieza es la imagen más frecuente entre sus contactos
+  por qué (`lib/negocio/barrido.ts:1150-1160`). La miniatura de la pieza es la imagen más frecuente entre sus contactos
   —el `videoUrl` o, si no hay, el `photoUrl`—, en empate la del contacto que entró más tarde al CRM, y sólo si su host
   es de Facebook, Instagram o el CDN de Meta (`lib/negocio/miniaturaDelContacto.ts:190-193`,
   `lib/negocio/miniaturaDelContacto.ts:227-235`). La pieza de un contacto
@@ -528,7 +528,7 @@ filas: en el módulo de rendimiento, por `costoDelAnuncio` (`lib/negocio/costoDe
 si una cambia su filtro, la ficha y `rendimiento_de_piezas` dirán dos impresiones para la misma pieza.
 
 **6 · Un `results` con otra forma se tiraría en silencio.** **Abierto**, sin cambios: un arreglo devuelve
-`acciones: null` (`lib/ghl/anuncios.ts:209`), y el hook rate, el link CTR y la landing pasarían a «GoHighLevel no lo
+`acciones: null` (`3bd2d58:lib/ghl/anuncios.ts:209`), y el hook rate, el link CTR y la landing pasarían a «GoHighLevel no lo
 reportó.» sin ningún contador.
 
 **7 · Los comentarios citan líneas que se corrieron.** **A medias.** Sigue abierto en el código:

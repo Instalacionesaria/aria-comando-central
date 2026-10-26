@@ -29,8 +29,8 @@
 // Sin gasto guardado no hay nada que esperar: ayer está cerrado.
 //
 // Las fechas salen de la base y viajan como texto: `current_date` es el de la base, y un `date` que pasa por
-// un `Date` de JavaScript se corre un día al este de Greenwich (ver `comoDiaLocal` en
-// `recolectarAnuncios.ts`).
+// un `Date` de JavaScript se corre un día al este de Greenwich (lo vio el colector de GoHighLevel, retirado en M5:
+// `82f863b:lib/negocio/recolectarAnuncios.ts`, `comoDiaLocal`).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';

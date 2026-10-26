@@ -5,15 +5,13 @@
 //
 // La 292 mide las rutas con la base. Acá, lo que no la necesita:
 //
-//   · los cuatro guiones de medición miden a cada cliente activo con SU token, y ninguno lee la credencial de la
+//   · los tres guiones de medición miden a cada cliente activo con SU token, y ninguno lee la credencial de la
 //     empresa ni el negocio; sus cortes de un cliente son `return` y sus `continue` siguen dentro de un bucle — un
 //     `continue` fuera de un bucle es un error de sintaxis que nada más atrapa: los guiones no corren en la suite y
 //     tsc no mira los `.mjs`, así que cada uno pasa por `node --check` — mutaciones: `'la_de_la_empresa'` de vuelta;
 //     un `continue` de adentro vuelto `return`; un `return` de un cliente vuelto `continue`;
-//   · siguen midiendo lo que medían con un cliente: medir-cita termina en el primer cliente con citas, y
-//     medir-gasto mide sólo la empresa principal — mutaciones: no cortar en medir-cita; medir todas las empresas;
-//   · medir-gasto pide S0 antes que la serie, resuelve los tokens sólo después del OK, y corre S4 sólo con la corrida
-//     acotada a un cliente — mutaciones: S4 con varios; descifrar antes del OK;
+//   · siguen midiendo lo que medían con un cliente: medir-cita termina en el primer cliente con citas — mutación: no
+//     cortar en medir-cita (medir-gasto, el cuarto, se fue con la lectura del gasto por GoHighLevel: Meta directo, M5);
 //   · Tools elige el cliente entre los activos y nombra al cliente sólo con más de uno; la pantalla manda el cliente
 //     sólo entonces, y el cliente final sigue sin llegar — mutaciones: el selector o el envío sin `varios`; los
 //     visibles en vez de los activos; la ruta en `RUTAS_DEL_CLIENTE`;
@@ -46,12 +44,11 @@ const CORTES: Readonly<Record<string, { continuar: number; volver: number; falso
   // Sin acceso, búsqueda fallida, sin contactos; los dos `continue` saltean una clave vacía o una que no es de atribución.
   'scripts/medir-contacto.mjs': { continuar: 2, volver: 3, falso: 0, verdadero: 0 },
   'scripts/medir-activos-en-ghl.mjs': { continuar: 0, volver: 1, falso: 0, verdadero: 0 },
-  // Sin acceso, S0 fallida, Meta sin vincular.
-  'scripts/medir-gasto-de-la-cuenta.mjs': { continuar: 0, volver: 3, falso: 0, verdadero: 0 },
+  // `medir-gasto-de-la-cuenta.mjs` se fue con la lectura del gasto por GoHighLevel (Meta directo, M5).
 };
 const GUIONES = Object.keys(CORTES);
 
-test('los cuatro guiones miden a cada cliente activo con su token, sin la credencial de la empresa ni el negocio', () => {
+test('los tres guiones miden a cada cliente activo con su token, sin la credencial de la empresa ni el negocio', () => {
   for (const ruta of GUIONES) {
     const guion = leer(ruta);
     assert.ok(guion.includes('clientesParaBarrer(db, org.id)'), `${ruta} no lee los clientes activos`);
@@ -65,7 +62,7 @@ test('los cuatro guiones miden a cada cliente activo con su token, sin la creden
   }
 });
 
-test('los cortes de un cliente son `return`, los `continue` siguen en su bucle, y los cuatro compilan', () => {
+test('los cortes de un cliente son `return`, los `continue` siguen en su bucle, y los tres compilan', () => {
   for (const ruta of GUIONES) {
     const cuerpo = cuerpoDeMedir(leer(ruta));
     const esperado = CORTES[ruta]!;
@@ -87,26 +84,9 @@ test('los cortes de un cliente son `return`, los `continue` siguen en su bucle, 
   }
 });
 
-test('con un cliente miden lo que medían: medir-cita corta en el primero con citas, medir-gasto sólo la principal', () => {
+test('con un cliente miden lo que medían: medir-cita corta en el primero con citas', () => {
   const cita = leer('scripts/medir-cita.mjs');
   assert.match(cita, /for \(const c of clientes\) if \(await medirUnCliente\(org, c, varios\)\) return;/, 'medir-cita ya no corta en el primero que respondió');
-  const gasto = leer('scripts/medir-gasto-de-la-cuenta.mjs');
-  assert.match(gasto, /\.where\('es_principal', '=', true\)/, 'medir-gasto mide otras empresas además de la principal');
-  assert.doesNotMatch(gasto, /for \(const org of/, 'medir-gasto recorre empresas');
-});
-
-test('medir-gasto: S0 antes que la serie, los tokens después del OK, y S4 sólo con un cliente', () => {
-  const gasto = leer('scripts/medir-gasto-de-la-cuenta.mjs');
-  const s0 = gasto.indexOf('integracionDeAnuncios(acceso)');
-  assert.ok(s0 > 0 && s0 < gasto.indexOf('serieDeLaCuenta(acceso'), 'S0 no va antes de la serie');
-  assert.match(gasto, /if \(estado !== 'connected'\) \{[^}]*return;/, 'sin Meta vinculado, S1 a S4 corren igual y dan vacío');
-  // Antes del OK no se descifra nada: el único `resolverAccesoAGhl` va después de la salida sin `--confirmo`.
-  assert.equal(cuantas(gasto, /resolverAccesoAGhl\(/g), 1);
-  assert.ok(gasto.indexOf('if (!confirmo)') < gasto.indexOf('resolverAccesoAGhl('), 'los tokens se descifran antes del OK');
-  // `--cliente=` acota la corrida, y S4 corre sólo si quedó uno: la campaña es de una sola subcuenta.
-  assert.ok(gasto.includes("argumento('cliente')"));
-  assert.match(gasto, /const conS4 = campana !== null && clientes\.length === 1;/, 'S4 corre con varios clientes');
-  assert.match(gasto, /campana: conS4 \? campana : null/);
 });
 
 test('Tools elige entre los activos, nombra al cliente sólo con más de uno, y el cliente final no llega', () => {
