@@ -598,6 +598,30 @@ async function cuentaPorOmision() {
   }
 }
 
+/**
+ * Los tokens de Meta pegados a mano, copiados a las conexiones de la `101` («Conectar con Meta», M1). **Corre como
+ * `app_identidad`.** El motivo, en el encabezado de `db/arranque/007_meta_manual_a_conexiones.sql`.
+ *
+ * En local, `reset` la corre después de `cuenta-en-negocio`. En producción va sola, después de la `101`:
+ *
+ *     node --env-file=.env.supabase scripts/db.mjs meta-manual-a-conexiones
+ */
+async function metaManualAConexiones() {
+  if (!process.env.DATABASE_URL_IDENTIDAD) throw new Error('DATABASE_URL_IDENTIDAD no está definida.');
+  const identidad = new pg.Client({ connectionString: process.env.DATABASE_URL_IDENTIDAD });
+  await identidad.connect();
+  try {
+    const sql = readFileSync(new URL('../db/arranque/007_meta_manual_a_conexiones.sql', import.meta.url), 'utf8')
+      .replace(/\r\n/g, '\n');
+    const marcas = sql.match(/@[A-Z_]+@/g);
+    if (marcas) throw new Error(`007_meta_manual_a_conexiones.sql tiene marcas sin sustituir: ${[...new Set(marcas)].join(', ')}`);
+    identidad.on('notice', (n) => console.log(`  ${n.message}`));
+    await identidad.query(sql);
+  } finally {
+    await identidad.end();
+  }
+}
+
 const FASES = {
   bajar,
   levantar,
@@ -610,6 +634,7 @@ const FASES = {
   cuentas,
   'cuenta-por-omision': cuentaPorOmision,
   'cuenta-en-negocio': cuentaEnNegocio,
+  'meta-manual-a-conexiones': metaManualAConexiones,
   verificar,
   'sembrar-agentes': sembrarAgentes,
   'quitar-agentes': quitarAgentes,
@@ -619,9 +644,10 @@ const FASES = {
 // `catalogo` va DESPUÉS de `migrar`: escribe en tablas que las migraciones crean.
 // `cuentas`, `cuenta-por-omision` y `cuenta-en-negocio` van DESPUÉS de `sembrar`: comprueban que toda organización
 // sembrada nació con su cuenta y su cuenta por omisión, y que ninguna fila de negocio quedó sin cuenta.
+// `meta-manual-a-conexiones` va DESPUÉS de `cuenta-por-omision`: el token de la empresa va a su cliente principal.
 const RESET = [
   'bajar', 'levantar', 'arranque', 'migrar', 'catalogo', 'sembrar', 'cuentas', 'cuenta-por-omision', 'cuenta-en-negocio',
-  'verificar',
+  'meta-manual-a-conexiones', 'verificar',
 ];
 
 const comando = process.argv[2];

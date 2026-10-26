@@ -1350,7 +1350,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/credenciales/resolver.ts:58`): el principal lee las de la empresa; los demás, las suyas, siempre por
   (organización, cliente) (`lib/credenciales/resolver.ts:66`), y sin las suyas FALTAN, nunca caen a las de la empresa.
   Quien quiere la de la empresa lo escribe (`'la_de_la_empresa'`). El aviso del CRM entra al cliente de su secreto
-  (`app/api/avisos/crm/route.ts:150`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:74`.
+  (`app/api/avisos/crm/route.ts:150`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:81`.
 - **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:131`) corren una vez por cliente
   activo, con sus credenciales, que la ruta resuelve por cliente (`app/api/cron/route.ts:230`); las de la empresa, una
   vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:656`), con el presupuesto mirado antes de
@@ -1364,7 +1364,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   sin prioridad al atrasado, para que uno lento no deje sin traer a los demás (`lib/negocio/traerDeLosClientes.ts:145`).
   Con un cliente, la respuesta de siempre; con varios, las cifras sumadas y `clientes`, con el nombre delante
   (`lib/negocio/traerDeLosClientes.ts:168`). Al cliente sin credenciales se le dice dónde se cargan las suyas
-  (`lib/credenciales/resolver.ts:919`). Lo exigen `pruebas/base/282-las-rutas-manuales-traen-a-cada-cliente.test.ts:331`
+  (`lib/credenciales/resolver.ts:999`). Lo exigen `pruebas/base/282-las-rutas-manuales-traen-a-cada-cliente.test.ts:331`
   y `pruebas/codigo/283-las-rutas-manuales-son-por-cliente.test.ts:68`.
 - **Acquisition, Conversation y los detectores del gasto, por cliente (C5 · G3, `094`).** La atribución por campaña
   agrupa por (campaña, cliente) (`lib/negocio/atribucionDelLead.ts:176`), y cada fila dice su cliente cuando las
@@ -1501,7 +1501,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`scripts/medir-gasto-de-la-cuenta.mjs:161`) y S4 sólo con la corrida acotada a un cliente
   (`scripts/medir-gasto-de-la-cuenta.mjs:143`). Quien pide la de la empresa a propósito está escrito, uno por uno —el
   cron, «Probar conexión» de Meta y la caída de las cuatro rutas de un contacto—, y cada uso nuevo se suma en el mismo
-  commit (`pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:141`). Con un solo cliente, todo como
+  commit (`pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:148`). Con un solo cliente, todo como
   siempre, salvo S0 en medir-gasto (un guion manual: una llamada más). **Un riesgo que decide el usuario:** con un
   cliente que no es el principal, al webhook de n8n viaja el Private Integration Token de OTRO negocio, y n8n guarda
   por omisión el cuerpo de cada ejecución, así que ese token queda en texto plano en su historial. Antes del primer
@@ -1655,7 +1655,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `db/sembrado/nivel-3.ts:158`). Las personas, como las del sembrado: la contraseña de desarrollo y debiendo cambiarla
   (`db/sembrado/nivel-3.ts:126`). Es reaplicable: lo que ya está se conserva con sus ids y sus sesiones, y los datos
   sintéticos se rehacen con fechas de los últimos días. Escribe como la aplicación —el alta y la edición de un cliente,
-  el vínculo de ARIA— y sólo local. No está en `reset` (`scripts/db.mjs:622`): la prueba 11 exige exactamente el
+  el vínculo de ARIA— y sólo local. No está en `reset` (`scripts/db.mjs:648`): la prueba 11 exige exactamente el
   sembrado de desarrollo, así que antes de la suite se quita con `quitar-nivel-3`, por su slug exacto
   (`db/sembrado/nivel-3.ts:333`); la auditoría que deja quien la mira es de sólo inserción y queda
   (`db/sembrado/casos-de-los-agentes.ts:214`). Lo exigen

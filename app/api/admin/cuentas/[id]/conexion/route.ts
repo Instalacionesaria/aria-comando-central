@@ -24,6 +24,7 @@ import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
 import { auditarAdministracion } from '../../../../../../lib/autenticacion/auditoria.ts';
 import { cifrar } from '../../../../../../lib/credenciales/cifrado.ts';
 import { resolverCredencialesDelCliente } from '../../../../../../lib/credenciales/resolver.ts';
+import { copiarMetaManual } from '../../../../../../lib/meta/conexiones.ts';
 
 export const PANTALLA = 'credenciales';
 
@@ -113,6 +114,10 @@ export async function PUT(peticion: Request, ctx: RouteContext<'/api/admin/cuent
         oc.column('cuenta_id').doUpdateSet({ actualizado_por: autorDelCambio(contexto), actualizado_el: new Date(), ...cambios } as never),
       )
       .execute();
+    // El token de Meta pegado a mano llega también a las conexiones de la `101`, que son las que se leen.
+    if (Object.hasOwn(cambios, 'meta_token_cifrado') || Object.hasOwn(cambios, 'meta_cuenta_id')) {
+      await copiarMetaManual(db, contexto.orgEfectiva, id);
+    }
     await auditarAdministracion(db, { accion: 'credenciales_cargadas', actor: contexto.usuarioId, objetivo: id, orgId: contexto.orgEfectiva });
     return ok(await resolverCredencialesDelCliente(db, contexto.orgEfectiva, id));
   });

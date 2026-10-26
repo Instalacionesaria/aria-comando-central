@@ -60,6 +60,7 @@ import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { cifrar } from '../../../../lib/credenciales/cifrado.ts';
 import { resolverCredenciales } from '../../../../lib/credenciales/resolver.ts';
+import { copiarMetaManual } from '../../../../lib/meta/conexiones.ts';
 import { auditarAdministracion } from '../../../../lib/autenticacion/auditoria.ts';
 
 export const PANTALLA = 'credenciales';
@@ -279,6 +280,18 @@ export async function PUT(peticion: Request): Promise<Response> {
           .where('org_id', '=', contexto.orgEfectiva)
           .where('es_por_omision', '=', true)
           .execute();
+      }
+
+      /* El token de Meta pegado a mano llega también a las conexiones de la `101`, que son las que se leen: es el del
+         cliente principal (`lib/meta/conexiones.ts`). */
+      if (Object.hasOwn(cambios, 'meta_token_cifrado') || Object.hasOwn(cambios, 'meta_cuenta_id')) {
+        const principal = await db
+          .selectFrom('cuentas')
+          .select('id')
+          .where('org_id', '=', contexto.orgEfectiva)
+          .where('es_por_omision', '=', true)
+          .executeTakeFirst();
+        if (principal) await copiarMetaManual(db, contexto.orgEfectiva, principal.id);
       }
 
       // El tipo `Detalle` de la auditoría no tiene campo donde quepa un token, así que esto no

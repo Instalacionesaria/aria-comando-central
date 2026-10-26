@@ -770,6 +770,86 @@ export async function resolverAccesoAMeta(db: Trx, orgId: string, cliente: Clien
   return { tipo: 'listo', token, cuentaId };
 }
 
+/**
+ * Una cuenta publicitaria de Meta asignada a un cliente, con el token de la conexión que la lee (101, «Conectar con
+ * Meta»). La moneda y la zona son las de la cuenta en Meta: todo su gasto está en esa moneda y sus días empiezan en
+ * esa zona.
+ */
+export interface CuentaDeMetaDelCliente {
+  act: string;
+  token: string;
+  conexionId: string;
+  moneda: string | null;
+  zonaHoraria: string | null;
+  historiaHasta: Date | null;
+}
+
+/** Por qué un cliente no tiene cuentas de Meta que leer. */
+export type FaltaDeCuentasDeMeta = 'sin_cuentas_de_meta' | 'conexion_de_meta_caida' | 'token_de_meta_ilegible';
+
+export type CuentasDeMeta =
+  | { tipo: 'listo'; cuentas: CuentaDeMetaDelCliente[] }
+  | { tipo: 'falta'; que: FaltaDeCuentasDeMeta };
+
+/**
+ * Las cuentas publicitarias de Meta asignadas a un cliente, cada una con el token descifrado de su conexión, o **qué
+ * falta**.
+ *
+ * Lee las tablas de la `101`, no las columnas `meta_*` de las credenciales: desde «Conectar con Meta» una conexión puede
+ * ser de la empresa y servir a varios clientes, y un cliente puede tener varias cuentas. `'la_de_la_empresa'` es el
+ * cliente principal (el token pegado de la empresa siempre fue para él). Sólo cuentan las conexiones `activa`: una
+ * revocada o vencida no se usa, y si todas las de un cliente lo están, el cliente «falta» con ese motivo, que pide
+ * volver a conectar y no conectar por primera vez.
+ */
+export async function resolverCuentasDeMeta(db: Trx, orgId: string, cliente: ClienteDeLaCredencial): Promise<CuentasDeMeta> {
+  const cuentaId =
+    cliente === 'la_de_la_empresa'
+      ? (
+          await db
+            .selectFrom('cuentas')
+            .select('id')
+            .where('org_id', '=', orgId)
+            .where('es_por_omision', '=', true)
+            .executeTakeFirst()
+        )?.id
+      : cliente.id;
+  if (!cuentaId) return { tipo: 'falta', que: 'sin_cuentas_de_meta' };
+
+  const filas = await db
+    .selectFrom('cuentas_publicitarias_de_meta as p')
+    .innerJoin('conexiones_de_meta as c', (j) => j.onRef('c.org_id', '=', 'p.org_id').onRef('c.id', '=', 'p.conexion_id'))
+    .select(['p.act_id', 'p.moneda', 'p.zona_horaria', 'p.historia_hasta', 'c.id as conexion_id', 'c.estado', 'c.token_cifrado'])
+    .where('p.org_id', '=', orgId)
+    .where('p.cuenta_id', '=', cuentaId)
+    .orderBy('p.act_id')
+    .execute();
+  if (filas.length === 0) return { tipo: 'falta', que: 'sin_cuentas_de_meta' };
+
+  const activas = filas.filter((f) => f.estado === 'activa');
+  if (activas.length === 0) return { tipo: 'falta', que: 'conexion_de_meta_caida' };
+
+  const cuentas: CuentaDeMetaDelCliente[] = [];
+  for (const f of activas) {
+    let token: string;
+    try {
+      token = descifrar(f.token_cifrado);
+    } catch {
+      // `ADR-0809` · el mismo punto de emisión y la misma transacción que los demás resolvedores.
+      await auditar(db, { accion: 'credencial_ilegible', orgId });
+      return { tipo: 'falta', que: 'token_de_meta_ilegible' };
+    }
+    cuentas.push({
+      act: f.act_id,
+      token,
+      conexionId: f.conexion_id,
+      moneda: f.moneda,
+      zonaHoraria: f.zona_horaria,
+      historiaHasta: f.historia_hasta,
+    });
+  }
+  return { tipo: 'listo', cuentas };
+}
+
 /** El texto que se le muestra a quien no puede generar. Uno por faltante. */
 export const TEXTO_DE_FALTA: Readonly<Record<FaltaParaGenerar, string>> = {
   sin_llave_de_ia:

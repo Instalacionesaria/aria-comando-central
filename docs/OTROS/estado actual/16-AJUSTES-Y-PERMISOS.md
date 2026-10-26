@@ -90,7 +90,7 @@ el servidor ya filtró con la misma función que decide el menú (`components/vi
 
 | Pestaña | Sección · capacidad | Qué hace | Rutas |
 |---|---|---|---|
-| Credenciales | `credenciales` · `credenciales.ver` | Carga por campo los secretos y los identificadores de la empresa; muestra el estado y los últimos cuatro caracteres, nunca el valor. Debajo, «Probar conexión» con Meta y los topes del cerebro | `app/api/admin/credenciales/route.ts:128`, `:138`, `:330`; `app/api/admin/credenciales/meta/route.ts:22`; `app/api/admin/cerebro/route.ts:25`, `:44` |
+| Credenciales | `credenciales` · `credenciales.ver` | Carga por campo los secretos y los identificadores de la empresa; muestra el estado y los últimos cuatro caracteres, nunca el valor. Debajo, «Probar conexión» con Meta y los topes del cerebro | `app/api/admin/credenciales/route.ts:129`, `:138`, `:330`; `app/api/admin/credenciales/meta/route.ts:22`; `app/api/admin/cerebro/route.ts:25`, `:44` |
 | Empresas | `empresas` · `organizaciones.listar` | Alta, edición (nombre, zona horaria, activa) y baja de organizaciones; un alta no crea personas ni credenciales (`components/ajustes/Empresas.jsx:24-28`) | `app/api/admin/organizaciones/route.ts:80`, `:129`; `app/api/admin/organizaciones/[id]/route.ts:71`, `:207` |
 | Usuarios | `usuarios` · `usuarios.ver` | Alta con selector de empresa, rol, pestañas concedidas por departamento, contraseña temporal, desactivar, reactivar y borrar | `app/api/usuarios/route.ts:51`, `app/api/admin/roles/route.ts:45` y las seis de `app/api/admin/usuarios/`, que declaran `SIN_SECCION` |
 
@@ -318,12 +318,12 @@ El origen es siempre `'organizacion'` (`lib/credenciales/resolver.ts:128`). En `
 
 **Qué se guarda.** **Seis** secretos —token y refresco del CRM, llave de IA, clave de pagos, llave de tl;dv y, desde
 el 2026-09-29, **token de Meta**— que se cifran con AES-256-GCM al guardar y nunca salen
-(`app/api/admin/credenciales/route.ts:90-97`, `lib/credenciales/cifrado.ts:62`); **seis** identificadores que no son
+(`app/api/admin/credenciales/route.ts:91-98`, `lib/credenciales/cifrado.ts:62`); **seis** identificadores que no son
 secretos y viajan completos —la cuenta publicitaria de Meta, y cuenta, calendario, dominio de reservas y usuario del
-agente en el CRM, y comercio de pagos— (`app/api/admin/credenciales/route.ts:99-122`); y el secreto del aviso del CRM,
-que no se carga sino que se genera con el `POST` (`app/api/admin/credenciales/route.ts:330`), se guarda como hash,
+agente en el CRM, y comercio de pagos— (`app/api/admin/credenciales/route.ts:100-123`); y el secreto del aviso del CRM,
+que no se carga sino que se genera con el `POST` (`app/api/admin/credenciales/route.ts:343`), se guarda como hash,
 sale una sola vez al generarse, y del que el `GET` sólo dice si existe (`lib/credenciales/resolver.ts:316`). Cada campo
-se guarda solo y un `null` explícito lo borra (`app/api/admin/credenciales/route.ts:173`). Las dos columnas de Meta son
+se guarda solo y un `null` explícito lo borra (`app/api/admin/credenciales/route.ts:174`). Las dos columnas de Meta son
 de la `064` (`db/migraciones/064_la_llave_de_meta.sql:28` y `:31`), aplicada el 2026-09-30 a las 16:15 UTC.
 
 **Meta, y «Probar conexión» (2026-10-15).** El token es el de un usuario del sistema del Business Manager, sólo de
@@ -356,8 +356,8 @@ empresa está diagnosticado y dejado para después (`docs/OTROS/futuro/el-dia-de
 
 **Quién firma el cambio.** `actualizado_por` tiene una foránea compuesta que exige un usuario de la misma
 organización, así que bajo delegación va nulo (`lib/autorizacion/sesion.ts:453-454`,
-`app/api/admin/credenciales/route.ts:259`); el actor real queda en `identidad.auditoria_accesos` como
-`credenciales_cargadas` (`app/api/admin/credenciales/route.ts:287`). Los topes del cerebro siguen la misma regla
+`app/api/admin/credenciales/route.ts:260`); el actor real queda en `identidad.auditoria_accesos` como
+`credenciales_cargadas` (`app/api/admin/credenciales/route.ts:300`). Los topes del cerebro siguen la misma regla
 (`app/api/admin/cerebro/route.ts:59`).
 
 **Cargadas por proveedor** (`count(*) filter (where … is not null)` sobre `identidad.organizaciones_credenciales`):
@@ -562,11 +562,11 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   y Sales se filtran a ese cliente; las demás pantallas dicen «Toda la empresa». Cambiar de empresa vacía el foco.
 - **La conexión de un cliente** (Bloque C): Ajustes › Clientes › Editar › «Conexión» carga el token y el calendario
   del CRM, el dominio de reservas, el usuario del agente, Meta y el secreto del aviso de un cliente que no es el
-  principal (`app/api/admin/cuentas/[id]/conexion/route.ts:28`), con las mismas capacidades que las credenciales de la
-  empresa. La del principal es la de la empresa: ahí es 409 (`app/api/admin/cuentas/[id]/conexion/route.ts:69`). La
+  principal (`app/api/admin/cuentas/[id]/conexion/route.ts:29`), con las mismas capacidades que las credenciales de la
+  empresa. La del principal es la de la empresa: ahí es 409 (`app/api/admin/cuentas/[id]/conexion/route.ts:70`). La
   subcuenta la vincula ARIA, nunca la del principal ni una que ya sea de una empresa
   (`lib/administracion/cuentas.ts:212`); y Ajustes › Credenciales copia la de la empresa a su principal
-  (`app/api/admin/credenciales/route.ts:277`), así que dos empresas no pueden tener la misma y cambiarla libera la
+  (`app/api/admin/credenciales/route.ts:278`), así que dos empresas no pueden tener la misma y cambiarla libera la
   vieja. Los closers son de la empresa: quien ve la organización entera los lee, también enfocado en un cliente
   (`db/migraciones/093_los_closers_de_la_empresa.sql`); el cliente final, sólo los de sus clientes, y su Sales le
   da un rótulo en vez del id de cada persona (`db/migraciones/100_los_closers_del_cliente_final.sql`).

@@ -670,11 +670,19 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
   //
   // Las cuatro nuevas son la cuenta (el nivel 2, la subcuenta del CRM), sus credenciales, qué cuentas ve cada
   // usuario y los acuerdos firmados. Las cuatro con la RLS forzada y su política, como las once.
-  const QUINCE_TABLAS_DE_IDENTIDAD = [
+  //
+  // ── Y DIECIOCHO, CON LA `101` (Meta directo) ───────────────────────────────
+  //
+  // Las conexiones con Meta de «Conectar con Meta», sus cuentas publicitarias (y a qué cliente va cada una) y el
+  // `state` del viaje a Meta. Las tres sólo para identidad: un token no se lee desde el inquilino.
+  const DIECIOCHO_TABLAS_DE_IDENTIDAD = [
     'acuerdos',
     'auditoria_accesos',
+    'conexiones_de_meta',
     'cuentas',
     'cuentas_credenciales',
+    'cuentas_publicitarias_de_meta',
+    'estados_de_oauth',
     'organizaciones',
     'organizaciones_credenciales',
     'permisos',
@@ -689,8 +697,8 @@ test('toda tabla de identidad y negocio tiene RLS activada, forzada y con polít
   ];
   assert.deepEqual(
     r.filter((t) => t.nspname === 'identidad').map((t) => t.relname).sort(),
-    QUINCE_TABLAS_DE_IDENTIDAD,
-    'el conjunto de tablas de identidad cambió: son quince y se otorgan a mano, una por una',
+    DIECIOCHO_TABLAS_DE_IDENTIDAD,
+    'el conjunto de tablas de identidad cambió: son dieciocho y se otorgan a mano, una por una',
   );
 
   for (const t of r) {

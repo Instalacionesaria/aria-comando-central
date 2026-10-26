@@ -1966,6 +1966,50 @@ export interface TablaCuentasCredenciales {
   actualizado_por: string | null;
 }
 
+/** Cada negocio de Meta conectado a la app de ARIA (101). Sólo lo lee identidad: el token está cifrado. */
+export interface TablaConexionesDeMeta {
+  id: Generated<string>;
+  org_id: string;
+  /** Nulo = la conectó la empresa; un cliente = ese cliente con su propio portfolio. */
+  cuenta_id: string | null;
+  token_cifrado: string;
+  negocio_de_meta_id: string | null;
+  origen: 'oauth' | 'manual';
+  estado: Generated<'activa' | 'revocada' | 'vencida'>;
+  conectada_por: string | null;
+  conectada_el: Generated<Date>;
+  ultimo_error: string | null;
+  ultimo_error_el: Date | null;
+}
+
+/** Cada cuenta publicitaria que una conexión de Meta puede leer, y a qué cliente va (101). */
+export interface TablaCuentasPublicitariasDeMeta {
+  org_id: string;
+  act_id: string;
+  conexion_id: string;
+  nombre: string | null;
+  moneda: string | null;
+  zona_horaria: string | null;
+  estado_en_meta: number | null;
+  /** Nulo = sin asignar: no se lee. */
+  cuenta_id: string | null;
+  asignada_por: string | null;
+  asignada_el: Date | null;
+  vista_el: Generated<Date>;
+  historia_hasta: Date | null;
+}
+
+/** El `state` del viaje a Meta, como hash y de un solo uso (101). */
+export interface TablaEstadosDeOauth {
+  hash: string;
+  org_id: string;
+  sesion_id: string;
+  usuario_id: string;
+  cuenta_id: string | null;
+  creado_el: Generated<Date>;
+  vence_el: Date;
+}
+
 /** A qué clientes entra una persona limitada (080). */
 export interface TablaUsuariosCuentas {
   org_id: string;
@@ -2179,6 +2223,9 @@ export interface BaseDeDatos {
   cuentas: TablaCuentas;
   cuentas_credenciales: TablaCuentasCredenciales;
   usuarios_cuentas: TablaUsuariosCuentas;
+  conexiones_de_meta: TablaConexionesDeMeta;
+  cuentas_publicitarias_de_meta: TablaCuentasPublicitariasDeMeta;
+  estados_de_oauth: TablaEstadosDeOauth;
   acuerdos: TablaAcuerdos;
   participacion_en_benchmarks: VistaParticipacionEnBenchmarks;
 

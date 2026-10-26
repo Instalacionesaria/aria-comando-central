@@ -205,7 +205,7 @@ select count(*)::int orgs, count(pagos_clave_cifrada)::int con_pagos
 -- 5 · 0
 ```
 
-Nadie las consume salvo el formulario que las guarda (`app/api/admin/credenciales/route.ts:93`) y el
+Nadie las consume salvo el formulario que las guarda (`app/api/admin/credenciales/route.ts:94`) y el
 resolvedor (`lib/credenciales/resolver.ts:242`). La migración lo dice:
 *«nada las consume»* (`024_ingreso_por_empresa.sql:8-9`).
 
