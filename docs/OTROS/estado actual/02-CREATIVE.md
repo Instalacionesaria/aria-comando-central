@@ -15,6 +15,10 @@
 > `git show a54d80e:"docs/OTROS/estado actual/02-CREATIVE.md"`, y la del 2026-09-15 con
 > `git show 93a1341:"docs/estado actual/02-CREATIVE.md"`.
 
+> **Construido en local, sin subir (2026-10-26) · Meta directo.** La retención del video sale de Meta (la parte de las
+> reproducciones que llegó al final, con su curva por cuartiles y un piso de 100), y el token pegado en Ajustes pasa a ser
+> el respaldo de «Conectar con Meta». Lo de abajo describe producción al corte. Todo en `docs/OTROS/produccion/META-DIRECTO.md`.
+
 **El front del prototipo, con los datos reales, desde el 2026-10-11; y Meta, listo y sin conectar, desde el
 2026-10-15.** La pestaña dibuja el marcado de `aios-command-center_1.html:2746-2804`: la tira de seis cifras,
 «Ordenar por», la biblioteca partida en «Funciona» y «No funciona» —cada pieza contra el promedio de SU etapa—, la
@@ -124,7 +128,7 @@ de ICP de 75 o más (`lib/negocio/calidadDelCreativo.ts:248`, `lib/negocio/tramo
 cita alcanzable. Hook rate y Frecuencia de la tira son pesados, no el promedio de los promedios: las vistas sobre las
 impresiones de los anuncio-día que traían la clave, y la frecuencia de cada pieza pesada con las impresiones de sus días
 con frecuencia (`lib/negocio/lecturaDeCreative.ts:422-443`). Retención es siempre «—» con `sin_fuente`
-(`lib/negocio/lecturaDeCreative.ts:372`). «Entregando» es haber tenido impresiones en alguno de los últimos 3 días del
+(`82f863b:lib/negocio/lecturaDeCreative.ts:372`). «Entregando» es haber tenido impresiones en alguno de los últimos 3 días del
 calendario, hoy incluido (`lib/negocio/lecturaDeCreative.ts:494-495`). La etapa de la pieza es la de la campaña de la que
 más impresiones tuvo; si esa campaña no la dice, la de sus contactos —la de más contactos, y en empate la que va antes
 en el embudo— y si no, «Sin etapa» (`lib/negocio/lecturaDeCreative.ts:331-349`, `lib/negocio/lecturaDeCreative.ts:505-530`).
@@ -185,9 +189,9 @@ Meta y después la imagen de los contactos (`lib/negocio/lecturaDeCreative.ts:37
   (`lib/negocio/miniaturaDelContacto.ts:195-209`): los contactos que traen la imagen entran por un anuncio de
   Instagram y llegan sin UTMs.
 - **La de Meta** la escribe la tarea `activos`, cada hora en el minuto 37 (`lib/negocio/barrido.ts:359-363`), y sin
-  token se sella `saltada` sin llamar a nadie (`lib/negocio/barrido.ts:745-749`). Con token, pide los anuncios que
+  token se sella `saltada` sin llamar a nadie (`lib/negocio/barrido.ts:790-795`). Con token, pide los anuncios que
   nunca se leyeron, los leídos hace más de un día y aquellos cuya miniatura vence en las próximas seis horas, primero
-  los que entregaron hace menos (`lib/negocio/recolectarActivos.ts:97-115`), hasta 200 por pasada y 90 s
+  los que entregaron hace menos (`8b797c2:lib/negocio/recolectarActivos.ts:97-115`), hasta 200 por pasada y 90 s
   (`lib/negocio/recolectarActivos.ts:26`, `lib/negocio/recolectarActivos.ts:29`). Lee por lotes de 50, primero el
   anuncio y después su creativo, con la miniatura pedida a 640 px (`lib/meta/anuncios.ts:3-7`,
   `lib/meta/anuncios.ts:16`, `lib/meta/anuncios.ts:19`), y guarda una fila por anuncio —también sin miniatura, con su
@@ -199,7 +203,7 @@ El navegador la pide sin `referrer` y con carga perezosa; sin URL dice «Sin min
 carga queda el fondo del prototipo (`components/creative/Miniatura.jsx:11-24`).
 
 **«Probar conexión», en Ajustes › Credenciales** (M-1, 2026-10-15). Debajo del token y la cuenta de Meta
-(`components/ajustes/Credenciales.jsx:418`), un botón llama a `POST /api/admin/credenciales/meta`, que pide
+(`82f863b:components/ajustes/Credenciales.jsx:418`), un botón llama a `POST /api/admin/credenciales/meta`, que pide
 `credenciales.editar` (`app/api/admin/credenciales/meta/route.ts:22-31`) y prueba, sin guardar nada, tres pasos en
 orden: el token, la cuenta publicitaria y la lectura de los últimos 25 anuncios con cuántos traen miniatura
 (`lib/meta/conexion.ts:37-73`). El cliente de Meta sólo hace `GET` y lleva el token en la cabecera, nunca en la URL
@@ -588,7 +592,7 @@ pantalla está, con todo lo que el sistema mide, y la mitad que el § 18.12 le r
 más allá de su imagen.
 
 **16 · Meta está listo y nadie lo conectó.** **Abierto** desde el 2026-10-15. La tarea `activos` corre cada hora en el
-minuto 37 (`lib/negocio/barrido.ts:359`) y, sin token, se sella `saltada` (`lib/negocio/barrido.ts:745`): el
+minuto 37 (`lib/negocio/barrido.ts:359`) y, sin token, se sella `saltada` (`lib/negocio/barrido.ts:790`): el
 2026-10-18 lo estaba en las 11 empresas, con `negocio.activos_de_anuncio` vacía. Es lo esperado, y hasta que alguien
 siga `docs/creative/17-CONECTAR-META-PASO-A-PASO.md` la pantalla no cambia. Nada se midió con un token real: cuánto dura
 la firma de una miniatura (`C15-P02`), si la miniatura de 640 px llega de ese tamaño, ni cuántas llamadas cuesta la
@@ -596,7 +600,7 @@ pasada. El primer «Probar conexión» y la primera hora de la tarea lo dicen.
 
 **17 · Los textos de Meta en Ajustes voseaban.** **Nuevo, 2026-10-18; cerrado el 2026-10-18 (`65669f4`).** Al corte,
 lo que «Probar conexión» le dice a quien carga el token usaba voseo: «Revisá» y «Probá», en los textos de cada falla
-(`lib/meta/graph.ts:69`, `lib/meta/graph.ts:72`, `lib/meta/graph.ts:79-80`) y en el del navegador cuando el servidor
+(`82f863b:lib/meta/graph.ts:69`, `82f863b:lib/meta/graph.ts:72`, `lib/meta/graph.ts:79-80`) y en el del navegador cuando el servidor
 no contesta (`components/ajustes/ConexionConMeta.jsx:36`), y la prueba que vigilaba el voseo,
 `pruebas/codigo/202-tools-no-vosea.test.ts`, miraba sólo Tools. Hoy esas líneas dicen «Revisa», «Prueba de nuevo» y
 «avisa a desarrollo», y `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts` mira `components/`, `lib/` y `app/`

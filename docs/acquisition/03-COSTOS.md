@@ -16,6 +16,10 @@
 > costo por anuncio (`lib/negocio/costoDelAnuncio.ts`) y el monitor de atribución del § 18.14
 > (`lib/negocio/calidadDeLaAtribucion.ts`). Nada de lo demás está construido.
 
+> **2026-10-26 · Meta directo (construido en local, sin subir).** El gasto que alimenta estos costos se lee de la
+> Marketing API de Meta por cuenta publicitaria, en su moneda (y en USD cuando un cliente tiene varias), y cada campaña
+> trae su presupuesto y su estado de entrega. Ver `docs/OTROS/produccion/META-DIRECTO.md`.
+
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito lleva el
 > `archivo:línea` del que sale. Lo que no se pudo rastrear está dicho como pregunta abierta, no como requisito. El
 > estado de cada dato sale de la foto del 2026-09-15 (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`):

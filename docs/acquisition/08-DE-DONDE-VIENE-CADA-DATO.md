@@ -25,6 +25,11 @@
 > sigue existiendo y mostraría otra cosa, están fijadas a ese commit (`archivo:N@c4cf2a8`); las demás no
 > se reapuntaron, porque esta carpeta no la audita `pruebas/codigo/101-las-citas-de-los-documentos.test.ts`.
 
+> **2026-10-26 · Meta directo (construido en local, sin subir).** Los datos de anuncios —campañas, conjuntos, anuncios,
+> gasto, impresiones, clics, alcance, frecuencia, acciones, video y desgloses— vienen de la Marketing API de Meta con la
+> conexión de cada cliente, y no del Ad Manager de GoHighLevel. Los contactos y su atribución siguen viniendo de
+> GoHighLevel. Ver `docs/OTROS/produccion/META-DIRECTO.md`.
+
 > Requisitos derivados del prototipo de Acquisition, no de una especificación escrita. Cada requisito
 > lleva el `archivo:línea` del que sale, o dice que no lo tiene. El estado de cada dato sale de la foto
 > del 2026-09-15 (`git show 1c55149:"docs/OTROS/estado actual/01-ACQUISITION.md"`): «foto del 2026-09-15,

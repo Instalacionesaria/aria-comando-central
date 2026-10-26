@@ -952,7 +952,7 @@ credencial de Meta en Ajustes, con las migraciones `063` y `064`— y el 2026-10
 ## 23 · Lo nuevo del 2026-09-29 al 2026-10-16
 
 - **El voseo de la conexión con Meta. Cerrada el 2026-10-18 (`65669f4`).** Al corte, los textos que ve quien conecta
-  Meta voseaban: «Revisá…» y «Probá de nuevo» (`lib/meta/graph.ts:69`, `lib/meta/graph.ts:72`,
+  Meta voseaban: «Revisá…» y «Probá de nuevo» (`82f863b:lib/meta/graph.ts:69`, `82f863b:lib/meta/graph.ts:72`,
   `lib/meta/graph.ts:79-80`) y «Probá de nuevo» en `components/ajustes/ConexionConMeta.jsx:36`; y lo mismo el aviso
   de una ventana vacía de Leads Portal, «Probá una ventana más larga» (`lib/negocio/leadsDelPortal.ts:528-529`). La
   prueba de voseo **sólo miraba Tools** (`pruebas/codigo/202-tools-no-vosea.test.ts:40-44`), así que no lo veía. Hoy

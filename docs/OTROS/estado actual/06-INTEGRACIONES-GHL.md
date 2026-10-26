@@ -12,6 +12,11 @@
 > [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior se lee con
 > `git show 972972e:"docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md"`.
 
+> **Construido en local, sin subir (2026-10-26) · Meta directo, M1 a M7 (migraciones `101` a `104`).** Los anuncios, las
+> campañas, las métricas y el gasto se leen de la Marketing API de Meta con «Conectar con Meta», y la lectura por el Ad
+> Manager de GoHighLevel se retiró, con su cuadre y su relleno (§ 3, § 9 y § 11 describen producción al corte). Todo en
+> `docs/OTROS/produccion/META-DIRECTO.md`.
+
 > **Desde el corte del 2026-09-28**
 >
 > - **2026-09-30 · `fd553b7`, `4365cc9`** — AQ-1 y AQ-3 de Acquisition: el colector de anuncios llama a
@@ -287,7 +292,7 @@ documentado como aceptado.
 dice qué tareas corre cada uno (`lib/negocio/barrido.ts:176-406`). Un horario que no está en el mapa corre **todas**
 (`lib/negocio/barrido.ts:610-620`). El orden de ejecución es el de `TAREAS` (`lib/negocio/barrido.ts:95-114`). El cron toma
 sólo las empresas activas (`app/api/cron/route.ts:187`) y resuelve el token de Meta sólo en la corrida que trae `activos`
-(`app/api/cron/route.ts:154-155`, `:205`). Desde el 2026-10-03 las funciones corren en São Paulo, al lado de la base
+(`8b797c2:app/api/cron/route.ts:154-155`, `:205`). Desde el 2026-10-03 las funciones corren en São Paulo, al lado de la base
 (`vercel.json:3-5`, commit `97fc905`).
 
 La columna `ultimas_llamadas` de `negocio.tareas_programadas` guarda lo que costó la última corrida de cada tarea. Para la
@@ -1068,7 +1073,7 @@ cuenta.**
 | # | Qué | Pedidos a Meta | Quién la dispara | Archivo |
 |---|---|---|---|---|
 | M1 | **«Probar conexión»**: el token (`GET /me`), la cuenta (`GET /act_…` con nombre, moneda y estado) y los últimos 25 anuncios con su miniatura; no guarda nada | 3 | una persona, desde Ajustes › Credenciales, con `credenciales.editar` | `lib/meta/conexion.ts:37-73`, `app/api/admin/credenciales/meta/route.ts:22-31` |
-| M2 | **La tarea `activos`**: el creativo de cada anuncio de `negocio.anuncios`, en dos pasos por lotes de 50 (`?ids=`): el anuncio y su creativo, y la imagen y la miniatura de 640 px | 2 por cada 50 anuncios, más uno por anuncio si un lote trae uno borrado | el cron, al minuto 37 de cada hora | `lib/meta/anuncios.ts:1-12`, `:101-148`; `lib/negocio/recolectarActivos.ts:195-227` |
+| M2 | **La tarea `activos`**: el creativo de cada anuncio de `negocio.anuncios`, en dos pasos por lotes de 50 (`?ids=`): el anuncio y su creativo, y la imagen y la miniatura de 640 px | 2 por cada 50 anuncios, más uno por anuncio si un lote trae uno borrado | el cron, al minuto 37 de cada hora | `lib/meta/anuncios.ts:1-12`, `:101-148`; `8b797c2:lib/negocio/recolectarActivos.ts:195-227` |
 
 «Probar conexión» es un `POST` aunque no escribe, para que un enlace o una vista previa no lo disparen, y dice en cuál de
 los tres pasos falla con un texto nuestro (`app/api/admin/credenciales/meta/route.ts:1-9`,
@@ -1093,7 +1098,7 @@ para mirar que no hay token, y sella.
 **Lo que se encontró al leerlo para esta foto** (los tres, cerrados el mismo 2026-10-18 en `65669f4`):
 
 - **Los textos de error de Meta voseaban**, contra la regla de tú neutro de la aplicación: «Revisá», «Probá», «avisá»
-  (`lib/meta/graph.ts:69`, `:71`, `:74-75`). Llegan a la pantalla de Ajustes por «Probar conexión»
+  (`82f863b:lib/meta/graph.ts:69`, `:71`, `:74-75`). Llegan a la pantalla de Ajustes por «Probar conexión»
   (`components/ajustes/ConexionConMeta.jsx:10-11`). La prueba de voseo de Tools (`202`) no mira `lib/meta/`. **Cerrado:**
   hoy dicen «Revisa», «Prueba de nuevo» y «avisa a desarrollo», y la prueba nueva
   `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts` mira `lib/meta/` con el resto de la aplicación.

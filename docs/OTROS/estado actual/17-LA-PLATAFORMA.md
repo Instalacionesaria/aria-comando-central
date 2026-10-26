@@ -11,6 +11,11 @@
 > omitido. Para ubicar cualquier cosa nombrada acá, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La
 > versión anterior, con sus anexos del 2026-10-04, se lee con `git show 972972e:"docs/OTROS/estado actual/17-LA-PLATAFORMA.md"`.
 
+> **Construido en local, sin subir (2026-10-26) · Meta directo.** Las tareas `anuncios`, `anuncios_relleno` y `activos`
+> le hablan a Meta con la conexión de cada cliente: `anuncios_relleno` pasa a ser la historia de 12 meses, y ninguna de
+> las tres pide el token del CRM. Migraciones `101` a `104`, cuatro tablas nuevas en `identidad` y tres en `negocio`
+> (§ 2 y § 4 describen producción al corte). Todo en `docs/OTROS/produccion/META-DIRECTO.md`.
+
 > **Desde el corte del 2026-09-28**
 >
 > - **Dieciséis migraciones, de la `063` a la `078`, aplicadas en producción** entre el 2026-09-30 y el 2026-10-15,
@@ -85,7 +90,7 @@ de rama**, sin la cual el rojo de la CI no frena el despliegue, y **un rastro du
 - **La fase de identidad va primero y se cierra antes del bucle**: lista las empresas, se queda con las activas
   (`app/api/cron/route.ts:187`) y resuelve en la misma transacción sus accesos —al CRM, al auditor y a los
   Analizadores—, más la llave de IA sólo en el horario de `senales` y el token de Meta sólo en el de `activos`
-  (`app/api/cron/route.ts:155-158`, `app/api/cron/route.ts:180-210`).
+  (`8b797c2:app/api/cron/route.ts:155-158`, `app/api/cron/route.ts:180-210`).
 - **Devuelve el reporte completo**, no un `{ ok: true }` (`app/api/cron/route.ts:212-232`). Lo que sobrevive es el
   sello de `negocio.tareas_programadas`.
 
@@ -157,7 +162,7 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/ba
 | `mejora` | `lib/auditor/buscarMejora.ts:149` | una mejora de prompt por día y por cliente activo (desde C4; con un solo cliente, por empresa) | 1 inferencia |
 | `anuncios` | `3bd2d58:lib/negocio/recolectarAnuncios.ts:511` | el costo diario por anuncio y el gasto de toda la cuenta, vía GoHighLevel | 8 |
 | `anuncios_relleno` | `3bd2d58:lib/negocio/rellenarAnuncios.ts:206` | busca qué campaña gastó en los días que no cuadran con la cuenta; con todo cuadrado no llama | 0 |
-| `activos` | `lib/negocio/recolectarActivos.ts:195` | la miniatura y el post de cada anuncio, de Meta | `saltada`: sin token de Meta |
+| `activos` | `8b797c2:lib/negocio/recolectarActivos.ts:195` | la miniatura y el post de cada anuncio, de Meta | `saltada`: sin token de Meta |
 | `analizadores` | `lib/analizadores/tarea.ts:75` | descubre, analiza, completa fichas y clasifica objeciones | 2 |
 | `reintentos` | `lib/analizadores/tarea.ts:231` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:207`) | 0 |
 | `senales` | `lib/agentes/detectores/correr.ts:143` | la pasada diaria de los detectores y el Plan de acción de cada departamento | 8 (las redacciones) |

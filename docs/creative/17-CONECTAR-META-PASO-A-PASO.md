@@ -7,6 +7,10 @@
 > trae la miniatura de cada anuncio (`15-LA-MINIATURA-Y-EL-VIDEO.md`, etapas M-1 a M-3). Los nombres de las pantallas
 > de Meta son los de su documentación a esa fecha: si cambiaron, el orden de los pasos es el mismo.
 
+> **2026-10-26 · Meta directo (construido en local, sin subir).** Lo normal pasa a ser el botón **«Conectar con Meta»**
+> de Ajustes: el negocio elige sus cuentas en el diálogo de Meta y no hace falta crear una app ni un token. Esta guía queda
+> para el **token pegado a mano**, que sigue como respaldo, plegado en «Avanzado: un token de Meta pegado a mano». Ver `docs/OTROS/produccion/META-DIRECTO.md`.
+
 ---
 
 ## Qué se consigue

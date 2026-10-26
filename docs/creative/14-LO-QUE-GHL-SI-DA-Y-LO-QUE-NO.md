@@ -10,6 +10,11 @@
 > Cada «no» de acá trae el código de error del intento, para que nadie vuelva a sondear una ruta que
 > ya devolvió 404.
 
+> **2026-10-26 · Meta directo (construido en local, sin subir).** Lo que aquí se mide del Ad Manager de GoHighLevel
+> dejó de usarse: los anuncios, el gasto y el video se leen de la Marketing API de Meta con la conexión de cada cliente,
+> y el cliente de GoHighLevel para anuncios se retiró (sus citas quedan fijadas a `3bd2d58`). La atribución de los
+> contactos (`adId`, `campaignId`) sigue saliendo de GoHighLevel. Ver `docs/OTROS/produccion/META-DIRECTO.md`.
+
 ---
 
 ## 1 · Lo que estaba escrito, y por qué era falso

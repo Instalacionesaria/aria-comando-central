@@ -9,6 +9,10 @@
 > `git show 972972e:"docs/OTROS/estado actual/01-ACQUISITION.md"`, y la del 2026-09-15 con
 > `git show 93a1341:"docs/estado actual/01-ACQUISITION.md"`.
 
+> **Construido en local, sin subir (2026-10-26) · Meta directo.** El gasto y las campañas salen de la Marketing API de
+> Meta, con el presupuesto y el estado de entrega de cada campaña; un cliente sin Meta conectado no tiene gasto y su aviso
+> lo dice. Lo de abajo describe producción al corte. Todo en `docs/OTROS/produccion/META-DIRECTO.md`.
+
 **El front del prototipo, con los datos reales, desde el 2026-09-30.** La pestaña vuelve al marcado de
 `aios-command-center_1.html`: cinco cifras, una nota de cobertura, tres funnels —Lead form ads, Profile funnel,
 Booking directo— y una tabla plegable por funnel, más «Sin funnel». La campaña entra a un funnel **porque alguien

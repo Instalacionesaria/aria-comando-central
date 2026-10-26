@@ -6,6 +6,11 @@
 > conteos y agregados y con el OK del usuario: de la base no salió un nombre, un correo ni un teléfono. Lo que no se
 > volvió a medir lleva su fecha; lo que no se pudo verificar está dicho como pendiente. Ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
 
+> **Construido en local, sin subir (2026-10-26) · Meta directo.** La lista de chequeo sube al contrato 3 (`103`): el paso
+> requerido es «Meta conectado» y «Campañas leídas de Meta» reemplaza a «Meta vinculado en su GoHighLevel». Las páginas
+> `/privacidad`, `/terminos`, `/borrado-de-datos` y `/meta/borrado/<código>` se ven sin sesión, por una lista explícita.
+> Lo de abajo describe producción al corte. Todo en `docs/OTROS/produccion/META-DIRECTO.md`.
+
 > **Desde el corte del 2026-09-28** (137 commits, `ceec000..dc84cb2`)
 >
 > - **2026-09-29/30 · `7a7eb17`..`ecfbc26`, `8ff8d9d`..`43ce5ac`** — Creative CR-0 a CR-3 (`063`, `064`) y Acquisition
@@ -1223,7 +1228,7 @@ activas** tienen la zona `UTC`; la que tiene datos tiene la suya.
 **48 · Las pantallas hablan de tú, nunca de vos.** `pruebas/apoyo/voseo.ts:8-9` es una lista de formas vistas en
 pantalla, no una regla gramatical (`:3`), y `pruebas/codigo/202-tools-no-vosea.test.ts:39` la pasa por
 `components/tools`, `lib/tools` y `app/api/tools` (`:40-44`, `5d60371`, 2026-10-04). Mira sólo Tools, y al corte los
-textos de la conexión con Meta (`lib/meta/graph.ts:69`, `:74`; `components/ajustes/ConexionConMeta.jsx:36`) voseaban
+textos de la conexión con Meta (`82f863b:lib/meta/graph.ts:69`, `:74`; `components/ajustes/ConexionConMeta.jsx:36`) voseaban
 sin que nada fallara. **Desde el 2026-10-18 (`65669f4`)** esos textos hablan de tú y la regla la vigila también
 `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts:79-89` en `components/`, `lib/` y `app/` enteros, sin comentarios y
 fuera de Fundaciones, que es de la rama `feature/icp-oferta-v2` (`:16`). No exige todavía que toda la aplicación hable de tú: exige
@@ -1598,13 +1603,13 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   cliente salen de SU GoHighLevel con Meta vinculado (la decisión del 2026-10-20), y la lista de chequeo miraba otra
   cosa: su paso «Meta conectado» era la conexión DIRECTA con Meta, que sólo trae las miniaturas, así que un cliente sin
   costos salía «configurado». Desde D5 el paso es «Meta vinculado en su GoHighLevel», **requerido**
-  (`lib/cartera/pasos.ts:39`), y la conexión directa queda como «Miniaturas de Meta», recomendada
-  (`lib/cartera/pasos.ts:40`). No se lee de una credencial: se MIDE con el sello de la pasada del gasto del
+  (`82f863b:lib/cartera/pasos.ts:39`), y la conexión directa queda como «Miniaturas de Meta», recomendada
+  (`82f863b:lib/cartera/pasos.ts:40`). No se lee de una credencial: se MIDE con el sello de la pasada del gasto del
   cliente —corrió con el vínculo, o corrió sin él y dejó `MOTIVO_SIN_META_EN_GHL`—, y sin un sello que corrió, con su
-  serie de gasto de 30 días; sin nada, «sin medir», que no se acusa (`lib/cartera/medicion.ts:83`). El principal sin sello
+  serie de gasto de 30 días; sin nada, «sin medir», que no se acusa (`82f863b:lib/cartera/medicion.ts:83`). El principal sin sello
   propio toma el sin cuenta, como los avisos (`lib/cartera/medicion.ts:119`). Lo mismo mide la foto y la
   lista en vivo (`medirLosPasos`, `lib/cartera/medicion.ts:98`); la foto lo guarda en `meta_en_el_crm`
-  (`lib/cartera/foto.ts:113`) y sube al **contrato 2**: cambian `configurada`, `faltan` y, de la empresa,
+  (`82f863b:lib/cartera/foto.ts:113`) y sube al **contrato 2**: cambian `configurada`, `faltan` y, de la empresa,
   `cuentas_configuradas`, y la `099` reescribe sus comentarios. Configurado sigue siendo «activo y con todo lo
   requerido» (`clienteConfigurado`, `lib/cartera/pasos.ts:128`), y el tablero ya no acusa lo medido de un cliente cuya
   empresa no se pudo medir (`lib/cartera/tablero.ts:177`). **Ajustes › Clientes** muestra la lista de cada cliente,
@@ -1616,8 +1621,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   escotilla y a la de los dos dominios, con dos lecturas. **Negocios** suma «Agregar cliente», con `cuentas.crear` y el
   `orgId` de la empresa, que sólo la plataforma puede mandar (`components/cartera/PanelDeNegocios.jsx:344`, `components/cartera/PanelDeNegocios.jsx:166`).
   Con un solo cliente, la lista cambia a propósito: un cliente cuyo GoHighLevel no tiene Meta vinculado deja de estar
-  configurado. Lo exigen `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:218`, `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:241`,
-  `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:287`, `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:55`,
+  configurado. Lo exigen `82f863b:pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:218`, `82f863b:pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:241`,
+  `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:287`, `82f863b:pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:55`,
   `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:247` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:93`.
 - **El cliente final lee sólo los closers de sus clientes (C6, `100`).** La `093` dejaba leer la designación de los
   closers desde cualquier ámbito de la organización, también el del cliente final: desde su cliente leía las filas de
@@ -1643,10 +1648,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   dos que tienen Meta vinculado quedan en SU cliente, con SUS cifras, y el que no lo tiene no escribe nada y su sello
   dice «Meta no está vinculado en GoHighLevel» (`3bd2d58:lib/negocio/barrido.ts:1163`), con el texto que leen la lista de
   chequeo y los avisos (`MOTIVO_SIN_META_EN_GHL`). Lo exigen
-  `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:190`,
-  `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:210`,
-  `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:236` y
-  `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:250`.
+  `8b797c2:pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:190`,
+  `8b797c2:pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:210`,
+  `8b797c2:pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:236` y
+  `8b797c2:pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:250`.
 - **La siembra local del nivel 3 (C6, `sembrar-nivel-3`, sin migración).** Para mirar en el navegador lo que las
   pruebas miran por partes, `node scripts/db.mjs sembrar-nivel-3` (`scripts/db.mjs:370`) deja la empresa `gamma` con
   tres clientes genéricos —el principal, un segundo con su Conexión de prueba (una subcuenta y un token inventados) y
