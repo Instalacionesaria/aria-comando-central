@@ -535,8 +535,8 @@ sin estar**: el 2026-10-18 `gh api …/branches/main` da `protected: false` ([17
 
 **La corrección que dejó la tercera.** No alcanza con preguntar qué LEE el arranque: hay que preguntar
 **qué TOCA la columna nueva, en cualquier sentido** —un `insert` que la nombra rompe igual que un
-`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:168`; el barrido de
-citas va a la hora y tres, `lib/negocio/barrido.ts:252`).
+`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:175`; el barrido de
+citas va a la hora y tres, `lib/negocio/barrido.ts:259`).
 
 **La comprobación de treinta segundos, antes de cada `git push`:**
 
@@ -617,7 +617,7 @@ prueba de código lo hace cumplir.
 | `negocio.citas` | `lib/negocio/citas.ts` (el barrido) | `pruebas/codigo/147-un-solo-escritor-de-citas.test.ts` |
 | `negocio.resultados` | `lib/negocio/avanzar.ts:1` — «Avanzar: el ÚNICO lugar donde se registra un resultado» | `pruebas/codigo/132-avanzar-sin-respuesta.test.ts` |
 | El sello del setter | — | `pruebas/codigo/112-sello-del-setter.test.ts` |
-| Las cuatro de Acquisition (2026-09-30) | `lib/negocio/recolectarAnuncios.ts` y `lib/negocio/funnelDeLaCampana.ts` | `pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:50` |
+| Las cuatro de Acquisition (2026-09-30) | `lib/negocio/recolectarAnuncios.ts` y `lib/negocio/funnelDeLaCampana.ts` | `pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:57` |
 | `negocio.enlaces_de_pieza` (2026-09-29) | el link manual de Creative | `pruebas/codigo/179-url-externa.test.ts:86` |
 | `negocio.uso_de_ia` y las tablas de los agentes (2026-10-04) | `lib/agentes/uso.ts` y uno por tabla | `pruebas/codigo/198-el-transporte-de-los-agentes.test.ts:484` |
 | `negocio.hallazgos` (sigue siendo del auditor) | `lib/auditor/` | `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:132` |
@@ -1132,7 +1132,7 @@ revisión adversarial con dos escépticos por hallazgo, que ejecutaron la funci�
 2026-09-18): «una marca de agua no puede describir un conjunto con agujeros». La ventana ahora sale de
 lo que FALTA. **Y volvió con el gasto**: el colector pedía 13 de las 61 campañas de la cuenta, el sello decía `corrio`
 y una campaña de mensajes no entraba nunca; la `076` (`22ec755`, 2026-10-07) lee la serie de toda la cuenta y el
-sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:1110-1113`).
+sello dice cuándo Meta no está vinculado (`lib/negocio/barrido.ts:1160-1163`).
 
 ## M · Un comentario que afirma sin medir
 
@@ -1166,8 +1166,8 @@ archivos citan (regla 35). Nacieron con Acquisition, la nueva estructura, los ag
 pantallas al front del prototipo; la 52 es vieja y no estaba en la lista.
 
 **42 · Un solo camino hacia afuera, y uno solo hacia el modelo.** `fetch(` aparece en exactamente tres archivos
-(`lib/http/cliente.ts:235-236`), forzado por `pruebas/codigo/30-portero.test.ts:546` (`ADR-0305`): todo pedido del
-servidor a un tercero sale por `pedirExterno` (`lib/http/cliente.ts:348`), porque un segundo cliente traería el manejo
+(`lib/http/cliente.ts:237-238`), forzado por `pruebas/codigo/30-portero.test.ts:546` (`ADR-0305`): todo pedido del
+servidor a un tercero sale por `pedirExterno` (`lib/http/cliente.ts:350`), porque un segundo cliente traería el manejo
 de errores opuesto. Los agentes nuevos llegan a Anthropic sólo por `llamarAlModelo`, que sale por `pedirExterno` con
 la dirección de `lib/agentes/proveedor.ts` (`lib/agentes/llamada.ts:9-10`, `d75f3be`, 2026-10-04); un reintento y sólo
 si el fallo es pasajero; nunca dentro de una transacción abierta (`:40-41`); y nunca una herramienta forzada, porque
@@ -1197,7 +1197,7 @@ y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas
 `d715b2a`, 2026-10-05) es una tabla común para los cuatro departamentos: la huella —departamento, regla, entidad,
 ventana— impide que una señal descartada renazca mientras su condición siga, la entidad es un id y no un nombre, y no
 hay texto libre de personas (`db/migraciones/072_las_senales.sql:15-26`); con menos de 10 no hay señal
-(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:364-370`),
+(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:371-377`),
 y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:77` y
 `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:101`. **Y las dos excepciones con datos de personas tienen
 su regla:** el Brief del closer es el agente que manda al modelo datos de una persona (`lib/agentes/brief/entrada.ts:14`),
@@ -1209,7 +1209,7 @@ remota (`pruebas/codigo/203-el-sembrado-de-los-agentes-es-local.test.ts:47`). Me
 
 **46 · Cada tabla de Acquisition tiene un escritor, y quien asigna un funnel lo audita.** `campanas`,
 `gasto_de_la_cuenta` y `lecturas_de_gasto` las escribe el colector y `funnels_de_campana` su módulo
-(`pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:50`, `e77d31f`, 2026-09-30). Es la regla 10 aplicada a un
+(`pruebas/codigo/180-un-solo-escritor-de-acquisition.test.ts:57`, `e77d31f`, 2026-09-30). Es la regla 10 aplicada a un
 departamento entero. Medido el 2026-10-18: `negocio.funnels_de_campana` tiene **0 filas** —ninguna campaña asignada—.
 
 **47 · Dos regímenes de ventana, y el día es el de la empresa.** Las ventanas de `lib/negocio/periodo.ts` son móviles
@@ -1275,7 +1275,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
   mitad: abrir el contexto de la organización ahora también abre el de sus cuentas.
 - **Los regímenes de negocio.** Cada tabla es de una cuenta, de una cuenta o de la organización, o sólo de la
   organización, y la lista es a mano porque el régimen es una decisión (`pruebas/apoyo/regimenes-de-negocio.ts:1-19`);
-  `pruebas/base/257-el-modelo-fase-0.test.ts:79` pone la suite en rojo si una tabla no tiene régimen o tiene dos.
+  `pruebas/base/257-el-modelo-fase-0.test.ts:80` pone la suite en rojo si una tabla no tiene régimen o tiene dos.
 - **El revisor del migrador.** Sigue prohibiendo `no force row level security` (`lib/datos/migrador.ts:131`), suma
   los esquemas `catalogo`, `sistema` e `ingesta` (`:70`), no le pide `org_id` a una partición (`:177`) y acepta
   `aplicar_aislamiento_de_cuenta` como aislamiento (`:208`).
@@ -1286,7 +1286,7 @@ para la base de producción; sí para el código del árbol y para la suite loca
   (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:4-21`).
 - **Lo demás.** El idioma común compartido sin `org_id` (`079`), las cuentas (`080`), la bandeja de lo crudo con una
   sola puerta (`081`) y los eventos de sólo agregar, con particiones que nacen cerradas (`084`,
-  `pruebas/base/257-el-modelo-fase-0.test.ts:654`).
+  `pruebas/base/257-el-modelo-fase-0.test.ts:659`).
 
 ## Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
 
@@ -1334,7 +1334,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **La foto de los negocios, con un solo escritor.** `negocio.foto_de_las_empresas` y `negocio.foto_de_las_cuentas`
   viven bajo la principal, que un disparador exige (`db/migraciones/089_la_foto_de_los_negocios.sql:126`); no guardan
   nombres, y nulo es «sin medir». Las escribe sólo `tomarLaFoto` (`lib/cartera/foto.ts:162`), en la tarea `foto` del
-  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:120`, horario en `lib/negocio/barrido.ts:382`).
+  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:119`, horario en `lib/negocio/barrido.ts:389`).
   Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:114`.
 - **El tablero de Negocios.** La primera entrada de Client Success, sólo del superadministrador y desde la principal
   (`app/api/negocios/route.ts:33`): la configuración en vivo, leída de identidad como presencias
@@ -1351,10 +1351,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (organización, cliente) (`lib/credenciales/resolver.ts:66`), y sin las suyas FALTAN, nunca caen a las de la empresa.
   Quien quiere la de la empresa lo escribe (`'la_de_la_empresa'`). El aviso del CRM entra al cliente de su secreto
   (`app/api/avisos/crm/route.ts:150`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:81`.
-- **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:131`) corren una vez por cliente
-  activo, con sus credenciales, que la ruta resuelve por cliente (`app/api/cron/route.ts:230`); las de la empresa, una
-  vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:656`), con el presupuesto mirado antes de
-  cada una (`lib/negocio/barrido.ts:695`), y cada sello con su cliente. La frescura de una pantalla es la de su
+- **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:130`) corren una vez por cliente
+  activo, con sus credenciales, que la ruta resuelve por cliente (`app/api/cron/route.ts:242`); las de la empresa, una
+  vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:701`), con el presupuesto mirado antes de
+  cada una (`lib/negocio/barrido.ts:740`), y cada sello con su cliente. La frescura de una pantalla es la de su
   cliente, o la del peor activo a la vista (`lib/negocio/frescura.ts:200`).
 - **Las rutas manuales traen a cada cliente (C5 · G4).** «Traer del calendario», el tic de la ingesta y «Traer de
   GoHighLevel» traen a los clientes ACTIVOS que su pantalla lee (`lib/autorizacion/ambito.ts:70`): las tres leen la
@@ -1364,7 +1364,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   sin prioridad al atrasado, para que uno lento no deje sin traer a los demás (`lib/negocio/traerDeLosClientes.ts:145`).
   Con un cliente, la respuesta de siempre; con varios, las cifras sumadas y `clientes`, con el nombre delante
   (`lib/negocio/traerDeLosClientes.ts:168`). Al cliente sin credenciales se le dice dónde se cargan las suyas
-  (`lib/credenciales/resolver.ts:999`). Lo exigen `pruebas/base/282-las-rutas-manuales-traen-a-cada-cliente.test.ts:331`
+  (`lib/credenciales/resolver.ts:1009`). Lo exigen `pruebas/base/282-las-rutas-manuales-traen-a-cada-cliente.test.ts:331`
   y `pruebas/codigo/283-las-rutas-manuales-son-por-cliente.test.ts:68`.
 - **Acquisition, Conversation y los detectores del gasto, por cliente (C5 · G3, `094`).** La atribución por campaña
   agrupa por (campaña, cliente) (`lib/negocio/atribucionDelLead.ts:176`), y cada fila dice su cliente cuando las
@@ -1638,10 +1638,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **El gasto de cada cliente, de punta a punta por el cron (C6, sin migración).** Lo que la 280 hace con los
   contactos y los mensajes, la 301 lo hace con el gasto: la tarea `anuncios` por la ruta del cron con su horario, con
   tres clientes y un Ad Manager de GoHighLevel falso que sólo responde a cada token con SU subcuenta y SUS campañas.
-  Cada unidad del barrido pide con el acceso de su cliente (`lib/negocio/barrido.ts:664`,
+  Cada unidad del barrido pide con el acceso de su cliente (`lib/negocio/barrido.ts:709`,
   `lib/negocio/barrido.ts:773`); las campañas, los anuncios, las métricas por anuncio y la serie de la cuenta de los
   dos que tienen Meta vinculado quedan en SU cliente, con SUS cifras, y el que no lo tiene no escribe nada y su sello
-  dice «Meta no está vinculado en GoHighLevel» (`lib/negocio/barrido.ts:1112`), con el texto que leen la lista de
+  dice «Meta no está vinculado en GoHighLevel» (`lib/negocio/barrido.ts:1162`), con el texto que leen la lista de
   chequeo y los avisos (`MOTIVO_SIN_META_EN_GHL`). Lo exigen
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:190`,
   `pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:210`,

@@ -82,7 +82,6 @@ create table if not exists identidad.cuentas_publicitarias_de_meta (
   asignada_por     uuid,
   asignada_el      timestamptz,
   vista_el         timestamptz not null default now(),
-  historia_hasta   date,
   primary key (org_id, act_id),
   foreign key (org_id, conexion_id) references identidad.conexiones_de_meta (org_id, id) on delete cascade,
   foreign key (org_id, cuenta_id) references identidad.cuentas (org_id, id) on delete set null (cuenta_id),
@@ -103,7 +102,6 @@ comment on column identidad.cuentas_publicitarias_de_meta.zona_horaria is 'La zo
 comment on column identidad.cuentas_publicitarias_de_meta.estado_en_meta is 'El account_status de Meta: 1 activa; 2 deshabilitada; 3 sin pagar; 7 en revisión de riesgo; 101 cerrada; etc.';
 comment on column identidad.cuentas_publicitarias_de_meta.cuenta_id is 'A qué cliente se asigna. Nulo = conectada y sin asignar: no se lee hasta que alguien la asigne.';
 comment on column identidad.cuentas_publicitarias_de_meta.vista_el is 'La última vez que Meta la devolvió al listar las cuentas de la conexión.';
-comment on column identidad.cuentas_publicitarias_de_meta.historia_hasta is 'Hasta qué fecha llegó el relleno de los 12 meses de historia. Nulo = todavía no empezó.';
 
 -- Una cuenta que conectó un CLIENTE con su propio portfolio sólo se asigna a ese cliente: la empresa no puede mover lo
 -- que otro negocio le dio a uno de sus clientes. La regla la cumple la base, no la pantalla.

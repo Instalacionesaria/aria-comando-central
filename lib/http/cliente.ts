@@ -78,6 +78,8 @@ export type Respuesta<T> =
        * Anthropic y GoHighLevel no lo mandan, y para ellos la respuesta queda igual que antes.
        */
       readonly numero?: number;
+      /** El subcódigo (`error.error_subcode` de Meta): `1487534` es «pedí menos datos», que se arregla partiendo el rango. */
+      readonly subnumero?: number;
     }
   | { readonly tipo: 'sin_respuesta'; readonly causa: string };
 
@@ -471,7 +473,7 @@ export async function pedirExterno<T>(
      * acá no aplica: los errores de un CRM pueden nombrar un contacto, y eso son datos de una persona en una
      * pantalla que quizá no le corresponde. Los de Anthropic hablan de la PETICIÓN —campos, límites,
      * saldo—, nunca de datos de terceros. */
-    const error = (cuerpoLeido as { error?: { type?: unknown; code?: unknown } } | null)?.error;
+    const error = (cuerpoLeido as { error?: { type?: unknown; code?: unknown; error_subcode?: unknown } } | null)?.error;
     const codigo = typeof error === 'object' && error !== null ? error.type : undefined;
     const numero = typeof error === 'object' && error !== null ? error.code : undefined;
     const motivo = motivoDelServicio(cuerpoLeido);
@@ -481,6 +483,7 @@ export async function pedirExterno<T>(
       codigo: typeof codigo === 'string' ? codigo : 'sin_codigo',
       ...(motivo === null ? {} : { detalle: motivo }),
       ...(typeof numero === 'number' && Number.isInteger(numero) ? { numero } : {}),
+      ...(typeof error?.error_subcode === 'number' && Number.isInteger(error.error_subcode) ? { subnumero: error.error_subcode } : {}),
     };
   }
 

@@ -28,7 +28,7 @@ import { cerrarTodo, conectar, filas, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
 import { TAREAS, TAREAS_DE_LA_PLATAFORMA, barrerTodo, type EmpresaParaBarrer } from '../../lib/negocio/barrido.ts';
-import type { AccesoAlAnalizador, AccesoAlAuditor } from '../../lib/credenciales/resolver.ts';
+import { TEXTO_DE_FALTA_CUENTAS_DE_META, type AccesoAlAnalizador, type AccesoAlAuditor } from '../../lib/credenciales/resolver.ts';
 
 /**
  * El acceso al auditor de estas empresas: **ninguna lo tiene**, y es el caso real.
@@ -239,19 +239,11 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
          (la ruta sólo lo resuelve en el horario de los activos). Ni llega a leer la base. */
       ['activos', 'saltada'],
       ['analizadores', 'saltada'],
-      /* Y `anuncios` sale FALLO por otro camino que las tres del CRM: desde la `076` su primer paso es
-         preguntar por el vínculo con Meta —sin vínculo no escribe nada, para que un vacío no se guarde
-         como cero—, y acá ese pedido no tiene red. Que no se pueda ni preguntar es la tarea fallando.
-
-         Hasta la `076` salía CORRIÓ sin llamar a nadie: armaba sus campañas desde la atribución y una
-         empresa sin contactos no tenía ninguna. Era ese mismo universo el que dejaba afuera a la campaña
-         de mensajes. */
-      ['anuncios', 'fallo'],
-      /* `anuncios_relleno` sale FALLO desde el nivel 3: toda tarea de un cliente abre primero el ámbito de su
-         cliente (`porOmisionDe`), y una empresa que no existe no tiene cliente por omisión. Antes salía CORRIÓ:
-         leía la base con la RLS, cero filas, y no tenía nada que rellenar. Que falle es lo honesto: no se sabe
-         de quién es lo que se rellenaría. */
-      ['anuncios_relleno', 'fallo'],
+      /* Las dos de los anuncios salen SALTADAS desde Meta directo, por lo mismo que `activos`: le hablan a Meta con
+         las cuentas del cliente, no al CRM, y esta empresa no trae cuentas de Meta. Ni llegan a leer la base. Hasta
+         Meta directo salían FALLO: le preguntaban a GoHighLevel por el vínculo con Meta con el token del CRM. */
+      ['anuncios', 'saltada'],
+      ['anuncios_relleno', 'saltada'],
       ['auditoria', 'saltada'],
       ['citas', 'fallo'],
       ['contactos', 'fallo'],
@@ -363,9 +355,10 @@ test('SE SELLA TAMBIÉN cuando la tarea no corrió', async () => {
   assert.equal(porTarea.get('citas'), 'sin_token');
   assert.match(String(porTarea.get('auditoria')), /llave de IA/);
   assert.match(String(porTarea.get('mejora')), /llave de IA/);
-  // `anuncios` sí necesita el token del CRM —le habla al Ad Manager de GoHighLevel—, así que su
-  // falta es la misma que la de las tres de arriba y no la del auditor.
-  assert.equal(porTarea.get('anuncios'), 'sin_token');
+  // `anuncios` NO necesita el token del CRM desde Meta directo: le habla a Meta con las cuentas del cliente, así que su
+  // falta es la de Meta, con su texto, y no la del CRM.
+  assert.equal(porTarea.get('anuncios'), TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta);
+  assert.equal(porTarea.get('anuncios_relleno'), TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta);
   // Y los Analizadores dicen lo suyo: la llave que les falta es la de tl;dv, no el token del CRM.
   assert.match(String(porTarea.get('analizadores')), /tl;dv/);
   // Y la pasada de los detectores, sin nada que decir.

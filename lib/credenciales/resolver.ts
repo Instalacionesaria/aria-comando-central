@@ -781,7 +781,8 @@ export interface CuentaDeMetaDelCliente {
   conexionId: string;
   moneda: string | null;
   zonaHoraria: string | null;
-  historiaHasta: Date | null;
+  /** `true` = el token es de una conexión por «Conectar con Meta» (de nuestra app): va con su `appsecret_proof`. */
+  conPrueba: boolean;
 }
 
 /** Por qué un cliente no tiene cuentas de Meta que leer. */
@@ -790,6 +791,15 @@ export type FaltaDeCuentasDeMeta = 'sin_cuentas_de_meta' | 'conexion_de_meta_cai
 export type CuentasDeMeta =
   | { tipo: 'listo'; cuentas: CuentaDeMetaDelCliente[] }
   | { tipo: 'falta'; que: FaltaDeCuentasDeMeta };
+
+/** Lo que se le dice a quien mira el sello o el aviso, por motivo. En tú, con la acción. */
+export const TEXTO_DE_FALTA_CUENTAS_DE_META: Readonly<Record<FaltaDeCuentasDeMeta, string>> = {
+  sin_cuentas_de_meta:
+    'Meta no está conectado para este cliente: conéctalo en Ajustes (o asígnale una cuenta publicitaria). Sin eso no ' +
+    'se leen sus campañas, su gasto ni sus anuncios.',
+  conexion_de_meta_caida: 'La conexión con Meta se cayó (se quitó en Meta o venció). Vuelve a conectar Meta en Ajustes.',
+  token_de_meta_ilegible: 'La conexión con Meta está guardada pero el servidor no puede leerla. Vuelve a conectar Meta en Ajustes.',
+};
 
 /**
  * Las cuentas publicitarias de Meta asignadas a un cliente, cada una con el token descifrado de su conexión, o **qué
@@ -818,7 +828,7 @@ export async function resolverCuentasDeMeta(db: Trx, orgId: string, cliente: Cli
   const filas = await db
     .selectFrom('cuentas_publicitarias_de_meta as p')
     .innerJoin('conexiones_de_meta as c', (j) => j.onRef('c.org_id', '=', 'p.org_id').onRef('c.id', '=', 'p.conexion_id'))
-    .select(['p.act_id', 'p.moneda', 'p.zona_horaria', 'p.historia_hasta', 'c.id as conexion_id', 'c.estado', 'c.token_cifrado'])
+    .select(['p.act_id', 'p.moneda', 'p.zona_horaria', 'c.id as conexion_id', 'c.estado', 'c.origen', 'c.token_cifrado'])
     .where('p.org_id', '=', orgId)
     .where('p.cuenta_id', '=', cuentaId)
     .orderBy('p.act_id')
@@ -844,7 +854,7 @@ export async function resolverCuentasDeMeta(db: Trx, orgId: string, cliente: Cli
       conexionId: f.conexion_id,
       moneda: f.moneda,
       zonaHoraria: f.zona_horaria,
-      historiaHasta: f.historia_hasta,
+      conPrueba: f.origen === 'oauth',
     });
   }
   return { tipo: 'listo', cuentas };

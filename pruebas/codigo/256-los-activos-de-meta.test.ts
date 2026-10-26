@@ -26,7 +26,7 @@ import { join } from 'node:path';
 import { RAIZ, archivosFuente } from '../apoyo/fuente.ts';
 import { LADO_DE_LA_MINIATURA, LOTE_DE_META, leerCreativos, type CreativoDeMeta } from '../../lib/meta/anuncios.ts';
 import { filaDelActivo, publicacionDelCreativo, vencimientoDeLaFirma } from '../../lib/negocio/recolectarActivos.ts';
-import { HORARIOS, TAREAS, motivoDeLoIncompleto } from '../../lib/negocio/barrido.ts';
+import { HORARIOS, TAREAS, TAREAS_DE_META, motivoDeLoIncompleto } from '../../lib/negocio/barrido.ts';
 
 type Respuesta = { estado: number; cuerpo: unknown };
 
@@ -205,11 +205,13 @@ test('la tarea `activos`: sola en el minuto 37, cada hora, y su corte se lee en 
   assert.equal(motivoDeLoIncompleto({ pedidos: 3, guardados: 3, conMiniatura: 2, corte: null }), null);
 
   const barrido = readFileSync(join(RAIZ, 'lib/negocio/barrido.ts'), 'utf8');
-  // Sin token de Meta, saltada con su texto y sin llamar a nadie; y no se le pide el token del CRM.
-  assert.match(barrido, /if \(tarea === 'activos' && meta\?\.tipo !== 'listo'\) \{/);
-  assert.match(barrido, /tarea !== 'activos' &&\s*\n\s*acceso\.tipo !== 'listo'/);
+  // Sin cuentas de Meta, saltada con su texto y sin llamar a nadie; y no se le pide el token del CRM. Desde Meta directo
+  // vale para las tres tareas de Meta (`TAREAS_DE_META`): los activos, los anuncios y su historia.
+  assert.match(barrido, /if \(esDeMeta\(tarea\) && meta\?\.tipo !== 'listo'\) \{/);
+  assert.match(barrido, /!esDeMeta\(tarea\) &&\s*\n\s*acceso\.tipo !== 'listo'/);
+  assert.deepEqual([...TAREAS_DE_META].sort(), ['activos', 'anuncios', 'anuncios_relleno']);
 
   const ruta = readFileSync(join(RAIZ, 'app/api/cron/route.ts'), 'utf8');
-  assert.match(ruta, /const conLosActivos = tareasDelHorario\(horario\)\.tareas\.includes\('activos'\);/);
-  assert.match(ruta, /\.\.\.\(conLosActivos \? \{ meta: await resolverAccesoAMeta\(db, org\.id, 'la_de_la_empresa'\) \} : \{\}\)/);
+  assert.match(ruta, /const conLosActivos = tareasDelHorario\(horario\)\.tareas\.some\(\(t\) => TAREAS_DE_META\.includes\(t\)\);/);
+  assert.match(ruta, /\.\.\.\(conLosActivos \? \{ meta: await resolverCuentasDeMeta\(db, org\.id, 'la_de_la_empresa'\) \} : \{\}\)/);
 });

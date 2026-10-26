@@ -31,7 +31,7 @@ import { mensajesDeLaFicha } from '../../lib/negocio/ficha.ts';
 import { agendaDelCloser } from '../../lib/negocio/agenda.ts';
 import {
   TEXTO_DE_FALTA_AUDITOR,
-  TEXTO_DE_FALTA_META,
+  TEXTO_DE_FALTA_CUENTAS_DE_META,
   type AccesoAlAnalizador,
   type AccesoAlAuditor,
 } from '../../lib/credenciales/resolver.ts';
@@ -86,7 +86,7 @@ function conSusClientes(): EmpresaParaBarrer {
     acceso: { tipo: 'falta', que: 'token_revocado' },
     auditor: { tipo: 'falta', que: 'auditor_apagado' },
     analizador: SIN_ANALIZADOR,
-    meta: { tipo: 'falta', que: 'sin_cuenta_de_meta' },
+    meta: { tipo: 'falta', que: 'sin_cuentas_de_meta' },
     clientes: [
       {
         cuenta: { id: p, esPorOmision: true },
@@ -186,18 +186,19 @@ test('cada tarea de un cliente usa SUS credenciales y se sella con SU cuenta; la
     ],
     'una tarea de un cliente se despachó con credenciales que no son las suyas',
   );
-  // La mejora (con la llave del auditor) y los activos (con la de Meta), también con las de cada cliente.
+  // La mejora (con la llave del auditor), y los anuncios y los activos (con sus cuentas de Meta), también con las de
+  // cada cliente: P tiene su conexión ilegible e Y no tiene ninguna.
   const diario = await barrerTodo('17 6 * * *', [conSusClientes()], DE_DIA);
   const activos = await barrerTodo('37 * * * *', [conSusClientes()], DE_DIA);
   assert.deepEqual(
-    [...diario.renglones, ...activos.renglones]
-      .filter((x) => x.tarea !== 'anuncios')
-      .map((x) => `${x.cuentaId === p ? 'P' : 'Y'}:${x.tarea}:${x.porque}`),
+    [...diario.renglones, ...activos.renglones].map((x) => `${x.cuentaId === p ? 'P' : 'Y'}:${x.tarea}:${x.porque}`),
     [
       `P:mejora:${TEXTO_DE_FALTA_AUDITOR.sin_llave_de_ia}`,
+      `P:anuncios:${TEXTO_DE_FALTA_CUENTAS_DE_META.token_de_meta_ilegible}`,
       `Y:mejora:${TEXTO_DE_FALTA_AUDITOR.sin_id_del_agente}`,
-      `P:activos:${TEXTO_DE_FALTA_META.token_de_meta_ilegible}`,
-      `Y:activos:${TEXTO_DE_FALTA_META.sin_token_de_meta}`,
+      `Y:anuncios:${TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta}`,
+      `P:activos:${TEXTO_DE_FALTA_CUENTAS_DE_META.token_de_meta_ilegible}`,
+      `Y:activos:${TEXTO_DE_FALTA_CUENTAS_DE_META.sin_cuentas_de_meta}`,
     ],
     'la mejora o los activos de un cliente usaron las credenciales de la empresa o de otro cliente',
   );

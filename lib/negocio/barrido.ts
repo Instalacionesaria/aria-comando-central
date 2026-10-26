@@ -31,17 +31,16 @@
 
 import { datos, conOrganizacion } from '../datos/contexto.ts';
 import type { OrganizacionListada } from '../administracion/organizaciones.ts';
-import type { AccesoAGhl, AccesoAlAnalizador, AccesoAlAuditor, AccesoAMeta } from '../credenciales/resolver.ts';
-import { TEXTO_DE_FALTA_ANALIZADOR, TEXTO_DE_FALTA_AUDITOR, TEXTO_DE_FALTA_META } from '../credenciales/resolver.ts';
+import type { AccesoAGhl, AccesoAlAnalizador, AccesoAlAuditor, CuentaDeMetaDelCliente, CuentasDeMeta } from '../credenciales/resolver.ts';
+import { TEXTO_DE_FALTA_ANALIZADOR, TEXTO_DE_FALTA_AUDITOR, TEXTO_DE_FALTA_CUENTAS_DE_META } from '../credenciales/resolver.ts';
 import { correrAnalizadores, llamadasDeLaTarea, reintentarAnalizadores } from '../analizadores/tarea.ts';
 import { auditarEmpresa } from '../auditor/analisis.ts';
 import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
 import { sincronizarContactos } from './sincronizar.ts';
 import { completarMiniaturas } from './miniaturaDelContacto.ts';
-import { recolectarAnuncios } from './recolectarAnuncios.ts';
-import { rellenarAnuncios } from './rellenarAnuncios.ts';
-import { recolectarActivos } from './recolectarActivos.ts';
+import { recolectarDeMeta } from './recolectarDeMeta.ts';
+import { recolectarActivos, type ResultadoDeActivos } from './recolectarActivos.ts';
 import { barrerCitas } from './citas.ts';
 import { ambitoDeUnCliente, cuentaDe, porOmisionDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { sondaDeAislamiento } from '../deteccion/sonda.ts';
@@ -139,6 +138,14 @@ export const TAREAS_DEL_CLIENTE: readonly Tarea[] = [
   'activos',
 ];
 const esDelCliente = (t: Tarea): boolean => TAREAS_DEL_CLIENTE.includes(t);
+
+/**
+ * Las tareas que le hablan a Meta con la conexión del cliente (Meta directo): las campañas y el gasto (`anuncios`), su
+ * historia de 12 meses (`anuncios_relleno`) y las miniaturas (`activos`). No piden el token del CRM; piden sus cuentas
+ * de Meta, y sin ellas quedan `saltada` con su texto.
+ */
+export const TAREAS_DE_META: readonly Tarea[] = ['anuncios', 'anuncios_relleno', 'activos'];
+const esDeMeta = (t: Tarea): boolean => TAREAS_DE_META.includes(t);
 
 /** En qué estado quedó un par (empresa, tarea). Tres de los cinco son NORMALES. */
 export type EstadoDeTarea = 'corrio' | 'saltada' | 'frenada' | 'sin_tiempo' | 'fallo';
@@ -438,6 +445,30 @@ export const FIN_PARA_LOS_ANALIZADORES_MS = 285_000;
  * vacío llamaría al proveedor y gastaría un rechazo, mientras que la excepción cae en el try/catch por
  * vuelta del bucle y sale reportada como `fallo` de esa empresa sin llevarse a las demás.
  */
+/**
+ * Las miniaturas de cada cuenta publicitaria del cliente, cada una con su token (Meta directo). El resultado es la suma;
+ * el corte, el de la primera cuenta que cortó. Una conexión rechazada va en `conexionesCaidas`, como en `anuncios`.
+ */
+async function activosDeLasCuentas(
+  ambito: AmbitoDeUnCliente,
+  cuentas: readonly CuentaDeMetaDelCliente[],
+  ahora: () => number,
+  fin: number,
+): Promise<{ corrio: true; resultado: ResultadoDeActivos & { conexionesCaidas: string[] }; llamadas: number }> {
+  const total: ResultadoDeActivos & { conexionesCaidas: string[] } = { pedidos: 0, guardados: 0, conMiniatura: 0, corte: null, conexionesCaidas: [] };
+  let llamadas = 0;
+  for (const c of cuentas) {
+    const r = await recolectarActivos(ambito, { token: c.token, cuentaId: c.act, conPrueba: c.conPrueba }, ahora, fin, cuentas.length > 1 ? c.act : null);
+    total.pedidos += r.resultado.pedidos;
+    total.guardados += r.resultado.guardados;
+    total.conMiniatura += r.resultado.conMiniatura;
+    total.corte ??= r.resultado.corte;
+    if (r.resultado.corte === 'token') total.conexionesCaidas.push(c.conexionId);
+    llamadas += r.llamadas;
+  }
+  return { corrio: true, resultado: total, llamadas };
+}
+
 function conToken(acceso: AccesoAGhl): { token: string; locationId: string } {
   if (acceso.tipo !== 'listo') throw new Error('barrido: la empresa no tiene token resuelto');
   return acceso;
@@ -473,6 +504,12 @@ export interface ResultadoDelBarridoCompleto {
    * que una corrida donde ninguna empresa tenía credencial se lea como una corrida exitosa.
    */
   corrieron: number;
+  /**
+   * Las conexiones de Meta cuyo token Meta rechazó en esta corrida (el cliente quitó la integración, o venció). La ruta
+   * del cron las marca `revocada` en identidad, que esta capa no toca: desde ahí, el cliente «falta» y el aviso pide
+   * volver a conectar.
+   */
+  conexionesDeMetaCaidas: string[];
 }
 
 /**
@@ -489,8 +526,11 @@ export interface EmpresaParaBarrer {
   auditor: AccesoAlAuditor;
   /** Las llaves de tl;dv y de IA de los Analizadores. Sin tl;dv es el caso normal: no descubre. */
   analizador: AccesoAlAnalizador;
-  /** El token y la cuenta de Meta de la tarea `activos`. Se resuelve sólo en el horario que la trae; sin él, `saltada`. */
-  meta?: AccesoAMeta;
+  /**
+   * Las cuentas publicitarias de Meta del cliente principal, con el token de su conexión (Meta directo): las leen
+   * `anuncios`, `anuncios_relleno` y `activos`. Se resuelven sólo en los horarios que las traen; sin ellas, `saltada`.
+   */
+  meta?: CuentasDeMeta;
   /**
    * La llave de IA, para redactar el Plan de acción. La resuelve la ruta SÓLO en el horario de `senales`
    * (AG-35): en las demás corridas no hace falta descifrarla. Ausente o `null`, el plan queda con plantillas.
@@ -512,8 +552,8 @@ export interface ClienteParaBarrer {
   cuenta: { id: string; esPorOmision: boolean };
   acceso: AccesoAGhl;
   auditor: AccesoAlAuditor;
-  /** El de Meta, sólo en el horario de los activos, como el de la empresa. */
-  meta?: AccesoAMeta;
+  /** Sus cuentas de Meta, sólo en los horarios que las leen, como las de la empresa. */
+  meta?: CuentasDeMeta;
 }
 
 /**
@@ -530,7 +570,7 @@ interface Unidad {
     esPorOmision: boolean;
     acceso: AccesoAGhl;
     auditor: AccesoAlAuditor;
-    meta?: AccesoAMeta;
+    meta?: CuentasDeMeta;
   } | null;
   tareas: readonly Tarea[];
   sello: number | null;
@@ -599,6 +639,11 @@ export async function barrerTodo(
   const { tareas, desconocido } = tareasDelHorario(horario);
   const arranque = ahora();
   const renglones: RenglonDelBarrido[] = [];
+  // Las conexiones de Meta que Meta rechazó en esta corrida: las marca la ruta del cron.
+  const caidas = new Set<string>();
+  const anotarCaidas = (lista: unknown): void => {
+    if (Array.isArray(lista)) for (const id of lista) if (typeof id === 'string') caidas.add(id);
+  };
 
   // ── LA SONDA VA PRIMERO, Y ES DELIBERADO ──────────────────────────────────
   //
@@ -721,8 +766,8 @@ export async function barrerTodo(
         tarea !== 'analizadores' &&
         tarea !== 'reintentos' &&
         tarea !== 'senales' &&
-        // Ni `activos`: le habla a Meta, con su propio token.
-        tarea !== 'activos' &&
+        // Ni las de Meta (`activos`, `anuncios`, `anuncios_relleno`): le hablan a Meta, con su propia conexión.
+        !esDeMeta(tarea) &&
         acceso.tipo !== 'listo'
       ) {
         renglon({ tarea, estado: 'saltada', porque: acceso.que, llamadas: 0 });
@@ -741,8 +786,8 @@ export async function barrerTodo(
          auditor sin llave. El reintento pide lo mismo: solo corre donde corren los Analizadores. */
       /* Los activos piden el token de Meta. Sin él es lo normal —casi ninguna empresa lo cargó todavía— y se sella como
          saltada con su texto: la pantalla de monitoreo dice qué falta y dónde se carga. */
-      if (tarea === 'activos' && meta?.tipo !== 'listo') {
-        const que = TEXTO_DE_FALTA_META[meta?.tipo === 'falta' ? meta.que : 'sin_token_de_meta'];
+      if (esDeMeta(tarea) && meta?.tipo !== 'listo') {
+        const que = TEXTO_DE_FALTA_CUENTAS_DE_META[meta?.tipo === 'falta' ? meta.que : 'sin_cuentas_de_meta'];
         renglon({ tarea, estado: 'saltada', porque: que, llamadas: 0 });
         await sellarAca(tarea, 'saltada', que, 0);
         continue;
@@ -769,13 +814,15 @@ export async function barrerTodo(
                 ? await auditar(org, elAmbito(), esPorOmision, auditor, acceso, arranque, ahora)
                 : tarea === 'mejora'
                   ? await mejorar(org, elAmbito(), esPorOmision, auditor)
-                  : tarea === 'anuncios'
-                    ? await recolectarAnuncios(elAmbito(), conToken(acceso))
-                    : tarea === 'anuncios_relleno'
-                      ? await rellenarAnuncios(elAmbito(), conToken(acceso), arranque, ahora)
+                  : tarea === 'anuncios' && meta?.tipo === 'listo'
+                    // Meta directo: estructura, los últimos 28 días y los desgloses, de cada cuenta del cliente.
+                    ? await recolectarDeMeta(elAmbito(), meta.cuentas, 'diario', arranque + FIN_PARA_LOS_ANALIZADORES_MS, { reloj: ahora })
+                    : tarea === 'anuncios_relleno' && meta?.tipo === 'listo'
+                      // La historia de los 12 meses, de a un tramo por cuenta en cada corrida.
+                      ? await recolectarDeMeta(elAmbito(), meta.cuentas, 'historia', arranque + FIN_PARA_LOS_ANALIZADORES_MS, { reloj: ahora })
                       : tarea === 'activos' && meta?.tipo === 'listo'
                         // Acotada también al fin de la corrida: con varios clientes, su presupuesto propio no alcanza.
-                        ? await recolectarActivos(elAmbito(), meta, ahora, arranque + FIN_PARA_LOS_ANALIZADORES_MS)
+                        ? await activosDeLasCuentas(elAmbito(), meta.cuentas, ahora, arranque + FIN_PARA_LOS_ANALIZADORES_MS)
                       : tarea === 'analizadores'
                         ? await analizar(org, analizador, arranque, ahora)
                         : tarea === 'reintentos'
@@ -810,7 +857,9 @@ export async function barrerTodo(
          * que ninguna cambia de comportamiento — y el día que otra tarea empiece a truncarse, el
          * lugar donde decirlo ya existe. */
         await sellarAca(tarea, 'corrio', motivoDeLoIncompleto(r.resultado), r.llamadas);
+        anotarCaidas((r.resultado as { conexionesCaidas?: unknown } | null)?.conexionesCaidas);
       } catch (e) {
+        anotarCaidas((e as { resumen?: { conexionesCaidas?: unknown } } | null)?.resumen?.conexionesCaidas);
         // El mensaje de la excepción va al REGISTRO y no al cuerpo (`ADR-0704`): puede llevar
         // nombres de tabla o fragmentos de consulta.
         console.error(`cron: falló ${tarea} de ${org.slug}${cuentaId === null ? '' : ` (cliente ${cuentaId})`}`, e);
@@ -850,6 +899,7 @@ export async function barrerTodo(
     renglones,
     // Los que DE VERDAD corrieron. Ver el comentario del campo.
     corrieron: renglones.filter((r) => r.estado === 'corrio').length,
+    conexionesDeMetaCaidas: [...caidas],
   };
 }
 
@@ -1173,6 +1223,26 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
   }
   if (n?.tipo === 'leidas' && n.corto === true) {
     partes.push('la lista de campañas vino recortada: puede faltar algún nombre');
+  }
+
+  /* Meta directo (`anuncios` y `anuncios_relleno`): lo de cada cuenta publicitaria que no se completó. La conexión
+     rechazada va primero porque es lo único que alguien tiene que ir a arreglar; el cupo y el tiempo se arreglan solos. */
+  const meta = r as { modo?: unknown; cuentas?: unknown };
+  if ((meta.modo === 'diario' || meta.modo === 'historia') && Array.isArray(meta.cuentas)) {
+    const FALLA: Record<string, string> = {
+      token: 'Meta rechazó la conexión: hay que volver a conectar Meta en Ajustes',
+      permiso: 'a la conexión con Meta le falta un permiso o la cuenta publicitaria: hay que volver a conectar Meta',
+      no_existe: 'Meta no encuentra la cuenta publicitaria: revisar la conexión en Ajustes',
+      cupo: 'Meta limitó las llamadas: lo que faltó se pide en la próxima corrida',
+      sin_respuesta: 'Meta no contestó o se acabó el tiempo: lo que faltó se pide en la próxima corrida',
+      otro: 'Meta rechazó un pedido: lo que faltó se pide en la próxima corrida',
+    };
+    let ilegibles = 0;
+    for (const c of meta.cuentas as { act?: unknown; falla?: unknown; ilegibles?: unknown }[]) {
+      if (typeof c.falla === 'string' && FALLA[c.falla]) partes.push(`${String(c.act)}: ${FALLA[c.falla]}`);
+      if (typeof c.ilegibles === 'number') ilegibles += c.ilegibles;
+    }
+    if (ilegibles > 0) partes.push(`${ilegibles} fila(s) o acción(es) que Meta mandó y no se pudieron leer`);
   }
 
   return partes.length === 0 ? null : partes.join('; ');

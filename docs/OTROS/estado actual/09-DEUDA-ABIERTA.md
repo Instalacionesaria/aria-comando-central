@@ -440,7 +440,7 @@ Lo detalla [14-ANALIZADORES.md](14-ANALIZADORES.md) § 7, con cifras del 2026-09
 verificado acá contra el código, otra vez el 2026-10-18:
 
 - **El sello se escribe y no lo lee nadie.** El comentario dice que el motivo «tiene que poder
-  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:801-812`), y en `lib/`, `app/` y
+  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:848-859`), y en `lib/`, `app/` y
   `components/` `ultimo_motivo` sólo aparece en `lib/negocio/barrido.ts` y en `lib/datos/esquema.ts`;
   fuera de ahí lo lee `scripts/medir-analizadores.sql:88`. Una llave de tl;dv revocada sólo se ve
   con SQL. Y desde la `076` el mismo sello dice cuándo Meta no está vinculado (§ 12): tampoco lo lee nadie.
@@ -452,7 +452,7 @@ verificado acá contra el código, otra vez el 2026-10-18:
   de los agentes (`cd851b3`, 2026-10-04)**: cada llamada de los Analizadores, la clasificación incluida, deja su
   fila en `negocio.uso_de_ia` (`lib/analizadores/pipeline.ts`, `anotarLaLlamada`); el 2026-10-18 hay 24 de ellas.
 - **El contador de reintentos sólo sube** (`lib/analizadores/datos.ts:878-886`), y **el reintento
-  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:739-755`): una transcripción
+  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:784-800`): una transcripción
   pegada a mano que falle en una empresa con sólo llave de IA no se reintenta nunca sola.
 - **`scripts/medir-analizadores.sql` no mide el reintento**: el sello que lee es sólo el de
   `analizadores` (`scripts/medir-analizadores.sql:87-89`) y `reintentos_automaticos` no aparece.
@@ -478,7 +478,7 @@ verificado acá contra el código, otra vez el 2026-10-18:
   ventana de 30 días no cayó bajo el piso de 10, como se temía el 2026-09-28: tiene 25.
 - **«Meta desconectado» contra «no se invirtió»: Cerrada a medias el 2026-10-07 (`22ec755`).** El colector ya
   preguntaba el vínculo (`lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), y desde la `076` el sello lo dice:
-  «Meta no está vinculado en GoHighLevel: no se leyó el gasto» (`lib/negocio/barrido.ts:1110-1113`). Lo que falta es
+  «Meta no está vinculado en GoHighLevel: no se leyó el gasto» (`lib/negocio/barrido.ts:1160-1163`). Lo que falta es
   quien lea el sello (§ 11): ninguna pantalla lo muestra.
 - **Sólo se pedían las campañas de nuestra atribución: Cerrada el 2026-10-07 (`22ec755`).** Antes, 13 de las 61
   campañas de la cuenta (`lib/negocio/recolectarAnuncios.ts:261-320@d17e029`); hoy se piden las activas y las que
@@ -569,9 +569,9 @@ sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
 
 - **Cerrada el 2026-10-07 (`22ec755`).** `lib/negocio/barrido.ts:243-245@d17e029` contaba **52 llamadas por día**
   «por cuatro días» cuando se releían dos (`DIAS_QUE_SE_RELEEN`, `lib/negocio/recolectarAnuncios.ts:62`); con la
-  `076` el comentario se reescribió con el costo nuevo, 8 a 14 llamadas por día (`lib/negocio/barrido.ts:285-288`).
+  `076` el comentario se reescribió con el costo nuevo, 8 a 14 llamadas por día (`lib/negocio/barrido.ts:292-295`).
 - **Cerrada el 2026-10-18 (`65669f4`).** `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea
-  `anuncios` en «el cron de las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:266`), y hoy dice eso.
+  `anuncios` en «el cron de las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:273`), y hoy dice eso.
 - `lib/negocio/sincronizar.ts:23-28` dice que `ultimo_entrante_el` y los suyos «quedan nulos» y que
   `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:337-338` pone `score` y `responsable_id` entre
   lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:441` y `lib/negocio/sincronizar.ts:501`,

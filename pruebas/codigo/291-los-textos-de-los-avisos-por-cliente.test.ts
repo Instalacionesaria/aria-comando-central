@@ -57,7 +57,7 @@ test('el aviso nombra al cliente, con un prefijo neutro y el texto de su código
       assert.ok(t.startsWith('La conexión de «Clínica Sur» con GoHighLevel no está lista, así que '), `no nombra al cliente: ${t}`);
       const texto = (esPorOmision ? TEXTO_DE_FALTA_GHL : TEXTO_DE_FALTA_GHL_DEL_CLIENTE)[que];
       assert.ok(t.endsWith(` ${texto}`), `con ${que} (${esPorOmision ? 'principal' : 'otro'}) no termina con el texto de su código`);
-      // «Le falta» no: con `token_ilegible` el token está cargado (`lib/credenciales/resolver.ts:884`).
+      // «Le falta» no: con `token_ilegible` el token está cargado (`lib/credenciales/resolver.ts:894`).
       assert.doesNotMatch(t.slice(0, t.indexOf(texto)), /le falta|falta su/i, 'el prefijo dice «falta» sobre una credencial que puede estar cargada');
       assert.equal(VOSEO.exec(t), null, `vosea: ${t}`);
       assert.equal(VOSEO_DE_ESTOS_TEXTOS.exec(t), null, `vosea: ${t}`);

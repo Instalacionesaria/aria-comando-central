@@ -59,6 +59,7 @@ import {
   DE_UNA_CUENTA_O_DE_LA_ORGANIZACION,
   NACIERON_CON_CUENTA,
   NACIERON_DESPUES_DE_LA_086,
+  DE_UNA_CUENTA_DESPUES_DE_LA_086,
 } from '../apoyo/regimenes-de-negocio.ts';
 
 let mig: Client;
@@ -414,7 +415,11 @@ test('las listas de tablas de los SQL de la cuenta son las de los regímenes', (
   }
   // La 086 (el nivel 3) rehace la política de las TRES listas, con las que nacieron con cuenta.
   const sql = readFileSync(join(RAIZ, 'db/migraciones/086_la_organizacion_entera.sql'), 'utf8');
-  assert.deepEqual(ordenar(listaDelSql(sql, 'v_obligatorias')), ordenar(DE_UNA_CUENTA), '086: las obligatorias');
+  assert.deepEqual(
+    ordenar(listaDelSql(sql, 'v_obligatorias')),
+    ordenar(DE_UNA_CUENTA.filter((t) => !(DE_UNA_CUENTA_DESPUES_DE_LA_086 as readonly string[]).includes(t))),
+    '086: las obligatorias',
+  );
   assert.deepEqual(ordenar(listaDelSql(sql, 'v_opcionales')), ordenar(DE_UNA_CUENTA_O_DE_LA_ORGANIZACION), '086: las opcionales');
   assert.deepEqual(
     ordenar(listaDelSql(sql, 'v_de_la_organizacion')),

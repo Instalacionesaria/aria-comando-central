@@ -7,12 +7,12 @@
 // tiene pulso, y la agenda decía «Todavía no se leyó el calendario… Usá «Traer del calendario»» para siempre, con un
 // botón que no lo arregla. Y Acquisition decía «Faltan días de gasto.» sin decir de quién ni por qué. Los dos hechos ya
 // estaban escritos en la base: el barrido sella cada tarea de cada cliente, y una credencial que falta deja la tarea
-// `saltada` con el CÓDIGO de la falta (`lib/negocio/barrido.ts:728`), y la pasada del gasto sin Meta vinculado en
+// `saltada` con el CÓDIGO de la falta (`lib/negocio/barrido.ts:773`), y la pasada del gasto sin Meta vinculado en
 // GoHighLevel deja su motivo en el sello de `anuncios` (`motivoDeLoIncompleto`).
 //
 // Este módulo los lee y los dice con el nombre del cliente y lo que hay que hacer: el texto de CADA código, que ya dice
 // dónde se carga —la de la empresa, en Ajustes; la de otro cliente, en su Conexión; su subcuenta, la vincula la
-// plataforma— y que con `token_ilegible` no dice «falta» (`lib/credenciales/resolver.ts:884`). Por eso el prefijo es
+// plataforma— y que con `token_ilegible` no dice «falta» (`lib/credenciales/resolver.ts:894`). Por eso el prefijo es
 // neutro: «la conexión no está lista», nunca «le falta».
 //
 // ── LAS TRES FRESCURAS ──────────────────────────────────────────────────────

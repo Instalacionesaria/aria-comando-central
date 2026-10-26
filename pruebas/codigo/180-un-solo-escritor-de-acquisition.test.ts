@@ -36,20 +36,27 @@ function escribe(tabla: string, fuente: string): boolean {
   return kysely.test(fuente) || crudo.test(fuente);
 }
 
+/* Desde Meta directo (M3), el escritor de las campañas y del gasto es el recolector de Meta. El de GoHighLevel
+   (`recolectarAnuncios.ts`, y el relleno que escribe a través de él) queda TOLERADO hasta su retiro (M5): el cron ya no
+   lo llama, pero el código existe. La lista de tolerados es explícita para que no crezca sin que nadie lo decida. */
+const DE_GOHIGHLEVEL_HASTA_SU_RETIRO = ['lib/negocio/recolectarAnuncios.ts'];
+
 const ESCRITORES = [
-  { tabla: 'campanas', escritor: 'lib/negocio/recolectarAnuncios.ts' },
-  /* Las dos de la `076`. El relleno (`rellenarAnuncios.ts`) escribe a través de los escritores exportados de
-     `recolectarAnuncios.ts`: el rango que no pisa una lectura del día y el cambio que reinicia el residuo son
-     reglas de su escritor, y un segundo escritor se las saltearía. */
-  { tabla: 'gasto_de_la_cuenta', escritor: 'lib/negocio/recolectarAnuncios.ts' },
-  { tabla: 'lecturas_de_gasto', escritor: 'lib/negocio/recolectarAnuncios.ts' },
-  { tabla: 'funnels_de_campana', escritor: 'lib/negocio/funnelDeLaCampana.ts' },
+  { tabla: 'campanas', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: DE_GOHIGHLEVEL_HASTA_SU_RETIRO },
+  /* El total del cliente por día (`076`): lo escribe el recolector de Meta, sumando sus cuentas publicitarias. */
+  { tabla: 'gasto_de_la_cuenta', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: DE_GOHIGHLEVEL_HASTA_SU_RETIRO },
+  { tabla: 'conjuntos_de_anuncios', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: [] as string[] },
+  { tabla: 'gasto_por_cuenta_publicitaria', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: [] as string[] },
+  { tabla: 'metricas_por_desglose', escritor: 'lib/negocio/recolectarDeMeta.ts', tolerados: [] as string[] },
+  /* Las lecturas por campaña del cuadre de GoHighLevel: sólo su recolector, hasta que se retiren. */
+  { tabla: 'lecturas_de_gasto', escritor: 'lib/negocio/recolectarAnuncios.ts', tolerados: [] as string[] },
+  { tabla: 'funnels_de_campana', escritor: 'lib/negocio/funnelDeLaCampana.ts', tolerados: [] as string[] },
 ];
 
-for (const { tabla, escritor } of ESCRITORES) {
+for (const { tabla, escritor, tolerados } of ESCRITORES) {
   test(`\`negocio.${tabla}\` tiene UN solo escritor, y es \`${escritor}\``, () => {
     const culpables = archivosFuente(['app', 'lib', 'scripts'])
-      .filter((a) => a.ruta !== escritor)
+      .filter((a) => a.ruta !== escritor && !tolerados.includes(a.ruta))
       .filter((a) => escribe(tabla, a.limpio))
       .map((a) => a.ruta);
 
@@ -68,7 +75,8 @@ for (const { tabla, escritor } of ESCRITORES) {
     assert.ok(propio, `no se encontró ${escritor}`);
     assert.match(
       propio.limpio,
-      new RegExp(`insertInto\\(\\s*['"\`]${tabla}['"\`]\\s*\\)`),
+      // Por Kysely o en SQL crudo: el total del cliente es un `insert … select` agrupado.
+      new RegExp(`insertInto\\(\\s*['"\`]${tabla}['"\`]\\s*\\)|insert\\s+into\\s+negocio\\.${tabla}\\b`),
       `el escritor único dejó de insertar en \`negocio.${tabla}\`: la aserción de arriba estaría pasando en vacío`,
     );
   });

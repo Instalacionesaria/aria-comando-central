@@ -94,8 +94,8 @@ export function filaDelActivo(anuncio: string, leido: CreativoDeMeta | 'no_exist
 }
 
 /** Los anuncios que hay que pedir, primero los que entregaron hace menos. Corre dentro de `conOrganizacion`. */
-export async function anunciosPorLeer(tope = TOPE_DE_ANUNCIOS_POR_PASADA): Promise<string[]> {
-  const filas = await datos()
+export async function anunciosPorLeer(tope = TOPE_DE_ANUNCIOS_POR_PASADA, act: string | null = null): Promise<string[]> {
+  let consulta = datos()
     .selectFrom('anuncios as a')
     .leftJoin('activos_de_anuncio as x', (j) =>
       j.onRef('x.org_id', '=', 'a.org_id').onRef('x.meta_anuncio_id', '=', 'a.meta_anuncio_id'),
@@ -109,8 +109,11 @@ export async function anunciosPorLeer(tope = TOPE_DE_ANUNCIOS_POR_PASADA): Promi
     .orderBy(sql`(select max(m.fecha) from negocio.metricas_de_anuncio m
                    where m.org_id = a.org_id and m.meta_anuncio_id = a.meta_anuncio_id) desc nulls last`)
     .orderBy('a.meta_anuncio_id')
-    .limit(tope)
-    .execute();
+    .limit(tope);
+  /* Con varias cuentas publicitarias (Meta directo), cada una lee los suyos con su token. Un anuncio traído antes de
+     Meta directo no sabe de qué cuenta es: lo pide cualquiera, y la que no es su dueña lo descarta (`cuenta_ajena`). */
+  if (act !== null) consulta = consulta.where((w) => w.or([w('a.act_id', '=', act), w('a.act_id', 'is', null)]));
+  const filas = await consulta.execute();
   return filas.map((f) => f.meta_anuncio_id);
 }
 
@@ -192,17 +195,19 @@ export interface ResultadoDeActivos {
 export async function recolectarActivos(
   // UN cliente (el nivel 3): sus anuncios, leídos con el token de SU cuenta de Meta.
   ambito: AmbitoDeUnCliente,
-  meta: { token: string; cuentaId: string },
+  meta: { token: string; cuentaId: string; conPrueba?: boolean },
   ahora: () => number = Date.now,
   // El fin de la corrida del cron (el nivel 3): con varios clientes, el presupuesto de cada uno no puede pasarlo.
   fin = Number.POSITIVE_INFINITY,
+  // Con varias cuentas publicitarias (Meta directo): sólo los anuncios de ésta.
+  act: string | null = null,
 ): Promise<{ corrio: true; resultado: ResultadoDeActivos; llamadas: number }> {
   const hasta = Math.min(ahora() + PRESUPUESTO_DE_ACTIVOS_MS, fin);
-  const ids = await conOrganizacion(ambito, () => anunciosPorLeer());
+  const ids = await conOrganizacion(ambito, () => anunciosPorLeer(TOPE_DE_ANUNCIOS_POR_PASADA, act));
   if (ids.length === 0) {
     return { corrio: true, resultado: { pedidos: 0, guardados: 0, conMiniatura: 0, corte: null }, llamadas: 0 };
   }
-  const lectura = await leerCreativos(meta.token, ids, hasta, ahora);
+  const lectura = await leerCreativos(meta.token, ids, hasta, ahora, meta.conPrueba === true);
   if (lectura.tipo === 'falla') {
     return { corrio: true, resultado: { pedidos: ids.length, guardados: 0, conMiniatura: 0, corte: lectura.motivo }, llamadas: lectura.llamadas };
   }

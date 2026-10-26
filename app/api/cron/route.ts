@@ -68,13 +68,14 @@ import { clientesParaBarrer } from '../../../lib/administracion/cuentas.ts';
 import {
   resolverAccesoAGhl,
   resolverAccesoAlAnalizador,
-  resolverAccesoAMeta,
+  resolverCuentasDeMeta,
   resolverAccesoAlAuditor,
   resolverLlaveDeIa,
 } from '../../../lib/credenciales/resolver.ts';
 import { ok, rechazo } from '../../../lib/autorizacion/respuesta.ts';
 import {
   TAREAS_DEL_CLIENTE,
+  TAREAS_DE_META,
   TAREAS_DE_LA_PLATAFORMA,
   barrerTodo,
   tareasDelHorario,
@@ -82,6 +83,7 @@ import {
   type EmpresaParaBarrer,
 } from '../../../lib/negocio/barrido.ts';
 import { leerLaConfiguracion, type ConfiguracionDeLosNegocios } from '../../../lib/cartera/configuracion.ts';
+import { marcarConexionesCaidas } from '../../../lib/meta/conexiones.ts';
 
 /**
  * El tope de Vercel en el plan Hobby, y no hay palanca para subirlo ahí.
@@ -151,8 +153,8 @@ export async function GET(peticion: Request): Promise<Response> {
   /* La llave de IA para redactar el Plan de acción se descifra SÓLO en la corrida que trae la pasada de los
      detectores (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35): en las demás no hace falta. */
   const conLaPasada = tareasDelHorario(horario).tareas.includes('senales');
-  // El token de Meta, igual: sólo en la corrida de los activos (`078`).
-  const conLosActivos = tareasDelHorario(horario).tareas.includes('activos');
+  // Las cuentas de Meta, igual: sólo en las corridas que le hablan a Meta (Meta directo: anuncios, su historia, activos).
+  const conLosActivos = tareasDelHorario(horario).tareas.some((t) => TAREAS_DE_META.includes(t));
   const { tareas } = tareasDelHorario(horario);
 
   /* ── LA FOTO DE LOS NEGOCIOS LEE A TODAS LAS EMPRESAS, Y NO CONTRADICE LO DE ARRIBA ──
@@ -201,13 +203,23 @@ export async function GET(peticion: Request): Promise<Response> {
         analizador: await resolverAccesoAlAnalizador(db, org.id),
         // Y la de redactar el plan, sólo con la pasada. Sin llave, el plan queda con plantillas.
         llaveDeIa: conLaPasada ? llaveLista(await resolverLlaveDeIa(db, org.id)) : null,
-        // Y el de Meta, sólo con los activos, en la misma transacción por el mismo motivo (`ADR-0809`).
-        ...(conLosActivos ? { meta: await resolverAccesoAMeta(db, org.id, 'la_de_la_empresa') } : {}),
+        // Y las de Meta, sólo en esas corridas, en la misma transacción por el mismo motivo (`ADR-0809`).
+        ...(conLosActivos ? { meta: await resolverCuentasDeMeta(db, org.id, 'la_de_la_empresa') } : {}),
       })),
     );
   });
 
   const r = await barrerTodo(horario, empresas, Date.now, configuracion);
+
+  /* Las conexiones de Meta cuyo token Meta rechazó: se marcan `revocada` (identidad, que el barrido no toca). Desde la
+     próxima corrida el cliente «falta» con «vuelve a conectar Meta», en vez de fallar cada hora contra Meta. */
+  if (r.conexionesDeMetaCaidas.length > 0) {
+    try {
+      await conIdentidad((db) => marcarConexionesCaidas(db, r.conexionesDeMetaCaidas));
+    } catch (e) {
+      console.error('cron: no se pudieron marcar las conexiones de Meta caídas', e);
+    }
+  }
 
   /* Se devuelve el reporte COMPLETO, no un `{ ok: true }`. Es el mismo criterio que la
    * sincronización de contactos: *"un contacto salteado en silencio es la peor forma de esto: la
@@ -234,7 +246,7 @@ async function credencialesDeLosClientes(db: Trx, orgId: string, conMeta: boolea
       cuenta,
       acceso: await resolverAccesoAGhl(db, orgId, cuenta),
       auditor: await resolverAccesoAlAuditor(db, orgId, cuenta),
-      ...(conMeta ? { meta: await resolverAccesoAMeta(db, orgId, cuenta) } : {}),
+      ...(conMeta ? { meta: await resolverCuentasDeMeta(db, orgId, cuenta) } : {}),
     });
   }
   return salida;

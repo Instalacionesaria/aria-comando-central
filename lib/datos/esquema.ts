@@ -1034,6 +1034,11 @@ export interface TablaAnuncios {
   /** `OUTCOME_LEADS`, `OUTCOME_ENGAGEMENT`, … Sin unión cerrada: el catálogo es de Meta, no nuestro. */
   objetivo: string | null;
   sincronizado_el: Generated<Date>;
+  /** El status y el effective_status de Meta (102): si entrega o qué lo frena. Nulos en lo traído de GoHighLevel. */
+  estado: string | null;
+  estado_efectivo: string | null;
+  /** La cuenta publicitaria de Meta (102). */
+  act_id: string | null;
 }
 
 /**
@@ -1056,6 +1061,65 @@ export interface TablaCampanas {
   plataforma: Generated<'meta' | 'tiktok' | 'google'>;
   /** Cómo convierte la campaña (084): nulo = nadie lo dijo. Reemplazará a `funnels_de_campana` en la contracción. */
   funnel: 'leadform' | 'profile' | 'booking' | null;
+  /** De Meta directo (102): el objetivo, el presupuesto (en `moneda`), las fechas y si entrega. */
+  objetivo: string | null;
+  presupuesto_diario: string | null;
+  presupuesto_total: string | null;
+  inicio: Date | null;
+  fin: Date | null;
+  estado_efectivo: string | null;
+  act_id: string | null;
+  moneda: string | null;
+}
+
+/** Los conjuntos de anuncios de Meta de cada cliente (102). Los escribe sólo el recolector de Meta. */
+export interface TablaConjuntosDeAnuncios {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  meta_conjunto_id: string;
+  meta_campana_id: string | null;
+  act_id: string | null;
+  nombre: string | null;
+  estado: string | null;
+  estado_efectivo: string | null;
+  presupuesto_diario: string | null;
+  presupuesto_total: string | null;
+  optimizacion: string | null;
+  sincronizado_el: Generated<Date>;
+}
+
+/** El gasto de cada cuenta publicitaria de Meta por día, en su moneda (102). */
+export interface TablaGastoPorCuentaPublicitaria {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  act_id: string;
+  fecha: Date;
+  gasto: string;
+  moneda: string | null;
+  gasto_usd: string | null;
+  impresiones: string | null;
+  clics: string | null;
+  alcance: string | null;
+  frecuencia: string | null;
+  cpm: string | null;
+  leido_el: Generated<Date>;
+}
+
+/** Lo de cada anuncio por día, partido por un desglose de Meta (102). Sin datos de personas. */
+export interface TablaMetricasPorDesglose {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  meta_anuncio_id: string;
+  fecha: Date;
+  desglose: 'ubicacion' | 'plataforma' | 'edad_genero' | 'dispositivo' | 'pais';
+  valor: string;
+  gasto: string | null;
+  impresiones: string | null;
+  clics: string | null;
+  alcance: string | null;
+  acciones: ColumnType<Record<string, number> | null, string | null | undefined, string | null | undefined>;
+  moneda: string | null;
+  leido_el: Generated<Date>;
 }
 
 /**
@@ -1079,6 +1143,13 @@ export interface TablaGastoDeLaCuenta {
   redescubierto_el: Date | null;
   /** Cuándo se declaró residuo: no cuadra con todas sus campañas leídas. */
   residuo_el: Date | null;
+  /** De Meta directo (102): la moneda del total, el total en USD, el alcance, la frecuencia, el cpm y la fuente. */
+  moneda: string | null;
+  gasto_usd: string | null;
+  alcance: string | null;
+  frecuencia: string | null;
+  cpm: string | null;
+  fuente: 'ghl' | 'meta' | null;
 }
 
 /**
@@ -1190,6 +1261,13 @@ export interface TablaMetricasDeAnuncio {
   acciones: ColumnType<Record<string, number> | null, string | null | undefined, string | null | undefined>;
   /** Meta corrige hacia atrás: dos lecturas de la misma ventana pueden diferir sin que nada falle. */
   sincronizado_el: Generated<Date>;
+  /** De Meta directo (102): el video, los valores de las acciones, el cpm, la moneda, el gasto en USD y la fuente. */
+  video: ColumnType<Record<string, number> | null, string | null | undefined, string | null | undefined>;
+  valores: ColumnType<Record<string, number> | null, string | null | undefined, string | null | undefined>;
+  cpm: string | null;
+  moneda: string | null;
+  gasto_usd: string | null;
+  fuente: 'ghl' | 'meta' | null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1996,7 +2074,6 @@ export interface TablaCuentasPublicitariasDeMeta {
   asignada_por: string | null;
   asignada_el: Date | null;
   vista_el: Generated<Date>;
-  historia_hasta: Date | null;
 }
 
 /** El `state` del viaje a Meta, como hash y de un solo uso (101). */
@@ -2259,6 +2336,9 @@ export interface BaseDeDatos {
   anuncios: TablaAnuncios;
   campanas: TablaCampanas;
   gasto_de_la_cuenta: TablaGastoDeLaCuenta;
+  conjuntos_de_anuncios: TablaConjuntosDeAnuncios;
+  gasto_por_cuenta_publicitaria: TablaGastoPorCuentaPublicitaria;
+  metricas_por_desglose: TablaMetricasPorDesglose;
   lecturas_de_gasto: TablaLecturasDeGasto;
   incidentes: TablaIncidentes;
   analisis_del_espia: TablaAnalisisDelEspia;

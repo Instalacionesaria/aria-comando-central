@@ -77,7 +77,7 @@ Antes de tocar código, leer `node_modules/next/dist/docs/` (lo pide `AGENTS.md`
 empresa. Después, un script nuevo, `scripts/medir-activos-en-meta.mjs`, con el molde de
 `scripts/medir-activos-en-ghl.mjs`:
 
-- **Sólo `GET`**, por `pedirExterno` (`lib/http/cliente.ts:338`), con el token en la cabecera
+- **Sólo `GET`**, por `pedirExterno` (`lib/http/cliente.ts:340`), con el token en la cabecera
   `Authorization` y **nunca en la URL**; se agrega a `ARCHIVOS_AUTORIZADOS`
   (`pruebas/apoyo/autorizados.ts`) si usa `conIdentidad(`.
 - **Imprime** estado, claves, hosts y códigos de error. **Nunca** el valor de una URL firmada, del
@@ -119,11 +119,11 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
     `db/migraciones/062_reintentos_de_los_analizadores.sql:19-23`: se hace `drop` y se vuelve a
     crear con la lista completa más `activos`.
 - **`lib/negocio/barrido.ts`**: `activos` en el tipo `Tarea`, en `TAREAS` después de `anuncios`
-  (`lib/negocio/barrido.ts:99-143`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:289-293`),
+  (`lib/negocio/barrido.ts:98-150`) y en el horario `'17 6 * * *'` (`lib/negocio/barrido.ts:296-300`),
   o en uno de cada hora si la compuerta B lo pide —el plan de Vercel es Pro, así que un horario de
   cada hora se acepta; si es uno nuevo, va también a `vercel.json`—. Sin credencial, la tarea queda `saltada` con el
   texto de `TEXTO_DE_FALTA_META`, igual que los Analizadores sin tl;dv
-  (`lib/negocio/barrido.ts:750-754`); y se suma al despacho (`lib/negocio/barrido.ts:776-778`).
+  (`lib/negocio/barrido.ts:795-799`); y se suma al despacho (`lib/negocio/barrido.ts:776-778`).
 - **Las traducciones de las claves foráneas nuevas** en `QUE_LO_IMPIDE`
   (`lib/administracion/borrado.ts:40`): sin eso, la suite falla en la prueba que las exige.
 - **Prueba**: `pruebas/codigo/99-cron.test.ts` ya exige que toda tarea de `HORARIOS` esté en `TAREAS`

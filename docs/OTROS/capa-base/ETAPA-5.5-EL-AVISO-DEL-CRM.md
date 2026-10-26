@@ -16,7 +16,7 @@
           la vista y ya son 0 con la pestaña cerrada. Lo que el aviso compra es LATENCIA: de hasta 24
           horas a segundos fuera del horario en que alguien mira.
        3. Y hay un competidor mucho mas barato para ese mismo problema: si el plan de Vercel es Pro,
-          descomentar dos renglones de `lib/negocio/barrido.ts:100-101` baja las 24 horas a 10 minutos,
+          descomentar dos renglones de `lib/negocio/barrido.ts:99-100` baja las 24 horas a 10 minutos,
           gratis y sin superficie de ataque nueva. Es el punto 2-A, y es una mirada al panel.
 -->
 
@@ -35,7 +35,7 @@ No es «no hacerlo todavía», pero tampoco es «el webhook es el ahorro». El a
 La lista de las tres propuestas tiene siete a diez ítems y **bloquea de más**. Verifiqué en disco cuáles ya están contestados. Queda esto, y es corto.
 
 ### A · ¿El plan de Vercel es Hobby o Pro? — UNA MIRADA AL PANEL. **BLOQUEA LA DECISIÓN, NO EL CÓDIGO.**
-Es el ítem que ninguna de las tres puso primero y es el que decide si esta etapa es necesaria o conveniente. `lib/negocio/barrido.ts:91-95` dice que no se pudo medir (el token lee proyectos, da 403 sobre facturación) y `:89-90` tiene las dos entradas comentadas listas. **Si el plan es Pro, descomentar dos renglones baja el retraso de 24 horas a 10 minutos, gratis, sin una línea de código nuevo y sin una superficie de ataque nueva** — y el aviso pasa de «única vía fuera de horario» a «optimización de latencia de 10 min a 2 s». No cambia el plan de abajo (las etapas 1 a 3 valen igual), pero cambia la urgencia de las etapas 4 a 7 y hay que saberlo antes de gastar la semana.
+Es el ítem que ninguna de las tres puso primero y es el que decide si esta etapa es necesaria o conveniente. `lib/negocio/barrido.ts:90-94` dice que no se pudo medir (el token lee proyectos, da 403 sobre facturación) y `:89-90` tiene las dos entradas comentadas listas. **Si el plan es Pro, descomentar dos renglones baja el retraso de 24 horas a 10 minutos, gratis, sin una línea de código nuevo y sin una superficie de ataque nueva** — y el aviso pasa de «única vía fuera de horario» a «optimización de latencia de 10 min a 2 s». No cambia el plan de abajo (las etapas 1 a 3 valen igual), pero cambia la urgencia de las etapas 4 a 7 y hay que saberlo antes de gastar la semana.
 Fuente: panel de Vercel → Settings → Billing. Cinco segundos.
 
 ### B · Cosechar los payloads reales del inbox de la plataforma anterior — UNA CONSULTA SQL. **BLOQUEA LA ETAPA 6.**
@@ -136,7 +136,7 @@ Verificado: contra cuerpos enormes este repositorio no hace **nada** a nivel glo
 
 **EL ORDEN DE LAS LÍNEAS ES LA DEFENSA, y va del más barato al más caro:**
 
-1. **LA PIMIENTA GLOBAL, ANTES DE TOCAR LA BASE.** La cabecera es `x-aviso-secreto: <pimienta>.<secreto_por_empresa>`. La mitad izquierda se compara con `timingSafeEqual` contra `process.env.AVISO_PIMIENTA`, con el guardia de «la variable no está definida» **antes** de comparar, copiando `coincide()` tal cual está en `app/api/cron/route.ts:91-98` y `app/api/sonda/route.ts:36-44`. Sin ella: `rechazo('sin_permiso')`, **cero consultas a la base**, y una línea al registro (no al cuerpo).
+1. **LA PIMIENTA GLOBAL, ANTES DE TOCAR LA BASE.** La cabecera es `x-aviso-secreto: <pimienta>.<secreto_por_empresa>`. La mitad izquierda se compara con `timingSafeEqual` contra `process.env.AVISO_PIMIENTA`, con el guardia de «la variable no está definida» **antes** de comparar, copiando `coincide()` tal cual está en `app/api/cron/route.ts:93-100` y `app/api/sonda/route.ts:36-44`. Sin ella: `rechazo('sin_permiso')`, **cero consultas a la base**, y una línea al registro (no al cuerpo).
    **Por qué esto NO viola la prohibición de `lib/credenciales/resolver.ts:6-36`:** la pimienta **no identifica ni autoriza a ninguna empresa** y no es respaldo de nada. No hay `?? entorno(...)`. Un cuerpo que trae la pimienta correcta y un secreto por empresa inválido se rechaza igual. La autorización sigue siendo 100 % por empresa y sin respaldo global; la pimienta es un portón anterior cuya única función es que **la base sea inalcanzable sin él**.
 2. **TAMAÑO:** `content-length` como atajo, y después `cuerpoAcotado` → 413.
 3. **LA EMPRESA, POR EL HASH DEL SECRETO.** `conIdentidad(` → `select org_id, aviso_secreto_hash, activa` por el hash de la mitad derecha. Sin fila → 403. Con fila → `timingSafeEqual` contra el guardado. **Y hay que decir en el comentario qué es y qué no es esa llamada**: con el índice ya igualado no puede devolver falso — su valor real es sobrevivir al día en que alguien cambie el `=` por un `like` o le agregue un `or`, y satisface el guardia de `pruebas/codigo/30-portero.test.ts:103-118` (verificado: exige la LLAMADA literal a `timingSafeEqual(`, porque una mutación pasó dejando el `import` sin usar). Escribirlo sin ese comentario deja al guardia verde por un adorno.

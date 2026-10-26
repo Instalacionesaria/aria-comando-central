@@ -66,13 +66,14 @@ async function porLote<T>(
   parametros: Readonly<Record<string, string>>,
   hasta: number,
   ahora: () => number,
+  conPrueba = false,
 ): Promise<{ tipo: 'ok'; filas: Map<string, T | null>; llamadas: number; incompleto: boolean } | { tipo: 'falla'; motivo: FallaDeMeta; llamadas: number }> {
   const filas = new Map<string, T | null>();
   let llamadas = 0;
   for (let i = 0; i < ids.length; i += LOTE_DE_META) {
     if (ahora() >= hasta) return { tipo: 'ok', filas, llamadas, incompleto: true };
     const lote = ids.slice(i, i + LOTE_DE_META);
-    const r = await pedirAMeta<Record<string, T>>('', token, { ids: lote.join(','), ...parametros });
+    const r = await pedirAMeta<Record<string, T>>('', token, { ids: lote.join(','), ...parametros }, { conPrueba });
     llamadas += 1;
     if (r.tipo === 'datos') {
       for (const id of lote) filas.set(id, (r.datos?.[id] as T | undefined) ?? null);
@@ -83,7 +84,7 @@ async function porLote<T>(
     // Un id del lote no existe: de a uno.
     for (const id of lote) {
       if (ahora() >= hasta) return { tipo: 'ok', filas, llamadas, incompleto: true };
-      const uno = await pedirAMeta<T>(id, token, parametros);
+      const uno = await pedirAMeta<T>(id, token, parametros, { conPrueba });
       llamadas += 1;
       if (uno.tipo === 'datos') {
         filas.set(id, uno.datos);
@@ -103,8 +104,10 @@ export async function leerCreativos(
   anuncios: readonly string[],
   hasta: number,
   ahora: () => number = Date.now,
+  // `true` = el token es de nuestra app («Conectar con Meta»): cada pedido va con su `appsecret_proof`.
+  conPrueba = false,
 ): Promise<LecturaDeCreativos> {
-  const paso1 = await porLote<FilaDeAnuncio>(token, anuncios, { fields: CAMPOS_DEL_ANUNCIO }, hasta, ahora);
+  const paso1 = await porLote<FilaDeAnuncio>(token, anuncios, { fields: CAMPOS_DEL_ANUNCIO }, hasta, ahora, conPrueba);
   if (paso1.tipo === 'falla') return { tipo: 'falla', motivo: paso1.motivo, llamadas: paso1.llamadas };
 
   const creativoDe = new Map<string, string>();
@@ -120,6 +123,7 @@ export async function leerCreativos(
     { fields: CAMPOS_DEL_CREATIVO, thumbnail_width: lado, thumbnail_height: lado },
     hasta,
     ahora,
+    conPrueba,
   );
   const llamadas = paso1.llamadas + paso2.llamadas;
   if (paso2.tipo === 'falla') return { tipo: 'falla', motivo: paso2.motivo, llamadas };

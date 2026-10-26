@@ -270,3 +270,19 @@ export async function vistaDeMeta(db: Trx, orgId: string): Promise<VistaDeMeta> 
     clientes: clientes.map((c) => ({ id: c.id, nombre: c.nombre, esPorOmision: c.es_por_omision })),
   };
 }
+
+/**
+ * Marca `revocada` las conexiones cuyo token Meta rechazó (código 190: el negocio quitó la integración, o venció). Sólo
+ * las que siguen activas: una que alguien volvió a conectar mientras corría el cron no se toca, porque su token es otro
+ * y la fecha de la conexión es posterior. Corre en identidad (la ruta del cron).
+ */
+export async function marcarConexionesCaidas(db: Trx, ids: readonly string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await db
+    .updateTable('conexiones_de_meta')
+    .set({ estado: 'revocada', ultimo_error: 'Meta rechazó el token: el negocio quitó la integración o venció', ultimo_error_el: new Date() })
+    .where('id', 'in', ids)
+    .where('estado', '=', 'activa')
+    .where('conectada_el', '<', new Date(Date.now() - 60_000))
+    .execute();
+}

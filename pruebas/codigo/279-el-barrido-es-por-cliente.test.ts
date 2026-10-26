@@ -60,7 +60,8 @@ test('la ruta del cron resuelve las credenciales de cada cliente con su cliente'
   const i = ruta.indexOf('async function credencialesDeLosClientes(');
   const cuerpo = ruta.slice(i, ruta.indexOf('\n}\n', i));
   assert.match(cuerpo, /clientesParaBarrer\(db, orgId\)/);
-  for (const r of ['resolverAccesoAGhl', 'resolverAccesoAlAuditor', 'resolverAccesoAMeta']) {
+  // Las cuentas de Meta (Meta directo) también con su cliente: con `resolverCuentasDeMeta`, no con el token pegado.
+  for (const r of ['resolverAccesoAGhl', 'resolverAccesoAlAuditor', 'resolverCuentasDeMeta']) {
     assert.match(cuerpo, new RegExp(`${r}\\(db, orgId, cuenta\\)`), `${r} no se resuelve con el cliente`);
   }
   assert.doesNotMatch(cuerpo, /la_de_la_empresa/);
@@ -86,7 +87,10 @@ test('el prompt del agente sólo con el cliente principal, en el auditor y en la
 test('las miniaturas y los activos se acotan al fin de la corrida', () => {
   const barrido = leer('lib/negocio/barrido.ts');
   assert.match(barrido, /releerContactos\(elAmbito\(\), conToken\(acceso\), arranque \+ FIN_PARA_LOS_ANALIZADORES_MS, ahora\)/);
-  assert.match(barrido, /recolectarActivos\(elAmbito\(\), meta, ahora, arranque \+ FIN_PARA_LOS_ANALIZADORES_MS\)/);
+  // Meta directo: los activos de cada cuenta del cliente, y los anuncios con su historia, todos al fin de la corrida.
+  assert.match(barrido, /activosDeLasCuentas\(elAmbito\(\), meta\.cuentas, ahora, arranque \+ FIN_PARA_LOS_ANALIZADORES_MS\)/);
+  assert.match(barrido, /recolectarDeMeta\(elAmbito\(\), meta\.cuentas, 'diario', arranque \+ FIN_PARA_LOS_ANALIZADORES_MS,/);
+  assert.match(barrido, /recolectarDeMeta\(elAmbito\(\), meta\.cuentas, 'historia', arranque \+ FIN_PARA_LOS_ANALIZADORES_MS,/);
   assert.match(leer('lib/negocio/miniaturaDelContacto.ts'), /const hasta = Math\.min\(ahora\(\) \+ TIEMPO_DE_LA_PASADA_MS, fin\)/);
   assert.match(leer('lib/negocio/recolectarActivos.ts'), /const hasta = Math\.min\(ahora\(\) \+ PRESUPUESTO_DE_ACTIVOS_MS, fin\)/);
 });

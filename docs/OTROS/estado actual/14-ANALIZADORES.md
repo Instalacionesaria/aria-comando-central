@@ -207,7 +207,7 @@ llaves. Lo que está escrito a mano son decisiones de operación:
 | Las seis categorías de una objeción | precio, momento, decisor, confianza, encaje, otra | `lib/analizadores/categorias.ts:6` |
 | Espera de una clasificación de objeciones | 30 s | `lib/analizadores/objeciones.ts:37` |
 | Llamadas con objeciones que se miran por corrida | 10 | `lib/analizadores/objeciones.ts:173` |
-| Fin de la tarea dentro de la función | 285 s | `lib/negocio/barrido.ts:428` |
+| Fin de la tarea dentro de la función | 285 s | `lib/negocio/barrido.ts:435` |
 | Pendientes pedidas por corrida | 10 | `lib/analizadores/tarea.ts:42` |
 | Reintentos automáticos por llamada | 3 | `lib/analizadores/tarea.ts:207` |
 | Minutos en ANALYZING para darla por colgada | 15 | `lib/analizadores/datos.ts:58` |
@@ -280,13 +280,13 @@ Brain no los guardaba (`docs/OTROS/analizadores/ANALIZADORES.md:76-78`). El aná
 cinco veces dentro de la espera de 270 s; la observación de HT-10 y OB-4 quería semanas de datos antes de tocar las
 esperas (`docs/OTROS/analizadores/ANALIZADORES.md:302-303`), y hay 10 completos propios.
 
-**La tarea de cada hora**, `'41 * * * *'` en `vercel.json` y en `lib/negocio/barrido.ts:308-312`: en `aria` el
+**La tarea de cada hora**, `'41 * * * *'` en `vercel.json` y en `lib/negocio/barrido.ts:315-319`: en `aria` el
 último sello es `corrio`, 2026-10-18 15:41 UTC, sin motivo y con **2 llamadas a proveedores**; la cuenta es la de
 `lib/analizadores/tarea.ts:188-197`, que desde AG11 suma también las pedidas de objeciones. En las otras 10 empresas
 activas, `saltada` por falta de la llave de tl;dv. **Que haya corrido cada hora no está verificado**: el sello guarda
-sólo la última corrida (`lib/negocio/barrido.ts:1282-1315`).
+sólo la última corrida (`lib/negocio/barrido.ts:1352-1385`).
 
-**El reintento de las 5**, `'7 10 * * *'` (`lib/negocio/barrido.ts:336-340`): último sello en `aria`, `corrio`
+**El reintento de las 5**, `'7 10 * * *'` (`lib/negocio/barrido.ts:343-347`): último sello en `aria`, `corrio`
 2026-10-18 10:07 UTC con 0 llamadas; en las otras 10, `saltada`.
 
 **Lo que dicen los informes** (agregados, sin texto): las 41 HT puntúan 1 (una), 3 (4), 4 (13), 5 (10), 6 (9) y 7
@@ -344,7 +344,7 @@ escribe sólo el estado y el error (`lib/analizadores/datos.ts:336-344`)—, per
 historial no se puede recalcular entero: a los 44 análisis copiados les faltan los dos contadores de caché (§ 4).
 
 **2 · La historia de las corridas.** `negocio.tareas_programadas` guarda la última de cada (empresa, tarea)
-(`lib/negocio/barrido.ts:1282-1315`), así que no hay forma de contar cuántas corridas hubo, ni cuántas fallaron, ni
+(`lib/negocio/barrido.ts:1352-1385`), así que no hay forma de contar cuántas corridas hubo, ni cuántas fallaron, ni
 cuántas quedaron cortas. Hoy se reconstruye a mano con `creado_el` y `tomada_el`, como el silencio del 13 al 18 (§ 4).
 
 **3 · El mapa de nombres de reunión → tipo.** Lo tiene el equipo y es la condición para construir la clasificación
@@ -401,8 +401,8 @@ devuelve (`lib/analizadores/datos.ts:623`).
 
 **6 · Solos en su horario y con la función entera.** La tarea de cada hora y el reintento corren sin otras tareas en
 su minuto y con 285 s, no con el presupuesto compartido de 180 s: con ese, la guardia rechazaría todo análisis y las
-pendientes no se drenarían nunca, sin que nada fallara (`lib/negocio/barrido.ts:295-312` y
-`lib/negocio/barrido.ts:418-428`); el reintento recibe el mismo fin de reloj (`lib/negocio/barrido.ts:963-971`).
+pendientes no se drenarían nunca, sin que nada fallara (`lib/negocio/barrido.ts:302-319` y
+`lib/negocio/barrido.ts:425-435`); el reintento recibe el mismo fin de reloj (`lib/negocio/barrido.ts:1013-1021`).
 
 **7 · Qué hace cada una de las dos tareas, y qué no.** La de cada hora hace **cuatro pasos**: descubre, drena las
 PENDING, completa las fichas que nunca se generaron y clasifica las objeciones sin categoría vigente, en ese orden y
@@ -445,8 +445,8 @@ No está verificado si es el negocio o la rúbrica; con `negocio.resultados` en 
 hay contra qué compararlo.
 
 **El motivo del sello se escribe y no lo lee nadie.** `motivoDeLoIncompleto` arma frases como «tl;dv rechazó la
-llave: hay que volver a cargarla» (`lib/negocio/barrido.ts:1085-1105`), y el bucle dice que eso «tiene que poder leerse
-desde la pantalla de monitoreo sin abrir un registro» (`lib/negocio/barrido.ts:801-812`). Ningún archivo de `lib/`,
+llave: hay que volver a cargarla» (`lib/negocio/barrido.ts:1135-1155`), y el bucle dice que eso «tiene que poder leerse
+desde la pantalla de monitoreo sin abrir un registro» (`lib/negocio/barrido.ts:848-859`). Ningún archivo de `lib/`,
 `app/` o `components/` lee `ultimo_motivo` fuera del que lo escribe (`grep`, 2026-10-18; sólo lo nombra
 `lib/datos/esquema.ts`). Desde AG15 la cabecera sí dice si la tarea nunca corrió, falló o está atrasada (§ 2), pero
 `frescuraDe` avisa sólo el estado `fallo` (`lib/negocio/frescura.ts:153-156`): con la llave de tl;dv revocada la
@@ -480,7 +480,7 @@ dibuja (`components/analizadores/PanelDeAnalizadores.jsx:395`).
 de `reintentos_automaticos` en `lib/`, `app/` y `pruebas/` no encuentra ningún reinicio. Una llamada que agotó sus
 tres, se rescató con el botón y más adelante vuelve a fallar ya no entra al barrido. Hoy afecta a 0 llamadas.
 
-**El reintento sólo corre donde hay llave de tl;dv** (`lib/negocio/barrido.ts:750-755`), aunque no la use: una
+**El reintento sólo corre donde hay llave de tl;dv** (`lib/negocio/barrido.ts:795-800`), aunque no la use: una
 transcripción pegada a mano que falla en una empresa con sólo llave de IA no se reintenta nunca sola. Hoy hay 0
 llamadas en otras empresas.
 

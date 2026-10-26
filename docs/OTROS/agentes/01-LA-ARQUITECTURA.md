@@ -14,7 +14,7 @@
   agentes, servicios o funciones» (Arq:1175).
 - El código: los cinco módulos que hoy arman llamadas al modelo (`lib/fundaciones/generacion.ts`,
   `conversacion.ts`, `relleno.ts`, `lib/auditor/modelo.ts`, `lib/analizadores/nucleo/anthropic.ts`) y el
-  único cliente saliente, `pedirExterno` (`lib/http/cliente.ts:348`).
+  único cliente saliente, `pedirExterno` (`lib/http/cliente.ts:350`).
 
 ---
 
@@ -33,7 +33,7 @@ responde o crea. Cuándo llama al modelo cada agente lo dice su ficha.
 
 ## AG-02 · Un solo proveedor y un solo camino
 
-Anthropic, por HTTP directo y sin SDK, **siempre** por `pedirExterno` (`lib/http/cliente.ts:348`). ADR-0305
+Anthropic, por HTTP directo y sin SDK, **siempre** por `pedirExterno` (`lib/http/cliente.ts:350`). ADR-0305
 permite `fetch(` sólo en tres archivos —`lib/http/cliente.ts`, `lib/deteccion/aviso.ts` y
 `scripts/supabase.mjs` (`pruebas/codigo/30-portero.test.ts:573-577`)— y prohíbe `EventSource`. Ningún
 archivo nuevo de este plan, ni siquiera el guion de evaluación, llama a `fetch(`.
@@ -128,7 +128,7 @@ módulo arma su propio cuerpo a propósito (`lib/auditor/modelo.ts:18`). Lo úni
 ## AG-10 · Respuestas enteras
 
 Sin streaming (`D-16`). La ruta del cerebro declara `maxDuration = 300` y su bucle se da 240 s en total,
-así que le quedan 60 para guardar. El navegador espera `ESPERA_DE_RUTA_LARGA_MS` (`lib/http/cliente.ts:128`,
+así que le quedan 60 para guardar. El navegador espera `ESPERA_DE_RUTA_LARGA_MS` (`lib/http/cliente.ts:130`,
 600 s), más que la ruta: nunca abandona una respuesta que todavía puede llegar. Mientras tanto, la mascota
 está en `pensando`.
 

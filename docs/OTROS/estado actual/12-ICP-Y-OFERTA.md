@@ -27,7 +27,7 @@ lo que promete su bajada: nada de lo que produce se cruza con un dato real del n
 > **Desde el corte del 2026-09-28**
 >
 > - **2026-10-01 · `b7203b2`** — el paso 1 del Research moría a los 300 s por el tope de cabeceras del `fetch` de
->   Node, no por el nuestro: la generación pasa a pedir el texto en flujo (`lib/http/cliente.ts:281-289`,
+>   Node, no por el nuestro: la generación pasa a pedir el texto en flujo (`lib/http/cliente.ts:283-291`,
 >   `lib/fundaciones/generacion.ts:259`).
 > - **2026-10-01 · `c936b24`** — un fallo del modelo dice qué pasó, a quién le toca y trae una referencia
 >   (`lib/fundaciones/fallo-del-modelo.ts:1-19`); `generar` reintenta una vez un fallo pasajero que llegó en los
@@ -184,15 +184,15 @@ misma organización cliente, cuyo paso 1 no salía:
    timeout`. El corte era nuestro: 240 s contra Anthropic dentro de una función de 300. Pasó a 280.
 4. **`d6b1f90`** (2026-09-23): los tres números subieron juntos. La función de generar va de 300 a
    600 s (`app/api/fundaciones/generar/route.ts:22-27`), el corte contra Anthropic de 280 a 580
-   (`lib/http/cliente.ts:296`) y la espera del navegador de 300 a 600 (`lib/http/cliente.ts:124-128`).
+   (`lib/http/cliente.ts:298`) y la espera del navegador de 300 a 600 (`lib/http/cliente.ts:126-130`).
    Los 20 s entre 580 y 600 son para guardar la versión antes de responder
-   (`lib/http/cliente.ts:273-279`), y una prueba compara los números
+   (`lib/http/cliente.ts:275-281`), y una prueba compara los números
    (`pruebas/codigo/90-fundaciones.test.ts:1014`).
 5. **`b7203b2`** (2026-10-01, después del corte): el paso 1 volvió a morir, ahora con «fetch failed (tras 301 s)».
    El 580 nunca llegaba a mirar: el `fetch` de Node trae su propio tope de 300 s para recibir las cabeceras, y
    Anthropic sin flujo no manda ninguna hasta haber escrito el documento entero. La generación pasa a pedir el texto
    en flujo, las cabeceras llegan al instante y el único corte que queda es el nuestro
-   (`lib/http/cliente.ts:281-289`, `lib/fundaciones/generacion.ts:259`). Desde ese mismo día, un fallo pasajero que
+   (`lib/http/cliente.ts:283-291`, `lib/fundaciones/generacion.ts:259`). Desde ese mismo día, un fallo pasajero que
    llega en los primeros 90 s se reintenta una vez (`lib/fundaciones/generacion.ts:203-213`), y todo fallo deja una
    situación (`IA-SATURADO`, `IA-SIN-SALDO`, `IA-TIEMPO`…) y una referencia en pantalla, en el registro y en el Panel
    de Incidentes (`lib/fundaciones/fallo-del-modelo.ts:12-19`, `lib/fundaciones/fallo-del-modelo.ts:34-46`). En
@@ -200,7 +200,7 @@ misma organización cliente, cuyo paso 1 no salía:
    (medido el 2026-10-18).
 
 Sólo `generar` subió. `conversar` y `rellenar` siguen en 300 s con la espera externa por omisión de
-240 (`lib/http/cliente.ts:248`), que cabe. **`mercado/preparar` no cabe**: también declara 300 s
+240 (`lib/http/cliente.ts:250`), que cabe. **`mercado/preparar` no cabe**: también declara 300 s
 (`app/api/fundaciones/mercado/preparar/route.ts:24`), pero su inferencia —el rubro del paso 1, 100
 tokens— sale por `generar()` (`lib/fundaciones/operaciones.ts:734-737`), que espera siempre 580 s
 (`lib/fundaciones/generacion.ts:200`). Si Anthropic no contesta, corta la plataforma a los 300 y no
@@ -285,7 +285,7 @@ Eso fue cierto del 2026-08-23 al 2026-09-07. El commit `b0a983b` lo cortó:
 Lo que queda del hub, y **nada de esto corre en ejecución**:
 
 - **El proyecto de Supabase.** `public` se comparte con otras plataformas, entre ellas ARIA-brain, y
-  el prefijo `aria_cc_` es lo que dice de quién es cada tabla (`lib/datos/esquema.ts:1650-1655`).
+  el prefijo `aria_cc_` es lo que dice de quién es cada tabla (`lib/datos/esquema.ts:1728-1733`).
 - **Los nombres, como contrato.** Los identificadores de herramienta son los del hub
   (`lib/fundaciones/herramientas.ts:11-16`), los campos del JSON siguen en inglés
   (`lib/fundaciones/estado.ts:11-17`) y las metodologías nacieron como copias, de las que seis ya
@@ -523,8 +523,8 @@ del almacén (`lib/fundaciones/operaciones.ts:319-322`, `lib/fundaciones/operaci
 los números del mercado se cuentan en el servidor (`lib/fundaciones/mercado.ts:15-21`).
 
 **5 · Quien espera espera menos que quien ejecuta.** 580 s de corte contra Anthropic dentro de 600 s
-de función, con la versión guardada antes de responder (`lib/http/cliente.ts:273-279`,
-`lib/http/cliente.ts:291-293`). Si uno sube,
+de función, con la versión guardada antes de responder (`lib/http/cliente.ts:275-281`,
+`lib/http/cliente.ts:293-295`). Si uno sube,
 sube primero el `maxDuration`. Hoy la incumple `mercado/preparar`, y ninguna prueba lo ve (§ 2.3).
 
 **6 · Los inputs se guardan antes de generar**, salga como salga la generación
@@ -596,7 +596,7 @@ es mayor que la función (300 s), así que un Anthropic lento termina en un cort
 Research sigue y la mirada se omite como «no se pudo preparar la búsqueda».
 
 **Gasto sin techo, y un techo que no es de esta pantalla.** No hay tope por organización (§ 5).
-Según `lib/http/cliente.ts:263-266` la cuenta de Vercel tiene un presupuesto de 200 dólares que corta
+Según `lib/http/cliente.ts:265-268` la cuenta de Vercel tiene un presupuesto de 200 dólares que corta
 al llegar; si es así, corta la aplicación entera y no sólo esta pantalla. No verificado en este corte.
 
 **Un histórico que ya nació con ruido.** 21 de sus 29 conversaciones son saludos sueltos de la siembra,
