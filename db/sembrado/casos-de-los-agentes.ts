@@ -418,7 +418,8 @@ export async function construirEmpresaConDatos(org: string, personas: PersonasDe
     for (const [i, c] of agendados.entries()) {
       // Los primeros treinta, del closer vinculado: es lo que «mío» le muestra a Closer Uno.
       const crm = i < 30 ? CRM_DEL_CLOSER_UNO : CRM_DE_OTRO;
-      await datos().updateTable('contactos').set({ crm_asignado_a: crm, score: 80 } as never).where('id', '=', c.id).execute();
+      // Con cuadrante: desde la `105` un agendado sin él no es calificado (`esCalificado`), y los casos lo son.
+      await datos().updateTable('contactos').set({ crm_asignado_a: crm, score: 80, cuadrante: 'prioriza' } as never).where('id', '=', c.id).execute();
       const cita = await datos()
         .insertInto('citas')
         .values({

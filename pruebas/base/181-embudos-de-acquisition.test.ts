@@ -81,15 +81,17 @@ async function unContacto(campos: {
   campana?: string | null;
   alta: string;
   score?: number | null;
+  /** El cuadrante del ICP. Por omisión Prioriza: desde la `105` un agendado sin cuadrante no es calificado. */
+  cuadrante?: string | null;
   etiquetas?: string[];
   cita?: { calendario?: boolean; reservada?: string | null; inicio?: string };
 }): Promise<void> {
   // «Sin atribución» es el objeto vacío: la columna no admite nulo.
   const atribucion = JSON.stringify(campos.campana === null ? {} : { campaignId: campos.campana ?? C1 });
   const r = await esc.admin.query<{ id: string }>(
-    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, score, etiquetas)
-     values ($1, $2, 'Contacto 181', 'setter', ${campos.alta}, $3::jsonb, $4, $5) returning id`,
-    [propia, `c181-${randomUUID()}`, atribucion, campos.score ?? null, campos.etiquetas ?? []],
+    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, score, etiquetas, cuadrante)
+     values ($1, $2, 'Contacto 181', 'setter', ${campos.alta}, $3::jsonb, $4, $5, $6) returning id`,
+    [propia, `c181-${randomUUID()}`, atribucion, campos.score ?? null, campos.etiquetas ?? [], campos.cuadrante === undefined ? 'prioriza' : campos.cuadrante],
   );
   if (!campos.cita) return;
   const inicio = campos.cita.inicio ?? `now() + interval '1 day'`;

@@ -63,13 +63,14 @@ interface Cita {
 }
 
 /** Un contacto, con sus citas. Devuelve su marca, que es la clave con la que se lee. */
-async function unContacto(o: { etiquetas?: string[]; citas?: Cita[]; confirmacion?: string }): Promise<string> {
+async function unContacto(o: { etiquetas?: string[]; citas?: Cita[]; confirmacion?: string; cuadrante?: string | null }): Promise<string> {
   const ghl = `${CONTACTO}${randomUUID().slice(0, 8)}`;
+  // El cuadrante, por omisión Valida: desde la `105` un agendado sin cuadrante no es calificado.
   const r = await esc.admin.query<{ id: string }>(
-    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, etiquetas, campos_del_crm)
-     values ($1, $2, 'Lead de prueba', 'setter', now() - interval '3 days', $3, $4::jsonb)
+    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, etiquetas, campos_del_crm, cuadrante)
+     values ($1, $2, 'Lead de prueba', 'setter', now() - interval '3 days', $3, $4::jsonb, $5)
      returning id`,
-    [esc.org, ghl, o.etiquetas ?? [], JSON.stringify(o.confirmacion === undefined ? {} : { [CAMPO]: o.confirmacion })],
+    [esc.org, ghl, o.etiquetas ?? [], JSON.stringify(o.confirmacion === undefined ? {} : { [CAMPO]: o.confirmacion }), o.cuadrante === undefined ? 'valida' : o.cuadrante],
   );
   for (const c of o.citas ?? []) {
     await esc.admin.query(
@@ -129,16 +130,21 @@ after(async () => {
 
 // ─── CALIFICÓ ─────────────────────────────────────────────────────────────────
 
-test('calificado es quien agendó y no está descartado; la etiqueta se lee en cualquier caja', async () => {
+test('calificado es quien agendó con Prioriza, Valida o Financia y no está descartado; la etiqueta se lee en cualquier caja', async () => {
   await limpiar();
   const califica = await unContacto({ citas: [{}] });
   const descartado = await unContacto({ etiquetas: ['ICP_Rechazado'], citas: [{}] });
   const sinCita = await unContacto({});
   const congelada = await unContacto({ citas: [{ calendario: false }] });
+  // Desde la `105` (2026-10-26): sin cuadrante no es calificado, y Descarta es un descarte.
+  const sinClasificar = await unContacto({ citas: [{}], cuadrante: null });
+  const enDescarta = await unContacto({ citas: [{}], cuadrante: 'descarta' });
   const r = await leer();
 
   assert.equal(r.get(califica)?.calificado, true);
   assert.equal(r.get(descartado)?.calificado, false, 'el descartado se contó como calificado');
+  assert.equal(r.get(sinClasificar)?.calificado, false, 'el agendado sin cuadrante se contó como calificado');
+  assert.equal(r.get(enDescarta)?.calificado, false, 'el agendado en Descarta se contó como calificado');
   assert.equal(r.get(sinCita)?.calificado, false);
   assert.equal(r.get(congelada)?.calificado, false, 'una cita congelada contó como agendada');
 });
@@ -317,10 +323,11 @@ async function enLaPropiaUnContacto(o: {
   campos?: Record<string, string>;
   cita?: { reservada?: string; estado?: string; calendario?: boolean };
 }): Promise<string> {
+  // Con cuadrante Valida: desde la `105` un agendado sin cuadrante no es calificado.
   const r = await esc.admin.query<{ id: string }>(
     `insert into negocio.contactos
-       (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_ultima, etiquetas, campos_del_crm)
-     values ($1, $2, 'Lead de prueba', 'setter', ${o.alta ?? 'null'}, $3::jsonb, $4, $5::jsonb) returning id`,
+       (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_ultima, etiquetas, campos_del_crm, cuadrante)
+     values ($1, $2, 'Lead de prueba', 'setter', ${o.alta ?? 'null'}, $3::jsonb, $4, $5::jsonb, 'valida') returning id`,
     [
       propia,
       `${CONTACTO_PROPIO}${randomUUID().slice(0, 8)}`,

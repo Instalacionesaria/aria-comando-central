@@ -41,6 +41,7 @@ import { type RawBuilder, sql } from 'kysely';
 
 import { ESTADO_NO_APARECIO, ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
 import { ETIQUETAS_DE_DESCARTE } from '../ghl/contrato.ts';
+import { CALIFICADOS } from './cuadrantesDelIcp.ts';
 
 /**
  * **¿El barrido todavía puede refrescar esta cita?**
@@ -152,17 +153,41 @@ export function tieneCitaAlcanzable(alias = 'contactos', reservadaHaceDias: numb
  * cada persona de la cohorte, y copiar el `unnest` con la lista sería la décima copia de la que este
  * archivo habla. `descartado` lo usa por dentro, así que las dos no pueden divergir.
  *
+ * ── Y EL CUADRANTE DESCARTA, DESDE LA `105` ────────────────────────────────
+ *
+ * Dos caminos al descarte: una etiqueta de `ETIQUETAS_DE_DESCARTE`, o el cuadrante del ICP en `descarta` (decisión del
+ * usuario, 2026-10-26: «Descarta» son contactos descartados en toda la plataforma). Van acá y no en cada pantalla
+ * porque todo lo que mira el descarte —los calificados, la cadena de cierre de Sales, el cierre por closer, la
+ * asistencia, Leads Portal— pasa por esta función o por `descartado`. `is not distinct from` y no `=`: un cuadrante
+ * nulo da `false`, no un nulo que un `not` volvería a dejar nulo.
+ *
  * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
  */
 export function contactoDescartado(alias = 'contactos'): RawBuilder<boolean> {
-  return sql<boolean>`exists (
-    select 1 from unnest(${sql.raw(alias)}.etiquetas) e
-     where lower(e) = any(${sql.val(ETIQUETAS_DE_DESCARTE)}))`;
+  const a = sql.raw(alias);
+  return sql<boolean>`(exists (
+    select 1 from unnest(${a}.etiquetas) e
+     where lower(e) = any(${sql.val(ETIQUETAS_DE_DESCARTE)}))
+    or ${a}.cuadrante is not distinct from 'descarta')`;
 }
 
 /**
- * **¿Esta PERSONA es un calificado?** Agendó y no está descartada (A14-07 de
- * `docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
+ * **¿El cuadrante del ICP de esta PERSONA es calificado?** Prioriza, Valida o Financia (`CALIFICADOS`). Sin
+ * cuadrante, no: «Sin clasificar» no es un calificado (decisión del usuario, 2026-10-26).
+ *
+ * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
+ */
+export function cuadranteCalificado(alias = 'contactos'): RawBuilder<boolean> {
+  return sql<boolean>`coalesce(${sql.raw(alias)}.cuadrante = any(${sql.val([...CALIFICADOS])}::text[]), false)`;
+}
+
+/**
+ * **¿Esta PERSONA es un calificado?** Agendó, su cuadrante del ICP es Prioriza, Valida o Financia, y no está
+ * descartada (A14-07 de `docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, y desde la `105` la decisión del
+ * usuario del 2026-10-26: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
+ *
+ * El cuadrante entró el 2026-10-26: hasta ahí, calificado era agendó y no descartado. Ahora el que agendó sin cuadrante
+ * no cuenta, y un contacto en Prioriza con una etiqueta de descarte tampoco —las dos fuentes de descarte valen igual—.
  *
  * Vivía como una expresión local de Acquisition, y Conversion pide la misma cifra (CV15-09): dos copias de
  * «calificado» divergen el día que alguien cambie una, y las dos pantallas dirían «35 calificados» de gente
@@ -171,14 +196,14 @@ export function contactoDescartado(alias = 'contactos'): RawBuilder<boolean> {
  * El descarte se mira como está hoy aunque se pida una edad: las etiquetas no tienen fecha. Por eso los
  * calificados no comparan contra una ventana anterior en ninguna pantalla.
  *
- * Entre paréntesis porque son dos condiciones: sin ellos, un `not ${esCalificado(…)}` negaría sólo la
+ * Entre paréntesis porque son tres condiciones: sin ellos, un `not ${esCalificado(…)}` negaría sólo la
  * primera.
  *
  * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
  * @param reservadaHaceDias La edad de `tieneCitaAlcanzable`, para una ventana anterior.
  */
 export function esCalificado(alias = 'contactos', reservadaHaceDias: number | null = null): RawBuilder<boolean> {
-  return sql<boolean>`(${tieneCitaAlcanzable(alias, reservadaHaceDias)} and not ${contactoDescartado(alias)})`;
+  return sql<boolean>`(${tieneCitaAlcanzable(alias, reservadaHaceDias)} and ${cuadranteCalificado(alias)} and not ${contactoDescartado(alias)})`;
 }
 
 /**
