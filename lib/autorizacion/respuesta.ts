@@ -263,6 +263,12 @@ export const RECHAZOS = {
   senales_bajo_delegacion: 409,
   // La señal ya está cerrada —resuelta, descartada o cerrada sola—: no hay nada que resolver. 409.
   senal_cerrada: 409,
+  // «Conectar con Meta» (Meta directo, M2). La app de Meta de ARIA no está configurada en el servidor (faltan sus
+  // variables): no es un permiso ni algo que arregle quien conecta, lo arregla quien administra el despliegue.
+  meta_sin_configurar: 409,
+  // El viaje a Meta no vale: el `state` no existe, ya se usó, venció o es de otra sesión, persona o cliente. Se vuelve a
+  // apretar «Conectar con Meta». 409 y no 403: quien pide tiene la capacidad.
+  viaje_a_meta_vencido: 409,
 } as const;
 
 /**

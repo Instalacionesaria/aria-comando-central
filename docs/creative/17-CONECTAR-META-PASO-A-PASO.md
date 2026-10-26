@@ -98,7 +98,7 @@ miniatura. Si sale mal dice en qué paso falló y qué hacer:
 | Meta limitó las llamadas / no contestó | esperar unos minutos y probar de nuevo |
 | La cuenta no está activa en Meta | la conexión anda; sin anuncios en curso no hay miniaturas nuevas |
 
-Los textos completos están en `lib/meta/graph.ts:65-76` y la tarjeta en `components/ajustes/ConexionConMeta.jsx`.
+Los textos completos están en `lib/meta/graph.ts:66-77` y la tarjeta en `components/ajustes/ConexionConMeta.jsx`.
 
 ## Paso 7 · Esperar la primera pasada
 

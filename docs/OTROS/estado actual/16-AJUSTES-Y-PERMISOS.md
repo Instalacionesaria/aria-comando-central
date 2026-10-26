@@ -236,8 +236,8 @@ sesión; no decide ningún permiso.
 (82 el 2026-09-28), **82** declaran `PANTALLA` y **29** están en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:522-656`):
 son exactamente, archivo por archivo, los que no la declaran (comparadas las dos listas con `diff`). No llaman a
 `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**, las mismas: `salud` y `login`, que son
-las públicas (`pruebas/apoyo/autorizados.ts:770-778`), y la sonda, el cron y el aviso del CRM, que van con secreto
-propio (`pruebas/apoyo/autorizados.ts:920-964`).
+las públicas (`pruebas/apoyo/autorizados.ts:779-787`), y la sonda, el cron y el aviso del CRM, que van con secreto
+propio (`pruebas/apoyo/autorizados.ts:929-973`).
 
 **Rechazos registrados.** En toda la historia de `identidad.auditoria_accesos`, 3 `permiso_denegado` y 0
 `seccion_denegada`; **ninguno** desde el 2026-09-28 (consulta del 2026-10-18 agrupada por `accion`).
@@ -281,7 +281,7 @@ restringe por sección, dársela sería dársela a todos los administradores (`d
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:772-777`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
+(`pruebas/apoyo/autorizados.ts:781-786`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
 origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con N=16384, r=8, p=1
 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login exitoso (`lib/autenticacion/freno.ts:85-96`).
 
@@ -443,7 +443,7 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 | Los topes y Meta | Los topes del cerebro en Ajustes; la prueba de conexión con Meta | `pruebas/base/218-los-topes-del-cerebro-en-ajustes.test.ts`, `pruebas/codigo/255-la-conexion-con-meta.test.ts` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` sigue vacía: no hay ninguna excepción viva
-(`pruebas/apoyo/autorizados.ts:880-887`).
+(`pruebas/apoyo/autorizados.ts:889-896`).
 
 **Un cruce que el código anuncia y no se encontró.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en las dos

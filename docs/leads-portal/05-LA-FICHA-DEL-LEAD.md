@@ -372,7 +372,7 @@ acciones y siete secciones:
 - **Qué pide:**
   - **teléfono y correo, sólo en la ficha.** Es la decisión del 2026-09-26, y la ruta del detalle es
     la única que los trae (LP-4). La respuesta sale con `no-store`, como toda respuesta con datos de
-    un inquilino (`lib/autorizacion/respuesta.ts:324-326`);
+    un inquilino (`lib/autorizacion/respuesta.ts:330-332`);
   - **el closer asignado:** `crm_asignado_a` es el usuario del CRM, crudo
     (`lib/datos/esquema.ts:383-393`). Se cruza con `closersDeLaEmpresa`
     (`lib/negocio/alcanceDelCloser.ts:130-171`) por par —el cliente del contacto y su usuario del

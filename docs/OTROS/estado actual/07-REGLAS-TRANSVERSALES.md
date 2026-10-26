@@ -835,7 +835,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:880`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:889`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -1223,7 +1223,7 @@ activas** tienen la zona `UTC`; la que tiene datos tiene la suya.
 **48 · Las pantallas hablan de tú, nunca de vos.** `pruebas/apoyo/voseo.ts:8-9` es una lista de formas vistas en
 pantalla, no una regla gramatical (`:3`), y `pruebas/codigo/202-tools-no-vosea.test.ts:39` la pasa por
 `components/tools`, `lib/tools` y `app/api/tools` (`:40-44`, `5d60371`, 2026-10-04). Mira sólo Tools, y al corte los
-textos de la conexión con Meta (`lib/meta/graph.ts:68`, `:74`; `components/ajustes/ConexionConMeta.jsx:36`) voseaban
+textos de la conexión con Meta (`lib/meta/graph.ts:69`, `:74`; `components/ajustes/ConexionConMeta.jsx:36`) voseaban
 sin que nada fallara. **Desde el 2026-10-18 (`65669f4`)** esos textos hablan de tú y la regla la vigila también
 `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts:79-89` en `components/`, `lib/` y `app/` enteros, sin comentarios y
 fuera de Fundaciones, que es de la rama `feature/icp-oferta-v2` (`:16`). No exige todavía que toda la aplicación hable de tú: exige

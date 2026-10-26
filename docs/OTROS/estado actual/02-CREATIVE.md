@@ -203,8 +203,8 @@ carga queda el fondo del prototipo (`components/creative/Miniatura.jsx:11-24`).
 `credenciales.editar` (`app/api/admin/credenciales/meta/route.ts:22-31`) y prueba, sin guardar nada, tres pasos en
 orden: el token, la cuenta publicitaria y la lectura de los últimos 25 anuncios con cuántos traen miniatura
 (`lib/meta/conexion.ts:37-73`). El cliente de Meta sólo hace `GET` y lleva el token en la cabecera, nunca en la URL
-(`lib/meta/graph.ts:12-15`, `lib/meta/graph.ts:82-94`); el error de Meta se traduce a seis motivos con un texto propio
-(`lib/meta/graph.ts:44`, `lib/meta/graph.ts:65-76`). Nadie lo apretó con un token real.
+(`lib/meta/graph.ts:12-15`, `lib/meta/graph.ts:83-106`); el error de Meta se traduce a seis motivos con un texto propio
+(`lib/meta/graph.ts:45`, `lib/meta/graph.ts:66-77`). Nadie lo apretó con un token real.
 
 **Cada «—» dice por qué, con una frase de una lista cerrada.** Siete motivos
 (`lib/negocio/lecturaDeCreative.ts:53-60`), cada uno con su frase (`components/creative/comun.jsx:26-34`), más el «—»
@@ -484,7 +484,7 @@ revenue y el CAC, de Business.
 (`app/api/creative/route.ts:59-63`).
 
 **15 · Meta se lee, nunca se escribe, y el token no viaja en una URL.** Sólo `GET`, con el token en la cabecera
-`Authorization` (`lib/meta/graph.ts:12-15`, `lib/meta/graph.ts:88-91`); el mensaje de Meta no llega al navegador, sólo el
+`Authorization` (`lib/meta/graph.ts:12-15`, `lib/meta/graph.ts:98-102`); el mensaje de Meta no llega al navegador, sólo el
 motivo y un texto propio (`lib/meta/graph.ts:16-17`). Nueva desde el 2026-10-15.
 
 ---
@@ -596,7 +596,7 @@ pasada. El primer «Probar conexión» y la primera hora de la tarea lo dicen.
 
 **17 · Los textos de Meta en Ajustes voseaban.** **Nuevo, 2026-10-18; cerrado el 2026-10-18 (`65669f4`).** Al corte,
 lo que «Probar conexión» le dice a quien carga el token usaba voseo: «Revisá» y «Probá», en los textos de cada falla
-(`lib/meta/graph.ts:68`, `lib/meta/graph.ts:71`, `lib/meta/graph.ts:74-75`) y en el del navegador cuando el servidor
+(`lib/meta/graph.ts:69`, `lib/meta/graph.ts:72`, `lib/meta/graph.ts:75-76`) y en el del navegador cuando el servidor
 no contesta (`components/ajustes/ConexionConMeta.jsx:36`), y la prueba que vigilaba el voseo,
 `pruebas/codigo/202-tools-no-vosea.test.ts`, miraba sólo Tools. Hoy esas líneas dicen «Revisa», «Prueba de nuevo» y
 «avisa a desarrollo», y `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts` mira `components/`, `lib/` y `app/`

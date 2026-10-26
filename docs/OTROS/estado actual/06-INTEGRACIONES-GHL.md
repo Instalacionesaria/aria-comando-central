@@ -363,10 +363,10 @@ de leads de Tools y «Probar conexión» de Meta.
 
 ### Los techos duros, y quién los cubre con reintentos
 
-- `pedirExterno` hace **un solo `fetch`** (`lib/http/cliente.ts:368-374`) y espera hasta 240 s
+- `pedirExterno` hace **un solo `fetch`** (`lib/http/cliente.ts:376-387`) y espera hasta 240 s
   (`lib/http/cliente.ts:248`) contra un `maxDuration` de 300; Vercel no reintenta el cron
   (`lib/negocio/barrido.ts:17`). Los pedidos nuevos acortan la espera: 15 s cada miniatura de contacto
-  (`lib/negocio/miniaturaDelContacto.ts:48`) y 20 s cada pedido a Meta (`lib/meta/graph.ts:30`).
+  (`lib/negocio/miniaturaDelContacto.ts:48`) y 20 s cada pedido a Meta (`lib/meta/graph.ts:31`).
 - **Desde el 2026-10-15, `pedirExterno` devuelve también el código numérico del error**, si el servicio lo manda en
   `error.code` (`lib/http/cliente.ts:72-80`, `:459-468`). Lo manda Meta, y es lo único que distingue un token vencido de un
   permiso que falta o del cupo; GoHighLevel y Anthropic no lo mandan, y para ellos la respuesta queda igual.
@@ -1011,7 +1011,7 @@ Cada uno es un hueco medido, no una suposición.
    confirmado (`lib/ghl/cliente.ts:264-266`). La familia de anuncios ya reintenta el 429; las otras
    catorce operaciones no, y ninguna lee `Retry-After`. El 2026-10-18 el piso es de ~1.568 llamadas por día para
    una empresa (§ 3); con cinco serían ~7.800, más el relleno del gasto, que la primera vez de cada empresa son
-   cientos. **Y el de Meta tampoco**: los códigos de cupo están traducidos (`lib/meta/graph.ts:47-48`) pero nunca se
+   cientos. **Y el de Meta tampoco**: los códigos de cupo están traducidos (`lib/meta/graph.ts:48-49`) pero nunca se
    recibió uno, porque nunca hubo token.
 
 5. **No pude comprobar el alcance del token sobre `/opportunities`.** Está probado que lee contactos,
@@ -1054,7 +1054,7 @@ URL** —el cliente lanza si alguien lo pone como parámetro— (`lib/meta/graph
 de permisos de lectura (`ads_read`, `pages_read_engagement`, `pages_show_list`), así que no hay forma de que una regresión
 cree, pause o gaste (`lib/meta/graph.ts:14-15`); y el error de Meta se traduce a un motivo cerrado —`token`, `permiso`,
 `no_existe`, `cupo`, `sin_respuesta`, `otro`— y su mensaje en inglés nunca llega al navegador (`lib/meta/graph.ts:16-17`,
-`:44-62`). La versión de la API es `v23.0` (`lib/meta/graph.ts:25`) y cada pedido espera hasta 20 s (`lib/meta/graph.ts:30`).
+`:44-62`). La versión de la API es `v23.0` (`lib/meta/graph.ts:26`) y cada pedido espera hasta 20 s (`lib/meta/graph.ts:31`).
 Para distinguir los motivos hace falta el código numérico del error, que `pedirExterno` empezó a devolver el mismo día (§ 3).
 
 **La credencial.** Dos columnas de `identidad.organizaciones_credenciales`, desde la `064` (2026-09-29): el token cifrado y
@@ -1093,7 +1093,7 @@ para mirar que no hay token, y sella.
 **Lo que se encontró al leerlo para esta foto** (los tres, cerrados el mismo 2026-10-18 en `65669f4`):
 
 - **Los textos de error de Meta voseaban**, contra la regla de tú neutro de la aplicación: «Revisá», «Probá», «avisá»
-  (`lib/meta/graph.ts:68`, `:71`, `:74-75`). Llegan a la pantalla de Ajustes por «Probar conexión»
+  (`lib/meta/graph.ts:69`, `:71`, `:74-75`). Llegan a la pantalla de Ajustes por «Probar conexión»
   (`components/ajustes/ConexionConMeta.jsx:10-11`). La prueba de voseo de Tools (`202`) no mira `lib/meta/`. **Cerrado:**
   hoy dicen «Revisa», «Prueba de nuevo» y «avisa a desarrollo», y la prueba nueva
   `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts` mira `lib/meta/` con el resto de la aplicación.

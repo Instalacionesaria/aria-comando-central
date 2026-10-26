@@ -158,6 +158,11 @@ export type Accion =
   | 'puntaje_elegido'
   | 'puntaje_por_su_nombre'
   | 'carpeta_del_perfil_elegida'
+  /* «Conectar con Meta» (Meta directo, M2). Conectar y desconectar son hechos distintos, y asignar una cuenta
+     publicitaria a un cliente cambia de quién es su gasto. */
+  | 'meta_conectada'
+  | 'meta_desconectada'
+  | 'meta_cuenta_asignada'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -329,6 +334,11 @@ export async function auditarAdministracion(
       | 'puntaje_elegido'
       | 'puntaje_por_su_nombre'
       | 'carpeta_del_perfil_elegida'
+      // «Conectar con Meta». El objetivo es el cliente para el que se conectó o al que se asignó la cuenta (o la
+      // empresa, si conectó la empresa).
+      | 'meta_conectada'
+      | 'meta_desconectada'
+      | 'meta_cuenta_asignada'
     >;
     actor: string;
     objetivo: string;

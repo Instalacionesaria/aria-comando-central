@@ -359,17 +359,30 @@ export async function pedirExterno<T>(
      * 300 s. Un rechazo se sigue leyendo como JSON, porque el servicio lo manda así.
      */
     lectura?: 'json' | 'texto';
+    /**
+     * Un cuerpo de formulario (`application/x-www-form-urlencoded`) en vez de JSON. Lo pide el canje de un código de
+     * OAuth (Meta): así el secreto de la app viaja en el cuerpo y nunca en la URL. No se combina con `cuerpo`.
+     */
+    formulario?: Record<string, string>;
+    /** Recibe las cabeceras de la respuesta, de un 2xx o de un rechazo: el uso de la cuota de Meta viaja ahí. */
+    alResponder?: (cabeceras: Headers) => void;
   } = {},
 ): Promise<Respuesta<T>> {
-  const { metodo = 'GET', cabeceras = {}, cuerpo, espera = ESPERA_EXTERNA_MS, lectura = 'json' } = opciones;
+  const { metodo = 'GET', cabeceras = {}, cuerpo, espera = ESPERA_EXTERNA_MS, lectura = 'json', formulario, alResponder } = opciones;
+  if (formulario !== undefined && cuerpo !== undefined) throw new Error('pedirExterno: `cuerpo` y `formulario` son excluyentes');
 
   const desde = Date.now();
   let respuesta: Response;
   try {
     respuesta = await fetch(url, {
       method: metodo,
-      headers: cuerpo === undefined ? cabeceras : { 'content-type': 'application/json', ...cabeceras },
-      body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+      headers:
+        formulario !== undefined
+          ? { 'content-type': 'application/x-www-form-urlencoded', ...cabeceras }
+          : cuerpo === undefined
+            ? cabeceras
+            : { 'content-type': 'application/json', ...cabeceras },
+      body: formulario !== undefined ? new URLSearchParams(formulario).toString() : cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
       signal: AbortSignal.timeout(espera),
     });
   } catch (e) {
@@ -397,6 +410,8 @@ export async function pedirExterno<T>(
       causa: `${e instanceof Error ? e.message : 'desconocida'} (tras ${Math.round(ms / 1000)} s)`,
     };
   }
+
+  alResponder?.(respuesta.headers);
 
   if (lectura === 'texto' && respuesta.ok) {
     try {

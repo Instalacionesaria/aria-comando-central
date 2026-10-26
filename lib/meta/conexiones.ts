@@ -84,3 +84,189 @@ export async function copiarMetaManual(db: Trx, orgId: string, cuentaId: string)
     .onConflict((oc) => oc.columns(['org_id', 'act_id']).doNothing())
     .execute();
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// «CONECTAR CON META» (M2): GUARDAR, LISTAR, ASIGNAR Y DESCONECTAR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Una cuenta que devolvió Meta al conectar (`cuentasDelToken`). */
+export interface CuentaConectada {
+  act: string;
+  nombre: string | null;
+  moneda: string | null;
+  zonaHoraria: string | null;
+  estado: number | null;
+}
+
+/**
+ * Guarda una conexión por OAuth con sus cuentas. Volver a conectar el mismo negocio reemplaza el token (no suma una
+ * conexión), y las cuentas que el negocio ya no le da a la app se sueltan.
+ *
+ * A qué cliente va cada cuenta:
+ *   · si conectó un CLIENTE con su portfolio, todas van a ese cliente (son suyas);
+ *   · si conectó la EMPRESA, una cuenta que ya estaba asignada sigue donde estaba; una nueva queda sin asignar, salvo
+ *     que la empresa tenga un solo cliente activo, que la recibe sola (el caso de hoy: una empresa, un negocio).
+ * Una cuenta que ya leía otra conexión (la manual de antes, u otro portfolio) pasa a leerse con ésta: el botón gana.
+ */
+export async function guardarConexionDeMeta(
+  db: Trx,
+  datos: {
+    orgId: string;
+    cuentaId: string | null;
+    tokenCifrado: string;
+    negocio: string | null;
+    usuarioId: string;
+    cuentas: readonly CuentaConectada[];
+  },
+): Promise<{ conexionId: string }> {
+  const { orgId, cuentaId } = datos;
+  const conexion = await db
+    .insertInto('conexiones_de_meta')
+    .values({
+      org_id: orgId,
+      cuenta_id: cuentaId,
+      token_cifrado: datos.tokenCifrado,
+      negocio_de_meta_id: datos.negocio,
+      origen: 'oauth',
+      estado: 'activa',
+      conectada_por: datos.usuarioId,
+    })
+    .onConflict((oc) =>
+      oc
+        .columns(['org_id', 'cuenta_id', 'negocio_de_meta_id'])
+        .where('origen', '=', 'oauth')
+        .doUpdateSet({
+          token_cifrado: datos.tokenCifrado,
+          estado: 'activa',
+          conectada_por: datos.usuarioId,
+          conectada_el: new Date(),
+          ultimo_error: null,
+          ultimo_error_el: null,
+        }),
+    )
+    .returning('id')
+    .executeTakeFirstOrThrow();
+
+  // El cliente que recibe sola una cuenta nueva de la empresa: el único activo, si hay uno solo.
+  let unico: string | null = null;
+  if (cuentaId === null) {
+    const activos = await db
+      .selectFrom('cuentas')
+      .select('id')
+      .where('org_id', '=', orgId)
+      .where('estado', '=', 'activa')
+      .limit(2)
+      .execute();
+    unico = activos.length === 1 ? activos[0]!.id : null;
+  }
+
+  const ahora = new Date();
+  for (const c of datos.cuentas) {
+    const asignada = cuentaId ?? unico;
+    await db
+      .insertInto('cuentas_publicitarias_de_meta')
+      .values({
+        org_id: orgId,
+        act_id: c.act,
+        conexion_id: conexion.id,
+        nombre: c.nombre,
+        moneda: c.moneda,
+        zona_horaria: c.zonaHoraria,
+        estado_en_meta: c.estado,
+        cuenta_id: asignada,
+        asignada_por: asignada ? datos.usuarioId : null,
+        asignada_el: asignada ? ahora : null,
+        vista_el: ahora,
+      })
+      .onConflict((oc) =>
+        oc.columns(['org_id', 'act_id']).doUpdateSet((eb) => ({
+          conexion_id: conexion.id,
+          nombre: c.nombre,
+          moneda: c.moneda,
+          zona_horaria: c.zonaHoraria,
+          estado_en_meta: c.estado,
+          vista_el: ahora,
+          // De un cliente: es suya. De la empresa: la que ya estaba asignada sigue donde estaba.
+          cuenta_id: cuentaId !== null ? cuentaId : eb.fn.coalesce(eb.ref('cuentas_publicitarias_de_meta.cuenta_id'), eb.val(unico)),
+        })),
+      )
+      .execute();
+  }
+
+  // Lo que el negocio ya no le da a la app (lo desmarcó en Meta) deja de leerse con esta conexión.
+  const vigentes = datos.cuentas.map((c) => c.act);
+  let soltar = db.deleteFrom('cuentas_publicitarias_de_meta').where('org_id', '=', orgId).where('conexion_id', '=', conexion.id);
+  if (vigentes.length > 0) soltar = soltar.where('act_id', 'not in', vigentes);
+  await soltar.execute();
+
+  return { conexionId: conexion.id };
+}
+
+/** Lo que Ajustes muestra de Meta: las conexiones y sus cuentas, sin un solo token. */
+export interface VistaDeMeta {
+  conexiones: {
+    id: string;
+    cliente: string | null;
+    origen: 'oauth' | 'manual';
+    estado: 'activa' | 'revocada' | 'vencida';
+    negocio: string | null;
+    conectadaEl: Date;
+    ultimoError: string | null;
+  }[];
+  cuentas: {
+    act: string;
+    nombre: string | null;
+    moneda: string | null;
+    zonaHoraria: string | null;
+    estadoEnMeta: number | null;
+    conexionId: string;
+    cliente: string | null;
+  }[];
+  clientes: { id: string; nombre: string; esPorOmision: boolean }[];
+}
+
+export async function vistaDeMeta(db: Trx, orgId: string): Promise<VistaDeMeta> {
+  const [conexiones, cuentas, clientes] = await Promise.all([
+    db
+      .selectFrom('conexiones_de_meta')
+      .select(['id', 'cuenta_id', 'origen', 'estado', 'negocio_de_meta_id', 'conectada_el', 'ultimo_error'])
+      .where('org_id', '=', orgId)
+      .orderBy('conectada_el')
+      .execute(),
+    db
+      .selectFrom('cuentas_publicitarias_de_meta')
+      .select(['act_id', 'nombre', 'moneda', 'zona_horaria', 'estado_en_meta', 'conexion_id', 'cuenta_id'])
+      .where('org_id', '=', orgId)
+      .orderBy('act_id')
+      .execute(),
+    db
+      .selectFrom('cuentas')
+      .select(['id', 'nombre', 'es_por_omision'])
+      .where('org_id', '=', orgId)
+      .where('estado', '<>', 'baja')
+      .orderBy('es_por_omision', 'desc')
+      .orderBy('nombre')
+      .execute(),
+  ]);
+  return {
+    conexiones: conexiones.map((c) => ({
+      id: c.id,
+      cliente: c.cuenta_id,
+      origen: c.origen,
+      estado: c.estado,
+      negocio: c.negocio_de_meta_id,
+      conectadaEl: c.conectada_el,
+      ultimoError: c.ultimo_error,
+    })),
+    cuentas: cuentas.map((c) => ({
+      act: c.act_id,
+      nombre: c.nombre,
+      moneda: c.moneda,
+      zonaHoraria: c.zona_horaria,
+      estadoEnMeta: c.estado_en_meta,
+      conexionId: c.conexion_id,
+      cliente: c.cuenta_id,
+    })),
+    clientes: clientes.map((c) => ({ id: c.id, nombre: c.nombre, esPorOmision: c.es_por_omision })),
+  };
+}

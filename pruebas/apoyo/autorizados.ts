@@ -174,6 +174,15 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // «Probar conexión» con Meta (Ajustes). Lee el token de Meta de la misma tabla de secretos, con el mismo filtro
   // `contexto.orgEfectiva`, y lo usa para tres lecturas a Meta: no escribe nada (`lib/meta/conexion.ts`).
   'app/api/admin/credenciales/meta/route.ts',
+  // «Conectar con Meta» (Meta directo, M2). Las conexiones con Meta, sus cuentas publicitarias y el `state` del viaje
+  // viven en `identidad` (`101`) y el inquilino no tiene ningún acceso a esas tablas: guardan tokens. Cada consulta
+  // filtra por `contexto.orgEfectiva`; el canje, además, exige que el `state` sea de la misma sesión, persona y
+  // organización. Ninguna lee ni escribe negocio.
+  'app/api/admin/meta/route.ts',
+  'app/api/admin/meta/conectar/route.ts',
+  'app/api/admin/meta/canje/route.ts',
+  'app/api/admin/meta/cuentas/[act]/route.ts',
+  'app/api/admin/meta/conexiones/[id]/route.ts',
   // ── Etapa 8 ──────────────────────────────────────────────────────────────────
   // El portero, para emitir `permiso_denegado`. La auditoría es una tabla de identidad, y en el
   // paso 5 el portero ya resolvió la sesión — así que sabe de qué organización se trata y filtra

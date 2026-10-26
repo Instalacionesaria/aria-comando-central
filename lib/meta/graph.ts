@@ -17,6 +17,7 @@
 //     ids de cuentas, nunca llega al navegador: lo que llega es el motivo y un texto nuestro.
 // ═══════════════════════════════════════════════════════════════════════════════
 import { pedirExterno, type Respuesta } from '../http/cliente.ts';
+import { pruebaDelSecreto } from './app.ts';
 
 /**
  * La versión de la API. Meta mantiene cada versión unos dos años y avisa antes de retirarla; cambiarla es cambiar
@@ -83,12 +84,26 @@ export async function pedirAMeta<T>(
   ruta: string,
   token: string,
   parametros: Readonly<Record<string, string>> = {},
+  opciones: {
+    /**
+     * `true` = el token es de NUESTRA app (una conexión `oauth`): va con su `appsecret_proof`, que es un hash y no un
+     * secreto. Un token pegado de la app de otro negocio va sin ella, porque Meta la rechazaría.
+     */
+    conPrueba?: boolean;
+    /** Recibe las cabeceras de la respuesta: el uso de la cuota de la cuenta y de la app viaja ahí. */
+    alResponder?: (cabeceras: Headers) => void;
+  } = {},
 ): Promise<Respuesta<T>> {
   const consulta = new URLSearchParams(parametros);
   if (consulta.has('access_token')) throw new Error('pedirAMeta: el token va en la cabecera, nunca en la URL');
+  if (opciones.conPrueba) consulta.set('appsecret_proof', pruebaDelSecreto(token));
   const url = `${BASE}/${ruta}${consulta.size > 0 ? `?${consulta.toString()}` : ''}`;
   return pedirExterno<T>(url, {
     cabeceras: { authorization: `Bearer ${token}` },
     espera: ESPERA_DE_META_MS,
+    alResponder: opciones.alResponder,
   });
 }
+
+/** La raíz de Graph con su versión, para quien arma una URL que no es un `GET` de datos (el canje de OAuth). */
+export const RAIZ_DE_GRAPH = BASE;

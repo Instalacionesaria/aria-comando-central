@@ -154,7 +154,10 @@ test('nadie navega a un destino sin validarlo', () => {
     // COMPLETA y no enrutado del cliente, porque `proxy.ts` tiene que ver la petición para
     // comprobar que la cookie ya no está. Se anota acá en vez de exceptuar la carpeta entera:
     // el día que alguien navegue con un valor de un parámetro, esta lista lo obliga a decidir.
-    ['app/entrar/page.tsx', 'app/guardia.tsx', 'components/MenuDeUsuario.jsx'].sort(),
+    //
+    // Y desde «Conectar con Meta», el retorno de Meta: vuelve a `/` con un literal, después de canjear el código
+    // (`app/meta/retorno/page.tsx`). Ningún valor de la URL de Meta llega al destino.
+    ['app/entrar/page.tsx', 'app/guardia.tsx', 'app/meta/retorno/page.tsx', 'components/MenuDeUsuario.jsx'].sort(),
     'un archivo nuevo navega por su cuenta: si el destino viene de un parámetro, tiene que ' +
       'pasar por destinoSeguro()',
   );
