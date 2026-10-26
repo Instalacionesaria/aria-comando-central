@@ -134,10 +134,10 @@ export const HERRAMIENTAS_DE_CONVERSATION: readonly DefinicionDeHerramienta[] = 
     nombre: 'conversation_en_cifras',
     descripcion:
       'Conversation: las cifras que la pantalla dibuja, como las dibuja. `paneles`: los contactos de la ventana y ' +
-      'cuántos agendaron, las citas y cuántas asistieron, y de qué ICP es el grupo que agendó (alto, medio, bajo, sin ' +
-      'calificar; porciones sobre todos los que agendaron). `leadFlow` y `appointmentFlow`: el KPI de cada flujo y su ' +
+      'cuántos agendaron, las citas y cuántas asistieron, y de qué ICP es el grupo que agendó (Prioriza, Valida, ' +
+      'Financia, Descarta y sin clasificar: el cuadrante que manda el CRM; porciones sobre todos los que agendaron). `leadFlow` y `appointmentFlow`: el KPI de cada flujo y su ' +
       'cadena paso a paso; en Appointment Flow, además, las salidas antes de la llamada (reprogramaron, cancelaron), ' +
-      'la asistencia por tramo de ICP y si los que agendaron conversaron antes. «Confirmaron» cuenta CONTACTOS con ' +
+      'la asistencia por cuadrante del ICP (sin Descarta, que es un descarte) y si los que agendaron conversaron antes. «Confirmaron» cuenta CONTACTOS con ' +
       'cita en la ventana, descartados incluidos, y su porción es sobre los que respondieron el campo del CRM: puede ' +
       'no cuadrar con las citas. `agentes`: las cuatro tarjetas (Lead Flow y Appointment Flow, texto y voz), con ' +
       'cifras del flujo y no del agente, y su sentimiento. `porCorregir`: los patrones abiertos del auditor. ' +

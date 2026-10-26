@@ -225,7 +225,7 @@ fuente de «visitas a la landing», del corte por dispositivo y de una falla de 
 (`lib/aios/executive.js:186-189@c4cf2a8`, `lib/aios/executive-panel.js:11-27@c4cf2a8`); se borró con la etapa E7 de la
 nueva estructura. **Leads Portal consume y no inventa**: su ficha trae la familia de cada lead con
 `familiaDelRecorrido` y el estado del formulario con `CAMPO_DEL_FORMULARIO`
-(`lib/negocio/fichaDelLeadDelPortal.ts:158`, `lib/negocio/fichaDelLeadDelPortal.ts:213-214`).
+(`lib/negocio/fichaDelLeadDelPortal.ts:150`, `lib/negocio/fichaDelLeadDelPortal.ts:205-206`).
 
 ---
 
@@ -264,7 +264,7 @@ están en § 2.
 la `048` (`db/migraciones/048_de_donde_vino_el_lead.sql:100-110`); el 2026-10-18 `atribucion_primera` estaba no
 vacía en 580 de 624 y `atribucion_ultima` en 597 (553 y 567 de 594 el 2026-09-28, cuando en 279 los dos toques eran
 distintos; eso no se re-midió). El barrido reescribe las dos cada vez que el CRM las devuelve
-(`lib/negocio/sincronizar.ts:463-468`) y ninguna de sus claves es una fecha, así que no se puede detectar un primer
+(`lib/negocio/sincronizar.ts:485-490`) y ninguna de sus claves es una fecha, así que no se puede detectar un primer
 toque sobrescrito (`lib/negocio/calidadDeLaAtribucion.ts:26-29`). La clasificación de Conversion lee el último
 (`lib/negocio/recorrido.ts:126-128`).
 
@@ -383,7 +383,7 @@ sobre los calificados. La porción de cada familia va sin piso, porque es un con
 
 **9. Ninguna cifra puede llevar un identificador de GoHighLevel escrito a mano.**
 
-`campoPorNombre()` (`lib/negocio/camposDelCrm.ts:318-335`) es la única puerta: compara por nombre exacto y
+`campoPorNombre()` (`lib/negocio/camposDelCrm.ts:333-350`) es la única puerta: compara por nombre exacto y
 devuelve `null` —no cero— si alguien renombra el campo. Conversion entra por ahí para el formulario
 (`lib/negocio/embudoDelFormulario.ts:182`) y para la confirmación, y sin el campo la cifra es un hueco.
 
@@ -393,7 +393,7 @@ cuya dirección se escribe al reservar dan 100 % porque estar en la fila y haber
 
 **11. El agendamiento sale del calendario, no del campo del formulario.** El campo decía `Agendado` 121 veces y
 sólo 47 de esos contactos tenían una cita alcanzable (2026-09-28). Sale del predicado compartido
-`tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`); el cajón de Formulario muestra la
+`tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:136-146`); el cajón de Formulario muestra la
 contradicción en la columna «Con cita».
 
 **12. «No hubo gente» no es «no hay dato».** Una ventana vacía es falta de tráfico, y el aviso lo dice con esas
@@ -438,7 +438,7 @@ en la tarjeta y en los cajones (`components/conversion/CajonDelPaso.jsx:263`). C
 otro activo sin ninguno, el freno es el del que tiene contactos, y la anterior del cambio de ruta, la de SU lectura
 (`lib/agentes/detectores/conversion.ts:173`): otro activo con la lectura fallando ya no lo deja sin medición para
 siempre. La pantalla sigue siendo de la empresa. Lo exigen
-`pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:289`,
+`pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:290`,
 `pruebas/base/295-las-senales-de-cada-cliente.test.ts:473` y
 `pruebas/base/295-las-senales-de-cada-cliente.test.ts:488`.
 

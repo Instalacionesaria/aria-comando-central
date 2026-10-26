@@ -25,7 +25,7 @@ import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { fichaDelLeadDelPortal } from '../../lib/negocio/fichaDelLeadDelPortal.ts';
 import { leadsDelPortal } from '../../lib/negocio/leadsDelPortal.ts';
-import { CAMPO_DEL_PUNTAJE } from '../../lib/ghl/contrato.ts';
+import { CAMPO_DEL_PUNTAJE, CLAVE_DEL_CUADRANTE } from '../../lib/ghl/contrato.ts';
 import { CAMPO_DEL_PRECALL } from '../../lib/negocio/consumoDelPrecall.ts';
 
 let esc: Escenario;
@@ -38,6 +38,7 @@ const CARPETA_INTERACCIONES = 'ficha-portal-int';
 const CAMPO_PREGUNTA = 'ficha-portal-q1';
 const CAMPO_SIN_GRUPO = 'ficha-portal-q2';
 const CAMPO_PRECALL = 'ficha-portal-pre';
+const CAMPO_CUADRANTE = 'ficha-portal-cua';
 /** Un JWT de ejemplo. Nunca fue un token de nadie. */
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwcnVlYmEifQ.firmaQueNoValeNada';
 
@@ -76,20 +77,23 @@ async function elCatalogo(): Promise<void> {
     [CAMPO_PREGUNTA, 'Objetivo de facturación', CARPETA_CALIFICACION],
     /* El campo del puntaje, EN la carpeta de calificación, que es donde vive en producción. */
     [CAMPO_DEL_PUNTAJE, 'Puntaje | ICP', CARPETA_CALIFICACION],
+    /* Y el del cuadrante (la `105`), en la misma carpeta: va arriba, en «Clasificación ICP», no en el cuestionario. */
+    [CAMPO_CUADRANTE, 'Cuadrante de Clasificacion', CARPETA_CALIFICACION],
     [CAMPO_SIN_GRUPO, 'Campo viejo', CARPETA_SIN_GRUPO],
     [CAMPO_PRECALL, CAMPO_DEL_PRECALL, CARPETA_INTERACCIONES],
   ] as const) {
     await esc.admin.query(
-      `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion)
-       values ($1, $2, $3, $4, 'TEXT', 1) on conflict do nothing`,
-      [esc.org, campo, nombre, carpeta],
+      `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion, clave)
+       values ($1, $2, $3, $4, 'TEXT', 1, $5) on conflict do nothing`,
+      [esc.org, campo, nombre, carpeta, campo === CAMPO_CUADRANTE ? CLAVE_DEL_CUADRANTE : null],
     );
   }
 }
 
 async function unContacto(o: {
   org?: string;
-  score?: number | null;
+  /** El cuadrante ya guardado. Por omisión, Valida. */
+  cuadrante?: string | null;
   etiquetas?: string[];
   territorio?: 'closer' | 'setter' | null;
   atribucion?: Record<string, string>;
@@ -103,7 +107,7 @@ async function unContacto(o: {
   const r = await esc.admin.query<{ id: string }>(
     `insert into negocio.contactos
        (org_id, ghl_contact_id, nombre, telefono, email, pais, territorio, alta_en_el_crm,
-        sincronizado_el, score, etiquetas, atribucion_primera, campos_del_crm, crm_asignado_a,
+        sincronizado_el, cuadrante, etiquetas, atribucion_primera, campos_del_crm, crm_asignado_a,
         mensajes_desde_el)
      values ($1, $2, 'Persona de prueba', '+51 999 000 111', 'persona@ejemplo.test', 'PE', $3,
              now() - interval '3 days', now() - interval '1 day', $4, $5::text[], $6::jsonb,
@@ -113,7 +117,7 @@ async function unContacto(o: {
       org,
       `${PREFIJO}${randomUUID().slice(0, 8)}`,
       o.territorio === undefined ? 'closer' : o.territorio,
-      o.score === undefined ? 70 : o.score,
+      o.cuadrante === undefined ? 'valida' : o.cuadrante,
       o.etiquetas ?? [],
       JSON.stringify(o.atribucion ?? {}),
       JSON.stringify(o.campos ?? {}),
@@ -193,31 +197,34 @@ test('la ficha no escribe: el contacto queda idéntico, y no aparece ni una fila
   assert.deepEqual(await foto(), antes, 'abrir la ficha cambió algo en la base');
 });
 
-// ─── EL PUNTAJE ───────────────────────────────────────────────────────────────
+// ─── EL CUADRANTE ─────────────────────────────────────────────────────────────
 
-test('el 0 viaja como 0, en «Sin calificar», y con su motivo', async () => {
-  const cero = (await ficha(await unContacto({ score: 0 })))!;
-  assert.equal(cero.puntaje.valor, 0, 'el 0 se volvió nulo: la ficha no puede decir «0, se cuenta como sin calificar»');
-  assert.equal(cero.puntaje.tramo, 'sin_calificar');
-  assert.equal(cero.puntaje.motivo, 'en_cero');
+test('la clasificación es la palabra del CRM, sin número; sin cuadrante, «Sin clasificar»', async () => {
+  const prioriza = (await ficha(await unContacto({ cuadrante: 'prioriza' })))!;
+  assert.deepEqual(prioriza.clasificacion, { clave: 'prioriza', rotulo: 'Prioriza' });
+  assert.ok(!('puntaje' in prioriza), 'la ficha volvió a mandar el puntaje');
 
-  const nulo = (await ficha(await unContacto({ score: null })))!;
-  assert.equal(nulo.puntaje.motivo, 'sin_puntaje');
+  const nulo = (await ficha(await unContacto({ cuadrante: null })))!;
+  assert.deepEqual(nulo.clasificacion, { clave: 'sin_clasificar', rotulo: 'Sin clasificar' });
+});
 
-  const alto = (await ficha(await unContacto({ score: 82 })))!;
-  assert.equal(alto.puntaje.rotulo, 'ICP alto');
-  assert.equal(alto.puntaje.motivo, null);
+test('el cuadrante Descarta es un descarte, y la ficha lo dice junto a las etiquetas', async () => {
+  const f = (await ficha(await unContacto({ cuadrante: 'descarta', etiquetas: ['ICP_Rechazado', 'vip'] })))!;
+  assert.deepEqual(f.descarte, ['ICP_Rechazado', 'Descarta (ICP)']);
+  const no = (await ficha(await unContacto({ cuadrante: 'prioriza' })))!;
+  assert.deepEqual(no.descarte, []);
 });
 
 // ─── LO MISMO QUE SU FILA ─────────────────────────────────────────────────────
 
-test('la ficha dice lo mismo que su fila de la rejilla: cita, asistencia, plantón y tramo', async () => {
+test('la ficha dice lo mismo que su fila de la rejilla: cita, asistencia, plantón y cuadrante', async () => {
   const casos = [
     await unContacto({ citas: [{ haceHoras: -3 }] }),
     await unContacto({ citas: [{ haceHoras: -3, estado: 'noshow' }] }),
     await unContacto({ citas: [{ haceHoras: +30 }] }),
     await unContacto({ citas: [{ haceHoras: -3, congelada: true }] }),
-    await unContacto({ score: 0 }),
+    await unContacto({ cuadrante: null }),
+    await unContacto({ cuadrante: 'rechazo' }),
   ];
   const cohorte = await conOrganizacion(esc.org, () => leadsDelPortal(30));
   for (const id of casos) {
@@ -226,7 +233,7 @@ test('la ficha dice lo mismo que su fila de la rejilla: cita, asistencia, plant�
     assert.equal(f.recorrido.agendo.estado, fila.cita, 'la ficha y la fila no coinciden en la cita');
     assert.equal(f.recorrido.asistio.asistencia, fila.asistencia, 'la ficha y la fila no coinciden en la asistencia');
     assert.equal(f.recorrido.asistio.planton, fila.planton);
-    assert.equal(f.puntaje.tramo, fila.tramo);
+    assert.equal(f.clasificacion.clave, fila.cuadrante);
   }
 });
 
@@ -253,13 +260,14 @@ test('un acuerdo sin pago se dice como tal, y no como compra ni como monto repor
 
 // ─── EL CUESTIONARIO ─────────────────────────────────────────────────────────
 
-test('el cuestionario trae el grupo de calificación, sin el puntaje y sin los campos sin grupo', async () => {
+test('el cuestionario trae el grupo de calificación, sin el puntaje, sin el cuadrante y sin los campos sin grupo', async () => {
   const f = (await ficha(
     await unContacto({
-      score: 70,
+      cuadrante: 'prioriza',
       campos: {
         [CAMPO_PREGUNTA]: 'Más de 10 mil',
         [CAMPO_DEL_PUNTAJE]: '70',
+        [CAMPO_CUADRANTE]: 'Prioriza',
         [CAMPO_SIN_GRUPO]: 'Esto no se muestra',
         [CAMPO_PRECALL]: 'Nada',
       },

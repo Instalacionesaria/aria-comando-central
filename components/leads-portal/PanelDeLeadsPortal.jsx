@@ -1,6 +1,6 @@
 'use client';
 
-/* Leads Portal con leads reales: la cohorte del período, cinco tarjetas y una tarjeta por persona.
+/* Leads Portal con leads reales: la cohorte del período, seis tarjetas y una tarjeta por persona.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * LO QUE ESTE ARCHIVO REEMPLAZA
@@ -10,15 +10,16 @@
  * pantalla, por NOMBRE, copiando la del primero cuando no lo encontraba—. Los números eran
  * coherentes entre sí y no describían a nadie.
  *
- * Acá el servidor manda la cohorte ya contada: cada fila con su tramo, su cita, su asistencia y su
+ * Acá el servidor manda la cohorte ya contada: cada fila con su cuadrante, su cita, su asistencia y su
  * venta decididos, y cada tarjeta con su piso aplicado y su nulo donde no se puede decir. La pantalla
  * pide, filtra lo que ya llegó y dibuja.
  *
  * ── SE CONSERVA LA FORMA ────────────────────────────────────────────────────
  *
  * Las clases son las de la maqueta (`icpc`, `lc`, `lc-prog`…), así que la pantalla se ve como se
- * veía. Lo que cambia es lo que dicen: «ICP alto» y no «Calificado alto», «monto reportado» y no
- * «Revenue», tres estados por paso y no dos, y un guion donde no hay de qué hablar, nunca un cero.
+ * veía. Lo que cambia es lo que dicen: las cuatro palabras del CRM —Prioriza, Valida, Financia, Descarta— y no un
+ * puntaje (la `105`: ningún número del ICP en pantalla), «monto reportado» y no «Revenue», tres estados por paso y no
+ * dos, y un guion donde no hay de qué hablar, nunca un cero.
  *
  * ── LO QUE SE FUE Y NO VUELVE ───────────────────────────────────────────────
  *
@@ -33,7 +34,7 @@ import { anunciarPeriodo } from '@/lib/agentes/periodos';
 import { CADENCIA, usarReloj } from '@/lib/reloj';
 import { estaALaVista } from '@/lib/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
-import { ROTULO_DE_TODOS, TRAMOS, rotuloDelTramo } from '@/lib/negocio/tramosDelIcp';
+import { CUADRANTES, ROTULO_DE_TODOS, rotuloDelCuadrante } from '@/lib/negocio/cuadrantesDelIcp';
 import { DE_A, ETAPAS, SIN_FILTROS, contador, filtrar, porQueVacia } from '@/lib/negocio/filtrosDelPortal';
 import { leerLeadsPortal } from '@/lib/negocio/vistaDeLeadsPortal';
 import FichaDelLead from './FichaDelLead.jsx';
@@ -161,7 +162,7 @@ const fechaCorta = (iso) =>
 /** El porqué de un nulo, en palabras. Viaja como clave; el texto es de la pantalla. */
 const POR_QUE = {
   sin_ventas_registradas: 'No hay ninguna venta registrada en la empresa: un 0 % diría que nadie compró.',
-  bajo_el_piso: 'Menos de diez personas en el tramo: una venta movería la tasa más de diez puntos.',
+  bajo_el_piso: 'Menos de diez personas en el cuadrante: una venta movería la tasa más de diez puntos.',
   ventas_sin_monto: 'Hay ventas y ninguna tiene el monto cargado: un $0 diría que se vendió gratis.',
 };
 
@@ -173,17 +174,17 @@ function Cuerpo({ p, filtros, alFiltrar, mostradas, alMostrarMas, alAbrir }) {
     <>
       <Avisos p={p} />
 
-      <section className="icp-cards" aria-label="Contactos por tramo de ICP">
-        {p.tramos.map((t) => (
+      <section className="icp-cards" aria-label="Contactos por cuadrante del ICP">
+        {p.cuadrantes.map((t) => (
           <Tarjeta
             key={t.clave}
             t={t}
-            encendida={filtros.tramo === t.clave}
-            alTocar={() => alFiltrar({ tramo: filtros.tramo === t.clave ? null : t.clave })}
-            parte={t.clave === 'sin_calificar' ? p.sinCalificar : null}
+            encendida={filtros.cuadrante === t.clave}
+            alTocar={() => alFiltrar({ cuadrante: filtros.cuadrante === t.clave ? null : t.clave })}
+            parte={t.clave === 'sin_clasificar' ? p.sinClasificar : null}
           />
         ))}
-        <Tarjeta t={p.todos} encendida={filtros.tramo === null} alTocar={() => alFiltrar({ tramo: null })} />
+        <Tarjeta t={p.todos} encendida={filtros.cuadrante === null} alTocar={() => alFiltrar({ cuadrante: null })} />
       </section>
 
       <div className="lp-bar">
@@ -198,22 +199,22 @@ function Cuerpo({ p, filtros, alFiltrar, mostradas, alMostrarMas, alAbrir }) {
           />
         </label>
         <span className="tb-lab">ICP</span>
-        <div className="db-seg" role="group" aria-label="Tramo de ICP">
+        <div className="db-seg" role="group" aria-label="Cuadrante del ICP">
           <button
             type="button"
-            className={filtros.tramo === null ? 'on' : undefined}
-            aria-pressed={filtros.tramo === null}
-            onClick={() => alFiltrar({ tramo: null })}
+            className={filtros.cuadrante === null ? 'on' : undefined}
+            aria-pressed={filtros.cuadrante === null}
+            onClick={() => alFiltrar({ cuadrante: null })}
           >
             {ROTULO_DE_TODOS}
           </button>
-          {TRAMOS.map((t) => (
+          {CUADRANTES.map((t) => (
             <button
               key={t.clave}
               type="button"
-              className={filtros.tramo === t.clave ? 'on' : undefined}
-              aria-pressed={filtros.tramo === t.clave}
-              onClick={() => alFiltrar({ tramo: t.clave })}
+              className={filtros.cuadrante === t.clave ? 'on' : undefined}
+              aria-pressed={filtros.cuadrante === t.clave}
+              onClick={() => alFiltrar({ cuadrante: t.clave })}
             >
               {t.rotulo}
             </button>
@@ -288,7 +289,7 @@ function Avisos({ p }) {
   );
 }
 
-/** Una tarjeta de tramo, o «Todos». Es un botón de verdad: se alcanza con el teclado y dice si está apretado. */
+/** Una tarjeta de cuadrante, o «Todos». Es un botón de verdad: se alcanza con el teclado y dice si está apretado. */
 function Tarjeta({ t, encendida, alTocar, parte = null }) {
   const esTodos = t.clave === 'todos';
   return (
@@ -296,11 +297,11 @@ function Tarjeta({ t, encendida, alTocar, parte = null }) {
       type="button"
       className={encendida ? 'icpc on' : 'icpc'}
       aria-pressed={encendida}
-      data-tramo={t.clave}
+      data-cuadrante={t.clave}
       onClick={alTocar}
     >
       <span className="ih">
-        <span className="idot" data-tramo={t.clave} />
+        <span className="idot" data-cuadrante={t.clave} />
         {t.rotulo}
       </span>
       <span className="iv">{miles(t.contactos)}</span>
@@ -311,11 +312,11 @@ function Tarjeta({ t, encendida, alTocar, parte = null }) {
       </span>
       {parte ? (
         <span className="lp-parte">
-          sin puntaje {miles(parte.sinPuntaje)} · en 0 {miles(parte.enCero)}
+          sin respuesta {miles(parte.sinValor)} · otro valor {miles(parte.otroValor)}
         </span>
       ) : null}
       <span className="ib">
-        <i data-tramo={t.clave} style={{ width: `${Math.round((esTodos ? (t.contactos > 0 ? 1 : 0) : t.porcion ?? 0) * 100)}%` }} />
+        <i data-cuadrante={t.clave} style={{ width: `${Math.round((esTodos ? (t.contactos > 0 ? 1 : 0) : t.porcion ?? 0) * 100)}%` }} />
       </span>
       <span className="im">
         <span title={t.porQueSinCierre ? POR_QUE[t.porQueSinCierre] : undefined}>
@@ -329,8 +330,13 @@ function Tarjeta({ t, encendida, alTocar, parte = null }) {
   );
 }
 
-/** La clase de color de la maqueta para cada tramo. `nc` era «Sin calificar» allá. */
-const CLASE = { alto: 'seg-alto', medio: 'seg-medio', bajo: 'seg-bajo', sin_calificar: 'seg-nc' };
+/**
+ * La clase de color de la maqueta para cada cuadrante, por su NIVEL: Prioriza el alto, Valida y Financia el medio,
+ * Descarta el bajo. `nc` era «Sin calificar» allá, y es «Sin clasificar» acá.
+ */
+const CLASE = Object.fromEntries(
+  CUADRANTES.map((c) => [c.clave, c.nivel === null ? 'seg-nc' : `seg-${c.nivel}`]),
+);
 
 const CITA = { agendo: 'agendó', solo_congeladas: 'sólo citas congeladas', sin_cita: 'sin cita' };
 
@@ -352,7 +358,7 @@ function Persona({ l, alAbrir }) {
   const vendio = l.vendio ? ['on', 'vendió'] : ['', 'sin venta registrada'];
 
   return (
-    <button type="button" className={`lc ${CLASE[l.tramo] ?? 'seg-nc'}`} onClick={(e) => alAbrir(l.id, e.currentTarget)}>
+    <button type="button" className={`lc ${CLASE[l.cuadrante] ?? 'seg-nc'}`} onClick={(e) => alAbrir(l.id, e.currentTarget)}>
       <span className="lc-top">
         <span className="lc-id">
           <span className="lc-name">{l.nombre}</span>
@@ -362,8 +368,18 @@ function Persona({ l, alAbrir }) {
           <span className="lp-alta">Entró el {fechaCorta(l.altaEl)}</span>
         </span>
         <span className="lc-score">
-          <span className="sc-v">{l.puntaje === null ? '—' : l.puntaje}</span>
-          <span className="sc-l">{rotuloDelTramo(l.tramo)}</span>
+          {/* La palabra del CRM, nunca un número (la `105`). Sin cuadrante, el guion arriba y el rótulo abajo, como antes. */}
+          {l.cuadrante === 'sin_clasificar' ? (
+            <>
+              <span className="sc-v">—</span>
+              <span className="sc-l">{rotuloDelCuadrante(l.cuadrante)}</span>
+            </>
+          ) : (
+            <>
+              <span className="sc-v sc-palabra">{rotuloDelCuadrante(l.cuadrante)}</span>
+              <span className="sc-l">ICP</span>
+            </>
+          )}
         </span>
       </span>
       {l.descartado || l.territorio === 'congelado' || l.planton ? (

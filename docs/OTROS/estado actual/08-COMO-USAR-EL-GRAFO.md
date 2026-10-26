@@ -181,7 +181,7 @@ documento, que lo nombraba; hoy ninguna. Es la forma más directa de contestar �
 en la línea 143, que es la **función** (`lib/negocio/consumoDelPrecall.ts:143`); el **tipo**
 `ConsumoDelPrecall` (`lib/negocio/consumoDelPrecall.ts:104`) no tiene nodo propio, y sus usos llegan
 como aristas de la función: las dos referencias de `lecturaDeConversation.ts`
-(`lib/negocio/lecturaDeConversation.ts:129` y `lib/negocio/lecturaDeConversation.ts:391`, las dos
+(`lib/negocio/lecturaDeConversation.ts:132` y `lib/negocio/lecturaDeConversation.ts:396`, las dos
 `precall: ConsumoDelPrecall`) y el `import type` de la prueba 250. graphify pasa los identificadores
 por `casefold()` (`normalize_id`, en `graphify/ids.py`), así que un tipo y una función que sólo
 difieren en la mayúscula inicial terminan en el mismo nodo. El 2026-09-29 este mismo nodo se llamaba
@@ -212,7 +212,7 @@ por un nodo de documento (`Sales: mapa de los requisitos`, de `docs/sales/00-MAP
 
 El 2026-09-28 había un ejemplo de camino que sí era código:
 `graphify path "leadsDelPortal.ts" "PanelDeLeadsPortal"` pasaba por `filtrosDelPortal.ts`, que la
-pantalla importa de verdad (`components/leads-portal/PanelDeLeadsPortal.jsx:37`). Desde el 2026-09-29
+pantalla importa de verdad (`components/leads-portal/PanelDeLeadsPortal.jsx:38`). Desde el 2026-09-29
 cruza por un documento: entonces, por un nodo de este mismo documento; hoy, por un racional de
 `10-LEADS-PORTAL.md` (§ 6), «Tres valores por paso», que nombra a los dos. **Extraer documentos acorta
 los caminos**: cada documento que nombra dos archivos los deja a dos saltos, y `path` devuelve el más

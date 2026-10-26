@@ -8,6 +8,8 @@
 > [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión del 2026-09-28 se lee con
 > `git show 972972e:"docs/OTROS/estado actual/10-LEADS-PORTAL.md"`.
 
+> **ICP en cuadrantes (2026-10-26, local, sin subir).** El ICP del lead dejó de ser el puntaje de 0 a 100: es el cuadrante que manda el CRM —Prioriza, Valida, Financia o Descarta— en `contactos.cuadrante` (la `105`), y ningún número del ICP se muestra. Lo que esta foto dice del puntaje, de los tramos 75 y 50 y del cero describe la versión anterior; sus citas quedaron fijadas a `@bf2de85` o a `@ddba683`. Los requisitos: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`. Seis tarjetas —Sin clasificar, Prioriza, Valida, Financia, Descarta y Todos—; «Sin clasificar» se parte en «sin respuesta» y «otro valor»; el guardián de los ceros pasó a ser el del valor que no es ninguna de las cuatro palabras; el cuadrante Descarta marca el descarte de la fila y de la ficha.
+
 > **Desde el corte del 2026-09-28**
 >
 > - **El código de la pestaña casi no cambió.** `lib/negocio/leadsDelPortal.ts`, las dos rutas
@@ -136,39 +138,39 @@ cabecera que dice qué se borró y por qué (`components/views/ContactsView.jsx:
   `tablero.ver`; preguntar y borrar un hilo, `cerebro.usar` (`app/api/leads-portal/cerebro/route.ts:43`, `:55`).
   La herramienta `cohorte_de_leads` corre `leadsDelPortal` con el período pedido y devuelve los tramos y las
   primeras filas con las claves de la lista, sin teléfono ni correo pero **con el nombre**
-  (`lib/agentes/executive/adaptadores/leads.ts:4-6`, `:24-33`).
+  (`lib/agentes/executive/adaptadores/leads.ts:4-6`, `:26-35`).
 
 **Los módulos** (todos en `lib/negocio/`):
 
 | módulo | qué hace | rastro |
 |---|---|---|
-| `leadsDelPortal.ts` | una CTE arma una fila por persona y de ella salen la lista y las cinco tarjetas | `lib/negocio/leadsDelPortal.ts:4-13`, `:276-344` |
-| `tramosDelIcp.ts` | el corte 75/50, sin imports, para servidor y navegador | `lib/negocio/tramosDelIcp.ts:38`, `:41`, `:84-89` |
-| `citasAlcanzables.ts` | «agendó», «descartado», «cita cerrable», «plantón» | `lib/negocio/citasAlcanzables.ts:111-113`, `:135-145`, `:157-161`, `:218-220` |
+| `leadsDelPortal.ts` | una CTE arma una fila por persona y de ella salen la lista y las cinco tarjetas | `lib/negocio/leadsDelPortal.ts:4-13`, `:275-338` |
+| `tramosDelIcp.ts` | el corte 75/50, sin imports, para servidor y navegador | `lib/negocio/tramosDelIcp.ts:38@ddba683`, `:41`, `:84-89` |
+| `citasAlcanzables.ts` | «agendó», «descartado», «cita cerrable», «plantón» | `lib/negocio/citasAlcanzables.ts:112-114`, `:136-146`, `:166-172`, `:243-245` |
 | `ventasDelContacto.ts` | «vendió» y el monto reportado; lo importa también Sales | `lib/negocio/ventasDelContacto.ts:44-46`, `lib/negocio/cadenaDeCierre.ts:63` |
-| `fichaDelLeadDelPortal.ts` | la ficha, con los mismos fragmentos que la fila | `lib/negocio/fichaDelLeadDelPortal.ts:3-13` |
+| `fichaDelLeadDelPortal.ts` | la ficha, con los mismos fragmentos que la fila | `lib/negocio/fichaDelLeadDelPortal.ts:3-13@bf2de85` |
 | `atribucionVisible.ts` | ocho claves del primer toque por lista blanca; de `url` y `referrer`, el host | `lib/negocio/atribucionVisible.ts:51-60` |
 | `huecosDelLeadsPortal.ts` | cinco huecos de la ficha, con su fecha | `lib/negocio/huecosDelLeadsPortal.ts:37-77` |
-| `filtrosDelPortal.ts` | búsqueda, tramo y etapa, en el navegador | `lib/negocio/filtrosDelPortal.ts:91-98` |
+| `filtrosDelPortal.ts` | búsqueda, tramo y etapa, en el navegador | `lib/negocio/filtrosDelPortal.ts:92-99` |
 | `vistaDeLeadsPortal.ts` | la lectura desde el navegador; no calcula nada | `lib/negocio/vistaDeLeadsPortal.ts:47-68` |
 
 **Lo que dibuja el panel** (`components/leads-portal/PanelDeLeadsPortal.jsx`), de arriba abajo:
 
 1. El encabezado y el segmentado de período, con **el botón encendido que contestó el servidor**
-   (`components/leads-portal/PanelDeLeadsPortal.jsx:103-112`).
+   (`components/leads-portal/PanelDeLeadsPortal.jsx:104-113`).
 2. Los avisos, antes de las cifras: la frescura, la cola de la ventana y el aviso de la cohorte
-   (`components/leads-portal/PanelDeLeadsPortal.jsx:275-289`).
+   (`components/leads-portal/PanelDeLeadsPortal.jsx:276-290`).
 3. Cinco tarjetas —Sin calificar, ICP alto, ICP medio, ICP bajo y Todos—: contactos, porción del
    total, agendados, cierre y monto reportado; la de «Sin calificar» parte sus dos poblaciones, y
-   tocar una filtra la rejilla (`components/leads-portal/PanelDeLeadsPortal.jsx:176-187`,
+   tocar una filtra la rejilla (`components/leads-portal/PanelDeLeadsPortal.jsx:176-187@bf2de85`,
    `:288-327`).
 4. La barra: buscador por nombre, campaña y creativo; tramo; etapa (Todas · Agendados · Asistieron ·
-   Vendidos); contador «N de M» (`components/leads-portal/PanelDeLeadsPortal.jsx:189-246`).
+   Vendidos); contador «N de M» (`components/leads-portal/PanelDeLeadsPortal.jsx:190-247`).
 5. La rejilla, de a 60 con «Mostrar más», una tarjeta por persona con **tres estados por paso**
    en «Agendó › Asistió › Vendió» y las marcas de descartado, congelado y plantón
-   (`components/leads-portal/PanelDeLeadsPortal.jsx:248-268`, `:334-397`).
+   (`components/leads-portal/PanelDeLeadsPortal.jsx:249-269`, `:340-413`).
 6. Los huecos de la venta, que vienen de Sales con su fecha
-   (`components/leads-portal/PanelDeLeadsPortal.jsx:402-415`).
+   (`components/leads-portal/PanelDeLeadsPortal.jsx:418-431`).
 
 **Las cifras que dibuja al abrirse, calculadas desde la base el 2026-10-18 a las 15:32 UTC** con los predicados
 del código (`scripts/medir-leads-portal.sql`, que los copia a mano y lo dice); entre paréntesis, las del
@@ -183,15 +185,15 @@ del código (`scripts/medir-leads-portal.sql`, que los copia a mano y lo dice); 
 | Todos | **25** (277) | — | 19 (139) · «0 vendidos» | — | — |
 
 El cierre y el monto van en «—» con el motivo `sin_ventas_registradas`, porque la empresa no tiene
-ninguna venta (`lib/negocio/leadsDelPortal.ts:491-516`); si la tuviera, los tres tramos con puntaje darían «—»
+ninguna venta (`lib/negocio/leadsDelPortal.ts:485-510`); si la tuviera, los tres tramos con puntaje darían «—»
 igual, por el piso (`:497`). El aviso de la cohorte, con esta medición, diría tres cosas: que **2 contactos**
 entraron en los últimos 14 días con el puntaje en 0 —el guardián que el 2026-09-28 estaba apagado
-(`lib/negocio/leadsDelPortal.ts:533-540`)—, que **12 personas** tuvieron una cita que ya debería haber ocurrido sin
+(`lib/negocio/leadsDelPortal.ts:533-540@bf2de85`)—, que **12 personas** tuvieron una cita que ya debería haber ocurrido sin
 registro (46 el 2026-09-28) y que **24 contactos** no tienen alta y ninguna ventana los trae (`:542-548`,
 `:566-571`). En «Completo» —600 personas— son 93 las de la cita sin registro, siguen las 79 personas con sólo
 citas congeladas (`:550-555`), y la cola que medía el aviso del 2026-09-28 (proporción 0,076, bajo el 0,25 de
 `lib/negocio/periodo.ts:147`) no se volvió a medir. **En «Hoy» no entró nadie** y el aviso abre con «No entró ni
-un contacto en esta ventana… Probá una ventana más larga.» (`lib/negocio/leadsDelPortal.ts:526-530`): voseo en una
+un contacto en esta ventana… Probá una ventana más larga.» (`lib/negocio/leadsDelPortal.ts:520-524`): voseo en una
 frase que la pantalla muestra (§ 7). Desde el 2026-10-18 (`65669f4`) dice «Prueba una ventana más larga».
 
 **La ficha** (`components/leads-portal/FichaDelLead.jsx`) se monta en `document.body` con un cajón
@@ -208,13 +210,13 @@ sincronización (`:354-375`).
 **Ventanas y pisos.** Las cuatro del sistema —hoy (24 h), 7 días, 30 días, completo— y ninguna más
 (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`). La cohorte
 es por alta en el CRM, móvil, la misma expresión que la cadena de Sales
-(`lib/negocio/leadsDelPortal.ts:300`, `lib/negocio/cadenaDeCierre.ts:169`). El único piso es el del
+(`lib/negocio/leadsDelPortal.ts:297`, `lib/negocio/cadenaDeCierre.ts:169`). El único piso es el del
 cierre, `PISO_DE_UNA_TASA = 10` sobre los contactos del tramo
-(`lib/negocio/indicadoresDeCitas.ts:329`, `lib/negocio/leadsDelPortal.ts:497`); la porción no lleva
+(`lib/negocio/indicadoresDeCitas.ts:329`, `lib/negocio/leadsDelPortal.ts:491`); la porción no lleva
 piso (`LP06-P01`, abierta). El guardián de ceros mira 14 días de la empresa, sin la ventana
-(`lib/negocio/leadsDelPortal.ts:62`, `:336-339`). La lista viaja entera hasta 5.000 filas
-(`lib/negocio/leadsDelPortal.ts:54`) y el reloj recarga cada 60 segundos sólo con la pestaña a la
-vista (`components/leads-portal/PanelDeLeadsPortal.jsx:76-80`, `lib/cadencia.ts:91`).
+(`lib/negocio/leadsDelPortal.ts:62@bf2de85`, `:336-339`). La lista viaja entera hasta 5.000 filas
+(`lib/negocio/leadsDelPortal.ts:56`) y el reloj recarga cada 60 segundos sólo con la pestaña a la
+vista (`components/leads-portal/PanelDeLeadsPortal.jsx:77-81`, `lib/cadencia.ts:91`).
 
 **Las pruebas**, según los mensajes de sus commits y **no re-corridas hoy** (este trabajo no corre la
 suite): la 175 de los tramos, en `pruebas/codigo/` (LP-1, sin cifras en su mensaje);
@@ -247,10 +249,10 @@ carpeta no copia ninguno de esos datos.
 | lo que había | qué lo reemplazó |
 |---|---|
 | `lib/aios/leads-portal.js`, 324 líneas con `innerHTML`, tramos y tasas calculados en el navegador | `components/leads-portal/` y las rutas; el módulo se borró en `aed4f27` |
-| «Calificado alto / medio / No calificado» | «ICP alto / medio / bajo»: «no calificado» es una etiqueta de descarte (`lib/negocio/tramosDelIcp.ts:55-62`) |
-| el tramo guardado a mano al lado del puntaje | derivado siempre del puntaje (`lib/negocio/tramosDelIcp.ts:13-16`) |
-| «Revenue» y «Cierre N %» por tramo | «monto reportado» y «—» con motivo (`lib/negocio/leadsDelPortal.ts:477-516`) |
-| dos estados por paso | tres: «sin registrar» no es «no asistió» (`components/leads-portal/PanelDeLeadsPortal.jsx:337-352`) |
+| «Calificado alto / medio / No calificado» | «ICP alto / medio / bajo»: «no calificado» es una etiqueta de descarte (`lib/negocio/tramosDelIcp.ts:55-62@ddba683`) |
+| el tramo guardado a mano al lado del puntaje | derivado siempre del puntaje (`lib/negocio/tramosDelIcp.ts:13-16@ddba683`) |
+| «Revenue» y «Cierre N %» por tramo | «monto reportado» y «—» con motivo (`lib/negocio/leadsDelPortal.ts:471-510`) |
+| dos estados por paso | tres: «sin registrar» no es «no asistió» (`components/leads-portal/PanelDeLeadsPortal.jsx:343-358`) |
 | el botón «Plan de acción», cuatro frases escritas a mano | borrado; la primera frase, medida, no da 22 % sino 17,8 % a 30 días el 2026-09-27 (`docs/leads-portal/07-EL-PLAN-DE-ACCION.md:71-104`); el 2026-09-28, 18,1 %: 50 de 277 |
 | la píldora «Personalizado» y un tercer botón que mandaba `mes` | borrados; el período se valida contra la lista (`app/api/leads-portal/route.ts:52-56`) |
 | `window.AIOSLeadCard`, que abría una ficha por NOMBRE y, si no la encontraba, la de otra persona | la ficha por id con 404 (`app/api/leads-portal/[id]/route.ts:43-46`) |
@@ -277,11 +279,11 @@ es [11-EXECUTIVE.md](11-EXECUTIVE.md)). **Los tres se fueron el 2026-10-01 con l
   pestaña (`lib/aios/leads-group.js:60-64@c4cf2a8`). Desde «Contactos» a 7 días promete 312
   (`lib/aios/executive.js:17@c4cf2a8`, `:30@c4cf2a8`); la pestaña abre en 30 días con 277, y a 7 días tiene 3
   (medido el 2026-09-28). Es `LP08-P01`, abierta (§ 5); **después del corte, el 2026-10-01**, resuelta con el borrado del cajón.
-- El corte 75/50 **existe dos veces**: en `lib/negocio/tramosDelIcp.ts:38-41` y en el `SEG` del cajón
+- El corte 75/50 **existe dos veces**: en `lib/negocio/tramosDelIcp.ts:38-41@ddba683` y en el `SEG` del cajón
   (`lib/aios/leads-group.js:10@c4cf2a8`), que no se tocaba por la compuerta de paridad
   (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:310-315`). **El 2026-10-01** el cajón se borró con la maqueta
   del Executive, y su `SEG` con él: hoy el corte vive en `tramosDelIcp.ts` y lo repiten, como parámetros, la cohorte
-  de esta pestaña y los funnels de Acquisition (`lib/negocio/tramosDelIcp.ts:80-83`).
+  de esta pestaña y los funnels de Acquisition (`lib/negocio/tramosDelIcp.ts:80-83@ddba683`).
 
 Lo que el Inicio dice hoy de esta pestaña sale de la misma función: el cerebro responde con `cohorte_de_leads`
 (§ 2).
@@ -345,12 +347,12 @@ los tres sobre el piso; el 2026-10-18 ninguno de los tres tramos llega a diez co
 (`docs/leads-portal/14-EL-PUNTAJE-DEL-CRM.md:363-369`).
 
 **Asistencia, plantón y venta.** Citas: **368** (333 el 2026-09-28; 327 el 2026-09-21,
-`lib/negocio/citasAlcanzables.ts:92`), 267 alcanzables (232); `cancelled` 179 · `confirmed` 166 · `noshow` 20 ·
+`lib/negocio/citasAlcanzables.ts:93`), 267 alcanzables (232); `cancelled` 179 · `confirmed` 166 · `noshow` 20 ·
 **`showed` 3**, el primer `showed` que aparece en la base (el censo del 2026-09-21 no tenía ninguno,
-`lib/negocio/citasAlcanzables.ts:96-100`). `citas.asistio` con dato: **0 de 368**. Personas con alguna cita: 316
+`lib/negocio/citasAlcanzables.ts:97-101`). `citas.asistio` con dato: **0 de 368**. Personas con alguna cita: 316
 (292). Del 2026-09-28, no re-medido: con todas sus citas canceladas, 146; y a 30 días,
 **92 de los 139 agendados** tenían todas sus citas alcanzables canceladas —la ficha lo dice
-«agendó y canceló» (`lib/negocio/fichaDelLeadDelPortal.ts:177-183`); la tarjeta, no— y 75 de los
+«agendó y canceló» (`lib/negocio/fichaDelLeadDelPortal.ts:169-175`); la tarjeta, no— y 75 de los
 139 llevaban una etiqueta de descarte. Resultados, el 2026-10-18: **7** —seguimiento 4, no_show 2, no_interesa
 1—, el último del 2026-09-09: los mismos siete que `lib/negocio/huecosDeSales.ts:56-63` contó el 2026-09-21.
 **Ninguna venta en la base.**
@@ -405,13 +407,13 @@ Nadie nuevo recibió la pestaña desde LP-4 (`docs/leads-portal/12-QUIEN-VE-QUE.
 
 **Lo que no es un hueco entero, y no se colapsa en uno:** la asistencia es `sin_registrar` con su
 número —12 personas a 30 días y 93 en «Completo» el 2026-10-18 (46 y 77 el 2026-09-28)—, y el plantón del
-calendario viaja aparte (`lib/negocio/citasAlcanzables.ts:105-113`). El calendario empezó a marcar el lado positivo
+calendario viaja aparte (`lib/negocio/citasAlcanzables.ts:106-114`). El calendario empezó a marcar el lado positivo
 —3 citas `showed`— y nada lo lee: el plantón es la única señal del calendario que entra
-(`lib/negocio/citasAlcanzables.ts:111-113`). La tiene que escribir una persona en Avanzar; el CRM
+(`lib/negocio/citasAlcanzables.ts:112-114`). La tiene que escribir una persona en Avanzar; el CRM
 no la trae. La **historia de la reproducción** que pide el § 5.3 exige una tabla y un escritor
 nuevos, y quién los construye es `LP11-P03`. El **ICP calculado por Comando Central** espera los pesos
 del equipo (`docs/OTROS/futuro/icp-interno-calculado.md:325-333`); el día que exista, cambia de dónde
-sale el número y no el corte (`lib/negocio/tramosDelIcp.ts:14-16`).
+sale el número y no el corte (`lib/negocio/tramosDelIcp.ts:14-16@ddba683`).
 
 **Lo que queda del lado del usuario**, además de la prueba de humo de § 2:
 
@@ -424,7 +426,7 @@ sale el número y no el corte (`lib/negocio/tramosDelIcp.ts:14-16`).
   la compuerta de paridad (`docs/leads-portal/08-LO-QUE-ENTREGA-Y-RECIBE.md:350-369`). **Resuelta el 2026-10-01**:
   el cajón se borró con la maqueta del Executive (E7).
 - **`LP04-P01`** — ¿la rejilla se ordena por alta o por puntaje? Hoy va por alta, la más nueva
-  primero, con el id de desempate (`lib/negocio/leadsDelPortal.ts:304-314`); con 29 altas desde el
+  primero, con el id de desempate (`lib/negocio/leadsDelPortal.ts:301-311`); con 29 altas desde el
   14 de septiembre, eso muestra primero a gente de hace días o semanas
   (`docs/leads-portal/04-LA-REJILLA-Y-LOS-FILTROS.md:289-294`).
 
@@ -439,40 +441,40 @@ ordenadas por la etapa que no debía empezar sin cada una, está en
 **1 · La fila es una persona, y la tarjeta y la fila salen de la misma sentencia.** Una CTE decide
 tramo, cita, asistencia y venta por persona, y el resumen agrupa por esa columna sin volver a
 clasificar a nadie (`lib/negocio/leadsDelPortal.ts:4-13`). «Todos» es la suma de las cuatro, no una
-cuenta aparte (`lib/negocio/leadsDelPortal.ts:355-375`).
+cuenta aparte (`lib/negocio/leadsDelPortal.ts:355-375@bf2de85`).
 
 **2 · Ningún predicado es propio salvo el tramo.** «Agendó», «descartado», «cita cerrable»,
 «plantón» y «vendió» vienen de donde ya los usan las otras pestañas
-(`lib/negocio/leadsDelPortal.ts:15-20`); el tramo es una clasificación, no un hecho.
+(`lib/negocio/leadsDelPortal.ts:15-20@bf2de85`); el tramo es una clasificación, no un hecho.
 
 **3 · Cohorte y «agendó» son la misma expresión que en Sales, y se comparan en cada respuesta.** Si
 no coinciden, se publican las dos cifras y el aviso lo dice, sin elegir
-(`lib/negocio/leadsDelPortal.ts:599-623`). **Los vendidos no se comparan**: la cadena exige una cita
+(`lib/negocio/leadsDelPortal.ts:601-625`). **Los vendidos no se comparan**: la cadena exige una cita
 cerrable y un intento, esta pestaña no (`lib/negocio/ventasDelContacto.ts:11-14`).
 
 **4 · Tres valores por paso, y el «no se sabe» nunca se escribe «no».** La asistencia es
 `asistio`, `no_asistio`, `sin_registrar` o `null` —no había nada que registrar—
-(`lib/negocio/leadsDelPortal.ts:72-79`); la venta es «vendió» o «sin venta registrada», nunca «no
+(`lib/negocio/leadsDelPortal.ts:66-73`); la venta es «vendió» o «sin venta registrada», nunca «no
 compró» (`docs/leads-portal/01-LA-UNIDAD-ES-LA-PERSONA.md:198-213`).
 
 **5 · El 0 del puntaje va a «Sin calificar», pero sigue siendo 0.** Los dos motivos viajan separados
-(`lib/negocio/tramosDelIcp.ts:18-25`), y un 0 nuevo **avisa y no reclasifica**
-(`lib/negocio/leadsDelPortal.ts:533-540`).
+(`lib/negocio/tramosDelIcp.ts:18-25@ddba683`), y un 0 nuevo **avisa y no reclasifica**
+(`lib/negocio/leadsDelPortal.ts:533-540@bf2de85`).
 
 **6 · Los cortes 75 y 50 son una decisión fechada, no un corte validado.** Viven con nombre en un
-solo módulo sin imports (`lib/negocio/tramosDelIcp.ts:4-16`, `:27-32`); los datos proponen también
+solo módulo sin imports (`lib/negocio/tramosDelIcp.ts:4-16@ddba683`, `:27-32`); los datos proponen también
 un 60, donde la casa deja de rechazar.
 
 **7 · El cierre tiene dos motivos para no publicarse, en orden:** la empresa no tiene ninguna venta,
 o el tramo tiene menos de 10 contactos. Fuera de eso se publica, 0 incluido. **El monto tiene tres
-estados** y un nulo nunca es $0 (`lib/negocio/leadsDelPortal.ts:477-516`).
+estados** y un nulo nunca es $0 (`lib/negocio/leadsDelPortal.ts:471-510`).
 
 **8 · Venta es la que reportó el closer, y nada más.** Ni `acuerdo_sin_pago` ni `venta_chica`, y
 nunca un pago verificado (`lib/negocio/ventasDelContacto.ts:16-21`).
 
 **9 · La lista lleva exactamente catorce claves, y ninguna es un medio de contacto.** Una clave
-nueva pone la prueba en rojo aunque no esté prohibida (`lib/negocio/leadsDelPortal.ts:105-129`), y el mapeo va
-clave por clave, nunca `...l` (`lib/negocio/leadsDelPortal.ts:377-398`). Teléfono y correo, sólo en
+nueva pone la prueba en rojo aunque no esté prohibida (`lib/negocio/leadsDelPortal.ts:98-121`), y el mapeo va
+clave por clave, nunca `...l` (`lib/negocio/leadsDelPortal.ts:371-391`). Teléfono y correo, sólo en
 la ficha.
 
 **10 · La atribución se muestra por lista blanca, y de las direcciones sólo el host.** Una clave que
@@ -480,7 +482,7 @@ el CRM empiece a mandar mañana no aparece hasta que alguien la decida
 (`lib/negocio/atribucionVisible.ts:12-14`).
 
 **11 · La ficha sólo lee, se abre por id, y lo ajeno se ve igual que lo inexistente**
-(`lib/negocio/fichaDelLeadDelPortal.ts:3-9`, `:130-136`, `app/api/leads-portal/[id]/route.ts:16-19`).
+(`lib/negocio/fichaDelLeadDelPortal.ts:3-9`, `:122-128`, `app/api/leads-portal/[id]/route.ts:16-19`).
 Nada del CRM se vuelve enlace salvo llamar y escribir
 (`components/leads-portal/FichaDelLead.jsx:13-19`).
 
@@ -506,11 +508,11 @@ siendo `LP06-P02`, abierta (`docs/leads-portal/06-PERIODOS-Y-PISOS.md:291-298`).
 
 **El guardián de ceros está encendido.** Dos contactos de los últimos 14 días entraron con el puntaje en 0
 (§ 4). El aviso no distingue un puntaje real de un puntuador del CRM parado
-(`lib/negocio/leadsDelPortal.ts:533-540`), y con 16 de los 19 «Sin calificar» de la ventana sin ningún puntaje, la
+(`lib/negocio/leadsDelPortal.ts:533-540@bf2de85`), y con 16 de los 19 «Sin calificar» de la ventana sin ningún puntaje, la
 pregunta de si el puntuador sigue andando merece mirarse en el CRM.
 
 **Voseo en una frase de la pantalla. Cerrado el 2026-10-18 (`65669f4`).** Al corte, el aviso de una ventana vacía
-terminaba en «Probá una ventana más larga.» (`lib/negocio/leadsDelPortal.ts:528-529`), y es lo primero que se lee en
+terminaba en «Probá una ventana más larga.» (`lib/negocio/leadsDelPortal.ts:522-523`), y es lo primero que se lee en
 «Hoy». La única prueba de voseo miraba Tools y el prompt del Espía (`pruebas/codigo/202-tools-no-vosea.test.ts:10-11`),
 así que nada fallaba. Hoy dice «Prueba una ventana más larga.», y `pruebas/codigo/258-la-aplicacion-no-vosea.test.ts`
 mira `components/`, `lib/` y `app/` enteros, fuera de Fundaciones. Lo que queda: 38 archivos que todavía vosean,
@@ -519,7 +521,7 @@ contados en su lista `TODAVIA_VOSEAN` (`pruebas/codigo/258-la-aplicacion-no-vose
 
 **El calendario ya marca asistencias, y nadie las lee.** 3 citas con `showed` (§ 4) mientras «Asistieron» cuenta
 sólo `citas.asistio`, que sigue sin un dato. El comentario del módulo que decide qué entra decía al corte que `showed`
-no aparece ni una vez (`lib/negocio/citasAlcanzables.ts:98-99`), falso desde esta medición; desde el 2026-10-18
+no aparece ni una vez (`lib/negocio/citasAlcanzables.ts:99-100`), falso desde esta medición; desde el 2026-10-18
 (`65669f4`) dice que no aparecía, que desde octubre sí —3 ese día— y que nada lo lee. Sumarlas o no es la
 misma decisión que separó el plantón de `asistio` (`:105-109`).
 
@@ -553,7 +555,7 @@ muestra. Y todo administrador de cualquier empresa ve la pestaña sin concesión
 **Cerrados el 2026-10-01 (E7):** las cifras de Executive que hablaban en nombre de esta pestaña —312, 78, 22 % y
 61 %—, el pie de su cajón que llevaba hasta acá y el corte 75/50 que vivía dos veces
 (`lib/aios/leads-group.js:10@c4cf2a8`). Hoy el corte vive una vez y lo repiten como parámetros dos consultas, cada
-una con su prueba de base (`lib/negocio/tramosDelIcp.ts:80-83`).
+una con su prueba de base (`lib/negocio/tramosDelIcp.ts:80-83@ddba683`).
 
 **Creative promedia los ceros y esta pestaña los aparta.** Las dos cifras de ICP están bien por
 separado y no se reconcilian; el día que alguien renombre «Puntaje | ICP» en el CRM, Creative pierde
@@ -567,14 +569,14 @@ hueco sigue diciendo «No hay ninguna venta registrada» (`lib/negocio/huecosDeS
 fecha vieja hasta que alguien lo edite, mientras la tarjeta ya cuenta la venta.
 
 **Llamado sin ventana, el módulo mide catorce días.** `leadsDelPortal(dias = DIAS_DE_LA_TASA)`
-(`lib/negocio/leadsDelPortal.ts:272-275`, `lib/negocio/indicadoresDeCitas.ts:339`): catorce no es
+(`lib/negocio/leadsDelPortal.ts:266-269`, `lib/negocio/indicadoresDeCitas.ts:339`): catorce no es
 ninguno de los cuatro botones. La ruta siempre pasa `periodo.dias`, así que hoy no pasa; un
 consumidor nuevo que lo llame a secas publicaría una cohorte que ninguna pantalla puede reproducir.
 
 **«0 vendidos» en la tarjeta «Todos».** Es un conteo de personas con venta registrada y está medido
 (`docs/leads-portal/02-METRICAS.md:229-246`), pero es el único cero de la pantalla sobre la venta,
 al lado de un «—» que dice lo mismo con otro motivo
-(`components/leads-portal/PanelDeLeadsPortal.jsx:308-310`, `:318-323`).
+(`components/leads-portal/PanelDeLeadsPortal.jsx:309-311`, `:319-324`).
 Leído solo, dice «nadie compró».
 
 **Y el que ordena a los demás: ninguna de estas cifras se vio en la pantalla andando.** Todo lo de

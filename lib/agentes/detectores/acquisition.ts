@@ -31,7 +31,7 @@
 // Meta —sin entrega, la concentración, el costo por mil y el cambio brusco del conjunto— de los demás
 // (`faltanDiasDeMeta`, `anteriorDeMeta`).
 //
-// Desde C6 · D3 se miden también dentro de su cliente las tres que comparaban contra toda la empresa: el ICP de una
+// Desde C6 · D3 se miden también dentro de su cliente las tres que comparaban contra toda la empresa: el Descarta de una
 // campaña contra SU funnel EN SU cliente, la fuga de un funnel contra los otros funnels DE SU cliente (con el
 // identificador de `idConCliente`: el de siempre para el principal) y el monitor de atribución, por cliente, sobre los
 // clientes ACTIVOS con campañas que tienen denominador en la ventana: uno sin gente, en pausa o de baja se salta, y la
@@ -49,7 +49,7 @@ import {
   CIFRAS_VACIAS,
   costo,
   lecturaDeAcquisition,
-  promedioDelIcp,
+  porcionDeDescarta,
   sumar,
   type Cifras,
   type EmbudosDeAcquisition,
@@ -68,7 +68,9 @@ export const ACQ = {
   cplSostenido: 'ACQ-CPL-SOSTENIDO',
   gastoSinCrecimiento: 'ACQ-GASTO-SIN-CRECIMIENTO',
   concentracion: 'ACQ-CONCENTRACION',
-  icpEntreCampanas: 'ACQ-ICP-ENTRE-CAMPANAS',
+  /* Reemplaza a `ACQ-ICP-ENTRE-CAMPANAS` (el ICP promedio): desde la `105` el ICP es una de cuatro palabras y no hay
+     promedio. Sus señales viejas quedan en el historial con su código. */
+  descartaEntreCampanas: 'ACQ-DESCARTA-ENTRE-CAMPANAS',
   escalaPorCalificado: 'ACQ-ESCALA-POR-CALIFICADO',
   fugaEntreEtapas: 'ACQ-FUGA-ENTRE-ETAPAS',
   cpmAbrupto: 'ACQ-CPM-ABRUPTO',
@@ -135,13 +137,13 @@ export const REGLAS_DE_ACQUISITION: readonly ReglaDelCatalogo[] = [
     porque: 'Con tres campañas o más en una cuenta publicitaria (con varios clientes, la de cada uno), que una se lleve el 60 % de su gasto deja a la cuenta dependiendo de un solo anuncio. Toca presupuesto: requiere validación ejecutiva.',
   },
   {
-    codigo: ACQ.icpEntreCampanas,
+    codigo: ACQ.descartaEntreCampanas,
     departamento: 'acquisition',
-    valor: 15,
-    unidad: 'puntos',
-    denominador: 'calificados con puntaje',
+    valor: 0.15,
+    unidad: 'puntos_porcentuales',
+    denominador: 'contactos clasificados',
     gravedad: 'media',
-    porque: 'Quince puntos de ICP bajo el promedio de su funnel (con varios clientes, el de su funnel en su cliente) separan un tramo del otro.',
+    porque: 'Quince puntos más de Descarta que su funnel (con varios clientes, el de su funnel en su cliente): la campaña trae gente que el CRM descarta (decisión del usuario, 2026-10-26).',
   },
   {
     codigo: ACQ.escalaPorCalificado,
@@ -598,13 +600,13 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
     }
   }
 
-  // ── El ICP de una campaña, bajo el de su funnel ──
+  // ── La porción de Descarta de una campaña, sobre la de su funnel ──
   {
-    const u = umbral(ACQ.icpEntreCampanas);
-    /* Con campañas de varios clientes (C6 · D3), el promedio es el de SU funnel EN SU cliente: con el de la empresa, una
-       campaña de un cliente cuyo público puntúa distinto quedaba bajo un promedio que no es el suyo —o tapada por él—.
-       Con la misma fórmula de la pantalla (`promedioDelIcp`) sobre las cifras de sus campañas. Con un cliente, la cifra
-       de la pantalla, sin volver a sumarla. */
+    const u = umbral(ACQ.descartaEntreCampanas);
+    /* Con campañas de varios clientes (C6 · D3), la porción es la de SU funnel EN SU cliente: con la de la empresa, una
+       campaña de un cliente cuyo público se clasifica distinto quedaba sobre una porción que no es la suya —o tapada por
+       ella—. Con la misma fórmula de la pantalla (`porcionDeDescarta`) sobre las cifras de sus campañas. Con un cliente,
+       la cifra de la pantalla, sin volver a sumarla. */
     const enSuCliente = new Map<string, Cifras>();
     if (m.clienteDe.size > 0) {
       for (const c of embudos.campanas) {
@@ -618,26 +620,26 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
       const cliente = m.clienteDe.get(c.campana) ?? null;
       const delFunnel =
         m.clienteDe.size === 0
-          ? embudos.funnels[c.funnel].calificados.icp.promedio
-          : promedioDelIcp(enSuCliente.get(`${cliente ?? ''}·${c.funnel}`) ?? CIFRAS_VACIAS);
-      const propio = c.cifras.calificados.icp.promedio;
-      const conPuntaje = actualDe(c.campana)?.conPuntaje ?? 0;
-      /* Bajo el piso de puntajes la pantalla no publica el promedio, y sin él no se sabe si la regla se
+          ? embudos.funnels[c.funnel].calificados.icp.descarta.porcion
+          : porcionDeDescarta(enSuCliente.get(`${cliente ?? ''}·${c.funnel}`) ?? CIFRAS_VACIAS);
+      const propio = c.cifras.calificados.icp.descarta.porcion;
+      const clasificados = actualDe(c.campana)?.clasificados ?? 0;
+      /* Bajo el piso de clasificados la pantalla no publica la porción, y sin ella no se sabe si la regla se
          cumpliría: no es una detección bajo el piso, es una que no se puede hacer. */
       if (delFunnel === null || propio === null) continue;
-      const debajo = delFunnel - propio;
-      if (debajo < u.valor) continue;
+      const encima = propio - delFunnel;
+      if (encima < u.valor) continue;
       salida.detecciones.push({
         ...base,
-        regla: ACQ.icpEntreCampanas,
+        regla: ACQ.descartaEntreCampanas,
         entidad: { tipo: 'campana', id: c.campana },
-        metrica: 'icp_promedio',
-        lineaBase: redondear(delFunnel, 1),
-        valorActual: redondear(propio, 1),
+        metrica: 'porcion_de_descarta',
+        lineaBase: redondear(delFunnel, 4),
+        valorActual: redondear(propio, 4),
         cambioPct: null,
-        muestra: conPuntaje,
+        muestra: clasificados,
         gravedad: 'media',
-        revisionRecomendada: 'Revisa a quién le habla la campaña: trae gente que encaja menos que el resto de su funnel.',
+        revisionRecomendada: 'Revisa a quién le habla la campaña: trae más gente que el CRM descarta que el resto de su funnel.',
         causasPosibles: ['puede deberse a la segmentación', 'puede deberse a un mensaje que atrae a otro público'],
         perdidaContactos: null,
         umbral: u,
@@ -647,9 +649,9 @@ export function detectarEnAcquisition(m: MedidaDeAcquisition, umbral: Umbral): D
           campana: c.campana,
           funnel: c.funnel,
           ...(cliente === null ? {} : { cliente }),
-          promedioDelFunnel: redondear(delFunnel, 1),
-          promedio: redondear(propio, 1),
-          conPuntaje,
+          descartaDelFunnel: redondear(delFunnel, 4),
+          descarta: redondear(propio, 4),
+          clasificados,
         },
       });
     }

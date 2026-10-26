@@ -6,10 +6,11 @@
 // La mitad pura la cuida `pruebas/codigo/250-lectura-de-conversation.test.ts`. Acá se mira lo que sólo se ve con filas:
 //
 //   · el ICP de quienes agendaron: la cohorte de la ventana con CUALQUIER cita —con o sin calendario, pasada o
-//     futura, como el `agendaron` de `indicadoresDelLead`—, por `tramoDelPuntaje` —el cero es sin calificar— —
-//     mutaciones: sacar la ventana, sacar la cita, filtrar por calendario o por fecha, cortar con otros umbrales;
-//   · la asistencia por tramo: las citas de la ventana, ocurridas, alcanzables y de contactos no descartados, cada
-//     una en el tramo de su contacto — mutaciones: sacar cualquiera de las cuatro, o mandar todo a un tramo;
+//     futura, como el `agendaron` de `indicadoresDelLead`—, por `claveDelCuadrante` —el rechazo es sin clasificar— —
+//     mutaciones: sacar la ventana, sacar la cita, filtrar por calendario o por fecha, clasificar distinto;
+//   · la asistencia por cuadrante: las citas de la ventana, ocurridas, alcanzables y de contactos no descartados —también
+//     Descarta, desde la `105`—, cada una en el cuadrante de su contacto — mutaciones: sacar cualquiera de las cuatro, o
+//     mandar todo a un cuadrante;
 //   · los patrones abiertos: uno por código, como los agrupa Auditoría, y sólo los que no se resolvieron — mutación:
 //     contar hallazgos, contar por agente y código, o contar los resueltos;
 //   · la lectura entera: arma la pantalla con lo leído, y sin auditoría no cuenta patrones y el sentimiento lo dice.
@@ -25,7 +26,7 @@ import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import {
-  asistenciaPorTramo,
+  asistenciaPorCuadrante,
   icpDeLosAgendados,
   patronesAbiertos,
   lecturaDeConversation,
@@ -42,12 +43,12 @@ async function limpiar(): Promise<void> {
   await esc.admin.query('delete from negocio.contactos where ghl_contact_id like $1', [`${CONTACTO}%`]);
 }
 
-/** Un contacto dado de alta hace `haceDias`, con su puntaje y sus etiquetas. */
-async function unContacto(o: { score?: number | null; haceDias?: number; etiquetas?: string[] } = {}): Promise<string> {
+/** Un contacto dado de alta hace `haceDias`, con su cuadrante del ICP y sus etiquetas. */
+async function unContacto(o: { cuadrante?: string | null; haceDias?: number; etiquetas?: string[] } = {}): Promise<string> {
   const { rows } = await esc.admin.query<{ id: string }>(
-    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, score, etiquetas)
+    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, cuadrante, etiquetas)
      values ($1, $2, 'Lead de prueba', 'closer', now() - make_interval(days => $3) - interval '1 hour', $4, $5::text[]) returning id`,
-    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, o.haceDias ?? 1, o.score ?? null, o.etiquetas ?? []],
+    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, o.haceDias ?? 1, o.cuadrante ?? null, o.etiquetas ?? []],
   );
   return rows[0]!.id;
 }
@@ -74,47 +75,53 @@ after(async () => {
   await cerrarClientes();
 });
 
-test('el ICP de quienes agendaron: la cohorte de la ventana con cualquier cita, por tramo, y el cero es sin calificar', async () => {
+test('el ICP de quienes agendaron: la cohorte de la ventana con cualquier cita, por cuadrante, y el rechazo es sin clasificar', async () => {
   await limpiar();
   const antes = await enAlfa(() => icpDeLosAgendados(30));
-  for (const score of [80, 75, 60, 10, 0, null]) await unaCita(await unContacto({ score }));
+  for (const cuadrante of ['prioriza', 'prioriza', 'valida', 'financia', 'descarta', 'rechazo', null]) {
+    await unaCita(await unContacto({ cuadrante }));
+  }
   // También cuentan: una cita sin calendario y una futura, como en el `agendaron` del panel de al lado.
-  await unaCita(await unContacto({ score: 85 }), { sinCalendario: true });
-  await unaCita(await unContacto({ score: 55 }), { haceHoras: -48 });
+  await unaCita(await unContacto({ cuadrante: 'prioriza' }), { sinCalendario: true });
+  await unaCita(await unContacto({ cuadrante: 'valida' }), { haceHoras: -48 });
   // Lo que no cuenta: sin cita, y con cita pero dado de alta antes de la ventana.
-  await unContacto({ score: 90 });
-  await unaCita(await unContacto({ score: 90, haceDias: 40 }));
+  await unContacto({ cuadrante: 'prioriza' });
+  await unaCita(await unContacto({ cuadrante: 'prioriza', haceDias: 40 }));
   const despues = await enAlfa(() => icpDeLosAgendados(30));
   await limpiar();
-  const delta = Object.fromEntries((['alto', 'medio', 'bajo', 'sin_calificar'] as const).map((k) => [k, despues[k] - antes[k]]));
+  const delta = Object.fromEntries(
+    (['prioriza', 'valida', 'financia', 'descarta', 'sin_clasificar'] as const).map((k) => [k, despues[k] - antes[k]]),
+  );
   assert.deepEqual(
     delta,
-    { alto: 3, medio: 2, bajo: 1, sin_calificar: 2 },
-    'contó a alguien sin cita o fuera de la ventana, dejó afuera una cita sin calendario o futura, o cortó con otros umbrales',
+    { prioriza: 3, valida: 2, financia: 1, descarta: 1, sin_clasificar: 2 },
+    'contó a alguien sin cita o fuera de la ventana, dejó afuera una cita sin calendario o futura, o clasificó distinto',
   );
 });
 
-test('la asistencia por tramo: citas de la ventana, ocurridas, alcanzables y de contactos no descartados', async () => {
+test('la asistencia por cuadrante: citas de la ventana, ocurridas, alcanzables y de contactos no descartados', async () => {
   await limpiar();
-  const antes = await enAlfa(() => asistenciaPorTramo(30));
-  const alto = await unContacto({ score: 80 });
+  const antes = await enAlfa(() => asistenciaPorCuadrante(30));
+  const alto = await unContacto({ cuadrante: 'prioriza' });
   await unaCita(alto, { asistio: true });
   await unaCita(alto, { asistio: false });
   await unaCita(alto, { asistio: null });
   // Lo que no cuenta: una futura, una sin calendario, una de un contacto descartado y una de antes de la ventana.
   await unaCita(alto, { haceHoras: -48, asistio: true });
   await unaCita(alto, { sinCalendario: true, asistio: true });
-  await unaCita(await unContacto({ score: 80, etiquetas: ['Rechazado'] }), { asistio: true });
+  await unaCita(await unContacto({ cuadrante: 'prioriza', etiquetas: ['Rechazado'] }), { asistio: true });
+  // Desde la `105`, Descarta es un descarte: su cita tampoco cuenta.
+  await unaCita(await unContacto({ cuadrante: 'descarta' }), { asistio: true });
   await unaCita(alto, { haceHoras: 40 * 24, asistio: true });
-  // Y otro tramo, para ver que cada cita va al de su contacto.
-  await unaCita(await unContacto({ score: 60 }), { asistio: false });
-  const despues = await enAlfa(() => asistenciaPorTramo(30));
+  // Y otro cuadrante, para ver que cada cita va al de su contacto.
+  await unaCita(await unContacto({ cuadrante: 'valida' }), { asistio: false });
+  const despues = await enAlfa(() => asistenciaPorCuadrante(30));
   await limpiar();
-  const delta = (t: 'alto' | 'medio') => [despues[t].conAsistencia - antes[t].conAsistencia, despues[t].sePresentaron - antes[t].sePresentaron];
+  const delta = (t: 'prioriza' | 'valida' | 'descarta') => [despues[t].conAsistencia - antes[t].conAsistencia, despues[t].sePresentaron - antes[t].sePresentaron];
   assert.deepEqual(
-    [delta('alto'), delta('medio')],
-    [[2, 1], [1, 0]],
-    'contó una cita futura, sin calendario, de un descartado o de antes de la ventana, o mandó una cita a otro tramo',
+    [delta('prioriza'), delta('valida'), delta('descarta')],
+    [[2, 1], [1, 0], [0, 0]],
+    'contó una cita futura, sin calendario, de un descartado o de antes de la ventana, o mandó una cita a otro cuadrante',
   );
 });
 

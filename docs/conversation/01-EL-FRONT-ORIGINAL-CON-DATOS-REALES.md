@@ -27,9 +27,9 @@ Todas las cifras están escritas a mano y varias no cierran entre sí: los asist
 agente de texto de Lead Flow dice 58 % de agendados sobre 346 cuando la cadena dice 121. Tiene nombres de personas,
 que no se copian a ninguna parte.
 
-Sus reglas siguen en `app/aios.css`: el bloque de Conversation (`app/aios.css:1728-1856`), `.iss*`
-(`app/aios.css:1901-1924`), `.org-*` (`app/aios.css:1933-1941`), `.cs-view` (`app/aios.css:1944`) y `.pn*`
-(`app/aios.css:1948-1975`).
+Sus reglas siguen en `app/aios.css`: el bloque de Conversation (`app/aios.css:1730-1858`), `.iss*`
+(`app/aios.css:1903-1926`), `.org-*` (`app/aios.css:1935-1943`), `.cs-view` (`app/aios.css:1946`) y `.pn*`
+(`app/aios.css:1950-1977`).
 
 ### Decidido por el usuario el 2026-10-10
 
@@ -63,7 +63,7 @@ Las cifras de la columna «medido» son del **2026-09-28**, de la foto `docs/OTR
 |---|---|---|---|
 | Panel Lead Flow | contactos de la cohorte y cuántos agendaron | `indicadoresDelLead` | 277 contactos, 139 agendaron (50,2 %) |
 | Panel Appointment Flow | citas ocurridas y cuántas asistieron | `tasaDeCancelacion` | 106 citas; asistencia sin marcar: «—» |
-| Panel del ICP | quienes agendaron, por tramo | `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85`) | no medido |
+| Panel del ICP | quienes agendaron, por tramo | `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85@ddba683`) | no medido |
 | Tarjeta Lead Flow | el booking rate y la cadena Entraron → Les escribimos → Respondieron → Agendaron | `indicadoresDelLead` | 277 → 270 → 161 → 139 |
 | Tarjeta Appointment Flow | Agendaron → Confirmaron → Asistieron, las salidas, la calidad y el origen | `tasaDeCancelacion`, `indicadoresDelLead` | cancelación 34,9 %; asistencia «—» |
 | Agentes | dos tarjetas de texto con cifras del flujo y su sentimiento; dos de voz en «—» | los flujos, `sentimientoPorFlujo` | `negocio.llamadas` vacía |
@@ -94,7 +94,7 @@ datos, con los predicados de cada módulo:
   marcarse.
 - La confirmación no se midió: es un campo del CRM y se lee en CN-1 con su módulo.
 - **Una aproximación de esta medición**: el ICP se contó con los cortes de 75 y 50 en SQL, con el puntaje 0 dentro de
-  «bajo». `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85`) lo cuenta como «sin calificar», y la pantalla usa esa
+  «bajo». `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85@ddba683`) lo cuenta como «sin calificar», y la pantalla usa esa
   función: puede mover algún contacto de «bajo» a «sin calificar».
 
 ---
@@ -224,8 +224,8 @@ como presente; sin ninguna marcada, «—» con «Nadie marca la asistencia.».
 bajo, y los sin calificar aparte—, con su porción sobre todos los que agendaron, sin calificar incluidos, y con el piso de
 10 sobre ese total.
 
-**Fórmula** · La misma cohorte de `indicadoresDelLead`, por `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85`), con
-los cortes de 75 y 50 (`lib/negocio/tramosDelIcp.ts:38`) y el puntaje 0 como sin calificar: `icpDeLosAgendados`, en
+**Fórmula** · La misma cohorte de `indicadoresDelLead`, por `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85@ddba683`), con
+los cortes de 75 y 50 (`lib/negocio/tramosDelIcp.ts:38@ddba683`) y el puntaje 0 como sin calificar: `icpDeLosAgendados`, en
 `lib/negocio/lecturaDeConversation.ts`, agrupa los puntajes con la función y no copia sus umbrales en SQL.
 
 **Estado** · El cálculo, construido el 2026-10-10 (CN-1), en `armarConversation`; el dibujo, construido el 2026-10-10 (CN-3).

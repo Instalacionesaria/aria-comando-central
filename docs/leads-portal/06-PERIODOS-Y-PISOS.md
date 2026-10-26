@@ -87,7 +87,7 @@ Tres decisiones dentro de esa línea, cada una con su defecto conocido:
    `:169`). Esta pestaña tampoco: contactos, citas y resultados son `timestamptz`.
 
 > **Y por eso sus «30 días» no son los de Creative.** Creative ancla la ventana al día
-> (`lib/negocio/calidadDelCreativo.ts:258`, `current_date - make_interval(days => dias - 1)`) porque
+> (`lib/negocio/calidadDelCreativo.ts:245`, `current_date - make_interval(days => dias - 1)`) porque
 > cruza con el gasto, que sí es una fecha. Las dos ventanas difieren en hasta un día de altas en el
 > borde de atrás. **No se comparan los conteos por tramo de esta pestaña con los de Creative
 > esperando igualdad**: la comparación que tiene que dar exacta es con la cadena de Sales, que usa el
@@ -239,7 +239,7 @@ motivo. Borrar la tarjeta de un tramo es afirmar que ese tramo no existe
 ### LP06-12 · Cuanto más larga la ventana, más personas con citas que ya no se refrescan
 
 La proporción de citas congeladas crece con la ventana: medido por Creative el 2026-09-15, 7,0 % a
-catorce días y 27,2 % a treinta (`lib/negocio/calidadDelCreativo.ts:30-35`). Y Lead Flow midió el
+catorce días y 27,2 % a treinta (`lib/negocio/calidadDelCreativo.ts:32-37`). Y Lead Flow midió el
 efecto por persona el 2026-09-16: 0 personas con sólo citas congeladas a 7 y 14 días, 22 a 30 y 79 en
 «completo» (`lib/negocio/indicadoresDelLead.ts:223-227`).
 

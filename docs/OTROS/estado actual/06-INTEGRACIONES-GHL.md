@@ -17,6 +17,8 @@
 > Manager de GoHighLevel se retiró, con su cuadre y su relleno (§ 3, § 9 y § 11 describen producción al corte). Todo en
 > `docs/OTROS/produccion/META-DIRECTO.md`.
 
+> **ICP en cuadrantes (2026-10-26, local, sin subir).** El ICP del lead dejó de ser el puntaje de 0 a 100: es el cuadrante que manda el CRM —Prioriza, Valida, Financia o Descarta— en `contactos.cuadrante` (la `105`), y ningún número del ICP se muestra. Lo que esta foto dice del puntaje, de los tramos 75 y 50 y del cero describe la versión anterior; sus citas quedaron fijadas a `@bf2de85` o a `@ddba683`. Los requisitos: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`. El catálogo guarda el `fieldKey` de cada campo (`campos_del_crm.clave`) y el del cuadrante se reconoce por `contact.cuadrante_de_clasificacion`; un catálogo sin ninguna clave se relee ya; la sincronización escribe el cuadrante y reclasifica desde lo guardado; `score` se sigue escribiendo y nadie lo lee.
+
 > **Desde el corte del 2026-09-28**
 >
 > - **2026-09-30 · `fd553b7`, `4365cc9`** — AQ-1 y AQ-3 de Acquisition: el colector de anuncios llama a
@@ -133,11 +135,11 @@ motivo, `sin_token`). Y en `activos`, la tarea de Meta, salen `saltada` **las 11
 **1 · El censo de etiquetas NO es el catálogo de la subcuenta.** `negocio.contactos` sólo contiene
 contactos que tienen —o tuvieron— `zona_closer` o `zona_setter`. La llamada que lee el catálogo real
 (`GET /locations/{loc}/tags`, `lib/ghl/cliente.ts:450`) sólo se dispara **cuando la búsqueda no trae
-ningún contacto** (`lib/negocio/sincronizar.ts:234-238`), y trae contactos siempre. Las 63 etiquetas
+ningún contacto** (`lib/negocio/sincronizar.ts:247-251`), y trae contactos siempre. Las 63 etiquetas
 medidas son **un piso**, no el inventario del CRM.
 
 **2 · Nuestra foto de etiquetas está vencida para los contactos congelados.** El congelamiento pone
-`territorio` en nulo y **a propósito no toca `etiquetas`** (`lib/negocio/sincronizar.ts:278-280`).
+`territorio` en nulo y **a propósito no toca `etiquetas`** (`lib/negocio/sincronizar.ts:291-293`).
 Medido: de los 25 congelados, **21 siguen cargando una etiqueta de zona** que el CRM ya les sacó (eran
 20 de 25). El censo sobrecuenta `zona_closer`/`zona_setter` hasta en 21.
 
@@ -184,8 +186,8 @@ decía «tres cabeceras distintas»; con tres familias y dos valores, nunca lo f
 | 3 | `POST /contacts/{id}/tags` | Avanzar; marcar una intervención del auditor (`lib/auditor/intervencion.ts:128`) | 7 resultados en total, ninguno desde el 2026-09-09 | `lib/ghl/cliente.ts:592` |
 | 4 | `DELETE /contacts/{id}/tags` | resolver una intervención del auditor | ninguna: **0 de 24** hallazgos resueltos (eran 0 de 20) | `lib/ghl/cliente.ts:638` |
 | 5 | `GET /locations/{loc}/tags` | **sólo si la búsqueda trajo cero contactos** | nunca en régimen | `lib/ghl/cliente.ts:450` |
-| 6 | `GET /locations/{loc}/customFields` | catálogo de campos | 1 por día (`FRESCURA_MS`, `lib/negocio/camposDelCrm.ts:66`) | `lib/ghl/cliente.ts:712` |
-| 7 | `GET /locations/{loc}/customFields/{carpetaId}` | nombre de UNA carpeta | **1 por día para siempre** (ver abajo) | `lib/ghl/cliente.ts:754` |
+| 6 | `GET /locations/{loc}/customFields` | catálogo de campos | 1 por día (`FRESCURA_MS`, `lib/negocio/camposDelCrm.ts:74`) | `lib/ghl/cliente.ts:717` |
+| 7 | `GET /locations/{loc}/customFields/{carpetaId}` | nombre de UNA carpeta | **1 por día para siempre** (ver abajo) | `lib/ghl/cliente.ts:760` |
 | 8 | `GET /users/?locationId=` | desplegable de vincular closer | por acción de una persona | `lib/ghl/cliente.ts:493` |
 | 9 | `GET /calendars/?locationId=` | cron `citas`; botón «Traer del calendario» | cada hora | `lib/ghl/calendarios.ts:143` |
 | 10 | `GET /calendars/events` | ídem, **1 por calendario** | 9 por corrida | `lib/ghl/calendarios.ts:230` |
@@ -234,7 +236,7 @@ en ninguna tabla nuestra.
 **`POST /contacts/search`.** El sobre: sólo `contacts` y `total`. De cada contacto, `ContactoDeGhl`
 declara 19 claves (`lib/ghl/cliente.ts:59-161`) y la fila escribe 15 columnas con datos del
 contacto, más el sello `sincronizado_el`; dos de ellas son derivadas: `territorio`, de las
-etiquetas, y desde el 2026-09-21 `score`, de los campos (§ 6) (`lib/negocio/sincronizar.ts:374-472`).
+etiquetas, y desde el 2026-09-21 `score`, de los campos (§ 6) (`lib/negocio/sincronizar.ts:389-494`).
 `locationId` se declara y no se usa. Todo lo que
 GoHighLevel mande y la interfaz no declare **se cae ahí mismo, sin error** — el defecto que costó la
 atribución hasta la `048` y, un nivel más adentro, el desglose de acciones de Meta hasta la `053`.
@@ -280,7 +282,7 @@ alcance y frecuencia por día (`3bd2d58:lib/ghl/anuncios.ts:626`, `:648-657`); s
 guardado**. Medido el 2026-09-28 y otra vez el 2026-10-18: `select count(*) from negocio.carpetas_del_crm where nombre is null`
 → **1**, igual que el 2026-09-15. Esa carpeta fue borrada en GoHighLevel y responde 404
 (`lib/negocio/camposDelCrm.ts:35-42`), así que **se le pide el nombre una vez por día, para siempre**:
-la lectura diaria del catálogo cuesta 2 llamadas y no 1 (`lib/negocio/camposDelCrm.ts:70`). Está
+la lectura diaria del catálogo cuesta 2 llamadas y no 1 (`lib/negocio/camposDelCrm.ts:78`). Está
 documentado como aceptado.
 
 ---
@@ -474,7 +476,7 @@ confianza, y tres están declaradas `pendiente` justamente porque todavía no se
 
 | Etiqueta | Confianza declarada | Lectura |
 |---|---|---|
-| `setter_nuevo`, `setter_en_calificacion`, `setter_calificado` | `pendiente` | **No existen y no se mandan.** `sePuedeMandar` las filtra (`lib/ghl/contrato.ts:575-589`). La fuente de verdad de la etapa es nuestra base (`lib/ghl/contrato.ts:473-491`). |
+| `setter_nuevo`, `setter_en_calificacion`, `setter_calificado` | `pendiente` | **No existen y no se mandan.** `sePuedeMandar` las filtra (`lib/ghl/contrato.ts:592-606`). La fuente de verdad de la etapa es nuestra base (`lib/ghl/contrato.ts:490-508`). |
 | `seguimiento_terminado` | `sin_confirmar` | Existe según el contrato; nadie confirmó qué significa. Sólo lectura. |
 | `adelanto_ganado` | `confirmado` | Existe y **nunca se escribió**: de 7 resultados registrados, ninguno fue acuerdo sin pago. |
 | `bot_activado`, `bot_apagado_manual`, `bot_desactivado_leadflow` | `confirmado` | Declaradas verificadas en la subcuenta, sin uso en nuestros contactos. |
@@ -521,12 +523,12 @@ select count(*), count(distinct carpeta_id) from negocio.campos_del_crm
 
 Hay además **3 identificadores de campo con valores guardados que el catálogo no define** (27, 6 y 1
 contacto; eran 28, 7 y 1) — campos borrados en GoHighLevel cuyos valores quedaron en la foto del
-contacto. El catálogo no borra lo que desapareció, a propósito (`lib/negocio/camposDelCrm.ts:195-204`).
+contacto. El catálogo no borra lo que desapareció, a propósito (`lib/negocio/camposDelCrm.ts:206-215`).
 
 ### El reparto por carpeta, y las que son inalcanzables
 
-Un campo se dibuja en el Perfil sólo si su carpeta tiene `grupo` (`lib/negocio/camposDelCrm.ts:256`).
-El grupo se pone **al descubrir la carpeta**, desde `CARPETAS_DEL_PERFIL` (`lib/ghl/contrato.ts:332-344`), que lista cuatro, o cuando llega tarde el nombre de una sin grupo que nadie eligió (`lib/negocio/camposDelCrm.ts:592`);
+Un campo se dibuja en el Perfil sólo si su carpeta tiene `grupo` (`lib/negocio/camposDelCrm.ts:271`).
+El grupo se pone **al descubrir la carpeta**, desde `CARPETAS_DEL_PERFIL` (`lib/ghl/contrato.ts:349-361`), que lista cuatro, o cuando llega tarde el nombre de una sin grupo que nadie eligió (`lib/negocio/camposDelCrm.ts:555`);
 desde la `098` también lo elige una persona en Ajustes › Clientes (`grupo_elegido_el`), y ningún refresco lo pisa.
 
 | Clase | Carpetas | Campos | Con algún valor | Valores guardados |
@@ -537,19 +539,19 @@ desde la `098` también lo elige una persona en Ajustes › Clientes (`grupo_ele
 O sea: **el 60,4 % de los valores que guardamos de GoHighLevel no se dibuja en el Perfil** (era el
 60,6 %: 4.939 de 8.144). Dentro de las cuatro con grupo hubo un movimiento que el código registra a
 medias: «Contact» pasó de 1 campo a 3 —eso sí quedó escrito, el 2026-09-21, en
-`lib/ghl/contrato.ts:333-335`— y «📁 Score | ICP Lead Form (Meta)» de 9 a 7, que no. Son los dos
+`lib/ghl/contrato.ts:350-352`— y «📁 Score | ICP Lead Form (Meta)» de 9 a 7, que no. Son los dos
 campos de URL que `ETIQUETAS_CORTAS` rotula «Redes» y «Web»: hoy su carpeta es «Contact» (consulta
-sobre `campos_del_crm` por esos dos identificadores). `lib/ghl/contrato.ts:339` todavía dice
-«9 campos», y `lib/ghl/contrato.ts:355`, que los siete rotulados son «todos de la carpeta de Meta».
+sobre `campos_del_crm` por esos dos identificadores). `lib/ghl/contrato.ts:356` todavía dice
+«9 campos», y `lib/ghl/contrato.ts:372`, que los siete rotulados son «todos de la carpeta de Meta».
 
 «Inalcanzable» tiene dos sentidos, y hay que separarlos. Para la **pantalla del Perfil**, los 174
 están fuera y no hay forma de traerlos sin cambiar `carpetas_del_crm.grupo`. Para el **código de
-negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:318`) resuelve un campo
+negocio** existe una salida: `campoPorNombre` (`lib/negocio/camposDelCrm.ts:333`) resuelve un campo
 por su nombre **saltándose el filtro de carpetas**. El 2026-09-15 la usaban dos módulos; hoy seis:
 `lib/negocio/consumoDelPrecall.ts:159`, `lib/negocio/indicadoresDeCitas.ts:248`,
 `lib/negocio/pasosDeConversion.ts:578`, `lib/negocio/embudoDelFormulario.ts:182`,
-`lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:213-215`. El puntaje de Creative ya no: desde la
-`098` `campoDelPuntaje` (`lib/negocio/camposDelCrm.ts:529`) busca el «Puntaje | ICP» por su cuenta, cliente por
+`lib/negocio/recorrido.ts:258` y `lib/negocio/fichaDelLeadDelPortal.ts:205-207`. El puntaje de Creative ya no: desde la
+`098` `campoDelPuntaje` (`lib/negocio/camposDelCrm.ts:529@bf2de85`) busca el «Puntaje | ICP» por su cuenta, cliente por
 cliente y sólo si el cliente no eligió el suyo, con el mismo desempate por `campo_id`. De los campos que se
 leen así, dos viven en carpetas sin grupo: «Confirmación Agendamiento»
 (`lib/negocio/indicadoresDeCitas.ts:208`) y «Form Landing VSL» (`lib/negocio/recorrido.ts:231`). El
@@ -621,7 +623,7 @@ Form completo sin agendar       39
 El 2026-09-15 este informe decía que ninguna pantalla lo leía. **Cambió**: desde el 2026-09-20
 (commit `4da946d`) lo leen por nombre, para Conversion, `lib/negocio/embudoDelFormulario.ts:182` y
 `lib/negocio/recorrido.ts:258`, y desde el 2026-09-26, para Leads Portal,
-`lib/negocio/fichaDelLeadDelPortal.ts:213`. Y las cifras no se movieron por otro motivo: el campo
+`lib/negocio/fichaDelLeadDelPortal.ts:205`. Y las cifras no se movieron por otro motivo: el campo
 dejó de reportar el 2026-08-31, cuando la gente empezó a entrar por el widget y no por la landing
 (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:16-23`).
 
@@ -659,7 +661,7 @@ podía guardarlo: era `char(1)` con `check` de letras
 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:6-16`). Desde `e350a47`
 (2026-09-21) la columna es `smallint` entre 0 y 100
 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:70-76`) y la
-sincronización la pisa en cada pasada (`lib/negocio/sincronizar.ts:441`). El mismo commit borró dos columnas que
+sincronización la pisa en cada pasada (`lib/negocio/sincronizar.ts:456`). El mismo commit borró dos columnas que
 nunca tuvieron escritor, `responsable_id` y `responsable_rol`
 (`db/migraciones/054_las_dos_columnas_que_nadie_escribio.sql:54-55`).
 
@@ -988,7 +990,7 @@ El orden que proponía la foto del 2026-09-15, y en qué quedó cada paso al 202
 Cada uno es un hueco medido, no una suposición.
 
 1. **El catálogo real de etiquetas de la subcuenta nunca se leyó.** `GET /locations/{loc}/tags` sólo
-   se llama si la búsqueda trae cero contactos (`lib/negocio/sincronizar.ts:234-238`). Las 80
+   se llama si la búsqueda trae cero contactos (`lib/negocio/sincronizar.ts:247-251`). Las 80
    etiquetas medidas el 2026-10-18 son las que cargan nuestros 624 contactos: **un piso**. Una sola llamada
    manual lo cerraría.
 

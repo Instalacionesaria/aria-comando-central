@@ -83,9 +83,10 @@ export const HERRAMIENTAS_DE_CREATIVE: readonly DefinicionDeHerramienta[] = [
   {
     nombre: 'calidad_de_piezas',
     descripcion:
-      'Creative: por pieza, contactos, cuántos traen puntaje de ICP, el ICP promedio, cuántos agendaron y la tasa ' +
-      'de agenda (nula bajo el piso). Dice cuántos contactos no se pudieron cruzar con una pieza, y si falta el ' +
-      'campo del ICP.' +
+      'Creative: por pieza, contactos, cuántos tienen cuadrante del ICP (clasificados), cuántos son calificados ' +
+      '(Prioriza, Valida o Financia), cuántos están en Descarta y su porción sobre los clasificados (nula bajo el ' +
+      'piso), cuántos agendaron y la tasa de agenda (nula bajo el piso). El ICP no es un número: no hay promedio. ' +
+      'Dice cuántos contactos no se pudieron cruzar con una pieza, y si falta el campo del cuadrante.' +
       CON_VARIOS_CLIENTES,
     secciones: ['creative'],
     esquema: ARGUMENTO_PERIODO,
@@ -94,10 +95,10 @@ export const HERRAMIENTAS_DE_CREATIVE: readonly DefinicionDeHerramienta[] = [
       const filas = primeras(c.filas);
       const cliente = await suCliente(c.filas);
       return {
-        ...tomar(c, ['dias', 'desde', 'hasta', 'congeladas', 'puente', 'campoDeIcp', 'aviso'] as const),
+        ...tomar(c, ['dias', 'desde', 'hasta', 'congeladas', 'puente', 'campoDelCuadrante', 'aviso'] as const),
         piezas: {
           filas: filas.filas.map((f) => ({
-            ...tomar(f, ['creativo', 'etapa', 'contactos', 'conPuntaje', 'icpPromedio', 'agendaron', 'tasaDeAgenda', 'anunciosDeMeta'] as const),
+            ...tomar(f, ['creativo', 'etapa', 'contactos', 'clasificados', 'calificados', 'descarta', 'porcionDeDescarta', 'agendaron', 'tasaDeAgenda', 'anunciosDeMeta'] as const),
             ...cliente(f),
           })),
           total: filas.total,
@@ -164,15 +165,15 @@ export const HERRAMIENTAS_DE_CREATIVE: readonly DefinicionDeHerramienta[] = [
   {
     nombre: 'creative_en_cifras',
     descripcion:
-      'Creative: las cifras que la pantalla dibuja, como las dibuja. `cifras`: Calificados (contactos de ICP alto, 75 o ' +
-      'más), Agendas, Hook rate (vistas de video sobre impresiones de los anuncio-día que las reportan), Retención (sin fuente), ' +
+      'Creative: las cifras que la pantalla dibuja, como las dibuja. `cifras`: Calificados (contactos en Prioriza, ' +
+      'Valida o Financia, el cuadrante del ICP que manda el CRM), Agendas, Hook rate (vistas de video sobre impresiones de los anuncio-día que las reportan), Retención (sin fuente), ' +
       'Impresiones y Frecuencia, de toda la ventana. `piezas`: cada pieza con su etapa (la de la campaña con más ' +
       'impresiones; si esa campaña no la dice, la de sus contactos; si no, sin etapa), si entregó en los últimos 3 días, las mismas seis cifras, si perdió gancho (fatiga), si tiene ' +
       'miniatura o enlace, y su ficha: anuncios, primer y último día con entrega, gasto, CTR, link CTR, landing y ' +
       'click-to-landing. `criterios`: para Calificados, Agendas, Hook rate e Impresiones, qué piezas «funcionan» —llegan ' +
       'al promedio de SU etapa— y cuáles no, el promedio de cada etapa y las piezas únicas de su etapa. `loDemas`: gasto, ' +
       'CTR, link CTR, landing y piezas perdiendo gancho. Las tasas son fracciones de 0 a 1. Una cifra sin valor trae su ' +
-      'motivo: `sin_contactos`, `sin_puntaje` (el CRM no tiene el campo del ICP), `sin_entrega` (sin impresiones en la ' +
+      'motivo: `sin_contactos`, `sin_clasificacion` (el CRM no tiene el campo del cuadrante del ICP), `sin_entrega` (sin impresiones en la ' +
       'ventana), `bajo_el_piso` (menos de 10 clics al enlace), `pocas_impresiones` (menos de 1000), `sin_reporte` ' +
       '(GoHighLevel no reportó esa acción para la pieza en ningún día de la ventana, o el gasto de días con impresiones) o ' +
       '`sin_fuente` (la retención, que GoHighLevel no entrega). Entran sólo las piezas que en la ventana trajeron contactos, ' +

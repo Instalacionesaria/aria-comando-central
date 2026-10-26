@@ -26,6 +26,8 @@ el volumen, no el código**: a 30 días entraron **25 contactos** (58 el 2026-10
 2026-10-14 (todo medido el 2026-10-18). El sentimiento de Appointment Flow sigue bajo el piso: **6 juzgadas** a 30
 días.
 
+> **ICP en cuadrantes (2026-10-26, local, sin subir).** El ICP del lead dejó de ser el puntaje de 0 a 100: es el cuadrante que manda el CRM —Prioriza, Valida, Financia o Descarta— en `contactos.cuadrante` (la `105`), y ningún número del ICP se muestra. Lo que esta foto dice del puntaje, de los tramos 75 y 50 y del cero describe la versión anterior; sus citas quedaron fijadas a `@bf2de85` o a `@ddba683`. Los requisitos: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`. El grupo que agendó se reparte en Prioriza, Valida, Financia, Descarta y sin clasificar; la asistencia por calidad va por cuadrante calificado y sin clasificar, sin Descarta (sus citas son de descartados).
+
 > **Desde el corte del 2026-10-10**
 >
 > - **2026-10-10 · `d297289`** — CN-5: la comparación medida contra el prototipo, los anchos y la foto; «Qué corregir
@@ -115,10 +117,10 @@ sólo desde cuándo hay datos. Antes de CN-2 la ruta llamaba a cada función por
 (`app/api/auditoria/route.ts:80-110@e1ccf44`).
 
 **La lectura.** `lib/negocio/lecturaDeConversation.ts` tiene una mitad pura, `armarConversation`
-(`lib/negocio/lecturaDeConversation.ts:167-316`), y otra que lee: compone `indicadoresDelLead`, `tasaDeCancelacion`,
+(`lib/negocio/lecturaDeConversation.ts:178-327`), y otra que lee: compone `indicadoresDelLead`, `tasaDeCancelacion`,
 `atribucionDelLead`, `consumoDelPrecall` y `sentimientoPorFlujo` con tres lecturas propias —el ICP de quienes agendaron,
-la asistencia por tramo y los patrones abiertos— (`lib/negocio/lecturaDeConversation.ts:402-419`). Todo lo de
-`pantalla` viaja de 0 a 1; el navegador multiplica por 100 en un solo lugar (`components/conversation/comun.jsx:78`).
+la asistencia por tramo y los patrones abiertos— (`lib/negocio/lecturaDeConversation.ts:407-424`). Todo lo de
+`pantalla` viaja de 0 a 1; el navegador multiplica por 100 en un solo lugar (`components/conversation/comun.jsx:79`).
 
 **Los cuatro modos** (`components/conversation/PanelDeConversation.jsx:50-55`): **Estado** y **Agentes** son el
 prototipo y llevan el segmentado (`components/conversation/PanelDeConversation.jsx:144-150`); **Auditoría** y
@@ -138,33 +140,33 @@ la cabecera del departamento a la vista, `app/departamentos.css:208` oculta el t
 | Panel Appointment Flow: «Citas totales» y «Asistieron» con la tasa | `components/conversation/PanelDeConversation.jsx:313-330` | **40**; «—», «Nadie marca la asistencia.» |
 | Panel «De qué está hecho el grupo que agendó»: Agendaron y Alto · Medio · Bajo con su porción, y «{N} sin calificar» en el título | `components/conversation/PanelDeConversation.jsx:337-353` | 19; alto 1 (5 %) · medio 2 (11 %) · bajo 1 (5 %), 15 sin calificar |
 | **Estado** · tarjeta Lead Flow: «contacto a agenda» y la cadena Entraron → Les escribimos → Respondieron → Abrieron la landing → Agendaron | `components/conversation/PanelDeConversation.jsx:412-429` | 76 %; 25 · 20 (80 %) · 12 (48 %) · «—» «Sin enlace con seguimiento.» · 19 (76 %) |
-| **Estado** · tarjeta Appointment Flow: «agenda a asistencia», la cadena Citas → Confirmaron → Asistieron, las salidas, la asistencia por calidad y de dónde viene la cita | `components/conversation/PanelDeConversation.jsx:435-463` | «—»; 40 · no medido · «—»; Reprogramaron 5 (13 %), Cancelaron 14 (35 %); una sola línea «Nadie marca la asistencia.» (`components/conversation/PanelDeConversation.jsx:469-495`); el origen, 12 conversaron antes (63 %) y 7 solos (37 %) |
-| **Agentes** · cuatro tarjetas: Lead Flow y Appointment Flow, texto y voz | `components/conversation/PanelDeConversation.jsx:523-564` | Lead Flow · texto: **60 % de respuesta** (12 de 20), sentimiento «—» «Sin análisis en esta ventana.»; Appointment Flow · texto: la confirmación, no medida, y sentimiento «—» «Pocos casos para una tasa.» (6 juzgadas); las dos de voz: «—», «Sin llamadas registradas.» |
-| **Agentes** · «Qué corregir · {N} por resolver», que lleva al modo Auditoría | `components/conversation/PanelDeConversation.jsx:502-517` | **7 por resolver**: 27 hallazgos abiertos (26 de AppFlow y 1 de LeadFlow) en 7 códigos distintos |
-| «Lo demás, en cifras»: Primera respuesta · Primer mensaje fuera de horario · Precall registrado · Molestos | `components/conversation/PanelDeConversation.jsx:570-583` | las tres primeras, no medidas; Molestos «—», «Pocos casos para una tasa.» (6 juzgadas entre los dos flujos) |
+| **Estado** · tarjeta Appointment Flow: «agenda a asistencia», la cadena Citas → Confirmaron → Asistieron, las salidas, la asistencia por calidad y de dónde viene la cita | `components/conversation/PanelDeConversation.jsx:435-463` | «—»; 40 · no medido · «—»; Reprogramaron 5 (13 %), Cancelaron 14 (35 %); una sola línea «Nadie marca la asistencia.» (`components/conversation/PanelDeConversation.jsx:470-496`); el origen, 12 conversaron antes (63 %) y 7 solos (37 %) |
+| **Agentes** · cuatro tarjetas: Lead Flow y Appointment Flow, texto y voz | `components/conversation/PanelDeConversation.jsx:524-565` | Lead Flow · texto: **60 % de respuesta** (12 de 20), sentimiento «—» «Sin análisis en esta ventana.»; Appointment Flow · texto: la confirmación, no medida, y sentimiento «—» «Pocos casos para una tasa.» (6 juzgadas); las dos de voz: «—», «Sin llamadas registradas.» |
+| **Agentes** · «Qué corregir · {N} por resolver», que lleva al modo Auditoría | `components/conversation/PanelDeConversation.jsx:503-518` | **7 por resolver**: 27 hallazgos abiertos (26 de AppFlow y 1 de LeadFlow) en 7 códigos distintos |
+| «Lo demás, en cifras»: Primera respuesta · Primer mensaje fuera de horario · Precall registrado · Molestos | `components/conversation/PanelDeConversation.jsx:571-584` | las tres primeras, no medidas; Molestos «—», «Pocos casos para una tasa.» (6 juzgadas entre los dos flujos) |
 
 **Con «Hoy» y «7 días» la pantalla está casi vacía** (2026-10-18): 1 contacto en 7 días y 4 citas ocurridas, así que
 toda tasa queda bajo el piso, «—» con «Pocos casos para una tasa.».
 
 **Las cuatro cifras de abajo** (CN1-12): **la primera respuesta** es la mediana en minutos, con piso de 10 respuestas
-y su propia frase, «Pocos casos para una mediana.» (`lib/negocio/lecturaDeConversation.ts:295-300`); **el primer
+y su propia frase, «Pocos casos para una mediana.» (`lib/negocio/lecturaDeConversation.ts:306-311`); **el primer
 mensaje fuera de horario** es la porción de primeros mensajes que salieron antes de las 8 o desde las 21 en la zona
-del contacto, sobre los escritos con zona (`lib/negocio/lecturaDeConversation.ts:303-306`); **el precall** es la
+del contacto, sobre los escritos con zona (`lib/negocio/lecturaDeConversation.ts:314-317`); **el precall** es la
 porción de contactos con cita que registraron haber visto el video, **sobre los que tienen el campo clasificado**, la
-base del módulo (`lib/negocio/lecturaDeConversation.ts:308-312`, `lib/negocio/consumoDelPrecall.ts:232`); y **los
+base del módulo (`lib/negocio/lecturaDeConversation.ts:319-323`, `lib/negocio/consumoDelPrecall.ts:232`); y **los
 molestos** juntan las conversaciones juzgadas de los dos flujos, con el piso sobre la suma
-(`lib/negocio/lecturaDeConversation.ts:207-218`). La atribución por fuente y por campaña salió de la pantalla: la
+(`lib/negocio/lecturaDeConversation.ts:218-229`). La atribución por fuente y por campaña salió de la pantalla: la
 responde el agente.
 
 **Las tarjetas de agente son cifras del flujo, no del agente** (CN1-11): ningún mensaje dice qué agente lo escribió y
 la confirmación es un campo del CRM. La de texto de Lead Flow publica la respuesta —respondieron sobre escritos—, con
 escritos, respondieron y agendaron debajo; la de Appointment Flow, la confirmación, con citas, confirmaron,
-reprogramaron y cancelaron (`lib/negocio/lecturaDeConversation.ts:265-291`). Las de voz no tienen dato
-(`lib/negocio/lecturaDeConversation.ts:199-205`). Las tarjetas no abren cajón (`app/conversation.css:89-90`).
+reprogramaron y cancelaron (`lib/negocio/lecturaDeConversation.ts:276-302`). Las de voz no tienen dato
+(`lib/negocio/lecturaDeConversation.ts:210-216`). Las tarjetas no abren cajón (`app/conversation.css:89-90`).
 
 **«Qué corregir · {N} por resolver»** cuenta patrones abiertos, uno por código como los agrupa Auditoría
-(`lib/negocio/lecturaDeConversation.ts:378-385`), sin ventana, como la pantalla del técnico. Sin auditoría no cuenta:
-dice «La empresa no audita sus agentes.» (`lib/negocio/lecturaDeConversation.ts:292`). Ver riesgo 21.
+(`lib/negocio/lecturaDeConversation.ts:383-390`), sin ventana, como la pantalla del técnico. Sin auditoría no cuenta:
+dice «La empresa no audita sus agentes.» (`lib/negocio/lecturaDeConversation.ts:303`). Ver riesgo 21.
 
 **Los desvíos de rótulo**, declarados en CN1-02: «Contactos» por «Contactos sin cita»; «el grupo que agendó» por «el
 grupo que asistió», porque la asistencia está en 0; «Conversaron antes» por «Los rescató Lead Flow», porque se mide si
@@ -175,10 +177,10 @@ que el auditor no detecta; y la cifra grande de cada agente de texto, que es del
 
 **Las bases de la cadena de Appointment Flow no son la misma** (CN1-10). «Citas» son citas ocurridas de contactos no
 descartados. **«Confirmaron» cuenta CONTACTOS** con cita en la ventana, descartados incluidos, y su porción es sobre
-los que respondieron el campo del CRM (`lib/negocio/lecturaDeConversation.ts:245-246`,
+los que respondieron el campo del CRM (`lib/negocio/lecturaDeConversation.ts:256-257`,
 `lib/negocio/indicadoresDeCitas.ts:245`): el conteo puede no cuadrar con el de las citas, y su barra no es una porción
 de ellas. «Asistieron» es sobre las citas con la asistencia marcada. La pantalla no lo dice; lo dice la herramienta
-del cerebro (`lib/agentes/executive/adaptadores/conversation.ts:140-142`).
+del cerebro (`lib/agentes/executive/adaptadores/conversation.ts:140-142@bf2de85`).
 
 **Cada «—» dice por qué, con una frase de una lista cerrada.** Doce motivos (`lib/negocio/lecturaDeConversation.ts:48-60`),
 cada uno con su frase (`components/conversation/comun.jsx:28-41`), más el «—» mismo, la de la mediana, la de la
@@ -190,16 +192,16 @@ en las herramientas del cerebro.
 **Ventanas y piso.** Hoy · 7 días · 30 días · Completo (`lib/negocio/periodo.ts:83-96`), **rodantes** (`CN1-P01`), sin
 comparación contra la ventana anterior. Tres poblaciones en una pantalla, todas con la misma cantidad de días: la
 COHORTE de contactos por `alta_en_el_crm` para Lead Flow, el ICP, el origen y las cifras de abajo; las CITAS ocurridas
-en la ventana, alcanzables y de no descartados, para Appointment Flow (`lib/negocio/lecturaDeConversation.ts:344-358`);
+en la ventana, alcanzables y de no descartados, para Appointment Flow (`lib/negocio/lecturaDeConversation.ts:344-358@bf2de85`);
 y los ANÁLISIS del auditor por `analizado_el` para el sentimiento (`lib/auditor/sentimiento.ts:89-93`). «Qué corregir»
 no tiene ventana. **Toda tasa lleva el piso de 10 sobre su denominador** (`CN1-P02`): `tasa`
-(`lib/negocio/lecturaDeConversation.ts:142-146`) sobre `PISO_DE_UNA_TASA` (`lib/negocio/indicadoresDeCitas.ts:329`),
+(`lib/negocio/lecturaDeConversation.ts:145-149`) sobre `PISO_DE_UNA_TASA` (`lib/negocio/indicadoresDeCitas.ts:329`),
 también el booking rate, la respuesta, la cancelación y el reagendamiento, que los módulos publican sin él; las
-porciones del ICP lo llevan sobre el total de quienes agendaron (`lib/negocio/lecturaDeConversation.ts:175-185`), y el
-sentimiento sobre los juzgados (`lib/negocio/lecturaDeConversation.ts:155-164`). El piso se aplica en la lectura, no
+porciones del ICP lo llevan sobre el total de quienes agendaron (`lib/negocio/lecturaDeConversation.ts:175-185@bf2de85`), y el
+sentimiento sobre los juzgados (`lib/negocio/lecturaDeConversation.ts:166-175`). El piso se aplica en la lectura, no
 en las funciones, que comparten otras pantallas.
 
-**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:132`) con las
+**El plan.** El «Plan de acción» es `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:135`) con las
 señales que trae la ruta (`components/conversation/PanelDeConversation.jsx:141`): el plan de la pasada de la mañana,
 de 7 días con «7 días» y de 30 con los otros tres (`app/api/auditoria/route.ts:76`). El detector tiene una sola regla,
 `CONV-PATRON-ABIERTO` (`lib/agentes/detectores/conversation.ts:49-62`): traduce los hallazgos abiertos del auditor,
@@ -220,7 +222,7 @@ guardan la proporción (303 · 303 · 503 px contra 315 · 315 · 523, con 1144 
 las cadenas miden lo mismo (42 y 31 px contra 41 y 30) y los tamaños de letra son iguales. Los paneles miden 13 px
 más alto porque la línea de debajo de una cifra se parte en dos renglones, y el selector es más ancho porque tiene
 cuatro modos y cuatro períodos. A 1440, 1180, 1125 y 375 px, en los cuatro modos, nada desborda a lo ancho y ninguna
-cifra queda cortada; las reglas de los anchos están en `app/conversation.css:103-123`. Las pruebas: `pruebas/codigo/250-lectura-de-conversation.test.ts`,
+cifra queda cortada; las reglas de los anchos están en `app/conversation.css:103-124`. Las pruebas: `pruebas/codigo/250-lectura-de-conversation.test.ts`,
 `pruebas/base/250-lectura-de-conversation.test.ts` y `pruebas/codigo/251-la-pantalla-de-conversation.test.ts`. No se
 volvió a mirar en el navegador para este corte.
 
@@ -290,10 +292,10 @@ Medido el **2026-10-18**, con `scripts/supabase.mjs leer`, sobre la única organ
 | 30 días | 40 (56) | 14 (15) | 5 (7) | 0 |
 | toda la historia | 173 (169) | 65 (63) | 18 (17) | 0 |
 
-**El ICP de esta medición es exacto**: se contó con la regla de `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85`),
+**El ICP de esta medición es exacto**: se contó con la regla de `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85@ddba683`),
 el puntaje 0 en «sin calificar». La del 2026-10-10 lo contaba dentro de «bajo», y la diferencia en toda la historia
 —78 a 71 en «bajo», 38 a 48 en «sin calificar», con 3 agendados más— dice que eran 7 contactos. Desde CN-1
-Conversation usa el tramo de Leads Portal (`lib/negocio/lecturaDeConversation.ts:326-337`).
+Conversation usa el tramo de Leads Portal (`lib/negocio/lecturaDeConversation.ts:326-337@bf2de85`).
 
 **Las citas, todas**: 368, del 2026-08-12 al 2026-10-20, una sola futura; ninguna con `asistio` escrito, 179
 canceladas, 101 congeladas, 20 plantones y 3 «showed» del calendario (2026-10-18).
@@ -362,10 +364,10 @@ y cada uno dice por qué falta ESA cifra: «sin contactos» al lado de «Contact
 (`lib/negocio/lecturaDeConversation.ts:45-46`). La frase sale de una lista cerrada (CN1-02).
 
 **2 · Toda tasa de la pantalla lleva el piso de 10 sobre su denominador**, en la lectura y no en las funciones
-compartidas (`lib/negocio/lecturaDeConversation.ts:142-146`).
+compartidas (`lib/negocio/lecturaDeConversation.ts:145-149`).
 
 **3 · El servidor calcula; el navegador dibuja.** Todo viaja de 0 a 1 y se multiplica por 100 en un solo lugar
-(`components/conversation/comun.jsx:78`). Lo que dice el cerebro de una cifra es lo que se dibuja (CN1-16).
+(`components/conversation/comun.jsx:79`). Lo que dice el cerebro de una cifra es lo que se dibuja (CN1-16).
 
 **4 · Es un tablero: cifras con su rótulo, y la explicación es del agente** (CN1-05).
 
@@ -376,7 +378,7 @@ que muestra, con su permiso, y al cerebro no viajan los casos ni las conversacio
 (`lib/agentes/executive/adaptadores/conversation.ts:4-7`).
 
 **7 · La cadena de Lead Flow no es un embudo.** Agendar no exige haber contestado: cada paso es una porción de la
-cohorte (`lib/negocio/lecturaDeConversation.ts:232-239`), y la bifurcación suma el total
+cohorte (`lib/negocio/lecturaDeConversation.ts:243-250`), y la bifurcación suma el total
 (`pruebas/base/150-indicadores-del-lead.test.ts:593-597`).
 
 **8 · Agendar es el evento**: el booking rate cuenta cualquier cita, futura o congelada
@@ -384,7 +386,7 @@ cohorte (`lib/negocio/lecturaDeConversation.ts:232-239`), y la bifurcación suma
 las exclusiones porque pregunta otra cosa.
 
 **9 · El denominador de la asistencia lleva `asistio is not null`** (`lib/negocio/indicadoresDeCitas.ts:385-399`), y la
-asistencia por tramo lo repite (`lib/negocio/lecturaDeConversation.ts:350-351`).
+asistencia por tramo lo repite (`lib/negocio/lecturaDeConversation.ts:360-361`).
 
 **10 · Los dos vocabularios del supervisor no se mezclan.** Post-agenda (`lib/auditor/veredicto.ts:97`) y pre-agenda
 (`lib/auditor/veredicto.ts:134`) tienen rúbricas distintas, y cruzarlas da un resultado «convincente y falso»
@@ -414,7 +416,7 @@ hallazgos de más de un cliente, el detector lee los casos de cada cliente activ
 SU agente (`lib/auditor/pantalla.ts:295`), así que el `issue_source` de un cliente no sale del prompt de otro, y un
 cliente con la auditoría atrasada no calla a los demás: sólo lo suyo queda sin medición, y el plan lo nombra
 (`lib/agentes/detectores/clientes.ts:64`). La pestaña Auditoría no cambia (su texto ganador sigue siendo por patrón, de
-toda la empresa). Lo exigen `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:248` y
+toda la empresa). Lo exigen `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:249` y
 `pruebas/base/295-las-senales-de-cada-cliente.test.ts:325`.
 
 ---
@@ -442,7 +444,7 @@ de Meta gastó 1,20 en 7 días. Ninguna cifra de la pantalla dice cuánto entró
 `asistio is not null` diría que no viene nadie.
 
 **6 · Dos ventanas en la misma pantalla.** **Abierto.** Auditoría ya es un modo aparte, sin segmentado. Pero en
-Agentes, «Qué corregir · {N}» cuenta patrones de toda la historia (`lib/negocio/lecturaDeConversation.ts:373-385`)
+Agentes, «Qué corregir · {N}» cuenta patrones de toda la historia (`lib/negocio/lecturaDeConversation.ts:378-390`)
 debajo de tarjetas que miden la ventana elegida, y nada lo dice: con «Hoy», «7 por resolver» al lado de tarjetas en
 «—».
 
@@ -465,7 +467,7 @@ al compararlas.
 valor que era el nombre de una persona, escondidos en «Otras» por el piso (2026-09-28, no re-medido).
 
 **12 · La respuesta es de la conversación, no del agente.** **Abierto, y expuesto**: es la cifra grande de la tarjeta
-«Lead Flow · Texto» (`lib/negocio/lecturaDeConversation.ts:268`). El desvío está declarado (CN1-02, CN1-11), pero la
+«Lead Flow · Texto» (`lib/negocio/lecturaDeConversation.ts:279`). El desvío está declarado (CN1-02, CN1-11), pero la
 pantalla no tiene dónde decirlo: lo dice el agente.
 
 **13 · El censurado de las latencias.** **Abierto**: «Primera respuesta» es la mediana de los que contestaron, y el
@@ -475,9 +477,9 @@ aviso que cuenta a los que no (`lib/negocio/indicadoresDelLead.ts:436-448`) no s
 
 **15 · Convertir la bifurcación en un escalón.** **Abierto.** La cadena de Lead Flow termina en «Agendaron», después de
 «Respondieron», como en el prototipo. Ninguna porción miente —todas son sobre la cohorte
-(`lib/negocio/lecturaDeConversation.ts:232-239`)—, pero la forma se lee como embudo y agendar no es un subconjunto de
+(`lib/negocio/lecturaDeConversation.ts:243-250`)—, pero la forma se lee como embudo y agendar no es un subconjunto de
 responder: el 2026-10-18, a 30 días, 19 agendaron y 12 respondieron. La bifurcación vive en «De dónde viene la cita»,
-sobre los que agendaron (`lib/negocio/lecturaDeConversation.ts:260-263`), y la suma la fija la prueba de la regla 7.
+sobre los que agendaron (`lib/negocio/lecturaDeConversation.ts:271-274`), y la suma la fija la prueba de la regla 7.
 
 **16 · Tasas sin piso sobre uno a cinco casos.** **Cerrado en la pantalla** en CN-1 (`e1ccf44`). Las funciones siguen
 sin piso (`lib/negocio/indicadoresDeCitas.ts:449`), y Sales dibuja la cancelación con ellas.
@@ -492,7 +494,7 @@ activas tiene contactos y análisis del auditor (2026-10-18). Sin auditoría, el
 empresa no audita sus agentes.»; las cifras de los flujos dependen de `negocio.*`.
 
 **19 · `desde` sin año.** **Cerrado** en CN-4 (`89d8c19`): la fecha lleva el año cuando no es el de hoy
-(`components/conversation/comun.jsx:91-97`).
+(`components/conversation/comun.jsx:92-98`).
 
 **20 · Dos comentarios decían que la sección pide `tablero.ver`.** **Cerrado** en CN-3 (`a6e6309`):
 `lib/autorizacion/secciones.ts:314-316` y `components/views/ConversationView.jsx:16-18`.
@@ -500,7 +502,7 @@ empresa no audita sus agentes.»; las cifras de los flujos dependen de `negocio.
 **21 · Los patrones se agrupan sin mirar el agente.** **Abierto** (`CN1-P07`: la auditoría no cambia).
 `agruparPorPatron` junta por código (`lib/auditor/vista.ts:106-138`) y cada tarjeta se queda con los patrones cuyo
 caso más reciente es suyo (`components/auditoria/PanelDeAuditoria.jsx:150`). «Qué corregir» cuenta igual, por código
-(`lib/negocio/lecturaDeConversation.ts:381`): en CN-4 contaba por agente y código, y se corrigió en CN-5. **La foto
+(`lib/negocio/lecturaDeConversation.ts:386`): en CN-4 contaba por agente y código, y se corrigió en CN-5. **La foto
 anterior se contradecía**: su tabla publicaba «8 por resolver» (7 patrones de AppFlow y 1 de LeadFlow), que es la
 cuenta vieja; por código son 7, porque el patrón de LeadFlow comparte código con uno de AppFlow (medido el
 2026-10-18, con los mismos 27 hallazgos abiertos).

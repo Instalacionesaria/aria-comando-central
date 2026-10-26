@@ -127,15 +127,15 @@ la pantalla nueva no puede heredar sin querer.
   - **47 en cero**, todos de tres semanas de alta (la del 17-ago 3, la del 24-ago 23, la del 31-ago
     21) y **ninguno en los últimos 14 días**. `sincronizar.ts` guarda el cero como cero porque no se
     sabe si el CRM calculó cero o si su workflow no corrió
-    (`lib/negocio/sincronizar.ts:432-440`).
+    (`lib/negocio/sincronizar.ts:447-455`).
 - **Qué pide:** el pie de la tarjeta muestra los dos términos: «sin puntaje N · en 0 N». La
   respuesta los trae como `sinCalificar.sinPuntaje` y `sinCalificar.enCero`.
 - **El guardián:** `sinCalificar.cerosRecientes` cuenta los ceros con alta en los últimos 14 días.
   Si deja de valer 0, la pantalla lo avisa. Un cero nuevo querría decir que el CRM volvió a fallar,
   y esa falla se escondería dentro de una tarjeta que ya tiene gente. **Medido: 0.**
 - **La divergencia que hay que declarar:** el ICP promedio de Creative **sí** promedia los ceros. Su
-  validación —la de la sincronización desde C6 · D4 (`lib/negocio/camposDelCrm.ts:456`)— deja pasar el `0`, y el
-  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:245`). Las dos pantallas pueden
+  validación —la de la sincronización desde C6 · D4 (`lib/negocio/camposDelCrm.ts:456@bf2de85`)— deja pasar el `0`, y el
+  promedio se calcula sobre eso (`lib/negocio/calidadDelCreativo.ts:245@bf2de85`). Las dos pantallas pueden
   mostrar a los mismos contactos de forma distinta. Esta carpeta no lo arregla: lo dice en el matiz
   de la tarjeta y lo registra `14-EL-PUNTAJE-DEL-CRM.md`.
 
@@ -186,9 +186,9 @@ la pantalla nueva no puede heredar sin querer.
 - **Rastro:** `agend` en `aios-command-center_1.html:4710`, y el «sin agendar» fijo de la tarjeta
   `nc` en `aios-command-center_1.html:4715`.
 - **Qué pide:** la misma definición que el resto del sistema, sin copiarla. El predicado es
-  `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:115-145`): una cita cancelada cuenta, una
+  `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:116-146`): una cita cancelada cuenta, una
   congelada no. La unidad es la persona, con `exists` y no con `join`
-  (`lib/negocio/citasAlcanzables.ts:122-124`). Es el mismo predicado del eslabón `con_cita` de Sales
+  (`lib/negocio/citasAlcanzables.ts:123-125`). Es el mismo predicado del eslabón `con_cita` de Sales
   (`lib/negocio/cadenaDeCierre.ts:204`). Por eso los agendados de «Todos» tienen que coincidir con
   los de Sales en la misma ventana, y la prueba de la ruta lo vigila (LP-4).
 - **Lo que LP-0 no midió, y hay que decirlo:** la medición contó **292** personas con alguna cita y
@@ -260,7 +260,7 @@ la pantalla nueva no puede heredar sin querer.
   comentario de `comision.ts` describe ese mismo defecto (`lib/negocio/comision.ts:26-27`).
 - **El formato de la maqueta es andamiaje:** `'$'+n.toLocaleString('en-US')`
   (`aios-command-center_1.html:4587`). La tabla de resultados guarda el monto y ninguna moneda
-  (`lib/datos/esquema.ts:877-890`).
+  (`lib/datos/esquema.ts:890-903`).
 
 ### LP03-14 · Las tarjetas no emiten `data-leads`
 
@@ -301,7 +301,7 @@ la pantalla nueva no puede heredar sin querer.
 - **Qué pide:** la respuesta trae `asistieron` por tramo, porque lo necesita el filtro de etapa, pero
   **la tarjeta no dibuja una tasa de asistencia**. Hoy esa tasa no tendría denominador: nadie
   contestó. El plantón del calendario viaja aparte y no se suma con `asistio`
-  (`lib/negocio/citasAlcanzables.ts:105-109`).
+  (`lib/negocio/citasAlcanzables.ts:106-110`).
 
 ---
 

@@ -1,4 +1,4 @@
-// La búsqueda, el filtro de tramo y el de etapa de la rejilla de Leads Portal. En el navegador.
+// La búsqueda, el filtro de cuadrante del ICP y el de etapa de la rejilla de Leads Portal. En el navegador.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // SE FILTRA EN LA PANTALLA PORQUE LA PANTALLA TIENE TODO
@@ -17,12 +17,12 @@
 //
 // ── SIN IMPORTS QUE TOQUEN LA BASE ──────────────────────────────────────────
 //
-// Lo usa el panel, que es `'use client'`. `buscarLead.ts` y `tramosDelIcp.ts` no importan nada, y los
+// Lo usa el panel, que es `'use client'`. `buscarLead.ts` y `cuadrantesDelIcp.ts` no importan nada, y los
 // tipos de `leadsDelPortal.ts` entran con `import type`, que se borra al compilar.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { normalizar } from './buscarLead.ts';
-import { type ClaveDeTramo, rotuloDelTramo } from './tramosDelIcp.ts';
+import { type ClaveDeCuadrante, rotuloDelCuadrante } from './cuadrantesDelIcp.ts';
 import type { LeadDelPortal } from './leadsDelPortal.ts';
 
 export type Etapa = 'todas' | 'agendados' | 'asistieron' | 'vendidos';
@@ -47,18 +47,18 @@ export const DE_A = 60;
 /** Lo que el filtro necesita de una fila. Un subconjunto, para probarlo sin la fila entera. */
 export type FilaFiltrable = Pick<
   LeadDelPortal,
-  'nombre' | 'campana' | 'creativo' | 'tramo' | 'cita' | 'asistencia' | 'vendio'
+  'nombre' | 'campana' | 'creativo' | 'cuadrante' | 'cita' | 'asistencia' | 'vendio'
 >;
 
 export interface Filtros {
   /** Lo que se escribió, SIN normalizar. */
   consulta: string;
-  /** `null` = todos los tramos. */
-  tramo: ClaveDeTramo | null;
+  /** `null` = todos los cuadrantes. */
+  cuadrante: ClaveDeCuadrante | null;
   etapa: Etapa;
 }
 
-export const SIN_FILTROS: Filtros = { consulta: '', tramo: null, etapa: 'todas' };
+export const SIN_FILTROS: Filtros = { consulta: '', cuadrante: null, etapa: 'todas' };
 
 /**
  * Si la fila coincide con lo escrito: nombre, campaña o creativo, sin tildes y sin mayúsculas.
@@ -83,15 +83,16 @@ function cumpleLaEtapa(fila: FilaFiltrable, etapa: Etapa): boolean {
 }
 
 /**
- * Las filas que cumplen los tres filtros a la vez: la búsqueda, el tramo y la etapa.
+ * Las filas que cumplen los tres filtros a la vez: la búsqueda, el cuadrante y la etapa.
  *
- * El tramo compara la CLAVE que mandó el servidor, así que «Sin calificar» incluye a los que valen 0
- * sin que la pantalla lo decida de nuevo: el 0 ya llegó con `tramo: 'sin_calificar'`.
+ * El cuadrante compara la CLAVE que mandó el servidor, así que «Sin clasificar» incluye a los que traen un valor
+ * que no es ninguna de las cuatro palabras sin que la pantalla lo decida de nuevo: ya llegaron con
+ * `cuadrante: 'sin_clasificar'`.
  */
 export function filtrar<F extends FilaFiltrable>(filas: readonly F[], f: Filtros): F[] {
   return filas.filter(
     (fila) =>
-      (f.tramo === null || fila.tramo === f.tramo) &&
+      (f.cuadrante === null || fila.cuadrante === f.cuadrante) &&
       cumpleLaEtapa(fila, f.etapa) &&
       coincideConLaConsulta(fila, f.consulta),
   );
@@ -111,7 +112,7 @@ export function contador(o: {
   truncado: boolean;
 }): string {
   const partes = [`${o.vistas} de ${o.cohorte} contactos`];
-  if (o.filtros.tramo !== null) partes.push(rotuloDelTramo(o.filtros.tramo));
+  if (o.filtros.cuadrante !== null) partes.push(rotuloDelCuadrante(o.filtros.cuadrante));
   if (o.filtros.etapa !== 'todas') {
     partes.push(ETAPAS.find((e) => e.clave === o.filtros.etapa)?.rotulo ?? o.filtros.etapa);
   }
@@ -126,7 +127,7 @@ export function contador(o: {
  *
  * «Asistieron» vacío porque nadie registró asistencia no es «ninguno coincide», y «Vendidos» vacío
  * sin ninguna venta en la empresa tampoco: son datos que no existen, y dibujarlos como una búsqueda
- * sin resultados diría que la gente no fue o no compró. Una búsqueda o un tramo sin coincidencias sí
+ * sin resultados diría que la gente no fue o no compró. Una búsqueda o un cuadrante sin coincidencias sí
  * lleva el texto genérico.
  */
 export function porQueVacia(o: {

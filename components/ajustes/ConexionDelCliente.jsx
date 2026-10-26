@@ -17,8 +17,9 @@
  * cadena vacía no borra (borrar es `null`, con su botón); y una recarga con datos ya dibujados NO vuelve a «Leyendo…»,
  * porque eso desmontaría `AvisoDelCrm` y perdería la cabecera recién generada, que no se vuelve a mostrar.
  *
- * Debajo va «Puntaje y Perfil» (`CamposDelCliente`, C6 · D4) — también en el principal: el campo del puntaje y las
- * carpetas del Perfil no son credenciales sino el catálogo de su subcuenta, y se eligen acá para todos los clientes.
+ * Debajo va «ICP y Perfil» (`CamposDelCliente`, C6 · D4) — también en el principal: el campo del cuadrante del ICP
+ * (que se ve, no se elige: la `105`) y las carpetas del Perfil no son credenciales sino el catálogo de su subcuenta, y
+ * se miran y eligen acá para todos los clientes.
  * Vive en su propio archivo, con su propia lectura.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 

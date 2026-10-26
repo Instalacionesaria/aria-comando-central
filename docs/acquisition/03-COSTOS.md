@@ -171,7 +171,7 @@ El requisito de forma: **el costo no se presenta solo.** Un «$115» sin el «21
 
 ### A3-13 · El costo por calificado es la cifra de decisión, y la pantalla ya lo marca
 
-`:200-201` — de las tres estadísticas del encabezado del embudo, dos llevan la clase `key`, que las pinta en el color de acento (`app/aios.css:1767` y `:1876`): **Calificados** y **Costo / calif.** La que no la lleva es **Inversión**. La tesis del departamento en tres números, con las dos que importan resaltadas: cuántos buenos salieron y a cómo salió cada uno.
+`:200-201` — de las tres estadísticas del encabezado del embudo, dos llevan la clase `key`, que las pinta en el color de acento (`app/aios.css:1769` y `:1876`): **Calificados** y **Costo / calif.** La que no la lleva es **Inversión**. La tesis del departamento en tres números, con las dos que importan resaltadas: cuántos buenos salieron y a cómo salió cada uno.
 
 Lo confirma el modal: la única recomendación accionable con umbral de toda la pantalla es «Sube el presupuesto de retargeting mientras el costo por calificado se mantenga bajo $110» (`lib/aios/acquisition-plan.js:21`), y el freno del otro grupo enuncia la regla de negocio completa: «Deja de escalar Prospecting B **por costo por contacto**: su costo por calificado es el más alto» (`:16`). **La decisión de escala se toma por costo por calificado, no por costo por contacto.**
 

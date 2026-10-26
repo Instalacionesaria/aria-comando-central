@@ -314,7 +314,7 @@ cita no se midió: el vínculo no se guarda, se calcula al leer.
   piso de 10 y frases citables sólo para quien tiene `analizadores.ver` (`lib/negocio/llamadasDeVenta.ts:7-20`);
 - la **Reunión** de cada mañana (`lib/agentes/reunion/temas.ts:104-105`);
 - el **Brief** del closer, que trae la ficha de la última llamada vinculada al contacto y las objeciones frecuentes
-  (`lib/agentes/brief/entrada.ts:145`, `lib/agentes/brief/entrada.ts:168-169`); en producción
+  (`lib/agentes/brief/entrada.ts:146`, `lib/agentes/brief/entrada.ts:169-170`); en producción
   `negocio.briefs_del_closer` tiene **0 filas** el 2026-10-18;
 - y la **pantalla de Sales**, cuyos motivos de no venta son las llamadas HT sin cierre con una objeción de cada
   categoría (`lib/negocio/motivosDeLasLlamadas.ts:1-24`, leído en `lib/negocio/lecturaDeSales.ts:262`).

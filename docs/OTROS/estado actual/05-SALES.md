@@ -22,6 +22,8 @@ monto**, y la última es del 2026-09-09: **desde el 2026-10-10 la ventana de 30 
 y Ventas, Revenue y Tasa de cierre dicen «—» con «Nadie registró en esta ventana.». La asistencia está marcada en
 **0 de 368** citas (todo medido el 2026-10-18).
 
+> **ICP en cuadrantes (2026-10-26, local, sin subir).** El ICP del lead dejó de ser el puntaje de 0 a 100: es el cuadrante que manda el CRM —Prioriza, Valida, Financia o Descarta— en `contactos.cuadrante` (la `105`), y ningún número del ICP se muestra. Lo que esta foto dice del puntaje, de los tramos 75 y 50 y del cero describe la versión anterior; sus citas quedaron fijadas a `@bf2de85` o a `@ddba683`. Los requisitos: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`. El cuadrante Descarta es un descarte: sus citas cuentan como descartadas en la cadena de cierre y salen del cierre por closer.
+
 > **Desde el corte del 2026-10-09**
 >
 > - **2026-10-09 · `2421d49`** — SA-9: la revisión de la segunda ronda. El closer sin vínculo con el CRM dice por qué
@@ -346,7 +348,7 @@ presentaron entre las citas con la asistencia respondida; sin ninguna respondida
 `resultados.registrado_por` contra `contactos.crm_asignado_a`, que en esta base dan vuelta la tabla si se cruzan
 (`lib/negocio/cierrePorCloser.ts:37-51`).
 
-**9 · El filtro de citas «alcanzables y no descartadas» es del sistema.** `lib/negocio/citasAlcanzables.ts:54-56` y
+**9 · El filtro de citas «alcanzables y no descartadas» es del sistema.** `lib/negocio/citasAlcanzables.ts:55-57` y
 `:79-85`.
 
 **10 · Los identificadores del CRM se resuelven por NOMBRE, nunca a mano.** `lib/negocio/salidas.ts:73-77`.

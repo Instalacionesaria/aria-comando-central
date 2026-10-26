@@ -102,7 +102,8 @@ con cada consulta al pie de su cifra en `09-DE-DONDE-VIENE-CADA-DATO.md`.
 | `11-LO-QUE-PIDE-EL-DOCUMENTO.md` | el § 5.3 renglón por renglón, las entidades del § 5.1, y lo que el documento no tiene |
 | `12-QUIEN-VE-QUE.md` | la regla de acceso, a quién alcanza hoy, qué va en la lista y qué sólo en la ficha |
 | `13-EL-CONTRASTE.md` | la maqueta contra el documento contra lo medible: qué se construye en LP-1 a LP-6 y qué se dibuja como hueco |
-| **`14-EL-PUNTAJE-DEL-CRM.md`** | qué es «Puntaje \| ICP», los cortes 75 y 50, los 47 ceros y el cruce con el rechazo |
+| **`14-EL-PUNTAJE-DEL-CRM.md`** | qué es «Puntaje \| ICP», los cortes 75 y 50, los 47 ceros y el cruce con el rechazo (reemplazado por el 15) |
+| **`15-EL-CUADRANTE-DEL-ICP.md`** | desde el 2026-10-26: el ICP son las cuatro palabras del CRM (Prioriza, Valida, Financia, Descarta), Descarta es un descarte y calificado es agendó con una de las tres primeras |
 
 Fuera de la carpeta, pedido con el mismo plan: `docs/OTROS/futuro/icp-interno-calculado.md`, un ICP
 calculado por Comando Central que **sólo se documenta**.

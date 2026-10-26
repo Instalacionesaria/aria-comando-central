@@ -31,17 +31,28 @@
 #v-contacts button.icpc:focus-visible,
 #v-contacts button.lc:focus-visible { outline: 2px solid rgb(var(--c-acento) / .55); outline-offset: 2px; }
 
-/* El color de cada tramo: los de la maqueta, por clave y no por posición. */
-#v-contacts .idot[data-tramo="alto"],
-#v-contacts .ib i[data-tramo="alto"] { background: var(--ok); }
-#v-contacts .idot[data-tramo="medio"],
-#v-contacts .ib i[data-tramo="medio"] { background: var(--warn); }
-#v-contacts .idot[data-tramo="bajo"],
-#v-contacts .ib i[data-tramo="bajo"] { background: var(--txt-faint); }
-#v-contacts .idot[data-tramo="sin_calificar"],
-#v-contacts .ib i[data-tramo="sin_calificar"] { background: rgb(var(--c-nube) / .25); }
-#v-contacts .idot[data-tramo="todos"],
-#v-contacts .ib i[data-tramo="todos"] { background: var(--accent); }
+/* El color de cada cuadrante, por clave y no por posición (la `105`): Prioriza el de «alto» de la maqueta, Valida y
+   Financia el de «medio» —Financia más tenue, para que las dos tarjetas del mismo nivel se distingan—, Descarta el de
+   «bajo». */
+#v-contacts .idot[data-cuadrante="prioriza"],
+#v-contacts .ib i[data-cuadrante="prioriza"] { background: var(--ok); }
+#v-contacts .idot[data-cuadrante="valida"],
+#v-contacts .ib i[data-cuadrante="valida"] { background: var(--warn); }
+#v-contacts .idot[data-cuadrante="financia"],
+#v-contacts .ib i[data-cuadrante="financia"] { background: rgb(var(--c-warn) / .55); }
+#v-contacts .idot[data-cuadrante="descarta"],
+#v-contacts .ib i[data-cuadrante="descarta"] { background: var(--txt-faint); }
+#v-contacts .idot[data-cuadrante="sin_clasificar"],
+#v-contacts .ib i[data-cuadrante="sin_clasificar"] { background: rgb(var(--c-nube) / .25); }
+#v-contacts .idot[data-cuadrante="todos"],
+#v-contacts .ib i[data-cuadrante="todos"] { background: var(--accent); }
+
+/* El chip de la persona lleva la palabra del CRM, no un número: más chica que el número de la maqueta, para que
+   «Prioriza» quepa en el ancho del chip. */
+#v-contacts .sc-v.sc-palabra { font-size: 12px; letter-spacing: 0; }
+
+/* Seis tarjetas —«Sin clasificar», las cuatro palabras y «Todos»— y no las cinco de la maqueta. */
+#v-contacts .icp-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
 #v-contacts .lp-parte { font-size: 10.5px; color: var(--txt-faint); margin-top: 4px; }
 #v-contacts .lp-alta { font-size: 10.5px; color: var(--txt-faint); margin-top: 3px; }
@@ -84,7 +95,7 @@
 .lp-ficha .ld-btn.lp-apagado { opacity: .45; cursor: not-allowed; }
 .lp-ficha .ld-dot.lp-duda { background: var(--warn); }
 
-/* A 375 px: las cinco tarjetas en dos columnas, la rejilla en una, y la barra en varias líneas sin
+/* A 375 px: las seis tarjetas en dos columnas, la rejilla en una, y la barra en varias líneas sin
    desplazamiento horizontal. */
 @media (max-width: 720px) {
   #v-contacts .icp-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }

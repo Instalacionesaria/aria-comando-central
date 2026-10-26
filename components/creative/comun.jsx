@@ -12,7 +12,7 @@ export const FRASE = {
   pocasImpresiones: 'Pocas impresiones para una tasa.',
   sinEntrega: 'Sin entrega en esta ventana.',
   sinFuente: 'GoHighLevel no lo entrega.',
-  sinPuntaje: 'El CRM no tiene el puntaje.',
+  sinClasificacion: 'El CRM no tiene el campo del cuadrante.',
   sinMiniatura: 'Sin miniatura todavía.',
   sinGancho: 'Sin días suficientes para medir el gancho.',
   sinContactos: 'Sin contactos en este período',
@@ -25,7 +25,7 @@ export const FRASE = {
 /** La frase de cada motivo por el que una cifra no tiene valor (`MotivoDeLaCifra` de `lecturaDeCreative.ts`). */
 export const FRASE_DEL_MOTIVO = {
   sin_contactos: FRASE.sinContactos,
-  sin_puntaje: FRASE.sinPuntaje,
+  sin_clasificacion: FRASE.sinClasificacion,
   sin_entrega: FRASE.sinEntrega,
   bajo_el_piso: FRASE.bajoElPiso,
   pocas_impresiones: FRASE.pocasImpresiones,

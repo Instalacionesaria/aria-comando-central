@@ -53,6 +53,13 @@ import { noCancelada } from './citas.ts';
 import { armarPildora, type Pildora } from './pildora.ts';
 import { type AlcanceDelCloser, contactoDelCloser } from './alcanceDelCloser.ts';
 import type { Territorio } from '../datos/esquema.ts';
+import { type Cuadrante, claveDelCuadrante } from './cuadrantesDelIcp.ts';
+
+/** La clave del cuadrante para la fila, o `null` sin cuadrante (se dibuja `—`). */
+function cuadranteDeLaFila(cuadrante: string | null): Cuadrante | null {
+  const clave = claveDelCuadrante(cuadrante);
+  return clave === 'sin_clasificar' ? null : clave;
+}
 import {
   CITA_AGENDADA,
   ESTANCADO,
@@ -177,16 +184,11 @@ export interface Fila {
   /** Para el grupo «Detalles» del Perfil. La lista no lo dibuja. */
   email: string | null;
   /**
-   * El puntaje que el CRM calcula para el lead, 0 a 100. `null` → la fila dibuja `—`.
-   *
-   * Decía *«la letra de calificación, nada la calcula todavía»* y las dos mitades eran falsas: el
-   * CRM lo calcula —«Puntaje | ICP», en 471 de 590— y no es una letra. Ver `esquema.ts` y la
-   * migración `055`.
-   *
-   * **`Fila.jsx` lo dibuja con `?? '—'` y no con `||`**, que es lo que hace que un puntaje de 0 se
-   * vea como `0` y no como «sin dato». Son dos hechos distintos y hay 47 contactos en el primero.
+   * El cuadrante del ICP que el CRM calcula para el lead (la `105`): una de las cuatro claves, o `null` → la fila dibuja
+   * `—`. Reemplaza al puntaje de 0 a 100, que ya no se muestra en ningún lado. `Fila.jsx` lo dibuja con su rótulo
+   * (`rotuloDelCuadrante`).
    */
-  score: number | null;
+  cuadrante: Cuadrante | null;
   /**
    * El chip de fuente. **Nunca nulo**: el § 7.1 exige *"ninguna fila sin fuente: si no se
    * sabe, va un valor de reserva visible"*. La reserva la pone la base
@@ -367,7 +369,7 @@ function aFila(f: {
   nombre: string;
   telefono: string | null;
   email: string | null;
-  score: number | null;
+  cuadrante: string | null;
   fuente: string;
   etapa: string | null;
   ultimo_entrante_el: Date | null;
@@ -396,7 +398,8 @@ function aFila(f: {
     nombre: f.nombre,
     telefono: f.telefono,
     email: f.email,
-    score: f.score,
+    // Sólo una de las cuatro claves; cualquier otra cosa —el `rechazo` del catálogo— va como sin dato.
+    cuadrante: cuadranteDeLaFila(f.cuadrante),
     fuente: f.fuente,
     etapa: f.etapa,
     ultimoEntranteEl: f.ultimo_entrante_el,
@@ -470,7 +473,7 @@ function conLosSeisIconos() {
       'c.nombre',
       'c.telefono',
       'c.email',
-      'c.score',
+      'c.cuadrante',
       'c.fuente',
       'c.etapa',
       'c.ultimo_entrante_el',

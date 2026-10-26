@@ -31,7 +31,7 @@ import { atribucionDelLead, type AtribucionDelLead } from './atribucionDelLead.t
 import { consumoDelPrecall, type ConsumoDelPrecall } from './consumoDelPrecall.ts';
 import { indicadoresDelLead, type IndicadoresDelLead } from './indicadoresDelLead.ts';
 import { type Cancelacion, PISO_DE_UNA_TASA, tasaDeCancelacion } from './indicadoresDeCitas.ts';
-import { type ClaveDeTramo, tramoDelPuntaje } from './tramosDelIcp.ts';
+import { CALIFICADOS, type ClaveDeCuadrante, claveDelCuadrante, LOS_CUATRO } from './cuadrantesDelIcp.ts';
 
 // ─── Los tipos ──────────────────────────────────────────────────────────────
 
@@ -77,12 +77,12 @@ export interface Paso {
 }
 
 /**
- * El ICP de quienes agendaron: el total y cada tramo con su conteo y su porción sobre ese total, sin calificar incluidos.
- * Las porciones llevan el piso de 10 sobre el total; sin porción, `motivo` dice por qué.
+ * El ICP de quienes agendaron: el total y cada cuadrante con su conteo y su porción sobre ese total, sin clasificar
+ * incluidos. Las porciones llevan el piso de 10 sobre el total; sin porción, `motivo` dice por qué.
  */
 export interface IcpDeLosAgendados {
   agendaron: number;
-  tramos: { clave: ClaveDeTramo; n: number; porcion: number | null }[];
+  cuadrantes: { clave: ClaveDeCuadrante; n: number; porcion: number | null }[];
   motivo: MotivoDeLaCifra | null;
 }
 
@@ -108,8 +108,11 @@ export interface PantallaDeConversationArmada {
     kpi: Cifra;
     cadena: Paso[];
     salidas: { reprogramaron: Paso; cancelaron: Paso };
-    /** La asistencia por tramo de ICP: «—» mientras nadie marque la asistencia. */
-    calidad: { clave: ClaveDeTramo; asistencia: Cifra }[];
+    /**
+     * La asistencia por cuadrante del ICP: «—» mientras nadie marque la asistencia. Sin Descarta: sus citas son de
+     * descartados (la `105`) y la población de la tasa no los tiene.
+     */
+    calidad: { clave: ClaveDeCuadrante; asistencia: Cifra }[];
     origen: { conversaronAntes: Paso; solos: Paso };
   };
   agentes: TarjetaDeAgente[];
@@ -122,9 +125,9 @@ export interface PantallaDeConversationArmada {
 export interface EntradaDeConversation {
   lead: IndicadoresDelLead;
   citas: Cancelacion;
-  icp: Record<ClaveDeTramo, number>;
-  /** Las citas con la asistencia respondida y las que se presentaron, por tramo de ICP del contacto. */
-  asistenciaPorTramo: Record<ClaveDeTramo, { conAsistencia: number; sePresentaron: number }>;
+  icp: Record<ClaveDeCuadrante, number>;
+  /** Las citas con la asistencia respondida y las que se presentaron, por cuadrante del ICP del contacto. */
+  asistenciaPorCuadrante: Record<ClaveDeCuadrante, { conAsistencia: number; sePresentaron: number }>;
   atribucion: Pick<AtribucionDelLead, 'fueraDeHorario'>;
   precall: ConsumoDelPrecall;
   sentimiento: Record<string, SentimientoDelFlujo>;
@@ -149,7 +152,15 @@ function paso(clave: string, n: number, sobre: number, vacio: MotivoDeLaCifra): 
   return { clave, valor: conValor(n), porcion: tasa(n, sobre, vacio) };
 }
 
-const ORDEN_DE_TRAMOS: readonly ClaveDeTramo[] = ['alto', 'medio', 'bajo', 'sin_calificar'];
+/** Los cuadrantes del panel, del mejor al peor y «Sin clasificar» al final, como estaban los tramos. */
+const ORDEN_DE_CUADRANTES: readonly ClaveDeCuadrante[] = [...LOS_CUATRO, 'sin_clasificar'];
+/** Los de la asistencia por calidad: sin Descarta, cuyas citas son de descartados y no están en la población. */
+const ORDEN_DE_LA_CALIDAD: readonly ClaveDeCuadrante[] = [...CALIFICADOS, 'sin_clasificar'];
+
+/** Cero por cuadrante, con las cinco claves. */
+function porCuadrante<T>(cero: () => T): Record<ClaveDeCuadrante, T> {
+  return Object.fromEntries(ORDEN_DE_CUADRANTES.map((k) => [k, cero()])) as Record<ClaveDeCuadrante, T>;
+}
 
 /** El sentimiento de un flujo, de 0 a 1, con el piso sobre los juzgados del vocabulario. */
 function sentimientoDe(s: SentimientoDelFlujo | undefined, audita: boolean) {
@@ -172,11 +183,11 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
   /* Sin la cohorte vacía, el motivo de lo que no se puede calcular sobre una base del lead es el de esa base. */
   const vacioDe = (motivo: MotivoDeLaCifra): MotivoDeLaCifra => (sinCohorte ? 'sin_contactos' : motivo);
 
-  const totalIcp = ORDEN_DE_TRAMOS.reduce((s, k) => s + (e.icp[k] ?? 0), 0);
+  const totalIcp = ORDEN_DE_CUADRANTES.reduce((s, k) => s + (e.icp[k] ?? 0), 0);
   const conPiso = totalIcp >= PISO_DE_UNA_TASA;
   const icp: IcpDeLosAgendados = {
     agendaron: totalIcp,
-    tramos: ORDEN_DE_TRAMOS.map((clave) => ({
+    cuadrantes: ORDEN_DE_CUADRANTES.map((clave) => ({
       clave,
       n: e.icp[clave] ?? 0,
       porcion: conPiso ? (e.icp[clave] ?? 0) / totalIcp : null,
@@ -250,8 +261,8 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
         reprogramaron: paso('reprogramaron', c.reagendadas, c.citas, 'sin_citas'),
         cancelaron: paso('cancelaron', c.canceladas, c.citas, 'sin_citas'),
       },
-      calidad: ORDEN_DE_TRAMOS.map((clave) => {
-        const t = e.asistenciaPorTramo[clave] ?? { conAsistencia: 0, sePresentaron: 0 };
+      calidad: ORDEN_DE_LA_CALIDAD.map((clave) => {
+        const t = e.asistenciaPorCuadrante[clave] ?? { conAsistencia: 0, sePresentaron: 0 };
         return {
           clave,
           asistencia: c.citas === 0 ? sinValor('sin_citas') : tasa(t.sePresentaron, t.conAsistencia, 'sin_asistencia'),
@@ -318,35 +329,34 @@ export function armarConversation(e: EntradaDeConversation): PantallaDeConversat
 // ─── La lectura ─────────────────────────────────────────────────────────────
 
 /**
- * Quienes agendaron en la ventana, por tramo de ICP: la misma cohorte que `indicadoresDelLead` —el alta en el CRM
- * dentro de la ventana, con alguna cita— y el mismo tramo que Leads Portal, `tramoDelPuntaje`. Los puntajes se
- * agrupan acá para que el corte sea la función y no una copia de sus umbrales en SQL. Corre dentro de
+ * Quienes agendaron en la ventana, por cuadrante del ICP: la misma cohorte que `indicadoresDelLead` —el alta en el CRM
+ * dentro de la ventana, con alguna cita— y la misma clave que Leads Portal, `claveDelCuadrante`. Corre dentro de
  * `conOrganizacion`.
  */
-export async function icpDeLosAgendados(dias: number): Promise<Record<ClaveDeTramo, number>> {
+export async function icpDeLosAgendados(dias: number): Promise<Record<ClaveDeCuadrante, number>> {
   const filas = await datos()
     .selectFrom('contactos')
-    .select(['score', sql<number>`count(*)`.as('n')])
+    .select(['cuadrante', sql<number>`count(*)`.as('n')])
     .where(sql<boolean>`alta_en_el_crm >= now() - make_interval(days => ${dias})`)
     .where(sql<boolean>`exists (select 1 from negocio.citas ci where ci.org_id = contactos.org_id and ci.contacto_id = contactos.id)`)
-    .groupBy('score')
+    .groupBy('cuadrante')
     .execute();
-  const salida: Record<ClaveDeTramo, number> = { alto: 0, medio: 0, bajo: 0, sin_calificar: 0 };
-  for (const f of filas) salida[tramoDelPuntaje(f.score === null ? null : Number(f.score))] += Number(f.n);
+  const salida = porCuadrante(() => 0);
+  for (const f of filas) salida[claveDelCuadrante(f.cuadrante)] += Number(f.n);
   return salida;
 }
 
 /**
- * La asistencia de las citas de la ventana por tramo de ICP del contacto: las respondidas y las presentes. La misma
- * población que `tasaDeCancelacion` —ocurridas, alcanzables y de contactos no descartados—, con sus predicados
- * compartidos. Corre dentro de `conOrganizacion`.
+ * La asistencia de las citas de la ventana por cuadrante del ICP del contacto: las respondidas y las presentes. La
+ * misma población que `tasaDeCancelacion` —ocurridas, alcanzables y de contactos no descartados, y desde la `105`
+ * Descarta es un descarte—, con sus predicados compartidos. Corre dentro de `conOrganizacion`.
  */
-export async function asistenciaPorTramo(dias: number): Promise<Record<ClaveDeTramo, { conAsistencia: number; sePresentaron: number }>> {
+export async function asistenciaPorCuadrante(dias: number): Promise<Record<ClaveDeCuadrante, { conAsistencia: number; sePresentaron: number }>> {
   const filas = await datos()
     .selectFrom('citas')
     .innerJoin('contactos', (j) => j.onRef('contactos.id', '=', 'citas.contacto_id').onRef('contactos.org_id', '=', 'citas.org_id'))
     .select([
-      'contactos.score as score',
+      'contactos.cuadrante as cuadrante',
       sql<number>`count(*) filter (where citas.asistio is not null)`.as('con'),
       sql<number>`count(*) filter (where citas.asistio is true)`.as('si'),
     ])
@@ -354,16 +364,11 @@ export async function asistenciaPorTramo(dias: number): Promise<Record<ClaveDeTr
     .where(sql<boolean>`citas.inicio_el < now()`)
     .where(alcanzable('citas'))
     .where(sql<boolean>`not ${descartado('citas')}`)
-    .groupBy('contactos.score')
+    .groupBy('contactos.cuadrante')
     .execute();
-  const salida: Record<ClaveDeTramo, { conAsistencia: number; sePresentaron: number }> = {
-    alto: { conAsistencia: 0, sePresentaron: 0 },
-    medio: { conAsistencia: 0, sePresentaron: 0 },
-    bajo: { conAsistencia: 0, sePresentaron: 0 },
-    sin_calificar: { conAsistencia: 0, sePresentaron: 0 },
-  };
+  const salida = porCuadrante(() => ({ conAsistencia: 0, sePresentaron: 0 }));
   for (const f of filas) {
-    const t = salida[tramoDelPuntaje(f.score === null ? null : Number(f.score))];
+    const t = salida[claveDelCuadrante(f.cuadrante)];
     t.conAsistencia += Number(f.con);
     t.sePresentaron += Number(f.si);
   }
@@ -406,7 +411,7 @@ export async function lecturaDeConversation(dias: number, audita: boolean): Prom
   const precall = await consumoDelPrecall(dias);
   const sentimiento = await sentimientoPorFlujo(dias);
   const icp = await icpDeLosAgendados(dias);
-  const asistencia = await asistenciaPorTramo(dias);
+  const asistencia = await asistenciaPorCuadrante(dias);
   const porCorregir = audita ? await patronesAbiertos() : 0;
   return {
     lead,
@@ -414,6 +419,6 @@ export async function lecturaDeConversation(dias: number, audita: boolean): Prom
     atribucion,
     precall,
     sentimiento,
-    pantalla: armarConversation({ lead, citas, icp, asistenciaPorTramo: asistencia, atribucion, precall, sentimiento, porCorregir, audita }),
+    pantalla: armarConversation({ lead, citas, icp, asistenciaPorCuadrante: asistencia, atribucion, precall, sentimiento, porCorregir, audita }),
   };
 }

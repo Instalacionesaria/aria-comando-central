@@ -106,8 +106,8 @@ puede heredar.
     ella (`LP04-02`), y un orden sin su clave a la vista no se puede leer.
   - **«campaña · creativo»**, del **primer toque**: `atribucion_primera ->> 'campaign'` y
     `->> 'utmContent'`. «Creativo» es `utmContent` porque es la llave de pieza que usa Creative: la
-    llave es el nombre del creativo (`lib/negocio/calidadDelCreativo.ts:21`), y se arma sobre
-    `utmContent` (`lib/negocio/calidadDelCreativo.ts:224`). En la tarjeta se muestra el texto tal como llega; la
+    llave es el nombre del creativo (`lib/negocio/calidadDelCreativo.ts:23`), y se arma sobre
+    `utmContent` (`lib/negocio/calidadDelCreativo.ts:218`). En la tarjeta se muestra el texto tal como llega; la
     normalización de Creative es para agrupar, no para mostrar. Una mitad vacía se dibuja «—».
     **Nunca se inventa un origen**, como el «Orgánico» de la maqueta (`aios-command-center_1.html:4632`).
   - **El puntaje y su tramo.** El número, **0 incluido**, más el rótulo de `TRAMOS`: «ICP alto»,
@@ -132,8 +132,8 @@ puede heredar.
   puntaje, tramo, territorio, descartado, cita, asistencia, plantón, vendió y monto. La prueba de la
   ruta (LP-4) comprueba que la lista no trae teléfono, correo, atribución ni `campos_del_crm`. La
   atribución no se muestra cruda porque *«`referrer` y `url` son direcciones completas y pueden llevar
-  el identificador de una persona adentro»* (`lib/datos/esquema.ts:447-448`).
-- **Tampoco viaja el texto del último mensaje** (`lib/datos/esquema.ts:405`).
+  el identificador de una persona adentro»* (`lib/datos/esquema.ts:450-451`).
+- **Tampoco viaja el texto del último mensaje** (`lib/datos/esquema.ts:408`).
 
 ### LP04-07 · El bloque de dinero dice «reportado», y sin venta dice el estado de la cita
 
@@ -157,7 +157,7 @@ puede heredar.
   cuando lo cierto es que nadie lo cargó.
 - **Qué pide:**
   - **Agendó:** sí, «sólo citas congeladas» o no. El sí es `tieneCitaAlcanzable`
-    (`lib/negocio/citasAlcanzables.ts:135`); el segundo es `cita = 'solo_congeladas'` de `LP02-03`,
+    (`lib/negocio/citasAlcanzables.ts:136`); el segundo es `cita = 'solo_congeladas'` de `LP02-03`,
     el mismo estado que el bloque de dinero ya distingue (`LP04-07`). Una persona cuya única cita
     está congelada tuvo cita, pero no cuenta en «Agendados» (`LP04-13`) porque esa cita dejó de
     refrescarse. El paso lo dice, en vez de apagarse como si nunca hubiera tenido cita.
@@ -166,7 +166,7 @@ puede heredar.
     ya empezada. «No aplica» es el `null`: sin cita, sólo futuras, sólo canceladas o sólo congeladas.
     Así una persona con una sola cita futura no sale «sin registrar». **El plantón del calendario no
     entra en este paso**: va como una marca aparte, «plantón según el calendario». Son dos fuentes de
-    la misma pregunta y no se suman (`lib/negocio/citasAlcanzables.ts:105-109`). **Medido: 15
+    la misma pregunta y no se suman (`lib/negocio/citasAlcanzables.ts:106-110`). **Medido: 15
     plantones.**
   - **Vendió:** sí, o «sin venta registrada». Nunca «no compró».
 

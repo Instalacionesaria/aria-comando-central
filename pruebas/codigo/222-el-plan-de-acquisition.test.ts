@@ -92,13 +92,13 @@ test('dentro de un grupo, primero lo que más gente pierde; sin pérdida, despu�
 test('cada frase lleva la métrica, el valor y la base, con el verbo de un período o de una entidad', () => {
   const p = plan([
     deteccion(ACQ.cplSostenido, '1', { lineaBase: 50, valorActual: 70, cambioPct: 0.4, muestra: 14 }),
-    deteccion(ACQ.icpEntreCampanas, '2', { lineaBase: 60, valorActual: 40, muestra: 10 }),
+    deteccion(ACQ.descartaEntreCampanas, '2', { lineaBase: 0.4, valorActual: 0.6, muestra: 10 }),
   ]);
   const textos = p.grupos.flatMap((g) => g.renglones.map((r) => r.texto));
   // Entre períodos: «subió … contra los 30 días anteriores».
   assert.ok(textos.includes('El costo por contacto subió 40 % contra los 30 días anteriores: de 50 a 70, sobre 14 contactos.'), textos.join('\n'));
-  // Entre entidades: «está … por debajo de».
-  assert.ok(textos.includes('Su ICP promedio está 20 puntos por debajo del de su funnel: 40 contra 60, sobre 10 calificados con puntaje.'), textos.join('\n'));
+  // Entre entidades: «está … por encima de». Porciones, no puntajes: ningún número del ICP (la `105`).
+  assert.ok(textos.includes('Su porción de Descarta está 20 puntos por encima de la de su funnel: 60 % contra 40 %, sobre 10 contactos clasificados.'), textos.join('\n'));
 });
 
 test('la consecuencia del monitor llega sin acentos graves ni citas a secciones', () => {

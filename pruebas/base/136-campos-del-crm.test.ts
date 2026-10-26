@@ -117,7 +117,9 @@ async function sembrarCatalogo(org: string): Promise<void> {
         },
         {
           campo_id: CAMPO_NUMERO,
-          nombre: 'Puntaje | ICP',
+          /* Un numérico cualquiera, y no «Puntaje | ICP»: desde la `105` el Perfil no dibuja el campo del puntaje (lo
+             cuida la 313), y esta prueba mide el filtro por carpeta y la etiqueta, no eso. */
+          nombre: 'Facturación mensual',
           carpeta_id: CARPETA_VISIBLE,
           tipo: 'NUMERICAL',
           // Posición 1.5: `numeric` y no entero, que es como llega de GoHighLevel.
@@ -228,7 +230,7 @@ test('el Perfil muestra los campos con valor de las carpetas con grupo, y nada m
     'viajó el nombre largo de GoHighLevel teniendo etiqueta corta',
   );
   // Y cuando no hay corta, el nombre de GoHighLevel. Sin este respaldo la fila saldría en blanco.
-  assert.ok(etiquetas.includes('Puntaje | ICP'), 'un campo sin etiqueta corta se quedó sin nombre');
+  assert.ok(etiquetas.includes('Facturación mensual'), 'un campo sin etiqueta corta se quedó sin nombre');
 
   assert.equal(
     etiquetas.includes('Meta de facturación 6 meses'),
@@ -242,7 +244,7 @@ test('el Perfil muestra los campos con valor de las carpetas con grupo, y nada m
   );
 
   // Los dos que sí van, en el grupo de su carpeta y con su valor intacto.
-  const puntaje = perfil.filas.find((f) => f.etiqueta === 'Puntaje | ICP');
+  const puntaje = perfil.filas.find((f) => f.etiqueta === 'Facturación mensual');
   assert.equal(puntaje?.valor, '68');
   assert.equal(puntaje?.grupo, 'calificacion');
 

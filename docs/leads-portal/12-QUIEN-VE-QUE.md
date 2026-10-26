@@ -124,7 +124,7 @@ select (select count(*) from identidad.usuarios u where u.org_id = (select id fr
   significa ver la pestaña Closer: le falta la concesión. Pero **`contactos.ver` no se recorta por
   sección**: la ficha del contacto la pide con `SIN_SECCION` (línea 74 de
   `app/api/contactos/[id]/route.ts`) y devuelve el teléfono y el correo
-  (`lib/negocio/fila.ts:470-472`) de cualquier contacto de la empresa, sin filtro de asignación. O
+  (`lib/negocio/fila.ts:473-475`) de cualquier contacto de la empresa, sin filtro de asignación. O
   sea que las cuatro personas ya podían leer, con una petición, el teléfono y el correo de cualquiera
   de los 593.
 

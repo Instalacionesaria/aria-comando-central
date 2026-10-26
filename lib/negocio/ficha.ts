@@ -23,7 +23,8 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { CANALES_DEL_CHAT } from '../ghl/entrega.ts';
-import { camposQueSeMuestran, hayCarpetasQueSeMuestran, hayCatalogo } from './camposDelCrm.ts';
+import { camposDelCuadrante, camposDelPuntaje, camposQueSeMuestran, hayCarpetasQueSeMuestran, hayCatalogo } from './camposDelCrm.ts';
+import { claveDelCuadrante, rotuloDelCuadrante } from './cuadrantesDelIcp.ts';
 import { frescuraDe, frescuraDelAviso, type Frescura, type FrescuraDelAviso } from './frescura.ts';
 import { definicionDe, modoDe } from './salidas.ts';
 import { avisoSinConexion, clientesSinConexion } from './faltaDeLosClientes.ts';
@@ -487,7 +488,7 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
       'email',
       'fuente',
       'etiquetas',
-      'score',
+      'cuadrante',
       'campos_del_crm',
       'sincronizado_el',
       'cuenta_id',
@@ -513,16 +514,11 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
   poner('Teléfono', c.telefono, 'detalles');
   poner('Correo', c.email, 'detalles');
   poner('Fuente', c.fuente, 'origen');
-  /* El puntaje que el CRM calcula, 0 a 100: el campo de su subcuenta («Puntaje | ICP» en la de ARIA, 471 de 590).
-     *
-     Decía *«es una letra y hoy nada la calcula»*, y las dos mitades eran falsas — ver `esquema.ts`
-     y la migración `055`.
-     *
-     `String(...)` sobre el número, y el nulo se conserva: `poner` espera texto porque el Perfil
-     dibuja los 172 campos del CRM con el mismo camino. **No `String(c.score ?? '')`**: eso
-     convertiría la ausencia en una cadena vacía, y el Perfil no podría distinguirla de un campo
-     contestado en blanco. */
-  poner('Calificación', c.score === null ? null : String(c.score), 'calificacion');
+  /* El cuadrante del ICP que el CRM calcula (la `105`): la palabra, nunca el puntaje de 0 a 100, que ya no se muestra.
+     Sin cuadrante no va la fila: `poner` descarta el nulo, y «Calificación: Sin clasificar» se leería como un juicio
+     del CRM cuando lo cierto es que no mandó nada. */
+  const clave = claveDelCuadrante(c.cuadrante);
+  poner('Calificación', clave === 'sin_clasificar' ? null : rotuloDelCuadrante(clave), 'calificacion');
   // Las etiquetas crudas del CRM. Van en «Origen» porque es de donde salió el contacto, y sirven
   // para la primera pregunta cuando alguien dice «éste no va acá».
   poner('Etiquetas', (c.etiquetas ?? []).join(', '), 'origen');
@@ -536,10 +532,13 @@ export async function perfilDeLaFicha(contactoId: string): Promise<Pestana<Campo
    *
    * El orden lo pone `camposQueSeMuestran` —carpeta y después posición dentro de ella—, que es lo
    * que mantiene juntas las preguntas de un mismo formulario. */
-  const mostrables = await camposQueSeMuestran();
+  /* Menos dos campos (la `105`): el del puntaje viejo —ningún número del ICP en pantalla— y el del cuadrante, que ya
+     va arriba en «Calificación». Por id, con los de cada subcuenta. */
+  const [mostrables, puntaje, cuadrante] = await Promise.all([camposQueSeMuestran(), camposDelPuntaje(), camposDelCuadrante()]);
+  const fuera = new Set([...puntaje, ...cuadrante]);
   const valores = c.campos_del_crm ?? {};
   const antes = campos.length;
-  for (const m of mostrables) poner(m.etiqueta, valores[m.campoId] ?? null, m.grupo);
+  for (const m of mostrables) if (!fuera.has(m.campoId)) poner(m.etiqueta, valores[m.campoId] ?? null, m.grupo);
   const cuantosDelCrm = campos.length - antes;
 
   /* ── EL «FALTA», QUE AHORA DEPENDE DE POR QUÉ NO HAY MÁS ───────────────────

@@ -41,7 +41,7 @@ import { estaALaVista } from '@/lib/vista';
 import { agruparPorPatron, leerLaPantalla } from '@/lib/auditor/vista';
 import { PERIODOS, PERIODO_POR_OMISION } from '@/lib/negocio/periodo';
 import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
-import { AGENTE, FRASE, FRASE_DEL_MOTIVO, PASO, TRAMO, fechaCorta, miles, minutos, o, pf } from './comun.jsx';
+import { AGENTE, CUADRANTE, FRASE, FRASE_DEL_MOTIVO, PASO, fechaCorta, miles, minutos, o, pf } from './comun.jsx';
 
 /**
  * Los cuatro modos. Los dos primeros, con los iconos del prototipo (`#i-chat` y `#i-setter`); los del supervisor,
@@ -330,22 +330,22 @@ function PanelDeAppointmentFlow({ c, kpi, desde }) {
 }
 
 /**
- * «De qué está hecho el grupo que agendó» (CN1-08): quienes agendaron y los tres tramos del prototipo, cada uno con
- * su porción sobre todos los que agendaron, con el piso de 10. Los sin calificar van en el rótulo del panel, donde el
- * prototipo decía cuánto era calificado.
+ * «De qué está hecho el grupo que agendó» (CN1-08): quienes agendaron y los cuatro cuadrantes del CRM (la `105`), cada
+ * uno con su porción sobre todos los que agendaron, con el piso de 10. Los sin clasificar van en el rótulo del panel,
+ * donde el prototipo decía cuánto era calificado.
  */
 function PanelDelIcp({ icp }) {
-  const tramo = Object.fromEntries(icp.tramos.map((t) => [t.clave, t]));
-  const sinCalificar = tramo.sin_calificar.n;
+  const cuadrante = Object.fromEntries(icp.cuadrantes.map((t) => [t.clave, t]));
+  const sinClasificar = cuadrante.sin_clasificar.n;
   return (
     <div className="pn">
       <div className="pn-h">
-        De qué está hecho el grupo que agendó {sinCalificar > 0 ? <em>{`${miles(sinCalificar)} sin calificar`}</em> : null}
+        De qué está hecho el grupo que agendó {sinClasificar > 0 ? <em>{`${miles(sinClasificar)} sin clasificar`}</em> : null}
       </div>
-      <div className="pn-b q4">
+      <div className="pn-b q5">
         <Par rotulo="Agendaron" valor={miles(icp.agendaron)} debajo={icp.motivo === null ? null : (FRASE_DEL_MOTIVO[icp.motivo] ?? null)} />
-        {['alto', 'medio', 'bajo'].map((clave) => (
-          <Par key={clave} rotulo={TRAMO[clave]} valor={miles(tramo[clave].n)} tasa={tramo[clave].porcion === null ? null : pf(tramo[clave].porcion)} />
+        {['prioriza', 'valida', 'financia', 'descarta'].map((clave) => (
+          <Par key={clave} rotulo={CUADRANTE[clave]} valor={miles(cuadrante[clave].n)} tasa={cuadrante[clave].porcion === null ? null : pf(cuadrante[clave].porcion)} />
         ))}
       </div>
     </div>
@@ -463,7 +463,8 @@ function TarjetaDeAppointmentFlow({ f }) {
 }
 
 /**
- * La asistencia por calidad: la tasa de cada tramo. Mientras ningún tramo tiene valor y por el mismo motivo —nadie
+ * La asistencia por calidad: la tasa de cada cuadrante calificado y la de los sin clasificar —Descarta no, sus citas
+ * son de descartados—. Mientras ningún cuadrante tiene valor y por el mismo motivo —nadie
  * marca la asistencia—, una sola línea con la frase y no cuatro iguales.
  */
 function Calidad({ filas }) {
@@ -479,7 +480,7 @@ function Calidad({ filas }) {
       ) : (
         filas.map((t) => (
           <div className="org-r" key={t.clave}>
-            <span className="org-n">{TRAMO[t.clave]}</span>
+            <span className="org-n">{CUADRANTE[t.clave]}</span>
             <span className="org-v" title={motivo(t.asistencia) ?? undefined}>
               {o(t.asistencia.valor, pf)}
             </span>

@@ -19,7 +19,8 @@
 //   · calificado es agendado y no descartado, y el descarte no mira la caja — mutación: sin el `not`;
 //   · una cita sin calendario no es «agendó» (`alcanzable`) — mutación: contar cualquier cita;
 //   · la ventana anterior cuenta los agendados A LA MISMA EDAD — mutación: sin el corte de `reservada_el`;
-//   · los cortes del ICP son los de `tramoDelPuntaje` — mutación: `>` por `>=` en un corte;
+//   · el reparto del ICP es por el cuadrante de cada calificado, y la porción de Descarta es sobre todos los
+//     clasificados de la campaña — mutaciones: contar el Descarta sólo entre los calificados, o un cuadrante por otro;
 //   · se compara sólo si los datos describen las dos ventanas enteras, y los clics sólo si el desglose
 //     cubre la anterior — mutaciones: dar cada cobertura por hecha;
 //   · «Hoy» no compara ni publica costos — mutación: costos en «Hoy»;
@@ -40,7 +41,6 @@ import { conOrganizacion } from '../../lib/datos/contexto.ts';
 import { leerRespuesta, montar, pedirComo, sesionDe, type Escenario } from '../apoyo/closer.ts';
 import { cifrasPorCampana, embudosDeAcquisition } from '../../lib/negocio/embudosDeAcquisition.ts';
 import { PERIODOS, type ClaveDePeriodo } from '../../lib/negocio/periodo.ts';
-import { tramoDelPuntaje } from '../../lib/negocio/tramosDelIcp.ts';
 import { GET as leerAcquisition } from '../../app/api/acquisition/route.ts';
 
 let esc: Escenario;
@@ -80,7 +80,6 @@ async function borrarLoDeAlfa(): Promise<void> {
 async function unContacto(campos: {
   campana?: string | null;
   alta: string;
-  score?: number | null;
   /** El cuadrante del ICP. Por omisión Prioriza: desde la `105` un agendado sin cuadrante no es calificado. */
   cuadrante?: string | null;
   etiquetas?: string[];
@@ -89,9 +88,9 @@ async function unContacto(campos: {
   // «Sin atribución» es el objeto vacío: la columna no admite nulo.
   const atribucion = JSON.stringify(campos.campana === null ? {} : { campaignId: campos.campana ?? C1 });
   const r = await esc.admin.query<{ id: string }>(
-    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, score, etiquetas, cuadrante)
-     values ($1, $2, 'Contacto 181', 'setter', ${campos.alta}, $3::jsonb, $4, $5, $6) returning id`,
-    [propia, `c181-${randomUUID()}`, atribucion, campos.score ?? null, campos.etiquetas ?? [], campos.cuadrante === undefined ? 'prioriza' : campos.cuadrante],
+    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, etiquetas, cuadrante)
+     values ($1, $2, 'Contacto 181', 'setter', ${campos.alta}, $3::jsonb, $4, $5) returning id`,
+    [propia, `c181-${randomUUID()}`, atribucion, campos.etiquetas ?? [], campos.cuadrante === undefined ? 'prioriza' : campos.cuadrante],
   );
   if (!campos.cita) return;
   const inicio = campos.cita.inicio ?? `now() + interval '1 day'`;
@@ -113,8 +112,10 @@ async function unDia(anuncio: string, hace: number, gasto: number | null, accion
   );
 }
 
-/** Los puntajes de los calificados de C1 en la ventana de siete días. */
-const PUNTAJES_CALIFICADOS = [80, 90, 75, 100, 60, 50, 74, 30, 1, 49, 0, null];
+/** Los cuadrantes de los doce calificados de C1 en la ventana de siete días: cinco Prioriza, cuatro Valida, tres Financia. */
+const CUADRANTES_CALIFICADOS = [
+  'prioriza', 'prioriza', 'prioriza', 'prioriza', 'prioriza', 'valida', 'valida', 'valida', 'valida', 'financia', 'financia', 'financia',
+];
 
 before(async () => {
   esc = await montar('Embudos181');
@@ -180,14 +181,14 @@ before(async () => {
   );
 
   const mediodia = (hace: number) => `(current_date - ${hace})::timestamptz + interval '12 hours'`;
-  // Doce calificados de C1: diez con puntaje, uno en cero y uno sin puntaje.
-  for (const score of PUNTAJES_CALIFICADOS) {
-    await unContacto({ alta: mediodia(score === null || score === 0 ? 2 : 1), score, cita: {} });
+  // Doce calificados de C1, con su cuadrante: diez de ayer y dos de anteayer.
+  for (const [i, cuadrante] of CUADRANTES_CALIFICADOS.entries()) {
+    await unContacto({ alta: mediodia(i < 10 ? 1 : 2), cuadrante, cita: {} });
   }
-  // Agendó pero está descartado, con la etiqueta en otra caja: no es calificado, y su 90 no cuenta.
-  await unContacto({ alta: mediodia(3), score: 90, etiquetas: ['ICP_Rechazado'], cita: {} });
-  await unContacto({ alta: mediodia(3), score: 70, cita: { calendario: false } }); // sin calendario no es «agendó»
-  await unContacto({ alta: mediodia(4), score: 95 }); // sólo contacto
+  // Agendó pero está descartado, con la etiqueta en otra caja: no es calificado aunque su cuadrante sea Prioriza.
+  await unContacto({ alta: mediodia(3), etiquetas: ['ICP_Rechazado'], cita: {} });
+  await unContacto({ alta: mediodia(3), cita: { calendario: false } }); // sin calendario no es «agendó»
+  await unContacto({ alta: mediodia(4), cuadrante: 'descarta' }); // sólo contacto, y en Descarta
   await unContacto({ alta: '(current_date - 7)::timestamptz' }); // el primer instante de la ventana: entra
   await unContacto({ alta: `(current_date - 7)::timestamptz - interval '1 second'` }); // el último de la anterior
   // La anterior de 7 días, con citas reservadas antes y después de la edad de corte (hace siete días).
@@ -296,19 +297,13 @@ test('calificado es agendado y no descartado; una cita sin calendario no cuenta'
   assert.equal(c1.calificados, 12, 'el descartado se contó como calificado');
 });
 
-test('el ICP de los calificados reparte con `tramoDelPuntaje`', async () => {
-  /* Lo esperado sale de la función y no de una lista escrita a mano: el `case` del SQL es una segunda
-     copia de ese corte (`tramosDelIcp.ts`), y la única forma de que no diverjan es compararlas. */
-  const esperado = { alto: 0, medio: 0, bajo: 0, sin_calificar: 0 };
-  for (const s of PUNTAJES_CALIFICADOS) esperado[tramoDelPuntaje(s)] += 1;
+test('el ICP de los calificados se reparte por su cuadrante, y el Descarta se cuenta entre todos los clasificados', async () => {
   const c1 = (await enLaPropia(() => cifrasPorCampana(hoy(7), hoy(1)))).get(C1)!;
-  assert.deepEqual(
-    [c1.alto, c1.medio, c1.bajo, c1.sinCalificar],
-    [esperado.alto, esperado.medio, esperado.bajo, esperado.sin_calificar],
-    'el SQL corta distinto que `tramoDelPuntaje`',
-  );
-  // El 90 del descartado no entra: el puntaje es de los calificados.
-  assert.deepEqual([c1.sumaDePuntajes, c1.conPuntaje], [609, 10]);
+  assert.deepEqual([c1.prioriza, c1.valida, c1.financia], [5, 4, 3], 'el reparto de los calificados no es el de sus cuadrantes');
+  assert.equal(c1.prioriza + c1.valida + c1.financia, c1.calificados, 'los tres cuadrantes no suman los calificados');
+  /* Los dieciséis contactos de C1 en la ventana tienen cuadrante (el descartado y el de la cita sin calendario,
+     Prioriza por omisión); el de sólo contacto está en Descarta: no es calificado, pero sí es gente que trajo la campaña. */
+  assert.deepEqual([c1.clasificados, c1.descarta], [16, 1], 'el Descarta se contó entre los calificados, o los clasificados no son todos');
 });
 
 test('la ventana anterior cuenta los agendados a la MISMA edad', async () => {

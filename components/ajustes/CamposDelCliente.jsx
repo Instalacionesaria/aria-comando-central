@@ -1,13 +1,15 @@
 'use client';
 
-/* Ajustes › Clientes › el puntaje y el Perfil de UN cliente (el nivel 3, C6 · D4). NO viene del prototipo.
+/* Ajustes › Clientes › el ICP y el Perfil de UN cliente (el nivel 3, C6 · D4). NO viene del prototipo.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * QUÉ SE ELIGE ACÁ
+ * QUÉ SE VE Y QUÉ SE ELIGE ACÁ
  *
- * Cuál campo del GoHighLevel de este cliente es el puntaje de sus leads, y qué carpetas de campos se muestran en el
- * Perfil de la ficha y en qué grupo. Sin elegir, se reconocen solos: el campo que se llama «Puntaje | ICP» y las
- * carpetas del snapshot de ARIA. Un cliente con otros nombres no tiene ni lo uno ni lo otro hasta que alguien elige.
+ * Se ve el campo del cuadrante del ICP de su GoHighLevel (la `105`): si lo tiene y cuántos de sus leads clasifica. No
+ * se elige: el ICP son las cuatro palabras que el CRM manda en `contact.cuadrante_de_clasificacion`, el mismo campo en
+ * todos los clientes, y se reconoce por su clave. Hasta el 2026-10-26 acá se elegía el campo del puntaje de 0 a 100,
+ * que ya no se usa. Se elige qué carpetas de campos se muestran en el Perfil de la ficha y en qué grupo; sin elegir, se
+ * reconocen las del snapshot de ARIA.
  *
  * Se monta desde `ConexionDelCliente.jsx` también para el principal: no son credenciales, son su catálogo de campos.
  * Las opciones, los grupos y si esta persona puede guardar los dice el servidor: acá no hay ninguna lista de tipos ni
@@ -19,38 +21,29 @@ import { useCallback, useEffect, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 
 const MOTIVOS = {
-  sin_permiso: 'Tu usuario no puede ver ni elegir el puntaje y el Perfil de los clientes.',
+  sin_permiso: 'Tu usuario no puede ver el ICP ni elegir el Perfil de los clientes.',
   no_encontrado: 'Ese cliente ya no existe, o no es de esta empresa.',
 };
 
-const MARCAS = {
-  elegido: { clase: 'ok', texto: 'Elegido' },
-  por_omision: { clase: 'ok', texto: 'Por su nombre' },
-  ninguno: { clase: 'warn', texto: 'Sin puntaje' },
-};
+const miles = (n) => Number(n).toLocaleString('es-PE');
 
 function porQue(r) {
   if (r.tipo === 'sin_respuesta') return 'No llegó al servidor. No se guardó nada.';
   return r.detalle ?? MOTIVOS[r.codigo] ?? `Rechazado (${r.estado}).`;
 }
 
-/** El valor del selector del puntaje para lo que dice el servidor: '' = sin elegir. */
-const puntajeDe = (d) => (d.puntaje.origen === 'elegido' ? d.puntaje.campoId : '');
-
 export default function CamposDelCliente({ cliente }) {
   const ruta = `/api/admin/cuentas/${cliente.id}/campos`;
   const [datos, setDatos] = useState(null);
   const [causa, setCausa] = useState(null);
-  const [puntaje, setPuntaje] = useState('');
   const [grupos, setGrupos] = useState({});
   const [guardando, setGuardando] = useState(null);
   const [aviso, setAviso] = useState(null);
 
-  /* Lo que el servidor dijo pasa a ser lo que se ve: el selector del puntaje y el de cada carpeta vuelven a su valor
-     guardado, así que «cambiado» es siempre contra lo guardado. */
+  /* Lo que el servidor dijo pasa a ser lo que se ve: el selector de cada carpeta vuelve a su valor guardado, así que
+     «cambiado» es siempre contra lo guardado. */
   const pintar = useCallback((d) => {
     setDatos(d);
-    setPuntaje(puntajeDe(d));
     setGrupos(Object.fromEntries(d.carpetas.map((c) => [c.carpetaId, c.grupo ?? ''])));
   }, []);
 
@@ -87,7 +80,7 @@ export default function CamposDelCliente({ cliente }) {
   if (!datos) {
     return (
       <div className="aj-bloque">
-        <div className="dw-sec-t">Puntaje y Perfil</div>
+        <div className="dw-sec-t">ICP y Perfil</div>
         {causa ? (
           <>
             <div className="fd-aviso mal" role="status">
@@ -117,7 +110,7 @@ export default function CamposDelCliente({ cliente }) {
   if (!datos.catalogo.leido) {
     return (
       <div className="aj-bloque">
-        <div className="dw-sec-t">Puntaje y Perfil</div>
+        <div className="dw-sec-t">ICP y Perfil</div>
         <p className="aj-ayuda">
           Todavía no se leyó el catálogo de campos de este cliente. Se lee con la sincronización de contactos; vuelve
           cuando haya corrido.
@@ -127,81 +120,41 @@ export default function CamposDelCliente({ cliente }) {
   }
 
   const editable = datos.puedeEditar === true;
-  const marca = MARCAS[datos.puntaje.origen];
-  const puntajeCambiado = puntaje !== puntajeDe(datos);
+  const cuadrante = datos.cuadrante;
   const cambiadas = datos.carpetas
     .filter((c) => (grupos[c.carpetaId] ?? '') !== (c.grupo ?? ''))
     .map((c) => ({ carpetaId: c.carpetaId, grupo: grupos[c.carpetaId] === '' ? null : grupos[c.carpetaId] }));
 
   return (
     <div className="aj-bloque">
-      <div className="dw-sec-t">Puntaje y Perfil</div>
+      <div className="dw-sec-t">ICP y Perfil</div>
       <p className="aj-ayuda">
-        El campo de su GoHighLevel que es el puntaje de sus leads (0 a 100), y qué carpetas de campos se ven en el Perfil
-        de la ficha. Sin elegir, se reconocen por su nombre.
+        El cuadrante del ICP de sus leads (Prioriza, Valida, Financia o Descarta) sale del campo de su GoHighLevel con la
+        clave contact.cuadrante_de_clasificacion: se reconoce solo, no se elige. Abajo, qué carpetas de campos se ven en
+        el Perfil de la ficha.
       </p>
 
       <div className="fd-campo">
-        <label htmlFor={`pyp-${cliente.id}`}>
-          Campo del puntaje <span className={`chip ${marca.clase}`}>{marca.texto}</span>
+        <label>
+          Campo del cuadrante{' '}
+          <span className={`chip ${cuadrante.campoId ? 'ok' : 'warn'}`}>{cuadrante.campoId ? 'Encontrado' : 'No está'}</span>
         </label>
-        <div className="aj-fila">
-          <div className="fd-campo">
-            <select
-              id={`pyp-${cliente.id}`}
-              value={puntaje}
-              disabled={!editable || guardando !== null}
-              onChange={(e) => setPuntaje(e.target.value)}
-            >
-              <option value="">Sin elegir: el que se llama «Puntaje | ICP»</option>
-              {datos.opciones.map((o) => (
-                // El elegido viaja aunque ya no sea numérico: se ve seleccionado, y no se puede volver a elegir.
-                <option key={o.campoId} value={o.campoId} disabled={o.yaNoEsNumerico}>
-                  {`${o.nombre} — ${o.usables} leads con un número de 0 a 100${o.yaNoEsNumerico ? ` (ahora es ${o.tipo})` : ''}`}
-                </option>
-              ))}
-            </select>
-          </div>
-          {editable ? (
-            <button
-              type="button"
-              className="fd-btn"
-              disabled={!puntajeCambiado || guardando !== null}
-              onClick={() =>
-                void guardar('puntaje', { puntaje: puntaje === '' ? null : puntaje }, 'Guardado. El puntaje de sus leads ya se recalculó con este campo.')
-              }
-            >
-              {guardando === 'puntaje' ? 'Guardando…' : 'Guardar el puntaje'}
-            </button>
-          ) : null}
-        </div>
-        {datos.puntaje.origen === 'ninguno' ? (
+        {cuadrante.campoId ? (
+          <p className="aj-ayuda">
+            «{cuadrante.nombre}» · {miles(cuadrante.clasificados)} {cuadrante.clasificados === 1 ? 'lead clasificado' : 'leads clasificados'}
+            {cuadrante.conValor > cuadrante.clasificados
+              ? ` · ${miles(cuadrante.conValor - cuadrante.clasificados)} con un valor que no es ninguna de las cuatro palabras`
+              : ''}
+          </p>
+        ) : (
           <div className="fd-aviso mal" role="status">
             <i>⚠</i>
             <span>
-              {editable
-                ? 'Su GoHighLevel no tiene un campo «Puntaje | ICP»: elige el suyo, o sus leads quedan «Sin calificar».'
-                : 'Su GoHighLevel no tiene un campo «Puntaje | ICP»: hasta que alguien elija el suyo, sus leads quedan «Sin calificar».'}
+              Su GoHighLevel no tiene el campo contact.cuadrante_de_clasificacion: hasta que lo tenga, sus leads quedan «Sin
+              clasificar».
             </span>
           </div>
-        ) : null}
-        {datos.puntaje.yaNoEsNumerico ? (
-          <div className="fd-aviso mal" role="status">
-            <i>⚠</i>
-            <span>
-              El campo elegido ya no es numérico en GoHighLevel: lo que no sea un número de 0 a 100 queda «Sin calificar».
-            </span>
-          </div>
-        ) : null}
-        {datos.puntaje.noVistoEnLaUltimaLectura ? (
-          <div className="fd-aviso mal" role="status">
-            <i>⚠</i>
-            <span>
-              El campo elegido no vino en la última lectura del catálogo: lo borraron en GoHighLevel, o este cliente se
-              vinculó a otra subcuenta. Mientras siga elegido, sus leads nuevos quedan «Sin calificar».
-            </span>
-          </div>
-        ) : null}
+        )}
       </div>
 
       <div className="fd-campo">

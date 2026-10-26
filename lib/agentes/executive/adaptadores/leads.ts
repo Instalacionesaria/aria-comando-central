@@ -8,7 +8,7 @@
 import { CLAVES_DE_LA_FILA, leadsDelPortal } from '../../../negocio/leadsDelPortal.ts';
 import { ARGUMENTO_PERIODO, type DefinicionDeHerramienta, periodoPedido, primeras, tomar } from './comun.ts';
 
-const CLAVES_DEL_TRAMO = [
+const CLAVES_DEL_CUADRANTE = [
   'clave', 'rotulo', 'contactos', 'porcion', 'agendados', 'asistieron', 'vendidos', 'cierre', 'porQueSinCierre',
   'montoReportado', 'porQueSinMonto', 'ventasSinMonto', 'sinRegistrar', 'soloCongeladas',
 ] as const;
@@ -17,17 +17,19 @@ export const HERRAMIENTAS_DE_LEADS: readonly DefinicionDeHerramienta[] = [
   {
     nombre: 'cohorte_de_leads',
     descripcion:
-      'Leads › De GHL: los contactos que entraron en la ventana, por tramo de ICP (alto, medio, bajo, sin calificar), ' +
-      'con agendados, asistencia, ventas reportadas y monto; y las primeras filas de la cohorte.',
+      'Leads › De GHL: los contactos que entraron en la ventana, por cuadrante del ICP que manda el CRM (Prioriza, ' +
+      'Valida, Financia, Descarta y sin clasificar; Prioriza es el nivel alto, Valida y Financia el medio, Descarta el ' +
+      'bajo y además un descarte), con agendados, asistencia, ventas reportadas y monto; y las primeras filas de la ' +
+      'cohorte. El ICP no es un número: no hay puntaje que citar.',
     secciones: ['contacts'],
     esquema: ARGUMENTO_PERIODO,
     async ejecutar(argumentos) {
       const r = await leadsDelPortal(periodoPedido(argumentos)!.dias);
       const leads = primeras(r.leads);
       return {
-        ...tomar(r, ['dias', 'cohorte', 'sinCalificar', 'hayVentasRegistradas', 'piso', 'truncado', 'aviso'] as const),
-        tramos: r.tramos.map((t) => tomar(t, CLAVES_DEL_TRAMO)),
-        todos: tomar(r.todos, CLAVES_DEL_TRAMO),
+        ...tomar(r, ['dias', 'cohorte', 'sinClasificar', 'hayVentasRegistradas', 'piso', 'truncado', 'aviso'] as const),
+        cuadrantes: r.cuadrantes.map((t) => tomar(t, CLAVES_DEL_CUADRANTE)),
+        todos: tomar(r.todos, CLAVES_DEL_CUADRANTE),
         leads: { filas: leads.filas.map((l) => tomar(l, CLAVES_DE_LA_FILA)), total: leads.total },
       };
     },

@@ -122,14 +122,15 @@ export async function entradaDelBrief(citaId: string, alcance: AlcanceDelCloser)
   const respuestas = (await formulariosDe([c.contacto_id])).get(c.contacto_id) ?? [];
   const formulario = respuestas.map((f, i): DatoDeLaEntrada => ({ fuente: `formulario:${i + 1}`, etiqueta: f.etiqueta, valor: f.valor }));
 
-  // ── La ficha del lead: de dónde vino y su puntaje ──
+  // ── La ficha del lead: de dónde vino y su cuadrante del ICP ──
   const lead = await fichaDelLeadDelPortal(c.contacto_id);
   const ficha: DatoDeLaEntrada[] = [];
   const poner = (fuente: string, etiqueta: string, valor: string | number | null | undefined) => {
     if (valor !== null && valor !== undefined && String(valor).trim() !== '') ficha.push({ fuente: `ficha:${fuente}`, etiqueta, valor: String(valor) });
   };
   if (lead) {
-    poner('puntaje', 'Puntaje de ICP', lead.puntaje.valor === null ? null : `${lead.puntaje.valor} (${lead.puntaje.rotulo})`);
+    // La palabra del CRM (la `105`), no un número; sin cuadrante no viaja, como cualquier dato que falta.
+    poner('cuadrante', 'Clasificación ICP', lead.clasificacion.clave === 'sin_clasificar' ? null : lead.clasificacion.rotulo);
     poner('campana', 'Campaña por la que entró', lead.recorrido.entro.campana);
     poner('creativo', 'Anuncio por el que entró', lead.recorrido.entro.creativo);
     /* «Sin rastro» es el rótulo de que no hay dato, no un dato: viajando, la evaluación real lo vio volver como

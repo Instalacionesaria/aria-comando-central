@@ -4,7 +4,7 @@
 // LO QUE SE AFIRMA, Y LA MUTACIÓN QUE CADA COSA TIENE QUE PONER EN ROJO
 //
 // El front del prototipo (docs/acquisition/14) dibuja lo que este módulo arma: no calcula nada. Acá se
-// prueba la mitad PURA —A14-05 (sin tasa), A14-08 (el piso del promedio), A14-09, A14-11, A14-14 y el
+// prueba la mitad PURA —A14-05 (sin tasa), A14-08 (el piso de las porciones del ICP, desde la `105`), A14-09, A14-11, A14-14 y el
 // orden de A14-18—. Lo que vive en el SQL —A14-07, los días de A14-10, los clics nulos de A14-05, los
 // cortes del ICP— se prueba contra la base en `pruebas/base/181-embudos-de-acquisition.test.ts`.
 //
@@ -18,7 +18,7 @@
 //   · en «Hoy» no hay costos — mutación: ignorar `conCostos`;
 //   · los grupos suman agendados, calificados y el ICP de sus campañas — mutación: no sumar un campo;
 //   · Booking tiene su etapa de formulario, sin dato — mutación: sacarla de `ETAPAS`;
-//   · el ICP promedia sólo con diez puntajes — mutación: sin piso;
+//   · las porciones del ICP se publican sólo con diez en su denominador — mutación: sin piso;
 //   · las campañas se ordenan por inversión, después contactos, después id — mutación: por nombre;
 //   · el total suma TODAS, con o sin funnel — mutación: sumar sólo las que tienen funnel.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -91,12 +91,12 @@ test('la Inversión sube y baja sin color: gastar más no es bueno ni malo', () 
 test('sumar: los clics siguen nulos sólo si los dos lo son', () => {
   assert.equal(sumar(cifras({}), cifras({})).clics, null);
   assert.equal(sumar(cifras({ clics: null }), cifras({ clics: 3 })).clics, 3);
-  assert.equal(sumar(cifras({ contactos: 2, sumaDePuntajes: 150 }), cifras({ contactos: 3, sumaDePuntajes: 50 })).contactos, 5);
+  assert.equal(sumar(cifras({ contactos: 2, clasificados: 2 }), cifras({ contactos: 3, clasificados: 1 })).contactos, 5);
 });
 
 test('un funnel suma los agendados, los calificados y el ICP de sus campañas', () => {
-  /* Dos campañas del mismo funnel, cada una con seis puntajes: ninguna llega sola al piso del
-     promedio, y el funnel sí. Si `sumar` perdiera un campo, la tarjeta dibujaría cero o «—». */
+  /* Dos campañas del mismo funnel, cada una con seis clasificados: ninguna llega sola al piso de la porción de
+     Descarta, y el funnel sí. Si `sumar` perdiera un campo, la tarjeta dibujaría cero o «—». */
   const una = cifras({
     inversion: 60,
     inversionConDesglose: 60,
@@ -104,12 +104,11 @@ test('un funnel suma los agendados, los calificados y el ICP de sus campañas', 
     contactos: 20,
     agendados: 8,
     calificados: 7,
-    alto: 3,
-    medio: 2,
-    bajo: 1,
-    sinCalificar: 1,
-    sumaDePuntajes: 420,
-    conPuntaje: 6,
+    prioriza: 3,
+    valida: 2,
+    financia: 2,
+    clasificados: 6,
+    descarta: 1,
   });
   const otra = cifras({
     inversion: 40,
@@ -118,12 +117,11 @@ test('un funnel suma los agendados, los calificados y el ICP de sus campañas', 
     contactos: 10,
     agendados: 4,
     calificados: 6,
-    alto: 1,
-    medio: 2,
-    bajo: 3,
-    sinCalificar: 0,
-    sumaDePuntajes: 300,
-    conPuntaje: 6,
+    prioriza: 1,
+    valida: 2,
+    financia: 3,
+    clasificados: 6,
+    descarta: 2,
   });
   const p = armarEmbudos({
     ventana: { desde: '2026-09-23', hasta: '2026-09-29' },
@@ -150,12 +148,13 @@ test('un funnel suma los agendados, los calificados y el ICP de sus campañas', 
   assert.equal(g.etapas[1]?.costo, 80 / 40, 'el funnel no sumó el gasto con desglose');
   assert.equal(g.calificados.valor, 13);
   assert.deepEqual(
-    [g.calificados.icp.alto, g.calificados.icp.medio, g.calificados.icp.bajo, g.calificados.icp.sinCalificar],
-    [4, 4, 4, 1],
+    [g.calificados.icp.prioriza, g.calificados.icp.valida, g.calificados.icp.financia],
+    [4, 4, 5],
   );
-  assert.equal(g.calificados.icp.promedio, 720 / 12, 'el promedio no salió de sumar los doce puntajes');
-  // Y cada campaña sola, con seis, no lo publica.
-  assert.ok(p.campanas.every((c) => c.cifras.calificados.icp.promedio === null));
+  assert.equal(g.calificados.icp.porcionDePrioriza, 4 / 13);
+  assert.deepEqual(g.calificados.icp.descarta, { valor: 3, clasificados: 12, porcion: 3 / 12 }, 'la porción no salió de sumar los doce clasificados');
+  // Y cada campaña sola, con seis, no la publica.
+  assert.ok(p.campanas.every((c) => c.cifras.calificados.icp.descarta.porcion === null));
 });
 
 // ─── 2 · Un grupo ───────────────────────────────────────────────────────────
@@ -229,21 +228,20 @@ test('las variaciones de cada etapa salen de la ventana anterior; los calificado
   assert.equal(sin.calificados.variacion.tipo, 'sin_comparacion');
 });
 
-test('el ICP promedia sólo los puntajes mayores que cero, y sólo desde diez', () => {
+test('las porciones del ICP llevan el piso de diez en su denominador: Descarta sobre los clasificados, Prioriza sobre los calificados', () => {
   const con = armarGrupo(
     'total',
     ETAPAS.total,
-    cifras({ calificados: 12, alto: 5, medio: 4, bajo: 1, sinCalificar: 2, sumaDePuntajes: 700, conPuntaje: 10 }),
+    cifras({ calificados: 12, prioriza: 5, valida: 4, financia: 3, clasificados: 20, descarta: 5 }),
     null,
     1,
   );
-  assert.equal(con.calificados.icp.promedio, 70);
-  assert.deepEqual(
-    [con.calificados.icp.alto, con.calificados.icp.medio, con.calificados.icp.bajo, con.calificados.icp.sinCalificar],
-    [5, 4, 1, 2],
-  );
-  const pocos = armarGrupo('total', ETAPAS.total, cifras({ calificados: 9, sumaDePuntajes: 630, conPuntaje: 9 }), null, 1);
-  assert.equal(pocos.calificados.icp.promedio, null, 'promedió nueve puntajes');
+  assert.deepEqual(con.calificados.icp.descarta, { valor: 5, clasificados: 20, porcion: 0.25 });
+  assert.equal(con.calificados.icp.porcionDePrioriza, 5 / 12);
+  assert.deepEqual([con.calificados.icp.prioriza, con.calificados.icp.valida, con.calificados.icp.financia], [5, 4, 3]);
+  const pocos = armarGrupo('total', ETAPAS.total, cifras({ calificados: 9, prioriza: 9, clasificados: 9, descarta: 3 }), null, 1);
+  assert.equal(pocos.calificados.icp.descarta.porcion, null, 'publicó la porción de nueve clasificados');
+  assert.equal(pocos.calificados.icp.porcionDePrioriza, null, 'publicó la porción de nueve calificados');
 });
 
 // ─── 3 · La pantalla ────────────────────────────────────────────────────────

@@ -244,10 +244,10 @@ probada contra la base local (`pruebas/base/22-los-tres-roles.test.ts:304`, `pru
 
 Todo medido el **2026-10-18** entre las 15:34 y las 15:40 UTC; entre paréntesis, la cifra del 2026-09-28. Las tres tablas
 del scraper viven en `public` y **las escribe el backend de scraping, no este proyecto**, por PostgREST
-(`lib/datos/esquema.ts:1591-1593`), con RLS forzada (medido el 2026-09-28; no se volvió a medir). La cuarta, la de
+(`lib/datos/esquema.ts:1604-1606`), con RLS forzada (medido el 2026-09-28; no se volvió a medir). La cuarta, la de
 mediciones, sería nuestra y sigue sin existir (§ 6).
 
-**Los trabajos** (`public.aria_cc_scraper_trabajos`), lo que el panel cuenta como «un scrapeo» (`lib/datos/esquema.ts:1620`):
+**Los trabajos** (`public.aria_cc_scraper_trabajos`), lo que el panel cuenta como «un scrapeo» (`lib/datos/esquema.ts:1633`):
 
 | qué | 2026-10-18 |
 |---|---|
@@ -316,9 +316,9 @@ de la Landing. **No se volvió a medir.**
 
 | hueco | dónde se nota | de dónde tendría que venir | hoy (2026-10-18) |
 |---|---|---|---|
-| **La duración de cada scrapeo** | ningún lado; era para decidir si los 10 minutos alcanzan (`lib/tools/medicion.ts:6-8`) | `public.aria_cc_scraper_mediciones`, que llena el proxy (`lib/datos/esquema.ts:1704-1712`) | **la tabla sigue sin existir** (`to_regclass` nulo), y su migración no está en el repositorio (§ 6) |
+| **La duración de cada scrapeo** | ningún lado; era para decidir si los 10 minutos alcanzan (`lib/tools/medicion.ts:6-8`) | `public.aria_cc_scraper_mediciones`, que llena el proxy (`lib/datos/esquema.ts:1717-1725`) | **la tabla sigue sin existir** (`to_regclass` nulo), y su migración no está en el repositorio (§ 6) |
 | **El ingreso y el margen por empresa** | Monitoreo, dos columnas y una tarjeta | el precio mensual, a mano en Ajustes › Empresas (`db/migraciones/024_ingreso_por_empresa.sql:11-12`, `lib/monitoreo/fuentes.ts:91-97`) | 0 de 13 |
-| El costo de 2 corridas | Monitoreo, «2 corridas sin medir» | el backend, que consulta Apify y escribe `costo_usd` (`lib/datos/esquema.ts:1661-1667`) | 24 de 26 medidas; los 2 huecos son de Maps |
+| El costo de 2 corridas | Monitoreo, «2 corridas sin medir» | el backend, que consulta Apify y escribe `costo_usd` (`lib/datos/esquema.ts:1674-1680`) | 24 de 26 medidas; los 2 huecos son de Maps |
 | El tope pedido de un trabajo | un trabajo retomado no dice cuánto se pidió (`app/api/tools/trabajos/route.ts:74-77`) | la columna `max_leads`, que el backend no escribe (`app/api/tools/trabajos/route.ts:72-78`) | se lee de `results_data`; no se volvió a contar |
 | Cuántos lotes se subieron al CRM | ningún lado; el cerebro lo dice así (`lib/agentes/executive/adaptadores/tools.ts:24-27`) | un registro que la ruta de envío no deja | ver [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md) |
 | El costo de IA por empresa | no hay columna en Monitoreo, a propósito (`app/api/monitoreo/route.ts:23-25`) | `negocio.uso_de_ia`, que **desde el 2026-10-04 sí guarda los tokens por empresa** (`db/migraciones/069_el_uso_de_la_ia.sql:38-67`) | el dato existe; el panel no lo lee |
@@ -354,8 +354,8 @@ desde el 2026-10-03 el Espía reabre sus búsquedas desde la base, no desde la m
 del Espía, igual (`lib/tools/historial-del-espia.ts:15`).
 
 **6 · Este proyecto no escribe en las tablas del backend.** Declara sólo las columnas que lee
-(`lib/datos/esquema.ts:1625-1628`). Las tablas nuestras de Tools son la de mediciones, que no existe
-(`lib/datos/esquema.ts:1704-1712`), y desde el 2026-10-03 `negocio.analisis_del_espia`, que no lleva clave foránea al
+(`lib/datos/esquema.ts:1638-1641`). Las tablas nuestras de Tools son la de mediciones, que no existe
+(`lib/datos/esquema.ts:1717-1725`), y desde el 2026-10-03 `negocio.analisis_del_espia`, que no lleva clave foránea al
 trabajo porque esa tabla vive en `public` y la escribe el backend (`db/migraciones/068_el_analisis_del_espia.sql:11-13`).
 
 **7 · Medir no puede romper un scrapeo, y guardar no puede perder un análisis.** Las funciones de medición no lanzan nunca y
@@ -399,9 +399,9 @@ contacto (`lib/agentes/executive/adaptadores/tools.ts:3-6`).
 
 **La medición de duración no mide, y nada lo dice en voz alta.** `public.aria_cc_scraper_mediciones` sigue sin existir en
 producción (`to_regclass`, medido el 2026-10-18). Los comentarios la atribuyen a «la migración 020 de `/migraciones`»
-(`lib/datos/esquema.ts:1706`, `lib/tools/medicion.ts:19`), carpeta que no está en el repositorio; y la `020` que sí está es
+(`lib/datos/esquema.ts:1719`, `lib/tools/medicion.ts:19`), carpeta que no está en el repositorio; y la `020` que sí está es
 otra cosa, `db/migraciones/020_closer_asignado.sql`. Tampoco está `migraciones/006_aria_cc_scraper.sql`, que citan varios
-comentarios (`lib/datos/esquema.ts:1601`, `app/api/tools/scrape/route.ts:19`, `components/tools/MisLeads.jsx:12-14`). Desde el
+comentarios (`lib/datos/esquema.ts:1614`, `app/api/tools/scrape/route.ts:19`, `components/tools/MisLeads.jsx:12-14`). Desde el
 commit que la introdujo corrieron **13 trabajos sin quedar medidos** (3 el 2026-09-23 y los 10 posteriores al 2026-09-28),
 porque el código sigue igual cuando la tabla falta (`lib/tools/medicion.ts:32-33`). La prueba 165 sólo comprueba que esté
 declarada (`pruebas/codigo/165-medicion-de-los-scrapeos.test.ts:101-103`).
@@ -415,7 +415,7 @@ toma como regalo el mayor entre `leads_regalados` y lo que queda gratis (`lib/to
 el regalo pasa a «comprado» (`lib/tools/saldo.ts:53-55`). La empresa B tiene `leads_regalados = 0` con 447 gratuitos y 53
 usados: la franja diría 53 comprados. **La empresa C, cuyo monedero se abrió después del corte anterior, también tiene
 `leads_regalados = 0`** (con 500 gratuitos y 0 usados): hoy no se nota, y se va a notar con su primer lead. O sea que el
-backend sigue sin escribir esa columna al abrir un monedero, contra lo que dice `lib/datos/esquema.ts:1696-1698`. La prueba
+backend sigue sin escribir esa columna al abrir un monedero, contra lo que dice `lib/datos/esquema.ts:1709-1711`. La prueba
 cubre el monedero sin regalo sólo con cero usados (`pruebas/codigo/139-saldo-de-leads.test.ts:48-49`).
 
 **El servidor no acota cuántos anuncios pide el Espía.** La ruta manda `Number(p.count) || 60`

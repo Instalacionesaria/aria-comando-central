@@ -170,7 +170,7 @@ El resultado se escribe en el § 6 del 14 (a partir de `C14-23`) y cierra `C15-P
 - **`lib/negocio/reproduccionDelAnuncio.ts`** resuelve en este orden (`C15-08`): el `source` pedido en
   el momento (no se guarda, `C15-04`) → el post de Facebook o Instagram → el link manual de la pieza
   → nada. La respuesta se arma a mano, con claves exactas (`C15-07`, como `CLAVES_DE_LA_FILA` en
-  `lib/negocio/leadsDelPortal.ts:114`):
+  `lib/negocio/leadsDelPortal.ts:107`):
   - `{ tipo: 'archivo', url, poster, respaldo }`
   - `{ tipo: 'enlace', enlace, motivo, texto }`
   - `{ tipo: 'ninguno', motivo, texto }`

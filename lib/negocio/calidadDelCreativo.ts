@@ -10,7 +10,9 @@
 // trae la gente que sirve».
 //
 // Medido el 2026-09-18, ventana de 30 días: el ICP promedio va de **29,2 a 69,2** según la pieza
-// —factor 2,4— y la tasa de agenda de **31 % a 77 %**. Seis piezas sobre el piso.
+// —factor 2,4— y la tasa de agenda de **31 % a 77 %**. Seis piezas sobre el piso. Desde el 2026-10-26 (la `105`)
+// el ICP ya no es un número: es el cuadrante que manda el CRM, y por pieza se cuentan los calificados (Prioriza,
+// Valida o Financia) y la porción de Descarta (`docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
 //
 // Y no necesita nada de Meta: ni una credencial nueva, ni una llamada, ni el colector. Por eso este
 // módulo es el que hace que Creative deje de ser una maqueta, y por eso se escribe antes que el que
@@ -42,27 +44,13 @@
 import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
-import { campoDelPuntaje, clientesSinPuntaje, puntajeDelCampo, type CampoDelCrm, type ClienteSinPuntaje } from './camposDelCrm.ts';
+import { camposDelCuadrante, clientesSinCuadrante, type ClienteSinCampo } from './camposDelCrm.ts';
+import { CALIFICADOS } from './cuadrantesDelIcp.ts';
 import { seNombranLosClientes } from './faltaDeLosClientes.ts';
 import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
 import { llaveInterna } from './idDeLaPieza.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
-import { UMBRAL_ALTO } from './tramosDelIcp.ts';
-
-/**
- * El nombre del campo del CRM que trae el puntaje de encaje: el respaldo, si el cliente no eligió el suyo (`098`).
- *
- * **Exacto y no parecido**, y no es una precaución abstracta: el catálogo de esta empresa tiene
- * DIEZ campos con nombre parecido —`Pre-Score | ICP`, `Puntaje | Meta Lead Ads`,
- * `Pre-Score | Meta Lead Ads`, `Puntaje Final`, `Puntaje Survey HT`, `perfil_icp`,
- * `puntaje_encaje_icp`, `puntaje_interaccion`, `Lead Score`— y elegir el equivocado da una columna
- * llena de números plausibles sobre otra pregunta. `campoDelPuntaje` compara exacto por eso mismo.
- *
- * Medido el 2026-09-18: es `9HXxl5DW6aayQgKUPiOS`, el campo más poblado de la cohorte (344 de 344
- * contactos de treinta días).
- */
-export const CAMPO_DE_ICP = 'Puntaje | ICP';
 
 export { ETAPAS, type Etapa };
 
@@ -83,14 +71,19 @@ export interface FilaDeCreativo {
    */
   etapa: Etapa | null;
   contactos: number;
-  /** Cuántos de esos contactos traen el campo de ICP. Viaja siempre, con el promedio. */
-  conPuntaje: number;
-  /** `null` bajo el piso, o si el campo no está en el catálogo. Nunca cero. */
-  icpPromedio: number | null;
+  /** Cuántos de esos contactos tienen cuadrante del ICP (cualquiera de los cuatro). Viaja siempre, con la porción. */
+  clasificados: number;
+  /** Cuántos están en Descarta. */
+  descarta: number;
   /**
-   * Cuántos traen un puntaje de ICP alto —75 o más, el tramo «alto» de `tramoDelPuntaje`
-   * (`lib/negocio/tramosDelIcp.ts`)—: los «Calificados» del front del prototipo (docs/creative/16, CF1-06). Un
-   * conteo, sin piso.
+   * Descarta sobre los clasificados. `null` bajo el piso de clasificados, o si el campo no está en el catálogo. Una
+   * proporción, no un puntaje: reemplaza al ICP promedio (la `105`), que con palabras no existe.
+   */
+  porcionDeDescarta: number | null;
+  /**
+   * Cuántos son calificados por su cuadrante: Prioriza, Valida o Financia (`CALIFICADOS`), hayan agendado o no. Son los
+   * «Calificados» del front del prototipo (docs/creative/16, CF1-06), que hasta la `105` eran los de puntaje 75 o más.
+   * Un conteo, sin piso.
    */
   calificados: number;
   agendaron: number;
@@ -124,18 +117,18 @@ export interface CalidadDeLosCreativos {
   /** El cruce nombre↔anuncio. `sobre` son TODOS los contactos de la ventana. Ver `coberturaDelPuente`. */
   puente: { con: number; sobre: number; sinNombre: number };
   /**
-   * El identificador del campo de ICP, o `null` si no está en el catálogo del CRM.
+   * El identificador del campo del cuadrante del ICP (el de la primera subcuenta), o `null` si ningún cliente a la
+   * vista lo tiene en el catálogo del CRM.
    *
-   * `null` **apaga la columna entera y lo dice**. Publicar ceros ahí sería afirmar que todos los
-   * leads tienen encaje cero, que es una afirmación sobre el negocio hecha con un campo que no
-   * existe.
+   * `null` **apaga la columna entera y lo dice**. Publicar ceros ahí sería afirmar que nadie califica, que es una
+   * afirmación sobre el negocio hecha con un campo que no existe.
    */
-  campoDeIcp: string | null;
+  campoDelCuadrante: string | null;
   /**
-   * Los clientes de la ventana SIN campo del puntaje (C6 · D4). Sus piezas no tienen «Calificados»: con un cliente con
+   * Los clientes de la ventana SIN el campo del cuadrante. Sus piezas no tienen «Calificados»: con un cliente con
    * campo y otro sin, el segundo recibía un cero que afirma que nadie calificó, y quedaba último en ese ranking.
    */
-  cuentasSinPuntaje: string[];
+  cuentasSinCuadrante: string[];
   /** `null` ⟹ la pantalla no dibuja nada. La regla del silencio de este proyecto. */
   aviso: string | null;
 }
@@ -149,19 +142,20 @@ export interface CalidadDeLosCreativos {
 export async function calidadDelCreativo(
   dias = DIAS_DE_LA_TASA,
 ): Promise<CalidadDeLosCreativos> {
-  /* El campo se resuelve UNA vez y se pasa a la consulta. Si no está, la columna se apaga y el
-     aviso lo dice — no se consulta un identificador vacío ni se publica cero. */
-  const campoDeIcp = await campoDelPuntaje();
+  /* El campo se mira UNA vez: si ningún cliente lo tiene, la columna se apaga y el aviso lo dice — no se publica cero.
+     El cuadrante se lee de la columna (`contactos.cuadrante`), que la sincronización ya normalizó. */
+  const campo = await camposDelCuadrante();
+  const campoDelCuadrante = campo[0] ?? null;
 
   const [filas, extremos, congeladas, puente] = await Promise.all([
-    porCreativo(dias, campoDeIcp),
+    porCreativo(dias),
     extremosDeLaCohorte(dias),
     congeladasDeLaVentana(dias),
     coberturaDelPuente(dias),
   ]);
   // Los clientes de la ventana sin campo (el nivel 3): sus piezas van sin «Calificados», y el aviso los nombra salvo con
   // un solo cliente a la vista (`seNombranLosClientes`), que se queda con el de siempre.
-  const [sinPuntaje, nombrar] = await Promise.all([clientesSinPuntaje(filas.map((f) => f.cuentaId)), seNombranLosClientes()]);
+  const [sinCuadrante, nombrar] = await Promise.all([clientesSinCuadrante(filas.map((f) => f.cuentaId)), seNombranLosClientes()]);
 
   return {
     dias,
@@ -171,9 +165,9 @@ export async function calidadDelCreativo(
     congeladas,
     puente,
     // Viaja el de la primera subcuenta: lo que se lee de acá es si el campo está, no su id (uno por cliente).
-    campoDeIcp: campoDeIcp?.[0] ?? null,
-    cuentasSinPuntaje: sinPuntaje.map((c) => c.cuentaId),
-    aviso: avisoDe({ filas, congeladas, campoDeIcp: campoDeIcp?.[0] ?? null, puente, sinPuntaje, nombrar }),
+    campoDelCuadrante,
+    cuentasSinCuadrante: sinCuadrante.map((c) => c.cuentaId),
+    aviso: avisoDe({ filas, congeladas, campoDelCuadrante, puente, sinCuadrante, nombrar }),
   };
 }
 
@@ -220,19 +214,13 @@ async function anunciosPorNombre(): Promise<Map<string, number>> {
   return new Map(filas.map((f) => [llaveInterna(f.cuenta_id, f.n), Number(f.c ?? 0)]));
 }
 
-async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promise<FilaDeCreativo[]> {
+async function porCreativo(dias: number): Promise<FilaDeCreativo[]> {
   const llave = llaveOSinCreativo("contactos.atribucion_primera ->> 'utmContent'");
   const anuncios = await anunciosPorNombre();
 
-  /* El puntaje pasa por LA validación del puntaje (`puntajeUsable`), la de la sincronización: un entero de 0 a 100.
-     Hasta C6 · D4 acá entraba cualquier número —decimales, sin tope— y un campo con otra escala salía con promedio
-     acá y «Sin calificar» en Acquisition. Y sólo castea lo que ya pasó la forma: un texto en el campo no lanza `22P02`
-     ni se lleva puesta la consulta entera, el mismo guard que la `053` puso en el escritor del desglose. */
-  const puntaje = campoDeIcp
-    ? puntajeDelCampo(sql`contactos.campos_del_crm`, campoDeIcp)
-    : sql<number | null>`null::int`;
-
-  const numerico = sql<boolean>`${puntaje} is not null`;
+  /* El cuadrante sale de la columna que la sincronización ya normalizó (la `105`), igual que en Acquisition y Leads
+     Portal: leer el campo crudo acá daría otra normalización, y la misma pieza calificaría distinto en dos pantallas. */
+  const clasificado = sql<boolean>`contactos.cuadrante in ('prioriza', 'valida', 'financia', 'descarta')`;
 
   const filas = await datos()
     .selectFrom('contactos')
@@ -241,11 +229,10 @@ async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promis
       llave.as('creativo'),
       etapaDelNombre("contactos.atribucion_primera ->> 'campaign'").as('etapa'),
       sql<number>`count(*)`.as('contactos'),
-      sql<number>`count(*) filter (where ${numerico})`.as('conPuntaje'),
-      sql<number | null>`avg((${puntaje})::numeric) filter (where ${numerico})`.as('icp'),
-      /* `puntajeUsable` ya es un entero o nulo, así que la comparación no castea nada: un texto en el campo no lanza
-         `22P02`. Un nulo no es `>=` a nada, y no cuenta. Ver el comentario de arriba. */
-      sql<number>`count(*) filter (where ${puntaje} >= ${UMBRAL_ALTO})`.as('calificados'),
+      sql<number>`count(*) filter (where ${clasificado})`.as('clasificados'),
+      sql<number>`count(*) filter (where contactos.cuadrante = 'descarta')`.as('descarta'),
+      // Calificados por su cuadrante (`CALIFICADOS`), hayan agendado o no: la columna del prototipo.
+      sql<number>`count(*) filter (where contactos.cuadrante = any(${sql.val([...CALIFICADOS])}::text[]))`.as('calificados'),
       /* El MISMO `exists` con `ghl_calendario_id` que `costoDelAnuncio.ts:350-353` y que
          `atribucionDelLead`. Tiene que ser el mismo, o las filas de este corte no sumarían la cifra
          grande de al lado y nadie tendría cómo saber cuál de las dos está mal.
@@ -265,17 +252,18 @@ async function porCreativo(dias: number, campoDeIcp: CampoDelCrm | null): Promis
     .map((f) => {
       const contactos = Number(f.contactos ?? 0);
       const agendaron = Number(f.agendaron ?? 0);
-      const conPuntaje = Number(f.conPuntaje ?? 0);
+      const clasificados = Number(f.clasificados ?? 0);
+      const descarta = Number(f.descarta ?? 0);
       return {
         creativo: f.creativo,
         cuentaId: f.cuentaId,
         etapa: f.etapa,
         contactos,
-        conPuntaje,
-        /* El piso es del DENOMINADOR de cada cifra, no del total de la fila: el ICP se promedia
-           sobre los que traen el campo y la tasa se calcula sobre todos los contactos, así que son
-           dos denominadores distintos y cada uno responde por el suyo. */
-        icpPromedio: conPuntaje >= PISO_DE_UNA_TASA && f.icp !== null ? Number(f.icp) : null,
+        clasificados,
+        descarta,
+        /* El piso es del DENOMINADOR de cada cifra, no del total de la fila: Descarta se divide por los clasificados y
+           la tasa por todos los contactos, así que son dos denominadores distintos y cada uno responde por el suyo. */
+        porcionDeDescarta: clasificados >= PISO_DE_UNA_TASA ? descarta / clasificados : null,
         calificados: Number(f.calificados ?? 0),
         agendaron,
         tasaDeAgenda: contactos >= PISO_DE_UNA_TASA ? agendaron / contactos : null,
@@ -383,34 +371,34 @@ async function coberturaDelPuente(
 function avisoDe(r: {
   filas: FilaDeCreativo[];
   congeladas: number;
-  campoDeIcp: string | null;
+  campoDelCuadrante: string | null;
   /** El cruce nombre↔anuncio. `sobre` son TODOS los contactos de la ventana. Ver `coberturaDelPuente`. */
   puente: { con: number; sobre: number; sinNombre: number };
-  /** Los clientes de la ventana sin campo del puntaje (`clientesSinPuntaje`). */
-  sinPuntaje: readonly ClienteSinPuntaje[];
+  /** Los clientes de la ventana sin el campo del cuadrante (`clientesSinCuadrante`). */
+  sinCuadrante: readonly ClienteSinCampo[];
   /** Si el aviso habla de cada cliente (`seNombranLosClientes`): no con la empresa de un cliente o el foco en el principal. */
   nombrar: boolean;
 }): string | null {
   const partes: string[] = [];
 
-  if (r.campoDeIcp === null && !r.nombrar) {
+  if (r.campoDelCuadrante === null && !r.nombrar) {
     partes.push(
-      `El CRM de esta empresa no tiene un campo «${CAMPO_DE_ICP}», o cambió de nombre. Sin él no ` +
-        'hay encaje que promediar: no es que los leads tengan encaje cero.',
+      'El CRM de esta empresa no tiene el campo del cuadrante del ICP (contact.cuadrante_de_clasificacion). Sin él ' +
+        'no hay calificados que contar: no es que nadie califique.',
     );
   } else {
     /* Con otro cliente con campo, o con varios a la vista aunque ninguno lo tenga (el nivel 3), cada uno sin campo con
        su nombre y con lo que le pasa: «el CRM de esta empresa» no es el de cada uno, y diría «no tiene campo» de uno
-       cuyo catálogo ni se leyó. Son dos estados y mandan a lugares distintos: sin catálogo leído no hay nada que elegir
-       todavía; con catálogo, lo que falta es elegir el campo, y lo hace quien administra la empresa —quien mira
-       Creative en general no puede—. Sin piezas en la ventana no hay columna que explicar, y no se dice nada. */
-    for (const c of r.sinPuntaje) {
+       cuyo catálogo ni se leyó. Son dos estados y mandan a lugares distintos: sin catálogo leído no hay nada que mirar
+       todavía; con catálogo, lo que falta es el campo en su CRM —ya no se elige: se reconoce por su clave—. Sin piezas
+       en la ventana no hay columna que explicar, y no se dice nada. */
+    for (const c of r.sinCuadrante) {
       partes.push(
         c.catalogo
-          ? `«${c.nombre}» no tiene campo del puntaje —ni uno elegido ni uno llamado «${CAMPO_DE_ICP}»—: el encaje de ` +
-              'sus piezas no se promedia. Quien administra la empresa lo elige en Ajustes › Clientes.'
+          ? `El CRM de «${c.nombre}» no tiene el campo del cuadrante del ICP (contact.cuadrante_de_clasificacion): ` +
+              'sus piezas no tienen calificados que contar.'
           : `Todavía no se leyó el catálogo de campos de «${c.nombre}»: se lee con la sincronización de contactos, y ` +
-              'hasta entonces el encaje de sus piezas no se promedia.',
+              'hasta entonces sus piezas no tienen calificados que contar.',
       );
     }
   }

@@ -9,7 +9,7 @@
 //
 //   · el identificador: el de siempre para el principal, con el cliente adelante para otro —mutación: el prefijo
 //     siempre—, y el de una pieza nunca pasa el tope de la tabla —mutación: el detector de Creative sin cortarlo—;
-//   · el ICP contra SU funnel EN SU cliente —mutación: contra el de la empresa—; la fuga entre los funnels de SU cliente
+//   · el Descarta contra SU funnel EN SU cliente —mutación: contra el de la empresa—; la fuga entre los funnels de SU cliente
 //     —mutación: sumarlos todos—, con ids distintos —mutación: sin prefijo—;
 //   · el monitor de cada cliente —mutación: el de la empresa—, y un cliente sin denominador no lo frena —mutación:
 //     «alguno con sobre 0»—;
@@ -93,7 +93,7 @@ test('una pieza con un nombre largo no pasa el tope de la tabla: se corta, estab
   const m: MedidaDeCreative = {
     ventana: '30d',
     periodo: { desde: '2026-09-21', hasta: '2026-10-20' },
-    calidad: { filas: [], campoDeIcp: 'campo' },
+    calidad: { filas: [], campoDelCuadrante: 'campo' },
     rendimiento: { filas: [] },
     fatiga: { filas: [fatiga] },
     principal: P,
@@ -108,25 +108,26 @@ test('una pieza con un nombre largo no pasa el tope de la tabla: se corta, estab
 
 // ─── Acquisition ────────────────────────────────────────────────────────────
 
-test('el ICP de una campaña se compara con SU funnel EN SU cliente', () => {
-  /* X: 90, 90 y 65 (promedio 81,7): la de 65 está 16,7 abajo. Y: 40 y 40. Juntas, el funnel promedia 65: la de X
-     quedaba tapada y las dos de Y salían por estar 25 abajo de un público que no es el suyo. */
-  const icp = (suma: number) => ({ sumaDePuntajes: suma, conPuntaje: 10, calificados: 10 });
+test('el Descarta de una campaña se compara con SU funnel EN SU cliente', () => {
+  /* X: 1, 1 y 4 de 10 en Descarta (el funnel, 6 de 30 = 0,2): la de 4 está 20 puntos arriba. Y: 6 y 6 de 10. Juntas, el
+     funnel queda en 18 de 50 = 0,36: la de X quedaba tapada (4 puntos arriba) y las dos de Y salían por estar 24 arriba
+     de un público que no es el suyo. */
+  const icp = (descarta: number) => ({ descarta, clasificados: 10, calificados: 10 });
   const r = detectarEnAcquisition(
     medidaDeAcquisition({
       campanas: ['x1', 'x2', 'x3', 'y1', 'y2'].map((c) => campana(c, 'leadform')),
-      actual: [['x1', icp(900)], ['x2', icp(900)], ['x3', icp(650)], ['y1', icp(400)], ['y2', icp(400)]],
+      actual: [['x1', icp(1)], ['x2', icp(1)], ['x3', icp(4)], ['y1', icp(6)], ['y2', icp(6)]],
       previa: [],
       clienteDe: [['x1', P], ['x2', P], ['x3', P], ['y1', Y], ['y2', Y]],
       principal: P,
     }),
     umbral,
   );
-  const i = r.detecciones.filter((d) => d.regla === ACQ.icpEntreCampanas);
-  assert.deepEqual(i.map((d) => [d.entidad.id, d.lineaBase, d.valorActual, cliente(d)]), [['x3', 81.7, 65, P]]);
+  const i = r.detecciones.filter((d) => d.regla === ACQ.descartaEntreCampanas);
+  assert.deepEqual(i.map((d) => [d.entidad.id, d.lineaBase, d.valorActual, cliente(d)]), [['x3', 0.2, 0.4, P]]);
   assert.equal(
     textoDe(i[0]!, '30d'),
-    'Su ICP promedio está 16,7 puntos por debajo del de su funnel en su cliente: 65 contra 81,7, sobre 10 calificados con puntaje.',
+    'Su porción de Descarta está 20 puntos por encima de la de su funnel en su cliente: 40 % contra 20 %, sobre 10 contactos clasificados.',
   );
 });
 

@@ -14,8 +14,10 @@
 //     anuncios; los costos de personas se pagan sólo con la de las campañas que traen contactos (A14-19);
 //   · contactos: los que traen esa campaña en `atribucion_primera->>'campaignId'`, dados de alta en la
 //     ventana (A14-04);
-//   · agendados: `tieneCitaAlcanzable`; calificados: `esCalificado`, agendados sin descarte (A14-07);
-//   · ICP: el puntaje de los calificados, con los cortes de `tramosDelIcp.ts` (A14-08);
+//   · agendados: `tieneCitaAlcanzable`; calificados: `esCalificado`, agendados con Prioriza, Valida o Financia y
+//     sin descarte (A14-07, y la `105`);
+//   · ICP: el reparto de los calificados en Prioriza, Valida y Financia, y la porción de Descarta entre todos los
+//     contactos clasificados de la campaña (A14-08, reemplazado por `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`);
 //   · el funnel de cada campaña: `negocio.funnels_de_campana`, asignado a mano (A14-03);
 //   · el nombre y el estado: `negocio.campanas` (A14-13).
 //
@@ -66,7 +68,6 @@ import { cohorteEntre } from './recorrido.ts';
 import { funnelsDeLasCampanas, FUNNELS, type Funnel } from './funnelDeLaCampana.ts';
 import { PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import type { ClaveDePeriodo } from './periodo.ts';
-import { UMBRAL_ALTO, UMBRAL_MEDIO } from './tramosDelIcp.ts';
 
 // ─── La forma ───────────────────────────────────────────────────────────────
 
@@ -112,14 +113,19 @@ export interface Cifras {
   contactos: number;
   agendados: number;
   calificados: number;
-  /** El reparto de los calificados. Los cuatro suman `calificados`. */
-  alto: number;
-  medio: number;
-  bajo: number;
-  sinCalificar: number;
-  /** Para el promedio del ICP: la suma y la cantidad de puntajes mayores que cero. */
-  sumaDePuntajes: number;
-  conPuntaje: number;
+  /**
+   * El reparto de los calificados por su cuadrante del ICP. Los tres suman `calificados`: desde la `105` un
+   * calificado ES un Prioriza, un Valida o un Financia (`esCalificado`).
+   */
+  prioriza: number;
+  valida: number;
+  financia: number;
+  /**
+   * Para la porción de Descarta: de TODOS los contactos de la campaña, cuántos tienen cuadrante y cuántos están en
+   * Descarta. No de los calificados: un calificado nunca es Descarta, y la pregunta es qué gente trae la campaña.
+   */
+  clasificados: number;
+  descarta: number;
 }
 
 export const CIFRAS_VACIAS: Readonly<Cifras> = {
@@ -130,12 +136,11 @@ export const CIFRAS_VACIAS: Readonly<Cifras> = {
   contactos: 0,
   agendados: 0,
   calificados: 0,
-  alto: 0,
-  medio: 0,
-  bajo: 0,
-  sinCalificar: 0,
-  sumaDePuntajes: 0,
-  conPuntaje: 0,
+  prioriza: 0,
+  valida: 0,
+  financia: 0,
+  clasificados: 0,
+  descarta: 0,
 };
 
 /**
@@ -191,12 +196,14 @@ export interface CalificadosDelGrupo {
   tasa: number | null;
   costo: number | null;
   icp: {
-    alto: number;
-    medio: number;
-    bajo: number;
-    sinCalificar: number;
-    /** El promedio del puntaje de los calificados con puntaje; `null` bajo el piso (A14-08). */
-    promedio: number | null;
+    /** Los calificados por cuadrante: suman `valor`. */
+    prioriza: number;
+    valida: number;
+    financia: number;
+    /** Prioriza sobre los calificados, con el piso. Es una proporción, no un puntaje: ningún número del ICP se muestra. */
+    porcionDePrioriza: number | null;
+    /** De los contactos clasificados del grupo, cuántos están en Descarta, y la porción con el piso (`porcionDeDescarta`). */
+    descarta: { valor: number; clasificados: number; porcion: number | null };
   };
 }
 
@@ -339,12 +346,11 @@ export function sumar(a: Cifras, b: Cifras): Cifras {
     contactos: a.contactos + b.contactos,
     agendados: a.agendados + b.agendados,
     calificados: a.calificados + b.calificados,
-    alto: a.alto + b.alto,
-    medio: a.medio + b.medio,
-    bajo: a.bajo + b.bajo,
-    sinCalificar: a.sinCalificar + b.sinCalificar,
-    sumaDePuntajes: a.sumaDePuntajes + b.sumaDePuntajes,
-    conPuntaje: a.conPuntaje + b.conPuntaje,
+    prioriza: a.prioriza + b.prioriza,
+    valida: a.valida + b.valida,
+    financia: a.financia + b.financia,
+    clasificados: a.clasificados + b.clasificados,
+    descarta: a.descarta + b.descarta,
   };
 }
 
@@ -409,22 +415,23 @@ export function armarGrupo(
       tasa: tasa(actual.calificados, actual.agendados),
       costo: costoDe(actual.inversionConContactos, actual.calificados),
       icp: {
-        alto: actual.alto,
-        medio: actual.medio,
-        bajo: actual.bajo,
-        sinCalificar: actual.sinCalificar,
-        promedio: promedioDelIcp(actual),
+        prioriza: actual.prioriza,
+        valida: actual.valida,
+        financia: actual.financia,
+        porcionDePrioriza: tasa(actual.prioriza, actual.calificados),
+        descarta: { valor: actual.descarta, clasificados: actual.clasificados, porcion: porcionDeDescarta(actual) },
       },
     },
   };
 }
 
 /**
- * El ICP promedio de unas cifras: el de los calificados con puntaje, con el piso de una tasa. Es la fórmula de la
- * pantalla, y la del detector cuando compara una campaña con su funnel EN SU CLIENTE (C6 · D3): una sola definición.
+ * La porción de Descarta de unas cifras: de los contactos clasificados, cuántos están en Descarta, con el piso de una
+ * tasa sobre los clasificados. Es la fórmula de la pantalla y la del detector cuando compara una campaña con su funnel
+ * EN SU CLIENTE (C6 · D3): una sola definición. Reemplaza al ICP promedio (la `105`): con palabras no hay promedio.
  */
-export function promedioDelIcp(c: Pick<Cifras, 'sumaDePuntajes' | 'conPuntaje'>): number | null {
-  return c.conPuntaje >= PISO_DE_UNA_TASA ? c.sumaDePuntajes / c.conPuntaje : null;
+export function porcionDeDescarta(c: Pick<Cifras, 'descarta' | 'clasificados'>): number | null {
+  return c.clasificados >= PISO_DE_UNA_TASA ? c.descarta / c.clasificados : null;
 }
 
 /** Lo que Meta directo dice de una campaña: si entrega, cuánto puede gastar y para qué. */
@@ -596,32 +603,29 @@ export async function cifrasPorCampana(desde: string, hasta: string, edad: numbe
 
   // El «agendó» es el predicado compartido; con `edad`, a esa edad (ver `tieneCitaAlcanzable`).
   const agendo = tieneCitaAlcanzable('c', edad);
-  /* Los calificados, y el reparto de su puntaje, con el mismo `case` que `tramoDelPuntaje`: 0 o
-     nulo es «sin calificar», y los cortes son los umbrales de `tramosDelIcp.ts`, pasados como
-     parámetros para que no haya un segundo número. */
+  /* Los calificados y su reparto por cuadrante: un calificado es Prioriza, Valida o Financia (`esCalificado`), así que
+     los tres suman los calificados. Y aparte, sobre todos los contactos de la campaña, los clasificados y los Descarta. */
   const calificado = esCalificado('c', edad);
   const gente = await sql<{
     campana: string;
     contactos: string;
     agendados: string;
     calificados: string;
-    alto: string;
-    medio: string;
-    bajo: string;
-    sin_calificar: string;
-    suma: string | null;
-    con_puntaje: string;
+    prioriza: string;
+    valida: string;
+    financia: string;
+    clasificados: string;
+    descarta: string;
   }>`
     select c.atribucion_primera->>'campaignId' as campana,
            count(*) as contactos,
            count(*) filter (where ${agendo}) as agendados,
            count(*) filter (where ${calificado}) as calificados,
-           count(*) filter (where ${calificado} and c.score >= ${UMBRAL_ALTO}) as alto,
-           count(*) filter (where ${calificado} and c.score >= ${UMBRAL_MEDIO} and c.score < ${UMBRAL_ALTO}) as medio,
-           count(*) filter (where ${calificado} and c.score > 0 and c.score < ${UMBRAL_MEDIO}) as bajo,
-           count(*) filter (where ${calificado} and coalesce(c.score, 0) = 0) as sin_calificar,
-           sum(c.score) filter (where ${calificado} and c.score > 0) as suma,
-           count(*) filter (where ${calificado} and c.score > 0) as con_puntaje
+           count(*) filter (where ${calificado} and c.cuadrante = 'prioriza') as prioriza,
+           count(*) filter (where ${calificado} and c.cuadrante = 'valida') as valida,
+           count(*) filter (where ${calificado} and c.cuadrante = 'financia') as financia,
+           count(*) filter (where c.cuadrante in ('prioriza', 'valida', 'financia', 'descarta')) as clasificados,
+           count(*) filter (where c.cuadrante = 'descarta') as descarta
       from negocio.contactos c
      where ${cohorteEntre('c', { desde, hasta })}
        and c.atribucion_primera->>'campaignId' ~ ${CAMPANA_NUMERICA}
@@ -656,12 +660,11 @@ export async function cifrasPorCampana(desde: string, hasta: string, edad: numbe
     c.contactos = n(p.contactos);
     c.agendados = n(p.agendados);
     c.calificados = n(p.calificados);
-    c.alto = n(p.alto);
-    c.medio = n(p.medio);
-    c.bajo = n(p.bajo);
-    c.sinCalificar = n(p.sin_calificar);
-    c.sumaDePuntajes = n(p.suma);
-    c.conPuntaje = n(p.con_puntaje);
+    c.prioriza = n(p.prioriza);
+    c.valida = n(p.valida);
+    c.financia = n(p.financia);
+    c.clasificados = n(p.clasificados);
+    c.descarta = n(p.descarta);
   }
   return cifras;
 }

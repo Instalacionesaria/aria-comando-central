@@ -10,11 +10,11 @@
 //     llave interna, distinta de los dos — mutación: el cliente siempre adelante;
 //   · `armarCreative` con un cliente: la clave es el nombre y la pieza no dice cliente; con dos, cada pieza con sus
 //     cifras, su link, su miniatura y su cliente — mutación: los mapas por nombre;
-//   · «Funciona» con dos clientes es contra su etapa EN SU CLIENTE, como la señal del ICP — mutación: contra la etapa
+//   · «Funciona» con dos clientes es contra su etapa EN SU CLIENTE, como la señal del Descarta — mutación: contra la etapa
 //     de todos; y el cliente sólo se dibuja con piezas de dos clientes en la lectura; un empate y las sin valor van
 //     por (nombre, cliente) — mutación: ordenar por la clave;
-//   · el detector: la concentración dentro de cada cliente y el ICP por (cliente, etapa), con la evidencia y la frase
-//     que lo dicen — mutaciones: la concentración y el ICP sobre todos;
+//   · el detector: la concentración dentro de cada cliente y el Descarta por (cliente, etapa), con la evidencia y la frase
+//     que lo dicen — mutaciones: la concentración y el Descarta sobre todos;
 //   · el cerebro no lee ningún uuid — mutación: la clave de la pantalla tal cual;
 //   · la fuente: la ruta valida el cliente con la sesión y nombra al cliente en el 404 sólo si ve más de uno, el
 //     escritor y el borrado van por cliente, la `095` arma la clave nueva, el navegador manda el cliente y nombra la
@@ -69,7 +69,7 @@ test('el identificador: el nombre para el principal, con el cliente para otro, y
 // ─── La pantalla ────────────────────────────────────────────────────────────
 
 const calidad = (f: Partial<FilaDeCreativo> & { creativo: string; cuentaId: string }): FilaDeCreativo => ({
-  etapa: 'TOFU', contactos: 5, conPuntaje: 0, icpPromedio: null, calificados: 1, agendaron: 2, tasaDeAgenda: null, anunciosDeMeta: 1, ...f,
+  etapa: 'TOFU', contactos: 5, clasificados: 0, descarta: 0, porcionDeDescarta: null, calificados: 1, agendaron: 2, tasaDeAgenda: null, anunciosDeMeta: 1, ...f,
 });
 const rend = (f: Partial<FilaDeRendimiento> & { creativo: string; cuentaId: string }): FilaDeRendimiento =>
   ({
@@ -94,7 +94,7 @@ const entrega = (f: Partial<EntregaDeLaPieza> & { pieza: string; cuentaId: strin
 function entrada(o: Partial<EntradaDeCreative> = {}): EntradaDeCreative {
   return {
     calidad: {
-      dias: 30, desde: null, hasta: null, congeladas: 0, puente: { con: 0, sobre: 0, sinNombre: 0 }, aviso: null, campoDeIcp: 'campo', cuentasSinPuntaje: [],
+      dias: 30, desde: null, hasta: null, congeladas: 0, puente: { con: 0, sobre: 0, sinNombre: 0 }, aviso: null, campoDelCuadrante: 'campo', cuentasSinCuadrante: [],
       filas: [calidad({ creativo: 'a', cuentaId: P, calificados: 7 }), calidad({ creativo: 'a', cuentaId: Y, calificados: 2 })],
     } as unknown as CalidadDeLosCreativos,
     rendimiento: {
@@ -156,7 +156,7 @@ test('con dos clientes, dos piezas con el mismo nombre: cada una con lo suyo', (
   assert.deepEqual([de('a').miniatura, de(`${Y}:a`).miniatura], [null, 'https://scontent.xx.fbcdn.net/v/y.jpg']);
 });
 
-test('con dos clientes, «Funciona» es contra la etapa EN SU CLIENTE, como la señal del ICP', () => {
+test('con dos clientes, «Funciona» es contra la etapa EN SU CLIENTE, como la señal del Descarta', () => {
   const g = armarCreative(entrada()).criterios.impresiones;
   // P: (10.000 + 8.000) / 2 = 9.000, «a» funciona y «b» no. Y: «a» es la única de su etapa en Y.
   assert.deepEqual(g.funciona, ['a', `${Y}:a`]);
@@ -195,8 +195,8 @@ test('el cerebro nunca lee un uuid: la clave y los criterios van con el rótulo'
 
 const umbral = (codigo: string) => umbralVigente(CATALOGO_DE_REGLAS.find((r) => r.codigo === codigo)!, new Map());
 const pieza = (cuentaId: string, creativo: string, gasto: number) => ({ cuentaId, creativo, gasto, impresiones: 5000 }) as FilaDeRendimiento;
-const icp = (cuentaId: string, creativo: string, icpPromedio: number) =>
-  ({ cuentaId, creativo, etapa: 'TOFU', icpPromedio, conPuntaje: 20, contactos: 20 }) as FilaDeCreativo;
+const descarta = (cuentaId: string, creativo: string, porcionDeDescarta: number) =>
+  ({ cuentaId, creativo, etapa: 'TOFU', porcionDeDescarta, clasificados: 20, contactos: 20 }) as unknown as FilaDeCreativo;
 const fatiga = (cuentaId: string, creativo: string, caida: number) =>
   ({ cuentaId, creativo, dias: 20, desde: '2026-09-10', hasta: '2026-10-04', ctrTemprano: 3, ctrTardio: 2, caida, fatigado: true, motivo: null, porque: null }) as FatigaDeUnCreativo;
 
@@ -204,7 +204,7 @@ function medida(e: { rendimiento?: FilaDeRendimiento[]; calidad?: FilaDeCreativo
   return {
     ventana: e.ventana ?? '30d',
     periodo: { desde: '2026-09-21', hasta: '2026-10-20' },
-    calidad: { filas: e.calidad ?? [], campoDeIcp: 'campo' },
+    calidad: { filas: e.calidad ?? [], campoDelCuadrante: 'campo' },
     rendimiento: { filas: e.rendimiento ?? [] },
     fatiga: { filas: e.fatiga ?? [] },
     principal: P,
@@ -229,21 +229,21 @@ test('la concentración se mide dentro de cada cliente, y la frase lo dice', () 
   assert.equal(((c[1]!.evidencia as { piezas: unknown[] }).piezas).length, 3, 'la evidencia trae las piezas de su cliente, no las de todos');
 });
 
-test('el ICP se compara con las piezas de su etapa EN SU CLIENTE', () => {
-  /* P en TOFU: 70, 70 y 40 (promedio 60): la de 40 está 20 abajo. Y en TOFU: 50, 50 y 20 (promedio 40): la de 20 está
-     20 abajo. Con el promedio de todas (50), la de P quedaría 10 abajo y no saldría. */
+test('el Descarta se compara con las piezas de su etapa EN SU CLIENTE', () => {
+  /* P en TOFU: 0,1, 0,1 y 0,4 (promedio 0,2): la de 0,4 está 20 puntos arriba. Y en TOFU: 0,5, 0,5 y 0,8 (promedio 0,6):
+     la de 0,8 está 20 arriba. Con el promedio de todas (0,4), la de P quedaría en el promedio y no saldría. */
   const r = detectarEnCreative(
-    medida({ calidad: [icp(P, 'x', 70), icp(P, 'y', 70), icp(P, 'z', 40), icp(Y, 'u', 50), icp(Y, 'v', 50), icp(Y, 'w', 20)] }),
+    medida({ calidad: [descarta(P, 'x', 0.1), descarta(P, 'y', 0.1), descarta(P, 'z', 0.4), descarta(Y, 'u', 0.5), descarta(Y, 'v', 0.5), descarta(Y, 'w', 0.8)] }),
     umbral,
   );
-  const i = r.detecciones.filter((d) => d.regla === CRE.icpPorPieza);
+  const i = r.detecciones.filter((d) => d.regla === CRE.descartaPorPieza);
   assert.deepEqual(i.map((d) => [d.entidad.id, d.lineaBase, d.valorActual, (d.evidencia as { cliente?: string }).cliente]), [
-    ['z', 60, 40, P],
-    [`${Y}:w`, 40, 20, Y],
+    ['z', 0.2, 0.4, P],
+    [`${Y}:w`, 0.6, 0.8, Y],
   ]);
   assert.equal(
     textoDeCreative(i[0]!),
-    'Su ICP promedio está 20 puntos por debajo del promedio de las piezas de su etapa en su cliente (TOFU): 40 contra 60, sobre 20 contactos con puntaje.',
+    'Su porción de Descarta está 20 puntos por encima del promedio de las piezas de su etapa en su cliente (TOFU): 40 % contra 20 %, sobre 20 contactos clasificados.',
   );
 });
 

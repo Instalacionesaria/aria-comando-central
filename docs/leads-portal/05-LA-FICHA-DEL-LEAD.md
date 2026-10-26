@@ -55,7 +55,7 @@ acciones y siete secciones:
 ### LP05-03 · La ficha sólo lee: no refresca contra el CRM ni escribe
 
 - **Rastro:** la ficha del closer sí refresca: su ruta llama a `refrescarUnContacto`, que es *«la
-  llamada que cuesta abrir la ficha»* (`lib/negocio/sincronizar.ts:555-585`).
+  llamada que cuesta abrir la ficha»* (`lib/negocio/sincronizar.ts:592-622`).
 - **Qué pide:** `fichaDelLeadDelPortal` sólo lee. No gasta presupuesto del proveedor ni reescribe el
   territorio. La prueba de LP-3 comprueba que la ficha no escribe. Por eso la ficha muestra cuándo se
   sincronizó el contacto por última vez (`LP05-05`).
@@ -89,7 +89,7 @@ acciones y siete secciones:
     y sin puntaje, «sin puntaje · sin calificar». Es la prueba de LP-3: el 0 viaja con su motivo;
   - **país**. Medido: **569** de 593 lo tienen;
   - **alta en el CRM**, con fecha absoluta y relativa. No es `creado_el`: `creado_el` es cuando lo vio
-    nuestro barrido (`lib/datos/esquema.ts:427-440`);
+    nuestro barrido (`lib/datos/esquema.ts:430-443`);
   - **sincronizado el**, y para un congelado, que ya no se refresca;
   - **la marca de descartado**, con la etiqueta que lo descartó, si la hay.
 - **No hay un «estado» de una palabra.** Hasta dónde llegó la persona lo dice el recorrido
@@ -138,7 +138,7 @@ acciones y siete secciones:
   4. **Asistió:** tres estados (asistió, no asistió, sin registrar), y nada cuando no hay cita
      cerrable (sin cita, sólo futuras, sólo canceladas o sólo congeladas), que es el `null` de
      `LP02-04`. Así una cita todavía por delante no sale «sin registrar». El plantón del calendario
-     va como marca aparte y no se suma (`lib/negocio/citasAlcanzables.ts:105-109`). **Medido:** 0
+     va como marca aparte y no se suma (`lib/negocio/citasAlcanzables.ts:106-110`). **Medido:** 0
      personas con asistencia registrada y 145 con cita pasada, no cancelada y sin registro. El 145
      es un techo: se midió sin el filtro de alcanzable (`LP02-04`). Con el predicado exacto, **77**.
   5. **Compró:** si hay una venta registrada, con su monto reportado. Un acuerdo sin pago se muestra
@@ -159,18 +159,18 @@ acciones y siete secciones:
   (`aios-command-center_1.html:4668-4671`): la facturación depende de `seg`. El cuestionario dice lo que el
   tramo ya decía, y parece confirmarlo.
 - **Qué pide:**
-  - **el grupo `calificacion` de `perfilDeLaFicha`** (`lib/negocio/ficha.ts:481`), agrupado por
-    significado y no por formulario (`lib/negocio/ficha.ts:456-466`). Sus carpetas son tres
-    (`lib/ghl/contrato.ts:332-340`): la del puntaje, «Score | ICP Nuevo» y «Score | ICP Lead Form
+  - **el grupo `calificacion` de `perfilDeLaFicha`** (`lib/negocio/ficha.ts:482`), agrupado por
+    significado y no por formulario (`lib/negocio/ficha.ts:457-467`). Sus carpetas son tres
+    (`lib/ghl/contrato.ts:349-357`): la del puntaje, «Score | ICP Nuevo» y «Score | ICP Lead Form
     (Meta)». Así entran las dos cosas que el § 5.3 pide por separado: las respuestas de Meta Lead Ads
     y las de la landing (`§ 5.3:253-254`);
-  - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:504-510`);
+  - **un campo vacío no se muestra.** `poner` ya lo descarta (`lib/negocio/ficha.ts:505-511`);
   - **sin «N de M».** Son dos formularios con preguntas distintas y casi nadie contesta los dos —6
     personas, medido en LP-3—: un «5 de 17» diría que faltan doce respuestas que la persona nunca tuvo
     delante;
   - **el puntaje aparece una sola vez**, en la sección de calificación. Hoy saldría dos veces: como
-    «Calificación» (`lib/negocio/ficha.ts:525`) y como el propio campo del CRM, que vive en una de las
-    carpetas del grupo (`lib/ghl/contrato.ts:333-336`);
+    «Calificación» (`lib/negocio/ficha.ts:525@bf2de85`) y como el propio campo del CRM, que vive en una de las
+    carpetas del grupo (`lib/ghl/contrato.ts:350-353`);
   - **un campo sin grupo no aparece.** Es la prueba de LP-3. Medido: **174** campos del catálogo no
     tienen grupo, contra **17** del grupo `calificacion` en **3** carpetas;
   - los valores se muestran como texto (`LP05-04`).
@@ -186,7 +186,7 @@ acciones y siete secciones:
   vocabulario cerrado de tres valores (`lib/negocio/recorrido.ts:234-238`). **No está en el grupo
   `calificacion`:** vive en la carpeta vieja «Score | ICP», que quedó fuera del perfil a propósito
   (`lib/ghl/contrato.ts:262-265`). Se lee por nombre con `campoPorNombre`
-  (`lib/negocio/camposDelCrm.ts:318-335`), como ya hace Conversion
+  (`lib/negocio/camposDelCrm.ts:333-350`), como ya hace Conversion
   (`lib/negocio/recorrido.ts:257-268`).
 - **Medido:** Agendado **121** · Form incompleto sin agendar **87** · Form completo sin agendar **39**
   · vacío **346**. **No se escribe desde el 2026-08-31**
@@ -231,7 +231,7 @@ acciones y siete secciones:
 - **Rastro:** la maqueta lo pone como porcentaje dentro del bloque del VSL
   (`aios-command-center_1.html:4832`) y otra vez en interacciones (`aios-command-center_1.html:4681`).
 - **Dónde está el dato:** en `Video Pre-Call` (`lib/negocio/consumoDelPrecall.ts:64`), dentro de la
-  carpeta «Interacciones», que es del grupo `interacciones` (`lib/ghl/contrato.ts:341-343`).
+  carpeta «Interacciones», que es del grupo `interacciones` (`lib/ghl/contrato.ts:358-360`).
 - **Medido:** **222** contactos con valor y **371** vacíos. Por valor: Sin abrir (0%) 130 · Nada 50 ·
   76–100% 12 · 1–25% 11 · -20% 6 · 51–75% 4 · Accede: sin reproducir 3 · 26–50% 2 · 40-60% 2 · Clic a
   link 2.
@@ -257,11 +257,11 @@ acciones y siete secciones:
   persona, y **el nombre de un closer real** en «Llamada con…» (`aios-command-center_1.html:4607`).
 - **Qué pide:**
   - **mensajes:** la fecha del último entrante y la del último saliente
-    (`lib/datos/esquema.ts:404-406`). El conteo, sólo cuando la historia se leyó (`mensajes_desde_el`).
+    (`lib/datos/esquema.ts:407-409`). El conteo, sólo cuando la historia se leyó (`mensajes_desde_el`).
     Si no se leyó, la ficha dice «no se leyó su historia», no «nunca escribió»
-    (`lib/datos/esquema.ts:408-414`). **Medido:** 305 con algún mensaje entrante, 484 con alguno
+    (`lib/datos/esquema.ts:411-417`). **Medido:** 305 con algún mensaje entrante, 484 con alguno
     saliente, 541 con la historia leída;
-  - **sin el texto.** `ultimo_entrante_texto` (`lib/datos/esquema.ts:405`) no viaja. La conversación
+  - **sin el texto.** `ultimo_entrante_texto` (`lib/datos/esquema.ts:408`) no viaja. La conversación
     es del closer y del setter, que ya la ven en su pantalla; el portal cuenta y fecha;
   - **citas:** fecha, estado del calendario (confirmada, cancelada o plantón), si es alcanzable o
     congelada, y la asistencia registrada;
@@ -278,7 +278,7 @@ acciones y siete secciones:
 - **Rastro:** once campos y cuatro UTM (`aios-command-center_1.html:4846-4854`). Para catorce contactos,
   el relleno los fabrica (`aios-command-center_1.html:4672-4676`).
 - **Qué pide:** `atribucion_primera` se guarda cruda *«y sin lista blanca»*
-  (`lib/datos/esquema.ts:441-453`). Por eso la lista blanca va en la lectura, en
+  (`lib/datos/esquema.ts:444-456`). Por eso la lista blanca va en la lectura, en
   `atribucionVisible.ts` (LP-3). Medido sobre los 593:
 
   | clave | rótulo | contactos |
@@ -297,8 +297,8 @@ acciones y siete secciones:
   Notas sobre la tabla:
   - `utmMedium` es un nombre, no un id, y un renombre en Meta parte la serie. Acquisition pide
     decirlo en pantalla (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`);
-  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1025`);
-  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1022-1033`). **Medido: 213 de 213
+  - `utmTerm` es el identificador del conjunto (`lib/datos/esquema.ts:1038`);
+  - `adId` se nombra con `negocio.anuncios` (`lib/datos/esquema.ts:1035-1046`). **Medido: 213 de 213
     cruzan.**
 - **Sólo el host.** **286** direcciones traen un token: un JWT, un `fbclid` o un `token=`. Es lo que
   pide A8-18 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:239`). Hosts medidos:
@@ -322,10 +322,10 @@ acciones y siete secciones:
   | campo de la maqueta | qué es hoy | rastro |
   |---|---|---|
   | Ubicación · Posición | **hueco**: el placement no llega de ningún lado | A8-29, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304` |
-  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1194-1202`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
+  | Costo del lead | **hueco**: el costo es por anuncio y por día (`lib/datos/esquema.ts:1207-1215`); repartirlo entre personas es un modelo, no un dato. La maqueta lo calcula con el puntaje (`aios-command-center_1.html:4674`) | — |
   | Dispositivo · Ciudad | **hueco**: están dentro de `userAgent` e `ip`, que no se muestran. Acquisition pide derivarlos y no mostrarlos (A8-17). La maqueta elige el dispositivo por la paridad del puntaje (`aios-command-center_1.html:4673`) | `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:238` |
   | Plataforma | **no es un dato aparte**: lo dice `sessionSource`. No se inventa «Meta» | — |
-  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1030-1031`). Ver `LP05-P02` | — |
+  | Objetivo | **no se muestra hoy**: el objetivo del anuncio existe en `negocio.anuncios` (`lib/datos/esquema.ts:1043-1044`). Ver `LP05-P02` | — |
   | Punto de captura | **se reemplaza** por el host de `url` y por «Llegó por» (`LP05-07`) | A8-18 |
   | Conjunto · Creative · UTM | **dato real**, por la lista blanca (`LP05-13`); «Creative» es el **nombre** del anuncio, no la pieza (ver la nota) | A8-07, `docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93` |
 
@@ -333,7 +333,7 @@ acciones y siete secciones:
   (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:304`) porque habla de la pieza: el formato y el
   *Creative Profile*, que no llegan de ningún lado. Lo que esta ficha muestra en «Creative» es el
   nombre que viene en `utmContent`, que A8-07 (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`)
-  llama anuncio y que Creative usa como llave (`lib/negocio/calidadDelCreativo.ts:224`). El rótulo
+  llama anuncio y que Creative usa como llave (`lib/negocio/calidadDelCreativo.ts:218`). El rótulo
   no promete más que eso.
 
   Los huecos salen de `huecosDelLeadsPortal.ts` con su fecha: el VSL, fit e intent, ubicación,
@@ -353,7 +353,7 @@ acciones y siete secciones:
   - **quién lo calcula:** el rótulo dice que lo calcula el CRM, no Comando Central. El ICP calculado
     por Comando Central es futuro (`docs/OTROS/futuro/icp-interno-calculado.md`);
   - **el 0**, con su motivo: *«No se sabe si el CRM calculó cero o si su workflow no corrió»*
-    (`lib/negocio/sincronizar.ts:432-440`);
+    (`lib/negocio/sincronizar.ts:447-455`);
   - **la etiqueta de descarte**, si la tiene. Medido con `icp_rechazado`: bajo 45 · medio 22 · sin
     calificar 1 · alto 0;
   - **«Formulario completado»** pasa a ser el estado del `Form Landing VSL` (`LP05-09`);
@@ -374,7 +374,7 @@ acciones y siete secciones:
     la única que los trae (LP-4). La respuesta sale con `no-store`, como toda respuesta con datos de
     un inquilino (`lib/autorizacion/respuesta.ts:330-332`);
   - **el closer asignado:** `crm_asignado_a` es el usuario del CRM, crudo
-    (`lib/datos/esquema.ts:383-393`). Se cruza con `closersDeLaEmpresa`
+    (`lib/datos/esquema.ts:383-396`). Se cruza con `closersDeLaEmpresa`
     (`lib/negocio/alcanceDelCloser.ts:130-171`) por par —el cliente del contacto y su usuario del
     CRM, entre los vínculos a la vista (el nivel 3)—. Si cruza, se muestra el nombre. Si no cruza,
     «asignado en el CRM a alguien que no es un closer configurado». Si no hay asignación, «sin
@@ -392,7 +392,7 @@ acciones y siete secciones:
 ### LP05-P01 · ¿Se muestran los otros tres campos del grupo `interacciones`?
 
 La carpeta «Interacciones» tiene cuatro campos: la confirmación de asistencia, el video precall y las
-dos preguntas de la llamada (`lib/ghl/contrato.ts:341-343`). Medido: el grupo tiene **4** campos en
+dos preguntas de la llamada (`lib/ghl/contrato.ts:358-360`). Medido: el grupo tiene **4** campos en
 **1** carpeta. `LP05-11` toma el precall. Los otros tres ya se muestran en la ficha del closer. En el
 portal completarían el recorrido: la confirmación de asistencia es justo lo que le falta al paso
 «Asistió». Pero LP-0 no midió su cobertura, y el plan de LP-3 no los nombra.
@@ -401,16 +401,16 @@ portal completarían el recorrido: la confirmación de asistencia es justo lo qu
 
 Ninguno es un dato personal. `medium` está en 552 contactos y `campaignId` en 358. El objetivo existe
 para los 213 contactos cuyo `adId` cruza con `negocio.anuncios`; cuántos lo traen cargado no se midió,
-y la columna puede ser nula (`lib/datos/esquema.ts:1030-1031`). Quedaron afuera porque la lista del plan
+y la columna puede ser nula (`lib/datos/esquema.ts:1043-1044`). Quedaron afuera porque la lista del plan
 es la mínima que llena la ficha de la maqueta. `campaignId` sólo serviría para cruzar, y hoy
-`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1022-1033`).
+`negocio.anuncios` no guarda el nombre de la campaña, sólo su id (`lib/datos/esquema.ts:1035-1046`).
 `medium` y el objetivo sí llenarían dos filas que la maqueta tiene: «Plataforma» y «Objetivo».
 Para el objetivo, es la misma pregunta que `LP09-P04` (`09-DE-DONDE-VIENE-CADA-DATO.md`), y se
 contesta una sola vez.
 
 ### LP05-P03 · ¿La ficha muestra las etiquetas crudas del CRM?
 
-`perfilDeLaFicha` las pone en el grupo «origen» (`lib/negocio/ficha.ts:526-528`). Esta ficha sólo
+`perfilDeLaFicha` las pone en el grupo «origen» (`lib/negocio/ficha.ts:522-524`). Esta ficha sólo
 muestra la de descarte (`LP05-05`). Las crudas explican casos raros, como por qué alguien está donde
 está. Pero son vocabulario interno del CRM, y en una pestaña que ve más gente que el closer quizás no
 corresponde.

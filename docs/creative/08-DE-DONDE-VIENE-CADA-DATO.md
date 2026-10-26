@@ -67,7 +67,7 @@ from (select nombre, count(distinct meta_anuncio_id) ids from negocio.anuncios g
 **`C8-08`, el ICP** — y hay una trampa que costó una medición equivocada: `campos_del_crm` está
 indexado por **id de GoHighLevel**, así que buscar por el nombre del campo devuelve cero y **no
 falla**. El id vigente se resuelve con `campoPorNombre('Puntaje | ICP')`
-(`lib/negocio/camposDelCrm.ts:318`), contra `negocio.campos_del_crm`. Ver `C2-17` y el riesgo de los
+(`lib/negocio/camposDelCrm.ts:333`), contra `negocio.campos_del_crm`. Ver `C2-17` y el riesgo de los
 diez campos con nombre parecido.
 
 ---

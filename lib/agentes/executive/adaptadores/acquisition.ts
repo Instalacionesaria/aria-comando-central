@@ -18,6 +18,8 @@ export const HERRAMIENTAS_DE_ACQUISITION: readonly DefinicionDeHerramienta[] = [
     nombre: 'embudos_de_acquisition',
     descripcion:
       'Acquisition: inversión, contactos, clics, agendados y calificados por funnel y por campaña, con su ' +
+      'reparto por cuadrante del ICP (calificados.icp: Prioriza, Valida y Financia; porcionDePrioriza sobre los ' +
+      'calificados; descarta: de los contactos clasificados, cuántos están en Descarta y su porción) y su ' +
       'variación contra la ventana anterior. La inversión del total es la de toda la cuenta de Meta (gasto.deLaCuenta, ' +
       'igual al Administrador de anuncios); conGasto dice cuántas campañas gastaron, e inversionSinContactos cuánto ' +
       'gastaron las campañas sin contactos atribuidos, que no pagan el costo por contacto. Una campaña con ' +

@@ -40,7 +40,7 @@ function entrada(o: {
   lead?: Partial<IndicadoresDelLead>;
   citas?: Partial<Cancelacion>;
   icp?: Partial<EntradaDeConversation['icp']>;
-  asistenciaPorTramo?: Partial<EntradaDeConversation['asistenciaPorTramo']>;
+  asistenciaPorCuadrante?: Partial<EntradaDeConversation['asistenciaPorCuadrante']>;
   fueraDeHorario?: { contactos: number; sobre: number } | null;
   precall?: Partial<ConsumoDelPrecall>;
   sentimiento?: Record<string, SentimientoDelFlujo>;
@@ -56,10 +56,11 @@ function entrada(o: {
       citas: 56, canceladas: 15, reagendadas: 7, conAsistencia: 0, sePresentaron: 0, conConfirmacion: 20, confirmaron: 15, ...o.citas,
     } as Cancelacion,
     // El total del ICP, 32, no es el `agendaron` del lead, 35: una porción sobre el lead se vería distinta.
-    icp: { alto: 8, medio: 6, bajo: 5, sin_calificar: 13, ...o.icp },
-    asistenciaPorTramo: {
-      alto: { conAsistencia: 0, sePresentaron: 0 }, medio: { conAsistencia: 0, sePresentaron: 0 },
-      bajo: { conAsistencia: 0, sePresentaron: 0 }, sin_calificar: { conAsistencia: 0, sePresentaron: 0 }, ...o.asistenciaPorTramo,
+    icp: { prioriza: 8, valida: 4, financia: 2, descarta: 5, sin_clasificar: 13, ...o.icp },
+    asistenciaPorCuadrante: {
+      prioriza: { conAsistencia: 0, sePresentaron: 0 }, valida: { conAsistencia: 0, sePresentaron: 0 },
+      financia: { conAsistencia: 0, sePresentaron: 0 }, descarta: { conAsistencia: 0, sePresentaron: 0 },
+      sin_clasificar: { conAsistencia: 0, sePresentaron: 0 }, ...o.asistenciaPorCuadrante,
     },
     atribucion: { fueraDeHorario: o.fueraDeHorario === undefined ? { contactos: 12, sobre: 40 } : o.fueraDeHorario },
     precall: { sobre: 40, registraron: 10, clasificados: 32, hayCampo: true, ...o.precall } as ConsumoDelPrecall,
@@ -82,8 +83,8 @@ test('toda tasa lleva el piso de 10: bajo el piso, «—» con su motivo', () =>
   const ocho = armarConversation(entrada({ citas: { citas: 8, canceladas: 4 } }));
   assert.deepEqual(ocho.appointmentFlow.salidas.cancelaron.porcion, { valor: null, motivo: 'bajo_el_piso' });
   // Las porciones del ICP, también: con 9 agendados no hay porcentajes.
-  const icp = armarConversation(entrada({ icp: { alto: 0, medio: 0, bajo: 0, sin_calificar: 9 } })).paneles.icp;
-  assert.ok(icp.tramos.every((t) => t.porcion === null), 'una porción del ICP con 9 agendados');
+  const icp = armarConversation(entrada({ icp: { prioriza: 0, valida: 0, financia: 0, descarta: 0, sin_clasificar: 9 } })).paneles.icp;
+  assert.ok(icp.cuadrantes.every((t) => t.porcion === null), 'una porción del ICP con 9 agendados');
   assert.equal(icp.motivo, 'bajo_el_piso');
 });
 
@@ -95,17 +96,17 @@ test('la asistencia: sin citas no hubo a quién; con citas y sin respuestas, nad
   assert.deepEqual(marcada.appointmentFlow.kpi, { valor: 0.5, motivo: null });
 });
 
-test('el ICP de quienes agendaron, de alto a sin calificar, con su porción sobre su propio total', () => {
+test('el ICP de quienes agendaron, de Prioriza a sin clasificar, con su porción sobre su propio total', () => {
   const p = armarConversation(entrada());
-  assert.equal(p.paneles.icp.agendaron, 32, 'el total del ICP no es la suma de sus tramos');
-  assert.deepEqual(p.paneles.icp.tramos.map((t) => [t.clave, t.n, t.porcion]), [
-    ['alto', 8, 8 / 32], ['medio', 6, 6 / 32], ['bajo', 5, 5 / 32], ['sin_calificar', 13, 13 / 32],
+  assert.equal(p.paneles.icp.agendaron, 32, 'el total del ICP no es la suma de sus cuadrantes');
+  assert.deepEqual(p.paneles.icp.cuadrantes.map((t) => [t.clave, t.n, t.porcion]), [
+    ['prioriza', 8, 8 / 32], ['valida', 4, 4 / 32], ['financia', 2, 2 / 32], ['descarta', 5, 5 / 32], ['sin_clasificar', 13, 13 / 32],
   ]);
   assert.equal(p.paneles.icp.motivo, null);
-  const nadie = armarConversation(entrada({ icp: { alto: 0, medio: 0, bajo: 0, sin_calificar: 0 } }));
-  assert.ok(nadie.paneles.icp.tramos.every((t) => t.porcion === null), 'una porción sobre cero agendados');
+  const nadie = armarConversation(entrada({ icp: { prioriza: 0, valida: 0, financia: 0, descarta: 0, sin_clasificar: 0 } }));
+  assert.ok(nadie.paneles.icp.cuadrantes.every((t) => t.porcion === null), 'una porción sobre cero agendados');
   assert.equal(nadie.paneles.icp.motivo, 'sin_agendados', 'con contactos y nadie que agendara no es «sin contactos»');
-  const vacia = armarConversation(entrada({ lead: { cohorte: 0 }, icp: { alto: 0, medio: 0, bajo: 0, sin_calificar: 0 } }));
+  const vacia = armarConversation(entrada({ lead: { cohorte: 0 }, icp: { prioriza: 0, valida: 0, financia: 0, descarta: 0, sin_clasificar: 0 } }));
   assert.equal(vacia.paneles.icp.motivo, 'sin_contactos');
 });
 
@@ -169,16 +170,17 @@ test('el sentimiento de cada agente: con su piso, sin análisis y sin auditoría
   assert.deepEqual(armarConversation(entrada()).porCorregir, { valor: 8, motivo: null });
 });
 
-test('la asistencia por calidad es la de cada tramo, no la de la empresa', () => {
+test('la asistencia por calidad es la de cada cuadrante calificado, sin Descarta, no la de la empresa', () => {
   const p = armarConversation(entrada({
     citas: { conAsistencia: 22, sePresentaron: 12 },
-    asistenciaPorTramo: { alto: { conAsistencia: 12, sePresentaron: 9 }, bajo: { conAsistencia: 10, sePresentaron: 3 } },
+    asistenciaPorCuadrante: { prioriza: { conAsistencia: 12, sePresentaron: 9 }, financia: { conAsistencia: 10, sePresentaron: 3 } },
   }));
+  // Descarta no tiene fila: sus citas son de descartados (la `105`) y la población de la tasa no las cuenta.
   assert.deepEqual(p.appointmentFlow.calidad.map((x) => [x.clave, x.asistencia]), [
-    ['alto', { valor: 9 / 12, motivo: null }],
-    ['medio', { valor: null, motivo: 'sin_asistencia' }],
-    ['bajo', { valor: 3 / 10, motivo: null }],
-    ['sin_calificar', { valor: null, motivo: 'sin_asistencia' }],
+    ['prioriza', { valor: 9 / 12, motivo: null }],
+    ['valida', { valor: null, motivo: 'sin_asistencia' }],
+    ['financia', { valor: 3 / 10, motivo: null }],
+    ['sin_clasificar', { valor: null, motivo: 'sin_asistencia' }],
   ]);
   const sinCitas = armarConversation(entrada({ citas: { citas: 0 } })).appointmentFlow.calidad;
   assert.ok(sinCitas.every((x) => x.asistencia.motivo === 'sin_citas'), 'sin citas, la calidad culpa a quien no marca');

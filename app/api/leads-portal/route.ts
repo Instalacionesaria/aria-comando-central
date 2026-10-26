@@ -18,7 +18,7 @@
 // ── LO QUE VIAJA ────────────────────────────────────────────────────────────
 //
 // La lista no trae teléfono, ni correo, ni la atribución cruda, ni los campos del CRM: cada fila son
-// las catorce claves de `CLAVES_DE_LA_FILA`. El teléfono y el correo van sólo en la ficha
+// las trece claves de `CLAVES_DE_LA_FILA`. El teléfono y el correo van sólo en la ficha
 // (`[id]/route.ts`). Y `ok()` responde con `no-store`, como toda respuesta con datos de un inquilino.
 // ═══════════════════════════════════════════════════════════════════════════════
 

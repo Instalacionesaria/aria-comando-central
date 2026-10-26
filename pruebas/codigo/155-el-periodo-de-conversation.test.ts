@@ -161,7 +161,7 @@ test('las cifras de la pantalla reciben la misma ventana, y sale del período', 
     'consumoDelPrecall',
     'sentimientoPorFlujo',
     'icpDeLosAgendados',
-    'asistenciaPorTramo',
+    'asistenciaPorCuadrante',
   ]) {
     assert.match(
       cuerpo,

@@ -5,11 +5,11 @@
 //
 // Lo que la 296 no ve porque no corre la pantalla ni lee el código. Cada afirmación dice la mutación que la pone roja:
 //
-//   · `ConexionDelCliente.jsx` monta «Puntaje y Perfil» también para el principal, que no tiene Conexión propia pero
+//   · `ConexionDelCliente.jsx` monta «ICP y Perfil» también para el principal, que no tiene Conexión propia pero
 //     sí su catálogo — mutación: montarlo sólo en la rama de los demás;
-//   · `CamposDelCliente.jsx` no tiene lista propia de tipos ni de grupos —las opciones y los grupos los dice el
-//     servidor— y manda `puntaje: null` para «sin elegir» — mutaciones: una lista de tipos, `''` en vez de `null`;
-//   · el botón del puntaje sólo se habilita cuando la persona cambia el valor, y quien sólo ve no recibe botones;
+//   · `CamposDelCliente.jsx` no tiene lista propia de tipos ni de grupos —los grupos los dice el servidor—, muestra el
+//     campo del cuadrante y no elige el puntaje (la `105`) — mutaciones: una lista de tipos, volver a mandar «puntaje»;
+//   · quien sólo ve no recibe botones;
 //   · los escritores del catálogo no nombran `visto_el`: si lo tocaran, el catálogo parecería recién leído y no se
 //     releería en un día — mutación: tocarlo al elegir;
 //   · la ruta no abre una transacción de identidad (no cruza los dos dominios) y corre con el foco del cliente;
@@ -33,31 +33,30 @@ function cuerpoDe(fuente: string, nombre: string): string {
   return fuente.slice(desde, hasta);
 }
 
-test('la Conexión monta «Puntaje y Perfil» también para el principal, y después del aviso en los demás', () => {
+test('la Conexión monta «ICP y Perfil» también para el principal, y después del aviso en los demás', () => {
   const fuente = sinComentarios(leer('components/ajustes/ConexionDelCliente.jsx'));
   const principal = /if \(cliente\.esPorOmision\) \{\s*return \([\s\S]*?\n {2}\}\n/.exec(fuente)?.[0] ?? '';
   assert.ok(principal, 'no encontré la rama del principal');
-  assert.match(principal, /<CamposDelCliente cliente=\{cliente\} \/>/, 'el principal se quedó sin puntaje ni Perfil que elegir');
+  assert.match(principal, /<CamposDelCliente cliente=\{cliente\} \/>/, 'el principal se quedó sin ICP ni Perfil');
   const resto = fuente.slice(fuente.indexOf('<AvisoDelCrm'));
-  assert.match(resto, /<CamposDelCliente cliente=\{cliente\} \/>/, 'los demás clientes se quedaron sin puntaje ni Perfil que elegir');
+  assert.match(resto, /<CamposDelCliente cliente=\{cliente\} \/>/, 'los demás clientes se quedaron sin ICP ni Perfil');
 });
 
-test('la pantalla no tiene lista propia de tipos ni de grupos, y «sin elegir» manda null', () => {
+test('la pantalla muestra el cuadrante sin elegirlo, y no tiene lista propia de tipos ni de grupos', () => {
   const fuente = sinComentarios(leer('components/ajustes/CamposDelCliente.jsx'));
   assert.doesNotMatch(fuente, /NUMERICAL|LARGE_TEXT|SINGLE_OPTIONS|'TEXT'/, 'la pantalla decide qué tipos sirven: es una segunda lista');
   assert.doesNotMatch(fuente, /'(detalles|origen|calificacion|interacciones)'/, 'la pantalla tiene su propia lista de grupos');
-  assert.match(fuente, /datos\.opciones\.map\(/);
   assert.match(fuente, /datos\.grupos\.map\(/);
-  assert.match(fuente, /puntaje: puntaje === '' \? null : puntaje/, '«sin elegir» no manda null: el servidor no vuelve al de su nombre');
-  // El botón, sólo con un cambio: con el elegido que ya no es numérico fuera de las opciones, un «Guardar» lo borraba.
-  assert.match(fuente, /disabled=\{!puntajeCambiado \|\| guardando !== null\}/);
+  // Desde la `105` el puntaje no se elige: ni el selector, ni un cuerpo con «puntaje», ni sus opciones.
+  assert.doesNotMatch(fuente, /datos\.opciones|puntaje:|setPuntaje/, 'la pantalla volvió a elegir el puntaje');
+  assert.match(fuente, /datos\.cuadrante/, 'la pantalla no muestra el campo del cuadrante');
   assert.match(fuente, /const editable = datos\.puedeEditar === true;/);
-  assert.match(fuente, /\{editable \? \(\s*<button/, 'quien sólo ve recibe un botón que va a dar 403');
+  assert.match(fuente, /\{editable \? \(\s*<div className="aj-fila">\s*<button/, 'quien sólo ve recibe un botón que va a dar 403');
 });
 
 test('los escritores del catálogo no tocan `visto_el`', () => {
   const fuente = leer('lib/negocio/camposDelCrm.ts');
-  for (const nombre of ['elegirElPuntaje', 'elegirLosGrupos', 'recalcularLosPuntajes']) {
+  for (const nombre of ['elegirLosGrupos', 'recalcularLosCuadrantes']) {
     assert.doesNotMatch(sinComentarios(cuerpoDe(fuente, nombre)), /visto_el/, `${nombre} toca visto_el: el catálogo parecería recién leído`);
   }
   // Y el refresco no nombra `es_el_puntaje`: lo elegido es nuestro.

@@ -55,12 +55,13 @@ export const PASO = {
   cancelaron: 'Cancelaron',
 };
 
-/** Los tramos de ICP de `lib/negocio/tramosDelIcp.ts`, en el orden del servidor. */
-export const TRAMO = {
-  alto: 'Alto',
-  medio: 'Medio',
-  bajo: 'Bajo',
-  sin_calificar: 'Sin calificar',
+/** Los cuadrantes del ICP de `lib/negocio/cuadrantesDelIcp.ts` (la `105`): las palabras del CRM, en el orden del servidor. */
+export const CUADRANTE = {
+  prioriza: 'Prioriza',
+  valida: 'Valida',
+  financia: 'Financia',
+  descarta: 'Descarta',
+  sin_clasificar: 'Sin clasificar',
 };
 
 /* Las cuatro tarjetas de agente del prototipo, con su rol en una línea y el rótulo de la cifra grande. Las de

@@ -11,6 +11,8 @@
 > `/privacidad`, `/terminos`, `/borrado-de-datos` y `/meta/borrado/<código>` se ven sin sesión, por una lista explícita.
 > Lo de abajo describe producción al corte. Todo en `docs/OTROS/produccion/META-DIRECTO.md`.
 
+> **ICP en cuadrantes (2026-10-26, local, sin subir).** El ICP del lead dejó de ser el puntaje de 0 a 100: es el cuadrante que manda el CRM —Prioriza, Valida, Financia o Descarta— en `contactos.cuadrante` (la `105`), y ningún número del ICP se muestra. Lo que esta foto dice del puntaje, de los tramos 75 y 50 y del cero describe la versión anterior; sus citas quedaron fijadas a `@bf2de85` o a `@ddba683`. Los requisitos: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`. Dos reglas del sistema cambiaron en `citasAlcanzables.ts`: descartado es una etiqueta de descarte **o** el cuadrante Descarta, y calificado es agendó con Prioriza, Valida o Financia y sin descarte.
+
 > **Desde el corte del 2026-09-28** (137 commits, `ceec000..dc84cb2`)
 >
 > - **2026-09-29/30 · `7a7eb17`..`ecfbc26`, `8ff8d9d`..`43ce5ac`** — Creative CR-0 a CR-3 (`063`, `064`) y Acquisition
@@ -257,7 +259,7 @@ para el hecho medido — y donde hace falta, un aviso que diga cuál de los dos 
 
 La tercera fila es una regla: `citasAlcanzables.ts` publica los plantones del calendario con su propio nombre y
 prohíbe sumarlos con `asistio` —«son dos fuentes de la misma pregunta y sólo una es nuestra»—
-(`lib/negocio/citasAlcanzables.ts:87-113`). Un «0 asistencias» y un «20 plantones» conviven sin contradecirse. El
+(`lib/negocio/citasAlcanzables.ts:88-114`). Un «0 asistencias» y un «20 plantones» conviven sin contradecirse. El
 lado positivo, `ESTADO_ASISTIO` (`lib/ghl/calendarios.ts:195`), ya tiene 3 citas y ningún lector (error C).
 
 El caso de la asistencia es el que mejor muestra por qué la regla importa:
@@ -297,13 +299,13 @@ haber sido agendada.
 
 **Dónde vive el predicado, y eso cambió.** La foto anterior lo citaba como constante local de
 `indicadoresDeCitas.ts`. Desde el 2026-09-21 (`1164984`) es una función compartida,
-`alcanzable(alias)` en `lib/negocio/citasAlcanzables.ts:54-56`, y el motivo de no repetirlo, que antes
+`alcanzable(alias)` en `lib/negocio/citasAlcanzables.ts:55-57`, y el motivo de no repetirlo, que antes
 era una advertencia, se volvió un hecho medido: el predicado **ya estaba copiado nueve veces**
 (`lib/negocio/citasAlcanzables.ts:11-14`; ver la regla 30).
 
 **Qué son las congeladas.** Citas anteriores a la migración `038`, que no traen identificador de
 calendario. El CRM ya no devuelve sus eventos, así que su estado quedó fijo en el que tenían el día que
-dejaron de sincronizarse (`lib/negocio/citasAlcanzables.ts:48-50`).
+dejaron de sincronizarse (`lib/negocio/citasAlcanzables.ts:49-51`).
 
 **Medido el 2026-10-18 contra producción:**
 
@@ -342,7 +344,7 @@ descansan en una congelada (`:124-126`), porque la cancelación de al lado no lo
 **Y eso dejó dos definiciones de «agendó» en el producto.** El booking rate de Lead Flow cuenta
 cualquier cita; la atribución de la misma pantalla y Acquisition, Creative, Conversion, Sales y Leads
 Portal usan `tieneCitaAlcanzable`, que excluye a quien sólo tiene congeladas
-(`lib/negocio/citasAlcanzables.ts:115-145`). A 7, 14 y 30 días coinciden porque no queda nadie así;
+(`lib/negocio/citasAlcanzables.ts:116-146`). A 7, 14 y 30 días coinciden porque no queda nadie así;
 en «Completo» Lead Flow dice **303** agendados y las filas de la atribución suman **224** (2026-10-18; 279 y 200
 el 2026-09-28: la diferencia son los mismos 79). Y el comentario que
 debería impedirlo afirma lo contrario: «el mismo filtro de cita alcanzable que el booking rate»
@@ -374,7 +376,7 @@ sino porque la pregunta está mal hecha. La proporción no se movió en tres sem
 barrido* vio al contacto, y la carga inicial le puso la misma marca a 239. La cohorte es
 `alta_en_el_crm` (migración `048`); medido el 2026-10-18, **600 de 624 contactos la tienen** (570 de 594
 el 2026-09-28). Leads Portal nació con la misma regla escrita en su encabezado
-(`lib/negocio/leadsDelPortal.ts:22-27`): el alta y no `creado_el`, de cualquier territorio.
+(`lib/negocio/leadsDelPortal.ts:23-28`): el alta y no `creado_el`, de cualquier territorio.
 
 **El precio se dice en voz alta, y esa también es la regla.** `lib/negocio/indicadoresDelLead.ts:33-36`:
 la tasa de respuesta bajó de 68,1 % a 60,9 % al sacar el filtro de territorio, porque la cohorte dejó
@@ -467,7 +469,7 @@ forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:174`).
 las filas alcanzadas y no `now() - dias` (`lib/negocio/indicadoresDelLead.ts:268`,
 `lib/negocio/indicadoresDeCitas.ts:400-403`). Medido el 2026-10-18: en Lead Flow «Completo» arranca el
 **2025-08-08** (el alta más vieja); en las citas, el **2026-08-24 13:00 UTC** contra el **2026-09-18 16:00**
-de «30 días». Desde CN-3 la pantalla dibuja el año cuando no es el de hoy (`components/conversation/comun.jsx:91-96`). Y
+de «30 días». Desde CN-3 la pantalla dibuja el año cuando no es el de hoy (`components/conversation/comun.jsx:92-97`). Y
 `desde` solo también miente cuando describe a un caso suelto: para eso está `avisoDeLaCola`
 (`lib/negocio/periodo.ts:111-147` y `:158`), que hoy usan los dos módulos de Conversation y Leads
 Portal (el error D).
@@ -515,7 +517,7 @@ migración nace vacía y se llena hacia adelante (`db/migraciones/048_de_donde_v
 *no cambió*».
 
 **Dónde se resuelve entonces.** El dato se arregla **al leer**, no al migrar: la `040` infiere el canal en
-`lib/negocio/ficha.ts:192` (`CANAL_EFECTIVO`) sin tocar una fila. Y cuando hay que escribir, una fase de
+`lib/negocio/ficha.ts:193` (`CANAL_EFECTIVO`) sin tocar una fila. Y cuando hay que escribir, una fase de
 `scripts/db.mjs` que corre con el rol que sí ve las filas (sección «Construido en local», 2026-10-16).
 
 ---
@@ -570,7 +572,7 @@ del modelo de datos no se empujan sin la aprobación de un ingeniero (sección �
 ninguna de las dos.
 
 El vocabulario vive en `lib/ghl/contrato.ts:231` (`ETIQUETAS_DE_DESCARTE`), con su censo en
-`:193-230`, y el predicado que lo aplica en `descartado()` de `lib/negocio/citasAlcanzables.ts:68-85`.
+`:193-230`, y el predicado que lo aplica en `descartado()` de `lib/negocio/citasAlcanzables.ts:69-86`.
 
 **Medido el 2026-10-18, en las tres ventanas que importan:**
 
@@ -600,7 +602,7 @@ dependa del corte se midió antes de elegir; no re-medido hoy.
 **Tres detalles que son reglas en sí mismos:**
 
 1. **Todas las cifras de la tarjeta cortan igual**, o las demás hablarían de otra población.
-2. **`exists` sobre `unnest` y no `&&` de arreglos** (`lib/negocio/citasAlcanzables.ts:71-73`): las
+2. **`exists` sobre `unnest` y no `&&` de arreglos** (`lib/negocio/citasAlcanzables.ts:72-74`): las
    etiquetas se guardan crudas y GoHighLevel no garantiza la caja.
 3. **Todo en la misma pasada** (`lib/negocio/indicadoresDeCitas.ts:363-365`): dos consultas podrían ver
    estados distintos de la tabla, «y entonces las dos poblaciones de la misma tarjeta no sumarían el
@@ -666,7 +668,7 @@ barra habría dicho 86,3 % donde lo real era 45,3 %: casi el doble, con los cuat
 **Con pocas altas el defecto se ve sin disfraz:** a treinta días agendaron más de los que respondieron, y un
 «embudo» dibujado ahí **se ensancharía**, la prueba más directa de que «agendaron» no es un escalón de
 «respondieron». (Las cohortes de 7, 14 y 30 días están debajo o cerca del piso: se citan como ilustración.) Desde
-CN-3 el front dibuja «Conversaron antes» como parte de los que agendaron, que sí es subconjunto (`lib/negocio/lecturaDeConversation.ts:261`).
+CN-3 el front dibuja «Conversaron antes» como parte de los que agendaron, que sí es subconjunto (`lib/negocio/lecturaDeConversation.ts:272`).
 
 **Por qué es cara: no falla.** Los cuatro valores se pueden auditar uno por uno y están bien. Lo único
 falso es la flecha, que no es un dato sino un dibujo.
@@ -720,7 +722,7 @@ aparte como plantones (§ 3)—.
 cifra habla de citas, el denominador son CONTACTOS (`lib/negocio/indicadoresDeCitas.ts:162-164`). Y
 siempre `exists`, nunca `join` (`lib/negocio/indicadoresDeCitas.ts:263-264`,
 `lib/negocio/indicadoresDelLead.ts:199-200`). Creative midió lo que cuesta: un `join` infló una pieza de
-109 a 112 (`lib/negocio/citasAlcanzables.ts:122-124`).
+109 a 112 (`lib/negocio/citasAlcanzables.ts:123-125`).
 
 **14 · Mediana y percentiles, nunca promedio.** `lib/negocio/indicadoresDelLead.ts:52-63`: en el tiempo
 hasta el primer intento el promedio era 30,6 veces la mediana, y el p90 de la primera respuesta 61
@@ -781,15 +783,15 @@ da error. No hace nada» (`:13`).
 dicen cuándo se mudan a una columna de la organización.
 
 **27 · Leer el catálogo no cambia lo que se muestra.** `campoPorNombre`
-(`lib/negocio/camposDelCrm.ts:318`) existe para que agregar un indicador no cambie lo que el closer ve.
+(`lib/negocio/camposDelCrm.ts:333`) existe para que agregar un indicador no cambie lo que el closer ve.
 
 **28 · Un módulo que comparten el servidor y el navegador no puede importar nada que toque la base.**
 `lib/negocio/periodo.ts:25-34`, forzado por `pruebas/codigo/155-el-periodo-de-conversation.test.ts:244`.
 El defecto: `DIAS_DE_TODO` vivía en `indicadoresDeCitas.ts` y arrastró el cliente de PostgreSQL al
 paquete del navegador; `next build` lo rechazó. **Desde el 2026-09-26 son dos módulos:**
-`lib/negocio/tramosDelIcp.ts:27-32` («Por lo mismo que `periodo.ts`», `b04fb6c`), forzado por
-`pruebas/codigo/175-tramos-del-icp.test.ts:111`, que cuenta también los reexportes; y los filtros de
-Leads Portal sólo pueden importar dos módulos puros (`pruebas/codigo/177-filtros-del-portal.test.ts:108`).
+`lib/negocio/tramosDelIcp.ts:27-32@ddba683` («Por lo mismo que `periodo.ts`», `b04fb6c`), forzado por
+`pruebas/codigo/175-tramos-del-icp.test.ts:111@ddba683`, que cuenta también los reexportes; y los filtros de
+Leads Portal sólo pueden importar dos módulos puros (`pruebas/codigo/177-filtros-del-portal.test.ts:108@bf2de85`).
 El corolario: lo que el panel `'use client'` necesita explicar y no puede importar, **viaja en la
 respuesta** —las ventanas de Sales con su texto (`c109ebd`), el título de Creative (`7d1bc8b`)—.
 
@@ -840,7 +842,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:884`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:889`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -851,7 +853,7 @@ casos, los tres del 2026-09-21 al 26:
   sólo el host (`db120a1`); una clave nueva del CRM no aparece sola
   (`pruebas/codigo/176-atribucion-visible.test.ts:59`).
 - La fila de Leads Portal tiene **exactamente catorce claves**, sin teléfono ni correo
-  (`pruebas/base/175-leads-del-portal.test.ts:431`, `d97848e`).
+  (`pruebas/base/175-leads-del-portal.test.ts:431@bf2de85`, `d97848e`).
 - Del cockpit de Sales viajan cuatro campos, y los otros cuatro se buscan por nombre en la respuesta
   serializada (`pruebas/base/166-la-ruta-de-sales.test.ts:105`, `c109ebd`): `return ok({ cockpit })`
   los traería con la forma correcta y sin que nada fallara.
@@ -922,12 +924,12 @@ que se omite no se distingue de una regresión». El patrón es `fueraDeAlcance`
 hecho permanente del producto. **La deuda que trae:** `MEDIDO_EL` es un literal escrito a mano, y envejece
 como cualquier cifra de comentario: el 2026-10-18 siguen diciendo el 21 y el 27 de septiembre ([05-SALES.md](05-SALES.md)).
 
-**40 · La cohorte y su resumen salen de UNA sentencia.** `lib/negocio/leadsDelPortal.ts:6-13` (`d97848e`):
+**40 · La cohorte y su resumen salen de UNA sentencia.** `lib/negocio/leadsDelPortal.ts:6-13@bf2de85` (`d97848e`):
 la pantalla publica «ICP alto 51» y, debajo, las 51 tarjetas; con dos consultas, un barrido entre una y
 otra deja la tarjeta diciendo 51 sobre una rejilla de 52, «y ninguna de las dos está mal». Una CTE arma
 una fila por persona y de ella salen la lista y el resumen, que agrupa sin volver a clasificar. Y cuando
 dos pantallas publican la misma cifra, la ruta las compara y lo dice en el aviso en vez de elegir una
-(`coherenciaConSales`, `lib/negocio/leadsDelPortal.ts:610`, `app/api/leads-portal/route.ts:73-74`). Es la
+(`coherenciaConSales`, `lib/negocio/leadsDelPortal.ts:612`, `app/api/leads-portal/route.ts:73-74`). Es la
 regla de «todo en la misma pasada» (§ 9) llevada de una tarjeta a una pantalla entera.
 
 **41 · «Los últimos 30 días» pueden ser tres poblaciones: cada una viaja con su nombre y su grano.** En
@@ -994,7 +996,7 @@ Un patrón propio. El dato estaba guardado, completo, y ninguna línea del siste
 | `analisis_del_agente.sentimiento` | desde que existe el módulo | `ae600f2` |
 | `Confirmación Agendamiento` | desde la `039`, 178 contactos (184 medido el 2026-09-28) | `10fde57` |
 | `mensajes.fuente`, la entrega, `resultados.salida` | ya poblados | `4f752f7` |
-| `ESTADO_NO_APARECIO` (`noshow`) | declarada desde la `038`, 15 citas | `371c0c5` (`lib/negocio/citasAlcanzables.ts:102-103`) |
+| `ESTADO_NO_APARECIO` (`noshow`) | declarada desde la `038`, 15 citas | `371c0c5` (`lib/negocio/citasAlcanzables.ts:103-104`) |
 
 El coste no es sólo la cifra que falta: es que **se propusieron integraciones externas para conseguir
 datos que ya estaban en la base**.
@@ -1203,7 +1205,7 @@ y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas
 ventana— impide que una señal descartada renazca mientras su condición siga, la entidad es un id y no un nombre, y no
 hay texto libre de personas (`db/migraciones/072_las_senales.sql:15-26`); con menos de 10 no hay señal
 (`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:372-378`),
-y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:77` y
+y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:77@bf2de85` y
 `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:101`. **Y las dos excepciones con datos de personas tienen
 su regla:** el Brief del closer es el agente que manda al modelo datos de una persona (`lib/agentes/brief/entrada.ts:14`),
 sin teléfono ni correo (`pruebas/codigo/232-el-brief-cada-dato-con-su-fuente.test.ts:96`); y ninguna evaluación real
@@ -1220,7 +1222,7 @@ departamento entero. Medido el 2026-10-18: `negocio.funnels_de_campana` tiene **
 **47 · Dos regímenes de ventana, y el día es el de la empresa.** Las ventanas de `lib/negocio/periodo.ts` son móviles
 (`now() - make_interval`); desde CV-1 (`71c71b8`, 2026-10-08) los «7 días» y «30 días» de Acquisition y Conversion son
 días CERRADOS en la zona de la empresa —el comentario de `lib/negocio/periodo.ts:76-77` lo dice así desde `65669f4`— (`lib/negocio/diasCerrados.ts:16`, `:82-88`), y Conversion arma su cohorte con
-la misma expresión que Acquisition (`pruebas/base/246-pasos-de-conversion.test.ts:226`). Lo que no se arregló está
+la misma expresión que Acquisition (`pruebas/base/246-pasos-de-conversion.test.ts:232`). Lo que no se arregló está
 diagnosticado y dejado para después (`d17e029`): las ventanas ancladas a `current_date` usan el día UTC de la base y no
 el de la empresa (`docs/OTROS/futuro/el-dia-de-la-empresa.md:8-13`). Medido el 2026-10-18: **9 de las 11 empresas
 activas** tienen la zona `UTC`; la que tiene datos tiene la suya.
@@ -1255,7 +1257,7 @@ nadie porque `app/guardia.tsx` no copiaba una clave (`34e966c`, 2026-10-01).
 `lib/negocio/lecturaDeCreative.ts:13`, `lib/negocio/lecturaDeSales.ts:1-15` y, para Conversion,
 `lib/agentes/detectores/conversion.ts:5-12` (`b2dcdf5`), con la prueba que compara la cifra del cerebro con la de la
 pantalla (`pruebas/base/215-la-cifra-del-cerebro-es-la-de-la-pantalla.test.ts:118`). Toda tasa lleva el piso de 10
-sobre su denominador (`lib/negocio/lecturaDeConversation.ts:18`, `pruebas/codigo/250-lectura-de-conversation.test.ts:72`),
+sobre su denominador (`lib/negocio/lecturaDeConversation.ts:18`, `pruebas/codigo/250-lectura-de-conversation.test.ts:73`),
 cada «—» viaja con su motivo, y la pantalla es un tablero sin párrafos: los avisos viajan y los da el agente
 (`components/conversation/PanelDeConversation.jsx:30-31`). Es la regla 40 llevada a todas las pantallas.
 
@@ -1375,16 +1377,16 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   agrupa por (campaña, cliente) (`lib/negocio/atribucionDelLead.ts:176`), y cada fila dice su cliente cuando las
   campañas de la ventana son de más de uno (`lib/negocio/atribucionDelLead.ts:213`); las campañas de Acquisition y de la
   herramienta del cerebro, igual, con el cliente de sus anuncios, el que la listó o el de sus contactos
-  (`lib/negocio/embudosDeAcquisition.ts:736`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
-  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:697`)
-  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:967`); sólo uno con
+  (`lib/negocio/embudosDeAcquisition.ts:739`). Con uno solo, o con el foco en uno, la fila es la de siempre. **Dos
+  frenos**: un cliente que pautó en la ventana sin ningún día de su serie (`lib/negocio/embudosDeAcquisition.ts:700`)
+  deja a la empresa sin costos y sin el total de la cuenta (`lib/negocio/embudosDeAcquisition.ts:970`); sólo uno con
   métricas y sin serie frena lo que lee Meta —«sin entrega», la concentración y el costo por mil, con su anterior
-  aparte— (`lib/negocio/embudosDeAcquisition.ts:866`, `lib/negocio/embudosDeAcquisition.ts:952`): un cliente sin Meta no
+  aparte— (`lib/negocio/embudosDeAcquisition.ts:869`, `lib/negocio/embudosDeAcquisition.ts:955`): un cliente sin Meta no
   apaga lo de los demás. Las vistas de Conversion no son la suma ni el cero de otro cliente
   (`lib/negocio/pasosDeConversion.ts:542`), y no comparan con un cliente sin su gasto en ninguna de las dos ventanas
   (`lib/negocio/pasosDeConversion.ts:609`, `lib/negocio/pasosDeConversion.ts:619`). En el detector, lo que es de una
-  cuenta publicitaria se mide dentro de su cliente (`lib/agentes/detectores/acquisition.ts:369`): la crítica de «sin
-  entrega» es del `cliente` cuyas campañas no entregan (`lib/agentes/detectores/acquisition.ts:422`), la entidad nueva
+  cuenta publicitaria se mide dentro de su cliente (`lib/agentes/detectores/acquisition.ts:371`): la crítica de «sin
+  entrega» es del `cliente` cuyas campañas no entregan (`lib/agentes/detectores/acquisition.ts:424`), la entidad nueva
   de la `094` (`db/migraciones/094_el_cliente_en_acquisition.sql:33`), que la pantalla nombra
   (`lib/agentes/senales/lectura.ts:227`); y toda señal de campaña dice su cliente con varios, «Campaña (Cliente)», con
   el cliente de la pantalla (`lib/agentes/senales/lectura.ts:116`). El funnel se guarda en el cliente de su campaña
@@ -1404,8 +1406,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   módulo puro que también lee el navegador: el nombre si la pieza es del principal —con un cliente, siempre: la clave,
   las huellas y la pantalla de siempre— y `<cuenta>:<nombre>` si es de otro; quien agrupa sin saber cuál es el
   principal usa una llave interna aparte (`lib/negocio/idDeLaPieza.ts:116`). La calidad agrupa por cliente
-  (`lib/negocio/calidadDelCreativo.ts:261`) y cruza un contacto sólo con un anuncio de SU cliente
-  (`lib/negocio/calidadDelCreativo.ts:363`); el rendimiento, la fatiga y la entrega, también
+  (`lib/negocio/calidadDelCreativo.ts:248`) y cruza un contacto sólo con un anuncio de SU cliente
+  (`lib/negocio/calidadDelCreativo.ts:351`); el rendimiento, la fatiga y la entrega, también
   (`lib/negocio/rendimientoDelCreativo.ts:347`, `lib/negocio/fatigaDelCreativo.ts:164`,
   `lib/negocio/lecturaDeCreative.ts:502`). Los leads y la miniatura de un contacto son del cliente de su ANUNCIO, y sólo
   sin el anuncio en la dimensión, del contacto (`lib/negocio/costoDelAnuncio.ts:358`,
@@ -1413,8 +1415,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/negocio/lecturaDeCreative.ts:364`), la pieza dice su cliente (`lib/negocio/lecturaDeCreative.ts:386`) —la
   tarjeta en su propia línea (`components/creative/PanelDeCreative.jsx:396`), la ficha en «Qué es»— y «Funciona» compara
   cada pieza con las de su etapa EN SU CLIENTE (`lib/negocio/lecturaDeCreative.ts:269`), como la señal del ICP
-  (`lib/agentes/detectores/creative.ts:306`); la concentración es sobre el gasto de su cliente
-  (`lib/agentes/detectores/creative.ts:222`), la evidencia nombra al cliente (`lib/agentes/detectores/creative.ts:187`)
+  (`lib/agentes/detectores/creative.ts:307`); la concentración es sobre el gasto de su cliente
+  (`lib/agentes/detectores/creative.ts:224`), la evidencia nombra al cliente (`lib/agentes/detectores/creative.ts:189`)
   y la pantalla nombra la señal «nombre · cliente» y la del anuncio «Anuncio (Cliente)»
   (`lib/agentes/senales/lectura.ts:236`, `lib/agentes/senales/lectura.ts:230`). El cerebro nunca lee un uuid: la clave
   y los criterios viajan con el rótulo (`lib/agentes/executive/adaptadores/creative.ts:30`). El link manual es de
@@ -1436,7 +1438,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   que quien sólo trabaja en otro cliente no ve, con el foco en éste, los leads de los demás— y lo que se publica, con
   los de la vista. Sales agrupa por par (`lib/negocio/cierrePorCloser.ts:301`) y quien está vinculado sólo en otro
   cliente tiene su propio aviso (`lib/negocio/cierrePorCloser.ts:346`); la ficha del lead busca al closer por par
-  (`lib/negocio/fichaDelLeadDelPortal.ts:251`). El escritor recibe el cliente explícito (`lib/negocio/closer.ts:285`),
+  (`lib/negocio/fichaDelLeadDelPortal.ts:246`). El escritor recibe el cliente explícito (`lib/negocio/closer.ts:285`),
   cuenta PERSONAS para el tope (`lib/negocio/closer.ts:294`) y mide el usuario repetido dentro del cliente
   (`lib/negocio/closer.ts:301`); quitar saca a la persona de todos. La ruta acepta `cuentaId` —sin él, el principal— y
   lo valida contra los clientes de la empresa: uno ajeno, de baja o mal formado es 404
@@ -1461,10 +1463,10 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   calendario» para siempre, y con citas `sinConexion` (`lib/negocio/agenda.ts:428`, `lib/negocio/agenda.ts:313`); la
   cabecera de Mi Día, DESPUÉS de las citas sin registrar (`lib/agentes/cabecera.ts:174`), las dos sólo de los clientes
   del alcance de quien mira (`lib/negocio/faltaDeLosClientes.ts:145`); el chat de la ficha, del cliente del contacto
-  (`lib/negocio/ficha.ts:279`), y Leads, arriba (`app/api/leads-portal/route.ts:70`). Acquisition y Conversion nombran,
+  (`lib/negocio/ficha.ts:280`), y Leads, arriba (`app/api/leads-portal/route.ts:70`). Acquisition y Conversion nombran,
   después de «Faltan días de gasto.», al cliente que deja el gasto incompleto y por qué —Meta sin vincular en su
   GoHighLevel, su conexión, o que ya no está activo— (`lib/negocio/faltaDeLosClientes.ts:207`): los que pautaron sin
-  serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:1024`,
+  serie y los de serie atrasada o con días sin cerrar (`lib/negocio/embudosDeAcquisition.ts:1027`,
   `lib/negocio/gastoDeLaCuenta.ts:251`), así que también cuando la serie de un cliente dejó de escribirse y la empresa
   queda con el colector atrasado; Conversion pregunta por la ventana que decidió el motivo
   (`lib/negocio/pasosDeConversion.ts:642`). Las frases entraron primero en A14-02 y CV15-02. Y los closers: el alta, la
@@ -1524,12 +1526,12 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **Las señales que mezclaban clientes (C6 · D3, sin migración).** Lo que se mide dentro de un cliente lleva el
   identificador de la pieza: el de siempre para el principal y `<cuenta>:<id>` para otro (`lib/negocio/idDeLaPieza.ts:44`),
   así que al sumar un cliente no se cierra ni renace ninguna señal del principal. Acquisition compara el ICP de una
-  campaña con SU funnel EN SU cliente, con la fórmula de la pantalla (`lib/agentes/detectores/acquisition.ts:608`,
-  `lib/negocio/embudosDeAcquisition.ts:426`); la fuga, con los otros funnels de su cliente
-  (`lib/agentes/detectores/acquisition.ts:714`); el monitor de atribución, por cliente ACTIVO con campañas
-  (`lib/agentes/detectores/acquisition.ts:258`, `lib/negocio/calidadDeLaAtribucion.ts:124`), y uno sin denominador en la
-  ventana se salta: la regla queda sin medición sólo si ninguno lo tiene (`lib/agentes/detectores/acquisition.ts:862`);
-  el conjunto, que lee Meta, con el freno y la anterior de Meta (`lib/agentes/detectores/acquisition.ts:812`). Conversation
+  campaña con SU funnel EN SU cliente, con la fórmula de la pantalla (`lib/agentes/detectores/acquisition.ts:610`,
+  `lib/negocio/embudosDeAcquisition.ts:426@bf2de85`); la fuga, con los otros funnels de su cliente
+  (`lib/agentes/detectores/acquisition.ts:716`); el monitor de atribución, por cliente ACTIVO con campañas
+  (`lib/agentes/detectores/acquisition.ts:260`, `lib/negocio/calidadDeLaAtribucion.ts:124`), y uno sin denominador en la
+  ventana se salta: la regla queda sin medición sólo si ninguno lo tiene (`lib/agentes/detectores/acquisition.ts:864`);
+  el conjunto, que lee Meta, con el freno y la anterior de Meta (`lib/agentes/detectores/acquisition.ts:814`). Conversation
   agrupa por (cliente, agente, patrón) (`lib/agentes/detectores/conversation.ts:157`) y, con hallazgos de varios, lee
   los casos de cada cliente activo con su tope y el texto ganador de su agente (`lib/agentes/detectores/conversation.ts:118`,
   `lib/auditor/pantalla.ts:295`). Conversion mide a cada cliente activo contra SU cohorte, SU anterior —con la regla de
@@ -1547,14 +1549,14 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   deja sin medir los costos (`lib/agentes/plan/acquisition.ts:162`). La pantalla nombra «Landing con VSL (Cliente)»,
   «LeadFlow (Cliente)», «Formulario (Cliente)» y «Conjunto N (Cliente)» (`lib/agentes/senales/lectura.ts:240`), la
   evidencia con el nombre del cliente (`lib/agentes/senales/lectura.ts:130`), la fuga con el rótulo de su funnel
-  (`components/senales/SenalesDelDepartamento.jsx:102`), y los cajones de Conversion y el plan, el cliente de cada
+  (`components/senales/SenalesDelDepartamento.jsx:105`), y los cajones de Conversion y el plan, el cliente de cada
   renglón (`components/conversion/CajonDelPaso.jsx:263`, `lib/agentes/senales/lectura.ts:158`). Y la pieza de nombre
   largo se corta en la señal con una huella del entero (`lib/negocio/idDeLaPieza.ts:95`,
-  `lib/agentes/detectores/creative.ts:179`): ya no hace fallar la pasada de Creative. Con un cliente, todo como siempre.
+  `lib/agentes/detectores/creative.ts:181`): ya no hace fallar la pasada de Creative. Con un cliente, todo como siempre.
   Lo exigen `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:63`,
-  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:111`,
-  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:248`,
-  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:289`,
+  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:111@bf2de85`,
+  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:249`,
+  `pruebas/codigo/294-las-senales-que-mezclaban-clientes.test.ts:290`,
   `pruebas/base/295-las-senales-de-cada-cliente.test.ts:250`,
   `pruebas/base/295-las-senales-de-cada-cliente.test.ts:325`,
   `pruebas/base/295-las-senales-de-cada-cliente.test.ts:390` y
@@ -1562,43 +1564,43 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **El puntaje y el Perfil de cada subcuenta, configurables (C6 · D4, `098`).** Cuál campo del CRM es el puntaje del
   lead y qué carpetas se muestran en el Perfil se reconocían solos —por el id de la subcuenta de ARIA o por el nombre
   del snapshot—, y un cliente con otros nombres se quedaba sin puntaje y sin Perfil. Desde la `098` se eligen cliente por
-  cliente en Ajustes › Clientes › «Puntaje y Perfil» (`components/ajustes/ConexionDelCliente.jsx:116`,
-  `components/ajustes/ConexionDelCliente.jsx:230`), también para el principal, con `credenciales.ver` para leer y
-  `credenciales.editar` para elegir (`app/api/admin/cuentas/[id]/campos/route.ts:94`,
-  `app/api/admin/cuentas/[id]/campos/route.ts:104`), y viven en el catálogo de cada subcuenta:
+  cliente en Ajustes › Clientes › «Puntaje y Perfil» (`components/ajustes/ConexionDelCliente.jsx:117`,
+  `components/ajustes/ConexionDelCliente.jsx:231`), también para el principal, con `credenciales.ver` para leer y
+  `credenciales.editar` para elegir (`app/api/admin/cuentas/[id]/campos/route.ts:88`,
+  `app/api/admin/cuentas/[id]/campos/route.ts:98`), y viven en el catálogo de cada subcuenta:
   `campos_del_crm.es_el_puntaje`, uno por cliente con un índice único parcial, y `carpetas_del_crm.grupo_elegido_el`
-  (`lib/datos/esquema.ts:538`, `lib/datos/esquema.ts:506`). Con la configuración de hoy nada cambia: una subcuenta SIN
+  (`lib/datos/esquema.ts:551`, `lib/datos/esquema.ts:514`). Con la configuración de hoy nada cambia: una subcuenta SIN
   campo elegido resuelve lo de antes —la sincronización, la unión de la constante y el primero por su nombre; Creative,
-  el de su nombre—, y sólo la que eligió usa ése y nada más (`lib/negocio/camposDelCrm.ts:514`,
-  `lib/negocio/camposDelCrm.ts:529`). Un puntaje es un entero de 0 a 100 escrito con dígitos, y lo dice UNA validación:
-  `puntajeDeUnValor` en la sincronización (`lib/negocio/sincronizar.ts:552`) y `puntajeUsable`, lo mismo en SQL, en
-  Creative, en el conteo de la pantalla y en el recálculo (`lib/negocio/camposDelCrm.ts:444`,
-  `lib/negocio/camposDelCrm.ts:456`); hasta acá Creative promediaba decimales y valores de más de 100. Al elegir, el
+  el de su nombre—, y sólo la que eligió usa ése y nada más (`lib/negocio/camposDelCrm.ts:517`,
+  `lib/negocio/camposDelCrm.ts:529@bf2de85`). Un puntaje es un entero de 0 a 100 escrito con dígitos, y lo dice UNA validación:
+  `puntajeDeUnValor` en la sincronización (`lib/negocio/sincronizar.ts:575`) y `puntajeUsable`, lo mismo en SQL, en
+  Creative, en el conteo de la pantalla y en el recálculo (`lib/negocio/camposDelCrm.ts:459`,
+  `lib/negocio/camposDelCrm.ts:456@bf2de85`); hasta acá Creative promediaba decimales y valores de más de 100. Al elegir, el
   puntaje de TODOS los contactos del cliente se recalcula desde lo guardado, congelados incluidos, en la misma
-  transacción y sin llamar al CRM (`app/api/admin/cuentas/[id]/campos/route.ts:135`, `lib/negocio/camposDelCrm.ts:800`).
-  Creative no le da «Calificados: 0» al cliente sin campo (`lib/negocio/lecturaDeCreative.ts:316`) y lo nombra,
-  separando «no se leyó su catálogo» de «no tiene campo» (`lib/negocio/calidadDelCreativo.ts:164`,
-  `lib/negocio/calidadDelCreativo.ts:407`), también cuando ningún cliente a la vista tiene campo, si hay más de uno o
+  transacción y sin llamar al CRM (`app/api/admin/cuentas/[id]/campos/route.ts:135@ddba683`, `lib/negocio/camposDelCrm.ts:800@ddba683`).
+  Creative no le da «Calificados: 0» al cliente sin campo (`lib/negocio/lecturaDeCreative.ts:316@bf2de85`) y lo nombra,
+  separando «no se leyó su catálogo» de «no tiene campo» (`lib/negocio/calidadDelCreativo.ts:164@bf2de85`,
+  `lib/negocio/calidadDelCreativo.ts:407@bf2de85`), también cuando ningún cliente a la vista tiene campo, si hay más de uno o
   el foco está en uno que no es el principal; con un solo cliente a la vista —la empresa de un cliente, o el foco en el
-  principal—, el aviso de siempre (`lib/negocio/faltaDeLosClientes.ts:82`, `lib/negocio/calidadDelCreativo.ts:396`). La pantalla avisa cuando el elegido dejó de ser numérico o no vino en la
+  principal—, el aviso de siempre (`lib/negocio/faltaDeLosClientes.ts:82`, `lib/negocio/calidadDelCreativo.ts:396@bf2de85`). La pantalla avisa cuando el elegido dejó de ser numérico o no vino en la
   última lectura del catálogo —lo borraron en GoHighLevel, o el cliente se vinculó a otra subcuenta—
-  (`lib/negocio/camposDelCrm.ts:703`), y el vínculo lo recuerda al cambiar la subcuenta
+  (`lib/negocio/camposDelCrm.ts:703@bf2de85`), y el vínculo lo recuerda al cambiar la subcuenta
   (`app/api/admin/cuentas/[id]/vinculo/route.ts:82`). El refresco del catálogo no pisa lo elegido, y una carpeta sin
-  nombre ni grupo que nadie eligió toma el suyo cuando su nombre llega tarde (`lib/negocio/camposDelCrm.ts:155`,
-  `lib/negocio/camposDelCrm.ts:592`). «Elegida» quiere decir sólo que la eligió una persona: el tercer «falta» del Perfil
+  nombre ni grupo que nadie eligió toma el suyo cuando su nombre llega tarde (`lib/negocio/camposDelCrm.ts:163`,
+  `lib/negocio/camposDelCrm.ts:555`). «Elegida» quiere decir sólo que la eligió una persona: el tercer «falta» del Perfil
   pregunta si alguna carpeta SE MUESTRA, la haya elegido una persona o el contrato, y con catálogo y ninguna lo dice sin
-  culpar al contacto (`lib/negocio/ficha.ts:561`, `lib/negocio/camposDelCrm.ts:576`). Dos elecciones al mismo tiempo:
-  la segunda es 409 (`app/api/admin/cuentas/[id]/campos/route.ts:148`). Todo auditado —`puntaje_elegido`,
+  culpar al contacto (`lib/negocio/ficha.ts:560`, `lib/negocio/camposDelCrm.ts:539`). Dos elecciones al mismo tiempo:
+  la segunda es 409 (`app/api/admin/cuentas/[id]/campos/route.ts:148@ddba683`). Todo auditado —`puntaje_elegido`,
   `puntaje_por_su_nombre` y `carpeta_del_perfil_elegida`, sin el cuerpo— (`lib/autenticacion/auditoria.ts:158`). Lo
-  exigen `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:287`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:319`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:332`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:366`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:466`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:486`,
-  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:549`,
-  `pruebas/codigo/297-el-puntaje-y-el-perfil-se-eligen-en-la-conexion.test.ts:36` y, el aviso de un solo cliente,
-  `pruebas/base/157-calidad-del-creativo.test.ts:333`.
+  exigen `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:273`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:301`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:332@bf2de85`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:366@bf2de85`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:466@bf2de85`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:486@bf2de85`,
+  `pruebas/base/296-el-puntaje-y-el-perfil-de-cada-cliente.test.ts:549@ddba683`,
+  `pruebas/codigo/297-el-puntaje-y-el-perfil-se-eligen-en-la-conexion.test.ts:36@bf2de85` y, el aviso de un solo cliente,
+  `pruebas/base/157-calidad-del-creativo.test.ts:333@bf2de85`.
 - **La lista de chequeo del cliente, en Ajustes y con Meta en su GoHighLevel (C6 · D5, `099`).** Los costos de cada
   cliente salen de SU GoHighLevel con Meta vinculado (la decisión del 2026-10-20), y la lista de chequeo miraba otra
   cosa: su paso «Meta conectado» era la conexión DIRECTA con Meta, que sólo trae las miniaturas, así que un cliente sin
@@ -1702,7 +1704,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   señal ya no habla de los mismos contactos que la pantalla (Acquisition, Conversion y la del técnico siguen siendo de
   la empresa: no hay foco por cliente); un cliente sin ningún sello no frena hasta su primera pasada (como la frescura
   de la empresa); Creative sigue frenando la caída de CTR, la concentración y la frecuencia con la frescura de
-  `anuncios` de la empresa, que es la del PEOR cliente activo (`lib/agentes/detectores/creative.ts:123`): un cliente
+  `anuncios` de la empresa, que es la del PEOR cliente activo (`lib/agentes/detectores/creative.ts:125`): un cliente
   activo cuya lectura de anuncios falla deja esas reglas sin medición para todos mientras siga fallando —el mismo «un
   atrasado calla a todos» que D3 cerró en Conversation y Conversion; se cierra llevándolo a
   `frenoDeLaTarea('anuncios', …)` con `sinMedicionDeClientes`, en un frente aparte—; y el nombre del cliente queda
@@ -1812,7 +1814,7 @@ cierta; el hecho con el que se justifica, no. **Sigue igual.**
 **Encontrado de paso — dos agujeros de integridad que ninguna de estas reglas cubre:**
 
 1. **36 contactos con `territorio` nulo**, medido el 2026-10-18 (25 el 2026-09-28). `congelarLosQueYaNoEstan`
-   (`lib/negocio/sincronizar.ts:307`) pone el territorio en nulo y el barrido no vuelve a esas filas. **24 no tienen
+   (`lib/negocio/sincronizar.ts:320`) pone el territorio en nulo y el barrido no vuelve a esas filas. **24 no tienen
    `alta_en_el_crm`** —los mismos 24 viejos—, así que son invisibles para todas las cohortes sin ningún aviso; los otros
    12 tienen alta y se congelaron desde el 2026-09-17; 11 de los 36 tienen una cita alcanzable.
 2. **Las citas no tienen resta.** No hay equivalente de `congelarLosQueYaNoEstan` en `lib/negocio/citas.ts`, que no

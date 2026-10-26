@@ -57,9 +57,9 @@ function deteccion(regla: string, entidad: Deteccion['entidad'], cambios: Partia
   return {
     regla,
     entidad,
-    metrica: 'icp_promedio',
-    lineaBase: 52.3,
-    valorActual: 35,
+    metrica: 'porcion_de_descarta',
+    lineaBase: 0.4,
+    valorActual: 0.6,
     cambioPct: null,
     muestra: 20,
     periodo: { desde: '2026-09-06', hasta: '2026-10-05' },
@@ -70,7 +70,7 @@ function deteccion(regla: string, entidad: Deteccion['entidad'], cambios: Partia
     perdidaContactos: null,
     destino: null,
     requiereValidacionEjecutiva: false,
-    umbral: { valor: 15, provisional: true },
+    umbral: { valor: 0.15, provisional: true },
     evidencia: { etapa: 'TOFU' },
     ...cambios,
   };
@@ -84,7 +84,7 @@ async function sembrar(): Promise<{ local: string; ejecutiva: string; deAcquisit
       detector: 'creative',
       ventana: '30d',
       detecciones: [
-        deteccion(CRE.icpPorPieza, { tipo: 'pieza', id: 'pieza baja' }),
+        deteccion(CRE.descartaPorPieza, { tipo: 'pieza', id: 'pieza baja' }),
         deteccion(CRE.concentracion, { tipo: 'pieza', id: 'pieza grande' }, { requiereValidacionEjecutiva: true, muestra: null, lineaBase: null, valorActual: 0.6, evidencia: { piezas: [1, 2, 3] } }),
       ],
       sinMedicion: [],
@@ -99,7 +99,7 @@ async function sembrar(): Promise<{ local: string; ejecutiva: string; deAcquisit
   });
   const id = async (regla: string) =>
     (await esc.admin.query<{ id: string }>('select id from negocio.senales where org_id = $1 and regla = $2', [esc.org, regla])).rows[0]!.id;
-  return { local: await id(CRE.icpPorPieza), ejecutiva: await id(CRE.concentracion), deAcquisition: await id(ACQ.cplSostenido) };
+  return { local: await id(CRE.descartaPorPieza), ejecutiva: await id(CRE.concentracion), deAcquisition: await id(ACQ.cplSostenido) };
 }
 
 const accion = (cuerpo: unknown, token = esc.token) => decidir(pedirComo('/api/creative/senales', token, { metodo: 'POST', cuerpo }));
@@ -149,10 +149,10 @@ test('el GET de Creative trae sólo sus señales, con la frase de su plan y el n
   }>(await leerCreative(pedirComo('/api/creative?periodo=30d', esc.token)));
   assert.equal(r.estado, 200);
   assert.equal(r.cuerpo.senales.ventana, '30d');
-  assert.deepEqual(r.cuerpo.senales.lista.map((s) => [s.regla, s.nombre]).sort(), [[CRE.concentracion, 'pieza grande'], [CRE.icpPorPieza, 'pieza baja']]);
+  assert.deepEqual(r.cuerpo.senales.lista.map((s) => [s.regla, s.nombre]).sort(), [[CRE.concentracion, 'pieza grande'], [CRE.descartaPorPieza, 'pieza baja']]);
   assert.equal(
-    r.cuerpo.senales.lista.find((s) => s.regla === CRE.icpPorPieza)!.texto,
-    'Su ICP promedio está 17,3 puntos por debajo del promedio de las piezas de su etapa (TOFU): 35 contra 52,3, sobre 20 contactos con puntaje.',
+    r.cuerpo.senales.lista.find((s) => s.regla === CRE.descartaPorPieza)!.texto,
+    'Su porción de Descarta está 20 puntos por encima del promedio de las piezas de su etapa (TOFU): 60 % contra 40 %, sobre 20 contactos clasificados.',
   );
   assert.deepEqual(r.cuerpo.senales.reglas.map((x) => x.codigo).sort(), Object.values(CRE).sort());
   assert.equal(r.cuerpo.senales.reglas.find((x) => x.codigo === CRE.frecuenciaAlta)!.unidad, 'veces');

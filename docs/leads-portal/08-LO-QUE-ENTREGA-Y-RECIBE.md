@@ -24,15 +24,15 @@ del embudo de Executive terminaba abriendo la ficha inventada de esta pestaña. 
 
 ### LP08-01 · Lee lo que el barrido ya guarda, y no le pide nada nuevo al CRM
 
-**Rastro** · La tabla `negocio.contactos` en `lib/datos/esquema.ts:351-470`: el puntaje (`:358`),
+**Rastro** · La tabla `negocio.contactos` en `lib/datos/esquema.ts:351-473`: el puntaje (`:358`),
 el asignado del CRM (`:369`), cuándo se sincronizó (`:383`), desde cuándo hay mensajes (`:390`), los
 campos del CRM (`:402`), el alta (`:416`), la atribución del primer toque (`:429`) y el país
 (`:445`). Las siete tablas de las que sale todo están en `LP09-01`.
 
 **Requisito** · **Sin sincronización nueva y sin columnas nuevas** (decisión del 2026-09-26). El
-puntaje ya llega: lo deriva `lib/negocio/sincronizar.ts:441` del mismo mapa de campos que el barrido
+puntaje ya llega: lo deriva `lib/negocio/sincronizar.ts:456` del mismo mapa de campos que el barrido
 normaliza en la línea de arriba, sin una llamada más al proveedor, y **guarda el cero como cero y la
-ausencia como nulo** (`lib/negocio/sincronizar.ts:432-440`). Esta pestaña hereda esa distinción y no
+ausencia como nulo** (`lib/negocio/sincronizar.ts:447-455`). Esta pestaña hereda esa distinción y no
 la colapsa: el cero cuenta como «Sin calificar» con su motivo (`LP02-09`), no se reescribe.
 
 **Y la ficha no refresca.** La ficha que ya existe, la de las pestañas de operación, refresca el
@@ -78,14 +78,14 @@ poniéndolas una al lado de la otra.
 
 | qué | de dónde | por qué no se recalcula |
 |---|---|---|
-| cita alcanzable, cancelada, plantón | `lib/negocio/citasAlcanzables.ts:54`, `:64`, `:111` | los importan ya Sales, Conversion, Creative y Acquisition |
-| «agendó» por persona | `lib/negocio/citasAlcanzables.ts:135` | estaba copiado ocho veces (`:118-120`); ya no |
+| cita alcanzable, cancelada, plantón | `lib/negocio/citasAlcanzables.ts:55`, `:65`, `:112` | los importan ya Sales, Conversion, Creative y Acquisition |
+| «agendó» por persona | `lib/negocio/citasAlcanzables.ts:136` | estaba copiado ocho veces (`:119-121`); ya no |
 | el descarte por etiqueta | `lib/ghl/contrato.ts:231-238`, en minúscula | la lista existe una vez; medido: 121 personas descartadas por etiqueta |
 | el piso de una tasa | `lib/negocio/indicadoresDeCitas.ts:329` | es el mismo 10 que importan Acquisition, Creative, Conversion y Sales |
 | las ventanas y la de omisión | `lib/negocio/periodo.ts:83-96`, `:109` | `periodoDe` (`:188`) rechaza lo que no está en la lista, como el `mes` del tercer botón de la maqueta (`LP06-02`) |
 
 El descarte tiene un matiz que LP-2 resuelve: el predicado que existe, `descartado`
-(`lib/negocio/citasAlcanzables.ts:79-85`), pregunta por el contacto **de una cita**. Esta pestaña
+(`lib/negocio/citasAlcanzables.ts:80-86`), pregunta por el contacto **de una cita**. Esta pestaña
 necesita preguntar por el contacto a secas, así que el plan agrega uno hermano sobre la misma lista,
 en el mismo archivo, en vez de escribir la comparación en la consulta.
 
@@ -131,11 +131,11 @@ pestaña publica tramos por persona. **Las dos cifras no se reconcilian, y ningu
 
 | | Creative | Leads Portal |
 |---|---|---|
-| el cero | **se promedia**: la validación del puntaje acepta `0` (`lib/negocio/camposDelCrm.ts:456`) y entra al `avg` (`lib/negocio/calidadDelCreativo.ts:245`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
-| de dónde lee el puntaje | del campo crudo: el que eligió el cliente o, si no, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:65`, `:154`) | de `contactos.score`, derivado del elegido o, si no, **por identificador** y por nombre (`lib/ghl/contrato.ts:313`, `lib/negocio/camposDelCrm.ts:379`) |
-| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:258`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
+| el cero | **se promedia**: la validación del puntaje acepta `0` (`lib/negocio/camposDelCrm.ts:456@bf2de85`) y entra al `avg` (`lib/negocio/calidadDelCreativo.ts:245@bf2de85`) | **no entra en ningún tramo con puntaje**: es «Sin calificar» |
+| de dónde lee el puntaje | del campo crudo: el que eligió el cliente o, si no, **buscado por nombre** (`lib/negocio/calidadDelCreativo.ts:65@bf2de85`, `:154`) | de `contactos.score`, derivado del elegido o, si no, **por identificador** y por nombre (`lib/ghl/contrato.ts:313`, `lib/negocio/camposDelCrm.ts:394`) |
+| la ventana | anclada al día (`lib/negocio/calidadDelCreativo.ts:245@bf2de85`), porque cruza con el gasto | rodante, como Sales (`LP08-03`) |
 
-Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:62` y la
+Hoy los dos caminos leen el mismo campo —el comentario de `lib/negocio/calidadDelCreativo.ts:62@bf2de85` y la
 constante de `lib/ghl/contrato.ts:313` nombran el mismo identificador—. **El día que alguien renombre
 «Puntaje | ICP» en el CRM, Creative pierde el ICP y esta pestaña no**, y ninguna de las dos falla.
 
@@ -230,7 +230,7 @@ se hacía mal.
    una ficha pisaría lo que Executive hubiera escrito ahí, y al revés.
 2. **`window.AIOSLeadCard` se fue, y su único llamador se limpió.** La guarda evitaba el error,
    pero la fila habría quedado **clicable y muda**: el `cursor:pointer` de `.lg-r` vive en
-   `app/aios.css:2345-2346`, que no se toca. El clic salió (`lib/aios/leads-group.js:57-59@c4cf2a8` es ahora
+   `app/aios.css:2354-2355`, que no se toca. El clic salió (`lib/aios/leads-group.js:57-59@c4cf2a8` es ahora
    el comentario que lo explica) y el cursor se anuló **fuera** de `app/aios.css`, en
    `app/leads-portal.css:107@c4cf2a8`, con el precedente del commit `bd26085`, que anuló el cursor de los
    iconos de la ficha en `app/closer.css` «porque `aios.css` tiene que seguir comparable contra el
@@ -261,7 +261,7 @@ se hacía mal.
    (`components/views/ExecutiveView.jsx:62@c4cf2a8`). Deuda anotada (`LP06-02`, `LP10-13`).
 
 Lo que **no** se toca, porque es de Executive: `lib/aios/leads-group.js` salvo los dos manejadores,
-`#lgPanel`, las reglas `[data-leads]` de `app/aios.css:2366-2370` y la emisión de
+`#lgPanel`, las reglas `[data-leads]` de `app/aios.css:2375-2379` y la emisión de
 `lib/aios/executive.js:49@c4cf2a8`.
 
 ### LP08-13 · Lo que Executive dice de Leads Portal, y nadie ve o nadie debería creer
@@ -335,7 +335,7 @@ Ninguna pantalla lee de Leads Portal, y LP-4 no cambia eso. Lo que produce y otr
 ### LP08-16 · Dos fichas de la misma persona, y una sola definición de cada pieza
 
 **Rastro** · La ficha de las pestañas de operación, `components/negocio/Ficha.jsx`, y la de esta
-pestaña, que LP-3 arma sobre `perfilDeLaFicha` (`lib/negocio/ficha.ts:481`).
+pestaña, que LP-3 arma sobre `perfilDeLaFicha` (`lib/negocio/ficha.ts:482`).
 
 **Requisito** · Quien tenga las dos pestañas va a ver a la misma persona en dos fichas. Pueden
 diferir en **qué hacen** —aquélla refresca y escribe notas; ésta sólo lee (`LP05-03`)— pero

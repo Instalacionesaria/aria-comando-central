@@ -18,7 +18,7 @@
 //   · cada cifra sale del lugar que le toca en `pantalla` — mutación: intercambiar dos;
 //   · las frases son las de CN1-02, en las dos direcciones, y cada motivo del servidor tiene la suya — mutación:
 //     cambiar una, o intercambiar dos;
-//   · los pasos, los tramos y los agentes son los del servidor, cada uno con su rótulo — mutación: sacar uno;
+//   · los pasos, los cuadrantes y los agentes son los del servidor, cada uno con su rótulo — mutación: sacar uno;
 //   · no vuelven «Personalizado», la clave `mes`, las flechas, los nombres de la maqueta ni los cajones;
 //   · la carga: la última lectura gana, la recarga no pisa a la primera y la primera se apaga — mutación: borrar
 //     una de las tres guardas (CN-4);
@@ -33,6 +33,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ } from '../apoyo/fuente.ts';
+import { CUADRANTES } from '../../lib/negocio/cuadrantesDelIcp.ts';
 
 const leer = (r: string): string => readFileSync(join(RAIZ, r), 'utf8');
 const sinComentarios = (t: string): string =>
@@ -122,13 +123,13 @@ test('los paneles llevan los rótulos del prototipo, con los desvíos declarados
   assert.match(af, /<div className="pn hi">/, 'Appointment Flow perdió el panel resaltado del prototipo');
   assert.match(af, /<Par rotulo="Citas totales" valor=\{miles\(c\.citas\.valor\)\}/);
   assert.match(af, /<Par\s+rotulo="Asistieron"\s+valor=\{o\(c\.asistieron\.valor, miles\)\}\s+tasa=\{kpi\.valor === null \? null : pf\(kpi\.valor\)\}/);
-  // El tercero: «el grupo que agendó», por decisión del usuario, con los tres tramos del prototipo (CN1-08).
+  // El tercero: «el grupo que agendó», por decisión del usuario (CN1-08), con los cuatro cuadrantes del CRM (la `105`).
   assert.ok(js.includes('De qué está hecho el grupo que asistió'));
   const icp = funcion(panel(), 'PanelDelIcp');
   assert.match(icp, /De qué está hecho el grupo que agendó/);
-  assert.match(icp, /<div className="pn-b q4">\s*<Par rotulo="Agendaron" valor=\{miles\(icp\.agendaron\)\}/);
-  assert.match(icp, /\['alto', 'medio', 'bajo'\]\.map/, 'los tres tramos del prototipo no van en su orden');
-  assert.match(icp, /`\$\{miles\(sinCalificar\)\} sin calificar`/, 'los sin calificar no van aparte');
+  assert.match(icp, /<div className="pn-b q5">\s*<Par rotulo="Agendaron" valor=\{miles\(icp\.agendaron\)\}/);
+  assert.match(icp, /\['prioriza', 'valida', 'financia', 'descarta'\]\.map/, 'los cuatro cuadrantes no van en su orden');
+  assert.match(icp, /`\$\{miles\(sinClasificar\)\} sin clasificar`/, 'los sin calificar no van aparte');
   // Las tarjetas de flujo, con sus misiones y el rótulo de su cifra clave (CN1-09, CN1-10).
   for (const [fn, t, m, k] of [
     ['TarjetaDeLeadFlow', 'Lead Flow', 'Que agende quien no lo hizo solo', 'contacto a agenda'],
@@ -224,11 +225,11 @@ test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor'
   assert.match(funcion(panel(), 'PanelDelIcp'), /debajo=\{icp\.motivo === null \? null : \(FRASE_DEL_MOTIVO\[icp\.motivo\] \?\? null\)\}/);
   assert.match(funcion(panel(), 'Eslabon'), /<span className="csr-p" title=\{sinPorcion \?\? undefined\}>/);
   assert.match(funcion(panel(), 'Eslabon'), /<span className="cs-motivo" title=\{sinValor\}>/);
-  // La calidad junta las frases sólo si todos los tramos están en «—» por el mismo motivo.
+  // La calidad junta las frases sólo si todos los cuadrantes están en «—» por el mismo motivo.
   assert.match(funcion(panel(), 'Calidad'), /motivos\.size === 1 && !motivos\.has\('con_valor'\)/);
 });
 
-test('los pasos, los tramos y los agentes son los del servidor, cada uno con su rótulo', () => {
+test('los pasos, los cuadrantes y los agentes son los del servidor, cada uno con su rótulo', () => {
   const lectura = leer('lib/negocio/lecturaDeConversation.ts');
   const delServidor = new Set([...lectura.matchAll(/paso\('(\w+)'|clave: '(\w+)', valor: sinValor|\{ clave: '(\w+)', n: /g)].map((m) => m[1] ?? m[2] ?? m[3]));
   for (const clave of ['asistieron', 'reprogramaron', 'cancelaron']) delServidor.add(clave);
@@ -241,7 +242,7 @@ test('los pasos, los tramos y los agentes son los del servidor, cada uno con su 
     "entraron: 'Entraron'", "escritos: 'Les escribimos'", "respondieron: 'Respondieron'", "abrieron: 'Abrieron la landing'",
     "agendaron: 'Agendaron'", "citas: 'Citas'", "confirmaron: 'Confirmaron'", "asistieron: 'Asistieron'",
     "reprogramaron: 'Reprogramaron'", "cancelaron: 'Cancelaron'",
-    "alto: 'Alto'", "medio: 'Medio'", "bajo: 'Bajo'", "sin_calificar: 'Sin calificar'",
+    "prioriza: 'Prioriza'", "valida: 'Valida'", "financia: 'Financia'", "descarta: 'Descarta'", "sin_clasificar: 'Sin clasificar'",
   ]) {
     assert.ok(c.includes(par), `cambió el rótulo \`${par}\``);
   }
@@ -250,11 +251,11 @@ test('los pasos, los tramos y los agentes son los del servidor, cada uno con su 
   assert.match(c, /leadflow_voz: \{ flujo: 'Lead Flow', canal: 'voz',[^}]*cifra: null \}/);
   assert.match(c, /appflow_voz: \{ flujo: 'Appointment Flow', canal: 'voz',[^}]*cifra: null \}/);
   assert.match(lectura, /\{ clave: 'asistieron', valor: asistieron, porcion: tasaDeAsistencia \}/);
-  const tramos = /ORDEN_DE_TRAMOS: readonly ClaveDeTramo\[\] = \[([^\]]+)\]/.exec(lectura)?.[1] ?? '';
-  assert.deepEqual(claves('TRAMO'), [...tramos.matchAll(/'(\w+)'/g)].map((m) => m[1]!), 'un tramo del servidor no tiene rótulo');
+  // Los cuadrantes: los del módulo que el servidor usa para ordenarlos, todos con su rótulo.
+  assert.deepEqual(claves('CUADRANTE').sort(), CUADRANTES.map((x) => x.clave).sort(), 'un cuadrante del servidor no tiene rótulo');
   const tipo = /clave: ('leadflow_texto'[^;]+);/.exec(lectura)?.[1] ?? '';
   assert.deepEqual(claves('AGENTE'), [...tipo.matchAll(/'(\w+)'/g)].map((m) => m[1]!), 'un agente del servidor no tiene tarjeta, o cambiaron de orden');
-  // El molesto es el molesto, y cada tramo de la barra el suyo.
+  // El molesto es el molesto, y cada parte de la barra la suya.
   const tarjeta = funcion(panel(), 'TarjetaDeAgente');
   assert.match(tarjeta, /`\$\{pf\(a\.sentimiento\.molesto\)\} molesto`/);
   assert.match(

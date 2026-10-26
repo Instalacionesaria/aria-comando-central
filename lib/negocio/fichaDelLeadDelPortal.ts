@@ -9,8 +9,8 @@
 // contactos congelados la ficha es la foto del último día que se vieron (medido el 2026-09-27).
 //
 // **Lo que muestra sale de los mismos predicados que la fila de la rejilla.** El estado de la cita,
-// la asistencia y el plantón son los fragmentos de `leadsDelPortal.ts`, y el tramo es
-// `tramoDelPuntaje`: si la tarjeta dice «sin registrar», la ficha no puede decir otra cosa.
+// la asistencia y el plantón son los fragmentos de `leadsDelPortal.ts`, y el cuadrante del ICP es
+// `claveDelCuadrante`: si la tarjeta dice «sin registrar», la ficha no puede decir otra cosa.
 //
 // ── LO QUE VIAJA Y LO QUE NO ────────────────────────────────────────────────
 //
@@ -25,7 +25,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { ETIQUETAS_DE_DESCARTE } from '../ghl/contrato.ts';
 import { closersDeLaEmpresa } from './alcanceDelCloser.ts';
-import { camposDelPuntaje, camposQueSeMuestran, campoPorNombre, idEn, type CampoDelCrm } from './camposDelCrm.ts';
+import { camposDelCuadrante, camposDelPuntaje, camposQueSeMuestran, campoPorNombre, idEn, type CampoDelCrm } from './camposDelCrm.ts';
 import { cancelada, alcanzable } from './citasAlcanzables.ts';
 import { CAMPO_DEL_PRECALL, ramaDelPrecall } from './consumoDelPrecall.ts';
 import { HUECOS, MEDIDO_EL, type HuecoDelPortal } from './huecosDelLeadsPortal.ts';
@@ -40,13 +40,7 @@ import {
 } from './recorrido.ts';
 import { definicionDe } from './salidas.ts';
 import { atribucionVisible, type ParametroVisible } from './atribucionVisible.ts';
-import {
-  type ClaveDeTramo,
-  motivoSinCalificar,
-  type MotivoSinCalificar,
-  rotuloDelTramo,
-  tramoDelPuntaje,
-} from './tramosDelIcp.ts';
+import { type ClaveDeCuadrante, claveDelCuadrante, rotuloDelCuadrante } from './cuadrantesDelIcp.ts';
 import { montoReportado, tieneVenta } from './ventasDelContacto.ts';
 
 /**
@@ -71,15 +65,13 @@ export interface FichaDelLead {
   /** La última vez que la sincronización lo vio. La ficha no refresca: esto dice de cuándo es la foto. */
   sincronizadoEl: string | null;
   territorio: 'closer' | 'setter' | 'congelado';
-  /** Las etiquetas de descarte que tiene, tal como las escribió el CRM. Vacío = no está descartado. */
+  /**
+   * Por qué está descartado: las etiquetas de descarte que tiene, tal como las escribió el CRM, y «Descarta (ICP)» si
+   * su cuadrante es Descarta —desde la `105` también es un descarte—. Vacío = no está descartado.
+   */
   descarte: string[];
-  puntaje: {
-    valor: number | null;
-    tramo: ClaveDeTramo;
-    rotulo: string;
-    /** Por qué está en «Sin calificar». El 0 viaja con el suyo: «0, se cuenta como sin calificar». */
-    motivo: MotivoSinCalificar | null;
-  };
+  /** El cuadrante del ICP que manda el CRM. Sin número: el puntaje de 0 a 100 no se muestra (la `105`). */
+  clasificacion: { clave: ClaveDeCuadrante; rotulo: string };
   recorrido: {
     entro: { altaEl: string | null; campana: string | null; creativo: string | null };
     /** El ÚLTIMO toque, con la clasificación de Conversion. Reemplaza al «Vio el VSL» de la maqueta. */
@@ -94,7 +86,7 @@ export interface FichaDelLead {
     asistio: { asistencia: Asistencia | null; planton: boolean };
     compro: { vendio: boolean; monto: number | null; acuerdoSinPago: boolean };
   };
-  /** Las respuestas del grupo `calificacion`, sin el puntaje, que va arriba. Un campo vacío no viaja. */
+  /** Las respuestas del grupo `calificacion`, sin el cuadrante —que va arriba— ni el puntaje viejo. Un campo vacío no viaja. */
   cuestionario: { etiqueta: string; valor: string }[];
   formulario: {
     valor: string | null;
@@ -146,7 +138,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
       'c.alta_en_el_crm',
       'c.sincronizado_el',
       'c.territorio',
-      'c.score',
+      'c.cuadrante',
       'c.etiquetas',
       'c.atribucion_primera',
       'c.campos_del_crm',
@@ -187,7 +179,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
 
   if (!c) return null;
 
-  const [citas, resultados, mensajes, mostrables, campoFormulario, corte, campoPrecall, closers, puntaje] =
+  const [citas, resultados, mensajes, mostrables, campoFormulario, corte, campoPrecall, closers, puntaje, cuadrante] =
     await Promise.all([
       datos()
         .selectFrom('citas')
@@ -214,8 +206,11 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
       ultimoDiaDelFormulario(),
       campoPorNombre(CAMPO_DEL_PRECALL),
       closersDeLaEmpresa(),
-      // El campo del puntaje de cada subcuenta (el nivel 3; el elegido, si hay, y nada más): va arriba, no en el cuestionario.
+      /* El campo del puntaje viejo de cada subcuenta: ya no se muestra en ningún lado (la `105`), tampoco en el
+         cuestionario. */
       camposDelPuntaje(),
+      // El del cuadrante: va arriba, en «Clasificación ICP», no en el cuestionario.
+      camposDelCuadrante(),
     ]);
 
   const valores = c.campos_del_crm ?? {};
@@ -232,10 +227,10 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
    * Es la misma lista que el grupo `calificacion` del Perfil del closer (`perfilDeLaFicha` la arma
    * con `camposQueSeMuestran` también): agrupada por significado, con un campo sin grupo afuera y un
    * vacío sin mandar. Se arma acá y no llamando a `perfilDeLaFicha` porque aquélla le agrega la
-   * «Calificación» y deja el campo del puntaje adentro, y la ficha lo mostraría dos veces: el puntaje
-   * va una sola vez, arriba, con su tramo. */
+   * «Calificación» y deja el campo del puntaje adentro, y la ficha lo mostraría dos veces: el cuadrante
+   * va una sola vez, arriba, y el puntaje viejo no va (la `105`: ningún número del ICP en pantalla). */
   const cuestionario = mostrables
-    .filter((m) => m.grupo === 'calificacion' && !puntaje.includes(m.campoId))
+    .filter((m) => m.grupo === 'calificacion' && !puntaje.includes(m.campoId) && !cuadrante.includes(m.campoId))
     .map((m) => ({ etiqueta: m.etiqueta, valor: textoDe(m.campoId) }))
     .filter((x): x is { etiqueta: string; valor: string } => x.valor !== null);
 
@@ -249,7 +244,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
     asignado === null
       ? null
       : closers.find((k) => k.vinculosALaVista.some((v) => v.cuentaId === c.cuenta_id && v.crmUsuarioId === asignado));
-  const tramo = tramoDelPuntaje(c.score);
+  const clave = claveDelCuadrante(c.cuadrante);
 
   return {
     id: c.id,
@@ -260,13 +255,11 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
     altaEl: iso(alta),
     sincronizadoEl: iso(c.sincronizado_el),
     territorio: c.territorio ?? 'congelado',
-    descarte: (c.etiquetas ?? []).filter((e) => descarte.has(e.toLowerCase())),
-    puntaje: {
-      valor: c.score,
-      tramo,
-      rotulo: rotuloDelTramo(tramo),
-      motivo: motivoSinCalificar(c.score),
-    },
+    descarte: [
+      ...(c.etiquetas ?? []).filter((e) => descarte.has(e.toLowerCase())),
+      ...(clave === 'descarta' ? ['Descarta (ICP)'] : []),
+    ],
+    clasificacion: { clave, rotulo: rotuloDelCuadrante(clave) },
     recorrido: {
       entro: {
         altaEl: iso(alta),

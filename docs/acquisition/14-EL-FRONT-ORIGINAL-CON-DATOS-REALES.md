@@ -36,8 +36,8 @@ Decidido por el usuario el 2026-09-30:
 | Entrada del funnel (Leads · DMs · Contactos) | contactos atribuidos a la campaña, dados de alta en la ventana | `contactos.atribucion_primera->>'campaignId'` y `alta_en_el_crm` |
 | Clics a landing VSL | clics al enlace, **contados por Meta** | `metricas_de_anuncio.acciones->linkClick` |
 | Completaron form (sólo Booking) | **hueco** | el campo «Form Landing VSL» dejó de escribirse el 2026-08-31 (`lib/negocio/embudoDelFormulario.ts:33-38`) |
-| Agendados | contactos con alguna cita alcanzable | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`) |
-| Calificados | agendados sin etiqueta de descarte | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:157-161`) |
+| Agendados | contactos con alguna cita alcanzable | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:136-146`) |
+| Calificados | agendados sin etiqueta de descarte | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:166-172`) |
 | ICP % y barra alto/medio/bajo | puntaje de los calificados | `contactos.score`, con los cortes de `lib/negocio/tramosDelIcp.ts` |
 | Deltas | la misma cifra en la ventana anterior del mismo largo | el mismo cálculo, corrido una ventana antes, con los agendados a la misma edad (A14-11) |
 | Nombre de la campaña | nombre en Meta | `negocio.campanas` (`065`), que el colector llena desde GoHighLevel (`3bd2d58:lib/ghl/anuncios.ts:327`) |
@@ -52,7 +52,7 @@ Decidido por el usuario el 2026-09-30:
 **Qué es** · La pestaña se dibuja con las clases del prototipo, y en su orden: `cre-head`, `acq-kpis`,
 `acq-note`, `acq-fgrid` y las tablas por funnel. La `filterbar` del prototipo no se dibuja: su único
 control era el segmentado de tasa, que quedó oculto (A14-09). Esas reglas siguen vivas en
-`app/aios.css:1585-1725`, y son las que la visten. La sección **no lleva `estetica-op`**: esa capa, que entró en
+`app/aios.css:1585-1727`, y son las que la visten. La sección **no lleva `estetica-op`**: esa capa, que entró en
 `833fc51`, es la que cambió el look.
 
 **Fórmula** · Lo nuevo —el selector de funnel, el texto de un hueco, el estado vacío, el teléfono— va en
@@ -182,6 +182,8 @@ apagó (P-02 de `01`).
 
 ### A14-07 · Calificado es quien agendó y no está descartado
 
+> **Desde el 2026-10-26** (`docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`, LP15-06): calificado es quien agendó, está en Prioriza, Valida o Financia, y no está descartado; el cuadrante Descarta también descarta.
+
 **Qué es** · Un contacto de la entrada que tiene alguna cita alcanzable **y** no tiene ninguna etiqueta
 de `ETIQUETAS_DE_DESCARTE` (`lib/ghl/contrato.ts:231-238`).
 
@@ -196,10 +198,12 @@ usan Leads Portal, Conversion y Sales, así que el número es el mismo que se ve
 
 ### A14-08 · El ICP de los calificados: promedio del puntaje y tres tramos
 
+> **Reemplazado el 2026-10-26** (`docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`): no hay promedio; la barra es Prioriza/Valida/Financia de los calificados, se muestra «Prioriza N %», y la porción de Descarta de todos los clasificados alimenta la alerta `ACQ-DESCARTA-ENTRE-CAMPANAS`.
+
 **Qué es** · El «ICP %» es el promedio de `contactos.score` de los calificados. La barra reparte a esos
 calificados en alto, medio y bajo, con los cortes de Leads Portal: 75 y 50 (`lib/negocio/tramosDelIcp.ts`).
 
-**Fórmula** · Un puntaje 0 o nulo es «sin calificar» (`lib/negocio/tramosDelIcp.ts:35-90`): **no entra en
+**Fórmula** · Un puntaje 0 o nulo es «sin calificar» (`lib/negocio/tramosDelIcp.ts:35-90@ddba683`): **no entra en
 el promedio ni en la barra**. El promedio se publica desde diez calificados con puntaje
 (`PISO_DE_UNA_TASA`), igual que el ICP por pieza de Creative; debajo, «—».
 

@@ -48,8 +48,8 @@ documento da un techo, no un piso.
 | `:250` | Campaña, ad set, anuncio y creativo de origen | `campaign` · `utmMedium` y `utmTerm` · `adId` · `utmContent` | 271 · 507 y 273 · 213 · 505 | **a medias** (`LP11-05`) |
 | `:251` | First-touch attribution | `contactos.atribucion_primera` (`db/migraciones/048_de_donde_vino_el_lead.sql:100-101`) | por clave, en `09 § LP09-08` | **sí**, por lista blanca |
 | `:252` | Last-touch attribution | `contactos.atribucion_ultima` (`db/migraciones/048_de_donde_vino_el_lead.sql:103-104`) | sin medir en LP-0 | **sólo como «Llegó por»** (`LP11-05`, `LP11-P01`) |
-| `:253` | Respuestas de Meta Lead Ads, cuando aplique | carpeta «📁 Score \| ICP Lead Form (Meta)» (`lib/ghl/contrato.ts:339-340`) | respuestas: **123**, medido en LP-3 (`09 § LP09-P02`) | **el campo sí, y 123 personas con respuestas** (`LP11-06`) |
-| `:254` | Respuestas del formulario de la landing, después de completarlo | carpeta «📁 Score \| ICP Nuevo» (`lib/ghl/contrato.ts:337-338`) y el estado «Form Landing VSL» | estado: 121 · 87 · 39 · 346 vacío; respuestas: **219**, medido en LP-3 sin el puntaje (`09 § LP09-P02`) | **el campo sí, con corte; 219 personas con respuestas** (`LP11-06`) |
+| `:253` | Respuestas de Meta Lead Ads, cuando aplique | carpeta «📁 Score \| ICP Lead Form (Meta)» (`lib/ghl/contrato.ts:356-357`) | respuestas: **123**, medido en LP-3 (`09 § LP09-P02`) | **el campo sí, y 123 personas con respuestas** (`LP11-06`) |
+| `:254` | Respuestas del formulario de la landing, después de completarlo | carpeta «📁 Score \| ICP Nuevo» (`lib/ghl/contrato.ts:354-355`) y el estado «Form Landing VSL» | estado: 121 · 87 · 39 · 346 vacío; respuestas: **219**, medido en LP-3 sin el puntaje (`09 § LP09-P02`) | **el campo sí, con corte; 219 personas con respuestas** (`LP11-06`) |
 | `:255` | ICP score | `contactos.score` | 471, y 47 de ellos en 0 | **sí** |
 | `:256` | Segmento de ICP | el tramo, derivado del puntaje con 75 y 50 | 108 · 158 · 158 · 169 sin calificar | **sí**, por decisión (`LP11-07`) |
 | `:257` | Estado del funnel | no hay columna: se deriva | — | **derivado** (`LP11-08`) |
@@ -86,7 +86,7 @@ id que no es de la empresa responde 404. La maqueta abría la ficha **por nombre
 
 `ghl_contact_id` existe en las 593 filas y **no se dibuja**. Su único uso en pantalla sería armar el
 enlace a GoHighLevel, y la decisión del 2026-09-26 es que no hay enlace: en el Closer se quitó a
-pedido y el campo que lo armaba se fue con él (`lib/negocio/fila.ts:468-469` lo sigue leyendo con un
+pedido y el campo que lo armaba se fue con él (`lib/negocio/fila.ts:471-472` lo sigue leyendo con un
 comentario que todavía habla de ese enlace; hoy sólo lo usa el refresco contra el CRM al abrir la
 ficha). La ficha de esta pestaña no refresca contra el CRM, así que tampoco lo necesita. El dato
 cumple el documento; la pantalla no lo usa.
@@ -125,12 +125,12 @@ El documento pide cuatro niveles —campaña, ad set, anuncio, creativo— y dos
 | ad set | `utmMedium` | 507 | **por nombre**: un renombre en Meta parte la serie (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`) |
 | ad set | `utmTerm` | 273 | **el id del conjunto** (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:95-96`) |
 | anuncio | `adId` | 213 | los 213 cruzan con `negocio.anuncios` y traen nombre |
-| creativo | `utmContent` | 505 | la llave del creativo de Creative (`lib/negocio/calidadDelCreativo.ts:21-24`) |
+| creativo | `utmContent` | 505 | la llave del creativo de Creative (`lib/negocio/calidadDelCreativo.ts:23-26`) |
 
 **Hay que decir una diferencia de vocabulario entre dos carpetas de este repositorio.** Acquisition
 rotuló `utmContent` como el nombre del **anuncio** (`docs/acquisition/08-DE-DONDE-VIENE-CADA-DATO.md:93`,
 del 2026-09-16), y dos días después Creative lo adoptó como el nombre de la **pieza**, porque los
-anuncios de `negocio.anuncios` son muchas menos piezas que ids (`lib/negocio/calidadDelCreativo.ts:21-24`).
+anuncios de `negocio.anuncios` son muchas menos piezas que ids (`lib/negocio/calidadDelCreativo.ts:23-26`).
 Esta carpeta sigue a Creative, que es la decisión más reciente y la que ya publica una pantalla: en
 la ficha, «Creativo» es `utmContent` y «Anuncio» es el nombre que sale por `adId`. **Son dos filas
 distintas y no se funden en una**, porque la del anuncio falta en 380 contactos y la del creativo en
@@ -143,11 +143,11 @@ distintas y no se funden en una**, porque la del anuncio falta en 380 contactos 
 
 ### LP11-06 · Las respuestas (`§ 5.3:253-254`)
 
-El grupo `calificacion` junta tres carpetas (`lib/ghl/contrato.ts:332-340`): la del formulario de la
+El grupo `calificacion` junta tres carpetas (`lib/ghl/contrato.ts:349-357`): la del formulario de la
 landing, la del formulario de Meta, y «Contact», que tiene el puntaje y dos URLs. `perfilDeLaFicha`
-(`lib/negocio/ficha.ts:481-563`) ya las agrupa **por significado y no por formulario**, que es lo que
+(`lib/negocio/ficha.ts:482-562`) ya las agrupa **por significado y no por formulario**, que es lo que
 el documento necesita: el lead pudo entrar por cualquiera de las dos puertas, y la misma pregunta
-existe en las dos (`lib/negocio/ficha.ts:459-465`).
+existe en las dos (`lib/negocio/ficha.ts:460-466`).
 
 El `§ 5.3:254` dice **«después de completarlo»**, y el estado del formulario dice que no todos lo
 completaron:
@@ -171,7 +171,7 @@ LP-0 cuenta al puntaje como una respuesta (`09 § LP09-P02`).
 ### LP11-07 · ICP score y segmento (`§ 5.3:255-256`)
 
 El puntaje lo calcula el CRM —«Puntaje | ICP», 0 a 100— y llega a `contactos.score` por la
-sincronización (`lib/negocio/sincronizar.ts:441`). El documento no dice quién lo calcula: dice que
+sincronización (`lib/negocio/sincronizar.ts:456`). El documento no dice quién lo calcula: dice que
 existe. Que el sistema lo calcule por su cuenta, con las respuestas del formulario, **queda a
 futuro** y se documenta en `docs/OTROS/futuro/icp-interno-calculado.md`.
 
@@ -243,7 +243,7 @@ conservarse su historial y exponer un resumen en el perfil.»*
 
 **Hoy se guarda exactamente como el documento dice que no.** El VSL y el precall viven dentro de
 `contactos.campos_del_crm`, que la sincronización **reescribe entero** en cada pasada
-(`lib/negocio/sincronizar.ts:412-414`). No hay tabla de eventos de reproducción, ni una fila por
+(`lib/negocio/sincronizar.ts:427-429`). No hay tabla de eventos de reproducción, ni una fila por
 visionado, ni una fecha. Lo que la ficha puede mostrar del precall es la última foto.
 
 **No se arregla en esta pestaña.** Conservar la historia es una tabla nueva y un escritor nuevo, y

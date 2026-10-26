@@ -3,21 +3,21 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE ESTE ARCHIVO PROTEGE
 //
-// Una fila por persona, con cinco preguntas ya contestadas —tramo, cita, asistencia, plantón y
-// venta—, y cinco tarjetas contadas sobre esas mismas filas. Los defectos que importan no fallan: dan
+// Una fila por persona, con cinco preguntas ya contestadas —cuadrante del ICP, cita, asistencia, plantón y
+// venta—, y seis tarjetas contadas sobre esas mismas filas. Los defectos que importan no fallan: dan
 // un número más grande y creíble.
 //
 //   · **Contar citas y rotularlas personas.** Tres citas de una persona son una persona que agendó.
 //   · **Colapsar el «no se sabe» en «no».** Una cita que ocurrió sin que nadie registrara nada no es
 //     un «no asistió», un plantón del calendario no es nuestra asistencia, y cero ventas registradas
 //     no es un cierre de 0 %.
-//   · **Clasificar dos veces.** El tramo que la tarjeta cuenta y el que la fila muestra salen de la
-//     misma columna; si el corte de SQL y el de TypeScript divergen, la prueba de los bordes lo ve.
-//   · **Mandar al navegador lo que no va.** La fila tiene exactamente catorce claves.
+//   · **Clasificar dos veces.** El cuadrante que la tarjeta cuenta y el que la fila muestra salen de la
+//     misma columna (la `105`); lo que no es una de las cuatro claves cae en «Sin clasificar» en las dos.
+//   · **Mandar al navegador lo que no va.** La fila tiene exactamente trece claves, y ningún número del ICP.
 //
 // Todas las pruebas comparten la organización `alfa` con el resto de la suite. Por eso cada una
 // siembra con el prefijo `portal-`, limpia antes, y lo que es de toda la empresa —los que no tienen
-// alta, los ceros recientes— se mide contra una línea base tomada en la misma prueba.
+// alta, los que traen un valor desconocido en el campo— se mide contra una línea base tomada en la misma prueba.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -27,19 +27,35 @@ import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
-import {
-  CLAVES_DE_LA_FILA,
-  DIAS_DE_LOS_CEROS_RECIENTES,
-  leadsDelPortal,
-  type LeadsDelPortal,
-} from '../../lib/negocio/leadsDelPortal.ts';
+import { CLAVES_DE_LA_FILA, leadsDelPortal, type LeadsDelPortal } from '../../lib/negocio/leadsDelPortal.ts';
 import { PISO_DE_UNA_TASA } from '../../lib/negocio/indicadoresDeCitas.ts';
-import { tramoDelPuntaje } from '../../lib/negocio/tramosDelIcp.ts';
+import { claveDelCuadrante } from '../../lib/negocio/cuadrantesDelIcp.ts';
+import { CLAVE_DEL_CUADRANTE } from '../../lib/ghl/contrato.ts';
 import { DIAS_DE_TODO } from '../../lib/negocio/periodo.ts';
 
 let esc: Escenario;
 
 const PREFIJO = 'portal-';
+/** El campo del cuadrante en el catálogo de la empresa de prueba: sin él no se distingue «sin valor» de «otro valor». */
+const CAMPO = 'portal-campo-cuadrante';
+const CARPETA = 'portal-carpeta';
+
+async function sembrarElCampo(): Promise<void> {
+  await esc.admin.query(
+    `insert into negocio.carpetas_del_crm (org_id, carpeta_id, nombre, visto_el) values ($1, $2, 'Prueba', now()) on conflict do nothing`,
+    [esc.org, CARPETA],
+  );
+  await esc.admin.query(
+    `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion, clave, visto_el)
+       values ($1, $2, 'Cuadrante de Clasificacion', $3, 'RADIO', '1', $4, now()) on conflict do nothing`,
+    [esc.org, CAMPO, CARPETA, CLAVE_DEL_CUADRANTE],
+  );
+}
+
+async function quitarElCampo(): Promise<void> {
+  await esc.admin.query('delete from negocio.campos_del_crm where org_id = $1 and campo_id = $2', [esc.org, CAMPO]);
+  await esc.admin.query('delete from negocio.carpetas_del_crm where org_id = $1 and carpeta_id = $2', [esc.org, CARPETA]);
+}
 
 async function limpiar(): Promise<void> {
   const deLaPrueba = 'select id from negocio.contactos where ghl_contact_id like $1';
@@ -62,7 +78,10 @@ async function unContacto(o: {
   /** Días desde el alta. `null` = sin alta. Por omisión, dos. */
   altaHaceDias?: number | null;
   creadoHaceDias?: number;
-  score?: number | null;
+  /** El cuadrante ya guardado. Por omisión, Valida. */
+  cuadrante?: string | null;
+  /** Lo que trae en el campo del cuadrante, crudo. Por omisión, nada. */
+  enElCampo?: string;
   etiquetas?: string[];
   territorio?: 'closer' | 'setter' | null;
   atribucion?: Record<string, string>;
@@ -73,12 +92,12 @@ async function unContacto(o: {
   const alta = o.altaHaceDias === undefined ? 2 : o.altaHaceDias;
   const r = await esc.admin.query<{ id: string }>(
     `insert into negocio.contactos
-       (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, creado_el, score, etiquetas,
-        atribucion_primera, telefono, email)
+       (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, creado_el, cuadrante, etiquetas,
+        atribucion_primera, telefono, email, campos_del_crm, score)
      values ($1, $2, $3, $4,
              case when $5::int is null then null else now() - make_interval(days => $5::int) end,
              now() - make_interval(days => $6::int), $7, $8::text[], $9::jsonb,
-             '+51 999 000 000', 'persona@ejemplo.test')
+             '+51 999 000 000', 'persona@ejemplo.test', $10::jsonb, 87)
      returning id`,
     [
       esc.org,
@@ -87,9 +106,10 @@ async function unContacto(o: {
       o.territorio === undefined ? 'closer' : o.territorio,
       alta,
       o.creadoHaceDias ?? 1,
-      o.score === undefined ? 60 : o.score,
+      o.cuadrante === undefined ? 'valida' : o.cuadrante,
       o.etiquetas ?? [],
       JSON.stringify(o.atribucion ?? {}),
+      JSON.stringify(o.enElCampo === undefined ? {} : { [CAMPO]: o.enElCampo }),
     ],
   );
   const id = r.rows[0]!.id;
@@ -115,7 +135,7 @@ async function unContacto(o: {
 const leer = (dias = 30, tope?: number): Promise<LeadsDelPortal> =>
   conOrganizacion(esc.org, () => leadsDelPortal(dias, tope));
 const filaDe = (r: LeadsDelPortal, id: string) => r.leads.find((l) => l.id === id);
-const tramo = (r: LeadsDelPortal, clave: string) => r.tramos.find((t) => t.clave === clave)!;
+const cuadrante = (r: LeadsDelPortal, clave: string) => r.cuadrantes.find((t) => t.clave === clave)!;
 
 /**
  * La org de prueba no puede tener ventas de otra prueba: varias afirmaciones de acá dependen de que
@@ -132,77 +152,97 @@ async function sinVentasAjenas(): Promise<void> {
 before(async () => {
   esc = await montar('LeadsDelPortal');
   await limpiar();
+  await sembrarElCampo();
 });
 
 after(async () => {
   await limpiar();
+  await quitarElCampo();
   await cerrarTodo();
   await cerrarClientes();
 });
 
-// ─── EL TRAMO ────────────────────────────────────────────────────────────────
+// ─── EL CUADRANTE ────────────────────────────────────────────────────────────
 
-test('el tramo de SQL es el de `tramoDelPuntaje`, borde por borde', async () => {
-  /* La consulta repite el corte en SQL porque la base no puede llamar a TypeScript. Ésta es la prueba
-     que obliga a que las dos formas digan lo mismo: con `>` en vez de `>=` en una de las dos, el 75
-     cae en «medio» y la fila no coincide con la función. */
+test('el cuadrante de la fila es el de la columna, y lo que no es una de las cuatro claves es «Sin clasificar»', async () => {
+  /* La fila y la tarjeta no vuelven a clasificar: leen la columna que la sincronización normalizó. El `rechazo` del
+     catálogo (la `079`), que el CRM no manda, también es «Sin clasificar», como en `claveDelCuadrante`. */
   await limpiar();
-  const bordes = [null, 0, 1, 49, 50, 74, 75, 100];
-  const ids = new Map<string, number | null>();
-  for (const s of bordes) ids.set(await unContacto({ score: s }), s);
+  const valores = ['prioriza', 'valida', 'financia', 'descarta', 'rechazo', null];
+  const ids = new Map<string, string | null>();
+  for (const c of valores) ids.set(await unContacto({ cuadrante: c }), c);
 
   const r = await leer();
-  for (const [id, s] of ids) {
-    assert.equal(filaDe(r, id)?.tramo, tramoDelPuntaje(s), `el puntaje ${s} cae en otro tramo en SQL`);
-    assert.equal(filaDe(r, id)?.puntaje, s, 'el puntaje de la fila no es el del CRM: el 0 tiene que llegar como 0');
+  for (const [id, c] of ids) assert.equal(filaDe(r, id)?.cuadrante, claveDelCuadrante(c), `el cuadrante ${c} cae en otro en SQL`);
+});
+
+test('las cinco tarjetas suman el total de la cohorte, y «Todos» es esa suma', async () => {
+  await limpiar();
+  for (const c of [null, null, 'prioriza', 'prioriza', 'valida', 'descarta']) await unContacto({ cuadrante: c });
+
+  const r = await leer();
+  const suma = r.cuadrantes.reduce((a, t) => a + t.contactos, 0);
+  assert.equal(r.cohorte.total, 6);
+  assert.equal(suma, r.cohorte.total, 'los cuadrantes no suman la cohorte: alguien cayó fuera de los cinco');
+  assert.equal(r.todos.contactos, suma);
+  assert.deepEqual(
+    r.cuadrantes.map((t) => [t.clave, t.contactos]),
+    [['sin_clasificar', 2], ['prioriza', 2], ['valida', 1], ['financia', 0], ['descarta', 1]],
+  );
+  assert.equal(cuadrante(r, 'prioriza').porcion, 2 / 6);
+});
+
+test('«Sin clasificar» se parte en sin valor y en otro valor, y las dos partes suman la tarjeta', async () => {
+  await limpiar();
+  await unContacto({ cuadrante: null });
+  await unContacto({ cuadrante: null });
+  // Una opción del OTRO campo «cuadrante» escrita en éste: no es ninguna de las cuatro.
+  await unContacto({ cuadrante: null, enElCampo: 'Prioridad' });
+  await unContacto({ cuadrante: 'prioriza', enElCampo: 'Prioriza' });
+
+  const r = await leer();
+  assert.equal(r.sinClasificar.sinValor, 2);
+  assert.equal(r.sinClasificar.otroValor, 1, 'el valor desconocido se contó como sin valor, o no se contó');
+  assert.equal(r.sinClasificar.sinValor + r.sinClasificar.otroValor, cuadrante(r, 'sin_clasificar').contactos);
+  assert.equal(r.sinClasificar.sinCampo, false);
+});
+
+test('el guardián del valor desconocido mira la EMPRESA, no la ventana', async () => {
+  /* Si se midiera dentro de la cohorte, el aviso se encendería con «30 días» y se apagaría con «Hoy» para el mismo
+     contacto. La mutación que lo pone rojo es justamente ésa. */
+  await limpiar();
+  const base = (await leer(1)).sinClasificar.otrosEnLaEmpresa;
+  await unContacto({ cuadrante: null, enElCampo: 'Descartar', altaHaceDias: 10 });
+
+  const hoy = await leer(1);
+  const todo = await leer(DIAS_DE_TODO);
+  assert.equal(hoy.sinClasificar.otrosEnLaEmpresa, base + 1, 'con «Hoy» el valor de hace diez días no encendió el guardián');
+  assert.equal(todo.sinClasificar.otrosEnLaEmpresa, base + 1);
+  assert.equal(hoy.sinClasificar.otroValor, 0, 'el de hace diez días entró en la cohorte de hoy');
+  assert.match(String(hoy.aviso), /no es Prioriza, Valida, Financia ni Descarta/, 'el guardián encendido no aparece en el aviso');
+});
+
+test('sin el campo del cuadrante en el catálogo, todos son «Sin clasificar» y el aviso lo dice', async () => {
+  await limpiar();
+  await quitarElCampo();
+  try {
+    await unContacto({ cuadrante: null, enElCampo: 'Prioridad' });
+    const r = await leer();
+    assert.equal(r.sinClasificar.sinCampo, true);
+    assert.equal(r.sinClasificar.otroValor, 0, 'sin campo no hay valor que llamar desconocido');
+    assert.match(String(r.aviso), /no tiene el campo del cuadrante/);
+  } finally {
+    await sembrarElCampo();
   }
 });
 
-test('las cuatro tarjetas suman el total de la cohorte, y «Todos» es esa suma', async () => {
+test('ningún número del ICP viaja: ni en la fila ni en la respuesta', async () => {
+  // El contacto tiene `score` 87 guardado (lo pone `unContacto`): la `105` lo deja en la base y fuera de la pantalla.
   await limpiar();
-  for (const s of [null, 0, 20, 55, 80, 90]) await unContacto({ score: s });
-
+  const id = await unContacto({ cuadrante: 'prioriza' });
   const r = await leer();
-  const suma = r.tramos.reduce((a, t) => a + t.contactos, 0);
-  assert.equal(r.cohorte.total, 6);
-  assert.equal(suma, r.cohorte.total, 'los tramos no suman la cohorte: alguien cayó fuera de los cuatro');
-  assert.equal(r.todos.contactos, suma);
-  assert.deepEqual(
-    r.tramos.map((t) => [t.clave, t.contactos]),
-    [['sin_calificar', 2], ['alto', 2], ['medio', 1], ['bajo', 1]],
-  );
-  assert.equal(tramo(r, 'alto').porcion, 2 / 6);
-});
-
-test('«Sin calificar» se parte en sin puntaje y en 0, y las dos partes suman la tarjeta', async () => {
-  await limpiar();
-  await unContacto({ score: null });
-  await unContacto({ score: null });
-  await unContacto({ score: 0 });
-  await unContacto({ score: 40 });
-
-  const r = await leer();
-  assert.equal(r.sinCalificar.sinPuntaje, 2);
-  assert.equal(r.sinCalificar.enCero, 1, 'el 0 se contó como sin puntaje, o no se contó');
-  assert.equal(r.sinCalificar.sinPuntaje + r.sinCalificar.enCero, tramo(r, 'sin_calificar').contactos);
-});
-
-test('el guardián de los ceros mira la EMPRESA y los últimos 14 días, no la ventana', async () => {
-  /* Si se midiera dentro de la cohorte, el aviso se encendería con «30 días» y se apagaría con
-     «7 días» para el mismo 0. La mutación que lo pone rojo es justamente ésa. */
-  await limpiar();
-  const base = (await leer(1)).sinCalificar.cerosRecientes;
-  await unContacto({ score: 0, altaHaceDias: 10 });
-  await unContacto({ score: 0, altaHaceDias: DIAS_DE_LOS_CEROS_RECIENTES + 6 });
-
-  const hoy = await leer(1);
-  const siete = await leer(7);
-  const todo = await leer(DIAS_DE_TODO);
-  assert.equal(hoy.sinCalificar.cerosRecientes, base + 1, 'con «Hoy» el 0 de hace diez días no encendió el guardián');
-  assert.equal(siete.sinCalificar.cerosRecientes, base + 1);
-  assert.equal(todo.sinCalificar.cerosRecientes, base + 1, 'el 0 de hace veinte días se contó como reciente');
-  assert.equal(hoy.sinCalificar.enCero, 0, 'el 0 de hace diez días entró en la cohorte de hoy');
-  assert.match(String(hoy.aviso), /puntaje del CRM en 0/, 'el guardián encendido no aparece en el aviso');
+  assert.doesNotMatch(JSON.stringify(r), /"(puntaje|score)"/, 'una clave del puntaje viejo viajó en la respuesta');
+  assert.doesNotMatch(JSON.stringify(filaDe(r, id)), /87/, 'el puntaje viejo viajó en la fila');
 });
 
 // ─── LA COHORTE ──────────────────────────────────────────────────────────────
@@ -239,7 +279,7 @@ test('con la cohorte vacía la porción es nula, no 0 %, y el aviso lo dice', as
   const r = await leer(1);
   assert.equal(r.cohorte.total, 0);
   assert.equal(r.todos.porcion, null, 'un «0 %» sobre nadie afirma algo');
-  assert.ok(r.tramos.every((t) => t.porcion === null));
+  assert.ok(r.cuadrantes.every((t) => t.porcion === null));
   assert.match(String(r.aviso), /No entró ni un contacto/);
   assert.ok(r.cohorte.ultimaAlta, 'con la cohorte vacía, la última alta de la empresa es lo que dice cuándo entró alguien');
 });
@@ -336,15 +376,15 @@ test('el plantón del calendario viaja aparte y no se convierte en «no asistió
 // ─── LA VENTA ────────────────────────────────────────────────────────────────
 
 test('sin ninguna venta en la empresa, el cierre y el monto son nulos con su motivo, no 0 %', async () => {
-  /* Es el caso de hoy en producción. Un «0 %» en cada tarjeta se leería como «ningún tramo compra»;
+  /* Es el caso de hoy en producción. Un «0 %» en cada tarjeta se leería como «ningún cuadrante compra»;
      lo cierto es que nadie registró una venta. */
   await limpiar();
   await sinVentasAjenas();
-  for (let i = 0; i < PISO_DE_UNA_TASA + 2; i += 1) await unContacto({ score: 80 });
+  for (let i = 0; i < PISO_DE_UNA_TASA + 2; i += 1) await unContacto({ cuadrante: 'prioriza' });
 
   const r = await leer();
   assert.equal(r.hayVentasRegistradas, false);
-  for (const t of [...r.tramos, r.todos]) {
+  for (const t of [...r.cuadrantes, r.todos]) {
     assert.equal(t.cierre, null, `«${t.rotulo}» publicó un cierre sin ninguna venta registrada`);
     assert.equal(t.porQueSinCierre, 'sin_ventas_registradas');
     assert.equal(t.montoReportado, null, `«${t.rotulo}» publicó un monto sin ninguna venta`);
@@ -367,21 +407,21 @@ test('un acuerdo sin pago no es una venta', async () => {
 test('con ventas en la empresa: el piso, el cero medido, y el monto reportado', async () => {
   await limpiar();
   await sinVentasAjenas();
-  /* Tramo alto: once personas, dos venden (una con monto y otra sin). Pasa el piso. */
-  await unContacto({ score: 90, resultados: [{ salida: 'venta', monto: 1000 }, { salida: 'venta', monto: 250.5 }] });
-  const sinMonto = await unContacto({ score: 90, resultados: [{ salida: 'venta', monto: null }] });
-  for (let i = 0; i < 9; i += 1) await unContacto({ score: 90 });
-  /* Tramo medio: diez personas y ninguna venta. Pasa el piso: su 0 % es un hecho. */
-  for (let i = 0; i < PISO_DE_UNA_TASA; i += 1) await unContacto({ score: 60 });
-  /* Tramo bajo: tres personas, una vende. No pasa el piso. */
-  await unContacto({ score: 20, resultados: [{ salida: 'venta', monto: 300 }] });
-  await unContacto({ score: 20 });
-  await unContacto({ score: 20 });
+  /* Prioriza: once personas, dos venden (una con monto y otra sin). Pasa el piso. */
+  await unContacto({ cuadrante: 'prioriza', resultados: [{ salida: 'venta', monto: 1000 }, { salida: 'venta', monto: 250.5 }] });
+  const sinMonto = await unContacto({ cuadrante: 'prioriza', resultados: [{ salida: 'venta', monto: null }] });
+  for (let i = 0; i < 9; i += 1) await unContacto({ cuadrante: 'prioriza' });
+  /* Valida: diez personas y ninguna venta. Pasa el piso: su 0 % es un hecho. */
+  for (let i = 0; i < PISO_DE_UNA_TASA; i += 1) await unContacto({ cuadrante: 'valida' });
+  /* Financia: tres personas, una vende. No pasa el piso. */
+  await unContacto({ cuadrante: 'financia', resultados: [{ salida: 'venta', monto: 300 }] });
+  await unContacto({ cuadrante: 'financia' });
+  await unContacto({ cuadrante: 'financia' });
 
   const r = await leer();
-  const alto = tramo(r, 'alto');
-  const medio = tramo(r, 'medio');
-  const bajo = tramo(r, 'bajo');
+  const alto = cuadrante(r, 'prioriza');
+  const medio = cuadrante(r, 'valida');
+  const bajo = cuadrante(r, 'financia');
   assert.equal(r.hayVentasRegistradas, true);
 
   assert.equal(alto.vendidos, 2, 'dos ventas de la misma persona se contaron como dos personas');
@@ -391,9 +431,9 @@ test('con ventas en la empresa: el piso, el cero medido, y el monto reportado', 
   assert.equal(filaDe(r, sinMonto)?.monto, null, 'una venta sin monto se mostró como $0');
   assert.equal(filaDe(r, sinMonto)?.vendio, true);
 
-  assert.equal(medio.cierre, 0, 'con ventas en la empresa, un tramo sobre el piso sin ventas es un 0 % medido');
+  assert.equal(medio.cierre, 0, 'con ventas en la empresa, un cuadrante sobre el piso sin ventas es un 0 % medido');
   assert.equal(medio.porQueSinCierre, null);
-  assert.equal(medio.montoReportado, 0, 'con ventas en la empresa, un tramo sin ventas reportó un nulo en vez de 0');
+  assert.equal(medio.montoReportado, 0, 'con ventas en la empresa, un cuadrante sin ventas reportó un nulo en vez de 0');
 
   assert.equal(bajo.cierre, null, 'con tres personas, una venta publicó un 33 %');
   assert.equal(bajo.porQueSinCierre, 'bajo_el_piso');
@@ -405,14 +445,14 @@ test('con ventas en la empresa: el piso, el cero medido, y el monto reportado', 
   assert.match(String(r.aviso), /no un pago verificado/);
 });
 
-test('un tramo con ventas y ningún monto cargado dice por qué, en vez de reportar $0', async () => {
+test('un cuadrante con ventas y ningún monto cargado dice por qué, en vez de reportar $0', async () => {
   await limpiar();
   await sinVentasAjenas();
-  await unContacto({ score: 90, resultados: [{ salida: 'venta', monto: null }] });
+  await unContacto({ cuadrante: 'prioriza', resultados: [{ salida: 'venta', monto: null }] });
 
   const r = await leer();
-  assert.equal(tramo(r, 'alto').montoReportado, null);
-  assert.equal(tramo(r, 'alto').porQueSinMonto, 'ventas_sin_monto');
+  assert.equal(cuadrante(r, 'prioriza').montoReportado, null);
+  assert.equal(cuadrante(r, 'prioriza').porQueSinMonto, 'ventas_sin_monto');
 });
 
 // ─── LA FILA ─────────────────────────────────────────────────────────────────
@@ -421,14 +461,17 @@ test('«ICP_Rechazado» marca al descartado aunque venga con otra caja, y no lo 
   await limpiar();
   const rechazado = await unContacto({ etiquetas: ['ICP_Rechazado'] });
   const otro = await unContacto({ etiquetas: ['vip'] });
+  // Desde la `105`, el cuadrante Descarta también es un descarte.
+  const enDescarta = await unContacto({ cuadrante: 'descarta' });
 
   const r = await leer();
   assert.equal(filaDe(r, rechazado)?.descartado, true, 'la etiqueta con mayúsculas no se reconoció');
   assert.equal(filaDe(r, otro)?.descartado, false);
-  assert.equal(r.cohorte.total, 2, 'el descartado salió de la cohorte: es un atributo de la fila, no un filtro');
+  assert.equal(filaDe(r, enDescarta)?.descartado, true, 'el cuadrante Descarta no marcó el descarte');
+  assert.equal(r.cohorte.total, 3, 'el descartado salió de la cohorte: es un atributo de la fila, no un filtro');
 });
 
-test('la fila trae exactamente sus catorce claves: ni teléfono, ni correo, ni atribución cruda', async () => {
+test('la fila trae exactamente sus trece claves: ni teléfono, ni correo, ni atribución cruda, ni el puntaje', async () => {
   /* «Exactamente» y no «no contiene»: una clave nueva tiene que poner esto en rojo aunque hoy no esté
      prohibida. El contacto sembrado TIENE teléfono, correo, atribución con IP y etiquetas: si alguna
      se colara, está ahí para colarse. */

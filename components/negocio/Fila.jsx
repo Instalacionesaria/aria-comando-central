@@ -44,6 +44,8 @@
  * que el menú lateral: `<use href="#i-f-…">` sobre un `<symbol>` que dibuja con `currentColor`. De
  * ahí sale gratis lo otro que se pidió —que el encendido resalte en el acento— porque el color lo
  * pone el CSS y no hace falta un color por ícono. */
+import { rotuloDelCuadrante } from '@/lib/negocio/cuadrantesDelIcp';
+
 const ICONOS = [
   { clave: 'reunionesTenidas', icono: '#i-f-reunion', titulo: 'Reuniones que ya tuvo', conteo: true },
   { clave: 'citaFutura', icono: '#i-f-cita', titulo: 'Tiene una cita agendada' },
@@ -232,9 +234,16 @@ export default function Fila({ fila, onAbrir }) {
       }
       onClick={onAbrir ? () => onAbrir(fila) : undefined}
     >
-      {/* El score. Sin dato va `—`, no un número inventado ni un espacio en blanco: el § 7.1
-          pide el guión, porque un hueco se lee como "todavía cargando". */}
-      <span className="md-time">{fila.score ?? '—'}</span>
+      {/* El cuadrante del ICP, nunca un número (la `105`): la inicial de la palabra del CRM en el círculo de 28 px —la
+          palabra entera no cabe— y la palabra en el título y para el lector de pantalla. Sin dato va `—`, no un espacio
+          en blanco: el § 7.1 pide el guión, porque un hueco se lee como "todavía cargando". */}
+      {fila.cuadrante ? (
+        <span className="md-time" title={`ICP: ${rotuloDelCuadrante(fila.cuadrante)}`} aria-label={`ICP: ${rotuloDelCuadrante(fila.cuadrante)}`}>
+          {rotuloDelCuadrante(fila.cuadrante).charAt(0)}
+        </span>
+      ) : (
+        <span className="md-time">—</span>
+      )}
       <div>
         {/* ── SOLO EL NOMBRE ──────────────────────────────────────────────────
          *

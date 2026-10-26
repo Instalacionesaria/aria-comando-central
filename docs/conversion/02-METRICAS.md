@@ -57,7 +57,7 @@ nada falle.
 6. **El piso es del denominador**, no del total: `PISO_DE_UNA_TASA = 10`
    (`lib/negocio/indicadoresDeCitas.ts:329`). Y acá hay que subirlo — ver `CV5-05`.
 7. **Ningún identificador de GoHighLevel escrito a mano.** `campoPorNombre()`
-   (`lib/negocio/camposDelCrm.ts:318-335`) es la única puerta, y devuelve `null` —no cero— si alguien
+   (`lib/negocio/camposDelCrm.ts:333-350`) es la única puerta, y devuelve `null` —no cero— si alguien
    renombra el campo (`03-CONVERSION.md:437-443@b3ca9ad`).
 8. **El agendamiento sale de `negocio.citas`**, con el mismo `exists` sobre `ghl_calendario_id` que
    usan los otros cuatro módulos, o las pantallas no suman igual. Ver `CV2-09`.
@@ -126,7 +126,7 @@ el mismo hueco que `CV11-03` declara.
 **Unidad** · Los **dos términos**, siempre, no sólo la proporción.
 **Población** · La cohorte entera.
 **Rastro** · `§ 18.5:1247` del documento funcional; el patrón `puente` de
-`lib/negocio/calidadDelCreativo.ts:323-352`.
+`lib/negocio/calidadDelCreativo.ts:311-340`.
 **Estado** · **Construible hoy**: 475 de 590 (80,5 %). **No es una muestra al azar** — ver `CV1-P01`.
 
 ---
@@ -208,7 +208,7 @@ el cajón dice **479**; «No calificadas» dice 283 arriba y 286 abajo. Y la Lec
 afirma *«Las 84 restantes»* (`conversion.js:502`), que es un tercer número literal.
 
 **El requisito que sobrevive** es que el ICP del lead califique la cita — y eso **ya existe**:
-`lib/negocio/calidadDelCreativo.ts:65` resuelve `Puntaje | ICP` con 344 de 344 contactos de treinta
+`lib/negocio/calidadDelCreativo.ts:65@bf2de85` resuelve `Puntaje | ICP` con 344 de 344 contactos de treinta
 días. **Conversion lo consume, no lo recalcula** (`§ 2.4` del documento funcional).
 
 Y el `0.94` del comparativo (`conversion.js:167`) no tiene justificación ni comentario en ninguna

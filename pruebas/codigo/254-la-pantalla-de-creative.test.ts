@@ -253,7 +253,7 @@ test('cada motivo de una cifra sin valor tiene SU frase, y son los del servidor'
   /* Y cada uno con la frase de su situación en CF1-02: dos intercambiadas pasarían una comparación de conjuntos. */
   assert.deepEqual(mapa, {
     sin_contactos: 'Sin contactos en este período',
-    sin_puntaje: 'El CRM no tiene el puntaje.',
+    sin_clasificacion: 'El CRM no tiene el campo del cuadrante.',
     sin_entrega: 'Sin entrega en esta ventana.',
     bajo_el_piso: 'Pocos casos para una tasa.',
     pocas_impresiones: 'Pocas impresiones para una tasa.',

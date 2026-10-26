@@ -9,7 +9,7 @@
 //     generar es de Copywriter, no de un detector (C6-07a).
 //   · El verbo es el de la medición, no una orden (C6-10): «está … por debajo del promedio de su etapa», «bajó
 //     … entre la primera y la segunda mitad». Creative propone; la persona decide en Meta.
-//   · El ICP de una pieza contra su etapa es la frase de «Lo que dice la data» (C6-04a); la caída del CTR y la
+//   · El Descarta de una pieza contra su etapa es la frase de «Lo que dice la data» (C6-04a); la caída del CTR y la
 //     frecuencia, de «Ajusta o pausa esto». «Haz más de esto» queda vacío mientras ninguna regla mida lo que
 //     anda bien: un grupo vacío se guarda vacío y la pantalla lo dice.
 //
@@ -19,7 +19,7 @@
 import type { ParaElPlan } from '../detectores/correr.ts';
 import { CRE } from '../detectores/creative.ts';
 import type { Deteccion } from '../senales/tipos.ts';
-import { armarPlan, numero, porcentaje, type FormatoDelPlan, type PlanDelDepartamento } from './comun.ts';
+import { armarPlan, numero, porcentaje, puntos, type FormatoDelPlan, type PlanDelDepartamento } from './comun.ts';
 
 export const GRUPOS_DEL_PLAN_DE_CREATIVE = [
   { clave: 'data', titulo: 'Lo que dice la data' },
@@ -57,8 +57,8 @@ export function textoDeCreative(d: Deteccion): string {
       return `Se lleva el ${porcentaje(d.valorActual)} del gasto ${ev.cliente ? 'de su cliente en' : 'de'} la ventana, entre ${numero((ev.piezas as unknown[] | undefined)?.length)} piezas con gasto.`;
     case CRE.frecuenciaAlta:
       return `El anuncio se mostró ${numero(d.valorActual)} veces por persona en promedio en la semana, sobre ${numero(d.muestra)} impresiones.`;
-    case CRE.icpPorPieza:
-      return `Su ICP promedio está ${numero((d.lineaBase ?? 0) - (d.valorActual ?? 0))} puntos por debajo del promedio de las piezas de su etapa${ev.cliente ? ' en su cliente' : ''} (${String(ev.etapa ?? '—')}): ${numero(d.valorActual)} contra ${numero(d.lineaBase)}, sobre ${numero(d.muestra)} contactos con puntaje.`;
+    case CRE.descartaPorPieza:
+      return `Su porción de Descarta está ${puntos((d.valorActual ?? 0) - (d.lineaBase ?? 0))} puntos por encima del promedio de las piezas de su etapa${ev.cliente ? ' en su cliente' : ''} (${String(ev.etapa ?? '—')}): ${porcentaje(d.valorActual)} contra ${porcentaje(d.lineaBase)}, sobre ${numero(d.muestra)} contactos clasificados.`;
     default:
       return `${d.metrica}: ${numero(d.valorActual)}.`;
   }
@@ -69,7 +69,7 @@ const NO_SE_MIDIO: Record<string, string> = {
   [CRE.caidaDeCtr]: 'si el CTR de alguna pieza cae: la lectura de los anuncios no está al día',
   [CRE.concentracion]: 'el reparto del gasto entre piezas: la lectura de los anuncios no está al día',
   [CRE.frecuenciaAlta]: 'la frecuencia de los anuncios: la lectura de los anuncios no está al día',
-  [CRE.icpPorPieza]: 'el ICP por pieza: el campo de ICP no está en el CRM',
+  [CRE.descartaPorPieza]: 'el Descarta por pieza: el campo del cuadrante del ICP no está en el CRM',
 };
 
 export const FORMATO_DE_CREATIVE: FormatoDelPlan<GrupoDelPlanDeCreative> = {

@@ -127,7 +127,7 @@ cliente: «mío» son los pares (cliente, usuario del CRM), con un solo corte (`
 varios clientes (C6 · D1), la Agenda, la cabecera de Mi Día y el chat de la ficha dicen de qué cliente no se está
 leyendo el calendario o los mensajes porque su conexión con GoHighLevel no está lista, y qué hacer, sólo de los
 clientes del alcance de quien mira (`lib/negocio/agenda.ts:428`, `lib/agentes/cabecera.ts:174`,
-`lib/negocio/ficha.ts:279`); la pantalla del vínculo dice quiénes no están vinculados en el cliente elegido
+`lib/negocio/ficha.ts:280`); la pantalla del vínculo dice quiénes no están vinculados en el cliente elegido
 (`components/closer/QuienEsElCloser.jsx:359`). Quien administra puede mirar como uno de ellos, y el
 servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDelCloser.ts:215-224`).
 
@@ -183,11 +183,11 @@ UTC sobre toda la tabla (al pie, lo re-medido el 2026-10-18):
 
 | pestaña | qué muestra | de dónde lee | cuánto hay |
 |---|---|---|---|
-| Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:215-237`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
-| Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:364-371`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:123-125`) |
-| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas que se muestran | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:473-495`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
-| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:597-598`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:600-653`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
-| Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:419-421`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
+| Chat | los mensajes de WhatsApp y SMS, con su frescura, y el compositor | `negocio.mensajes` (`lib/negocio/ficha.ts:216-238`) | 6.110 mensajes; **2** escritos desde el compositor, el último el 2026-09-07, y 0 desde la `049` |
+| Llamada | las llamadas de la plataforma de voz | `negocio.llamadas` (`lib/negocio/ficha.ts:365-372`) | **0**: la tabla no tiene escritor (`lib/ghl/entrega.ts:230`) y la pestaña lo dice (`lib/negocio/ficha.ts:124-126`) |
+| Perfil | Detalles, Origen, Calificación e Interacciones (`components/negocio/Ficha.jsx:106-111`): los datos del contacto y los campos del CRM de las carpetas que se muestran | `negocio.contactos` y `negocio.carpetas_del_crm` (`lib/negocio/ficha.ts:474-496`) | 571 de 594 contactos traen campos del CRM (medido el 2026-09-29 00:00 UTC) |
+| Historial | resultados, seguimientos, citas y notas en una línea de tiempo; los mensajes no entran (`lib/negocio/ficha.ts:596-597`) | `negocio.resultados`, `tareas`, `citas` y `notas` (`lib/negocio/ficha.ts:599-652`) | 7 resultados, 4 tareas, 333 citas y 7 notas en toda la base |
+| Notas | el hilo de notas, con su autor, y un campo para escribir una | `negocio.notas` (`lib/negocio/ficha.ts:420-422`) | **7**: 4 escritas desde la aplicación, la última el 2026-09-07, y 3 del auditor de IA |
 
 Re-medido el 2026-10-18: **6.478 mensajes**, de los que siguen siendo **2** los escritos desde el compositor (el último,
 el 2026-09-07); 368 citas; 7 notas, 4 de ellas desde la aplicación; 4 tareas; 7 resultados. Nadie escribió nada desde
@@ -322,12 +322,12 @@ su fecha.
 
 Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay cinco familias:
 
-- **«Seis de sus siete salidas».** Lo dicen `lib/ghl/contrato.ts:428`,
+- **«Seis de sus siete salidas».** Lo dicen `lib/ghl/contrato.ts:445`,
   `lib/negocio/salidasDelSetter.ts:18`, `app/api/contactos/[id]/avanzar/route.ts:464-465` y
   `app/api/contactos/[id]/avanzar/route.ts:479` («sus siete declaran etiqueta»). El catálogo tiene
   **seis** salidas (`lib/negocio/salidas.ts:69`) y **cinco** apagan el agente, como dice la propia
-  tabla (`lib/ghl/contrato.ts:399-401`, `lib/ghl/contrato.ts:410-417`).
-- **«Todavía no se escriben: Avanzar es el paso siguiente»** (`lib/ghl/contrato.ts:396`), sobre las
+  tabla (`lib/ghl/contrato.ts:416-418`, `lib/ghl/contrato.ts:427-434`).
+- **«Todavía no se escriben: Avanzar es el paso siguiente»** (`lib/ghl/contrato.ts:413`), sobre las
   etiquetas que Avanzar manda desde el 2026-08-26 (commit `39bade3`). Y en el cockpit, «mientras
   Avanzar no exista» (`lib/negocio/inicio.ts:111-112`).
 - **«`closer_asignado` tiene `org_id` como clave primaria entera»**, o sea un closer por empresa, en
@@ -546,8 +546,8 @@ misma ventana de Avanzar (§ 2.8). Las cuatro siguen en pie:
    (`lib/negocio/periodo.ts:109`), y en esa ventana, sobre su población (sin descartados), a las
    18 h UTC había **69 citas no canceladas y sólo 13 dentro de los 14 días**. La cadena de Sales
    cuenta sus cerrables **sin ventana**
-   (`lib/negocio/citasAlcanzables.ts:218-220`), así que afirmar que acusa sobre la misma población que
-   Avanzar ofrece (`lib/negocio/cadenaDeCierre.ts:39-44`, `lib/negocio/citasAlcanzables.ts:210-213`)
+   (`lib/negocio/citasAlcanzables.ts:243-245`), así que afirmar que acusa sobre la misma población que
+   Avanzar ofrece (`lib/negocio/cadenaDeCierre.ts:39-44`, `lib/negocio/citasAlcanzables.ts:235-238`)
    es cierto para el resultado y falso para la asistencia.
 3. **Con dos citas o más, la respuesta por omisión es «ninguna».** Ver § 4.3.
 4. **El closer nunca ve su show rate.** Aunque registre, su Inicio dice «—» (§ 3.1).
@@ -607,7 +607,7 @@ En una semana entraron 4 contactos, 3 agendaron, 2 contactos más tuvieron su ci
 las 23:58), y el eslabón de registro no se movió. Entre la primera medición de 30 días y la segunda la cohorte bajó de 277 a 276, porque la
 ventana rueda con `now()` (`lib/negocio/cadenaDeCierre.ts:169`), y un contacto más tuvo su cita ya
 ocurrida; los dos últimos eslabones siguen en 3 y 0. La columna «Plantón» de Sales sale del
-calendario y no de Avanzar (`lib/negocio/citasAlcanzables.ts:105-110`), así que es la única de
+calendario y no de Avanzar (`lib/negocio/citasAlcanzables.ts:106-111`), así que es la única de
 asistencia que tiene algo: 15 citas en toda la base (alcanzables, sin descartados).
 
 ### 5.7 · El setter, entero en cero
@@ -651,7 +651,7 @@ historial para deshacerlo (`lib/negocio/salidas.ts:265-292`).
 **3 · La asistencia es de la cita y sale de `citas.asistio`, nunca de la salida.** «No-show» salió de
 las opciones de `nurture` porque un plantón podía registrarse como nurture y contarse como asistencia
 (`lib/negocio/salidas.ts:185-198`). Y la marca `noshow` del calendario **no se suma** con `asistio`:
-son dos fuentes y sólo una es nuestra (`lib/negocio/citasAlcanzables.ts:105-110`).
+son dos fuentes y sólo una es nuestra (`lib/negocio/citasAlcanzables.ts:106-111`).
 
 **4 · `asistio` no entra en el `do update` del barrido.** Es la única columna de `citas` que no viene
 del CRM; si entrara, cada pasada horaria la volvería a nulo sin error

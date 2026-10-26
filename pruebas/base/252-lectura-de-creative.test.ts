@@ -10,7 +10,8 @@
 //     sacar la ventana, sumar días sin la clave, promediar la frecuencia, mirar sólo la ventana para los días;
 //   · la etapa: la de la campaña con más impresiones — mutación: la primera que aparezca;
 //   · el hook rate de la entrega es el de `rendimientoDelCreativo` — mutación: otro denominador;
-//   · los calificados: ICP de 75 o más, sin contar el cero, un texto ni un decimal (C6 · D4) — mutación: otro umbral, o romper con un texto;
+//   · los calificados: los de cuadrante Prioriza, Valida o Financia (la `105`), sin Descarta, sin el «rechazo» del
+//     catálogo y sin los que no tienen cuadrante — mutación: contar Descarta, o contar a todos;
 //   · la miniatura de la pieza: la más frecuente entre sus contactos; empate, la del contacto más nuevo; sólo de los
 //     hosts permitidos, con el tope de la tabla; la foto si no hay video — mutación: la primera, cualquier host, el tope
 //     del link manual, sólo el video;
@@ -29,7 +30,8 @@ import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
-import { CAMPO_DE_ICP, calidadDelCreativo } from '../../lib/negocio/calidadDelCreativo.ts';
+import { calidadDelCreativo } from '../../lib/negocio/calidadDelCreativo.ts';
+import { CLAVE_DEL_CUADRANTE } from '../../lib/ghl/contrato.ts';
 import { rendimientoDelCreativo } from '../../lib/negocio/rendimientoDelCreativo.ts';
 import { entregaDeLasPiezas, lecturaDeCreative } from '../../lib/negocio/lecturaDeCreative.ts';
 import { miniaturasDeLasPiezas } from '../../lib/negocio/miniaturaDelContacto.ts';
@@ -41,8 +43,8 @@ const OTRA = 'pieza-cf1-dos';
 const TERCERA = 'pieza-cf1-tres';
 const CUARTA = 'pieza-cf1-cuatro';
 const CONTACTO = 'lectura-creative-';
-const CAMPO = 'campo-icp-cf1';
-const CARPETA = 'carpeta-icp-cf1';
+const CAMPO = 'campo-cuadrante-cf1';
+const CARPETA = 'carpeta-cuadrante-cf1';
 
 async function limpiar(): Promise<void> {
   const mios = 'select id from negocio.contactos where ghl_contact_id like $1';
@@ -87,13 +89,13 @@ async function unDia(id: string, hace: number, m: { impresiones: number; clics?:
   );
 }
 
-async function unLead(o: { pieza: string | null; adId?: string; icp?: string | null; video?: string | null; foto?: string; haceDias?: number }): Promise<void> {
+async function unLead(o: { pieza: string | null; adId?: string; cuadrante?: string | null; video?: string | null; foto?: string; haceDias?: number }): Promise<void> {
   // `pieza: null` = un lead sin `utmContent`, como los que entran por un anuncio de Instagram (DM).
   const atribucion = o.pieza === null ? { adId: o.adId ?? '1' } : { utmContent: o.pieza, adId: o.adId ?? '1' };
   const r = await esc.admin.query<{ id: string }>(
-    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, campos_del_crm)
-     values ($1, $2, 'Lead de prueba', 'setter', now() - make_interval(days => $5), $3::jsonb, $4::jsonb) returning id`,
-    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, JSON.stringify(atribucion), JSON.stringify(o.icp == null ? {} : { [CAMPO]: o.icp }), o.haceDias ?? 1],
+    `insert into negocio.contactos (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, cuadrante)
+     values ($1, $2, 'Lead de prueba', 'setter', now() - make_interval(days => $5), $3::jsonb, $4) returning id`,
+    [esc.org, `${CONTACTO}${randomUUID().slice(0, 8)}`, JSON.stringify(atribucion), o.cuadrante ?? null, o.haceDias ?? 1],
   );
   if (o.video !== undefined || o.foto !== undefined) {
     await esc.admin.query(
@@ -164,18 +166,17 @@ test('la entrega de una pieza: la ventana, las claves, la frecuencia pesada, los
   assert.ok(!todas.some((x) => x.pieza === ''), 'quedó una pieza con nombre vacío');
 });
 
-test('los calificados: ICP de 75 o más, sin el cero, un texto ni un decimal', async () => {
+test('los calificados: cuadrante Prioriza, Valida o Financia; ni Descarta, ni rechazo, ni sin cuadrante', async () => {
   await limpiar();
   await esc.admin.query(`insert into negocio.carpetas_del_crm (org_id, carpeta_id, nombre, visto_el) values ($1, $2, 'Prueba', now()) on conflict do nothing`, [esc.org, CARPETA]);
   await esc.admin.query(
-    `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion, visto_el) values ($1, $2, $3, $4, 'TEXT', '1', now()) on conflict do nothing`,
-    [esc.org, CAMPO, CAMPO_DE_ICP, CARPETA],
+    `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion, clave, visto_el) values ($1, $2, 'Cuadrante de Clasificacion', $3, 'RADIO', '1', $4, now()) on conflict do nothing`,
+    [esc.org, CAMPO, CARPETA, CLAVE_DEL_CUADRANTE],
   );
-  // `90.5` no es un puntaje: la validación es la de la sincronización, un entero de 0 a 100 (C6 · D4).
-  for (const icp of ['75', '90', '90.5', '74.9', '0', 'alto', null]) await unLead({ pieza: PIEZA, icp });
+  for (const cuadrante of ['prioriza', 'valida', 'descarta', 'rechazo', null, null, 'financia']) await unLead({ pieza: PIEZA, cuadrante });
   const f = (await enAlfa(() => calidadDelCreativo(30))).filas.filter((x) => x.creativo === PIEZA);
   await limpiar();
-  assert.equal(f.reduce((s, x) => s + x.calificados, 0), 2, 'contó otro umbral, el cero, un texto o un decimal');
+  assert.equal(f.reduce((s, x) => s + x.calificados, 0), 3, 'contó Descarta, el rechazo o a los que no tienen cuadrante');
   assert.equal(f.reduce((s, x) => s + x.contactos, 0), 7);
 });
 

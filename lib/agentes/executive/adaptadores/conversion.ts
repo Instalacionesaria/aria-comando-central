@@ -20,7 +20,8 @@ export const HERRAMIENTAS_DE_CONVERSION: readonly DefinicionDeHerramienta[] = [
     descripcion:
       'Conversion: la tira y los cinco pasos de la pantalla (Landing, VSL, Formulario, Agenda, Gracias): contactos de ' +
       'la ventana, vistas de landing contadas por Meta (no son personas), los que empezaron el formulario (sólo hasta ' +
-      'su corte), agendados, calificados, confirmados y los que cancelaron, con sus tasas como fracción de 0 a 1. ' +
+      'su corte), agendados, calificados (agendaron y su cuadrante del ICP es Prioriza, Valida o Financia, sin ' +
+      'descarte), confirmados y los que cancelaron, con sus tasas como fracción de 0 a 1. ' +
       'Cada tasa tiene su base: la de los agendados y la porción que entró por la landing, sobre los contactos de la ' +
       'ventana; la del formulario, sobre los contactos hasta su corte; calificados y no calificados, sobre los ' +
       'agendados (`deLaCohorte`, sobre los contactos); confirmados y los que cancelaron, sobre los calificados, no ' +

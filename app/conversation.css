@@ -119,5 +119,6 @@
   #v-conversation .csf-key { margin-left: 0; text-align: left; }
   #v-conversation .csf-key .cs-motivo { margin-left: 0; }
   #v-conversation .pn-b.q4,
+  #v-conversation .pn-b.q5,
   #v-conversation .pn-b.cs-cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

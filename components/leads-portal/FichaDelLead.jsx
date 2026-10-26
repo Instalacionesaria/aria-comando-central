@@ -128,17 +128,15 @@ export default function FichaDelLead({ id, alCerrar }) {
   );
 }
 
-/** El puntaje con su tramo, en palabras. El 0 dice que es un 0 y cómo se cuenta. */
-function textoDelPuntaje(p) {
-  if (p.motivo === 'sin_puntaje') return 'sin puntaje · Sin calificar';
-  if (p.motivo === 'en_cero') return '0, se cuenta como sin calificar';
-  return `ICP ${p.valor} · ${p.rotulo}`;
+/** El cuadrante del ICP en palabras: la del CRM, nunca un número (la `105`). */
+function textoDelCuadrante(c) {
+  return c.clave === 'sin_clasificar' ? 'ICP sin clasificar' : `ICP ${c.rotulo}`;
 }
 
 function Meta({ f }) {
   return (
     <div className="m">
-      {textoDelPuntaje(f.puntaje)} · entró el {fecha(f.altaEl)}
+      {textoDelCuadrante(f.clasificacion)} · entró el {fecha(f.altaEl)}
       {f.pais ? ` · ${f.pais}` : ''}
       {f.descarte.length > 0 ? <span className="lp-marca lp-marca-descarte">descartado: {f.descarte.join(', ')}</span> : null}
     </div>
@@ -345,7 +343,7 @@ function Contenido({ f }) {
       <div>
         <div className="dw-sec-t">Calificación</div>
         <div className="kv-box">
-          <Fila k="Puntaje ICP" v={textoDelPuntaje(f.puntaje)} nota="Lo calcula el CRM, no Comando Central." />
+          <Fila k="Clasificación ICP" v={f.clasificacion.rotulo} nota="La calcula el CRM, no Comando Central." />
           <Fila k="Descarte" v={f.descarte.length > 0 ? f.descarte.join(', ') : 'no'} />
         </div>
         <Huecos f={f} donde="calificacion" />

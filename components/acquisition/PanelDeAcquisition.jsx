@@ -8,7 +8,7 @@
  * `aios-command-center_1.html` dibujaba esta pantalla con plantillas de texto (`renderKpis`,
  * `renderFunnels`, `renderTables`, líneas 5482-5594) sobre 58 cifras inventadas. Acá se dibuja el
  * MISMO marcado —`cre-head`, `acq-kpis`, `acq-note`, `acq-fgrid`, las tablas plegables—, con las
- * mismas clases y en el mismo orden, y las reglas siguen siendo las de `app/aios.css:1585-1725`, que
+ * mismas clases y en el mismo orden, y las reglas siguen siendo las de `app/aios.css:1585-1727`, que
  * nadie toca (docs/acquisition/14, A14-01). Lo nuevo —el selector de funnel, los huecos, el teléfono—
  * vive en `app/acquisition.css`.
  *
@@ -320,18 +320,24 @@ function Delta({ v }) {
   );
 }
 
-/** La barra del ICP: alto, medio y bajo. Los «sin calificar» no entran (A14-08). */
+/**
+ * La barra del ICP de los calificados, por su cuadrante: Prioriza, Valida y Financia (la `105`). Descarta no entra: un
+ * calificado nunca lo es. El título dice los tres conteos, porque la barra sola no dice cuántos son.
+ */
 function BarraIcp({ icp }) {
-  const t = icp.alto + icp.medio + icp.bajo;
+  const t = icp.prioriza + icp.valida + icp.financia;
   const ancho = (n) => `${t ? (n / t) * 100 : 0}%`;
   return (
-    <div className="acq-icp">
-      <i className="a" style={{ width: ancho(icp.alto) }} />
-      <i className="m" style={{ width: ancho(icp.medio) }} />
-      <i className="b" style={{ width: ancho(icp.bajo) }} />
+    <div className="acq-icp" title={`Prioriza ${nf(icp.prioriza)} · Valida ${nf(icp.valida)} · Financia ${nf(icp.financia)}`}>
+      <i className="a" style={{ width: ancho(icp.prioriza) }} />
+      <i className="m" style={{ width: ancho(icp.valida) }} />
+      <i className="f" style={{ width: ancho(icp.financia) }} />
     </div>
   );
 }
+
+/** «Prioriza 42 %»: la porción de los calificados que el CRM prioriza. Una proporción, no un puntaje. */
+const prioriza = (icp) => `Prioriza ${o(icp.porcionDePrioriza, pf)}`;
 
 const etapa = (g, clave) => g.etapas.find((x) => x.etapa === clave);
 
@@ -474,8 +480,7 @@ function Tarjeta({ cfg, g }) {
                     </span>
                   </div>
                   <div className="acq-qual-m">
-                    {o(q.tasa, pf)} de {cfg.rotulos.agendados.toLowerCase()} · {o(q.costo, cf)} c/u · ICP{' '}
-                    {o(q.icp.promedio, (v) => `${Math.round(v)}%`)}
+                    {o(q.tasa, pf)} de {cfg.rotulos.agendados.toLowerCase()} · {o(q.costo, cf)} c/u · {prioriza(q.icp)}
                   </div>
                   <BarraIcp icp={q.icp} />
                 </div>
@@ -643,7 +648,7 @@ function Fila({ cfg, grilla, r, nombre, pie, total = false, sinContactos = false
       <div className="num">{o(q.costo, cf)}</div>
       <div className="num">
         <div className="acq-icp-cell">
-          <span style={{ fontWeight: 600 }}>{o(q.icp.promedio, (v) => `${Math.round(v)}%`)}</span>
+          <span style={{ fontWeight: 600 }}>{prioriza(q.icp)}</span>
           <BarraIcp icp={q.icp} />
         </div>
       </div>

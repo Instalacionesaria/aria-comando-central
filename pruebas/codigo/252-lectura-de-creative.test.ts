@@ -10,7 +10,8 @@
 //   · la tira suma las piezas y pesa las tasas —mutación: promediar los promedios—;
 //   · cada tasa lleva el piso de 1000 impresiones, y una acción que nunca se reportó no es un cero —mutación: sacar
 //     el piso, o publicar cero—;
-//   · «Calificados» es el ICP alto, y sin el campo del ICP dice por qué —mutación: contar todos los contactos—;
+//   · «Calificados» son Prioriza, Valida o Financia, y sin el campo del cuadrante dice por qué —mutación: contar todos
+//     los contactos—;
 //   · la etapa de la pieza es la de sus anuncios, y la de sus contactos sólo de respaldo —mutación: al revés—;
 //   · «Funciona» es contra el promedio de SU etapa, pesado en las tasas —mutación: contra el promedio de todas—;
 //   · la única de su etapa va a «Funciona» y se marca —mutación: mandarla a «No funciona»—;
@@ -44,7 +45,7 @@ const BOFU = 'BOFU' as const;
 const P = 'P';
 
 const calidad = (f: Partial<FilaDeCreativo> & { creativo: string | null }): FilaDeCreativo => ({
-  cuentaId: P, etapa: null, contactos: 0, conPuntaje: 0, icpPromedio: null, calificados: 0, agendaron: 0, tasaDeAgenda: null, anunciosDeMeta: 0, ...f,
+  cuentaId: P, etapa: null, contactos: 0, clasificados: 0, descarta: 0, porcionDeDescarta: null, calificados: 0, agendaron: 0, tasaDeAgenda: null, anunciosDeMeta: 0, ...f,
 });
 
 const rend = (f: Partial<FilaDeRendimiento> & { creativo: string }): FilaDeRendimiento =>
@@ -73,11 +74,11 @@ const entrega = (f: Partial<EntregaDeLaPieza> & { pieza: string }): EntregaDeLaP
  * → 30 %. El promedio pesado de TOFU es 1000/6000 = 16,7 %: a funciona, b no. Con un solo promedio de todas
  * (4000/16000 = 25 %) a no llegaría.
  */
-function entrada(o: Partial<EntradaDeCreative> & { campoDeIcp?: string | null } = {}): EntradaDeCreative {
+function entrada(o: Partial<EntradaDeCreative> & { campoDelCuadrante?: string | null } = {}): EntradaDeCreative {
   return {
     calidad: {
       dias: 30, desde: null, hasta: null, congeladas: 0, puente: { con: 0, sobre: 0, sinNombre: 0 }, aviso: null,
-      campoDeIcp: o.campoDeIcp === undefined ? 'campo' : o.campoDeIcp, cuentasSinPuntaje: [],
+      campoDelCuadrante: o.campoDelCuadrante === undefined ? 'campo' : o.campoDelCuadrante, cuentasSinCuadrante: [],
       filas: [
         // «a» trajo más contactos de BOFU, pero sus anuncios son TOFU: la etapa es la de los anuncios.
         calidad({ creativo: 'a', etapa: TOFU, contactos: 5, calificados: 1, agendaron: 2 }),
@@ -152,14 +153,14 @@ test('cada tasa lleva el piso de 1000 impresiones, y una acción que nunca se re
   assert.deepEqual(pieza(q, 'a').ficha.clickToLanding, { valor: 0.75, motivo: null }, 'el módulo lo publica en porcentaje');
 });
 
-test('«Calificados» es el ICP alto, y sin el campo del ICP dice por qué', () => {
+test('«Calificados» son los de Prioriza, Valida o Financia, y sin el campo del cuadrante dice por qué', () => {
   const p = armarCreative(entrada());
   assert.deepEqual(pieza(p, 'a').cifras.calificados, { valor: 8, motivo: null }, 'suma las dos etapas de sus contactos');
   assert.deepEqual(pieza(p, 'c').cifras.agendas, { valor: 4, motivo: null });
-  const sin = armarCreative(entrada({ campoDeIcp: null }));
-  assert.deepEqual(sin.cifras.calificados, { valor: null, motivo: 'sin_puntaje' });
-  assert.deepEqual(pieza(sin, 'a').cifras.calificados, { valor: null, motivo: 'sin_puntaje' });
-  assert.deepEqual(pieza(sin, 'a').cifras.agendas, { valor: 11, motivo: null }, 'las agendas no dependen del puntaje');
+  const sin = armarCreative(entrada({ campoDelCuadrante: null }));
+  assert.deepEqual(sin.cifras.calificados, { valor: null, motivo: 'sin_clasificacion' });
+  assert.deepEqual(pieza(sin, 'a').cifras.calificados, { valor: null, motivo: 'sin_clasificacion' });
+  assert.deepEqual(pieza(sin, 'a').cifras.agendas, { valor: 11, motivo: null }, 'las agendas no dependen del cuadrante');
 });
 
 test('la etapa de la pieza es la de sus anuncios, y la de sus contactos sólo de respaldo', () => {

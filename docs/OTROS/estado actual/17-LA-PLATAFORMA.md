@@ -155,7 +155,7 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/ba
 | tarea | módulo | qué hace | llamadas en el último sello de `aria`, 2026-10-18 |
 |---|---|---|---|
 | `sonda` | `lib/deteccion/sonda.ts:103` | busca filas de una organización de control vistas desde la otra | 0 al proveedor; **no deja sello** |
-| `contactos` | `lib/negocio/sincronizar.ts:156` y `lib/negocio/miniaturaDelContacto.ts:159` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
+| `contactos` | `lib/negocio/sincronizar.ts:164` y `lib/negocio/miniaturaDelContacto.ts:159` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
 | `mensajes` | `lib/negocio/ingesta.ts:108` | camina las conversaciones por marca de agua | 1 |
 | `auditoria` | `lib/auditor/analisis.ts:332` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
 | `citas` | `lib/negocio/citas.ts:147` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:75`, `:81`) | 11 |
@@ -238,14 +238,14 @@ el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fal
 (`lib/negocio/frescura.ts:260-266`, `:282`, `:309`).
 
 **Quién la lee** (búsqueda de `frescuraDe(` en `lib/`, `app/` y `components/`, 2026-10-18): la Agenda del Closer
-(`lib/negocio/agenda.ts:364`), el chat de la ficha (`lib/negocio/ficha.ts:303`, `:303`), Leads Portal
+(`lib/negocio/agenda.ts:364`), el chat de la ficha (`lib/negocio/ficha.ts:304`, `:304`), Leads Portal
 (`app/api/leads-portal/route.ts:65-66`), Conversion (`app/api/conversion/route.ts:49`), y desde los agentes: el
 **comentario de la cabecera** de cada departamento (`lib/agentes/cabecera.ts:127`, `lib/agentes/cabecera.ts:175`,
 `lib/agentes/cabecera.ts:185`), los detectores, que no publican lo que no pueden medir
-(`lib/agentes/detectores/creative.ts:123`; Conversion y Conversation, por cliente activo desde C6 · D3,
+(`lib/agentes/detectores/creative.ts:125`; Conversion y Conversation, por cliente activo desde C6 · D3,
 `lib/agentes/detectores/clientes.ts:68`), y una herramienta del cerebro que lee la frescura de las tareas
 (`lib/agentes/executive/adaptadores/plataforma.ts:58`). **Lo que nadie lee es el motivo del sello**:
-`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:790`).
+`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:803`).
 
 **La frescura por tabla, medida el 2026-10-18 hacia las 15:42 UTC:**
 
@@ -285,7 +285,7 @@ de `public` a `respaldo_aria_brain`. Medido el 2026-10-18: en `public` hay **0**
 base**: la misma revisión del 2026-10-12 dejó permisos de producción por corregir, revisados ese día, con su plan fuera
 del repositorio a propósito.
 
-**Las `aria_cc_*`.** `lib/datos/esquema.ts:2383-2388` tipa seis; en producción hay seis, y no son las mismas:
+**Las `aria_cc_*`.** `lib/datos/esquema.ts:2396-2401` tipa seis; en producción hay seis, y no son las mismas:
 `aria_cc_scraper_mediciones` **sigue sin existir** (`to_regclass` nulo, 2026-10-18) aunque el código la escribe
 (`lib/tools/medicion.ts:65`, `:94`, dentro de un `catch`, `lib/tools/medicion.ts:71-76`), y `aria_cc_icp_oferta`
 existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`). El detalle es de
@@ -476,7 +476,7 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 - **Las tres zonas en la CI**, y el arreglo de las pruebas que dependen de la hora (§ 5.1).
 - **La espera externa corta para el camino del cron** (`lib/negocio/barrido.ts:419-422`).
 - **Los contactos congelados siguen afirmando una frescura que no tienen, y crecen.** `congelarLosQueYaNoEstan` pone
-  `territorio = null` sin tocar `sincronizado_el` (`lib/negocio/sincronizar.ts:307-315`): medido el 2026-10-18, **36 de
+  `territorio = null` sin tocar `sincronizado_el` (`lib/negocio/sincronizar.ts:320-328`): medido el 2026-10-18, **36 de
   624** sin territorio y sin releer, con sellos entre el 2026-08-24 y el 2026-10-09 (25 de 594 el 2026-09-28).
 - **Ocho tablas sin una fila**: las tres de siempre (`llamadas`, `prompts_del_agente`, `versiones_del_prompt`) y cinco
   nuevas que esperan su primer uso —`activos_de_anuncio` (Meta), `briefs_del_closer`, `enlaces_de_pieza`,

@@ -54,7 +54,7 @@
 ### CV8-12 · Lo que no existe
 
 - **Ninguna tabla de sesiones web, de eventos de página o de reproducción de video.** El registro
-  completo está en `lib/datos/esquema.ts:1523-1576`: 22 tablas de `negocio` y ninguna es de sesión.
+  completo está en `lib/datos/esquema.ts:1536-1589`: 22 tablas de `negocio` y ninguna es de sesión.
 - **`visitor_id` y `session_id`**: búsqueda literal sobre `db/migraciones`, `lib`, `app` y
   `components` — **cero coincidencias**.
 - **Las tres entidades del `§ 5.1:210-212`**: `Landing Session`, `VSL Session`, `Form Submission`.
@@ -71,7 +71,7 @@
 
 ### CV8-13 · `campoPorNombre()` es la única vía, y devuelve `null`
 
-**Rastro** · `lib/negocio/camposDelCrm.ts:318-335`.
+**Rastro** · `lib/negocio/camposDelCrm.ts:333-350`.
 **Estado** · Compara por **nombre exacto, no por `ilike`** (`:302-303`); desempata por `campo_id`
 para que el denominador no cambie entre corridas (`:325-329`); y **`null` es un retorno legítimo**:
 quien lo use *«tiene que poder decir "no sé" en vez de "cero"»* (`:298-300`).
@@ -80,7 +80,7 @@ Es la regla 9 del departamento (`03-CONVERSION.md:437-443@b3ca9ad`). Los tres ca
 así:
 
 ```
-lib/negocio/calidadDelCreativo.ts:65   CAMPO_DE_ICP          = 'Puntaje | ICP'
+lib/negocio/calidadDelCreativo.ts:65@bf2de85   CAMPO_DE_ICP          = 'Puntaje | ICP'
 lib/negocio/consumoDelPrecall.ts:64    CAMPO_DEL_PRECALL     = 'Video Pre-Call'
 lib/negocio/indicadoresDeCitas.ts:208  CAMPO_DE_CONFIRMACION = 'Confirmación Agendamiento'
 ```

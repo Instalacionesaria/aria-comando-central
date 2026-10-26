@@ -1648,6 +1648,8 @@ svg.graph { width: 100%; height: 100%; display: block; }
 .acq-icp i:last-child { border-radius: 0 2px 2px 0; }
 .acq-icp .a { background: rgb(var(--c-exec) / 0.75); }
 .acq-icp .m { background: rgb(var(--c-exec) / 0.42); }
+/* Financia, el segundo del nivel medio (la `105`): más tenue que Valida, para que se distingan en la barra. */
+.acq-icp .f { background: rgb(var(--c-exec) / 0.24); }
 .acq-icp .b { background: rgb(var(--c-nube) / 0.13); }
 
 .acq-sub { font-size: 10.5px; color: var(--txt-faint); margin-top: 3px; }
@@ -1984,6 +1986,13 @@ svg.graph { width: 100%; height: 100%; display: block; }
 
 .cv-panels{grid-template-columns:0.85fr 0.9fr 1.25fr;}
 .pn-b.q3{grid-template-columns:repeat(3,1fr);}
+/* El panel del ICP de Conversation: «Agendaron» y los cuatro cuadrantes del CRM (la `105`), como el de cuatro. */
+.pn-b.q5{grid-template-columns:repeat(5,1fr);}
+.pn-b.q5 .pn-c{padding:15px 14px;}
+.pn-b.q5 .pn-v{font-size:23px;}
+.pn-b.q5 .pn-rt{font-size:13px; color:var(--txt-faint);}
+.pn-b.q5 .pn-c:first-child{background:rgb(var(--c-nube) / .022);}
+.pn-b.q5 .pn-c:nth-child(n+2) .pn-v{color:var(--txt-dim);}
 .pn-b.q3 .pn-c{padding:15px 14px;}
 .pn-b.q3 .pn-v{font-size:23px;}
 .pn-b.q3 .pn-rt{font-size:13px; color:var(--txt-faint);}

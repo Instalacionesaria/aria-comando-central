@@ -28,7 +28,7 @@ cada persona se dicen **tres cosas y no dos**: sí, no, o no se sabe.
 **Qué pide** · La fila es una fila de `negocio.contactos`. No es la cita ni el resultado: tres citas
 son una persona que agendó, y dos ventas son una persona que compró (`LP02-06`). Por eso el
 predicado de «agendó» es un `exists` sobre el contacto y no un `join` con `count`, que haría pesar
-doble a quien tiene dos citas (`lib/negocio/citasAlcanzables.ts:122-124`). La diferencia no es
+doble a quien tiene dos citas (`lib/negocio/citasAlcanzables.ts:123-125`). La diferencia no es
 teórica: el 2026-09-20, 226 citas alcanzables eran 201 contactos
 (`lib/negocio/citasAlcanzables.ts:28-30`).
 
@@ -43,7 +43,7 @@ Las demás pantallas que publican cifras tienen otra unidad, o cuentan personas 
 | pantalla | qué es una fila | rastro |
 |---|---|---|
 | Acquisition | el anuncio: el costo por anuncio y el monitor de atribución | `docs/acquisition/07-LO-QUE-ENTREGA-A-OTROS.md:16-18` |
-| Creative | la pieza, por el nombre del creativo | `lib/negocio/calidadDelCreativo.ts:19-21` |
+| Creative | la pieza, por el nombre del creativo | `lib/negocio/calidadDelCreativo.ts:21-23` |
 | Conversion | la familia de recorrido | `lib/negocio/recorrido.ts:49-56` |
 | Conversation | la conversación: audita chats | `docs/sales/13-EL-CONTRASTE.md:49-50` |
 | Sales | el eslabón y el closer; su cadena cuenta contactos, pero publica cuántos, no cuáles | `docs/sales/00-MAPA.md:126-127` |
@@ -93,7 +93,7 @@ persona.
 | predicado | qué pregunta | definición | dónde vive | quién más la usa |
 |---|---|---|---|---|
 | **entró** | ¿su alta cae en la ventana? | `alta_en_el_crm >= now() - make_interval(days => N)` | la ventana de `lib/negocio/cadenaDeCierre.ts:169` | Sales |
-| **agendó** | ¿llegó a tener una cita que el CRM todavía devuelve? | `tieneCitaAlcanzable` | `lib/negocio/citasAlcanzables.ts:135-145` | Sales (`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:255`), Acquisition y Conversion |
+| **agendó** | ¿llegó a tener una cita que el CRM todavía devuelve? | `tieneCitaAlcanzable` | `lib/negocio/citasAlcanzables.ts:136-146` | Sales (`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:242`), Acquisition y Conversion |
 | **asistió** | ¿alguien registró que se presentó? | `citas.asistio`, que carga una persona en Avanzar | `db/migraciones/049_si_se_presento_a_la_cita.sql:43-47` | Sales, que la declara nula con su motivo (`docs/sales/02-METRICAS.md:196-204`) |
 | **vendió** | ¿tiene un resultado con salida `venta`? | `salida = 'venta'`; nunca `acuerdo_sin_pago` | `lib/negocio/ventasDelContacto.ts:44-46`; la salida, en `lib/negocio/salidas.ts:84` | Sales |
 | **descartado** | ¿la casa lo rechazó en el CRM? | alguna etiqueta de `ETIQUETAS_DE_DESCARTE`, comparada en minúscula | `lib/ghl/contrato.ts:228-238` | Sales, por cita (`lib/negocio/cadenaDeCierre.ts:232`) |
@@ -104,7 +104,7 @@ persona.
   necesita se agregan en su propio archivo y no en la consulta: `tieneVenta` sale de
   `cadenaDeCierre.ts` a `ventasDelContacto.ts` (`LP02-06`), y el descarte por contacto nace como
   hermano de `descartado`, que pregunta por el contacto **de una cita**
-  (`lib/negocio/citasAlcanzables.ts:79-85`, `LP08-04`).
+  (`lib/negocio/citasAlcanzables.ts:80-86`, `LP08-04`).
 - **El total y los agendados coinciden con la cadena de Sales en la misma ventana**, y la prueba de
   la ruta lo vigila (`LP06-13`, `LP08-03`). Los vendidos no tienen por qué: esta pestaña cuenta a
   cualquier persona con una venta, y la cadena sólo cuenta a quien, además de una venta, tiene una
@@ -156,7 +156,7 @@ cargó.
 escrita: nulo es *«nadie lo dijo todavía»*, `false` es «no se presentó», *«y son distintos»*
 (`db/migraciones/049_si_se_presento_a_la_cita.sql:43-45`). Y la sincronización guarda el puntaje 0
 como 0 y no como nulo porque **no se sabe** si el CRM calculó cero o si su proceso no corrió
-(`lib/negocio/sincronizar.ts:434-440`). Esta pestaña lleva esa misma distinción a cada predicado.
+(`lib/negocio/sincronizar.ts:449-455`). Esta pestaña lleva esa misma distinción a cada predicado.
 
 ### LP01-07 · La tabla de los tres valores
 
@@ -178,7 +178,7 @@ Tres reglas que salen de la tabla:
    sobre todas sus citas y con una sola grafía de cancelada). Si se marcan aparte es `LP02-P03`.
 3. **Dos fuentes de la misma respuesta no se suman.** El calendario marcó **15** plantones: son un
    «no» del proveedor, no nuestro, y viajan aparte sin convertir un «no se sabe» en «no» (`LP02-05`,
-   `lib/negocio/citasAlcanzables.ts:105-109`). Si el barrido debería escribirlos como
+   `lib/negocio/citasAlcanzables.ts:106-110`). Si el barrido debería escribirlos como
    `asistio = false` es una pregunta que Sales dejó abierta
    (`docs/sales/01-LA-VENTA-NO-EXISTE.md:181-183`).
 
@@ -193,7 +193,7 @@ con las que Avanzar decide qué cita ofrece cerrar (`docs/sales/01-LA-VENTA-NO-E
 **Qué pide** · «No aplica» se dibuja **vacío**: ni «sin registrar» ni «no» (`LP05-07`, paso 4).
 Confundirlo con «no se sabe» acusaría de no registrar a quien nunca tuvo nada que registrar, y por
 eso `sin_registrar` exige las mismas tres condiciones que la cita cerrable de la cadena de Sales
-(`lib/negocio/citasAlcanzables.ts:218-220`).
+(`lib/negocio/citasAlcanzables.ts:243-245`).
 
 ### LP01-09 · Vendió tiene «sí» y «no se sabe»; su «no» está vacío a propósito
 
@@ -220,7 +220,7 @@ El puntaje no es sí o no: es un número. Su «no se sabe» son dos cosas distin
 
 - **el nulo**: el CRM no mandó el campo. Medido el 2026-09-27: **122**;
 - **el 0**: el CRM no dice si calculó cero o si su proceso no corrió
-  (`lib/negocio/sincronizar.ts:434-437`). Medido: **47**, todos de tres semanas de alta —3 en la del
+  (`lib/negocio/sincronizar.ts:449-452`). Medido: **47**, todos de tres semanas de alta —3 en la del
   17 de agosto, 23 en la del 24, 21 en la del 31— y **ninguno en los últimos 14 días**.
 
 Leer ese 0 como un puntaje bajo es colapsar el tercer valor en el segundo, y es lo que hacía el

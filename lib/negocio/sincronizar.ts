@@ -571,8 +571,7 @@ function puntajeDelCrm(c: ContactoDeGhl, puntaje: readonly string[]): number | n
   const id = puntaje.find((p) => campos[p] !== undefined);
   const crudo = id === undefined ? undefined : campos[id];
   if (crudo === undefined) return null;
-  // Un entero de 0 a 100 escrito con dígitos: LA validación (C6 · D4). Creative, la pantalla del puntaje y el recálculo
-  // dicen lo mismo en SQL (`puntajeUsable`), y con dos reglas distintas una pantalla calificaba lo que otra no.
+  // Un entero de 0 a 100 escrito con dígitos: LA validación del puntaje (C6 · D4). Desde la `105` nadie lo lee.
   return puntajeDeUnValor(crudo);
 }
 

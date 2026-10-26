@@ -74,21 +74,21 @@ test('el gasto de una campaña SIN contactos atribuidos no enciende «gasto sin 
   assert.ok(de(conLeads, ACQ.gastoSinCrecimiento).length > 0, 'el armado no enciende la regla con la campaña de leads');
 });
 
-test('la entidad es un identificador, nunca un nombre; la campaña sin funnel no compite por el ICP', () => {
+test('la entidad es un identificador, nunca un nombre; la campaña sin funnel no compite por el Descarta', () => {
   const r = detectar(
     medida({
       campanas: [campana('10', 'booking'), campana('11', 'booking'), campana('12', null)],
       actual: [
-        // 10: ICP 40 sobre 10 puntajes; 11: ICP 80; el funnel queda en 60, y 10 está 20 puntos abajo.
-        ['10', { inversion: 100, contactos: 20, agendados: 12, calificados: 10, conPuntaje: 10, sumaDePuntajes: 400 }],
-        ['11', { inversion: 100, contactos: 20, agendados: 12, calificados: 10, conPuntaje: 10, sumaDePuntajes: 800 }],
-        // 12, sin funnel y con el peor ICP: no se compara con nadie.
-        ['12', { inversion: 100, contactos: 20, agendados: 12, calificados: 10, conPuntaje: 10, sumaDePuntajes: 100 }],
+        // 10: 6 de 10 clasificados en Descarta; 11: 2 de 10; el funnel queda en 0,4, y 10 está 20 puntos arriba.
+        ['10', { inversion: 100, contactos: 20, agendados: 12, calificados: 10, clasificados: 10, descarta: 6 }],
+        ['11', { inversion: 100, contactos: 20, agendados: 12, calificados: 10, clasificados: 10, descarta: 2 }],
+        // 12, sin funnel y con el peor Descarta: no se compara con nadie.
+        ['12', { inversion: 100, contactos: 20, agendados: 12, calificados: 10, clasificados: 10, descarta: 9 }],
       ],
       previa: [],
     }),
   );
-  assert.deepEqual(de(r, ACQ.icpEntreCampanas).map((d) => [d.entidad, d.lineaBase, d.valorActual]), [[{ tipo: 'campana', id: '10' }, 60, 40]]);
+  assert.deepEqual(de(r, ACQ.descartaEntreCampanas).map((d) => [d.entidad, d.lineaBase, d.valorActual]), [[{ tipo: 'campana', id: '10' }, 0.4, 0.6]]);
   assert.doesNotMatch(JSON.stringify(r), /Nombre visible/, 'un nombre de campaña viajó en una detección');
 });
 

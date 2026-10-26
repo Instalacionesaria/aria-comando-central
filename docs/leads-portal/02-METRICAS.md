@@ -37,7 +37,7 @@
 
 1. **La unidad es la persona, nunca la cita.** Tres citas son una persona que agendó. El predicado
    de «agendó» es un `exists` sobre el contacto justamente por eso
-   (`lib/negocio/citasAlcanzables.ts:115-134`), y la diferencia no es teórica: 226 citas alcanzables
+   (`lib/negocio/citasAlcanzables.ts:116-135`), y la diferencia no es teórica: 226 citas alcanzables
    eran 201 contactos el 2026-09-20 (`lib/negocio/citasAlcanzables.ts:28-30`).
 2. **Una sola cohorte para las cinco tarjetas y para la rejilla**: los contactos con
    `alta_en_el_crm` dentro de la ventana. Cada cifra por tramo es un subconjunto de esa cohorte y de
@@ -59,7 +59,7 @@
    (`lib/negocio/cadenaDeCierre.ts:353-358`).
 8. **La asistencia no se deduce ni se mezcla.** La que registra Avanzar (`citas.asistio`) y el
    plantón que marca el calendario viajan cada una con su nombre y nunca en el mismo denominador
-   (`lib/negocio/citasAlcanzables.ts:105-109`).
+   (`lib/negocio/citasAlcanzables.ts:106-110`).
 9. **Un contacto descartado no sale de la cohorte: se marca.** La cadena de Sales cuenta a todos en
    su cohorte y en «llegaron a agendar» (`lib/negocio/cadenaDeCierre.ts:200-204`), y la ruta de esta
    pestaña tiene que coincidir con ella (regla 10). Descartar es un atributo de la fila, no un filtro
@@ -129,14 +129,14 @@ devuelve.
 **Unidad** · Conteo de personas.
 **Población** · Los contactos del tramo en la cohorte.
 **Rastro** · `aios-command-center_1.html:4710` y `:4715` («N agendados»); el filtro «Agendados» de
-`aios-command-center_1.html:3061`; el predicado en `lib/negocio/citasAlcanzables.ts:135-145`.
+`aios-command-center_1.html:3061`; el predicado en `lib/negocio/citasAlcanzables.ts:136-146`.
 **Estado** · **Construible hoy**, y es el mismo predicado que usan Sales
-(`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:255`) y
+(`lib/negocio/cadenaDeCierre.ts:204`), Creative (`lib/negocio/calidadDelCreativo.ts:242`) y
 Conversion. Tres consecuencias de la definición, las tres a propósito:
 
 - **Una cita cancelada cuenta.** El predicado pregunta por la existencia de una cita alcanzable, no
   por su estado.
-- **Una cita congelada no cuenta.** Su estado dejó de refrescarse (`lib/negocio/citasAlcanzables.ts:45-56`).
+- **Una cita congelada no cuenta.** Su estado dejó de refrescarse (`lib/negocio/citasAlcanzables.ts:46-57`).
   La persona cuya única cita está congelada viaja marcada aparte, con `cita: 'solo_congeladas'`, y el
   resumen publica cuántas son (ver abajo).
 - **La tarjeta «Sin calificar» cuenta sus agendados como las demás.** La maqueta escribe «sin
@@ -199,11 +199,11 @@ citas que ocurrieron sin que nadie registrara qué pasó (`lib/negocio/cadenaDeC
 
 Dos decisiones de la tabla, con su motivo:
 
-- **`sin_registrar` usa las tres condiciones de «cerrable»** de `lib/negocio/citasAlcanzables.ts:218-220`,
+- **`sin_registrar` usa las tres condiciones de «cerrable»** de `lib/negocio/citasAlcanzables.ts:243-245`,
   que son las de la cita que Avanzar ofrece cerrar (`lib/negocio/cadenaDeCierre.ts:41-44`). Si esta pestaña acusara de no
   registrar sobre otra población, estaría acusando a gente a la que nunca se le pidió.
 - **`asistio` y `no_asistio` leen cualquier cita de la persona**, congelada o no. La columna es
-  nuestra —la escribe Avanzar (`lib/negocio/citasAlcanzables.ts:92`)—, no del CRM, así que congelarse
+  nuestra —la escribe Avanzar (`lib/negocio/citasAlcanzables.ts:93`)—, no del CRM, así que congelarse
   no la vuelve vieja.
 
 **No se publica una tasa de asistencia**, y el conteo viaja por tramo pero no se dibuja en las
@@ -217,10 +217,10 @@ asistencia respondida, y hoy son cero.
 **Fórmula** · `exists` de una cita de la persona con `marcadaComoPlanton` (`estado_ghl = 'noshow'`).
 **Unidad** · Sí o no por persona.
 **Población** · La persona, en su fila y en su ficha.
-**Rastro** · `lib/negocio/citasAlcanzables.ts:87-113`; `lib/negocio/huecosDeSales.ts:35-37`.
+**Rastro** · `lib/negocio/citasAlcanzables.ts:88-114`; `lib/negocio/huecosDeSales.ts:35-37`.
 **Estado** · **Construible hoy.** Medido el 2026-09-27: **15 personas** en toda la base. Es la única señal de
 asistencia que existe, y es asimétrica: el lado negativo se observa y el positivo no
-(`lib/negocio/citasAlcanzables.ts:96-100`). Eso era al 2026-09-27: desde octubre el calendario sí marca `showed` (3 el 2026-10-18) y nada lo lee; el comentario lo dice así desde `65669f4`.
+(`lib/negocio/citasAlcanzables.ts:97-101`). Eso era al 2026-09-27: desde octubre el calendario sí marca `showed` (3 el 2026-10-18) y nada lo lee; el comentario lo dice así desde `65669f4`.
 
 **Nunca se suma con `asistencia`**: no convierte un `sin_registrar` en `no_asistio`, ni entra en el
 conteo de LP02-04. Viaja por persona (`plantón`, en la fila), no como una tarjeta.
@@ -333,7 +333,7 @@ en 0; y si apareció un 0 reciente que obligue a revisar la regla.
 **Unidad** · Conteos.
 **Población** · Las dos primeras, la cohorte; la tercera, la empresa entera.
 **Rastro** · `aios-command-center_1.html:4648-4659` (los «nc» de la maqueta son los de `icp:null`) y
-`:4717-4718` («Aún sin formulario · califican al agendar»); `lib/negocio/sincronizar.ts:432-440` (el
+`:4717-4718` («Aún sin formulario · califican al agendar»); `lib/negocio/sincronizar.ts:447-455` (el
 cero no se colapsa a nulo); `docs/acquisition/04-CALIDAD-DEL-LEAD.md:594-597` (la pregunta P-6,
 que esta pestaña contesta).
 **Estado** · **Construible hoy.** Medido el 2026-09-27 sobre los 593: **169 sin calificar = 122

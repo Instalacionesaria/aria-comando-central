@@ -15,11 +15,11 @@ Para una empresa en America/Lima (UTC−5), de 19:00 a 24:00 locales `current_da
 Dónde, en `current_date`:
 
 - La cohorte por días de calendario hasta hoy, `ventanaDeLaCohorte` (`lib/negocio/recorrido.ts:202`), y sus copias a
-  mano en Creative (`lib/negocio/calidadDelCreativo.ts:258`) y en el costo por anuncio
+  mano en Creative (`lib/negocio/calidadDelCreativo.ts:245`) y en el costo por anuncio
   (`lib/negocio/costoDelAnuncio.ts:367`). Desde el 2026-10-08 Conversion corta con `cohorteEntre`
   (`lib/negocio/recorrido.ts:214-217`), la de Acquisition: días cerrados, pero el borde de cada día sigue en UTC.
 - La ventana del gasto (`lib/negocio/costoDelAnuncio.ts:84`), sin tope arriba.
-- El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:118`,
+- El período que publican los detectores de Creative y Conversion (`lib/agentes/detectores/creative.ts:120`,
   `lib/agentes/detectores/conversion.ts:122@02d9207`; desde el 2026-10-08 el de Conversion son los días cerrados de
   `bordesDelPeriodo`), y el de Conversation en días UTC de JavaScript
   (`lib/agentes/detectores/conversation.ts:101`).
@@ -66,7 +66,7 @@ cualquier hora, y una de código que prohíba `current_date` y los `::date` sin 
   (`3bd2d58:lib/negocio/gastoDeLaCuenta.ts:54`: la API no expone esa zona). Medido el 2026-10-07: las sumas por día
   de la serie coinciden al centavo con el Administrador de anuncios en 7 y 30 días, así que el día del
   proveedor es el de la cuenta; su zona sigue sin saberse.
-- Los escenarios de Lima y Los Ángeles de la 181 (`pruebas/base/181-embudos-de-acquisition.test.ts:740-741` y
+- Los escenarios de Lima y Los Ángeles de la 181 (`pruebas/base/181-embudos-de-acquisition.test.ts:737-738` y
   `:731`) siembran anclados al día UTC y habría que rehacerlos y correrlos de noche: un escéptico mostró que
   con el cambio mecánico se ponen rojos, o quedan verdes sin probar nada, entre las 19:00 y las 24:00 de Lima.
 - El «− 3» de la cota de atraso está justificado en días UTC; en días locales el desfase normal es 2.

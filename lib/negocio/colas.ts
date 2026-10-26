@@ -148,7 +148,7 @@ export function filaHuerfana(id: string): Fila {
     nombre: 'Contacto que ya no está en el pipeline',
     telefono: null,
     email: null,
-    score: null,
+    cuadrante: null,
     fuente: '—',
     etapa: null,
     ultimoEntranteEl: null,

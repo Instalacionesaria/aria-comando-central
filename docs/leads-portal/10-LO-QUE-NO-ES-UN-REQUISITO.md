@@ -272,7 +272,7 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
 |---|---|---|
 | el cajón «Grupo de contactos» y su módulo | `components/Overlays.jsx:5-26@c4cf2a8`, `lib/aios/leads-group.js` | lo abre el embudo de Executive (`lib/aios/executive.js:49@c4cf2a8`) |
 | el cajón `#drawer` | `components/Overlays.jsx:120-136@c4cf2a8` | lo abre Executive (`lib/aios/executive-panel.js:80-81@c4cf2a8`, `:101-102@c4cf2a8`) |
-| las reglas `[data-leads]` | `app/aios.css:2366-2370` | Executive sigue emitiendo el atributo |
+| las reglas `[data-leads]` | `app/aios.css:2375-2379` | Executive sigue emitiendo el atributo |
 | las reglas de la sección «LEADS PORTAL» | `app/aios.css:1205-1315` | `app/aios.css` es el port literal y no se toca (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:162-165`); ver `LP10-12` |
 | el modal `#recoModal` | `components/Overlays.jsx:98-119@c4cf2a8` | queda inerte; ver `LP07-08` y `LP07-P01` |
 
@@ -291,7 +291,7 @@ direcciones, como pasó en Sales (`docs/sales/10-LO-QUE-NO-ES-UN-REQUISITO.md:92
     `.ld-btn` (`:4789`, `:4806-4809`); y el registro del video, `.vlog`, `.vl` y `.vl-*` (`:4833-4836`).
   
   Sus reglas viven casi todas en `app/aios.css:1205-1315`. Fuera de ese bloque: `.lc`, `.lc-score`,
-  `.sc-v` y `.sc-l` también en `app/aios.css:2373-2377` («leads sin calificar»); `.tb-lab` y
+  `.sc-v` y `.sc-l` también en `app/aios.css:2382-2386` («leads sin calificar»); `.tb-lab` y
   `.fb-div` en `app/aios.css:648`, `:669-670` y `:729`; las cuatro del encabezado en
   `app/aios.css:721`, `:856-864` y `:1698-1709`, y además en `app/inteligencia-estetica.css:97-118@a39a732`,
   acotadas a las pantallas de Inteligencia, que ya no las emiten;
@@ -322,7 +322,7 @@ nadie lea el commit como si lo hiciera:
 2. **`#recoModal` queda inerte** (`LP07-08`).
 3. **El calendario se queda sin quién lo abra**: la única píldora visible era la de esta pestaña; la
    de Executive está `hidden` (`components/views/ExecutiveView.jsx:62@c4cf2a8`).
-4. **La fila del cajón queda con cursor de mano y sin clic** (`app/aios.css:2345-2346`), hasta que
+4. **La fila del cajón queda con cursor de mano y sin clic** (`app/aios.css:2354-2355`), hasta que
    se anule fuera de `app/aios.css` (`LP08-12`, punto 2).
 5. **El corte 75/50 existe dos veces** (`LP08-14`).
 6. **`window.AIOSLeads` no tiene ningún consumidor**: se publica con `open` y `close`

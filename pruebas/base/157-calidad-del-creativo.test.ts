@@ -17,9 +17,10 @@
 //       `docs/OTROS/estado actual/02-CREATIVE.md:445-448@63b8cd1`: un `count(*)` sobre el `left join` inflaba
 //       «agendamiento - yaping» de 109 a 112. No lanza: devuelve un número más grande.
 //
-// Y el cuarto, que es de otra clase: **un puntaje de ICP que no es un número** hace que el
-// `::numeric` lance `22P02` y se lleve puesta la consulta ENTERA, no una fila. La pantalla de una
-// empresa en blanco por un dato raro de un contacto.
+// Y el cuarto, que es de otra clase: **contar el ICP con otra regla que la de las demás pantallas**. Desde la `105`
+// el ICP es el cuadrante que manda el CRM, ya normalizado en `contactos.cuadrante`: los calificados son Prioriza,
+// Valida o Financia, y la porción de Descarta es sobre los clasificados. Leer el campo crudo acá haría que la misma
+// pieza calificara distinto en Creative que en Acquisition.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -29,15 +30,16 @@ import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { montar, type Escenario } from '../apoyo/closer.ts';
 import { conOrganizacion } from '../../lib/datos/contexto.ts';
-import { CAMPO_DE_ICP, calidadDelCreativo } from '../../lib/negocio/calidadDelCreativo.ts';
+import { calidadDelCreativo } from '../../lib/negocio/calidadDelCreativo.ts';
+import { CLAVE_DEL_CUADRANTE } from '../../lib/ghl/contrato.ts';
 import { PISO_DE_UNA_TASA } from '../../lib/negocio/indicadoresDeCitas.ts';
 
 let esc: Escenario;
 
 const MARCA = '77777700';
 const CONTACTO = 'calcrea-';
-const CAMPO = 'campo-icp-prueba';
-const CARPETA = 'carpeta-icp-prueba';
+const CAMPO = 'campo-cuadrante-prueba';
+const CARPETA = 'carpeta-cuadrante-prueba';
 
 async function limpiar(): Promise<void> {
   await esc.admin.query(
@@ -50,17 +52,17 @@ async function limpiar(): Promise<void> {
   await esc.admin.query('delete from negocio.carpetas_del_crm where carpeta_id = $1', [CARPETA]);
 }
 
-/** El campo de ICP en el catálogo. Sin él, `campoPorNombre` devuelve nulo y la columna se apaga. */
-async function sembrarElCampoDeIcp(): Promise<void> {
+/** El campo del cuadrante en el catálogo, con su clave. Sin él, `camposDelCuadrante` sale vacío y la columna se apaga. */
+async function sembrarElCampoDelCuadrante(): Promise<void> {
   await esc.admin.query(
     `insert into negocio.carpetas_del_crm (org_id, carpeta_id, nombre, visto_el)
        values ($1, $2, 'Prueba', now()) on conflict do nothing`,
     [esc.org, CARPETA],
   );
   await esc.admin.query(
-    `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion, visto_el)
-       values ($1, $2, $3, $4, 'TEXT', '1', now()) on conflict do nothing`,
-    [esc.org, CAMPO, CAMPO_DE_ICP, CARPETA],
+    `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion, clave, visto_el)
+       values ($1, $2, 'Cuadrante de Clasificacion', $3, 'RADIO', '1', $4, now()) on conflict do nothing`,
+    [esc.org, CAMPO, CARPETA, CLAVE_DEL_CUADRANTE],
   );
 }
 
@@ -93,7 +95,8 @@ async function unAnuncio(id: string, nombre: string): Promise<void> {
 async function unLead(o: {
   creativo: string | null;
   campana?: string | null;
-  icp?: string | null;
+  /** El cuadrante ya guardado, como lo deja la sincronización. */
+  cuadrante?: string | null;
   citas?: number;
   congeladas?: number;
 }): Promise<void> {
@@ -104,15 +107,10 @@ async function unLead(o: {
 
   const r = await esc.admin.query<{ id: string }>(
     `insert into negocio.contactos
-       (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, campos_del_crm)
-     values ($1, $2, 'Lead de prueba', 'setter', now() - interval '1 day', $3::jsonb, $4::jsonb)
+       (org_id, ghl_contact_id, nombre, territorio, alta_en_el_crm, atribucion_primera, cuadrante)
+     values ($1, $2, 'Lead de prueba', 'setter', now() - interval '1 day', $3::jsonb, $4)
      returning id`,
-    [
-      esc.org,
-      ghl,
-      JSON.stringify(atribucion),
-      JSON.stringify(o.icp == null ? {} : { [CAMPO]: o.icp }),
-    ],
+    [esc.org, ghl, JSON.stringify(atribucion), o.cuadrante ?? null],
   );
   const id = r.rows[0]?.id;
 
@@ -242,21 +240,22 @@ test('«sin creativo» es una fila, y la suma da la cohorte entera', async () =>
 // ─── EL PISO, Y LOS DOS DENOMINADORES ───────────────────────────────────────
 
 test('el piso es del DENOMINADOR de cada cifra, y son dos distintos', async () => {
-  /* La tasa de agenda se calcula sobre TODOS los contactos de la pieza; el ICP, sólo sobre los que
-     traen el campo. Son dos denominadores y cada uno responde por el suyo: con doce contactos de los
-     cuales cuatro traen puntaje, la tasa se publica y el ICP no. Usar el mismo denominador para los
-     dos publica un promedio de cuatro respuestas como si fuera de doce. */
+  /* La tasa de agenda se calcula sobre TODOS los contactos de la pieza; la porción de Descarta, sólo sobre los
+     clasificados. Son dos denominadores y cada uno responde por el suyo: con doce contactos de los cuales cuatro están
+     clasificados, la tasa se publica y la porción no. Usar el mismo denominador para las dos publica una porción de
+     cuatro como si fuera de doce. */
   await limpiar();
-  await sembrarElCampoDeIcp();
-  for (let i = 0; i < 4; i += 1) await unLead({ creativo: 'r', campana: TOFU, icp: '80', citas: 1 });
+  await sembrarElCampoDelCuadrante();
+  for (let i = 0; i < 4; i += 1) await unLead({ creativo: 'r', campana: TOFU, cuadrante: 'descarta', citas: 1 });
   for (let i = 0; i < 8; i += 1) await unLead({ creativo: 'r', campana: TOFU, citas: 1 });
 
   const f = (await leer()).filas.find((x) => x.creativo === 'r');
 
   assert.equal(f?.contactos, 12);
-  assert.equal(f?.conPuntaje, 4, 'el conteo de los que traen puntaje no viaja');
+  assert.equal(f?.clasificados, 4, 'el conteo de los clasificados no viaja');
+  assert.equal(f?.descarta, 4);
   assert.equal(f?.tasaDeAgenda, 1, 'la tasa tenía denominador suficiente y salió nula');
-  assert.equal(f?.icpPromedio, null, `el ICP se publicó con ${4} respuestas, bajo el piso de ${PISO_DE_UNA_TASA}`);
+  assert.equal(f?.porcionDeDescarta, null, `la porción se publicó con ${4} clasificados, bajo el piso de ${PISO_DE_UNA_TASA}`);
 });
 
 test('bajo el piso se conserva el CONTEO y se pierde la TASA', async () => {
@@ -311,41 +310,40 @@ test('sin congeladas, el aviso NO las menciona', async () => {
   assert.doesNotMatch(String(r.aviso ?? ''), /congelad/, 'el aviso habla de congeladas cuando no hay');
 });
 
-// ─── EL CAMPO DE ICP ────────────────────────────────────────────────────────
+// ─── EL CUADRANTE ───────────────────────────────────────────────────────────
 
-test('un puntaje que no es número NO aborta la consulta, y no entra en el promedio', async () => {
-  /* El cuarto defecto, y es el único que se lleva puesta la pantalla entera: `::numeric` sobre
-     texto lanza `22P02`, que no es un error de una fila — es un error de la consulta. */
+test('los calificados son Prioriza, Valida y Financia, hayan agendado o no; Descarta y sin clasificar no', async () => {
   await limpiar();
-  await sembrarElCampoDeIcp();
-  for (let i = 0; i < 10; i += 1) await unLead({ creativo: 'w', campana: TOFU, icp: '50' });
-  await unLead({ creativo: 'w', campana: TOFU, icp: 'sin dato' });
-  await unLead({ creativo: 'w', campana: TOFU, icp: '' });
+  await sembrarElCampoDelCuadrante();
+  for (const cuadrante of ['prioriza', 'valida', 'financia', 'descarta', null]) {
+    await unLead({ creativo: 'w', campana: TOFU, cuadrante });
+    await unLead({ creativo: 'w', campana: TOFU, cuadrante, citas: 1 });
+  }
 
-  const r = await leer();
-  const f = r.filas.find((x) => x.creativo === 'w');
+  const f = (await leer()).filas.find((x) => x.creativo === 'w');
 
-  assert.equal(f?.contactos, 12, 'la consulta perdió filas');
-  assert.equal(f?.conPuntaje, 10, 'el texto entró en el conteo de respuestas');
-  assert.equal(f?.icpPromedio, 50, 'el texto ensució el promedio');
+  assert.equal(f?.contactos, 10, 'la consulta perdió filas');
+  assert.equal(f?.calificados, 6, 'los calificados no son los tres cuadrantes, con y sin cita');
+  assert.equal(f?.clasificados, 8, 'el sin clasificar entró entre los clasificados');
+  assert.equal(f?.descarta, 2);
 });
 
-test('si el campo de ICP no está en el catálogo, la columna se APAGA y lo dice', async () => {
-  /* Hay diez campos con nombre parecido en el catálogo real. Si alguien renombra éste, lo honesto
-     es apagar la columna: publicar ceros afirmaría que todos los leads tienen encaje cero. */
+test('si el campo del cuadrante no está en el catálogo, la columna se APAGA y lo dice', async () => {
+  /* El campo se reconoce por su clave: si el CRM de la empresa no lo tiene, lo honesto es apagar la columna —publicar
+     ceros afirmaría que nadie califica—. */
   await limpiar(); // se lleva el campo sembrado
-  for (let i = 0; i < 12; i += 1) await unLead({ creativo: 'x', campana: TOFU, icp: '80' });
+  for (let i = 0; i < 12; i += 1) await unLead({ creativo: 'x', campana: TOFU });
 
   const r = await leer();
   const f = r.filas.find((x) => x.creativo === 'x');
 
-  assert.equal(r.campoDeIcp, null);
-  assert.equal(f?.icpPromedio, null, 'se publicó un promedio con un campo que no existe');
-  assert.equal(f?.conPuntaje, 0);
-  assert.match(String(r.aviso), new RegExp(CAMPO_DE_ICP.replace('|', '\\|')), 'el aviso no nombra el campo');
-  // Con un solo cliente, el aviso de siempre (C6 · D4): ni su nombre, ni «no se leyó su catálogo» (aquí no se leyó).
-  assert.ok(String(r.aviso).startsWith('El CRM de esta empresa no tiene un campo «'), String(r.aviso));
-  assert.doesNotMatch(String(r.aviso), /Ajustes › Clientes|Todavía no se leyó|» no tiene campo del puntaje/, 'con un solo cliente el aviso habló de clientes');
+  assert.equal(r.campoDelCuadrante, null);
+  assert.equal(f?.porcionDeDescarta, null, 'se publicó una porción con un campo que no existe');
+  assert.equal(f?.clasificados, 0);
+  assert.match(String(r.aviso), /contact\.cuadrante_de_clasificacion/, 'el aviso no nombra el campo');
+  // Con un solo cliente, el aviso de siempre: ni su nombre, ni «no se leyó su catálogo» (aquí no se leyó).
+  assert.ok(String(r.aviso).startsWith('El CRM de esta empresa no tiene el campo del cuadrante'), String(r.aviso));
+  assert.doesNotMatch(String(r.aviso), /Todavía no se leyó|El CRM de «/, 'con un solo cliente el aviso habló de clientes');
 });
 
 // ─── EL PUENTE ──────────────────────────────────────────────────────────────
@@ -381,31 +379,18 @@ test('el puente separa las TRES poblaciones, y el denominador son todos los cont
   assert.equal(r.puente.sobre - r.puente.con - r.puente.sinNombre, 2);
 });
 
-test('el ICP es el PROMEDIO, y se comprueba con valores distintos entre sí', async () => {
-  /* ── UNA PRUEBA CON DIEZ VALORES IGUALES NO PRUEBA QUE SEA UN PROMEDIO ─────
-   *
-   * La que había sembraba diez leads con `icp: '50'` — y con diez cincuentas el promedio, el
-   * máximo, el mínimo, el primero y el último valen todos 50. Verificado el 2026-09-20: cambiar
-   * `avg(...)` por `max(...)` en la consulta dejaba la suite entera en verde.
-   *
-   * Acá los nueve dieces y el cien hacen que las cinco respuestas sean números distintos:
-   *
-   *     avg = 19 · max = 100 · min = 10 · sum = 190 · count = 10
-   *
-   * Y 19 no es ninguno de los valores sembrados, así que tampoco lo produce un `first` ni un
-   * `last` ni la mediana. El daño de equivocarse es directo: el ICP por pieza es la cifra que esta
-   * pantalla existe para publicar, y con `max` una pieza con un solo lead excelente se dibujaría
-   * arriba de una que trae gente buena de forma consistente. */
+test('la porción de Descarta es sobre los clasificados, no sobre todos los contactos', async () => {
+  /* Diez clasificados —tres en Descarta— y cinco sin clasificar: la porción es 3 de 10, no 3 de 15. Dividir por los
+     contactos la achicaría justo en las piezas donde el CRM clasificó menos. */
   await limpiar();
-  await sembrarElCampoDeIcp();
-  await unAnuncio(`${MARCA}40`, 'pieza de icp disparejo');
-  for (let i = 0; i < 9; i += 1) {
-    await unLead({ creativo: 'pieza de icp disparejo', campana: TOFU, icp: '10' });
-  }
-  await unLead({ creativo: 'pieza de icp disparejo', campana: TOFU, icp: '100' });
+  await sembrarElCampoDelCuadrante();
+  await unAnuncio(`${MARCA}40`, 'pieza de descarta');
+  for (let i = 0; i < 3; i += 1) await unLead({ creativo: 'pieza de descarta', campana: TOFU, cuadrante: 'descarta' });
+  for (let i = 0; i < 7; i += 1) await unLead({ creativo: 'pieza de descarta', campana: TOFU, cuadrante: 'valida' });
+  for (let i = 0; i < 5; i += 1) await unLead({ creativo: 'pieza de descarta', campana: TOFU });
 
-  const f = (await leer()).filas.find((x) => x.creativo === 'pieza de icp disparejo');
+  const f = (await leer()).filas.find((x) => x.creativo === 'pieza de descarta');
 
-  assert.equal(f?.conPuntaje, 10, 'el piso necesita diez respuestas: sin eso el ICP sale nulo');
-  assert.equal(f?.icpPromedio, 19, `salió ${f?.icpPromedio}: 100 es el máximo, 10 el mínimo, 19 el promedio`);
+  assert.equal(f?.clasificados, 10, 'el piso necesita diez clasificados: sin eso la porción sale nula');
+  assert.equal(f?.porcionDeDescarta, 0.3, `salió ${f?.porcionDeDescarta}: 3 de 10 clasificados, no 3 de 15 contactos`);
 });

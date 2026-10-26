@@ -16,7 +16,7 @@
 | tema | decisión |
 |---|---|
 | «Funciona / No funciona» | los dos grupos del prototipo, pero **cada pieza contra el promedio de SU etapa** (TOFU, MOFU, BOFU), y la tarjeta muestra la etapa |
-| «Calificados» | los contactos de **ICP alto**: puntaje de 75 o más, el tramo «alto» de `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85`) |
+| «Calificados» | los contactos de **ICP alto**: puntaje de 75 o más, el tramo «alto» de `tramoDelPuntaje` (`lib/negocio/tramosDelIcp.ts:85@ddba683`) |
 | La miniatura | el **«Video Url» de la primera atribución** del contacto, medido y usado: la imagen en la tarjeta y en la ficha; el clic abre Facebook o Instagram |
 | Completar la atribución | **una pasada con tope**: hasta 50 contactos por pasada, primero los más recientes, con `GET /contacts/{id}`; se activa al subir |
 | Los bloques de la pantalla anterior | **como Sales**: abajo «Lo demás, en cifras»; la fatiga además como marca en la tarjeta; el detalle por pieza en la ficha |
@@ -35,12 +35,12 @@ la vara y manda a «pausar o iterar» a las TOFU, que traían el 65 % del volume
 | lugar del prototipo | dato | fuente | estado |
 |---|---|---|---|
 | Encabezado: «Creative», «Qué funciona, qué no, y por qué», «Plan de acción», el segmentado | el título, la bajada, el plan real del detector y los cuatro períodos | `BotonDelPlan`, `lib/negocio/periodo.ts` | real |
-| Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:149`) más el tramo | real |
+| Tira: Calificados | contactos de ICP alto que trajo cada pieza, sumados | `calidadDelCreativo` (`lib/negocio/calidadDelCreativo.ts:142`) más el tramo | real |
 | Tira: Agendas | contactos que agendaron | `calidadDelCreativo` | real |
 | Tira: Hook rate | `videoView` sobre impresiones, con su piso | `rendimientoDelCreativo` (`lib/negocio/rendimientoDelCreativo.ts:325`) | real |
 | Tira: Retención | — | sin fuente por esta vía (`lib/negocio/rendimientoDelCreativo.ts:147`) | «—» |
 | Tira: Alcance | **impresiones** (desvío) | `rendimientoDelCreativo` | real |
-| Tira: Frecuencia | impresiones sobre alcance, pesada por impresiones | `metricas_de_anuncio`, como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:142`) | real |
+| Tira: Frecuencia | impresiones sobre alcance, pesada por impresiones | `metricas_de_anuncio`, como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:144`) | real |
 | Barra «Ordenar por» | Calificados, Agendas, Hook rate, Impresiones | el servidor | real |
 | Grupos «Funciona» / «No funciona» | contra el promedio de la etapa | el servidor | real |
 | Tarjeta: miniatura | `videoUrl` de la primera atribución | `negocio.miniaturas_del_contacto`, completada con `GET /contacts/{id}` | real desde CF-1 |
@@ -67,7 +67,7 @@ Con tres llamadas `GET` a GoHighLevel, también con el OK del usuario, que impri
   `igSid`, `campaign`, `adId` y `mediumId`. El contacto de la campaña de mensajes no las trae.
 - **`POST /contacts/search`, que es lo que usa la sincronización** (`lib/ghl/cliente.ts:288`), no las devuelve. Por eso
   la ingesta, que guarda toda clave escalar sin lista blanca (`lib/ghl/cliente.ts:215-225`,
-  `lib/negocio/sincronizar.ts:463-468`), no tiene nada que guardar. No es la primera diferencia entre las dos
+  `lib/negocio/sincronizar.ts:485-490`), no tiene nada que guardar. No es la primera diferencia entre las dos
   respuestas: en los campos del CRM, la búsqueda trae 24 valores y el pedido por contacto 27 (`lib/ghl/cliente.ts:147-148`).
 
 **Consecuencia:** la miniatura necesita una pasada que complete la atribución con `GET /contacts/{id}`
@@ -113,7 +113,7 @@ en línea del prototipo (`aios-command-center_1.html:558-985`), con los colores 
 | una tasa sobre impresiones con menos de 1000 | «Pocas impresiones para una tasa.» |
 | una pieza sin impresiones en la ventana | «Sin entrega en esta ventana.» |
 | lo que GoHighLevel no entrega: la retención, el formato, el ángulo, la duración, el dolor, el guion | «GoHighLevel no lo entrega.» |
-| el CRM sin el campo del ICP | «El CRM no tiene el puntaje.» |
+| el CRM sin el campo del cuadrante del ICP (desde la `105`; antes, sin el del puntaje) | «El CRM no tiene el campo del cuadrante.» |
 | una pieza sin «Video Url» guardado | «Sin miniatura todavía.» |
 | la fatiga sin veredicto | «Sin días suficientes para medir el gancho.» |
 | sin contactos en la ventana: la cohorte, o una pieza que no trajo ninguno | «Sin contactos en este período» |
@@ -177,9 +177,9 @@ Frecuencia. Las dos primeras son sumas; Hook rate y Frecuencia, el promedio pesa
 de los promedios; Retención, «—». La celda del criterio de orden elegido lleva la marca `.hi` del prototipo.
 
 **Fórmula** · Calificados: los contactos de la pieza con `tramoDelPuntaje` alto, sobre el mismo puntaje que lee
-`calidadDelCreativo` (el campo «Puntaje | ICP», `CAMPO_DE_ICP`, `lib/negocio/calidadDelCreativo.ts:65`). Hook rate: la
+`calidadDelCreativo` (el campo «Puntaje | ICP», `CAMPO_DE_ICP`, `lib/negocio/calidadDelCreativo.ts:65@bf2de85`). Hook rate: la
 suma de `videoView` sobre la suma de impresiones de los anuncio-días con la clave. Frecuencia: impresiones sobre
-alcance, pesada por impresiones como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:142-167`).
+alcance, pesada por impresiones como `frecuenciaPorAnuncio` (`lib/agentes/detectores/creative.ts:144-169`).
 
 **Estado** · El cálculo, construido el 2026-10-11 (CF-1), en `armarCreative`; el dibujo, el mismo día (CF-3), en `components/creative/PanelDeCreative.jsx`.
 

@@ -131,16 +131,16 @@ fila de la lista, y de dónde sale:
 
 | dato | en la maqueta | de dónde sale | cobertura (2026-09-27) |
 |---|---|---|---|
-| Nombre | `aios-command-center_1.html:4761` | `contactos.nombre`, `not null` (`db/migraciones/011_negocio_closer_setter.sql:69`); un contacto sin nombre no entra (`lib/negocio/sincronizar.ts:368-371`) | 593 de 593, por construcción |
+| Nombre | `aios-command-center_1.html:4761` | `contactos.nombre`, `not null` (`db/migraciones/011_negocio_closer_setter.sql:69`); un contacto sin nombre no entra (`lib/negocio/sincronizar.ts:383-386`) | 593 de 593, por construcción |
 | Campaña | `aios-command-center_1.html:4762`, primera mitad | `atribucion_primera->>'campaign'` | **271** de 593 |
-| Creativo | `aios-command-center_1.html:4762`, segunda mitad | `atribucion_primera->>'utmContent'`, que es la llave del creativo de Creative (`lib/negocio/calidadDelCreativo.ts:21-24`) | **505** de 593 |
+| Creativo | `aios-command-center_1.html:4762`, segunda mitad | `atribucion_primera->>'utmContent'`, que es la llave del creativo de Creative (`lib/negocio/calidadDelCreativo.ts:23-26`) | **505** de 593 |
 | Puntaje | `aios-command-center_1.html:4764-4767` | `contactos.score`, entero de 0 a 100 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:70-76`) | **471** con valor; 47 de ellos en 0 |
 | Tramo | `aios-command-center_1.html:4766` | derivado del puntaje con los cortes 75 y 50, **nunca guardado** | ver `LP09-06` |
 | Territorio | no se dibuja | `contactos.territorio` (`db/migraciones/011_negocio_closer_setter.sql:88`) | 287 · 281 · 25 sin territorio |
 | Descartado | no se dibuja | etiquetas contra `ETIQUETAS_DE_DESCARTE` (`lib/ghl/contrato.ts:231-238`), en minúscula | **121** |
-| Agendó | `aios-command-center_1.html:4752` | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`) | **sin medir con este predicado**: `LP09-07` |
+| Agendó | `aios-command-center_1.html:4752` | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:136-146`) | **sin medir con este predicado**: `LP09-07` |
 | Asistió | `aios-command-center_1.html:4752` | `citas.asistio` | `true` en 0 · `false` en 0 |
-| Plantón | no se dibuja | `marcadaComoPlanton` (`lib/negocio/citasAlcanzables.ts:111-113`) | 15 personas |
+| Plantón | no se dibuja | `marcadaComoPlanton` (`lib/negocio/citasAlcanzables.ts:112-114`) | 15 personas |
 | Vendió | `aios-command-center_1.html:4752`, `:4771-4772` | un resultado con `salida = 'venta'` | **0** |
 | Monto | `aios-command-center_1.html:4770-4771` («facturado») | suma de `resultados.monto` de esas ventas (`db/migraciones/011_negocio_closer_setter.sql:394-395`) | **0** montos en toda la base |
 | Alta | en la ficha, «hace 2 h» (`aios-command-center_1.html:4790-4791`) | `contactos.alta_en_el_crm` (`db/migraciones/048_de_donde_vino_el_lead.sql:68-72`) | 569 de 593 |
@@ -183,11 +183,11 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 
 | dato | en la maqueta | de dónde sale | cobertura |
 |---|---|---|---|
-| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:481-563`) | `LP09-09` |
+| Las nueve preguntas | `aios-command-center_1.html:4823-4828`, inventadas | el grupo `calificacion` de `perfilDeLaFicha` (`lib/negocio/ficha.ts:482-562`) | `LP09-09` |
 | «8/8 campos» y «Formulario completado» | `aios-command-center_1.html:4823`, `:4858` | no hay conteo de campos; lo más cercano es el estado «Form Landing VSL» (`lib/negocio/recorrido.ts:231-238`) | `LP09-09` |
 | ICP Score | `aios-command-center_1.html:4857` | `contactos.score` | 471 |
 | Fit score, Intent score | `aios-command-center_1.html:4857` | **no existen** | hueco |
-| Video precall | `aios-command-center_1.html:4832` | «Video Pre-Call», del grupo `interacciones` (`lib/ghl/contrato.ts:341-343`) | `LP09-09` |
+| Video precall | `aios-command-center_1.html:4832` | «Video Pre-Call», del grupo `interacciones` (`lib/ghl/contrato.ts:358-360`) | `LP09-09` |
 
 **Interacciones** (`aios-command-center_1.html:4840-4844`, y el relleno de `:4680-4682`)
 
@@ -221,11 +221,11 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 
 ### LP09-06 · El puntaje, los tramos y los ceros
 
-`contactos.score` lo escribe la sincronización (`lib/negocio/sincronizar.ts:441`) desde el campo del puntaje de la
+`contactos.score` lo escribe la sincronización (`lib/negocio/sincronizar.ts:456`) desde el campo del puntaje de la
 subcuenta —el elegido en Ajustes › Clientes o, si no, el que `CAMPO_DEL_PUNTAJE` designa (`lib/ghl/contrato.ts:313`) y
-el que se llama «Puntaje | ICP»: `lib/negocio/camposDelCrm.ts:379`—, con `puntajeDelCrm`
-(`lib/negocio/sincronizar.ts:544-553`): un valor fuera de 0-100 o no entero entra como nulo. **El
-cero no se colapsa a nulo** (`lib/negocio/sincronizar.ts:432-440`): los dos ceros se guardan
+el que se llama «Puntaje | ICP»: `lib/negocio/camposDelCrm.ts:394`—, con `puntajeDelCrm`
+(`lib/negocio/sincronizar.ts:568-576`): un valor fuera de 0-100 o no entero entra como nulo. **El
+cero no se colapsa a nulo** (`lib/negocio/sincronizar.ts:447-455`): los dos ceros se guardan
 distintos y la decisión de contarlos juntos es nuestra, en la pantalla.
 
 | tramo | todo el universo | 30 días |
@@ -293,7 +293,7 @@ select jsonb_object_agg(t, n) from (
   `enCero` (47). Y viaja `cerosRecientes`, que hoy vale 0: si aparece un cero en los últimos 14 días,
   la pantalla avisa, porque entonces el grupo dejó de ser el lote cerrado de agosto.
 - La divergencia con Creative **se declara**: su ICP promedio por pieza sí promedia los ceros
-  (`lib/negocio/calidadDelCreativo.ts:245`). Las dos cifras están bien por separado y miden cosas
+  (`lib/negocio/calidadDelCreativo.ts:245@bf2de85`). Las dos cifras están bien por separado y miden cosas
   distintas; lo que no puede pasar es que alguien las compare sin saberlo. El detalle, en
   `14-EL-PUNTAJE-DEL-CRM.md`.
 
@@ -343,7 +343,7 @@ select count(*) from negocio.resultados where org_id = (select id from org) and 
 **La cifra que falta, y hay que decirlo antes que nada: «agendó» no está medido con el predicado
 que la pestaña va a usar.** La medición llamó «alcanzable» a la cita de un contacto con territorio,
 y el código llama alcanzable a otra cosa: `ghl_calendario_id is not null`
-(`lib/negocio/citasAlcanzables.ts:54-56`), la cita que el barrido todavía puede refrescar. Son dos
+(`lib/negocio/citasAlcanzables.ts:55-57`), la cita que el barrido todavía puede refrescar. Son dos
 preguntas distintas, así que **el 278 no es el «agendó» de la pestaña** y no se publica como tal.
 Tampoco lo es el 292, que cuenta las citas congeladas. La cifra con el predicado exacto se midió en
 LP-2, y está en `LP09-P01`.
@@ -362,7 +362,7 @@ anotarlas: la sonda da por cancelada sólo `'cancelled'`, y el código usa la li
   son el techo; con el predicado exacto, medido en LP-2, son **77** en «Completo», y ésas son las
   que la pantalla dibuja como «sin registrar» y no como «no asistió» (`LP02-04`).
 - **El plantón del calendario viaja aparte y no se suma a la asistencia.** Son dos fuentes de la
-  misma pregunta y sólo una es nuestra (`lib/negocio/citasAlcanzables.ts:105-110`).
+  misma pregunta y sólo una es nuestra (`lib/negocio/citasAlcanzables.ts:106-111`).
 - **Vendió y monto valen cero medido**, y el cierre por tramo es nulo con su motivo, no «0 %»: es la
   misma lectura que Sales, que declara el revenue y la tasa de cierre como hueco porque *«un "$0"
   acá afirmaría que no se vendió nada»* (`lib/negocio/huecosDeSales.ts:64-69`).
@@ -464,13 +464,13 @@ select (select jsonb_object_agg(coalesce(grupo, 'sin_grupo'), n)
 -- {sin_grupo 21, calificacion 3, interacciones 1} · {sin_grupo 174, calificacion 17, interacciones 4}
 ```
 
-Las tres carpetas de `calificacion` son las de `lib/ghl/contrato.ts:332-340`: «Contact», con el
+Las tres carpetas de `calificacion` son las de `lib/ghl/contrato.ts:349-357`: «Contact», con el
 puntaje y dos URLs; «📁 Score | ICP Nuevo», el formulario de la landing; y «📁 Score | ICP Lead
 Form (Meta)», el mismo cuestionario para quien entra por el formulario de Meta.
 
 **Contactos con alguna respuesta del grupo `calificacion`: 475.** Pero esa cifra **cuenta al propio
 puntaje como una respuesta**, porque «Puntaje | ICP» vive en la carpeta «Contact», que es del mismo
-grupo (`lib/ghl/contrato.ts:333-336`). Con 471 puntajes, el 475 dice casi nada sobre el cuestionario.
+grupo (`lib/ghl/contrato.ts:350-353`). Con 471 puntajes, el 475 dice casi nada sobre el cuestionario.
 La cobertura de las preguntas propiamente dichas se midió en LP-3: **336**, en `LP09-P02`.
 
 ```sql
@@ -531,13 +531,13 @@ Conversation: «el CRM no registró reproducción».
 **Requisitos que salen de acá:**
 
 - De `campos_del_crm` a la ficha van **sólo** tres cosas: los campos del grupo `calificacion` —por
-  `perfilDeLaFicha`, que ya descarta lo vacío (`lib/negocio/ficha.ts:504-510`)—; el «Video Pre-Call»
+  `perfilDeLaFicha`, que ya descarta lo vacío (`lib/negocio/ficha.ts:505-511`)—; el «Video Pre-Call»
   del grupo `interacciones` (`LP05-11`; los otros tres campos de ese grupo son `LP05-P01`); y el
   estado del formulario. **Los 174 sin grupo no viajan**, salvo esa última: ahí están la atribución
   de campañas y los enlaces del sistema (`lib/ghl/contrato.ts:243-245`).
 - **La excepción, dicha:** «Form Landing VSL» vive en la carpeta «📁 Score | ICP», que no tiene
   grupo (`docs/OTROS/estado actual/06-INTEGRACIONES-GHL.md:825`; no está en
-  `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:332-344`, ni la eligió nadie en Ajustes › Clientes), y se lee **por nombre**, con
+  `CARPETAS_DEL_PERFIL`, `lib/ghl/contrato.ts:349-361`, ni la eligió nadie en Ajustes › Clientes), y se lee **por nombre**, con
   `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`, `:258`). Es el único campo sin grupo que
   viaja, y viaja nombrado, no por pertenecer a una carpeta. La prueba de LP-3 «un campo sin grupo no
   aparece» tiene que dejarlo pasar a él y a ningún otro: un segundo campo sin grupo en la ficha es

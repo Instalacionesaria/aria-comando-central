@@ -419,15 +419,15 @@ export async function hayCatalogo(cuentaId?: string): Promise<boolean> {
 // ── CON LA CONFIGURACIÓN DE HOY NADA CAMBIA, Y ESO ES POR DISEÑO ──────────────
 //
 // Una subcuenta SIN campo elegido resuelve exactamente lo de antes, y no una cascada nueva: la sincronización sigue
-// con la unión de la constante de ARIA y el primero que se llama «Puntaje | ICP», y Creative con el de su nombre.
-// Sólo la subcuenta que tiene uno elegido usa ése y nada más; sin esa exclusión, un contacto con los dos campos
-// tomaría el que quedara primero en la lista.
+// con la unión de la constante de ARIA y el primero que se llama «Puntaje | ICP». Sólo la subcuenta que tiene uno
+// elegido usa ése y nada más; sin esa exclusión, un contacto con los dos campos tomaría el que quedara primero.
 //
-// ── UNA SOLA VALIDACIÓN DEL PUNTAJE ───────────────────────────────────────────
+// ── DESDE LA `105` EL PUNTAJE YA NO SE ELIGE NI SE LEE ────────────────────────
 //
-// Un puntaje es un entero de 0 a 100 escrito con dígitos. Lo dice `puntajeDeUnValor` para la sincronización y
-// `puntajeUsable`, lo mismo en SQL, para Creative, el conteo de la pantalla y el recálculo. Con dos validaciones, un
-// campo con decimales o con otra escala salía «Sin calificar» en Acquisition y con promedio en Creative.
+// El ICP pasó a ser el cuadrante del CRM (más abajo), y ninguna pantalla lee `contactos.score`. El puntaje se sigue
+// escribiendo —el usuario pidió que quede guardado— con lo que cada subcuenta ya tenía: su elegido de la `098`, si lo
+// eligió, o lo de siempre. Ajustes › Clientes ya no lo elige: la ruta sólo elige las carpetas del Perfil. La única
+// validación del puntaje es `puntajeDeUnValor`, la de la sincronización.
 //
 // ── «ELEGIDA» QUIERE DECIR UNA SOLA COSA ──────────────────────────────────────
 //
@@ -449,8 +449,8 @@ const PUNTAJE_ESCRITO = /^[0-9]{1,3}$/;
 /**
  * El puntaje que trae un valor del CRM, listo para `contactos.score`: un entero de 0 a 100, o `null`.
  *
- * Es LA validación del puntaje: la sincronización la usa así, y los lectores en SQL con `puntajeUsable`, que dice lo
- * mismo con las mismas dos reglas. Por qué se valida en vez de confiar está en `puntajeDelCrm` (`sincronizar.ts`).
+ * Es LA validación del puntaje, la de la sincronización. Por qué se valida en vez de confiar está en `puntajeDelCrm`
+ * (`sincronizar.ts`).
  *
  * Sobre el texto, y no con `Number()`: `Number` acepta ` 50`, `50.0`, `1e1` o `0x32`, que SQL no puede leer igual, y dos
  * validaciones que discrepan dan «Sin calificar» en una pantalla y un promedio en otra. Un campo NUMERICAL llega como el
@@ -464,18 +464,6 @@ export function puntajeDeUnValor(crudo: unknown): number | null {
   return n <= 100 ? n : null;
 }
 
-/**
- * `puntajeDeUnValor` en SQL: el valor como entero de 0 a 100, o nulo. Dos `case` anidados y no un `and`: PostgreSQL no
- * promete evaluar el `~` antes que el `::int`, y un texto en el campo lanzaría `22P02` y se llevaría la consulta entera.
- */
-export function puntajeUsable(valor: RawBuilder<string | null>): RawBuilder<number | null> {
-  return sql<number | null>`(case when ${valor} ~ '^[0-9]{1,3}$' then case when (${valor})::int <= 100 then (${valor})::int end end)`;
-}
-
-/** El puntaje usable de un `campos_del_crm`, con el id de la subcuenta del contacto. */
-export function puntajeDelCampo(json: RawBuilder<unknown>, campo: string | CampoDelCrm): RawBuilder<number | null> {
-  return puntajeUsable(valorDelCampo(json, campo));
-}
 
 /** Una fila del catálogo que puede ser el puntaje de un cliente. */
 export interface FilaDelPuntaje {
@@ -536,51 +524,11 @@ function idsDelPuntaje(porCliente: Map<string, PuntajeDelCliente>): readonly str
   return [...new Set(ids)];
 }
 
-/**
- * El campo del puntaje para Creative: el elegido de cada cliente o, si no hay, el primero que se llama «Puntaje | ICP».
- * Sólo ids del catálogo, sin la constante: `null` = ningún cliente a la vista tiene campo, y apaga la columna con su
- * aviso. Sin nada elegido es `campoPorNombre(NOMBRE_DEL_PUNTAJE)`, lo que Creative leía hasta la `098`.
- */
-export async function campoDelPuntaje(): Promise<CampoDelCrm | null> {
-  const ids = [...(await puntajeDeCadaCliente()).values()].flatMap((c) => {
-    const f = c.elegido ?? c.porNombre;
-    return f === null ? [] : [f.campoId];
-  });
-  return ids.length === 0 ? null : (ids as unknown as CampoDelCrm);
-}
-
-/** Un cliente sin campo del puntaje. `catalogo` separa «no se leyó su catálogo» de «se leyó y no tiene campo». */
-export interface ClienteSinPuntaje {
+/** Un cliente sin el campo del cuadrante. `catalogo` separa «no se leyó su catálogo» de «se leyó y no tiene el campo». */
+export interface ClienteSinCampo {
   cuentaId: string;
   nombre: string;
   catalogo: boolean;
-}
-
-/**
- * De esos clientes, los que no tienen campo del puntaje —ni elegido ni llamado «Puntaje | ICP»—, por nombre. Los dos
- * estados no son el mismo: sin catálogo no hay nada que elegir todavía (se lee con la sincronización de contactos), y
- * con catálogo lo que falta es una elección. Corre dentro de `conOrganizacion(`.
- */
-export async function clientesSinPuntaje(cuentaIds: readonly string[]): Promise<ClienteSinPuntaje[]> {
-  if (cuentaIds.length === 0) return [];
-  const conCampo = await puntajeDeCadaCliente();
-  const sin = [...new Set(cuentaIds)].filter((id) => {
-    const c = conCampo.get(id);
-    return (c?.elegido ?? c?.porNombre ?? null) === null;
-  });
-  if (sin.length === 0) return [];
-  const filas = await datos()
-    .selectFrom('cuentas')
-    .select([
-      'id',
-      'nombre',
-      sql<boolean>`exists (select 1 from negocio.campos_del_crm ca where ca.org_id = cuentas.org_id and ca.cuenta_id = cuentas.id)`.as('catalogo'),
-    ])
-    .where('id', 'in', sin)
-    .orderBy('nombre')
-    .orderBy('id')
-    .execute();
-  return filas.map((f) => ({ cuentaId: f.id, nombre: f.nombre, catalogo: f.catalogo }));
 }
 
 /**
@@ -613,39 +561,26 @@ function grupoQueLlegaTarde(carpetaId: string, nombre: string | null): RawBuilde
 
 // ─── Lo que ve y elige Ajustes › Clientes ───────────────────────────────────
 
-/** Un campo que se puede elegir como puntaje: un NUMERICAL del catálogo del cliente, o el elegido aunque ya no lo sea. */
-export interface OpcionDelPuntaje {
-  campoId: string;
-  nombre: string;
-  /** El nombre de su carpeta. `null` = la carpeta no tiene nombre leído. */
-  carpeta: string | null;
-  tipo: string;
-  /** El elegido dejó de ser NUMERICAL en GoHighLevel. La elección sigue, y sus valores siguen pasando por la validación. */
-  yaNoEsNumerico: boolean;
-  /** Cuántos contactos del cliente traen algo en ese campo. */
+/**
+ * El campo del cuadrante del ICP de UN cliente, como lo muestra Ajustes › Clientes. No se elige (la `105`): se reconoce
+ * por su clave en cada subcuenta. Lo que la pantalla puede decir es si está y cuántos de sus contactos clasifica.
+ */
+export interface CuadranteDelCliente {
+  /** `null` = su catálogo no tiene un campo con la clave `contact.cuadrante_de_clasificacion`. */
+  campoId: string | null;
+  nombre: string | null;
+  tipo: string | null;
+  /** Cuántos contactos del cliente traen algo en el campo. */
   conValor: number;
-  /** Cuántos traen un puntaje usable (`puntajeUsable`): los que dejarían de quedar «Sin calificar». */
-  usables: number;
+  /** Cuántos están clasificados: tienen una de las cuatro palabras (`contactos.cuadrante`). */
+  clasificados: number;
 }
 
 /** El catálogo de UN cliente, como lo muestra y lo devuelve la ruta. */
 export interface CatalogoDelCliente {
-  /** `leido: false` = nunca se leyó su catálogo: no hay nada que elegir todavía. `vistoEl` = la última lectura. */
+  /** `leido: false` = nunca se leyó su catálogo: no hay nada que mostrar todavía. `vistoEl` = la última lectura. */
   catalogo: { leido: boolean; vistoEl: string | null };
-  puntaje: {
-    /** `elegido` en Ajustes › Clientes; `por_omision` = la constante de ARIA o por su nombre; `ninguno` = no tiene. */
-    origen: 'elegido' | 'por_omision' | 'ninguno';
-    campoId: string | null;
-    nombre: string | null;
-    tipo: string | null;
-    yaNoEsNumerico: boolean;
-    /**
-     * El elegido no vino en la última lectura del catálogo: lo borraron en GoHighLevel, o el cliente se vinculó a otra
-     * subcuenta. El catálogo no borra filas, así que la elección sigue viva y sus leads quedan «Sin calificar».
-     */
-    noVistoEnLaUltimaLectura: boolean;
-  };
-  opciones: OpcionDelPuntaje[];
+  cuadrante: CuadranteDelCliente;
   carpetas: {
     carpetaId: string;
     nombre: string | null;
@@ -661,32 +596,27 @@ export interface CatalogoDelCliente {
 
 /** Lo que Ajustes › Clientes muestra del catálogo de un cliente. Corre con el foco en ese cliente. */
 export async function catalogoDelCliente(cuentaId: string): Promise<CatalogoDelCliente> {
-  const [lectura, deCadaCliente, opciones, carpetas] = await Promise.all([
+  const [lectura, campo, carpetas] = await Promise.all([
     datos()
       .selectFrom('campos_del_crm')
       .select(({ fn }) => [fn.max('visto_el').as('ultimo'), fn.countAll().as('n')])
       .where('cuenta_id', '=', cuentaId)
       .executeTakeFirst(),
-    puntajeDeCadaCliente(),
     datos()
       .selectFrom('campos_del_crm as ca')
-      .leftJoin('carpetas_del_crm as cp', (j) => j.onRef('cp.org_id', '=', 'ca.org_id').onRef('cp.carpeta_id', '=', 'ca.carpeta_id'))
       .select([
         'ca.campo_id',
         'ca.nombre',
         'ca.tipo',
-        'cp.nombre as carpeta',
         sql<number>`(select count(*) from negocio.contactos c
                       where c.org_id = ca.org_id and c.cuenta_id = ca.cuenta_id and c.campos_del_crm ? ca.campo_id)`.as('conValor'),
         sql<number>`(select count(*) from negocio.contactos c
-                      where c.org_id = ca.org_id and c.cuenta_id = ca.cuenta_id
-                        and ${puntajeUsable(sql`c.campos_del_crm ->> ca.campo_id`)} is not null)`.as('usables'),
+                      where c.org_id = ca.org_id and c.cuenta_id = ca.cuenta_id and c.cuadrante is not null)`.as('clasificados'),
       ])
       .where('ca.cuenta_id', '=', cuentaId)
-      .where((eb) => eb.or([eb('ca.tipo', '=', 'NUMERICAL'), eb('ca.es_el_puntaje', '=', true)]))
-      .orderBy('ca.nombre')
+      .where('ca.clave', '=', CLAVE_DEL_CUADRANTE)
       .orderBy('ca.campo_id')
-      .execute(),
+      .executeTakeFirst(),
     datos()
       .selectFrom('carpetas_del_crm as cp')
       .select([
@@ -703,29 +633,15 @@ export async function catalogoDelCliente(cuentaId: string): Promise<CatalogoDelC
   ]);
 
   const ultimo = lectura?.ultimo ? new Date(lectura.ultimo) : null;
-  const c = deCadaCliente.get(cuentaId);
-  const elegido = c?.elegido ?? null;
-  // Sin elegido, el que la sincronización prefiere: la constante si es de esta subcuenta, si no el de su nombre.
-  const resuelto = elegido ?? c?.constante ?? c?.porNombre ?? null;
   return {
     catalogo: { leido: Number(lectura?.n ?? 0) > 0, vistoEl: ultimo?.toISOString() ?? null },
-    puntaje: {
-      origen: elegido ? 'elegido' : resuelto ? 'por_omision' : 'ninguno',
-      campoId: resuelto?.campoId ?? null,
-      nombre: resuelto?.nombre ?? null,
-      tipo: resuelto?.tipo ?? null,
-      yaNoEsNumerico: elegido !== null && elegido.tipo !== 'NUMERICAL',
-      noVistoEnLaUltimaLectura: elegido !== null && ultimo !== null && new Date(elegido.vistoEl).getTime() < ultimo.getTime(),
+    cuadrante: {
+      campoId: campo?.campo_id ?? null,
+      nombre: campo?.nombre ?? null,
+      tipo: campo?.tipo ?? null,
+      conValor: Number(campo?.conValor ?? 0),
+      clasificados: campo ? Number(campo.clasificados ?? 0) : 0,
     },
-    opciones: opciones.map((o) => ({
-      campoId: o.campo_id,
-      nombre: o.nombre,
-      carpeta: o.carpeta ?? null,
-      tipo: o.tipo,
-      yaNoEsNumerico: o.tipo !== 'NUMERICAL',
-      conValor: Number(o.conValor ?? 0),
-      usables: Number(o.usables ?? 0),
-    })),
     carpetas: carpetas.map((f) => ({
       carpetaId: f.carpeta_id,
       nombre: f.nombre,
@@ -737,89 +653,25 @@ export async function catalogoDelCliente(cuentaId: string): Promise<CatalogoDelC
   };
 }
 
-/** Lo que una persona elige para un cliente: el campo del puntaje (`null` = volver al de su nombre), y carpetas. */
+/** Lo que una persona elige para un cliente: en qué grupo del Perfil va cada carpeta. El puntaje ya no se elige (la `105`). */
 export interface EleccionDelCatalogo {
-  puntaje?: string | null;
-  carpetas?: readonly { carpetaId: string; grupo: CampoMostrable['grupo'] | null }[];
+  carpetas: readonly { carpetaId: string; grupo: CampoMostrable['grupo'] | null }[];
 }
 
 /**
  * Por qué no se puede guardar esa elección en el catálogo de ESE cliente, o `null`. Se valida todo antes de escribir
- * nada: un campo que no está en su catálogo (de otro cliente, o inventado) o que no es NUMERICAL, y una carpeta ajena.
+ * nada: una carpeta que no está en su catálogo (de otro cliente, o inventada).
  */
 export async function porQueNoSePuedeElegir(cuentaId: string, e: EleccionDelCatalogo): Promise<string | null> {
-  if (typeof e.puntaje === 'string') {
-    const campo = await datos()
-      .selectFrom('campos_del_crm')
-      .select(['nombre', 'tipo'])
-      .where('cuenta_id', '=', cuentaId)
-      .where('campo_id', '=', e.puntaje)
-      .executeTakeFirst();
-    if (!campo) return `El campo «${e.puntaje}» no está en el catálogo de campos de este cliente.`;
-    if (campo.tipo !== 'NUMERICAL') {
-      return `«${campo.nombre}» es un campo ${campo.tipo}: el puntaje tiene que ser un campo numérico (NUMERICAL) de 0 a 100.`;
-    }
-  }
-  if (e.carpetas !== undefined && e.carpetas.length > 0) {
-    const ids = e.carpetas.map((c) => c.carpetaId);
-    const suyas = new Set(
-      (await datos().selectFrom('carpetas_del_crm').select('carpeta_id').where('cuenta_id', '=', cuentaId).where('carpeta_id', 'in', ids).execute()).map(
-        (f) => f.carpeta_id,
-      ),
-    );
-    const ajena = ids.find((id) => !suyas.has(id));
-    if (ajena !== undefined) return `La carpeta «${ajena}» no está en el catálogo de campos de este cliente.`;
-  }
-  return null;
-}
-
-/**
- * Elige el campo del puntaje de un cliente (`null` = ninguno: vuelve al de su nombre). `true` si cambió algo.
- *
- * Primero apaga el elegido anterior y después prende el nuevo: el índice único de la `098` no es diferible, y al revés
- * chocaría consigo mismo. Dos elecciones al mismo tiempo: la segunda sale `23505`, y la ruta la responde 409. El nuevo
- * se prende sólo si es NUMERICAL. No toca `visto_el`: si lo tocara, el catálogo parecería recién leído y no se releería.
- */
-export async function elegirElPuntaje(cuentaId: string, campoId: string | null): Promise<boolean> {
-  const antes = await datos()
-    .selectFrom('campos_del_crm')
-    .select('campo_id')
-    .where('cuenta_id', '=', cuentaId)
-    .where('es_el_puntaje', '=', true)
-    .executeTakeFirst();
-  if ((antes?.campo_id ?? null) === campoId) return false;
-  await datos()
-    .updateTable('campos_del_crm')
-    .set({ es_el_puntaje: false })
-    .where('cuenta_id', '=', cuentaId)
-    .where('es_el_puntaje', '=', true)
-    .execute();
-  if (campoId === null) return true;
-  const r = await datos()
-    .updateTable('campos_del_crm')
-    .set({ es_el_puntaje: true })
-    .where('cuenta_id', '=', cuentaId)
-    .where('campo_id', '=', campoId)
-    .where('tipo', '=', 'NUMERICAL')
-    .executeTakeFirst();
-  if (r.numUpdatedRows === 0n) throw new Error(`elegirElPuntaje: «${campoId}» no es un campo NUMERICAL del catálogo de este cliente`);
-  return true;
-}
-
-/**
- * Recalcula el puntaje de TODOS los contactos de un cliente desde lo ya guardado, con el campo que resuelve ahora. Cero
- * llamadas al CRM. Sin esto, cambiar la elección corregía en diez minutos a los que la sincronización trae, y un
- * contacto congelado —que ya no trae— quedaba para siempre con el puntaje del campo anterior (o «Sin calificar», con
- * el valor en sus campos). Da lo mismo que la sincronización: el primer id que el contacto tiene, y `puntajeUsable`.
- */
-export async function recalcularLosPuntajes(cuentaId: string): Promise<number> {
-  const ids = (await camposDelPuntaje()) as CampoDelCrm;
-  const r = await datos()
-    .updateTable('contactos')
-    .set({ score: puntajeDelCampo(sql`campos_del_crm`, ids) } as never)
-    .where('cuenta_id', '=', cuentaId)
-    .executeTakeFirst();
-  return Number(r.numUpdatedRows);
+  if (e.carpetas.length === 0) return null;
+  const ids = e.carpetas.map((c) => c.carpetaId);
+  const suyas = new Set(
+    (await datos().selectFrom('carpetas_del_crm').select('carpeta_id').where('cuenta_id', '=', cuentaId).where('carpeta_id', 'in', ids).execute()).map(
+      (f) => f.carpeta_id,
+    ),
+  );
+  const ajena = ids.find((id) => !suyas.has(id));
+  return ajena === undefined ? null : `La carpeta «${ajena}» no está en el catálogo de campos de este cliente.`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -847,6 +699,34 @@ export async function camposDelCuadrante(): Promise<readonly string[]> {
   const porCliente = new Map<string, string>();
   for (const f of filas) if (!porCliente.has(f.cuenta_id)) porCliente.set(f.cuenta_id, f.campo_id);
   return [...porCliente.values()];
+}
+
+/**
+ * De esos clientes, los que no tienen el campo del cuadrante en su catálogo, por nombre. Como `clientesSinPuntaje`,
+ * separa «no se leyó su catálogo» (se lee con la sincronización de contactos) de «se leyó y no tiene el campo» (hay que
+ * crearlo en su CRM: ya no se elige). Corre dentro de `conOrganizacion(`.
+ */
+export async function clientesSinCuadrante(cuentaIds: readonly string[]): Promise<ClienteSinCampo[]> {
+  if (cuentaIds.length === 0) return [];
+  const conCampo = new Set(
+    (await datos().selectFrom('campos_del_crm').select('cuenta_id').where('clave', '=', CLAVE_DEL_CUADRANTE).execute()).map(
+      (f) => f.cuenta_id,
+    ),
+  );
+  const sin = [...new Set(cuentaIds)].filter((id) => !conCampo.has(id));
+  if (sin.length === 0) return [];
+  const filas = await datos()
+    .selectFrom('cuentas')
+    .select([
+      'id',
+      'nombre',
+      sql<boolean>`exists (select 1 from negocio.campos_del_crm ca where ca.org_id = cuentas.org_id and ca.cuenta_id = cuentas.id)`.as('catalogo'),
+    ])
+    .where('id', 'in', sin)
+    .orderBy('nombre')
+    .orderBy('id')
+    .execute();
+  return filas.map((f) => ({ cuentaId: f.id, nombre: f.nombre, catalogo: f.catalogo }));
 }
 
 /** `ESPACIOS` como una cadena de SQL: `btrim` recorta cualquiera de sus caracteres. */
@@ -894,7 +774,8 @@ export async function recalcularLosCuadrantes(): Promise<number> {
 
 /**
  * Elige el grupo del Perfil de unas carpetas de un cliente (`null` = no se muestra) y las marca elegidas. Devuelve las
- * que cambiaron: una ya elegida con el mismo grupo no se toca. No toca `visto_el`, por lo mismo que `elegirElPuntaje`.
+ * que cambiaron: una ya elegida con el mismo grupo no se toca. No toca `visto_el`: si lo tocara, el catálogo parecería
+ * recién leído y no se releería.
  */
 export async function elegirLosGrupos(
   cuentaId: string,

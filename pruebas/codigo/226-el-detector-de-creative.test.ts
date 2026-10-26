@@ -10,8 +10,9 @@
 //   · la caída del CTR sólo con veredicto de la fatiga y desde el 25 %, no desde el 20 % de la pantalla;
 //   · la concentración con tres piezas o más, y sólo a validación ejecutiva;
 //   · la frecuencia sólo en 7 días, con su piso de mil impresiones;
-//   · el ICP se compara dentro de la etapa y nunca entre etapas (C3-06), y una pieza en dos etapas es una señal;
-//   · sin la lectura de anuncios al día o sin el campo de ICP, la regla va a «sin medición»;
+//   · el Descarta se compara dentro de la etapa y nunca entre etapas (C3-06), y una pieza en dos etapas es una señal
+//     (desde la `105` reemplaza al ICP promedio: con palabras no hay promedio);
+//   · sin la lectura de anuncios al día o sin el campo del cuadrante, la regla va a «sin medición»;
 //   · el plan: sus grupos en el orden de C6-02, sin «Ideas para producir», y frases con el verbo de la medición.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -31,15 +32,15 @@ const P = 'P';
 const pieza = (creativo: string, gasto: number, impresiones = 5000) => ({ creativo, cuentaId: P, gasto, impresiones }) as FilaDeRendimiento;
 const fatiga = (creativo: string, caida: number | null, fatigado: boolean | null = caida === null ? null : caida >= 0.2) =>
   ({ creativo, cuentaId: P, dias: 20, desde: '2026-09-10', hasta: '2026-10-04', ctrTemprano: 2.76, ctrTardio: 1.98, caida, fatigado, motivo: null, porque: null }) as FatigaDeUnCreativo;
-const calidad = (creativo: string | null, etapa: FilaDeCreativo['etapa'], icpPromedio: number | null, conPuntaje = 20) =>
-  ({ creativo, cuentaId: P, etapa, icpPromedio, conPuntaje, contactos: conPuntaje }) as FilaDeCreativo;
+const calidad = (creativo: string | null, etapa: FilaDeCreativo['etapa'], porcionDeDescarta: number | null, clasificados = 20) =>
+  ({ creativo, cuentaId: P, etapa, porcionDeDescarta, clasificados, contactos: clasificados }) as unknown as FilaDeCreativo;
 
 function medida(e: Partial<{
   ventana: '7d' | '30d';
   rendimiento: FilaDeRendimiento[];
   fatiga: FatigaDeUnCreativo[];
   calidad: FilaDeCreativo[];
-  campoDeIcp: string | null;
+  campoDelCuadrante: string | null;
   frecuencias: [string, number, number][];
   anunciosAlDia: boolean;
   gastoCuadra: boolean;
@@ -48,7 +49,7 @@ function medida(e: Partial<{
   return {
     ventana,
     periodo: { desde: '2026-09-06', hasta: '2026-10-05' },
-    calidad: { filas: e.calidad ?? [], campoDeIcp: e.campoDeIcp === undefined ? 'campo-icp' : e.campoDeIcp },
+    calidad: { filas: e.calidad ?? [], campoDelCuadrante: e.campoDelCuadrante === undefined ? 'campo-cuadrante' : e.campoDelCuadrante },
     rendimiento: { filas: e.rendimiento ?? [] },
     fatiga: { filas: e.fatiga ?? [] },
     principal: P,
@@ -121,40 +122,40 @@ test('la frecuencia: sólo en 7 días, con su piso de mil impresiones', () => {
   assert.ok(!treinta.sinMedicion.includes(CRE.frecuenciaAlta));
 });
 
-test('el ICP se compara dentro de la etapa, nunca entre etapas (C3-06)', () => {
+test('el Descarta se compara dentro de la etapa, nunca entre etapas (C3-06)', () => {
   const r = detectar(
     medida({
       calidad: [
-        // TOFU: promedio por pieza (35 + 60 + 62) / 3 = 52,33; «baja» está 17,3 por debajo.
-        calidad('baja', 'TOFU', 35),
-        calidad('b', 'TOFU', 60),
-        calidad('c', 'TOFU', 62),
-        // Sola en su etapa: con 20 puntos no compite con nadie, aunque esté lejos del TOFU.
-        calidad('sola', 'BOFU', 20),
+        // TOFU: promedio por pieza (0,6 + 0,3 + 0,3) / 3 = 0,4; «mucho» está 20 puntos por encima.
+        calidad('mucho', 'TOFU', 0.6),
+        calidad('b', 'TOFU', 0.3),
+        calidad('c', 'TOFU', 0.3),
+        // Sola en su etapa: con 90 % no compite con nadie, aunque esté lejos del TOFU.
+        calidad('sola', 'BOFU', 0.9),
         // Sin etapa y sin creativo: no entran en ningún promedio.
-        calidad('sin-etapa', null, 0),
-        calidad(null, 'TOFU', 0),
+        calidad('sin-etapa', null, 1),
+        calidad(null, 'TOFU', 1),
       ],
     }),
   );
-  const icp = de(r, CRE.icpPorPieza);
-  assert.deepEqual(icp.map((d) => [d.entidad.id, d.lineaBase, d.valorActual, d.muestra]), [['baja', 52.3, 35, 20]]);
-  assert.equal((icp[0]!.evidencia as { etapa: string }).etapa, 'TOFU');
+  const descarta = de(r, CRE.descartaPorPieza);
+  assert.deepEqual(descarta.map((d) => [d.entidad.id, d.lineaBase, d.valorActual, d.muestra]), [['mucho', 0.4, 0.6, 20]]);
+  assert.equal((descarta[0]!.evidencia as { etapa: string }).etapa, 'TOFU');
 });
 
-test('una pieza que está baja en dos etapas es una sola señal: la de la caída más grande', () => {
+test('una pieza que está arriba en dos etapas es una sola señal: la de la distancia más grande', () => {
   const r = detectar(
     medida({
-      calidad: [calidad('doble', 'TOFU', 40), calidad('x', 'TOFU', 70), calidad('doble', 'MOFU', 10), calidad('y', 'MOFU', 80)],
+      calidad: [calidad('doble', 'TOFU', 0.6), calidad('x', 'TOFU', 0.2), calidad('doble', 'MOFU', 0.9), calidad('y', 'MOFU', 0.1)],
     }),
   );
-  const icp = de(r, CRE.icpPorPieza);
-  assert.equal(icp.length, 1);
-  assert.equal((icp[0]!.evidencia as { etapa: string }).etapa, 'MOFU');
+  const descarta = de(r, CRE.descartaPorPieza);
+  assert.equal(descarta.length, 1);
+  assert.equal((descarta[0]!.evidencia as { etapa: string }).etapa, 'MOFU');
 });
 
-test('sin la lectura de anuncios al día o sin el campo de ICP, la regla va a «sin medición»', () => {
-  const r = detectar(medida({ ventana: '7d', anunciosAlDia: false, campoDeIcp: null, rendimiento: [pieza('a', 900), pieza('b', 50), pieza('c', 50)], fatiga: [fatiga('a', 0.5)], frecuencias: [['ad', 9, 9000]] }));
+test('sin la lectura de anuncios al día o sin el campo del cuadrante, la regla va a «sin medición»', () => {
+  const r = detectar(medida({ ventana: '7d', anunciosAlDia: false, campoDelCuadrante: null, rendimiento: [pieza('a', 900), pieza('b', 50), pieza('c', 50)], fatiga: [fatiga('a', 0.5)], frecuencias: [['ad', 9, 9000]] }));
   assert.deepEqual(r.detecciones, []);
   assert.deepEqual(new Set(r.sinMedicion), new Set(Object.values(CRE)));
 });
@@ -162,14 +163,14 @@ test('sin la lectura de anuncios al día o sin el campo de ICP, la regla va a «
 // ─── El plan ────────────────────────────────────────────────────────────────
 
 const plan = (vigentes: Deteccion[]) =>
-  armarPlanDeCreative({ ventana: '30d', dia: '2026-10-05', periodo: { desde: '2026-09-06', hasta: '2026-10-05' }, detecciones: vigentes, vigentes, sinMedicion: [CRE.icpPorPieza], debajoDelPiso: [] });
+  armarPlanDeCreative({ ventana: '30d', dia: '2026-10-05', periodo: { desde: '2026-09-06', hasta: '2026-10-05' }, detecciones: vigentes, vigentes, sinMedicion: [CRE.descartaPorPieza], debajoDelPiso: [] });
 
 test('el plan: los grupos de C6-02 en su orden, sin «Ideas para producir»', () => {
   const p = plan([]);
   assert.deepEqual(p.grupos.map((g) => g.titulo), ['Lo que dice la data', 'Haz más de esto', 'Ajusta o pausa esto', 'Requiere validación ejecutiva']);
   assert.deepEqual(GRUPOS_DEL_PLAN_DE_CREATIVE.map((g) => g.clave), p.grupos.map((g) => g.clave));
   assert.equal(p.departamento, 'creative');
-  assert.deepEqual(p.sinMedicion, ['el ICP por pieza: el campo de ICP no está en el CRM']);
+  assert.deepEqual(p.sinMedicion, ['el Descarta por pieza: el campo del cuadrante del ICP no está en el CRM']);
 });
 
 test('cada regla a su grupo, con el verbo de la medición y el CTR sin multiplicar', () => {
@@ -178,17 +179,17 @@ test('cada regla a su grupo, con el verbo de la medición y el CTR sin multiplic
       ventana: '7d',
       rendimiento: [pieza('a', 600, 7000), pieza('b', 200), pieza('c', 200)],
       fatiga: [fatiga('a', 0.2826)],
-      calidad: [calidad('baja', 'TOFU', 35), calidad('b', 'TOFU', 60), calidad('c', 'TOFU', 62)],
+      calidad: [calidad('mucho', 'TOFU', 0.6), calidad('b', 'TOFU', 0.3), calidad('c', 'TOFU', 0.3)],
       frecuencias: [['ad-1', 3.25, 1500]],
     }),
   );
   const p = plan(r.detecciones);
   const donde = Object.fromEntries(p.grupos.flatMap((g) => g.renglones.map((x) => [x.regla, g.clave])));
-  assert.deepEqual(donde, { [CRE.icpPorPieza]: 'data', [CRE.caidaDeCtr]: 'ajusta', [CRE.frecuenciaAlta]: 'ajusta', [CRE.concentracion]: 'validacion' });
+  assert.deepEqual(donde, { [CRE.descartaPorPieza]: 'data', [CRE.caidaDeCtr]: 'ajusta', [CRE.frecuenciaAlta]: 'ajusta', [CRE.concentracion]: 'validacion' });
   const textos = p.grupos.flatMap((g) => g.renglones.map((x) => x.texto));
   for (const t of [
     'Su CTR bajó 28 % entre la primera y la segunda mitad de sus 20 días con entrega: de 2,76 % a 1,98 %, sobre 7.000 impresiones.',
-    'Su ICP promedio está 17,3 puntos por debajo del promedio de las piezas de su etapa (TOFU): 35 contra 52,3, sobre 20 contactos con puntaje.',
+    'Su porción de Descarta está 20 puntos por encima del promedio de las piezas de su etapa (TOFU): 60 % contra 40 %, sobre 20 contactos clasificados.',
     'El anuncio se mostró 3,25 veces por persona en promedio en la semana, sobre 1.500 impresiones.',
     'Se lleva el 60 % del gasto de la ventana, entre 3 piezas con gasto.',
   ]) assert.ok(textos.includes(t), `${t}\n--\n${textos.join('\n')}`);

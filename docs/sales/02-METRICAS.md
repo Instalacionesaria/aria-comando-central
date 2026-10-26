@@ -137,7 +137,7 @@ infinito: **no entran, y se dicen**.
 **Unidad** · Los **dos términos**, siempre, no sólo la proporción.
 **Población** · La cohorte entera.
 **Rastro** · `§ 18.5` del documento funcional; el patrón `puente` de
-`lib/negocio/calidadDelCreativo.ts:323-352`.
+`lib/negocio/calidadDelCreativo.ts:311-340`.
 **Estado** · **Obligatoria al lado de las tres de arriba.** Medido: 101 de 327 citas son congeladas y
 no entran en ningún eslabón.
 

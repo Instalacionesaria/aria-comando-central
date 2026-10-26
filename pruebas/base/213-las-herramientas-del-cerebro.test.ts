@@ -146,8 +146,8 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
     filas: [['campanas', ['campana', 'cifras', 'conContactos', 'estado', 'funnel', 'nombre']]],
   },
   calidad_de_piezas: {
-    arriba: ['aviso', 'campoDeIcp', 'congeladas', 'desde', 'dias', 'hasta', 'piezas', 'puente'],
-    filas: [['piezas', ['agendaron', 'anunciosDeMeta', 'conPuntaje', 'contactos', 'creativo', 'etapa', 'icpPromedio', 'tasaDeAgenda']]],
+    arriba: ['aviso', 'campoDelCuadrante', 'congeladas', 'desde', 'dias', 'hasta', 'piezas', 'puente'],
+    filas: [['piezas', ['agendaron', 'anunciosDeMeta', 'calificados', 'clasificados', 'contactos', 'creativo', 'descarta', 'etapa', 'porcionDeDescarta', 'tasaDeAgenda']]],
   },
   rendimiento_de_piezas: {
     arriba: ['aviso', 'desde', 'desdeElDesglose', 'dias', 'fueraDeAlcance', 'gastoTotal', 'hasta', 'piezas'],
@@ -244,8 +244,8 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
     ],
   },
   cohorte_de_leads: {
-    arriba: ['aviso', 'cohorte', 'dias', 'hayVentasRegistradas', 'leads', 'piso', 'sinCalificar', 'todos', 'tramos', 'truncado'],
-    filas: [['leads', ['altaEl', 'asistencia', 'campana', 'cita', 'creativo', 'descartado', 'id', 'monto', 'nombre', 'planton', 'puntaje', 'territorio', 'tramo', 'vendio']]],
+    arriba: ['aviso', 'cohorte', 'cuadrantes', 'dias', 'hayVentasRegistradas', 'leads', 'piso', 'sinClasificar', 'todos', 'truncado'],
+    filas: [['leads', ['altaEl', 'asistencia', 'campana', 'cita', 'creativo', 'cuadrante', 'descartado', 'id', 'monto', 'nombre', 'planton', 'territorio', 'vendio']]],
   },
   colas_del_setter: { arriba: ['colas', 'tareasPendientes', 'truncado'], argumentos: {} },
   inicio_del_setter: {

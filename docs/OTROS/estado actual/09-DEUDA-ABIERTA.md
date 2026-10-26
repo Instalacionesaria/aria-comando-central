@@ -8,6 +8,8 @@
 > importar. Lo que no se volvió a medir lleva su fecha. Cada deuda que se cerró queda marcada **Cerrada**, con su
 > commit y su fecha. Para ubicar lo nombrado, ver [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md).
 
+> **ICP en cuadrantes (2026-10-26, local, sin subir).** El ICP del lead dejó de ser el puntaje de 0 a 100: es el cuadrante que manda el CRM —Prioriza, Valida, Financia o Descarta— en `contactos.cuadrante` (la `105`), y ningún número del ICP se muestra. Lo que esta foto dice del puntaje, de los tramos 75 y 50 y del cero describe la versión anterior; sus citas quedaron fijadas a `@bf2de85` o a `@ddba683`. Los requisitos: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`. La deuda del puntaje —los ceros, los cortes sin validar— dejó de aplicar; la nueva está en las preguntas abiertas del documento 15 (LP15-P01 a P04).
+
 > **Desde el corte del 2026-09-28** (137 commits, `ceec000..dc84cb2`)
 >
 > - **Cerradas:** la maqueta del Executive y lo que colgaba de ella (E7, `4e9a242`, 10-01); el «Eliminar» invisible,
@@ -63,13 +65,13 @@ Siguen siendo los más caros porque **no fallan**: producen cifras plausibles so
 
 ### 2.1 · Treinta y seis contactos congelados, y un archivo que dice cuándo
 
-`congelarLosQueYaNoEstan` (`lib/negocio/sincronizar.ts:307`) hace lo mismo que el 2026-09-15: pone
-`territorio = null` (`lib/negocio/sincronizar.ts:315`) y **no toca `sincronizado_el`**. Como la
+`congelarLosQueYaNoEstan` (`lib/negocio/sincronizar.ts:320`) hace lo mismo que el 2026-09-15: pone
+`territorio = null` (`lib/negocio/sincronizar.ts:328`) y **no toca `sincronizado_el`**. Como la
 búsqueda del barrido es POR ETIQUETA, `guardar()` no vuelve a pasar por esa fila nunca más.
 
 Lo que cambió no es el código sino lo que se sabe. El disparador de la migración `047` archiva cada
 cambio de zona en `negocio.cambios_de_territorio` —el comentario lo dice en
-`lib/negocio/sincronizar.ts:302-306`—, y la tabla tiene su primera fila el 2026-09-15. Medido el
+`lib/negocio/sincronizar.ts:315-319`—, y la tabla tiene su primera fila el 2026-09-15. Medido el
 2026-10-18 a las 15:39 UTC: **52 filas, 40 altas, 11 congelados, 1 descongelado y 0 traspasos**; los
 congelados van del 2026-09-17 al 2026-10-09. Hoy hay **36 contactos congelados**: los 24 viejos, de los que
 no se sabe cuándo porque son anteriores a la primera fila del archivo, y 12 con alta, congelados después
@@ -106,7 +108,7 @@ from negocio.cambios_de_territorio group by 1;
 reaparezca en el CRM, o que alguien abra su ficha — pero un congelado no aparece en ninguna cola.
 Lo mínimo sigue siendo que `congelarLosQueYaNoEstan` escriba `sincronizado_el`; lo correcto, pedirlos
 por identificador cada tanto con `contactoPorId` (`lib/ghl/cliente.ts:545`), que ya usa
-`refrescarUnContacto` (`lib/negocio/sincronizar.ts:585`).
+`refrescarUnContacto` (`lib/negocio/sincronizar.ts:622`).
 
 ### 2.2 · Las citas no tienen resta, y la tarjeta mira treinta días de un barrido que mira catorce
 
@@ -190,7 +192,7 @@ nada que construir.
   `docs/conversion/` dan las cifras del 2026-09-28. Los 31 tienen cita. Nadie distingue el valor: Acquisition
   corta por el `sessionSource` del primer toque (`lib/negocio/atribucionDelLead.ts:104`, leído en
   `lib/negocio/atribucionDelLead.ts:153`), que nunca lo trae; la ficha de Leads Portal también lee
-  el primero (`lib/negocio/fichaDelLeadDelPortal.ts:151`); Conversion lee del último su `url`
+  el primero (`lib/negocio/fichaDelLeadDelPortal.ts:143`); Conversion lee del último su `url`
   (`lib/negocio/recorrido.ts:127`) y si trae `sessionSource` o no (`lib/negocio/recorrido.ts:165`),
   nunca cuál. El valor aparece una sola vez en el código, en un comentario
   (`lib/negocio/recorrido.ts:17`, que todavía dice 29 de 584). La pantalla de Conversation decía que un trigger
@@ -285,7 +287,7 @@ from negocio.citas where estado_cambiado_el is not null group by 1, 2 order by 3
   `lib/negocio/citas.ts:410` y `lib/negocio/citas.ts:414`, y quien las lee es el § 4 de este archivo.
 - **`ESTADO_ASISTIO`**, nuevo como caso: el CRM ya lo escribe en 3 citas y ningún archivo lo lee (§ 4).
   Leerlo no es sumarlo: `citasAlcanzables.ts` ya prohíbe sumar los plantones del CRM con `asistio`
-  (`lib/negocio/citasAlcanzables.ts:87-113`), y lo mismo valdría para éstas.
+  (`lib/negocio/citasAlcanzables.ts:88-114`), y lo mismo valdría para éstas.
 
 ```sql
 select count(*) filter (where estado_entrega_familia = 'en_curso') en_curso,
@@ -311,7 +313,7 @@ pero viaja con la mediana y con un guardián que habla cuando la fecha describe 
 `lib/negocio/periodo.ts:158-176`, con el umbral de 0,25 en `lib/negocio/periodo.ts:147`). Faltaba el año: `fechaCorta`
 formateaba con `day` y `month` y nada más (`components/conversation/PanelDeConversation.jsx:399-404@6f3bdb5`), así que
 el 2025-08-08 salía «8 de agosto» al lado de un «24 de agosto» de 2026. **Cerrado el 2026-10-10 en CN-4
-(`89d8c19`)**: la fecha lleva el año cuando no es el de hoy (`components/conversation/comun.jsx:91-96`), y el aviso
+(`89d8c19`)**: la fecha lleva el año cuando no es el de hoy (`components/conversation/comun.jsx:92-97`), y el aviso
 de la cola, que la pantalla ya no dibuja, lo recibe el cerebro (`lib/agentes/executive/adaptadores/conversation.ts:80`).
 Medido el 2026-10-18: la mitad de los 600 contactos con alta entró después del 2026-08-28.
 La tarjeta dibuja ese «desde el …» debajo de «Contactos» y de «Citas totales»
@@ -525,7 +527,7 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   calendario (`lib/negocio/recorrido.ts:201-203`; el propio `lib/negocio/costoDelAnuncio.ts:62-64`
   lo admite). Y `lib/negocio/periodo.ts:76-77` decía, hasta `65669f4` (2026-10-18),
   que todas las ventanas del sistema son móviles. Leads Portal sí es móvil
-  (`lib/negocio/leadsDelPortal.ts:300`): sus «30 días» no son la misma cohorte en los bordes. **En Conversion,
+  (`lib/negocio/leadsDelPortal.ts:297`): sus «30 días» no son la misma cohorte en los bordes. **En Conversion,
   cerrado el 2026-10-09** (CV-4): su segmentado va sin ese `title`, y desde CV-3 corta en días cerrados. El comentario
   de `periodo.ts`, **cerrado el 2026-10-18 (`65669f4`)**; lo de Leads Portal sigue.
 - **El monitor de atribución contaba una clave que nadie trae. Cerrada el 2026-10-18 (`65669f4`).** Las cinco UTM
@@ -554,9 +556,9 @@ Es la clase de deuda más cara de esta lista, porque el que la lee es el usuario
   texto fijo «No hay ninguna venta registrada» (`lib/negocio/huecosDeSales.ts:59`), sin mirar si hay
   ventas. El día de la primera venta, la tarjeta la va a contar y el hueco la va a negar. Sigue igual el 2026-10-18.
 - **La tarjeta «Todos» de Leads Portal dibuja «0 vendidos»**
-  (`components/leads-portal/PanelDeLeadsPortal.jsx:308-309`), el único cero de la pantalla sobre la
+  (`components/leads-portal/PanelDeLeadsPortal.jsx:309-310`), el único cero de la pantalla sobre la
   venta, al lado de un «—» con motivo, cuando el encabezado del mismo archivo promete «un guion donde
-  no hay de qué hablar, nunca un cero» (`components/leads-portal/PanelDeLeadsPortal.jsx:21`).
+  no hay de qué hablar, nunca un cero» (`components/leads-portal/PanelDeLeadsPortal.jsx:21@bf2de85`).
 - **Executive entero** (§ 9), y su píldora «Personalizado», que aplica un rango que no cambia nada
   (§ 10). **Cerrado el 2026-10-01** (nueva estructura, E7): los dos se fueron con la maqueta.
 
@@ -573,11 +575,11 @@ sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
 - **Cerrada el 2026-10-18 (`65669f4`).** `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea
   `anuncios` en «el cron de las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:274`), y hoy dice eso.
 - `lib/negocio/sincronizar.ts:23-28` dice que `ultimo_entrante_el` y los suyos «quedan nulos» y que
-  `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:337-338` pone `score` y `responsable_id` entre
-  lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:441` y `lib/negocio/sincronizar.ts:501`,
+  `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:350-351` pone `score` y `responsable_id` entre
+  lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:456` y `lib/negocio/sincronizar.ts:523`,
   que escriben `score`, y la `054`, que borró `responsable_id`.
-- `lib/ghl/contrato.ts:339` dice que la carpeta del formulario de Meta tiene 9 campos y
-  `lib/ghl/contrato.ts:355` que las siete etiquetas cortas son de esa carpeta; 06 midió hoy 7 campos y
+- `lib/ghl/contrato.ts:356` dice que la carpeta del formulario de Meta tiene 9 campos y
+  `lib/ghl/contrato.ts:372` que las siete etiquetas cortas son de esa carpeta; 06 midió hoy 7 campos y
   dos de las etiquetas en otra carpeta (no re-medido).
 - `lib/ghl/cliente.ts:1` dice «Solo lectura de contactos»; el archivo pone y quita etiquetas
   (`lib/ghl/cliente.ts:592`, `lib/ghl/cliente.ts:638`).
@@ -594,9 +596,9 @@ sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
   gasto y las piezas; de lo que mide, la ruta sólo llamaba a `recorridoDelLead` y a `embudoDelFormulario` (desde
   AG14 de los agentes además lee sus señales guardadas, que no cruzan gasto ni piezas)
   (`app/api/conversion/route.ts:64-78@02d9207`).
-- `lib/negocio/tramosDelIcp.ts:20` («47 de los 471») no dice la fecha en esa línea. (El «79 anuncios y
+- `lib/negocio/tramosDelIcp.ts:20@ddba683` («47 de los 471») no dice la fecha en esa línea. (El «79 anuncios y
   12 con gasto» del panel anterior de Acquisition salió con él en AQ-4.)
-- `lib/negocio/leadsDelPortal.ts:272-275`: sin argumento mide 14 días (`DIAS_DE_LA_TASA`), que no es
+- `lib/negocio/leadsDelPortal.ts:266-269`: sin argumento mide 14 días (`DIAS_DE_LA_TASA`), que no es
   ninguna de las cuatro ventanas. La ruta siempre le pasa el período; es un riesgo latente.
 - Los números de la maqueta de Conversion no coinciden entre sí: 530 literales en
   `components/views/ConversionView.jsx:2@b2dcdf5` y `components/conversion/PanelDeConversion.jsx:11@b2dcdf5`, 538 en
@@ -781,14 +783,14 @@ el documento miente o si buscó mal.
   `docs/sales/14-LOS-CINCO-ESLABONES.md:54`. Las cinco decían 451, que dejó de ser la regla; el 2026-09-28 se
   reapuntaron a la 625 (`861b5f0`), y el 2026-10-18 la 625 sigue siendo el encabezado del § 11. La de `docs/sales/`
   la audita la prueba; las otras cuatro, no.
-- **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:186`, `lib/negocio/rendimientoDelCreativo.ts:120`
+- **Entre módulos:** `lib/negocio/calidadDelCreativo.ts:180`, `lib/negocio/rendimientoDelCreativo.ts:120`
   y `lib/negocio/rendimientoDelCreativo.ts:238` mandan el defecto de grano a las líneas 158-165 de
   `costoDelAnuncio.ts` (157-164 el 2026-09-28: alguien sumó una y siguen sin llegar), y está hacia
   `lib/negocio/costoDelAnuncio.ts:205`; `lib/negocio/fatigaDelCreativo.ts:7` manda la frecuencia a las 89-96, y está
   hacia `lib/negocio/costoDelAnuncio.ts:124`; `lib/negocio/rendimientoDelCreativo.ts:228` manda a la 296 lo
   que está en `lib/negocio/costoDelAnuncio.ts:304`; y `lib/negocio/recorrido.ts:189@210ac73` mandaba —cerrado el 2026-10-08, CV-1— a la 357 de
   `costoDelAnuncio.ts` y a la 230 de `calidadDelCreativo.ts` lo que está en
-  `lib/negocio/costoDelAnuncio.ts:367` y `lib/negocio/calidadDelCreativo.ts:258`.
+  `lib/negocio/costoDelAnuncio.ts:367` y `lib/negocio/calidadDelCreativo.ts:245`.
 
 Lo que haría falta: que la auditoría sume `docs/conversion/`, `docs/acquisition/` y los comentarios
 del código, y que las citas entre documentos de carpetas distintas vayan por sección y no por línea,
@@ -954,7 +956,7 @@ credencial de Meta en Ajustes, con las migraciones `063` y `064`— y el 2026-10
 - **El voseo de la conexión con Meta. Cerrada el 2026-10-18 (`65669f4`).** Al corte, los textos que ve quien conecta
   Meta voseaban: «Revisá…» y «Probá de nuevo» (`82f863b:lib/meta/graph.ts:69`, `82f863b:lib/meta/graph.ts:72`,
   `lib/meta/graph.ts:79-80`) y «Probá de nuevo» en `components/ajustes/ConexionConMeta.jsx:36`; y lo mismo el aviso
-  de una ventana vacía de Leads Portal, «Probá una ventana más larga» (`lib/negocio/leadsDelPortal.ts:528-529`). La
+  de una ventana vacía de Leads Portal, «Probá una ventana más larga» (`lib/negocio/leadsDelPortal.ts:522-523`). La
   prueba de voseo **sólo miraba Tools** (`pruebas/codigo/202-tools-no-vosea.test.ts:40-44`), así que no lo veía. Hoy
   esas líneas dicen «Revisa», «Prueba de nuevo», «avisa a desarrollo» y «Prueba una ventana más larga», y la lista de
   `pruebas/apoyo/voseo.ts` suma «revisá» y «avisá». El arreglo completo que se proponía —que la lista recorra toda la

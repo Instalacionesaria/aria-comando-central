@@ -3,21 +3,22 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA ÚNICA PANTALLA QUE CUENTA PERSONAS Y, EN LA MISMA RESPUESTA, DICE CUÁLES
 //
-// Las demás publican conteos. Ésta publica el conteo **y la lista** que lo produce: «ICP alto 51» y,
+// Las demás publican conteos. Ésta publica el conteo **y la lista** que lo produce: «Prioriza 51» y,
 // debajo, las 51 tarjetas. Si las dos cosas salieran de dos consultas, un barrido que entra entre una
 // y otra deja la tarjeta diciendo 51 sobre una rejilla de 52, y ninguna de las dos está mal.
 //
-// Por eso es **una sola sentencia**: una CTE arma una fila por persona —con su tramo, su cita, su
+// Por eso es **una sola sentencia**: una CTE arma una fila por persona —con su cuadrante, su cita, su
 // asistencia y su venta ya decididos— y de esa misma CTE salen la lista y el resumen. El resumen
-// agrupa por la columna `tramo` de la CTE: no vuelve a clasificar a nadie, así que la tarjeta y la
+// agrupa por la columna `cuadrante` de la CTE: no vuelve a clasificar a nadie, así que la tarjeta y la
 // fila no pueden discrepar sobre dónde cae una persona.
 //
 // ── LOS PREDICADOS NO SON DE ESTA PANTALLA ──────────────────────────────────
 //
 // «Agendó» es `tieneCitaAlcanzable`, «descartado» es `contactoDescartado`, «la cita ya debería haber
 // ocurrido» es `citaCerrable`, el plantón es `marcadaComoPlanton` y la venta es `tieneVenta`. Todos
-// vienen de donde ya los usan Sales, Creative y Conversion. Lo único propio es el tramo, que es una
-// clasificación y no un hecho (`tramosDelIcp.ts`).
+// vienen de donde ya los usan Sales, Creative y Conversion. El cuadrante del ICP lo manda el CRM
+// (`contactos.cuadrante`, la `105`), y su orden y sus rótulos son los de `cuadrantesDelIcp.ts`. Desde el
+// 2026-10-26 reemplaza al puntaje de 0 a 100 y sus tramos (`docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
 //
 // ── LA VENTANA ──────────────────────────────────────────────────────────────
 //
@@ -38,9 +39,10 @@ import {
   marcadaComoPlanton,
   tieneCitaAlcanzable,
 } from './citasAlcanzables.ts';
+import { camposDelCuadrante, tieneElCampo, type CampoDelCrm } from './camposDelCrm.ts';
+import { type ClaveDeCuadrante, CUADRANTES, ROTULO_DE_TODOS } from './cuadrantesDelIcp.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { avisoDeLaCola } from './periodo.ts';
-import { type ClaveDeTramo, ROTULO_DE_TODOS, TRAMOS, UMBRAL_ALTO, UMBRAL_MEDIO } from './tramosDelIcp.ts';
 import { hayVentasRegistradas, montoReportado, tieneVenta, ventasSinMonto } from './ventasDelContacto.ts';
 
 /**
@@ -52,14 +54,6 @@ import { hayVentasRegistradas, montoReportado, tieneVenta, ventasSinMonto } from
  * hoy no se alcanza; si se alcanza, `truncado` lo dice y las tarjetas siguen contando a todos.
  */
 export const TOPE_DE_LA_COHORTE = 5000;
-
-/**
- * Desde hace cuántos días un puntaje 0 cuenta como «reciente» para el guardián.
- *
- * Catorce porque es lo que se midió: los 47 ceros son de altas del 21 de agosto al 3 de septiembre y
- * ninguno de los últimos 14 días (2026-09-27). Un 0 adentro de esta ventana es algo nuevo.
- */
-export const DIAS_DE_LOS_CEROS_RECIENTES = 14;
 
 /**
  * Si la persona llegó a tener cita.
@@ -88,9 +82,8 @@ export interface LeadDelPortal {
   campana: string | null;
   /** `utmContent` del primer toque: la llave de pieza que usa Creative. */
   creativo: string | null;
-  /** El número del CRM, **0 incluido**. El tramo dice cómo se lee. */
-  puntaje: number | null;
-  tramo: ClaveDeTramo;
+  /** El cuadrante del ICP que mandó el CRM, o «Sin clasificar». Nunca un número: el puntaje no se muestra (la `105`). */
+  cuadrante: ClaveDeCuadrante;
   territorio: 'closer' | 'setter' | 'congelado';
   descartado: boolean;
   cita: EstadoDeCita;
@@ -117,8 +110,7 @@ export const CLAVES_DE_LA_FILA = [
   'altaEl',
   'campana',
   'creativo',
-  'puntaje',
-  'tramo',
+  'cuadrante',
   'territorio',
   'descartado',
   'cita',
@@ -131,9 +123,9 @@ export const CLAVES_DE_LA_FILA = [
 export type PorQueSinCierre = 'sin_ventas_registradas' | 'bajo_el_piso';
 export type PorQueSinMonto = 'sin_ventas_registradas' | 'ventas_sin_monto';
 
-/** Una tarjeta: un tramo, o «Todos». */
-export interface ResumenDeTramo {
-  clave: ClaveDeTramo | 'todos';
+/** Una tarjeta: un cuadrante, o «Todos». */
+export interface ResumenDeCuadrante {
+  clave: ClaveDeCuadrante | 'todos';
   rotulo: string;
   contactos: number;
   /** De la cohorte, de 0 a 1. `null` con la cohorte vacía: un «0 %» afirmaría algo. */
@@ -141,12 +133,12 @@ export interface ResumenDeTramo {
   agendados: number;
   asistieron: number;
   vendidos: number;
-  /** Vendidos sobre contactos del tramo. Ver `cierreDe` para cuándo es `null`. */
+  /** Vendidos sobre contactos del cuadrante. Ver `cierreDe` para cuándo es `null`. */
   cierre: number | null;
   porQueSinCierre: PorQueSinCierre | null;
   montoReportado: number | null;
   porQueSinMonto: PorQueSinMonto | null;
-  /** Ventas del tramo sin monto cargado. El monto suma las otras. */
+  /** Ventas del cuadrante sin monto cargado. El monto suma las otras. */
   ventasSinMonto: number;
   /** Personas con una cita que ya debería haber ocurrido y sin asistencia registrada. */
   sinRegistrar: number;
@@ -171,17 +163,19 @@ export interface LeadsDelPortal {
     /** `avisoDeLaCola`: cuando `desde` es un caso suelto y el grueso llegó mucho después. */
     avisoDeLaVentana: string | null;
   };
-  /** Los cuatro tramos, en el orden de `TRAMOS`, aunque alguno esté vacío. */
-  tramos: ResumenDeTramo[];
-  /** La suma de los cuatro. No se cuenta aparte: si no da, se ve. */
-  todos: ResumenDeTramo;
-  sinCalificar: {
-    /** De la cohorte, sin puntaje. */
-    sinPuntaje: number;
-    /** De la cohorte, con el puntaje en 0. Con `sinPuntaje` suma el tramo, siempre. */
-    enCero: number;
-    /** De la EMPRESA, con 0 y alta en los últimos 14 días, sin la ventana. El guardián. */
-    cerosRecientes: number;
+  /** Los cinco cuadrantes —«Sin clasificar» y los cuatro del CRM—, en el orden de `CUADRANTES`, aunque alguno esté vacío. */
+  cuadrantes: ResumenDeCuadrante[];
+  /** La suma de los cinco. No se cuenta aparte: si no da, se ve. */
+  todos: ResumenDeCuadrante;
+  sinClasificar: {
+    /** De la cohorte, sin nada en el campo del cuadrante (o sin el campo en su CRM). */
+    sinValor: number;
+    /** De la cohorte, con algo en el campo que no es ninguna de las cuatro palabras. Con `sinValor` suma la tarjeta. */
+    otroValor: number;
+    /** De la EMPRESA, sin la ventana: los que traen en el campo algo que no es ninguna de las cuatro. El guardián. */
+    otrosEnLaEmpresa: number;
+    /** Ningún cliente a la vista tiene el campo del cuadrante en su catálogo: todos quedan «Sin clasificar». */
+    sinCampo: boolean;
   };
   /** Si la empresa tiene alguna venta registrada, en toda la base. */
   hayVentasRegistradas: boolean;
@@ -192,9 +186,9 @@ export interface LeadsDelPortal {
   aviso: string | null;
 }
 
-/** Lo que el resumen de la sentencia trae por tramo, antes de armar la tarjeta. */
-interface ConteoDeTramo {
-  tramo: ClaveDeTramo;
+/** Lo que el resumen de la sentencia trae por cuadrante, antes de armar la tarjeta. */
+interface ConteoDeCuadrante {
+  cuadrante: ClaveDeCuadrante;
   contactos: number;
   agendados: number;
   asistieron: number;
@@ -208,14 +202,14 @@ interface ConteoDeTramo {
 interface FilaDeLaSentencia {
   total: number;
   leads: (Omit<LeadDelPortal, 'monto'> & { monto: number | string | null })[];
-  tramos: ConteoDeTramo[];
-  sin_puntaje: number;
-  en_cero: number;
+  cuadrantes: ConteoDeCuadrante[];
+  sin_valor: number;
+  otro_valor: number;
   desde: Date | null;
   hasta: Date | null;
   mitad: Date | null;
   proporcion: string | number | null;
-  ceros_recientes: number;
+  otros_en_la_empresa: number;
   universo: number;
   sin_alta: number;
   ultima_alta: Date | null;
@@ -273,6 +267,11 @@ export async function leadsDelPortal(
   dias = DIAS_DE_LA_TASA,
   tope = TOPE_DE_LA_COHORTE,
 ): Promise<LeadsDelPortal> {
+  /* El campo del cuadrante, uno por subcuenta a la vista: sólo para separar «no trae nada» de «trae algo que no es
+     ninguna de las cuatro». Sin campo, nadie trae nada y todos están sin valor. */
+  const campo = await camposDelCuadrante();
+  const trae = (alias: string): RawBuilder<boolean> =>
+    campo.length === 0 ? sql<boolean>`false` : tieneElCampo(sql.raw(`${alias}.campos_del_crm`), campo as CampoDelCrm);
   const { rows } = await sql<FilaDeLaSentencia>`
     with filas as (
       select c.id,
@@ -280,14 +279,12 @@ export async function leadsDelPortal(
              c.alta_en_el_crm as alta_el,
              nullif(btrim(c.atribucion_primera ->> 'campaign'), '') as campana,
              nullif(btrim(c.atribucion_primera ->> 'utmContent'), '') as creativo,
-             c.score as puntaje,
-             /* El corte de \`tramoDelPuntaje\`, con SUS constantes como parámetros. La forma se repite
-                acá porque la base no puede llamar a una función de TypeScript; la prueba de la base
-                pasa cada borde por las dos y exige que coincidan. */
-             case when c.score is null or c.score = 0 then 'sin_calificar'
-                  when c.score >= ${UMBRAL_ALTO} then 'alto'
-                  when c.score >= ${UMBRAL_MEDIO} then 'medio'
-                  else 'bajo' end as tramo,
+             /* La clave del cuadrante tal como la guarda la sincronización, o «Sin clasificar». La columna sólo
+                admite las claves del catálogo (la \`084\`); el \`rechazo\` del catálogo, que el CRM no manda,
+                también cae en «Sin clasificar», como en \`claveDelCuadrante\`. */
+             case when c.cuadrante in ('prioriza', 'valida', 'financia', 'descarta') then c.cuadrante
+                  else 'sin_clasificar' end as cuadrante,
+             ${trae('c')} as trae_el_campo,
              coalesce(c.territorio, 'congelado') as territorio,
              ${contactoDescartado('c')} as descartado,
              ${estadoDeCita('c')} as cita,
@@ -306,14 +303,14 @@ export async function leadsDelPortal(
       (select coalesce(json_agg(json_build_object(
                 'id', f.id, 'nombre', f.nombre, 'altaEl', f.alta_el,
                 'campana', f.campana, 'creativo', f.creativo,
-                'puntaje', f.puntaje, 'tramo', f.tramo, 'territorio', f.territorio,
+                'cuadrante', f.cuadrante, 'territorio', f.territorio,
                 'descartado', f.descartado, 'cita', f.cita, 'asistencia', f.asistencia,
                 'planton', f.planton, 'vendio', f.vendio,
                 'monto', case when f.vendio then f.monto end)
               order by f.alta_el desc, f.id), '[]'::json)
          from (select * from filas order by alta_el desc, id limit ${tope}) f) as leads,
       (select coalesce(json_agg(t), '[]'::json) from (
-         select tramo,
+         select cuadrante,
                 count(*)::int as contactos,
                 count(*) filter (where cita = 'agendo')::int as agendados,
                 count(*) filter (where asistencia = 'asistio')::int as asistieron,
@@ -322,9 +319,9 @@ export async function leadsDelPortal(
                 coalesce(sum(ventas_sin_monto), 0)::int as ventas_sin_monto,
                 count(*) filter (where asistencia = 'sin_registrar')::int as sin_registrar,
                 count(*) filter (where cita = 'solo_congeladas')::int as solo_congeladas
-           from filas group by tramo) t) as tramos,
-      (select count(*) from filas where puntaje is null)::int as sin_puntaje,
-      (select count(*) from filas where puntaje = 0)::int as en_cero,
+           from filas group by cuadrante) t) as cuadrantes,
+      (select count(*) from filas where cuadrante = 'sin_clasificar' and not trae_el_campo)::int as sin_valor,
+      (select count(*) from filas where cuadrante = 'sin_clasificar' and trae_el_campo)::int as otro_valor,
       (select min(alta_el) from filas) as desde,
       (select max(alta_el) from filas) as hasta,
       /* La mediana y la proporción, como Lead Flow: \`percentile_disc\` devuelve un alta que existe, y
@@ -333,10 +330,7 @@ export async function leadsDelPortal(
       (select extract(epoch from (now() - percentile_disc(0.5) within group (order by alta_el)))
               / nullif(extract(epoch from (now() - min(alta_el))), 0) from filas) as proporcion,
       /* Lo que sigue es de la EMPRESA y va sin la ventana a propósito. */
-      (select count(*) from negocio.contactos
-        where score = 0
-          and alta_en_el_crm >= now() - make_interval(days => ${DIAS_DE_LOS_CEROS_RECIENTES}))::int
-        as ceros_recientes,
+      (select count(*) from negocio.contactos e where e.cuadrante is null and ${trae('e')})::int as otros_en_la_empresa,
       (select count(*) from negocio.contactos)::int as universo,
       (select count(*) from negocio.contactos where alta_en_el_crm is null)::int as sin_alta,
       (select max(alta_en_el_crm) from negocio.contactos) as ultima_alta,
@@ -347,16 +341,16 @@ export async function leadsDelPortal(
   const hayVentas = Boolean(f.hay_ventas);
   const total = Number(f.total);
 
-  const porTramo = new Map(f.tramos.map((t) => [t.tramo, t]));
-  const tramos = TRAMOS.map((t) =>
-    tarjeta(t.clave, t.rotulo, porTramo.get(t.clave) ?? vacio(t.clave), total, hayVentas),
+  const porCuadrante = new Map(f.cuadrantes.map((t) => [t.cuadrante, t]));
+  const cuadrantes = CUADRANTES.map((t) =>
+    tarjeta(t.clave, t.rotulo, porCuadrante.get(t.clave) ?? vacio(t.clave), total, hayVentas),
   );
 
-  /* «Todos» es la suma de las cuatro, no una cuenta aparte. Si un puntaje cayera fuera de los cuatro
-     tramos, la suma daría menos que \`cohorte.total\` y la diferencia se vería. */
-  const suma = (k: keyof ConteoDeTramo): number =>
-    tramos.reduce((acc, t) => acc + Number(porTramo.get(t.clave as ClaveDeTramo)?.[k] ?? 0), 0);
-  const montos = f.tramos.map((t) => t.monto).filter((m) => m !== null && m !== undefined);
+  /* «Todos» es la suma de las cinco, no una cuenta aparte. Si un contacto cayera fuera de los cinco
+     cuadrantes, la suma daría menos que \`cohorte.total\` y la diferencia se vería. */
+  const suma = (k: keyof ConteoDeCuadrante): number =>
+    cuadrantes.reduce((acc, t) => acc + Number(porCuadrante.get(t.clave as ClaveDeCuadrante)?.[k] ?? 0), 0);
+  const montos = f.cuadrantes.map((t) => t.monto).filter((m) => m !== null && m !== undefined);
   const todos = tarjeta(
     'todos',
     ROTULO_DE_TODOS,
@@ -376,7 +370,7 @@ export async function leadsDelPortal(
 
   /* Clave por clave y nunca `...l`. Es la segunda puerta de la lista blanca: si alguien agrega una
      columna al `json_build_object` de arriba, acá se cae antes de salir. La mutación lo probó —con
-     el teléfono metido en el SQL y este mapeo intacto, la prueba de las catorce claves sigue verde, y
+     el teléfono metido en el SQL y este mapeo intacto, la prueba de las trece claves sigue verde, y
      sólo se pone roja cuando se abre el mapeo—. */
   const leads: LeadDelPortal[] = f.leads.map((l) => ({
     id: l.id,
@@ -386,8 +380,7 @@ export async function leadsDelPortal(
     altaEl: new Date(l.altaEl).toISOString(),
     campana: l.campana,
     creativo: l.creativo,
-    puntaje: l.puntaje,
-    tramo: l.tramo,
+    cuadrante: l.cuadrante,
     territorio: l.territorio,
     descartado: l.descartado,
     cita: l.cita,
@@ -412,12 +405,13 @@ export async function leadsDelPortal(
         'la mitad de los contactos entró',
       ),
     },
-    tramos,
+    cuadrantes,
     todos,
-    sinCalificar: {
-      sinPuntaje: Number(f.sin_puntaje),
-      enCero: Number(f.en_cero),
-      cerosRecientes: Number(f.ceros_recientes),
+    sinClasificar: {
+      sinValor: Number(f.sin_valor),
+      otroValor: Number(f.otro_valor),
+      otrosEnLaEmpresa: Number(f.otros_en_la_empresa),
+      sinCampo: campo.length === 0,
     },
     hayVentasRegistradas: hayVentas,
     piso: PISO_DE_UNA_TASA,
@@ -431,9 +425,9 @@ export async function leadsDelPortal(
 
 const iso = (d: Date | null): string | null => (d === null ? null : new Date(d).toISOString());
 
-function vacio(tramo: ClaveDeTramo): ConteoDeTramo {
+function vacio(cuadrante: ClaveDeCuadrante): ConteoDeCuadrante {
   return {
-    tramo,
+    cuadrante,
     contactos: 0,
     agendados: 0,
     asistieron: 0,
@@ -446,12 +440,12 @@ function vacio(tramo: ClaveDeTramo): ConteoDeTramo {
 }
 
 function tarjeta(
-  clave: ClaveDeTramo | 'todos',
+  clave: ClaveDeCuadrante | 'todos',
   rotulo: string,
-  c: Omit<ConteoDeTramo, 'tramo'>,
+  c: Omit<ConteoDeCuadrante, 'cuadrante'>,
   total: number,
   hayVentas: boolean,
-): ResumenDeTramo {
+): ResumenDeCuadrante {
   const contactos = Number(c.contactos);
   const vendidos = Number(c.vendidos);
   const cierre = cierreDe(contactos, vendidos, hayVentas);
@@ -480,12 +474,12 @@ function tarjeta(
  * En este orden, y el orden importa:
  *
  *   1 · **La empresa no tiene ninguna venta registrada.** Es el caso de hoy. Un «0 %» en cada
- *       tarjeta se leería como «ningún tramo compra», cuando lo cierto es que nadie registró una
+ *       tarjeta se leería como «ningún cuadrante compra», cuando lo cierto es que nadie registró una
  *       venta: es el hueco que `huecosDeSales.ts` ya declara, y esta pantalla no lo contradice.
- *   2 · **El tramo tiene menos de `PISO_DE_UNA_TASA` contactos.** Con tres personas, una venta es un
+ *   2 · **El cuadrante tiene menos de `PISO_DE_UNA_TASA` contactos.** Con tres personas, una venta es un
  *       33 %. El piso es del denominador, no del total.
  *
- * Fuera de esos dos, se publica, **0 incluido**: si la empresa vende y un tramo de cincuenta no, ese
+ * Fuera de esos dos, se publica, **0 incluido**: si la empresa vende y un cuadrante de cincuenta no, ese
  * cero está medido.
  */
 export function cierreDe(
@@ -501,8 +495,8 @@ export function cierreDe(
 /**
  * El monto reportado de una tarjeta. **Tres estados, y ninguno se colapsa en otro.**
  *
- * Sin ventas en la empresa, `null`. Con ventas del tramo y ningún monto cargado, `null` también, con
- * otro motivo: un «$0» diría que vendió gratis. Y si el tramo no vendió pero la empresa sí, `0`: ahí
+ * Sin ventas en la empresa, `null`. Con ventas del cuadrante y ningún monto cargado, `null` también, con
+ * otro motivo: un «$0» diría que vendió gratis. Y si el cuadrante no vendió pero la empresa sí, `0`: ahí
  * el cero es un hecho.
  */
 export function montoDe(
@@ -521,7 +515,7 @@ function avisoDe(r: LeadsDelPortal, tope: number): string | null {
 
   /* Primero, porque cambia la lectura de todo lo demás: con las campañas pausadas desde el 14 de
      septiembre, «Hoy» y «7 días» vienen vacíos o casi, y eso no es un dato que falta. Pero NO corta
-     el aviso como en la cadena de Sales: el guardián de los ceros y los que no tienen alta son de la
+     el aviso como en la cadena de Sales: el guardián del cuadrante y los que no tienen alta son de la
      empresa, no de la ventana, y tienen que decirse igual. */
   if (r.cohorte.total === 0) {
     partes.push(
@@ -530,12 +524,20 @@ function avisoDe(r: LeadsDelPortal, tope: number): string | null {
     );
   }
 
-  if (r.sinCalificar.cerosRecientes > 0) {
+  /* El guardián del cuadrante. Sin el campo, todos quedan «Sin clasificar» y no es porque el CRM no los
+     clasificó: es que no se encontró dónde lo escribe. Con el campo, un valor que no es ninguna de las cuatro
+     palabras —una opción nueva, un error de tipeo en el CRM— se cuenta como «Sin clasificar» y se dice acá, en
+     vez de perderse en silencio. */
+  if (r.sinClasificar.sinCampo && r.cohorte.universo > 0) {
     partes.push(
-      `${r.sinCalificar.cerosRecientes} contacto(s) entraron en los últimos ` +
-        `${DIAS_DE_LOS_CEROS_RECIENTES} días con el puntaje del CRM en 0. Se siguen contando como ` +
-        '«Sin calificar», pero un 0 nuevo puede ser un puntaje real o el puntuador del CRM parado, y ' +
-        'el CRM no dice cuál de los dos es.',
+      'El CRM no tiene el campo del cuadrante del ICP (contact.cuadrante_de_clasificacion): todos los ' +
+        'contactos quedan «Sin clasificar» hasta que exista.',
+    );
+  } else if (r.sinClasificar.otrosEnLaEmpresa > 0) {
+    partes.push(
+      `${r.sinClasificar.otrosEnLaEmpresa} contacto(s) traen en el campo del cuadrante un valor que no es ` +
+        'Prioriza, Valida, Financia ni Descarta. Se cuentan como «Sin clasificar»: revisa las opciones del ' +
+        'campo en el CRM.',
     );
   }
 

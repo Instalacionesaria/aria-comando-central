@@ -565,7 +565,7 @@ test('un resultado de un contacto que YA NO ESTÁ sigue constando', async () => 
   assert.equal(c.completadas[0]!.completadaPor, 'Venta', 'no dice qué la completó, o volvió a la jerga');
   // Y NO se le inventan datos: los íconos van como no medidos, no como ceros.
   assert.equal(fila.iconos.montoVenta, null);
-  assert.equal(fila.score, null);
+  assert.equal(fila.cuadrante, null);
 });
 
 // ─── 7 · El cockpit: un cero medido y uno no medido ────────────────────────

@@ -11,6 +11,8 @@
 > [08-COMO-USAR-EL-GRAFO.md](08-COMO-USAR-EL-GRAFO.md). La versión anterior se lee con
 > `git show 972972e:"docs/OTROS/estado actual/16-AJUSTES-Y-PERMISOS.md"`.
 
+> **ICP en cuadrantes (2026-10-26, local, sin subir).** El ICP del lead dejó de ser el puntaje de 0 a 100: es el cuadrante que manda el CRM —Prioriza, Valida, Financia o Descarta— en `contactos.cuadrante` (la `105`), y ningún número del ICP se muestra. Lo que esta foto dice del puntaje, de los tramos 75 y 50 y del cero describe la versión anterior; sus citas quedaron fijadas a `@bf2de85` o a `@ddba683`. Los requisitos: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`. Ajustes › Clientes ya no elige el campo del puntaje: muestra el campo del cuadrante (si está y cuántos clasifica) y sólo elige las carpetas del Perfil; un cuerpo con «puntaje» es 400.
+
 > **Desde el corte del 2026-09-28**
 >
 > - **2026-09-29 · `ecfbc26`** — CR-3: el token de Meta y la cuenta publicitaria (`act_…`) en Ajustes ›
@@ -236,8 +238,8 @@ sesión; no decide ningún permiso.
 (82 el 2026-09-28), **82** declaran `PANTALLA` y **29** están en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:522-656`):
 son exactamente, archivo por archivo, los que no la declaran (comparadas las dos listas con `diff`). No llaman a
 `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**, las mismas: `salud` y `login`, que son
-las públicas (`pruebas/apoyo/autorizados.ts:774-782`), y la sonda, el cron y el aviso del CRM, que van con secreto
-propio (`pruebas/apoyo/autorizados.ts:924-968`).
+las públicas (`pruebas/apoyo/autorizados.ts:779-787`), y la sonda, el cron y el aviso del CRM, que van con secreto
+propio (`pruebas/apoyo/autorizados.ts:929-973`).
 
 **Rechazos registrados.** En toda la historia de `identidad.auditoria_accesos`, 3 `permiso_denegado` y 0
 `seccion_denegada`; **ninguno** desde el 2026-09-28 (consulta del 2026-10-18 agrupada por `accion`).
@@ -281,7 +283,7 @@ restringe por sección, dársela sería dársela a todos los administradores (`d
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:776-781`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
+(`pruebas/apoyo/autorizados.ts:781-786`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
 origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con N=16384, r=8, p=1
 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login exitoso (`lib/autenticacion/freno.ts:85-96`).
 
@@ -443,7 +445,7 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 | Los topes y Meta | Los topes del cerebro en Ajustes; la prueba de conexión con Meta | `pruebas/base/218-los-topes-del-cerebro-en-ajustes.test.ts`, `pruebas/codigo/255-la-conexion-con-meta.test.ts` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` sigue vacía: no hay ninguna excepción viva
-(`pruebas/apoyo/autorizados.ts:884-891`).
+(`pruebas/apoyo/autorizados.ts:889-896`).
 
 **Un cruce que el código anuncia y no se encontró.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en las dos
@@ -572,10 +574,10 @@ Encima de la Fase 0 y, como ella, en `main` local y **no en producción**. Commi
   da un rótulo en vez del id de cada persona (`db/migraciones/100_los_closers_del_cliente_final.sql`).
 - **El puntaje y el Perfil de un cliente** (C6 · D4, `098`): debajo de la Conexión, «Puntaje y Perfil» elige cuál campo
   numérico de su GoHighLevel es el puntaje de sus leads y qué carpetas se muestran en el Perfil y en qué grupo
-  (`components/ajustes/CamposDelCliente.jsx:40`). También para el principal: no son credenciales, son el catálogo de su
+  (`components/ajustes/CamposDelCliente.jsx:35`). También para el principal: no son credenciales, son el catálogo de su
   subcuenta. Lee con `credenciales.ver` y elige con `credenciales.editar`, con la pantalla `credenciales`; quien sólo ve
   lo ve de sólo lectura (`puedeEditar`), y un cliente de otra empresa o de baja es 404
-  (`app/api/admin/cuentas/[id]/campos/route.ts:94`, `app/api/admin/cuentas/[id]/campos/route.ts:104`). Corre como
+  (`app/api/admin/cuentas/[id]/campos/route.ts:88`, `app/api/admin/cuentas/[id]/campos/route.ts:98`). Corre como
   inquilino con el foco en ese cliente, sin abrir identidad, y queda auditado.
 - **La lista de chequeo de cada cliente** (C6 · D5, `099`): Ajustes › Clientes dice, por cliente, si está
   configurado y, abierta, qué le falta y qué hacer (`components/ajustes/Clientes.jsx:228`, `components/ajustes/ListaDeChequeo.jsx:69`). Es

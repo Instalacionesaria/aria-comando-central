@@ -490,7 +490,7 @@ permite leer un delta sin ir a mirar los campos de fecha.
 **Cuatro defectos de este renglón, los cuatro comprobables, y hay que arreglarlos al portar:**
 
 1. **La nota vive dentro de la barra de rango, que está oculta salvo en `custom`.** `:258` hace
-   `acqRange.classList.toggle('off', S.period !== 'custom')` y `app/aios.css:1745` define
+   `acqRange.classList.toggle('off', S.period !== 'custom')` y `app/aios.css:1747` define
    `.acq-range.off { display: none }`. El `<span id="acqRangeNote">` está adentro
    (`AcquisitionView.jsx:91`). O sea: **en «Histórico» la nota dice `'histórico completo'` dentro de
    un contenedor invisible.** La única nota que alguien llega a ver es la del rango libre.
@@ -742,7 +742,7 @@ Ninguno de estos es una opinión: los siete se comprueban abriendo el archivo.
 | 1 | El segmentado de período no enciende el botón elegido; los otros tres departamentos sí | `acquisition.js:273-284` contra `conversion.js:630-631` | A5-04 |
 | 2 | El calendario global guarda `S.from`/`S.to` y nadie los lee; el cálculo sigue leyendo el DOM | `acquisition.js:268` contra `:68` | A5-09 |
 | 3 | Un rango invertido se convierte en 1 día o en 21 sin aviso | `acquisition.js:69` | A5-07 |
-| 4 | La nota vive dentro de un contenedor oculto salvo en `custom` | `acquisition.js:258` + `app/aios.css:1745` | A5-21 |
+| 4 | La nota vive dentro de un contenedor oculto salvo en `custom` | `acquisition.js:258` + `app/aios.css:1747` | A5-21 |
 | 5 | Los dos textos «sin comparación» se sobrescriben en la misma pasada y nunca se ven | `acquisition.js:270`, `:282` contra `:260` | A5-21, A5-22 |
 | 6 | `delta` mata la flecha cuando el valor actual es cero | `acquisition.js:126` | A5-16 |
 | 7 | El KPI de Inversión sube en verde y, además, sólo puede moverse cuando las ventanas duran distinto | `acquisition.js:146` + `:88` | A5-19, P-07 |

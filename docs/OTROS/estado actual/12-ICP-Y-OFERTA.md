@@ -161,7 +161,7 @@ que llama desde la propia ruta a la función de la base que copia el formulario
 
 Las cuatro que gastan resuelven la llave con `resolverAccesoAFundaciones`
 (`lib/credenciales/resolver.ts:487-494`) y están en `ARCHIVOS_AUTORIZADOS` sólo por eso
-(`pruebas/apoyo/autorizados.ts:208-227`); las demás abren `conOrganizacion(` como cualquier ruta.
+(`pruebas/apoyo/autorizados.ts:213-232`); las demás abren `conOrganizacion(` como cualquier ruta.
 
 ### 2.3 · El Research y sus techos de tiempo
 
@@ -285,7 +285,7 @@ Eso fue cierto del 2026-08-23 al 2026-09-07. El commit `b0a983b` lo cortó:
 Lo que queda del hub, y **nada de esto corre en ejecución**:
 
 - **El proyecto de Supabase.** `public` se comparte con otras plataformas, entre ellas ARIA-brain, y
-  el prefijo `aria_cc_` es lo que dice de quién es cada tabla (`lib/datos/esquema.ts:1728-1733`).
+  el prefijo `aria_cc_` es lo que dice de quién es cada tabla (`lib/datos/esquema.ts:1741-1746`).
 - **Los nombres, como contrato.** Los identificadores de herramienta son los del hub
   (`lib/fundaciones/herramientas.ts:11-16`), los campos del JSON siguen en inglés
   (`lib/fundaciones/estado.ts:11-17`) y las metodologías nacieron como copias, de las que seis ya
@@ -587,7 +587,7 @@ columna en producción rompe la pantalla sin que ninguna prueba de este reposito
 
 **La misma palabra para dos cosas.** «ICP» es el avatar de esta pantalla y el puntaje del CRM que
 usan Leads Portal, Acquisition y Creative (`docs/OTROS/futuro/icp-interno-calculado.md:3-4`,
-`lib/negocio/calidadDelCreativo.ts:65`). Una métrica «ICP por anuncio» construida sobre el avatar, o
+`lib/negocio/calidadDelCreativo.ts:65@bf2de85`). Una métrica «ICP por anuncio» construida sobre el avatar, o
 un avatar evaluado contra el puntaje, mezcla dos hechos que no se cruzan (§ 5).
 
 **Un corte de tiempo que es de la plataforma y no nuestro.** En `mercado/preparar` la espera (580 s)

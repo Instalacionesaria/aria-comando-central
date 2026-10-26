@@ -60,15 +60,15 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | lugar del prototipo | dato | fuente | medido |
 |---|---|---|---|
 | Encabezado: chips de fuente | un chip, «GoHighLevel», con el punto de `frescuraDe('contactos')` | `lib/negocio/frescura.ts:116`; la cabecera ya ata Conversion a esa tarea (`lib/agentes/cabecera.ts:111`) | — |
-| Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:132-139`) | sólo con 7 y 30 días |
+| Encabezado: «Plan de acción» | el plan de la pasada de la mañana | `BotonDelPlan` (`components/senales/SenalesDelDepartamento.jsx:135-142`) | sólo con 7 y 30 días |
 | Encabezado: segmentado de período | Hoy · 7 días · 30 días · Completo | `PERIODOS` (`lib/negocio/periodo.ts:83-96`), con 30 días por omisión (`lib/negocio/periodo.ts:109`) | — |
 | Panel 1 · Contactos | la cohorte: contactos dados de alta en la ventana | `negocio.contactos.alta_en_el_crm` | **105** (anterior: 447) |
 | Panel 1 · Vistas de landing | la suma de `landingPageView` de todas las campañas, **contada por Meta** | `negocio.metricas_de_anuncio.acciones` (la `053`); la misma clave que lee Creative (`lib/negocio/rendimientoDelCreativo.ts:100`) | **462** (anterior: 2.420, sin día de gasto entero; CV15-07) |
 | Panel 1 · Dan play al VSL | hueco | 79 escrituras, las 79 en cero (`lib/negocio/embudoDelFormulario.ts:124-134`) | — |
 | Panel 2 · Empiezan el form | contactos con el campo `Form Landing VSL` | `CAMPO_DEL_FORMULARIO` (`lib/negocio/recorrido.ts:231`), que murió el 2026-08-31 | **0**: «Sin dato desde el 31 ago.» |
-| Panel 2 · Agendan | contactos con alguna cita alcanzable, sobre la cohorte | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:135-145`) | **63** de 105, 60 % |
+| Panel 2 · Agendan | contactos con alguna cita alcanzable, sobre la cohorte | `tieneCitaAlcanzable` (`lib/negocio/citasAlcanzables.ts:136-146`) | **63** de 105, 60 % |
 | Panel 3 · Agendados | los mismos 63 | igual | **63** |
-| Panel 3 · Calificados | agendados sin etiqueta de descarte, sobre los agendados | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:157-161`), como A14-07 | **35** de 63, 56 % |
+| Panel 3 · Calificados | agendados sin etiqueta de descarte, sobre los agendados | `tieneCitaAlcanzable` y no `contactoDescartado` (`lib/negocio/citasAlcanzables.ts:166-172`), como A14-07 | **35** de 63, 56 % |
 | Panel 3 · No calificados | agendados descartados | la resta | **28** de 63, 44 % |
 | Panel 3 · «% de contacto a cita útil» | calificados sobre la cohorte | igual | 35 de 105, 33 % |
 | Nota de cobertura | cuántos contactos traen por dónde entraron, y el rango | `recorrido.cobertura` (`lib/negocio/recorridoDelLead.ts:221`) | — |
@@ -81,7 +81,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 | Cajón de Formulario | los tres estados y la contradicción con las citas, que hasta CV-4 fueron el segundo bloque | `embudoDelFormulario` | — |
 | Cajón de Agenda | agendados, calificados, tasa, confirmados, cancelaron y no calificados | CV15-18 | 63 · 35 · 56 % · 18 · 12 · 28 |
 | Alarma | las señales `critica` | `senales.lista` | ninguna: no hay reglas críticas |
-| Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:210`) | — |
+| Tarjeta «Señales» | la de hoy, al final | `TarjetaDeSenales` (`components/senales/SenalesDelDepartamento.jsx:213`) | — |
 
 ### Lo que la medición del 2026-10-08 agregó
 
@@ -113,7 +113,7 @@ organización principal, leídos con `scripts/supabase.mjs leer`.
 **Qué es** · La pestaña se dibuja con las clases del prototipo, y en su orden: `cv-wrap`, `cre-head`,
 `cs-panels cv-panels`, la nota, `ghead` y `journey`, y la alarma (`aios-command-center_1.html:2806-2862`).
 Esas reglas siguen vivas en `app/aios.css`: `.cv-wrap` (`app/aios.css:917`), `.journey` y `.jstep`
-(`app/aios.css:920-934`) y los paneles (`app/aios.css:1948-1989`). La sección **no lleva `estetica-op`**,
+(`app/aios.css:920-934`) y los paneles (`app/aios.css:1950-1998`). La sección **no lleva `estetica-op`**,
 que es la capa que cambió el look.
 
 **Fórmula** · Lo nuevo —la nota, el cajón, el chip con su punto, el teléfono— va en una hoja propia,
@@ -255,7 +255,7 @@ En «Completo» la nota lo dice (CV15-10). Es el riesgo 6 de
 ### CV15-06 · El panel «Landing y VSL»: tres celdas
 
 **Qué es** · El prototipo tenía dos celdas, «Visitas» y «Dan play al VSL»
-(`aios-command-center_1.html:4111-4121`). Pasa a tres, con `.pn-b.q3` (`app/aios.css:1986-1989`):
+(`aios-command-center_1.html:4111-4121`). Pasa a tres, con `.pn-b.q3` (`app/aios.css:1988-1998`):
 
 | celda | cifra | tasa | flecha |
 |---|---|---|---|
@@ -514,7 +514,7 @@ automatización de descarte, que cancela el 94 % de lo suyo (`lib/negocio/indica
   (`lib/negocio/indicadoresDeCitas.ts:245`): una sola definición de «confirmó». El denominador es
   `CV15-P10`.
 - **Cancelaron**: calificados con al menos una cita alcanzable y **ninguna** alcanzable que no esté cancelada
-  (`alcanzable` y `cancelada`, `lib/negocio/citasAlcanzables.ts:54-66`). Quien canceló y volvió a reservar
+  (`alcanzable` y `cancelada`, `lib/negocio/citasAlcanzables.ts:55-67`). Quien canceló y volvió a reservar
   no cuenta. Tasa sobre los calificados, con el piso.
 
 **Qué no es** · No es la tasa de cancelación de Conversation y Sales (`lib/negocio/indicadoresDeCitas.ts:341`),
@@ -590,7 +590,7 @@ la invariante. La ruta de Conversion corta con esa ventana desde el 2026-10-08 (
 `lib/negocio/embudosDeAcquisition.ts`:
 
 - **una pura**, probada sin base: `armarPasos`, `variacionEnPuntos` y `pasoDeLaSenal`. Importa `tasa` y
-  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:294-297` y `:316-325`), y no las copia;
+  `variacion` de Acquisition (`lib/negocio/embudosDeAcquisition.ts:301-304` y `:323-332`), y no las copia;
 - **una de lectura**, probada contra la base: una sola pasada por los contactos de la cohorte y la suma de
   las vistas. Compone `recorridoDelLead` y `embudoDelFormulario`, que reciben la ventana explícita, y no
   recalcula lo que ya calculan, con una excepción: en la ventana anterior, la pasada cuenta la cohorte junto con
@@ -610,7 +610,7 @@ también `pasos` y `senales.porPaso`.
 **Qué es** · Lo que se mide no se recalcula en ningún otro lugar:
 
 - **El cerebro.** `recorrido_de_los_leads` y `formulario_de_la_landing`
-  (`lib/agentes/executive/adaptadores/conversion.ts:47` y `:64`) pasan a la lectura única, con la zona de la
+  (`lib/agentes/executive/adaptadores/conversion.ts:48` y `:65`) pasan a la lectura única, con la zona de la
   empresa. Se agrega `pasos_de_conversion`, con las cifras de la tira y de las tarjetas. Ya promete días
   cerrados para 7 y 30 días (`lib/agentes/executive/adaptadores/comun.ts:65`), y deja de ser falso para
   Conversion. `TAREAS_POR_SECCION.conversion`
@@ -643,7 +643,7 @@ de los días de calendario hasta hoy a los días cerrados.
 
 **Qué es** · A 375 px las cinco tarjetas pasan a una columna, la tira a un panel por fila y el cajón ocupa el
 ancho. Lo nuevo va en `app/conversion.css`. El panel 1, con tres celdas, puede quedar apretado en la columna
-de `.cv-panels` (`app/aios.css:1985`): se mira en el navegador en CV-5.
+de `.cv-panels` (`app/aios.css:1987`): se mira en el navegador en CV-5.
 
 **Estado** · **Las reglas, construidas el 2026-10-09** (CV-4) en `app/conversion.css`: entre el escritorio y el
 teléfono las cinco tarjetas van en tres columnas, la tira en un panel por fila y sin las flechas; desde 760 px,

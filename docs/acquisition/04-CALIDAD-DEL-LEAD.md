@@ -1,5 +1,7 @@
 # Acquisition · La calidad del lead: calificado, tramos de ICP y afinidad
 
+> **El ICP cambió el 2026-10-26** (`docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`): los tramos de ICP (§ 2), la fórmula de afinidad (§ 3) y el corte por tramos (§ 5) son del puntaje de 0 a 100, que ya no se usa. El reparto de los calificados es Prioriza, Valida y Financia, y calificado es agendó con uno de esos tres.
+
 > **`lib/aios/acquisition.js` YA NO EXISTE.** Se borró el 2026-09-16 junto con
 > `acquisition-plan.js`, y con ellos los 58 literales inventados que esta carpeta documenta. Las
 > citas `acquisition.js:N` de abajo **siguen siendo correctas como referencia histórica** —el
@@ -243,11 +245,11 @@ salgan de una consulta y puedan no cerrar contra el total, la barra sigue siendo
 
 Y porque suma 100 % siempre, **es comparable entre filas**: la misma función se usa en la tarjeta del
 embudo y en la celda de la tabla, con distinto ancho físico —`.acq-icp-cell .acq-icp { width: 78px }`
-(`app/aios.css:1814`)— y el mismo ancho relativo.
+(`app/aios.css:1816`)— y el mismo ancho relativo.
 
 ### A4-12 · El tramo bajo se pinta con el color del carril vacío
 
-- **Rastro:** `lib/aios/acquisition.js:182` y `:238` · colores en `app/aios.css:1793-1801`
+- **Rastro:** `lib/aios/acquisition.js:182` y `:238` · colores en `app/aios.css:1795-1803`
 - **Estado:** requisito de forma; el color del tercer tramo es una decisión a revisar.
 
 Cuatro píxeles de alto, tres segmentos, `gap: 2px`. Los tramos alto y medio se pintan con la misma
@@ -370,7 +372,7 @@ Acquisition necesita es el otro: un **puntaje por contacto**. No se cruzan en ni
 
 ### 4.2 · El campo se lee por nombre, y eso tiene un precio declarado
 
-- **Rastro:** `lib/negocio/camposDelCrm.ts:318` (`campoPorNombre`)
+- **Rastro:** `lib/negocio/camposDelCrm.ts:333` (`campoPorNombre`)
 - **Estado:** el mecanismo existe y ya lo usan dos cifras de producción
   (`consumoDelPrecall.ts:150`, `indicadoresDeCitas.ts:248`).
 

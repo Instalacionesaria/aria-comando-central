@@ -4,7 +4,7 @@
 // EL GRANO ES LA PIEZA
 //
 // Creative publica sólo lo que es de la pieza o del anuncio (C11-04): la caída del CTR, la concentración del
-// gasto en una pieza, la frecuencia de un anuncio y el ICP de una pieza. Lo de campaña y de conjunto —la
+// gasto en una pieza, la frecuencia de un anuncio y el Descarta de una pieza. Lo de campaña y de conjunto —la
 // entrega, el CPM, el costo por contacto, los cambios por conjunto— es de Acquisition (`./acquisition.ts`), y
 // Creative no publica ni una señal con esas entidades. La pieza se identifica por su cliente y su nombre normalizado
 // (`idDeLaPieza`, `lib/negocio/idDeLaPieza.ts`), el mismo identificador con que la pantalla agrupa: el nombre si es del
@@ -14,8 +14,8 @@
 // ── CON VARIOS CLIENTES (el nivel 3) ─────────────────────────────────────────
 //
 // Lo que la regla dice de «la cuenta» se mide dentro de cada cliente: la concentración es sobre el gasto de SU cliente,
-// y el ICP de una pieza se compara con las de su etapa EN SU CLIENTE —el puntaje es el campo de la subcuenta de cada
-// uno—. Con piezas de dos clientes o más, la evidencia nombra al cliente (`cliente`, su id), y con eso la frase lo dice
+// y el Descarta de una pieza se compara con las de su etapa EN SU CLIENTE —el cuadrante es el campo de la subcuenta de
+// cada uno—. Con piezas de dos clientes o más, la evidencia nombra al cliente (`cliente`, su id), y con eso la frase lo dice
 // y la pantalla rotula la señal. Con uno, la evidencia y la frase son las de siempre.
 //
 // ── CONSUME LA LECTURA DE LA PANTALLA ────────────────────────────────────────
@@ -26,7 +26,7 @@
 // es la de la pantalla de Creative, y una señal con otra ventana diría otra cifra que la que se ve.
 //
 // Lo que no se puede medir no se publica: sin la lectura de anuncios al día (`frescuraDe('anuncios')`), la
-// caída del CTR, la concentración y la frecuencia van a «sin medición»; sin el campo de ICP en el CRM, la del ICP.
+// caída del CTR, la concentración y la frecuencia van a «sin medición»; sin el campo del cuadrante en el CRM, la de Descarta.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sql } from 'kysely';
@@ -45,7 +45,9 @@ export const CRE = {
   caidaDeCtr: 'CRE-CAIDA-DE-CTR',
   concentracion: 'CRE-CONCENTRACION',
   frecuenciaAlta: 'CRE-FRECUENCIA-ALTA',
-  icpPorPieza: 'CRE-ICP-POR-PIEZA',
+  /* Reemplaza a `CRE-ICP-POR-PIEZA` (el ICP promedio): desde la `105` el ICP es una de cuatro palabras y no hay
+     promedio. Sus señales viejas quedan en el historial con su código. */
+  descartaPorPieza: 'CRE-DESCARTA-POR-PIEZA',
 } as const;
 
 export const REGLAS_DE_CREATIVE: readonly ReglaDelCatalogo[] = [
@@ -77,13 +79,13 @@ export const REGLAS_DE_CREATIVE: readonly ReglaDelCatalogo[] = [
     porque: 'Más de tres veces por persona en una semana, con mil impresiones, es la misma gente viendo el mismo anuncio.',
   },
   {
-    codigo: CRE.icpPorPieza,
+    codigo: CRE.descartaPorPieza,
     departamento: 'creative',
-    valor: 15,
-    unidad: 'puntos',
-    denominador: 'contactos con puntaje',
+    valor: 0.15,
+    unidad: 'puntos_porcentuales',
+    denominador: 'contactos clasificados',
     gravedad: 'media',
-    porque: 'Quince puntos de ICP bajo el promedio de las piezas de su etapa (con varios clientes, en su cliente) separan un tramo del otro (C7-10).',
+    porque: 'Quince puntos más de Descarta que el promedio de las piezas de su etapa (con varios clientes, en su cliente): la pieza trae gente que el CRM descarta (decisión del usuario, 2026-10-26; reemplaza a C7-10).',
   },
 ];
 
@@ -92,7 +94,7 @@ export const REGLAS_DE_CREATIVE: readonly ReglaDelCatalogo[] = [
 export interface MedidaDeCreative {
   ventana: VentanaDeSenal;
   periodo: { desde: string; hasta: string };
-  calidad: Pick<CalidadDeLosCreativos, 'filas' | 'campoDeIcp'>;
+  calidad: Pick<CalidadDeLosCreativos, 'filas' | 'campoDelCuadrante'>;
   rendimiento: Pick<RendimientoDeLosCreativos, 'filas'>;
   fatiga: Pick<FatigaDeLosCreativos, 'filas'>;
   /** El cliente por omisión de la empresa: el identificador de sus piezas es el nombre (`idDeLaPieza`). */
@@ -289,20 +291,19 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
     }
   }
 
-  // ── El ICP de una pieza, bajo el promedio de su etapa ──
+  // ── La porción de Descarta de una pieza, sobre el promedio de su etapa ──
   // El corte se hace dentro de cada etapa y nunca entre etapas (C3-06): una pieza de captación no compite con
-  // una de cierre. El promedio es el de las piezas —«el ICP promedio por pieza es X» (C6-04a)—, no el de los
-  // contactos: así lo decía la pantalla hasta el 2026-10-11, y así lo da el agente. La fila sin etapa o sin creativo no
-  // está en ningún promedio. Y dentro de su CLIENTE (el nivel 3): el puntaje es el campo «Puntaje | ICP» de la subcuenta
-  // de cada uno, y la pantalla compara igual (`agrupar`, `lib/negocio/lecturaDeCreative.ts`).
-  if (m.calidad.campoDeIcp === null) {
-    salida.sinMedicion.push(CRE.icpPorPieza);
+  // una de cierre. El promedio es el de las piezas, no el de los contactos, como lo era el del ICP (C6-04a). La fila sin
+  // etapa o sin creativo no está en ningún promedio. Y dentro de su CLIENTE (el nivel 3): el cuadrante es el campo de la
+  // subcuenta de cada uno. Reemplaza al ICP promedio por pieza (la `105`): con palabras no hay promedio.
+  if (m.calidad.campoDelCuadrante === null) {
+    salida.sinMedicion.push(CRE.descartaPorPieza);
   } else {
-    const u = umbral(CRE.icpPorPieza);
+    const u = umbral(CRE.descartaPorPieza);
     const porEtapa = new Map<string, { etapa: string; filas: typeof m.calidad.filas }>();
     for (const f of m.calidad.filas) {
-      // `icpPromedio` llega nulo bajo el piso de calificados: esa pieza no tiene cifra que comparar.
-      if (f.creativo === null || f.etapa === null || f.icpPromedio === null) continue;
+      // `porcionDeDescarta` llega nula bajo el piso de clasificados: esa pieza no tiene cifra que comparar.
+      if (f.creativo === null || f.etapa === null || f.porcionDeDescarta === null) continue;
       const grupo = `${f.cuentaId}·${f.etapa}`;
       porEtapa.set(grupo, { etapa: f.etapa, filas: [...(porEtapa.get(grupo)?.filas ?? []), f] });
     }
@@ -310,27 +311,27 @@ export function detectarEnCreative(m: MedidaDeCreative, umbral: Umbral): { detec
     const porPieza = new Map<string, Deteccion>();
     for (const { etapa, filas } of porEtapa.values()) {
       if (filas.length < 2) continue;
-      const promedio = filas.reduce((s, f) => s + f.icpPromedio!, 0) / filas.length;
+      const promedio = filas.reduce((s, f) => s + f.porcionDeDescarta!, 0) / filas.length;
       for (const f of filas) {
-        const debajo = promedio - f.icpPromedio!;
-        if (debajo < u.valor) continue;
+        const encima = f.porcionDeDescarta! - promedio;
+        if (encima < u.valor) continue;
         const pieza = id(f.cuentaId, f.creativo!);
         const previa = porPieza.get(pieza);
-        if (previa && previa.lineaBase! - previa.valorActual! >= debajo) continue;
+        if (previa && previa.valorActual! - previa.lineaBase! >= encima) continue;
         porPieza.set(pieza, {
           ...base,
-          regla: CRE.icpPorPieza,
+          regla: CRE.descartaPorPieza,
           entidad: { tipo: 'pieza', id: pieza },
-          metrica: 'icp_promedio',
-          lineaBase: redondear(promedio, 1),
-          valorActual: redondear(f.icpPromedio!, 1),
+          metrica: 'porcion_de_descarta',
+          lineaBase: redondear(promedio, 4),
+          valorActual: redondear(f.porcionDeDescarta!, 4),
           cambioPct: null,
-          muestra: f.conPuntaje,
+          muestra: f.clasificados,
           gravedad: 'media',
           causasPosibles: ['puede deberse al mensaje de la pieza', 'puede deberse a la audiencia donde corre'],
-          revisionRecomendada: 'Revisa a quién le habla la pieza: trae gente que encaja menos que las otras de su etapa.',
+          revisionRecomendada: 'Revisa a quién le habla la pieza: trae más gente que el CRM descarta que las otras de su etapa.',
           umbral: u,
-          evidencia: { ventana: m.ventana, creativo: f.creativo, ...delCliente(f.cuentaId), etapa, icpPromedio: f.icpPromedio, promedioDeLaEtapa: redondear(promedio, 1), piezasDeLaEtapa: filas.length, conPuntaje: f.conPuntaje },
+          evidencia: { ventana: m.ventana, creativo: f.creativo, ...delCliente(f.cuentaId), etapa, descarta: redondear(f.porcionDeDescarta!, 4), descartaDeLaEtapa: redondear(promedio, 4), piezasDeLaEtapa: filas.length, clasificados: f.clasificados },
         });
       }
     }

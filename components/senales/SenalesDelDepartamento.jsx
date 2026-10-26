@@ -47,6 +47,8 @@ const TITULO = {
   'ACQ-GASTO-SIN-CRECIMIENTO': 'El gasto sube y los contactos no',
   'ACQ-CONCENTRACION': 'El gasto se concentra en una campaña',
   'ACQ-ICP-ENTRE-CAMPANAS': 'ICP bajo el de su funnel',
+  // Desde la `105` (2026-10-26): el ICP son cuatro palabras; las dos de arriba quedan para las señales del historial.
+  'ACQ-DESCARTA-ENTRE-CAMPANAS': 'Trae más Descarta que su funnel',
   'ACQ-ESCALA-POR-CALIFICADO': 'Calificados más baratos que los de la empresa',
   'ACQ-FUGA-ENTRE-ETAPAS': 'Fuga entre el contacto y la agenda',
   'ACQ-CPM-ABRUPTO': 'Sube el costo por mil impresiones',
@@ -60,6 +62,7 @@ const TITULO = {
   'CRE-CONCENTRACION': 'El gasto se concentra en una pieza',
   'CRE-FRECUENCIA-ALTA': 'La misma gente lo ve muchas veces',
   'CRE-ICP-POR-PIEZA': 'ICP bajo el de su etapa',
+  'CRE-DESCARTA-POR-PIEZA': 'Trae más Descarta que su etapa',
   'CONV-PATRON-ABIERTO': 'Patrón abierto',
   'CNV-FAMILIA-QUE-NO-AGENDA': 'Un recorrido que agenda poco',
   'CNV-CAMBIO-DE-RUTA': 'Cambió la ruta de entrada',
