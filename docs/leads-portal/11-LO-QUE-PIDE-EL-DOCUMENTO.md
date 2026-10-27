@@ -171,7 +171,7 @@ LP-0 cuenta al puntaje como una respuesta (`09 § LP09-P02`).
 ### LP11-07 · ICP score y segmento (`§ 5.3:255-256`)
 
 El puntaje lo calcula el CRM —«Puntaje | ICP», 0 a 100— y llega a `contactos.score` por la
-sincronización (`lib/negocio/sincronizar.ts:456`). El documento no dice quién lo calcula: dice que
+sincronización (`lib/negocio/sincronizar.ts:457`). El documento no dice quién lo calcula: dice que
 existe. Que el sistema lo calcule por su cuenta, con las respuestas del formulario, **queda a
 futuro** y se documenta en `docs/OTROS/futuro/icp-interno-calculado.md`.
 
@@ -188,7 +188,7 @@ es del usuario, y esta carpeta la registra como decisión, no como hallazgo**.
 
 No hay una columna que lo guarde. `contactos.etapa` existe, pero la escribe sólo Avanzar y la
 sincronización no la toca (`db/migraciones/011_negocio_closer_setter.sql:95-99`); la etapa del CRM no
-llega porque GoHighLevel no la expone (`lib/negocio/sincronizar.ts:27`).
+llega porque GoHighLevel no la expone (`fe45e33:lib/negocio/sincronizar.ts:27`).
 
 **Requisito:** el estado se **deriva** de los hechos que sí existen —entró, agendó, asistió, vendió,
 descartado— y se dibuja como recorrido, no como una etiqueta única. Los rótulos de la maqueta
@@ -243,7 +243,7 @@ conservarse su historial y exponer un resumen en el perfil.»*
 
 **Hoy se guarda exactamente como el documento dice que no.** El VSL y el precall viven dentro de
 `contactos.campos_del_crm`, que la sincronización **reescribe entero** en cada pasada
-(`lib/negocio/sincronizar.ts:427-429`). No hay tabla de eventos de reproducción, ni una fila por
+(`lib/negocio/sincronizar.ts:428-430`). No hay tabla de eventos de reproducción, ni una fila por
 visionado, ni una fecha. Lo que la ficha puede mostrar del precall es la última foto.
 
 **No se arregla en esta pestaña.** Conservar la historia es una tabla nueva y un escritor nuevo, y

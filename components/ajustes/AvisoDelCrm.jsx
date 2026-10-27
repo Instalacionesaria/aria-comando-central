@@ -1,9 +1,9 @@
 'use client';
 
-/* El panel que configura el AVISO DEL CRM: la cabecera y las siete URLs.
+/* El panel que configura el AVISO DEL CRM: la cabecera y las URLs, una por evento.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * LAS SIETE URLs SALEN DEL CATÁLOGO, NUNCA DE UNA LISTA DE ACÁ
+ * LAS URLs SALEN DEL CATÁLOGO, NUNCA DE UNA LISTA DE ACÁ
  *
  * El archivo equivalente de la plataforma anterior abre contando el defecto que esto evita: los
  * nombres de evento vivían en DOS listas —el tipo y el array— y el panel necesitaba una TERCERA para
@@ -166,7 +166,7 @@ export default function AvisoDelCrm({ configurado, alGenerar, alMostrarCabecera,
             </span>
             {/* ── ROTAR PIDE CONFIRMACIÓN; LA PRIMERA VEZ NO ────────────────────
                 Generar cuando no hay nada no destruye nada: un clic y listo. Generar cuando YA hay
-                un secreto configurado corta las siete entregas de GoHighLevel en el acto y no se
+                un secreto configurado corta todas las entregas de GoHighLevel en el acto y no se
                 puede deshacer, porque del anterior solo queda el hash.
 
                 El texto de ayuda ya lo decía, y no alcanzó: un cartel al lado de un botón no frena
@@ -186,7 +186,7 @@ export default function AvisoDelCrm({ configurado, alGenerar, alMostrarCabecera,
                   <span>
                     La cabecera actual va a dejar de funcionar <b>en el momento</b>, y GoHighLevel va
                     a empezar a recibir un rechazo en cada entrega hasta que pegues la nueva en los
-                    siete workflows. Del secreto anterior solo queda su hash: no se puede recuperar.
+                    workflows. Del secreto anterior solo queda su hash: no se puede recuperar.
                   </span>
                 </div>
                 <div className="aj-fila">
@@ -226,7 +226,7 @@ export default function AvisoDelCrm({ configurado, alGenerar, alMostrarCabecera,
         </div>
       ) : null}
 
-      {/* ── PASO 2 · LAS SIETE URLs ──────────────────────────────────────── */}
+      {/* ── PASO 2 · LAS URLs, UNA POR EVENTO ─────────────────────────────── */}
       <div className="fd-campo">
         <label htmlFor="aviso-urls">2 · Una URL por workflow</label>
         <span className="aj-ayuda" id="aviso-urls">
@@ -255,6 +255,28 @@ export default function AvisoDelCrm({ configurado, alGenerar, alMostrarCabecera,
                   >
                     {copiado === e.evento ? 'Copiada ✓' : 'Copiar'}
                   </button>
+                  {/* Con un parámetro fijo (la etapa o la Salida de la oportunidad), una URL por clave: es la que va
+                      en cada rama del workflow, y gana sobre lo que diga el cuerpo. También salen del catálogo. */}
+                  {e.parametro ? (
+                    <details style={{ marginTop: '6px' }}>
+                      <summary>Con la {e.parametro.nombre} fija en la URL</summary>
+                      {e.parametro.valores.map((v) => {
+                        const fija = urlDelEvento(base, e.evento, { nombre: e.parametro.nombre, clave: v.clave });
+                        const cual = `${e.evento}:${v.clave}`;
+                        return (
+                          <div key={v.clave} style={{ marginTop: '6px' }}>
+                            <small style={{ color: 'var(--txt-faint)' }}>{v.nombre}</small>
+                            <br />
+                            <code style={{ wordBreak: 'break-all', fontSize: '11px' }}>{fija}</code>
+                            <br />
+                            <button type="button" className="fd-btn sec" onClick={() => void copiar(fija, cual)}>
+                              {copiado === cual ? 'Copiada ✓' : 'Copiar'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </details>
+                  ) : null}
                 </b>
               </div>
             );
@@ -264,7 +286,8 @@ export default function AvisoDelCrm({ configurado, alGenerar, alMostrarCabecera,
 
       <p className="aj-ayuda">
         El más importante es el primero. Con ese solo, un mensaje del cliente entra en segundos; los
-        demás mantienen al día el territorio y las citas.
+        demás mantienen al día el territorio y las citas, y los de la oportunidad registran la etapa del Pipeline
+        Maestro y su Salida con su hora.
       </p>
     </div>
   );

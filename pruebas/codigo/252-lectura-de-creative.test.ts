@@ -351,6 +351,7 @@ test('la tarea `contactos` pide las miniaturas después de sincronizar, y suma s
   // Con el ámbito y el acceso del cliente, y desde el nivel 3 también con el fin de la corrida.
   const miniaturas = cuerpo.indexOf('await completarMiniaturas(ambito, acceso,');
   assert.ok(miniaturas > 0 && cuerpo.indexOf('sincronizarContactos(') < miniaturas, 'las miniaturas no van después de sincronizar');
-  assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas \}/, 'el sello no lleva el resumen de las miniaturas');
+  // `avisos`, después: el reproceso de los avisos de oportunidad va en la misma tarea (ver la prueba 333).
+  assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas(, avisos)? \}/, 'el sello no lleva el resumen de las miniaturas');
   assert.match(cuerpo, /llamadas: r\.resumen\.llamadas \+ miniaturas\.pedidos/, 'las llamadas de las miniaturas no se cuentan');
 });

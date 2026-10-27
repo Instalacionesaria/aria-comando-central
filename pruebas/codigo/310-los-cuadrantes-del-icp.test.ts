@@ -82,7 +82,7 @@ test('las tarjetas van en el orden fijo, con las palabras del CRM y su nivel', (
   assert.equal(rotuloDelCuadrante('financia'), 'Financia');
 });
 
-test('lo que no es una de las cuatro claves se cuenta como «Sin clasificar», también el «rechazo» del catálogo', () => {
+test('lo que no es una de las cuatro claves se cuenta como «Sin clasificar», también una clave vieja como «rechazo»', () => {
   assert.deepEqual(
     ['prioriza', 'descarta', 'rechazo', 'Prioriza', null, undefined].map((c) => claveDelCuadrante(c)),
     ['prioriza', 'descarta', 'sin_clasificar', 'sin_clasificar', 'sin_clasificar', 'sin_clasificar'],

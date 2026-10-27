@@ -131,7 +131,7 @@ fila de la lista, y de dónde sale:
 
 | dato | en la maqueta | de dónde sale | cobertura (2026-09-27) |
 |---|---|---|---|
-| Nombre | `aios-command-center_1.html:4761` | `contactos.nombre`, `not null` (`db/migraciones/011_negocio_closer_setter.sql:69`); un contacto sin nombre no entra (`lib/negocio/sincronizar.ts:383-386`) | 593 de 593, por construcción |
+| Nombre | `aios-command-center_1.html:4761` | `contactos.nombre`, `not null` (`db/migraciones/011_negocio_closer_setter.sql:69`); un contacto sin nombre no entra (`lib/negocio/sincronizar.ts:384-387`) | 593 de 593, por construcción |
 | Campaña | `aios-command-center_1.html:4762`, primera mitad | `atribucion_primera->>'campaign'` | **271** de 593 |
 | Creativo | `aios-command-center_1.html:4762`, segunda mitad | `atribucion_primera->>'utmContent'`, que es la llave del creativo de Creative (`lib/negocio/calidadDelCreativo.ts:23-26`) | **505** de 593 |
 | Puntaje | `aios-command-center_1.html:4764-4767` | `contactos.score`, entero de 0 a 100 (`db/migraciones/055_el_score_era_una_letra_y_el_crm_manda_un_numero.sql:70-76`) | **471** con valor; 47 de ellos en 0 |
@@ -221,11 +221,11 @@ La ficha de la maqueta está en `aios-command-center_1.html:4804-4863`. Se recor
 
 ### LP09-06 · El puntaje, los tramos y los ceros
 
-`contactos.score` lo escribe la sincronización (`lib/negocio/sincronizar.ts:456`) desde el campo del puntaje de la
+`contactos.score` lo escribe la sincronización (`lib/negocio/sincronizar.ts:457`) desde el campo del puntaje de la
 subcuenta —el elegido en Ajustes › Clientes o, si no, el que `CAMPO_DEL_PUNTAJE` designa (`lib/ghl/contrato.ts:313`) y
 el que se llama «Puntaje | ICP»: `lib/negocio/camposDelCrm.ts:394`—, con `puntajeDelCrm`
-(`lib/negocio/sincronizar.ts:568-576`): un valor fuera de 0-100 o no entero entra como nulo. **El
-cero no se colapsa a nulo** (`lib/negocio/sincronizar.ts:447-455`): los dos ceros se guardan
+(`lib/negocio/sincronizar.ts:569-577`): un valor fuera de 0-100 o no entero entra como nulo. **El
+cero no se colapsa a nulo** (`lib/negocio/sincronizar.ts:448-456`): los dos ceros se guardan
 distintos y la decisión de contarlos juntos es nuestra, en la pantalla.
 
 | tramo | todo el universo | 30 días |

@@ -44,7 +44,7 @@ cita antes de la llamada. **Nada de eso movió el registro**, y el Brief no se g
 > - **2026-10-16 · `ce5ed91`, `8ad73f3`** — construido en local, sin subir: la cuenta (`cuenta_id`) entra a
 >   `contactos`, `citas`, `notas`, `tareas`, `resultados`, `comisiones`, `closer_asignado` y `briefs_del_closer`, entre
 >   otras (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:26-28`), y un Brief no puede quedar en otra cuenta que
->   su cita (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:65-66`).
+>   su cita (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:67-68`).
 
 ---
 
@@ -135,7 +135,7 @@ servidor sólo lo atiende si el alcance propio es `todo` (`lib/negocio/alcanceDe
 (`app/api/closer/mi-dia/route.ts:5`); lo que sí corre, con la pestaña a la vista, es un reloj de 10 s
 que dispara la ingesta de mensajes y recarga las colas (`components/views/CloserView.jsx:173-186`,
 `lib/cadencia.ts:40`). Los contactos entran solos cada diez minutos por el cron
-(`lib/negocio/barrido.ts:248-252`).
+(`lib/negocio/barrido.ts:249-253`).
 
 ### 2.4 · Quién ve qué
 
@@ -306,7 +306,7 @@ que ya no es cierto o que nadie volvió a medir.
 
 `lib/negocio/inicio.ts:42-54` lo cuenta con la etiqueta `cita_agendada` y deja escrito que «el día que
 se lea el calendario» pasará a ser del mes. El calendario ya se barre cada hora
-(`lib/negocio/barrido.ts:260-264`) y `negocio.citas` tiene fecha en sus 333 filas, pero el indicador
+(`lib/negocio/barrido.ts:261-265`) y `negocio.citas` tiene fecha en sus 333 filas, pero el indicador
 sigue en la etiqueta: **88 contactos del territorio closer** la llevan, medido el 2026-09-28, sin
 decir de cuándo.
 
@@ -338,7 +338,7 @@ Un comentario falso es un defecto de primera clase, y en estas dos pestañas hay
 - **«NO hay sincronización automática de contactos»** (`components/views/CloserView.jsx:395-401`).
   Hay: el comentario es del commit `28c6937` (2026-08-27 16:58, hora de Lima); `contactos` entró al
   barrido diario esa misma noche (`f6d09a0`, 21:42) y al horario de diez minutos
-  (`lib/negocio/barrido.ts:248-252`) con `2e8ce81`, el 2026-08-28.
+  (`lib/negocio/barrido.ts:249-253`) con `2e8ce81`, el 2026-08-28.
 - **«Las ÚNICAS dos con una capacidad de lectura propia»** (`lib/autorizacion/secciones.ts:352`).
   Analizadores pide `analizadores.ver` desde el 2026-09-23 (`lib/autorizacion/secciones.ts:383-389`).
 

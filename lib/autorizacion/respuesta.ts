@@ -56,6 +56,9 @@ export const RECHAZOS = {
   sin_cuentas: 403,
   // El nivel 3 · la subcuenta del CRM ya es de otro cliente: es única en toda la plataforma. 409 y sin decir de quién.
   subcuenta_en_uso: 409,
+  // Meta directo (M10) · la cuenta publicitaria ya tiene campañas o gasto leídos en OTRO cliente. Reasignarla haría
+  // fallar al recolector en cada pasada (las claves de Meta no llevan el cliente): primero hay que borrar lo leído.
+  cuenta_de_meta_con_datos: 409,
   // El nivel 3 · lo del cliente principal es de la empresa: su conexión se carga en Ajustes › Credenciales y su subcuenta
   // es la de la empresa. Un CONFLICTO y no un permiso, igual que `sobre_si_mismo`: quien pide tiene la capacidad.
   cliente_principal: 409,

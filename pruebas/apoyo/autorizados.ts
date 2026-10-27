@@ -177,12 +177,17 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // «Conectar con Meta» (Meta directo, M2). Las conexiones con Meta, sus cuentas publicitarias y el `state` del viaje
   // viven en `identidad` (`101`) y el inquilino no tiene ningún acceso a esas tablas: guardan tokens. Cada consulta
   // filtra por `contexto.orgEfectiva`; el canje, además, exige que el `state` sea de la misma sesión, persona y
-  // organización. Ninguna lee ni escribe negocio.
+  // organización. Ninguna escribe negocio; la asignación y el canje lo LEEN (M10: lo leído de Meta en otro cliente), y
+  // por eso están también en `CRUZAN_LOS_DOS_DOMINIOS`.
   'app/api/admin/meta/route.ts',
   'app/api/admin/meta/conectar/route.ts',
   'app/api/admin/meta/canje/route.ts',
   'app/api/admin/meta/cuentas/[act]/route.ts',
   'app/api/admin/meta/conexiones/[id]/route.ts',
+  // Cada escritura de la pasada de Meta (M10, el cierre de la revisión): relee en `cuentas_publicitarias_de_meta` si el
+  // `act_` sigue asignado al cliente del ámbito, con la fila en `for share`, filtrando por `ambito.orgId`. No escribe
+  // identidad; está también en `CRUZAN_LOS_DOS_DOMINIOS`.
+  'lib/meta/loLeidoDeMeta.ts',
   // Los dos avisos de Meta (Meta directo, M6): encuentran las conexiones por el id en la app de quien firmó, que puede
   // tenerlas en varias organizaciones —por eso no filtran por una—, las revocan o las borran, y anotan el pedido de
   // borrado (`104`). Lo leído de negocio lo borra el recolector de Meta, con el ámbito de cada cliente. Y la página
@@ -557,6 +562,21 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // identidad ANTES de escribir: si la lectura falla no se escribió nada, y si la escritura falla la
   // lectura no dejó rastro. Es la misma forma y la misma justificación que los porcentajes.
   'app/api/admin/closer/route.ts',
+  // Asignar una cuenta publicitaria de Meta a un cliente (M10). **Qué queda a medias si la segunda mitad falla:
+  // nada.** De negocio sólo LEE si el `act_` ya tiene campañas o gasto en otro cliente, DENTRO de la transacción de
+  // identidad y con la fila de la cuenta bloqueada (`for update`); la única escritura (la asignación y su auditoría) va
+  // entera en esa transacción. Si la lectura falla, la transacción de identidad se revierte y no se escribió nada.
+  'app/api/admin/meta/cuentas/[act]/route.ts',
+  // El canje de «Conectar con Meta» (M10 también por OAuth). **Qué queda a medias si la segunda mitad falla: nada.** Es
+  // la misma forma que la asignación de arriba: de negocio sólo LEE lo leído de Meta de las cuentas que trae la conexión,
+  // con sus filas bloqueadas en la transacción de identidad, y toda la escritura (la conexión, sus cuentas y la
+  // auditoría) va en esa transacción. Si la lectura falla, se revierte entera.
+  'app/api/admin/meta/canje/route.ts',
+  // Cada escritura de la pasada de Meta, sólo si el `act_` sigue siendo del cliente (M10 y una pasada ya en curso).
+  // **Qué queda a medias si la segunda mitad falla: nada.** De identidad sólo LEE la asignación, con la fila en
+  // `for share` mientras escribe; la única escritura es la de negocio, en su propia transacción y anidada en la de
+  // identidad: si falla, la de identidad se revierte sin haber escrito nada, y el error sube como antes.
+  'lib/meta/loLeidoDeMeta.ts',
   // El sembrado: identidad por `conIdentidad()`, negocio por bucle de
   // `conOrganizacion()`. Aceptable porque es idempotente POR DESTRUCCIÓN —`db:reset`
   // tira la base primero, así que una falla a medias se arregla volviendo a correrlo— y

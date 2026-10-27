@@ -44,14 +44,20 @@ export default function RetornoDeMeta() {
       return;
     }
     void (async () => {
-      const r = await pedir<{ cuentasConectadas: number }>('/api/admin/meta/canje', { metodo: 'POST', cuerpo: { code, state }, espera: ESPERA_DEL_CANJE_MS });
+      const r = await pedir<{ cuentasConectadas: number; cuentasRetenidas?: string[] }>('/api/admin/meta/canje', { metodo: 'POST', cuerpo: { code, state }, espera: ESPERA_DEL_CANJE_MS });
       if (r.tipo === 'datos') {
         const n = r.datos.cuentasConectadas;
+        const retenidas = r.datos.cuentasRetenidas?.length ?? 0;
+        // Una cuenta con campañas o gasto ya leídos en otro cliente no se mueve: se dice, para que nadie la espere acá.
+        const nota =
+          retenidas === 0
+            ? ''
+            : ` ${retenidas === 1 ? 'Una cuenta ya tenía' : `${retenidas} cuentas ya tenían`} campañas o gasto leídos en otro cliente y ${retenidas === 1 ? 'quedó' : 'quedaron'} en ese cliente.`;
         volver(
           true,
           n === 0
             ? 'Meta quedó conectado, pero no se eligió ninguna cuenta publicitaria. Vuelve a conectar y marca tus cuentas.'
-            : `Meta quedó conectado con ${n} cuenta${n === 1 ? '' : 's'} publicitaria${n === 1 ? '' : 's'}.`,
+            : `Meta quedó conectado con ${n} cuenta${n === 1 ? '' : 's'} publicitaria${n === 1 ? '' : 's'}.${nota}`,
         );
         return;
       }

@@ -475,20 +475,43 @@ export interface TablaContactos {
   /** El país del contacto. 100 de 100 — es lo que queda cuando `zona_horaria_del_lead` falta. */
   pais: string | null;
   creado_el: Generated<Date>;
-  // Las columnas estándar del modelo (084): nulas hasta que el normalizador (Fase 1) las escriba.
+  // Las columnas estándar del modelo (084).
+  /**
+   * La etapa VIGENTE del Pipeline Maestro (`catalogo.etapas`). La mueve GoHighLevel y Comando Central la registra
+   * (evento `etapa_cambiada`); aquí queda la más alta, porque sólo avanza. `etapa` es la del pipeline de trabajo.
+   */
   etapa_estandar: string | null;
+  /** Desde cuándo está en `etapa_estandar`. */
+  etapa_estandar_el: Date | null;
+  /** La Salida VIGENTE (`catalogo.salidas`): por qué se detuvo sin cambiar de etapa. `null` = sin Salida. */
+  salida: string | null;
+  /** Desde cuándo tiene la Salida vigente (o desde cuándo se vació). */
+  salida_el: Date | null;
   /**
    * El cuadrante del ICP (clave foránea a `catalogo.cuadrantes`). Desde la `105` lo escribe `sincronizar.ts` con el
    * campo `contact.cuadrante_de_clasificacion` del CRM —una de las cuatro claves de `lib/negocio/cuadrantesDelIcp.ts`—
-   * y se PISA en cada corrida, como `score`. `null` = Sin clasificar. Reemplaza a `score` en todas las pantallas.
+   * y se PISA en cada corrida, como `score`; cada cambio lo registra un disparador de la base (la `106`) en
+   * `clasificaciones` y en un evento `cuadrante_cambiado`. `null` = Sin clasificar. Reemplaza a `score` en todas las
+   * pantallas.
    */
   cuadrante: string | null;
-  puntaje: number | null;
   canal_de_entrada: string | null;
+  /** Por qué puerta del Pipeline Maestro entró (`catalogo.entradas`). */
+  entrada: string | null;
+  /** La palabra clave del CTA con la que entró (hasta 100). */
+  palabra_clave: string | null;
   fuente_estandar: string | null;
-  primer_toque_id: string | null;
-  ultimo_toque_id: string | null;
+  /** El id de su oportunidad en el Pipeline Maestro de GoHighLevel. Único por cuenta. */
+  ghl_oportunidad_id: string | null;
   no_contactar_desde: Date | null;
+  /** Su primer y su último toque de marketing (`toques_de_marketing`, la `106`): los pone el disparador. */
+  primer_toque_de_marketing_id: string | null;
+  ultimo_toque_de_marketing_id: string | null;
+  /**
+   * Desde cuándo se guarda su historia (la `106`). Nula = es de antes de la `106` y no se volvió a escribir: su primera
+   * escritura guarda antes lo que ya tenía (la foto inicial). La ponen la base y su disparador; el código no la escribe.
+   */
+  historia_desde: Generated<Date | null>;
 }
 
 /**
@@ -631,7 +654,11 @@ export interface TablaCitas {
   sincronizado_el: Date | null;
   creado_el: Generated<Date>;
   // Las columnas estándar del modelo (084): nulas hasta que el normalizador (Fase 1) las escriba.
-  tipo: 'venta' | 'onboarding' | 'coaching' | 'otra' | null;
+  /**
+   * Qué cita es: una clave de `catalogo.tipos_de_cita` (venta, onboarding, coaching, otra…), según su calendario
+   * mapeado. Una FK y no una lista cerrada: un tipo nuevo es un INSERT. Nulo = todavía sin mapear.
+   */
+  tipo: string | null;
   cuadrante_al_agendar: string | null;
   calificada: boolean | null;
 }
@@ -809,13 +836,18 @@ export interface TablaTareasProgramadas {
  * La cuarentena de avisos de GoHighLevel (migración 022).
  *
  * Todo cuerpo entra CRUDO acá antes de interpretarse, y se responde 200 enseguida. Si el mapeo falla,
- * el evento no se perdió: queda la fila con su `error` para reprocesar.
+ * el evento no se perdió: queda la fila con su `error`. Las de oportunidad con un motivo transitorio las reprocesa el
+ * barrido (`lib/negocio/reprocesoDeAvisos.ts`); un mensaje lo trae el sondeo.
  */
 export interface TablaAvisosDelCrm {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
   id: Generated<string>;
-  /** sha256 hex del cuerpo crudo. Es la idempotencia ante entregas duplicadas del proveedor. */
+  /**
+   * sha256 hex del cuerpo crudo. Es la idempotencia ante entregas duplicadas del proveedor. En los avisos de
+   * oportunidad (`oportunidad.*`) es el de la consulta de la URL + `\n` + el cuerpo: cada rama manda el mismo cuerpo con
+   * su `&etapa=` o `&salida=` (`app/api/avisos/crm/route.ts`).
+   */
   huella: string;
   /**
    * Del `?evento=` de la URL. **Nulo es la trampa**: si alguien pega la URL base sin el parámetro, el
@@ -827,7 +859,13 @@ export interface TablaAvisosDelCrm {
   bytes: number;
   /** `coincide` | `ausente` | `discordante` | `ilegible`. Se COMPARA; no rutea. */
   atribucion: string;
+  /** La consulta de la URL de un aviso de oportunidad (la rama: `&etapa=`, `&salida=`), para el reproceso (`106`). */
+  consulta: string | null;
   repeticiones: Generated<number>;
+  /**
+   * La llegada del hecho: la primera. En un aviso de oportunidad, la misma rama que vuelve después de unos minutos es
+   * un hecho nuevo y la fila toma esa hora (`app/api/avisos/crm/route.ts`).
+   */
   recibido_el: Generated<Date>;
   visto_ultimo_el: Generated<Date>;
   /** Cuándo se INTERPRETÓ. Nulo = llegó y no se pudo mapear, que no es lo mismo que «no llegó». */
@@ -932,6 +970,8 @@ export interface TablaResultados {
   moneda: string | null;
   monto_usd: string | null;
   motivo: string | null;
+  /** El resultado como Salida del Pipeline Maestro (`catalogo.salidas`). `salida` es el vocabulario de Avanzar. */
+  salida_estandar: string | null;
 }
 
 /**
@@ -1338,6 +1378,11 @@ export interface TablaAnalizadorLlamadas {
   meta_del_proveedor: JsonNulable<Record<string, unknown>>;
   creado_el: Generated<Date>;
   actualizado_el: Generated<Date>;
+  /** El lead de la llamada (la `106`). Vincular exige `cuenta_id`: la llamada queda en la cuenta del lead. */
+  contacto_id: string | null;
+  cita_id: string | null;
+  vinculado_por: 'correo' | 'cita' | 'persona' | null;
+  vinculado_el: Date | null;
 }
 
 export interface TablaAnalizadorTranscripciones {
@@ -2180,7 +2225,10 @@ export interface TablaCatalogoMonedas {
   vigente: boolean;
 }
 
-/** Los hechos, de sólo agregar y particionados por mes (084). Sin escritor todavía: llega con la Fase 1. */
+/**
+ * Los hechos, de sólo agregar y particionados por mes (084). Escriben los disparadores de la base (la `106`) y, en el
+ * código, SÓLO `lib/negocio/etapaDelCrm.ts` (`etapa_cambiada`, `salida_marcada`); la prueba 332 lo exige.
+ */
 export interface TablaEventos {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
@@ -2194,7 +2242,8 @@ export interface TablaEventos {
   canal: string | null;
   actor_tipo: 'lead' | 'agente_ia' | 'persona' | 'sistema';
   actor_id: string | null;
-  fuente: 'ghl' | 'meta' | 'tiktok' | 'fathom' | 'tldv' | 'landing' | 'n8n' | 'elevenlabs' | 'comando_central';
+  /** Qué sistema lo mandó: una clave de `catalogo.proveedores` (una FK, no una lista cerrada). */
+  fuente: string;
   id_externo: string;
   recibido_id: string | null;
   datos: ColumnType<unknown, string | undefined, never>;
@@ -2204,7 +2253,10 @@ export interface TablaEventos {
 export interface TablaMapeosDeCuenta {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
-  tipo: 'etapa_del_pipeline' | 'etiqueta' | 'campo' | 'valor_de_campo' | 'calendario' | 'pregunta';
+  /** Una clave de `catalogo.tipos_de_mapeo` (etapa_del_pipeline, etiqueta, campo, valor_de_campo, salida_de_oportunidad…). */
+  tipo: string;
+  /** A qué campo pertenece el valor (el fieldKey, o el pipeline). `''` = no depende del campo. Parte de la clave. */
+  campo: Generated<string>;
   valor_origen: string;
   destino_catalogo: string;
   destino_clave: string | null;
@@ -2218,6 +2270,8 @@ export interface TablaValoresSinMapear {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
   tipo: string;
+  /** A qué campo pertenece el valor, como en los mapeos. `''` = no depende del campo. Parte de la clave. */
+  campo: Generated<string>;
   valor_origen: string;
   apariciones: Generated<number>;
   primera_vez_el: Generated<Date>;
@@ -2303,8 +2357,142 @@ export interface TablaFotoDeLasCuentas {
   gasto_30d: string | null;
   ultima_ingesta_el: Date | null;
   ultima_alta_el: Date | null;
-  /** Meta vinculado en su GoHighLevel, de donde salen sus costos (`099`, contrato 2). Nulo = no se sabe. */
+  /** EN DESUSO desde el contrato 3 (`103`): Meta vinculado en su GoHighLevel (`099`, contrato 2). No se escribe. */
+  meta_en_el_crm: boolean | null;
+  /** Campañas leídas de Meta (`103`, contrato 3, recomendado). Nulo = no se sabe. */
   meta_leido: boolean | null;
+}
+
+/**
+ * Cada cambio del cuadrante de un lead (la `106`), de sólo agregar. La escribe el disparador de `contactos`: el
+ * código no inserta acá. El vigente está en `contactos.cuadrante`.
+ */
+export interface TablaClasificaciones {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  contacto_id: string;
+  cita_id: string | null;
+  cuadrante: string | null;
+  cuadrante_anterior: string | null;
+  /** Una clave de `catalogo.origenes_de_clasificacion` (crm, clasificador, recalificador, persona…): una FK. */
+  origen: string;
+  primera_vez: Generated<boolean>;
+  dolor_principal: string | null;
+  clasificado_el: Generated<Date>;
+  evento_id: string | null;
+}
+
+/**
+ * Lo que declaró cada lead, con historia (la `106`), de sólo agregar: una fila cada vez que un valor cambia. Hoy la
+ * escribe el disparador de `contactos.campos_del_crm` (pregunta nula, `origen_clave` = el id del campo del CRM). La
+ * pregunta estándar se resuelve al leer: `respuestas_del_lead_traducidas`.
+ */
+export interface TablaRespuestasDelLead {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  contacto_id: string;
+  pregunta: string | null;
+  origen_clave: string;
+  valor_texto: string | null;
+  valor_numero: string | null;
+  valor_booleano: boolean | null;
+  valor_fecha: Date | null;
+  moneda: string | null;
+  opcion: string | null;
+  /** `true` = el campo se vació: la fila no lleva valor. */
+  vaciada: Generated<boolean>;
+  proveedor: string;
+  /** Una clave de `catalogo.vias_de_obtencion` (formulario, agente_dm, setter, crm…): una FK, no una lista cerrada. */
+  obtenida_por: string;
+  etapa: string | null;
+  observada_el: Date;
+  registrada_el: Generated<Date>;
+  recibido_id: string | null;
+  evento_id: string | null;
+}
+
+/**
+ * Cada toque de marketing de un lead (la `106`), de sólo agregar, con la atribución separada en columnas. Hoy la
+ * escribe el disparador de `contactos.atribucion_primera`/`atribucion_ultima`. `url`, `fbclid` y `datos` no se
+ * muestran: pueden identificar a la persona o a su navegador.
+ */
+export interface TablaToquesDeMarketing {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  contacto_id: string | null;
+  visitante_id: string | null;
+  posicion: 'primera' | 'ultima' | 'otra';
+  ocurrio_el: Date;
+  registrado_el: Generated<Date>;
+  entrada: string | null;
+  fuente: string | null;
+  proveedor: string;
+  campana_id_externo: string | null;
+  conjunto_id_externo: string | null;
+  anuncio_id_externo: string | null;
+  formulario_id: string | null;
+  formulario_nombre: string | null;
+  meta_lead_id: string | null;
+  fbclid: string | null;
+  url: string | null;
+  session_source: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  ig_sid: string | null;
+  palabra_clave: string | null;
+  pieza_origen: string | null;
+  datos: ColumnType<Record<string, string>, string | undefined, never>;
+}
+
+/** La vista `negocio.etapas_del_lead` (la `106`): la primera vez que cada lead entró a cada etapa. Sólo lectura. */
+export interface VistaEtapasDelLead {
+  org_id: ColumnaInquilino;
+  cuenta_id: string;
+  contacto_id: string;
+  etapa: string;
+  orden: number;
+  entro_el: Date;
+}
+
+/**
+ * La vista `negocio.respuestas_del_lead_traducidas` (la `106`): cada respuesta con la pregunta estándar resuelta AL
+ * LEER — la de la fila, o la del mapeo «campo» de la cuenta o de su snapshot —, también para las filas viejas. Sólo
+ * lectura.
+ */
+export interface VistaRespuestasDelLeadTraducidas {
+  org_id: ColumnaInquilino;
+  cuenta_id: string;
+  id: string;
+  contacto_id: string;
+  /** La pregunta estándar (`catalogo.preguntas_estandar`). Nula = sin mapear, o ignorada. */
+  pregunta: string | null;
+  /** De dónde salió la pregunta. Nulo = sin pregunta. */
+  pregunta_por: 'fila' | 'cuenta' | 'snapshot' | null;
+  /** `true` = el campo tiene un mapeo a «ignorar». */
+  ignorada: boolean;
+  origen_clave: string;
+  campo_clave: string | null;
+  campo_nombre: string | null;
+  campo_tipo: string | null;
+  valor_texto: string | null;
+  valor_numero: string | null;
+  valor_booleano: boolean | null;
+  valor_fecha: Date | null;
+  moneda: string | null;
+  opcion: string | null;
+  vaciada: boolean;
+  proveedor: string;
+  obtenida_por: string;
+  etapa: string | null;
+  observada_el: Date;
+  registrada_el: Date;
+  recibido_id: string | null;
+  evento_id: string | null;
 }
 
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
@@ -2395,6 +2583,11 @@ export interface BaseDeDatos {
   foto_de_las_cuentas: TablaFotoDeLasCuentas;
   mapeos_de_cuenta: TablaMapeosDeCuenta;
   valores_sin_mapear: TablaValoresSinMapear;
+  clasificaciones: TablaClasificaciones;
+  respuestas_del_lead: TablaRespuestasDelLead;
+  toques_de_marketing: TablaToquesDeMarketing;
+  etapas_del_lead: VistaEtapasDelLead;
+  respuestas_del_lead_traducidas: VistaRespuestasDelLeadTraducidas;
 
   // El catálogo común (079): lo leen todos los roles y no lo escribe ninguno de la aplicación. Calificado, porque
   // `catalogo` no está en la ruta de búsqueda de ningún rol.

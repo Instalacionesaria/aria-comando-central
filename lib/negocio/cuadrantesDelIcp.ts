@@ -9,9 +9,10 @@
 // este archivo agrega es lo que el CRM no dice —en qué orden se dibujan, cuál es el nivel de cada una, cuáles son
 // calificados— y lo dice en UN lugar.
 //
-// Las cuatro claves son las de `catalogo.cuadrantes` (la `079`), que tiene una quinta, `rechazo` («falta un dato
-// obligatorio»), para el normalizador de la Fase 1. El CRM no la manda y esta capa no la escribe; si un día aparece en
-// la columna, se cuenta como «Sin clasificar» (`claveDelCuadrante`) hasta que se decida cómo se dibuja.
+// Las cuatro claves son exactamente las de `catalogo.cuadrantes` (la `079`). Sin cuadrante es NULL, no una quinta
+// clave: «Sin clasificar» (`sin_clasificar`) es sólo la seudoclave con que esta capa nombra el nulo. Si un día aparece
+// en la columna una clave que no es de las cuatro, se cuenta como «Sin clasificar» (`claveDelCuadrante`) hasta que se
+// decida cómo se dibuja.
 //
 //     Prioriza → nivel alto  ·  Valida y Financia → nivel medio  ·  Descarta → nivel bajo
 //
@@ -44,7 +45,7 @@ export type ClaveDeCuadrante = Cuadrante | 'sin_clasificar';
 /** El nivel de un cuadrante. Valida y Financia comparten el medio: ninguna es mejor que la otra. */
 export type NivelDelCuadrante = 'alto' | 'medio' | 'bajo';
 
-/** Las cuatro, en el orden del CRM: de la mejor a la peor. Es el `check` de la `105`. */
+/** Las cuatro, en el orden del CRM: de la mejor a la peor. Son las de `catalogo.cuadrantes`, la clave foránea de la `084`. */
 export const LOS_CUATRO: readonly Cuadrante[] = ['prioriza', 'valida', 'financia', 'descarta'];
 
 /** Los que son calificados: todos menos Descarta. */

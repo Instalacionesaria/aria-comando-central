@@ -15,13 +15,13 @@
 
 Hoy el tramo de ICP de un lead sale de **«Puntaje | ICP»**, un número de 0 a 100 que calcula un
 workflow de GoHighLevel y que Comando Central solo copia: `sincronizar.ts` lo deriva de los campos
-del contacto y lo guarda en `contactos.score` (`lib/negocio/sincronizar.ts:456`,
-`lib/negocio/sincronizar.ts:568-576`), con el campo que cada cliente elige en Ajustes › Clientes (la `098`) o, si no,
+del contacto y lo guarda en `contactos.score` (`lib/negocio/sincronizar.ts:457`,
+`lib/negocio/sincronizar.ts:569-577`), con el campo que cada cliente elige en Ajustes › Clientes (la `098`) o, si no,
 el que designa `CAMPO_DEL_PUNTAJE` (`lib/ghl/contrato.ts:313`). La fórmula no está escrita en ningún archivo de este repositorio.
 
 La idea es que **el puntaje lo calcule Comando Central**, a partir de las mismas respuestas del
 cuestionario de calificación que ya se guardan en `contactos.campos_del_crm`
-(`lib/negocio/sincronizar.ts:427-429`), con reglas escritas por la empresa: esta respuesta a esta
+(`lib/negocio/sincronizar.ts:428-430`), con reglas escritas por la empresa: esta respuesta a esta
 pregunta vale tantos puntos. Así el número tiene autor, fórmula a la vista y versión, y no depende de
 que un workflow ajeno siga corriendo.
 
@@ -82,7 +82,7 @@ que este documento discute es **de quién depende**, no si hoy anda.
 **47 de los 471 puntajes valen exactamente 0**, y no están repartidos: por semana de alta son 3
 (17-ago), 23 (24-ago) y 21 (31-ago), y **ninguno en los últimos 14 días**. El código ya lo dejó
 escrito: *«No se sabe si el CRM calculó cero o si su workflow no corrió: el proveedor no dice la
-diferencia»* (`lib/negocio/sincronizar.ts:449-455`). El primer registro del patrón, con los ceros
+diferencia»* (`lib/negocio/sincronizar.ts:450-456`). El primer registro del patrón, con los ceros
 terminándose de golpe el 2026-09-03, está en `docs/acquisition/04-CALIDAD-DEL-LEAD.md:403-421`.
 
 De las dos semanas que concentran 44 de los 47 ceros, la del 31-ago es la misma en que la ruta de
@@ -142,9 +142,9 @@ Tres cosas que salen de lo medido:
 - **Solo preguntas de opción cerrada.** «A quién ayuda y qué entrega» es texto libre —el formulario
   de Meta le agrega *«Se especifico o sera rechazado»* (`lib/ghl/contrato.ts:389-390`)— y pesarlo
   exigiría un modelo, que es gastar. Las URL tampoco entran. El tipo de cada campo está en
-  `negocio.campos_del_crm.tipo` (`lib/datos/esquema.ts:526`), y es lo primero que se mira.
+  `negocio.campos_del_crm.tipo` (`lib/datos/esquema.ts:549`), y es lo primero que se mira.
 - **Las opciones no están en el catálogo**: `TablaCamposDelCrm` no las guarda
-  (`lib/datos/esquema.ts:517-537`). El vocabulario de cada pregunta sale de los valores ya guardados,
+  (`lib/datos/esquema.ts:540-560`). El vocabulario de cada pregunta sale de los valores ya guardados,
   y **se mueve**: en «Video Pre-Call» el CRM renombró «Sin abrir (0%)» a «Nada» el 2026-09-08
   (`lib/negocio/consumoDelPrecall.ts:44-48`), y hoy conviven 130 y 50. Una respuesta que ninguna
   regla nombra es **«no reconocida»**, no una respuesta que vale cero.
@@ -357,7 +357,7 @@ servidor, nunca a la lista—.
 ### LPF-P05 · Qué es un 0 interno
 
 Con el CRM, 0 es «sin calificar» porque no se sabe si puntuó o no corrió
-(`lib/negocio/sincronizar.ts:449-455`; Acquisition dejó la misma pregunta abierta en
+(`lib/negocio/sincronizar.ts:450-456`; Acquisition dejó la misma pregunta abierta en
 `docs/acquisition/04-CALIDAD-DEL-LEAD.md:594-597`). Con el interno esa ambigüedad no existe: si no
 hay respuestas, el resultado es `null`. Un 0 interno sería un lead que contestó todo y no sumó nada,
 y lo natural es que sea **ICP bajo**. Es lo que obliga a que `tramoDelPuntaje` reciba la fuente.
@@ -398,7 +398,7 @@ o solo un administrador. Cambiar un peso cambia el tramo de cientos de leads de 
 ## Lo que NO cambia
 
 - **`contactos.score` se sigue guardando igual**, con el 0 como 0 y la ausencia como `null`
-  (`lib/negocio/sincronizar.ts:568-576`). El interno nunca lo pisa: sin los dos no hay comparación ni
+  (`lib/negocio/sincronizar.ts:569-577`). El interno nunca lo pisa: sin los dos no hay comparación ni
   vuelta atrás.
 - **El descarte sigue siendo del CRM.** `ETIQUETAS_DE_DESCARTE` (`lib/ghl/contrato.ts:231-238`) sigue
   marcando quién está descartado, y el interno no descarta a nadie.

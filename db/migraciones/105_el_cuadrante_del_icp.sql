@@ -15,8 +15,8 @@
 -- ── LA COLUMNA YA EXISTE: LA PUSO LA `084` ──────────────────────────────────
 --
 -- El modelo de datos de la Fase 0 ya declaró `contactos.cuadrante` (la `084`), con clave foránea a
--- `catalogo.cuadrantes` (la `079`: prioriza, valida, financia, descarta y rechazo), nula «hasta que el normalizador la
--- escriba». Ésta no agrega otra: la sincronización empieza a escribirla con la palabra del CRM, ya como clave del
+-- `catalogo.cuadrantes` (la `079`: prioriza, valida, financia y descarta; sin cuadrante = NULL), nula «hasta que el
+-- normalizador la escriba». Ésta no agrega otra: la sincronización empieza a escribirla con la palabra del CRM, ya como clave del
 -- catálogo, y la clave foránea es la que impide que un valor con otra caja o con espacios llegue a una consulta que
 -- compara exacto. `score` se queda como está —se sigue escribiendo y nadie lo lee—, por decisión del usuario.
 --
@@ -42,6 +42,7 @@ comment on column negocio.campos_del_crm.clave is
   'Es de GoHighLevel: el refresco del catálogo la pisa. NULL = la fila es de antes de la 105 y el catálogo se relee.';
 
 comment on column negocio.contactos.cuadrante is
-  'El cuadrante VIGENTE; su historia completa está en negocio.clasificaciones. Desde la 105 lo escribe '
-  'lib/negocio/sincronizar.ts con el campo contact.cuadrante_de_clasificacion del CRM (prioriza, valida, financia o '
-  'descarta) y se PISA en cada corrida. NULL = Sin clasificar. Reemplaza a score en todas las pantallas.';
+  'El cuadrante VIGENTE. Desde la 105 lo escribe lib/negocio/sincronizar.ts con el campo '
+  'contact.cuadrante_de_clasificacion del CRM (prioriza, valida, financia o descarta) y se pisa en cada corrida; cada '
+  'cambio queda en negocio.clasificaciones y en un evento cuadrante_cambiado, que escribe un disparador de esta tabla '
+  '(la 106). NULL = Sin clasificar. Reemplaza a score en todas las pantallas.';

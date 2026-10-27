@@ -40,10 +40,12 @@ end $$;
 -- Sólo si falta: al reaplicar, de esta restricción ya dependen las claves foráneas de abajo, y un `drop … if exists`
 -- fallaría.
 do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'contactos_cuenta_id_unico') then
+  if not exists (select 1 from pg_constraint where conname = 'contactos_cuenta_id_unico'
+                   and conrelid = 'negocio.contactos'::regclass) then
     alter table negocio.contactos add constraint contactos_cuenta_id_unico unique (org_id, cuenta_id, id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'citas_cuenta_id_unico') then
+  if not exists (select 1 from pg_constraint where conname = 'citas_cuenta_id_unico'
+                   and conrelid = 'negocio.citas'::regclass) then
     alter table negocio.citas add constraint citas_cuenta_id_unico unique (org_id, cuenta_id, id);
   end if;
 end $$;
@@ -65,6 +67,10 @@ end $$;
 alter table negocio.briefs_del_closer drop constraint if exists briefs_del_closer_misma_cuenta_que_la_cita;
 alter table negocio.briefs_del_closer add constraint briefs_del_closer_misma_cuenta_que_la_cita
   foreign key (org_id, cuenta_id, cita_id) references negocio.citas (org_id, cuenta_id, id) on delete cascade;
+-- La de la 049, `resultados_cita_fk`, era (org_id, cita_id) con `on delete set null` SIN lista de columnas: al borrar
+-- una cita con resultado intentaba poner org_id en nulo, y el borrado fallaba. La de abajo cubre la misma relación y
+-- suelta sólo cita_id.
+alter table negocio.resultados drop constraint if exists resultados_cita_fk;
 alter table negocio.resultados drop constraint if exists resultados_misma_cuenta_que_la_cita;
 alter table negocio.resultados add constraint resultados_misma_cuenta_que_la_cita
   foreign key (org_id, cuenta_id, cita_id) references negocio.citas (org_id, cuenta_id, id) on delete set null (cita_id);
@@ -72,7 +78,8 @@ alter table negocio.resultados add constraint resultados_misma_cuenta_que_la_cit
 -- Lo mismo para lo que cuelga de un anuncio: sus métricas diarias y lo leído de Meta (078). Un anuncio es de UNA
 -- cuenta publicitaria, y por lo tanto de una subcuenta; su métrica de otra subcuenta sería gasto contado dos veces.
 do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'anuncios_cuenta_id_unico') then
+  if not exists (select 1 from pg_constraint where conname = 'anuncios_cuenta_id_unico'
+                   and conrelid = 'negocio.anuncios'::regclass) then
     alter table negocio.anuncios add constraint anuncios_cuenta_id_unico unique (org_id, cuenta_id, meta_anuncio_id);
   end if;
 end $$;

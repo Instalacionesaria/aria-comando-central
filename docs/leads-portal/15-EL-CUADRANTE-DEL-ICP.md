@@ -49,7 +49,7 @@ cuenta en todas las pantallas y no muestra ningún número del ICP.** El puntaje
 
 - Se guarda la **clave** —minúscula, sin espacios a los costados, sin tilde—: «Prioriza», « prioriza » y «PRIORIZA» son
   la misma. Lo que no es ninguna de las cuatro se guarda como nulo, sin romper la corrida
-  (`lib/negocio/cuadrantesDelIcp.ts:112`).
+  (`lib/negocio/cuadrantesDelIcp.ts:113`).
 - La misma regla en SQL, para recalcular desde lo guardado: `cuadranteUsable` (`lib/negocio/camposDelCrm.ts:739`). Las
   dos se comparan con los mismos bordes en la 310 y la 311.
 
@@ -57,20 +57,20 @@ cuenta en todas las pantallas y no muestra ningún número del ICP.** El puntaje
 
 - `contactos.cuadrante`, la columna estándar que el modelo de datos de la Fase 0 ya había puesto (la `084`, clave
   foránea a `catalogo.cuadrantes`). La `105` no agrega otra: la sincronización empieza a escribirla.
-- La sincronización la escribe con el contacto (`lib/negocio/sincronizar.ts:463`, `cuadranteDelCrm` en
-  `lib/negocio/sincronizar.ts:586`). Sin los ids del campo —un catálogo sin claves— no la toca, para no borrar una
+- La sincronización la escribe con el contacto (`lib/negocio/sincronizar.ts:464`, `cuadranteDelCrm` en
+  `lib/negocio/sincronizar.ts:587`). Sin los ids del campo —un catálogo sin claves— no la toca, para no borrar una
   clasificación que ya estaba.
 - Después de releer el catálogo, `recalcularLosCuadrantes` reclasifica desde lo guardado, también a los congelados, sin
   llamar al CRM y escribiendo sólo las filas que cambian (`lib/negocio/camposDelCrm.ts:757`,
-  `lib/negocio/sincronizar.ts:241`).
+  `lib/negocio/sincronizar.ts:242`).
 
 ### LP15-04 · El orden, el nivel y los calificados, en un solo módulo
 
 `lib/negocio/cuadrantesDelIcp.ts`, sin imports (lo usan el servidor y el navegador): las cuatro claves
-(`lib/negocio/cuadrantesDelIcp.ts:48`), los calificados (`lib/negocio/cuadrantesDelIcp.ts:51`), y las cinco tarjetas
-con su rótulo y su nivel, «Sin clasificar» primero (`lib/negocio/cuadrantesDelIcp.ts:69`). Una clave que no es de las
+(`lib/negocio/cuadrantesDelIcp.ts:49`), los calificados (`lib/negocio/cuadrantesDelIcp.ts:52`), y las cinco tarjetas
+con su rótulo y su nivel, «Sin clasificar» primero (`lib/negocio/cuadrantesDelIcp.ts:70`). Una clave que no es de las
 cuatro —el `rechazo` del catálogo, que el CRM no manda— se cuenta como «Sin clasificar»
-(`lib/negocio/cuadrantesDelIcp.ts:119`).
+(`lib/negocio/cuadrantesDelIcp.ts:120`).
 
 ---
 

@@ -6,7 +6,7 @@
 // La mitad pura la cuida `pruebas/codigo/250-lectura-de-conversation.test.ts`. Acá se mira lo que sólo se ve con filas:
 //
 //   · el ICP de quienes agendaron: la cohorte de la ventana con CUALQUIER cita —con o sin calendario, pasada o
-//     futura, como el `agendaron` de `indicadoresDelLead`—, por `claveDelCuadrante` —el rechazo es sin clasificar— —
+//     futura, como el `agendaron` de `indicadoresDelLead`—, por `claveDelCuadrante` —sin cuadrante es sin clasificar— —
 //     mutaciones: sacar la ventana, sacar la cita, filtrar por calendario o por fecha, clasificar distinto;
 //   · la asistencia por cuadrante: las citas de la ventana, ocurridas, alcanzables y de contactos no descartados —también
 //     Descarta, desde la `105`—, cada una en el cuadrante de su contacto — mutaciones: sacar cualquiera de las cuatro, o
@@ -75,10 +75,10 @@ after(async () => {
   await cerrarClientes();
 });
 
-test('el ICP de quienes agendaron: la cohorte de la ventana con cualquier cita, por cuadrante, y el rechazo es sin clasificar', async () => {
+test('el ICP de quienes agendaron: la cohorte de la ventana con cualquier cita, por cuadrante, y sin cuadrante es sin clasificar', async () => {
   await limpiar();
   const antes = await enAlfa(() => icpDeLosAgendados(30));
-  for (const cuadrante of ['prioriza', 'prioriza', 'valida', 'financia', 'descarta', 'rechazo', null]) {
+  for (const cuadrante of ['prioriza', 'prioriza', 'valida', 'financia', 'descarta', null]) {
     await unaCita(await unContacto({ cuadrante }));
   }
   // También cuentan: una cita sin calendario y una futura, como en el `agendaron` del panel de al lado.
@@ -94,7 +94,7 @@ test('el ICP de quienes agendaron: la cohorte de la ventana con cualquier cita, 
   );
   assert.deepEqual(
     delta,
-    { prioriza: 3, valida: 2, financia: 1, descarta: 1, sin_clasificar: 2 },
+    { prioriza: 3, valida: 2, financia: 1, descarta: 1, sin_clasificar: 1 },
     'contó a alguien sin cita o fuera de la ventana, dejó afuera una cita sin calendario o futura, o clasificó distinto',
   );
 });

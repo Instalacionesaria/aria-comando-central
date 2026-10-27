@@ -38,7 +38,7 @@ entró **un solo contacto**, el 2026-10-16, y la tarea `contactos` siguió corri
 > - **2026-10-16 · `693a383..dc84cb2`, construido en local, sin subir** — la Fase 0 del modelo de datos: `contactos`
 >   y `citas` reciben `cuenta_id` (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:123-127`), y nace
 >   `negocio.eventos`, de sólo agregar, en el que nada escribe todavía (`db/migraciones/084_los_eventos.sql:6-7`,
->   `db/migraciones/084_los_eventos.sql:14`, `db/migraciones/084_los_eventos.sql:117`). Ninguno de los ocho commits
+>   `fe45e33:db/migraciones/084_los_eventos.sql:14`, `db/migraciones/084_los_eventos.sql:137`). Ninguno de los ocho commits
 >   toca `lib/negocio/`, `components/` ni `app/`.
 > - **2026-10-18** — esta foto: las cifras re-medidas.
 
@@ -264,7 +264,7 @@ están en § 2.
 la `048` (`db/migraciones/048_de_donde_vino_el_lead.sql:100-110`); el 2026-10-18 `atribucion_primera` estaba no
 vacía en 580 de 624 y `atribucion_ultima` en 597 (553 y 567 de 594 el 2026-09-28, cuando en 279 los dos toques eran
 distintos; eso no se re-midió). El barrido reescribe las dos cada vez que el CRM las devuelve
-(`lib/negocio/sincronizar.ts:485-490`) y ninguna de sus claves es una fecha, así que no se puede detectar un primer
+(`lib/negocio/sincronizar.ts:486-491`) y ninguna de sus claves es una fecha, así que no se puede detectar un primer
 toque sobrescrito (`lib/negocio/calidadDeLaAtribucion.ts:26-29`). La clasificación de Conversion lee el último
 (`lib/negocio/recorrido.ts:126-128`).
 
@@ -309,8 +309,8 @@ Formulario, «Qué pasa después» de la Agenda—. La lista viaja en la respues
 - **La historia de los toques.** El § 5.3 pide historial y el § 18.5 los dos toques con sus fechas. Hay dos
   toques por contacto, sobrescritos en cada barrido y sin fecha (§ 4). **Construido en local, sin subir**: la
   Fase 0 crea `negocio.eventos`, una tabla de sólo agregar para cada hecho del lead
-  (`db/migraciones/084_los_eventos.sql:6-7`, `db/migraciones/084_los_eventos.sql:117`); nada escribe en ella todavía
-  (`db/migraciones/084_los_eventos.sql:14`), así que no cambia este hueco.
+  (`db/migraciones/084_los_eventos.sql:6-7`, `db/migraciones/084_los_eventos.sql:137`); nada escribe en ella todavía
+  (`fe45e33:db/migraciones/084_los_eventos.sql:14`), así que no cambia este hueco.
 - **Las etapas del widget.** El widget de reserva fue en septiembre el camino mayoritario y no se sabe si
   distingue «abrió el calendario» de «eligió horario» de «confirmó»
   (`docs/conversion/14-LOS-TRES-INSTRUMENTOS-QUE-SE-APAGARON.md:240-245`).
@@ -488,8 +488,8 @@ cuatro reglas del detector siguen provisionales (`lib/agentes/detectores/convers
 
 **10. Si se vuelve a instrumentar, que sean eventos y no un campo por contacto.** Dos toques sobrescribibles sin
 fecha y un `% máximo visto` con 79 ceros son la demostración. La Fase 0 del modelo de datos, **construida en local
-y sin subir**, ya trae la tabla para eso, `negocio.eventos` (`db/migraciones/084_los_eventos.sql:117`), vacía y sin
-escritor (`db/migraciones/084_los_eventos.sql:14`).
+y sin subir**, ya trae la tabla para eso, `negocio.eventos` (`db/migraciones/084_los_eventos.sql:137`), vacía y sin
+escritor (`fe45e33:db/migraciones/084_los_eventos.sql:14`).
 
 **11. La alarma no aparece nunca.** Sólo se dibuja con señales `critica`, y ninguna regla de Conversion lo es
 (`lib/agentes/detectores/conversion.ts:70`). Es la respuesta por defecto de `CV15-P05`: el lugar existe, vacío,

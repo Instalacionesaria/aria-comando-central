@@ -36,14 +36,14 @@ un puntaje por contacto. No se cruzan en ninguna tabla
   repositorio**: nosotros recibimos el resultado.
 - **Cómo llega:** en la misma respuesta de contactos que ya trae todo lo demás. Se guarda crudo en
   `contactos.campos_del_crm` desde la migración `039`, y desde el 2026-09-21 la sincronización lo
-  deriva a `contactos.score` sin ninguna llamada nueva (`lib/negocio/sincronizar.ts:430-438`).
+  deriva a `contactos.score` sin ninguna llamada nueva (`lib/negocio/sincronizar.ts:431-439`).
 - **Cuál campo es:** se elige por cliente en Ajustes › Clientes (`campos_del_crm.es_el_puntaje`, la `098`, C6 · D4),
   porque no se puede deducir: el grupo `calificacion` tiene 17 campos y cualquiera de las preguntas del cuestionario
   daría un «puntaje» plausible y falso (`lib/ghl/contrato.ts:288-291`). Sin elegir, el de siempre: el identificador de
   `CAMPO_DEL_PUNTAJE` en la subcuenta de ARIA (`lib/ghl/contrato.ts:313`) y el que se llama «Puntaje | ICP» en la de
   cada cliente; con uno elegido, ése y nada más (`lib/negocio/camposDelCrm.ts:394`, `lib/negocio/camposDelCrm.ts:517`).
 - **Qué se acepta:** un entero de 0 a 100 escrito con dígitos; cualquier otra cosa se guarda como `null`
-  (`lib/negocio/sincronizar.ts:568-576`, `lib/negocio/camposDelCrm.ts:459`), y la columna es `smallint` con `check between 0 and 100`
+  (`lib/negocio/sincronizar.ts:569-577`, `lib/negocio/camposDelCrm.ts:459`), y la columna es `smallint` con `check between 0 and 100`
   desde la migración `055` (`lib/datos/esquema.ts:376`).
 - **Qué significa el nulo:** que el CRM no lo trae para ese contacto. **No es un cero**
   (`lib/datos/esquema.ts:379-380`).
@@ -66,7 +66,7 @@ cuestionario (`lib/datos/esquema.ts:364-367`). Dos consecuencias:
    que entre nadie. Se declara en la pantalla (`LP06-14`).
 2. **Los congelados no se refrescan** —salvo cuando alguien elige el campo del puntaje de su cliente: ahí se recalculan
    todos desde lo guardado (`lib/negocio/camposDelCrm.ts:800@ddba683`)—; se ven y no cuestan llamadas
-   (`lib/negocio/sincronizar.ts:601-607`)—, así que su puntaje es el del último día que tuvieron
+   (`lib/negocio/sincronizar.ts:602-608`)—, así que su puntaje es el del último día que tuvieron
    etiqueta de zona. Son 25, y 24 no tienen alta (medido el 2026-09-27), así que casi no entran en
    ninguna ventana
    (`LP06-07`). La ficha muestra `sincronizadoEl` para que se vea.
@@ -81,10 +81,10 @@ Hay dos caminos para leer el puntaje, y hoy dan lo mismo:
 
 | quién | de dónde | cómo encuentra el campo | qué acepta |
 |---|---|---|---|
-| sincronización → `contactos.score` | la columna | el elegido del cliente; si no, por identificador y por nombre (`lib/negocio/camposDelCrm.ts:394`) | entero 0-100 (`lib/negocio/sincronizar.ts:568-576`) |
+| sincronización → `contactos.score` | la columna | el elegido del cliente; si no, por identificador y por nombre (`lib/negocio/camposDelCrm.ts:394`) | entero 0-100 (`lib/negocio/sincronizar.ts:569-577`) |
 | Creative | el `jsonb` | el elegido del cliente; si no, por nombre, con `CAMPO_DE_ICP` (`lib/negocio/calidadDelCreativo.ts:65@bf2de85`, `lib/negocio/camposDelCrm.ts:529@bf2de85`) | el mismo entero 0-100, desde C6 · D4 (`lib/negocio/camposDelCrm.ts:456@bf2de85`, `lib/negocio/calidadDelCreativo.ts:231-235@bf2de85`) |
 
-Coinciden porque la columna, que sólo acepta enteros de 0 a 100 (`lib/negocio/sincronizar.ts:568-576`),
+Coinciden porque la columna, que sólo acepta enteros de 0 a 100 (`lib/negocio/sincronizar.ts:569-577`),
 tenía el 2026-09-27 los mismos 471 valores que el `jsonb` tenía el 2026-09-21
 (`lib/ghl/contrato.ts:278-279`). Pero divergen en dos casos que no fallan en ninguna parte: si alguien **renombra** el
 campo en el CRM, Creative apaga su columna y la de acá sigue. El **decimal** ya no: desde C6 · D4 las dos validan
@@ -225,7 +225,7 @@ días.
 
 Es el mismo grupo que la sincronización describe —todos entre el 21 de agosto y el 3 de septiembre,
 con menos etiquetas que el resto, ninguno reciente— y **el CRM no dice si calculó cero o si su
-proceso no corrió** (`lib/negocio/sincronizar.ts:447-455`). Acquisition lo leyó el 2026-09-16 como
+proceso no corrió** (`lib/negocio/sincronizar.ts:448-456`). Acquisition lo leyó el 2026-09-16 como
 un cambio de régimen: los ceros se terminan de golpe el 3 de septiembre, y el cero de este campo es
 «sin puntuar», no «puntuó cero» (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:403-421`).
 
@@ -236,7 +236,7 @@ cuarto estado (`docs/acquisition/04-CALIDAD-DEL-LEAD.md:594-597`).
 **Lo que la decisión NO hace:**
 
 - **No toca la columna.** El 0 sigue guardado como 0 y el nulo como nulo
-  (`lib/negocio/sincronizar.ts:454-455`). La clasificación es nuestra y vive en `tramoDelPuntaje`.
+  (`lib/negocio/sincronizar.ts:455-456`). La clasificación es nuestra y vive en `tramoDelPuntaje`.
 - **No junta los dos ceros en la respuesta.** `sinPuntaje` y `enCero` viajan separados, y suman el
   tramo (`LP02-09`).
 - **No borra el número en la ficha.** El plan pide mostrar el 0 como «0, se cuenta como sin
@@ -344,7 +344,7 @@ pasaba de **41,5 a 53,0** al sacarlos y cambiaba de lugar en la tabla
 ### LP14-P01 · ¿Qué produce un 0 en el CRM?
 
 La sincronización lo dice sin vueltas: el proveedor no distingue entre «calculó cero» y «el proceso
-no corrió» (`lib/negocio/sincronizar.ts:451-452`). La regla de esta pestaña se apoya en que los 47
+no corrió» (`lib/negocio/sincronizar.ts:452-453`). La regla de esta pestaña se apoya en que los 47
 son del segundo tipo, y lo que la sostiene es la fecha: todos entre el 21 de agosto y el 3 de
 septiembre, ninguno después. Quien administra el cálculo en GoHighLevel puede contestarlo de una
 vez; hasta entonces, el guardián de LP14-10 es lo único que avisa si deja de ser cierto.

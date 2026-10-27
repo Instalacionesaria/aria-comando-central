@@ -191,10 +191,10 @@ concedida (medido el 2026-10-18; la misma cifra que el 2026-09-28).
 **Construido en local, sin subir: la Fase 0 del modelo de datos** (`693a383..dc84cb2`, 2026-10-16). Las tablas que lee
 esta pantalla —`contactos`, `citas`, `resultados`, `comisiones`, `closer_asignado`, y las del analizador— ganan
 `cuenta_id` y una política por organización Y cuenta (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`,
-`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:99-110`); `conOrganizacion` pone `app.cuentas = '*'`
+`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:106-117`); `conOrganizacion` pone `app.cuentas = '*'`
 (`lib/datos/contexto.ts:60`, `lib/datos/contexto.ts:208`), así que la pantalla vería lo mismo que hoy. Lo que sí es
 nuevo para Sales: un resultado ya no puede quedar en otra cuenta que su cita
-(`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:68-70`), que es el eslabón `appointment_id → sale_report_id` del
+(`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:74-76`), que es el eslabón `appointment_id → sale_report_id` del
 §5.2. Ningún archivo de la sección cambia. Ver § 7.
 
 ---

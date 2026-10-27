@@ -254,7 +254,7 @@ muestra: no es una exposición nueva.
 
 ### LP12-09 · Nada de esto queda guardado en un caché
 
-`ok()` responde con `cache-control: no-store` (`lib/autorizacion/respuesta.ts:330-332`), y el lector
+`ok()` responde con `cache-control: no-store` (`lib/autorizacion/respuesta.ts:333-335`), y el lector
 del navegador pide también sin caché (`lib/http/cliente.ts:158-160`). **Requisito:** la pantalla no
 guarda la lista ni la ficha en el almacenamiento del navegador. Una lista de 593 nombres que
 sobrevive al cierre de sesión en una computadora compartida es la fuga más barata de todas.

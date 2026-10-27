@@ -49,7 +49,7 @@ No hay ningún paso a mano.
 1. Medir: `node --env-file=.env.supabase scripts/medir-cuadrante.mjs`. Seguir sólo si la mayoría de los contactos
    recientes traen el campo.
 2. Respaldo de `negocio.contactos` y `negocio.campos_del_crm`.
-3. `scripts/supabase.mjs migrar` con la `105` (después de la `079` a la `104`).
+3. `node --env-file=.env.supabase scripts/db.mjs migrar --hasta 105` (después de la `079` a la `104`).
 4. Push.
 5. Humo con login: esperar una corrida de la tarea de contactos, y mirar Leads Portal (las seis tarjetas y el aviso de
    «Sin clasificar»), Acquisition (la barra de tres y «Prioriza N %»), Ajustes › Clientes (el campo «Encontrado») y la

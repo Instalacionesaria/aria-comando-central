@@ -31,6 +31,8 @@ export const DE_UNA_CUENTA = [
   'eventos', 'mapeos_de_cuenta', 'valores_sin_mapear',
   // Las de Meta directo (`102`): los conjuntos, el gasto de cada cuenta publicitaria y los desgloses. De un cliente.
   'conjuntos_de_anuncios', 'gasto_por_cuenta_publicitaria', 'metricas_por_desglose',
+  // La historia del lead (`106`): las clasificaciones, las respuestas y los toques. Las escriben los disparadores.
+  'clasificaciones', 'respuestas_del_lead', 'toques_de_marketing',
 ] as const;
 
 /**
@@ -44,6 +46,9 @@ export const NACIERON_CON_CUENTA = [
   'conjuntos_de_anuncios',
   'gasto_por_cuenta_publicitaria',
   'metricas_por_desglose',
+  'clasificaciones',
+  'respuestas_del_lead',
+  'toques_de_marketing',
 ] as const;
 
 /** De una subcuenta o de la organización entera: `cuenta_id` nulable. */
@@ -65,5 +70,8 @@ export const DE_LA_ORGANIZACION = [
 /** Las de la organización que nacieron DESPUÉS de la `086`, que rehízo la política de las que existían. */
 export const NACIERON_DESPUES_DE_LA_086 = ['foto_de_las_empresas', 'foto_de_las_cuentas'] as const;
 
-/** Las de una cuenta que nacieron DESPUÉS de la `086` (Meta directo, `102`): nacen con su política de cuenta. */
-export const DE_UNA_CUENTA_DESPUES_DE_LA_086 = ['conjuntos_de_anuncios', 'gasto_por_cuenta_publicitaria', 'metricas_por_desglose'] as const;
+/** Las de una cuenta que nacieron DESPUÉS de la `086` (Meta directo, `102`; la historia del lead, `106`): nacen con su política de cuenta. */
+export const DE_UNA_CUENTA_DESPUES_DE_LA_086 = [
+  'conjuntos_de_anuncios', 'gasto_por_cuenta_publicitaria', 'metricas_por_desglose',
+  'clasificaciones', 'respuestas_del_lead', 'toques_de_marketing',
+] as const;

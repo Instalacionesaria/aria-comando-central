@@ -17,6 +17,7 @@
 
 import type { Trx } from '../datos/capa.ts';
 import { cuentaDeMeta } from '../credenciales/resolver.ts';
+import { tieneDatosEnOtroCliente, type LoLeidoDeMeta } from './loLeidoDeMeta.ts';
 
 /**
  * Deja la conexión manual de un cliente igual a lo que tienen hoy sus columnas `meta_*`: con token y cuenta válida la
@@ -107,6 +108,12 @@ export interface CuentaConectada {
  *   · si conectó la EMPRESA, una cuenta que ya estaba asignada sigue donde estaba; una nueva queda sin asignar, salvo
  *     que la empresa tenga un solo cliente activo, que la recibe sola (el caso de hoy: una empresa, un negocio).
  * Una cuenta que ya leía otra conexión (la manual de antes, u otro portfolio) pasa a leerse con ésta: el botón gana.
+ *
+ * Salvo una cuenta con algo leído de Meta en OTRO cliente que el que le tocaría (M10, `lib/meta/loLeidoDeMeta.ts`):
+ * ésa NO se mueve —ni de cliente ni de conexión: el disparador `cuenta_de_meta_en_su_cliente` no deja una cuenta de un
+ * cliente en la conexión de otro— y vuelve en `retenidas`, para que el canje lo diga. Si todavía no estaba en la tabla,
+ * entra sin asignar. La comprobación es con las filas bloqueadas (`for update`), y `loLeido` la hace en negocio: quien
+ * llama abre ese contexto.
  */
 export async function guardarConexionDeMeta(
   db: Trx,
@@ -120,7 +127,9 @@ export async function guardarConexionDeMeta(
     usuarioId: string;
     cuentas: readonly CuentaConectada[];
   },
-): Promise<{ conexionId: string }> {
+  /** Lo leído de Meta de estas cuentas, en negocio (`clientesConLoLeidoDeMeta` dentro de un `conOrganizacion`). */
+  loLeido: (acts: readonly string[]) => Promise<LoLeidoDeMeta>,
+): Promise<{ conexionId: string; retenidas: string[] }> {
   const { orgId, cuentaId } = datos;
   const conexion = await db
     .insertInto('conexiones_de_meta')
@@ -164,8 +173,50 @@ export async function guardarConexionDeMeta(
     unico = activos.length === 1 ? activos[0]!.id : null;
   }
 
+  // Las filas que ya están, bloqueadas: lo que se decide abajo con lo leído no cambia hasta confirmar.
+  const acts = datos.cuentas.map((c) => c.act);
+  const existentes = new Map(
+    acts.length === 0
+      ? []
+      : (
+          await db
+            .selectFrom('cuentas_publicitarias_de_meta')
+            .select(['act_id', 'cuenta_id'])
+            .where('org_id', '=', orgId)
+            .where('act_id', 'in', acts)
+            .forUpdate()
+            .execute()
+        ).map((f) => [f.act_id, f.cuenta_id] as const),
+  );
+  const leido = await loLeido(acts);
+  const retenidas: string[] = [];
+
   const ahora = new Date();
   for (const c of datos.cuentas) {
+    // El cliente al que iría: el que conectó; de la empresa, el que ya tenía, o el único activo.
+    const previa = existentes.get(c.act);
+    const destino = cuentaId ?? (previa === undefined || previa === null ? unico : previa);
+    if (destino !== null && tieneDatosEnOtroCliente(leido, c.act, destino)) {
+      retenidas.push(c.act);
+      // Ya estaba: se queda como está, en su cliente y con su conexión. Si no, entra sin asignar con ésta.
+      if (previa !== undefined) continue;
+      await db
+        .insertInto('cuentas_publicitarias_de_meta')
+        .values({
+          org_id: orgId,
+          act_id: c.act,
+          conexion_id: conexion.id,
+          nombre: c.nombre,
+          moneda: c.moneda,
+          zona_horaria: c.zonaHoraria,
+          estado_en_meta: c.estado,
+          cuenta_id: null,
+          vista_el: ahora,
+        })
+        .onConflict((oc) => oc.columns(['org_id', 'act_id']).doNothing())
+        .execute();
+      continue;
+    }
     const asignada = cuentaId ?? unico;
     await db
       .insertInto('cuentas_publicitarias_de_meta')
@@ -203,7 +254,7 @@ export async function guardarConexionDeMeta(
   if (vigentes.length > 0) soltar = soltar.where('act_id', 'not in', vigentes);
   await soltar.execute();
 
-  return { conexionId: conexion.id };
+  return { conexionId: conexion.id, retenidas };
 }
 
 /** Lo que Ajustes muestra de Meta: las conexiones y sus cuentas, sin un solo token. */

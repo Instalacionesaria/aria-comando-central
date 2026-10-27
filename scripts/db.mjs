@@ -6,13 +6,13 @@
 //   node scripts/db.mjs reset       bajar + levantar + arranque + migrar + catalogo + sembrar + cuentas + verificar
 //   node scripts/db.mjs levantar    el contenedor, y esperar a que esté sano
 //   node scripts/db.mjs bajar       el contenedor y su volumen
-//   node scripts/db.mjs arranque    los seis roles y sus rutas de búsqueda (superusuario)
+//   node scripts/db.mjs arranque    los seis roles y sus rutas de búsqueda (superusuario; 000 + 008)
 //   node scripts/db.mjs catalogo    capacidades, roles y reparto (superusuario, tras migrar)
 //   node scripts/db.mjs permisos-del-catalogo   privilegios del rol del catálogo (`migrador`)
 //   node scripts/db.mjs retiro      retira los roles que salieron del catálogo (`app_identidad`)
 //   node scripts/db.mjs cuentas     una cuenta para cada organización que no la tiene (`app_identidad`)
 //   node scripts/db.mjs cuenta-en-negocio   la cuenta en las filas de negocio de hoy (`app_inquilino`)
-//   node scripts/db.mjs migrar      las migraciones, como `migrador`
+//   node scripts/db.mjs migrar      las migraciones, como `migrador` (`--hasta NNN`: sólo hasta esa)
 //   node scripts/db.mjs sembrar     tres organizaciones, por `conIdentidad()`
 //   node scripts/db.mjs verificar   cuenta filas CONTRA LA BASE
 //   node scripts/db.mjs sembrar-agentes   las dos empresas sintéticas de los agentes (sólo local)
@@ -164,7 +164,18 @@ async function arranque() {
     const restantes = sql.match(/@[A-Z_]+@/g);
     if (restantes) throw new Error(`marcas sin reemplazar: ${[...new Set(restantes)].join(', ')}`);
 
-    await cliente.query(sql);
+    // Y los tres roles del modelo (`ingestor`, `app_ingesta`, `app_analista`), del `008`: el mismo archivo que en
+    // Supabase corre `supabase.mjs correr`, así que el camino local lo prueba. Sin marcas: si alguien le agrega una,
+    // allá dejaría de correr, y acá se dice. Va en la MISMA `query()` que el `000`: una sola transacción implícita,
+    // o quedan los seis o ninguno.
+    const modelo = readFileSync(new URL('../db/arranque/008_los_roles_del_modelo.sql', import.meta.url), 'utf8')
+      .replace(/\r\n/g, '\n');
+    const marcasDelModelo = modelo.match(/@[A-Z_]+@/g);
+    if (marcasDelModelo) {
+      throw new Error(`008_los_roles_del_modelo.sql tiene marcas y no debe: ${[...new Set(marcasDelModelo)].join(', ')}`);
+    }
+
+    await cliente.query(`${sql}\n${modelo}`);
     console.log('  seis roles (tres sin login todavía), rutas de búsqueda y permisos de esquema');
   } finally {
     await cliente.end();
@@ -329,10 +340,32 @@ async function permisosDelCatalogo() {
     await dueno.end();
   }}
 
-async function migrar() {
-  const { migrar: aplicar } = await import('../lib/datos/migrador.ts');
-  const { aplicadas } = await aplicar();
-  if (aplicadas.length === 0) console.log('  nada que aplicar (ya estaba al día)');
+/**
+ * Las migraciones, como `migrador`. **Con `--hasta NNN`, sólo hasta esa** (inclusive):
+ *
+ *     node --env-file=.env.supabase scripts/db.mjs migrar --hasta 081
+ *
+ * Es lo que deja subir el modelo por tramos, con una fase de arranque o un push entre uno y otro (documento 23 § 2,
+ * B2). Las migraciones salen SIEMPRE de los archivos de HEAD: nunca de un checkout viejo. Imprime lo que va a aplicar
+ * ANTES de aplicarlo, se niega a un tope que no existe y a uno que ya quedó atrás (no vuelve atrás). Cada sentencia
+ * espera un candado como mucho `ARIA_MIGRAR_LOCK_TIMEOUT` (5 s por omisión) y, si no lo consigue, se revierte todo.
+ */
+async function migrar(args = []) {
+  const { migrar: aplicar, leerOpcionesDeMigrar } = await import('../lib/datos/migrador.ts');
+  const { hasta } = leerOpcionesDeMigrar(args);
+  const { aplicadas } = await aplicar({
+    hasta,
+    alPlanear(plan) {
+      console.log(`  aplicadas: ${plan.aplicadas.length} (última: ${plan.aplicadas.at(-1) ?? 'ninguna'})`);
+      if (plan.hasta !== null) console.log(`  tope: --hasta ${plan.hasta}`);
+      if (plan.aAplicar.length === 0) return;
+      console.log(`  va a aplicar ${plan.aAplicar.length}, en una sola transacción:`);
+      for (const m of plan.aAplicar) console.log(`    ${m}`);
+      const quedan = plan.pendientes.length - plan.aAplicar.length;
+      if (quedan > 0) console.log(`  y deja pendientes ${quedan} (desde ${plan.pendientes[plan.aAplicar.length]})`);
+    },
+  });
+  if (aplicadas.length === 0) console.log(hasta ? '  nada que aplicar (ya había llegado a ese tope)' : '  nada que aplicar (ya estaba al día)');
   for (const m of aplicadas) console.log(`  aplicada ${m}`);
 }
 
@@ -663,7 +696,9 @@ try {
     console.log(`\nreset completo. Fases: ${completadas.join(' → ')}`);
   } else if (comando && Object.hasOwn(FASES, comando)) {
     console.log(`[${comando}]`);
-    await FASES[comando]();
+    // Sólo `migrar` lee argumentos (`--hasta NNN`); las demás fases, como siempre.
+    if (comando === 'migrar') await migrar(process.argv.slice(3));
+    else await FASES[comando]();
     console.log(`\n${comando}: hecho`);
   } else {
     console.error(`Uso: node scripts/db.mjs <${['reset', ...Object.keys(FASES)].join('|')}>`);

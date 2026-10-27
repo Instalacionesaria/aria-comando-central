@@ -491,8 +491,14 @@ export const RESULTADOS_DEL_SETTER: readonly ResultadoEnElCrm[] = [
  * **Las tres todavía NO existen en la subcuenta, y por eso no se mandan.**
  *
  * La aplicación las usa igual para su propio pipeline, porque —§ D.3— **la fuente de verdad de
- * la etapa es nuestra base, nunca el CRM**. El tag es un aviso para que el CRM dispare sus
- * automatismos, no el lugar donde vive el estado.
+ * la etapa DEL PIPELINE DE TRABAJO (`contactos.etapa`, la del setter y el closer) es nuestra base,
+ * nunca el CRM**. El tag es un aviso para que el CRM dispare sus automatismos, no el lugar donde
+ * vive el estado.
+ *
+ * La etapa ESTÁNDAR del Pipeline Maestro (`contactos.etapa_estandar`) y su Salida son lo contrario:
+ * las mueven los workflows de GoHighLevel en la oportunidad del lead, y Comando Central sólo las
+ * REGISTRA con su hora (eventos `etapa_cambiada` y `salida_marcada`). Decidido por el usuario el
+ * 2026-10-27: cierra la F1 de `docs/modelo de datos/23-REVISION-PARA-PRODUCCION.md`.
  *
  * Consecuencia práctica: las columnas del pipeline funcionan desde el día uno, y la escritura
  * al CRM **se enciende sola** el día que estas tres pasen a `confirmado`.

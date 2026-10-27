@@ -35,7 +35,8 @@ const leer = (ruta: string) => readFileSync(join(RAIZ, ruta), 'utf8').replace(/\
 const MIGRACION = leer('db/migraciones/089_la_foto_de_los_negocios.sql');
 /**
  * Las que la amplían, en su orden: la 099 suma `meta_en_el_crm` y reescribe los comentarios que cambiaron (contrato 2);
- * la 103 la renombra `meta_leido` y vuelve a escribir los comentarios (contrato 3, Meta directo).
+ * la 103 suma `meta_leido`, deja `meta_en_el_crm` en desuso y vuelve a escribir los comentarios (contrato 3, Meta
+ * directo).
  */
 const AMPLIACIONES = [
   leer('db/migraciones/099_meta_en_el_crm_de_cada_cliente.sql'),

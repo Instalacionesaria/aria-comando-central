@@ -14,8 +14,8 @@
 // `rolcreaterole`, medido y no supuesto.
 //
 // Eso lo convierte en el ÚNICO camino para las dos cosas que necesitan omitir RLS:
-// `db/arranque/000_cluster.sql` (los tres roles) y `db/arranque/001_catalogo.sql` (el catálogo
-// de capacidades, que vive detrás del forzado de RLS sin política para `migrador`).
+// `db/arranque/008_los_roles_del_modelo.sql` (los tres roles del modelo; el `000` no, lleva marcas) y
+// `db/arranque/001_catalogo.sql` (el catálogo, detrás del forzado de RLS sin política para `migrador`).
 //
 // ── LOS TRES FRENOS, Y CADA UNO POR UN MODO DE FALLA CONCRETO ───────────────
 //

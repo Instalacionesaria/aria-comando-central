@@ -21,8 +21,8 @@ comment on schema sistema is 'Cómo corre la plataforma: particiones, costos, y 
 
 -- Crea las particiones mensuales que falten de una tabla particionada por rango de un timestamptz. Los límites van
 -- en UTC: una partición es un mes UTC, y el «día local» de una cuenta se calcula al leer, no al particionar.
--- Idempotente: una partición que ya existe se saltea. La corre cada migración que crea una tabla particionada y, a
--- partir de la que crea los eventos, una tarea del cron cada mes, para los meses siguientes.
+-- Idempotente: una partición que ya existe se saltea. La corre cada migración que crea una tabla particionada; hasta
+-- 72 meses de una vez, para que una sola llamada cubra los meses pasados de un relleno y los tres años siguientes.
 create or replace function sistema.crear_particiones(p_tabla regclass, p_desde date, p_meses int)
 returns int
 language plpgsql as $$
@@ -33,7 +33,7 @@ declare
   v_creadas  int := 0;
   v_hija     text;
 begin
-  if p_meses < 1 or p_meses > 36 then
+  if p_meses < 1 or p_meses > 72 then
     raise exception 'crear_particiones: p_meses fuera de rango (%)', p_meses;
   end if;
   select n.nspname, c.relname into v_esquema, v_nombre
@@ -71,19 +71,22 @@ comment on schema ingesta is 'Lo crudo: cada aviso, webhook o lectura de un prov
 -- cada reintento), así que la unicidad vive en esta tabla chica, sin particionar, que se poda junto con las
 -- particiones viejas.
 create table if not exists ingesta.claves (
-  fuente          text not null,
+  fuente          catalogo.clave not null references catalogo.proveedores (clave),
+  ambito          text not null check (length(ambito) between 1 and 200),
   id_externo      text not null,
   recibido_id     uuid not null,
   primera_vez_el  timestamptz not null default now(),
-  primary key (fuente, id_externo)
+  primary key (fuente, ambito, id_externo)
 );
 comment on table ingesta.claves is
-  'Una fila por (fuente, id_externo) ya recibido: lo que hace que un reintento no se guarde dos veces. Se poda a los 90 días, con las particiones.';
+  'Una fila por (fuente, ámbito, id_externo) ya recibido: lo que hace que un reintento no se guarde dos veces. Se poda a los 90 días, con las particiones.';
+comment on column ingesta.claves.ambito is
+  'Dentro de qué se repite el id del proveedor: la location del CRM, o la organización (su id en texto) para un proveedor sin location (n8n, la landing). Dos empresas con el mismo id son dos avisos. Texto y no org_id: fuera de negocio e identidad no hay org_id.';
 
 create table if not exists ingesta.recibidos (
   id            uuid not null default gen_random_uuid(),
   recibido_el   timestamptz not null default now(),
-  fuente        text not null check (fuente in ('ghl', 'meta', 'tiktok', 'fathom', 'tldv', 'landing', 'n8n', 'elevenlabs', 'comando_central')),
+  fuente        catalogo.clave not null references catalogo.proveedores (clave),
   tipo          text not null check (length(tipo) between 1 and 120),
   org_id        uuid references identidad.organizaciones (id),
   cuenta_id     uuid,
@@ -103,6 +106,7 @@ create table if not exists ingesta.recibidos (
 ) partition by range (recibido_el);
 comment on table ingesta.recibidos is
   'Todo lo que llega, tal cual. Particionada por mes; se conserva 90 días. Reemplaza a negocio.avisos_del_crm, que hace esto sólo para GoHighLevel.';
+comment on column ingesta.recibidos.fuente is 'Qué sistema lo mandó (catalogo.proveedores). Un proveedor nuevo es un INSERT en el catálogo, no un cambio de esta tabla.';
 comment on column ingesta.recibidos.tipo is 'El tipo según el proveedor (ContactCreate, OpportunityStageUpdate, call.completed…). La traducción al catálogo la hace el normalizador.';
 comment on column ingesta.recibidos.cuenta_id is 'La resuelve el normalizador, desde crm_cuenta_id o el secreto del aviso. Nulo = todavía no se supo de qué cuenta es.';
 comment on column ingesta.recibidos.crm_cuenta_id is 'La location del CRM tal como la mandó el proveedor. recibir no la traduce: la puerta no lee identidad.';
@@ -115,12 +119,14 @@ create index if not exists recibidos_por_cuenta on ingesta.recibidos (cuenta_id,
 create table if not exists ingesta.recibidos_resto partition of ingesta.recibidos default;
 comment on table ingesta.recibidos_resto is 'La partición por omisión: sólo debería tener filas si faltó crear la del mes. La vigila la prueba 257.';
 -- Desde el mes en que se aplica y no desde una fecha fija: aplicada en otro mes, nacería sin la partición del mes en
--- curso. Lo que llegue antes de la primera partición cae en la de por omisión, que la 257 vigila.
-select sistema.crear_particiones('ingesta.recibidos', current_date, 6);
+-- curso. Lo recibido vive 90 días, así que no hay meses pasados que rellenar: el mes en curso y 36 más. Lo que llegue
+-- fuera de ellas cae en la de por omisión, que la 257 vigila.
+select sistema.crear_particiones('ingesta.recibidos', current_date, 37);
 
 -- La única puerta.
 create or replace function ingesta.recibir(
   p_fuente         text,
+  p_ambito         text,
   p_tipo           text,
   p_id_externo     text,
   p_payload        jsonb,
@@ -137,11 +143,12 @@ declare
 begin
   -- La cuenta NO se averigua acá: la puerta corre como su dueño (el migrador), y el migrador no ve filas de identidad.
   -- La location se guarda tal cual y la traduce el normalizador.
-  insert into ingesta.claves (fuente, id_externo, recibido_id)
-  values (p_fuente, p_id_externo, v_id)
-  on conflict (fuente, id_externo) do nothing;
+  insert into ingesta.claves (fuente, ambito, id_externo, recibido_id)
+  values (p_fuente, p_ambito, p_id_externo, v_id)
+  on conflict (fuente, ambito, id_externo) do nothing;
   if not found then
-    select k.recibido_id into v_previo from ingesta.claves k where k.fuente = p_fuente and k.id_externo = p_id_externo;
+    select k.recibido_id into v_previo from ingesta.claves k
+     where k.fuente = p_fuente and k.ambito = p_ambito and k.id_externo = p_id_externo;
     return query select v_previo, true;
     return;
   end if;
@@ -151,12 +158,12 @@ begin
           encode(sha256(convert_to(p_payload::text, 'UTF8')), 'hex'), p_payload);
   return query select v_id, false;
 end $$;
-comment on function ingesta.recibir(text, text, text, jsonb, text) is
-  'La única puerta de entrada. Guarda lo recibido tal cual y devuelve su id; si ya se había recibido (mismo fuente e id_externo), devuelve el id anterior y ya_estaba = true. La ejecuta sólo el rol ingestor.';
+comment on function ingesta.recibir(text, text, text, text, jsonb, text) is
+  'La única puerta de entrada. Guarda lo recibido tal cual y devuelve su id; si ya se había recibido (mismos fuente, ámbito e id_externo), devuelve el id anterior y ya_estaba = true. El ámbito es la location del CRM o la organización. La ejecuta sólo el rol ingestor.';
 
-revoke all on function ingesta.recibir(text, text, text, jsonb, text) from public;
+revoke all on function ingesta.recibir(text, text, text, text, jsonb, text) from public;
 grant usage on schema ingesta to ingestor, app_ingesta;
-grant execute on function ingesta.recibir(text, text, text, jsonb, text) to ingestor;
+grant execute on function ingesta.recibir(text, text, text, text, jsonb, text) to ingestor;
 
 -- El normalizador lee y marca. No inserta ni borra.
 grant select on ingesta.recibidos, ingesta.claves to app_ingesta;

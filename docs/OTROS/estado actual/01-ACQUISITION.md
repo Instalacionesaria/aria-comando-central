@@ -94,8 +94,8 @@ sólo va lo que la foto necesita:
   meta_ad_id válido».
 - **Diez pendientes técnicos (§ 18.19)** (`docs/acquisition/10-LO-QUE-PIDE-EL-DOCUMENTO.md:189-202`). El 1
   (confirmar campos) está medido uno por uno (`3bd2d58:lib/ghl/anuncios.ts:62-74`); el 2 (frecuencia) es una pasada diaria
-  a las 06:17 UTC que relee hoy y los dos días anteriores (`lib/negocio/barrido.ts:297`,
-  `3bd2d58:lib/negocio/recolectarAnuncios.ts:62`) más un relleno cada hora (`lib/negocio/barrido.ts:331`); el 3 (guardar
+  a las 06:17 UTC que relee hoy y los dos días anteriores (`lib/negocio/barrido.ts:298`,
+  `3bd2d58:lib/negocio/recolectarAnuncios.ts:62`) más un relleno cada hora (`lib/negocio/barrido.ts:332`); el 3 (guardar
   por día) es `negocio.metricas_de_anuncio` (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:230-232`) y, desde
   la `076`, el total diario de la cuenta (`db/migraciones/076_el_gasto_de_toda_la_cuenta.sql:23`); el 4 tiene los
   dos toques pero no su historia; el 5 (UTM) lo mide el monitor (su defecto, cerrado, en el § 7, riesgo 2); el 6 y el 7 están
@@ -189,7 +189,7 @@ costos sólo salen con el gasto de la ventana entero (`lib/negocio/embudosDeAcqu
   tienen contactos atribuidos; las 16 restantes dibujan «—» en sus personas.
 
 **Las señales y el plan.** La pasada del detector corre cada hora y trabaja la empresa que ya pasó las 6:00 de su
-zona sin haber corrido hoy (`lib/negocio/barrido.ts:365-379`, `lib/agentes/detectores/correr.ts:50`). Mide con la
+zona sin haber corrido hoy (`lib/negocio/barrido.ts:366-380`, `lib/agentes/detectores/correr.ts:50`). Mide con la
 misma `lecturaDeAcquisition` que la pantalla (`lib/agentes/detectores/acquisition.ts:4-9`, `:242-244`) y catorce
 reglas con valores provisionales que firma un administrador (`:66-81`, `:95-191`). El plan va en cuatro grupos más
 «Requiere validación ejecutiva» (`lib/agentes/plan/acquisition.ts:32-38`) y, con llave de IA, el modelo lo redacta
@@ -303,7 +303,7 @@ calendario sin él), el ad set en `utmTerm` y el cambio de anuncio entre los dos
 **1 · De Meta, lo que GoHighLevel no pasa.** Cuartiles de video, tiempo visto, placement, desgloses demográficos y
 el activo creativo: `fields` es un enum cerrado y `groupBy` sólo acepta día, semana o mes (`3bd2d58:lib/ghl/anuncios.ts:62-74`);
 el estado de entrega por anuncio tampoco llega (`db/migraciones/050_lo_que_costo_cada_anuncio.sql:60-63`). Meta
-directo existe desde el 2026-10-15 (`078`, tarea `activos` cada hora, `lib/negocio/barrido.ts:359`), pero sólo lee
+directo existe desde el 2026-10-15 (`078`, tarea `activos` cada hora, `lib/negocio/barrido.ts:360`), pero sólo lee
 la miniatura y el post de cada anuncio, para Creative, y espera el token de la empresa.
 
 **2 · Las campañas de mensajes, sin atribución.** El gasto ya entra (`076`); la gente que trae no: sus contactos llegan
@@ -451,10 +451,10 @@ contra la versión del 2026-09-15: con ésta caen en otro texto.
 
 **10 · Comentarios del código que no decían la verdad. Cerrado el 2026-10-18 (`65669f4`).**
 `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea `anuncios` «del cron de las 17:06 UTC», y es
-a las 06:17 (`lib/negocio/barrido.ts:297`); `lib/negocio/costoDelAnuncio.ts:471` decía que «el colector pide hoy y los
+a las 06:17 (`lib/negocio/barrido.ts:298`); `lib/negocio/costoDelAnuncio.ts:471` decía que «el colector pide hoy y los
 tres anteriores», y pide hoy y los dos anteriores (`3bd2d58:lib/negocio/recolectarAnuncios.ts:62`). Los dos seguían igual que
 el 2026-09-28 al corte; ese mismo día se corrigieron, y hoy dicen 06:17 UTC y «hoy y los dos anteriores». Antes ya
-se habían cerrado el de las «52 llamadas» de `barrido.ts` (hoy `lib/negocio/barrido.ts:293-296`, con el costo de la `076`) y el de
+se habían cerrado el de las «52 llamadas» de `barrido.ts` (hoy `lib/negocio/barrido.ts:294-297`, con el costo de la `076`) y el de
 `comoDia` en `costoDelAnuncio.ts`, que ya saca las fechas como texto (`lib/negocio/costoDelAnuncio.ts:418-420`).
 
 **11 · La comprobación con sesión no consta.** Ni la de AQ-5 ni la de las señales en producción (§ 2).

@@ -200,9 +200,11 @@ test('una sola normalización: el SQL dice lo mismo que la sincronización de ca
   assert.deepEqual(enSql, textos.map((v) => cuadranteDeUnValor(v)), 'el SQL y la sincronización normalizan distinto');
 });
 
-test('las cuatro claves son las de catalogo.cuadrantes, sin el «rechazo» que el CRM no manda', async () => {
-  const claves = await filas<{ clave: string }>(admin, `select clave from catalogo.cuadrantes where clave <> 'rechazo' order by orden`);
+test('las cuatro claves son las vigentes de catalogo.cuadrantes, sin una quinta para «sin clasificar»', async () => {
+  const claves = await filas<{ clave: string }>(admin, `select clave from catalogo.cuadrantes where vigente order by orden`);
   assert.deepEqual(claves.map((f) => f.clave), [...LOS_CUATRO]);
+  const todas = await filas<{ n: number }>(admin, `select count(*)::int as n from catalogo.cuadrantes`);
+  assert.equal(todas[0]?.n, LOS_CUATRO.length, 'el catálogo tiene una clave que el CRM no manda: sin cuadrante es NULL');
 });
 
 test('el campo se reconoce por su clave exacta, uno por subcuenta, y no por el otro «cuadrante»', async () => {

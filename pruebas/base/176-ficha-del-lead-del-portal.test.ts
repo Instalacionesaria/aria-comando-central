@@ -224,7 +224,7 @@ test('la ficha dice lo mismo que su fila de la rejilla: cita, asistencia, plantÃ
     await unContacto({ citas: [{ haceHoras: +30 }] }),
     await unContacto({ citas: [{ haceHoras: -3, congelada: true }] }),
     await unContacto({ cuadrante: null }),
-    await unContacto({ cuadrante: 'rechazo' }),
+    await unContacto({ cuadrante: 'descarta' }),
   ];
   const cohorte = await conOrganizacion(esc.org, () => leadsDelPortal(30));
   for (const id of casos) {

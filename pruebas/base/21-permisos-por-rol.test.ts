@@ -271,7 +271,14 @@ test('toda tabla de negocio es accesible para el inquilino, con las cuatro opera
      Un evento no se edita ni se borra: un hecho que cambia es un evento nuevo. El inquilino lo agrega y lo lee; el
      borrado en cascada al borrar a la persona lo hace la base. La 257 mide las cinco operaciones de los eventos. Las
      particiones se excluyen arriba: se leen a través de su madre. */
-  const SOLO_AGREGAR: Readonly<Record<string, readonly string[]>> = { eventos: ['SELECT', 'INSERT'] };
+  /* Y la historia del lead (`106`): las clasificaciones, las respuestas y los toques, que escriben los disparadores
+     de contactos. Lo mismo que los eventos: se agregan y se leen, y se van en cascada con el contacto. */
+  const SOLO_AGREGAR: Readonly<Record<string, readonly string[]>> = {
+    eventos: ['SELECT', 'INSERT'],
+    clasificaciones: ['SELECT', 'INSERT'],
+    respuestas_del_lead: ['SELECT', 'INSERT'],
+    toques_de_marketing: ['SELECT', 'INSERT'],
+  };
 
   for (const { relname } of tablas) {
     for (const priv of SOLO_AGREGAR[relname] ?? TODOS) {
@@ -339,6 +346,33 @@ test('toda vista de identidad corre con los permisos de QUIEN LA INVOCA', async 
   );
   assert.equal(identidad?.tiene, true);
   assert.equal(inquilino?.tiene, false);
+});
+
+test('toda vista de negocio corre con los permisos de QUIEN LA INVOCA, y el inquilino sólo la lee', async () => {
+  // Lo mismo que las de identidad, para las vistas de la historia del lead (la `106`): sobre los eventos y los
+  // contactos, con los permisos de su dueño (el migrador, sin política) devolverían cero filas sin error, y con un
+  // dueño que viera todo, las de todas las organizaciones.
+  const vistas = await filas<{ relname: string; reloptions: string[] | null }>(
+    mig,
+    `select c.relname, c.reloptions from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'negocio' and c.relkind = 'v' order by c.relname`,
+  );
+  assert.deepEqual(
+    vistas.map((v) => v.relname),
+    ['embudo_por_dia', 'etapas_del_lead', 'metricas_meta_del_dia', 'respuestas_del_lead_traducidas'],
+    'apareció una vista nueva en negocio: tiene que declarar security_invoker y sumarse acá',
+  );
+  for (const v of vistas) {
+    assert.ok((v.reloptions ?? []).includes('security_invoker=true'), `la vista ${v.relname} no declara security_invoker=true`);
+    for (const priv of TODOS) {
+      const f = await unaFila<{ tiene: boolean }>(mig, 'select has_table_privilege($1, $2, $3) as tiene', [
+        'app_inquilino',
+        `negocio.${v.relname}`,
+        priv,
+      ]);
+      assert.equal(f?.tiene, priv === 'SELECT', `el inquilino ${priv === 'SELECT' ? 'no lee' : `tiene ${priv} sobre`} negocio.${v.relname}`);
+    }
+  }
 });
 
 test('la vista de permisos efectivos DEVUELVE FILAS, no solo tiene permiso', async () => {

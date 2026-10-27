@@ -13,15 +13,17 @@
 //     ningún rol de la aplicación lo escribe — mutación: un `grant insert` a `app_inquilino`, o un `org_id`;
 //   · una llave de catálogo mal escrita no entra (el dominio `catalogo.clave`) — mutación: aflojar el patrón;
 //   · el nivel de un nicho es el de su padre más uno — mutación: quitar el disparador;
-//   · las semillas están: 45 nichos y los 33 tipos de evento, cada uno con el JSON Schema de sus datos — mutación:
-//     perder un bloque de semillas;
+//   · las semillas están: 45 nichos y al menos 42 tipos de evento, cada uno con el JSON Schema de sus datos, con los
+//     de la historia (etapa_cambiada, salida_marcada, cuadrante_cambiado…) y sin perdido ni precall_abierto; las 7
+//     etapas del Pipeline Maestro en orden — mutación: perder un bloque de semillas, o volver a sembrar perdido;
 //   · las cuentas (Paso 3, `080`): toda organización nace con su cuenta (el puente) — mutación: quitar el disparador;
 //   · la fase `cuentas` crea la que falta, con la location del CRM, y no duplica — mutación: sacarle el `not exists`;
 //   · `tipo` sale de `es_principal` y no se puede escribir — mutación: volverla una columna común;
 //   · el inquilino ve las cuentas de su organización sólo con `app.cuentas`, y ninguna credencial — mutación: una
 //     política sin `app.cuentas`, o un `grant select` sobre las credenciales;
-//   · la bandeja (Paso 4, `081`): el mismo aviso dos veces se guarda una sola, con la location tal cual — mutación:
-//     sacar la tabla de claves de la puerta;
+//   · la bandeja (Paso 4, `081`): el mismo aviso dos veces se guarda una sola, con la location tal cual; el mismo id en
+//     dos ámbitos son dos avisos; un proveedor que no está en el catálogo no entra — mutación: sacar la tabla de
+//     claves de la puerta, o sacar el ámbito de su clave;
 //   · sólo el ingestor ejecuta la puerta, y no lee nada; el normalizador lee y no inserta — mutación: un `grant
 //     select` al ingestor, o un `grant execute` a public;
 //   · la partición del mes existe y la de por omisión está vacía — mutación: no crear las del mes;
@@ -40,7 +42,10 @@
 //   · los eventos (Paso 6, `084`): el inquilino agrega y no edita ni borra — mutación: no revocar update/delete;
 //   · toda partición nace cerrada, sin permisos para la aplicación y con la RLS forzada — mutación: la
 //     `crear_particiones` de la `081`, que sólo revocaba a public;
-//   · un evento necesita un tipo del catálogo, y la partición del mes existe — mutación: no crear las del mes.
+//   · un evento necesita un tipo y un proveedor del catálogo, y la partición del mes existe — mutación: no crear las
+//     del mes;
+//   · las particiones cubren 24 meses hacia atrás y 36 hacia adelante (eventos) y el mes en curso más 36 (bandeja) —
+//     mutación: volver a los seis meses.
 //
 // Corre como `migrador`: es una comprobación de catálogo, y el migrador ve la estructura aunque no vea las filas.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -188,9 +193,63 @@ test('las semillas están: los nichos v1 y los tipos de evento, cada uno con el 
   );
   assert.equal(f?.nichos, 45, 'cambió la cantidad de nichos sembrados');
   assert.ok((f?.raices ?? 0) > 0, 'no hay nichos raíz');
-  assert.equal(f?.eventos, 33, 'cambió la cantidad de tipos de evento sembrados');
+  // Al menos: un tipo nuevo es un INSERT versionado y no tiene por qué romper esta prueba.
+  assert.ok((f?.eventos ?? 0) >= 42, `hay ${f?.eventos} tipos de evento sembrados; se esperaban al menos 42`);
   assert.equal(f?.sin_esquema, 0, 'un tipo de evento no tiene el JSON Schema de sus datos');
   assert.ok((f?.monedas ?? 0) > 0 && (f?.paises ?? 0) > 0, 'faltan monedas o países');
+
+  const claves = new Set(
+    (await filas<{ clave: string }>(mig, `select clave from catalogo.tipos_de_evento`)).map((x) => x.clave),
+  );
+  for (const k of ['etapa_cambiada', 'salida_marcada', 'cuadrante_cambiado', 'calificado', 'respondio_video', 'conexion_confirmada', 'cita_estado_cambiado']) {
+    assert.ok(claves.has(k), `falta el tipo de evento ${k}`);
+  }
+  // El dominio nutrición tiene sus tipos (listas del SOP), aunque todavía nada los escriba.
+  const nutricion = await filas<{ clave: string }>(mig, `select clave from catalogo.tipos_de_evento where dominio = 'nutricion' order by clave`);
+  assert.deepEqual(nutricion.map((x) => x.clave), ['email_enviado', 'entro_a_nutricion', 'reactivado', 'salio_de_nutricion']);
+  for (const k of ['perdido', 'precall_abierto']) assert.ok(!claves.has(k), `quedó el tipo ${k}, que el SOP reemplazó`);
+  // El tipo de cita es un catálogo (el destino del mapeo «calendario»), no un CHECK: sólo la de venta es de venta.
+  assert.deepEqual(await filas(mig, `select clave, es_de_venta from catalogo.tipos_de_cita order by clave`), [
+    { clave: 'coaching', es_de_venta: false },
+    { clave: 'onboarding', es_de_venta: false },
+    { clave: 'otra', es_de_venta: false },
+    { clave: 'venta', es_de_venta: true },
+  ]);
+
+  // Sólo etapa_cambiada registra la etapa; los demás dicen, a lo sumo, la etapa que deberían implicar.
+  const marcan = await filas<{ clave: string; etapa: string | null }>(
+    mig,
+    `select clave, etapa_que_marca as etapa from catalogo.tipos_de_evento
+      where clave in ('clasificado', 'calificado', 'pidio_no_contacto', 'onboarding_hecho', 'etapa_cambiada') order by clave`,
+  );
+  assert.deepEqual(marcan, [
+    { clave: 'calificado', etapa: 'calificado' },
+    { clave: 'clasificado', etapa: null },
+    { clave: 'etapa_cambiada', etapa: null },
+    { clave: 'onboarding_hecho', etapa: 'onboarding' },
+    { clave: 'pidio_no_contacto', etapa: null },
+  ]);
+});
+
+test('las etapas son las 7 del Pipeline Maestro: venta no es final, onboarding sí, y perdido es una Salida', async () => {
+  const etapas = await filas<{ clave: string; orden: number; es_final: boolean }>(
+    mig,
+    `select clave, orden, es_final from catalogo.etapas order by orden`,
+  );
+  assert.deepEqual(etapas, [
+    { clave: 'lead', orden: 1, es_final: false },
+    { clave: 'conversacion', orden: 2, es_final: false },
+    { clave: 'calificado', orden: 3, es_final: false },
+    { clave: 'agendado', orden: 4, es_final: false },
+    { clave: 'asistio', orden: 5, es_final: false },
+    { clave: 'venta', orden: 6, es_final: false },
+    { clave: 'onboarding', orden: 7, es_final: true },
+  ]);
+  const salidas = await filas<{ clave: string }>(mig, `select clave from catalogo.salidas order by orden`);
+  assert.deepEqual(
+    salidas.map((s) => s.clave),
+    ['descarta', 'no_show', 'seguimiento', 'adelanto', 'nurture', 'descalificado', 'nutricion', 'no_rotundo'],
+  );
 });
 
 // ─── Paso 3 · Las cuentas ───────────────────────────────────────────────────────
@@ -296,7 +355,7 @@ test('el inquilino ve las cuentas de su organización sólo con `app.cuentas`, y
 test('el mismo aviso dos veces se guarda una sola, con la location tal cual y sin traducir', async () => {
   await admin.query('begin');
   try {
-    const recibir = `select recibido_id, ya_estaba from ingesta.recibir('ghl', 'ContactCreate', 'aviso-257', $1::jsonb, 'loc-257')`;
+    const recibir = `select recibido_id, ya_estaba from ingesta.recibir('ghl', 'loc-257', 'ContactCreate', 'aviso-257', $1::jsonb, 'loc-257')`;
     const primera = await unaFila<{ recibido_id: string; ya_estaba: boolean }>(admin, recibir, ['{"contacto":"x"}']);
     const segunda = await unaFila<{ recibido_id: string; ya_estaba: boolean }>(admin, recibir, ['{"contacto":"x","otra":1}']);
     assert.equal(primera?.ya_estaba, false);
@@ -312,13 +371,29 @@ test('el mismo aviso dos veces se guarda una sola, con la location tal cual y si
       { ...filas_[0], huella: /^[0-9a-f]{64}$/.test(filas_[0]!.huella) },
       { crm_cuenta_id: 'loc-257', org_id: null, cuenta_id: null, estado: 'pendiente', huella: true },
     );
+
+    // El mismo id en OTRO ámbito (otra location, otra empresa) es otro aviso: no se pierde en silencio.
+    const otra = await unaFila<{ ya_estaba: boolean }>(
+      admin,
+      `select ya_estaba from ingesta.recibir('ghl', 'loc-257-b', 'ContactCreate', 'aviso-257', '{}'::jsonb, 'loc-257-b')`,
+    );
+    assert.equal(otra?.ya_estaba, false, 'el mismo id de otro ámbito se tomó por un reintento');
+
+    // Y un proveedor que no está en el catálogo no entra (la clave foránea a catalogo.proveedores).
+    await admin.query('savepoint s');
+    await assert.rejects(
+      admin.query(`select ingesta.recibir('no_existe_257', 'loc-257', 'X', 'aviso-257-c', '{}'::jsonb)`),
+      (e: { code?: string }) => e.code === '23503',
+      'entró un aviso de un proveedor que no está en catalogo.proveedores',
+    );
+    await admin.query('rollback to savepoint s');
   } finally {
     await admin.query('rollback');
   }
 });
 
 test('sólo el ingestor ejecuta la puerta, y no lee nada; el normalizador lee y no inserta', async () => {
-  const FIRMA = 'ingesta.recibir(text, text, text, jsonb, text)';
+  const FIRMA = 'ingesta.recibir(text, text, text, text, jsonb, text)';
   const f = await unaFila<Record<string, boolean>>(
     admin,
     `select has_function_privilege('ingestor', $1, 'execute') as ingestor_ejecuta,
@@ -649,6 +724,15 @@ test('el inquilino agrega eventos y no los edita ni los borra; el tipo tiene que
       'entró un evento de un tipo que no está en el catálogo',
     );
     await inq.query('rollback to savepoint s');
+    // El proveedor también es del catálogo: una clave foránea, no una lista cerrada.
+    await inq.query('savepoint p');
+    await assert.rejects(
+      inq.query(`insert into negocio.eventos (org_id, ocurrio_el, tipo, actor_tipo, fuente, id_externo)
+                   values ($1, now(), $2, 'sistema', 'no_existe_257', 'evento-257-c')`, [org.id, tipo.clave]),
+      (e: { code?: string }) => e.code === '23503',
+      'entró un evento de un proveedor que no está en catalogo.proveedores',
+    );
+    await inq.query('rollback to savepoint p');
     await assert.rejects(inq.query(`update negocio.eventos set actor_id = 'x' where id_externo = 'evento-257'`), /permis|permission/i);
     await inq.query('rollback');
   } finally {
@@ -678,4 +762,20 @@ test('toda partición nace cerrada: sin permisos para la aplicación, con la RLS
             (select count(*)::int from negocio.eventos_resto) as en_el_resto`,
   );
   assert.deepEqual(f, { del_mes: true, en_el_resto: 0 });
+});
+
+test('las particiones cubren la historia: eventos 24 meses atrás y 36 adelante, la bandeja el mes y 36 más', async () => {
+  const f = await unaFila<Record<string, boolean | number>>(
+    admin,
+    `with meses as (
+       select to_char(date_trunc('month', now() at time zone 'UTC') + make_interval(months => i), 'YYYY_MM') as mes, i
+         from generate_series(-24, 36) i)
+     select bool_and(exists (select 1 from pg_class where relnamespace = 'negocio'::regnamespace and relname = 'eventos_' || mes)) as eventos,
+            bool_and(exists (select 1 from pg_class where relnamespace = 'ingesta'::regnamespace and relname = 'recibidos_' || mes))
+              filter (where i >= 0) as recibidos,
+            (select count(*)::int from ingesta.recibidos_resto) as recibidos_resto,
+            (select count(*)::int from negocio.eventos_resto) as eventos_resto
+       from meses`,
+  );
+  assert.deepEqual(f, { eventos: true, recibidos: true, recibidos_resto: 0, eventos_resto: 0 });
 });

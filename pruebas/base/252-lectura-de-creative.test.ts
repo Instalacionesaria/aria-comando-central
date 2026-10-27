@@ -10,8 +10,8 @@
 //     sacar la ventana, sumar días sin la clave, promediar la frecuencia, mirar sólo la ventana para los días;
 //   · la etapa: la de la campaña con más impresiones — mutación: la primera que aparezca;
 //   · el hook rate de la entrega es el de `rendimientoDelCreativo` — mutación: otro denominador;
-//   · los calificados: los de cuadrante Prioriza, Valida o Financia (la `105`), sin Descarta, sin el «rechazo» del
-//     catálogo y sin los que no tienen cuadrante — mutación: contar Descarta, o contar a todos;
+//   · los calificados: los de cuadrante Prioriza, Valida o Financia (la `105`), sin Descarta y sin los que no tienen
+//     cuadrante — mutación: contar Descarta, o contar a todos;
 //   · la miniatura de la pieza: la más frecuente entre sus contactos; empate, la del contacto más nuevo; sólo de los
 //     hosts permitidos, con el tope de la tabla; la foto si no hay video — mutación: la primera, cualquier host, el tope
 //     del link manual, sólo el video;
@@ -166,18 +166,18 @@ test('la entrega de una pieza: la ventana, las claves, la frecuencia pesada, los
   assert.ok(!todas.some((x) => x.pieza === ''), 'quedó una pieza con nombre vacío');
 });
 
-test('los calificados: cuadrante Prioriza, Valida o Financia; ni Descarta, ni rechazo, ni sin cuadrante', async () => {
+test('los calificados: cuadrante Prioriza, Valida o Financia; ni Descarta ni sin cuadrante', async () => {
   await limpiar();
   await esc.admin.query(`insert into negocio.carpetas_del_crm (org_id, carpeta_id, nombre, visto_el) values ($1, $2, 'Prueba', now()) on conflict do nothing`, [esc.org, CARPETA]);
   await esc.admin.query(
     `insert into negocio.campos_del_crm (org_id, campo_id, nombre, carpeta_id, tipo, posicion, clave, visto_el) values ($1, $2, 'Cuadrante de Clasificacion', $3, 'RADIO', '1', $4, now()) on conflict do nothing`,
     [esc.org, CAMPO, CARPETA, CLAVE_DEL_CUADRANTE],
   );
-  for (const cuadrante of ['prioriza', 'valida', 'descarta', 'rechazo', null, null, 'financia']) await unLead({ pieza: PIEZA, cuadrante });
+  for (const cuadrante of ['prioriza', 'valida', 'descarta', null, null, 'financia']) await unLead({ pieza: PIEZA, cuadrante });
   const f = (await enAlfa(() => calidadDelCreativo(30))).filas.filter((x) => x.creativo === PIEZA);
   await limpiar();
-  assert.equal(f.reduce((s, x) => s + x.calificados, 0), 3, 'contó Descarta, el rechazo o a los que no tienen cuadrante');
-  assert.equal(f.reduce((s, x) => s + x.contactos, 0), 7);
+  assert.equal(f.reduce((s, x) => s + x.calificados, 0), 3, 'contó Descarta o a los que no tienen cuadrante');
+  assert.equal(f.reduce((s, x) => s + x.contactos, 0), 6);
 });
 
 test('la miniatura de la pieza: la más frecuente; empate, la del contacto más nuevo; sólo hosts permitidos', async () => {

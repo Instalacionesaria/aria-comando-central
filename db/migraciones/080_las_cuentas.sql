@@ -145,6 +145,20 @@ grant select, insert, update, delete on identidad.cuentas_credenciales to app_id
 drop policy if exists cuentas_credenciales_identidad on identidad.cuentas_credenciales;
 create policy cuentas_credenciales_identidad on identidad.cuentas_credenciales for all to app_identidad using (true) with check (true);
 
+-- En el proveedor administrado hay una regla de permisos por omisión que no está en este repositorio: le da todo
+-- sobre cada tabla nueva de identidad al rol de servicio de la plataforma, que además se salta la RLS. Las tablas de
+-- secretos no se lo dan: se le revoca a todo rol que se salta la RLS y no es superusuario, ni `postgres` (el alta
+-- externa) ni quien migra. Donde no existe ninguno (la base local), no hace nada.
+do $$
+declare
+  r record;
+begin
+  for r in select rolname from pg_roles
+            where rolbypassrls and not rolsuper and rolname not in ('postgres', current_user) loop
+    execute format('revoke all on identidad.cuentas_credenciales from %I', r.rolname);
+  end loop;
+end $$;
+
 -- ─── Qué cuentas ve un usuario (nivel 2) ─────────────────────────────────────────
 
 create table if not exists identidad.usuarios_cuentas (

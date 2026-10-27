@@ -542,8 +542,8 @@ sin estar**: el 2026-10-18 `gh api …/branches/main` da `protected: false` ([17
 
 **La corrección que dejó la tercera.** No alcanza con preguntar qué LEE el arranque: hay que preguntar
 **qué TOCA la columna nueva, en cualquier sentido** —un `insert` que la nombra rompe igual que un
-`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:176`; el barrido de
-citas va a la hora y tres, `lib/negocio/barrido.ts:260`).
+`select`— y en qué horario corre la tarea (`HORARIOS`, `lib/negocio/barrido.ts:177`; el barrido de
+citas va a la hora y tres, `lib/negocio/barrido.ts:261`).
 
 **La comprobación de treinta segundos, antes de cada `git push`:**
 
@@ -842,7 +842,7 @@ menú que aparece y devuelve 403. Medido sobre las 73 rutas, había una así: Co
 `8dcb619` alineando la **sección** a la ruta (`auditor.ver`, `lib/autorizacion/secciones.ts:333-335`),
 no al revés, porque igualarlas por la ruta habría ampliado el acceso a lo más sensible de las dos. Y no
 era latente: la pestaña de permisos le ofrecía la casilla de Conversation a un rol con sólo
-`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:889`).
+`tablero.ver`. La lista de excepciones queda declarada y vacía (`pruebas/apoyo/autorizados.ts:909`).
 
 **33 · Lo que viaja al navegador se decide por LISTA BLANCA, y tiene prueba de forma negativa.** Tres
 casos, los tres del 2026-09-21 al 26:
@@ -1139,7 +1139,7 @@ revisión adversarial con dos escépticos por hallazgo, que ejecutaron la funci�
 2026-09-18): «una marca de agua no puede describir un conjunto con agujeros». La ventana ahora sale de
 lo que FALTA. **Y volvió con el gasto**: el colector pedía 13 de las 61 campañas de la cuenta, el sello decía `corrio`
 y una campaña de mensajes no entraba nunca; la `076` (`22ec755`, 2026-10-07) lee la serie de toda la cuenta y el
-sello dice cuándo Meta no está vinculado (`3bd2d58:lib/negocio/barrido.ts:1161-1164`).
+sello dice cuándo Meta no está vinculado (`3bd2d58:lib/negocio/barrido.ts:1179-1182`).
 
 ## M · Un comentario que afirma sin medir
 
@@ -1204,7 +1204,7 @@ y cada pregunta daba 400 (`b6eed36`); lo vigila `pruebas/codigo/212-los-esquemas
 `d715b2a`, 2026-10-05) es una tabla común para los cuatro departamentos: la huella —departamento, regla, entidad,
 ventana— impide que una señal descartada renazca mientras su condición siga, la entidad es un id y no un nombre, y no
 hay texto libre de personas (`db/migraciones/072_las_senales.sql:15-26`); con menos de 10 no hay señal
-(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:372-378`),
+(`db/migraciones/072_las_senales.sql:58`). Los detectores corren a la hora y veintitrés (`lib/negocio/barrido.ts:373-379`),
 y lo fuerzan `pruebas/codigo/221-el-detector-de-acquisition.test.ts:77@bf2de85` y
 `pruebas/codigo/234-conversation-en-la-tabla-comun.test.ts:101`. **Y las dos excepciones con datos de personas tienen
 su regla:** el Brief del closer es el agente que manda al modelo datos de una persona (`lib/agentes/brief/entrada.ts:14`),
@@ -1282,18 +1282,18 @@ para la base de producción; sí para el código del árbol y para la suite loca
   mitad: abrir el contexto de la organización ahora también abre el de sus cuentas.
 - **Los regímenes de negocio.** Cada tabla es de una cuenta, de una cuenta o de la organización, o sólo de la
   organización, y la lista es a mano porque el régimen es una decisión (`pruebas/apoyo/regimenes-de-negocio.ts:1-19`);
-  `pruebas/base/257-el-modelo-fase-0.test.ts:80` pone la suite en rojo si una tabla no tiene régimen o tiene dos.
+  `pruebas/base/257-el-modelo-fase-0.test.ts:85` pone la suite en rojo si una tabla no tiene régimen o tiene dos.
 - **El revisor del migrador.** Sigue prohibiendo `no force row level security` (`lib/datos/migrador.ts:131`), suma
   los esquemas `catalogo`, `sistema` e `ingesta` (`:70`), no le pide `org_id` a una partición (`:177`) y acepta
   `aplicar_aislamiento_de_cuenta` como aislamiento (`:208`).
 - **Las fases de relleno.** Como el migrador no ve filas (regla 7), las filas que ya existen reciben su cuenta con dos
-  fases de `scripts/db.mjs`: `cuentas`, como `app_identidad` (`scripts/db.mjs:505`), y `cuenta-en-negocio`, como
+  fases de `scripts/db.mjs`: `cuentas`, como `app_identidad` (`scripts/db.mjs:571`), y `cuenta-en-negocio`, como
   `app_inquilino` dentro de `conOrganizacion` (`:541`). La cuenta en negocio va en tres pasos: la `082` la agrega nula
   con un puente, la fase rellena y la `083` la vuelve obligatoria con la política por cuenta
   (`db/migraciones/082_la_cuenta_en_negocio_expandir.sql:4-21`).
 - **Lo demás.** El idioma común compartido sin `org_id` (`079`), las cuentas (`080`), la bandeja de lo crudo con una
   sola puerta (`081`) y los eventos de sólo agregar, con particiones que nacen cerradas (`084`,
-  `pruebas/base/257-el-modelo-fase-0.test.ts:659`).
+  `pruebas/base/257-el-modelo-fase-0.test.ts:743`).
 
 ## Construido en local, sin subir: el nivel 3 (los clientes de nuestros clientes)
 
@@ -1333,7 +1333,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `pruebas/codigo/265-las-rutas-del-cliente-abren-su-ambito.test.ts:24`.
 - **La cuenta por omisión.** Una por empresa (`db/migraciones/085_la_cuenta_por_omision.sql:31`): recibe lo que entra
   con las credenciales de la empresa, y el puente cae en ella cuando la empresa tiene dos o más clientes
-  (`db/migraciones/085_la_cuenta_por_omision.sql:59`). Dar de alta un segundo cliente no corta la ingesta.
+  (`db/migraciones/085_la_cuenta_por_omision.sql:105`). Dar de alta un segundo cliente no corta la ingesta.
 - **El cliente final.** `usuarios.limitado_a_cuentas` (`db/migraciones/087_el_cliente_final.sql:23`): sin filas en
   `usuarios_cuentas` no ve **ninguna** cuenta, no todas. Sólo tiene roles restringidos y nada de la plataforma, y la
   base lo mira en cada fila, no al confirmar (`db/migraciones/087_el_cliente_final.sql:87`). El portero lo deja sólo en
@@ -1341,8 +1341,8 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **La foto de los negocios, con un solo escritor.** `negocio.foto_de_las_empresas` y `negocio.foto_de_las_cuentas`
   viven bajo la principal, que un disparador exige (`db/migraciones/089_la_foto_de_los_negocios.sql:126`); no guardan
   nombres, y nulo es «sin medir». Las escribe sólo `tomarLaFoto` (`lib/cartera/foto.ts:162`), en la tarea `foto` del
-  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:120`, horario en `lib/negocio/barrido.ts:390`).
-  Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:125`.
+  cron, que es de la plataforma como la sonda (`lib/negocio/barrido.ts:121`, horario en `lib/negocio/barrido.ts:391`).
+  Lo exige `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:126`.
 - **El tablero de Negocios.** La primera entrada de Client Success, sólo del superadministrador y desde la principal
   (`app/api/negocios/route.ts:33`): la configuración en vivo, leída de identidad como presencias
   (`lib/cartera/configuracion.ts:73`), y las cifras de la foto (`lib/cartera/tablero.ts:309`). Las cifras de arriba no
@@ -1357,11 +1357,11 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   (`lib/credenciales/resolver.ts:58`): el principal lee las de la empresa; los demás, las suyas, siempre por
   (organización, cliente) (`lib/credenciales/resolver.ts:66`), y sin las suyas FALTAN, nunca caen a las de la empresa.
   Quien quiere la de la empresa lo escribe (`'la_de_la_empresa'`). El aviso del CRM entra al cliente de su secreto
-  (`app/api/avisos/crm/route.ts:150`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:81`.
-- **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:131`) corren una vez por cliente
+  (`app/api/avisos/crm/route.ts:183`). Lo exige `pruebas/codigo/277-cada-credencial-dice-de-que-cliente-es.test.ts:81`.
+- **El cron barre por cliente.** Las tareas de un cliente (`lib/negocio/barrido.ts:132`) corren una vez por cliente
   activo, con sus credenciales, que la ruta resuelve por cliente (`app/api/cron/route.ts:242`); las de la empresa, una
-  vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:702`), con el presupuesto mirado antes de
-  cada una (`lib/negocio/barrido.ts:741`), y cada sello con su cliente. La frescura de una pantalla es la de su
+  vez. Todas en un orden global por su propio sello (`lib/negocio/barrido.ts:703`), con el presupuesto mirado antes de
+  cada una (`lib/negocio/barrido.ts:742`), y cada sello con su cliente. La frescura de una pantalla es la de su
   cliente, o la del peor activo a la vista (`lib/negocio/frescura.ts:200`).
 - **Las rutas manuales traen a cada cliente (C5 · G4).** «Traer del calendario», el tic de la ingesta y «Traer de
   GoHighLevel» traen a los clientes ACTIVOS que su pantalla lee (`lib/autorizacion/ambito.ts:70`): las tres leen la
@@ -1569,11 +1569,11 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   `credenciales.editar` para elegir (`app/api/admin/cuentas/[id]/campos/route.ts:88`,
   `app/api/admin/cuentas/[id]/campos/route.ts:98`), y viven en el catálogo de cada subcuenta:
   `campos_del_crm.es_el_puntaje`, uno por cliente con un índice único parcial, y `carpetas_del_crm.grupo_elegido_el`
-  (`lib/datos/esquema.ts:551`, `lib/datos/esquema.ts:514`). Con la configuración de hoy nada cambia: una subcuenta SIN
+  (`lib/datos/esquema.ts:574`, `lib/datos/esquema.ts:537`). Con la configuración de hoy nada cambia: una subcuenta SIN
   campo elegido resuelve lo de antes —la sincronización, la unión de la constante y el primero por su nombre; Creative,
   el de su nombre—, y sólo la que eligió usa ése y nada más (`lib/negocio/camposDelCrm.ts:517`,
   `lib/negocio/camposDelCrm.ts:529@bf2de85`). Un puntaje es un entero de 0 a 100 escrito con dígitos, y lo dice UNA validación:
-  `puntajeDeUnValor` en la sincronización (`lib/negocio/sincronizar.ts:575`) y `puntajeUsable`, lo mismo en SQL, en
+  `puntajeDeUnValor` en la sincronización (`lib/negocio/sincronizar.ts:576`) y `puntajeUsable`, lo mismo en SQL, en
   Creative, en el conteo de la pantalla y en el recálculo (`lib/negocio/camposDelCrm.ts:459`,
   `lib/negocio/camposDelCrm.ts:456@bf2de85`); hasta acá Creative promediaba decimales y valores de más de 100. Al elegir, el
   puntaje de TODOS los contactos del cliente se recalcula desde lo guardado, congelados incluidos, en la misma
@@ -1625,7 +1625,7 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
   Con un solo cliente, la lista cambia a propósito: un cliente cuyo GoHighLevel no tiene Meta vinculado deja de estar
   configurado. Lo exigen `82f863b:pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:218`, `82f863b:pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:241`,
   `pruebas/base/298-la-lista-de-chequeo-del-cliente.test.ts:287`, `82f863b:pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:55`,
-  `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:247` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:93`.
+  `pruebas/codigo/299-la-lista-de-chequeo-en-ajustes-y-en-negocios.test.ts:247` y `pruebas/codigo/271-el-contrato-de-la-foto.test.ts:94`.
 - **El cliente final lee sólo los closers de sus clientes (C6, `100`).** La `093` dejaba leer la designación de los
   closers desde cualquier ámbito de la organización, también el del cliente final: desde su cliente leía las filas de
   todos, con el usuario del CRM de cada closer en las otras subcuentas. Desde la `100` esa política es sólo para quien
@@ -1645,24 +1645,24 @@ son tres: ARIA (la organización principal), las empresas (`identidad.organizaci
 - **El gasto de cada cliente, de punta a punta por el cron (C6, sin migración).** Lo que la 280 hace con los
   contactos y los mensajes, la 301 lo hace con el gasto: la tarea `anuncios` por la ruta del cron con su horario, con
   tres clientes y un Ad Manager de GoHighLevel falso que sólo responde a cada token con SU subcuenta y SUS campañas.
-  Cada unidad del barrido pide con el acceso de su cliente (`lib/negocio/barrido.ts:710`,
-  `lib/negocio/barrido.ts:774`); las campañas, los anuncios, las métricas por anuncio y la serie de la cuenta de los
+  Cada unidad del barrido pide con el acceso de su cliente (`lib/negocio/barrido.ts:711`,
+  `lib/negocio/barrido.ts:775`); las campañas, los anuncios, las métricas por anuncio y la serie de la cuenta de los
   dos que tienen Meta vinculado quedan en SU cliente, con SUS cifras, y el que no lo tiene no escribe nada y su sello
-  dice «Meta no está vinculado en GoHighLevel» (`3bd2d58:lib/negocio/barrido.ts:1163`), con el texto que leen la lista de
+  dice «Meta no está vinculado en GoHighLevel» (`3bd2d58:lib/negocio/barrido.ts:1181`), con el texto que leen la lista de
   chequeo y los avisos (`MOTIVO_SIN_META_EN_GHL`). Lo exigen
   `8b797c2:pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:190`,
   `8b797c2:pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:210`,
   `8b797c2:pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:236` y
   `8b797c2:pruebas/base/301-el-gasto-de-cada-cliente-por-el-cron.test.ts:250`.
 - **La siembra local del nivel 3 (C6, `sembrar-nivel-3`, sin migración).** Para mirar en el navegador lo que las
-  pruebas miran por partes, `node scripts/db.mjs sembrar-nivel-3` (`scripts/db.mjs:370`) deja la empresa `gamma` con
+  pruebas miran por partes, `node scripts/db.mjs sembrar-nivel-3` (`scripts/db.mjs:436`) deja la empresa `gamma` con
   tres clientes genéricos —el principal, un segundo con su Conexión de prueba (una subcuenta y un token inventados) y
   uno marcado de prueba—, una persona administradora y un cliente final del segundo, y contactos, citas y resultados
   sintéticos de los dos primeros, con la administradora designada closer en los dos (`db/sembrado/nivel-3.ts:236`,
   `db/sembrado/nivel-3.ts:158`). Las personas, como las del sembrado: la contraseña de desarrollo y debiendo cambiarla
   (`db/sembrado/nivel-3.ts:126`). Es reaplicable: lo que ya está se conserva con sus ids y sus sesiones, y los datos
   sintéticos se rehacen con fechas de los últimos días. Escribe como la aplicación —el alta y la edición de un cliente,
-  el vínculo de ARIA— y sólo local. No está en `reset` (`scripts/db.mjs:648`): la prueba 11 exige exactamente el
+  el vínculo de ARIA— y sólo local. No está en `reset` (`scripts/db.mjs:681`): la prueba 11 exige exactamente el
   sembrado de desarrollo, así que antes de la suite se quita con `quitar-nivel-3`, por su slug exacto
   (`db/sembrado/nivel-3.ts:333`); la auditoría que deja quien la mira es de sólo inserción y queda
   (`db/sembrado/casos-de-los-agentes.ts:214`). Lo exigen
@@ -1814,7 +1814,7 @@ cierta; el hecho con el que se justifica, no. **Sigue igual.**
 **Encontrado de paso — dos agujeros de integridad que ninguna de estas reglas cubre:**
 
 1. **36 contactos con `territorio` nulo**, medido el 2026-10-18 (25 el 2026-09-28). `congelarLosQueYaNoEstan`
-   (`lib/negocio/sincronizar.ts:320`) pone el territorio en nulo y el barrido no vuelve a esas filas. **24 no tienen
+   (`lib/negocio/sincronizar.ts:321`) pone el territorio en nulo y el barrido no vuelve a esas filas. **24 no tienen
    `alta_en_el_crm`** —los mismos 24 viejos—, así que son invisibles para todas las cohortes sin ningún aviso; los otros
    12 tienen alta y se congelaron desde el 2026-09-17; 11 de los 36 tienen una cita alcanzable.
 2. **Las citas no tienen resta.** No hay equivalente de `congelarLosQueYaNoEstan` en `lib/negocio/citas.ts`, que no

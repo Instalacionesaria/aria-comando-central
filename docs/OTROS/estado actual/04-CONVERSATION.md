@@ -34,7 +34,7 @@ días.
 >   · {N} por resolver» pasa a contar por código, como agrupa Auditoría. La foto anterior decía que faltaba CN-5: está
 >   hecha y subida.
 > - **2026-10-11 · `90439cf`** — CF-1 de Creative: la tarea `contactos`, una de las cinco de las que vive esta
->   pantalla, suma la pasada de miniaturas de los contactos (`lib/negocio/barrido.ts:1097-1098`). No cambia lo que
+>   pantalla, suma la pasada de miniaturas de los contactos (`lib/negocio/barrido.ts:1103-1108`). No cambia lo que
 >   cuenta Conversation; su sello puede llevar ahora el motivo de una pasada de miniaturas cortada.
 > - **2026-10-11 · `2415e25`** — CF-3 de Creative: `app/inteligencia-estetica.css` se borra entera, cuando Creative
 >   sale por el mismo camino que Conversation; la prueba 251 deja de mirarla.
@@ -233,10 +233,10 @@ prompt pide además `auditor.editar`.
 **Construido en local, sin subir: la Fase 0 del modelo de datos** (`693a383..dc84cb2`, 2026-10-16). Todas las tablas
 que lee esta pantalla —`contactos`, `citas`, `mensajes`, `hallazgos`, `analisis_del_agente`, `llamadas`— ganan
 `cuenta_id` obligatoria y una política por organización Y cuenta
-(`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`, `db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:99-104`);
+(`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:8-12`, `db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:106-111`);
 `conOrganizacion` pone `app.cuentas = '*'` (`lib/datos/contexto.ts:60`, `lib/datos/contexto.ts:208`), así que la
 pantalla vería lo mismo que hoy. Ningún archivo de la sección cambia, y los eventos de la `084` no los escribe nadie
-todavía (`db/migraciones/084_los_eventos.sql:14`). Ver riesgo 26.
+todavía (`fe45e33:db/migraciones/084_los_eventos.sql:14`). Ver riesgo 26.
 
 ---
 

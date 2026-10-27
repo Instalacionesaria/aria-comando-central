@@ -16,7 +16,7 @@
           la vista y ya son 0 con la pestaña cerrada. Lo que el aviso compra es LATENCIA: de hasta 24
           horas a segundos fuera del horario en que alguien mira.
        3. Y hay un competidor mucho mas barato para ese mismo problema: si el plan de Vercel es Pro,
-          descomentar dos renglones de `lib/negocio/barrido.ts:100-101` baja las 24 horas a 10 minutos,
+          descomentar dos renglones de `lib/negocio/barrido.ts:101-102` baja las 24 horas a 10 minutos,
           gratis y sin superficie de ataque nueva. Es el punto 2-A, y es una mirada al panel.
 -->
 
@@ -35,7 +35,7 @@ No es «no hacerlo todavía», pero tampoco es «el webhook es el ahorro». El a
 La lista de las tres propuestas tiene siete a diez ítems y **bloquea de más**. Verifiqué en disco cuáles ya están contestados. Queda esto, y es corto.
 
 ### A · ¿El plan de Vercel es Hobby o Pro? — UNA MIRADA AL PANEL. **BLOQUEA LA DECISIÓN, NO EL CÓDIGO.**
-Es el ítem que ninguna de las tres puso primero y es el que decide si esta etapa es necesaria o conveniente. `lib/negocio/barrido.ts:91-95` dice que no se pudo medir (el token lee proyectos, da 403 sobre facturación) y `:89-90` tiene las dos entradas comentadas listas. **Si el plan es Pro, descomentar dos renglones baja el retraso de 24 horas a 10 minutos, gratis, sin una línea de código nuevo y sin una superficie de ataque nueva** — y el aviso pasa de «única vía fuera de horario» a «optimización de latencia de 10 min a 2 s». No cambia el plan de abajo (las etapas 1 a 3 valen igual), pero cambia la urgencia de las etapas 4 a 7 y hay que saberlo antes de gastar la semana.
+Es el ítem que ninguna de las tres puso primero y es el que decide si esta etapa es necesaria o conveniente. `lib/negocio/barrido.ts:92-96` dice que no se pudo medir (el token lee proyectos, da 403 sobre facturación) y `:89-90` tiene las dos entradas comentadas listas. **Si el plan es Pro, descomentar dos renglones baja el retraso de 24 horas a 10 minutos, gratis, sin una línea de código nuevo y sin una superficie de ataque nueva** — y el aviso pasa de «única vía fuera de horario» a «optimización de latencia de 10 min a 2 s». No cambia el plan de abajo (las etapas 1 a 3 valen igual), pero cambia la urgencia de las etapas 4 a 7 y hay que saberlo antes de gastar la semana.
 Fuente: panel de Vercel → Settings → Billing. Cinco segundos.
 
 ### B · Cosechar los payloads reales del inbox de la plataforma anterior — UNA CONSULTA SQL. **BLOQUEA LA ETAPA 6.**

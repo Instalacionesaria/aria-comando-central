@@ -164,6 +164,16 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   foto_de_las_empresas_org_id_fkey: 'es la dueña de la foto diaria de los negocios',
   foto_de_las_cuentas_org_id_fkey: 'es la dueña de la foto diaria de los clientes de los negocios',
   mapeos_de_cuenta_org_id_creado_por_fkey: 'creó un mapeo al idioma común',
+  /* La historia del lead (`106`): cada cambio de cuadrante, cada respuesta y cada toque de marketing. Caen con su
+     contacto, y los contactos ya frenan el borrado; se nombran igual, porque la restricción existe. */
+  clasificaciones_org_id_fkey: 'tiene la historia del cuadrante de sus leads',
+  respuestas_del_lead_org_id_fkey: 'tiene la historia de lo que respondieron sus leads',
+  toques_de_marketing_org_id_fkey: 'tiene los toques de marketing de sus leads',
+  /* Lo que trae Meta directo (`102`): los conjuntos, el gasto por cuenta publicitaria y los desgloses. Se vuelven a
+     leer de Meta, como los anuncios, pero la empresa no se borra con ellos adentro. */
+  conjuntos_de_anuncios_org_id_fkey: 'tiene los conjuntos de anuncios de Meta cargados',
+  gasto_por_cuenta_publicitaria_org_id_fkey: 'tiene el gasto de sus cuentas publicitarias de Meta cargado',
+  metricas_por_desglose_org_id_fkey: 'tiene las métricas de sus anuncios por ubicación, edad y país cargadas',
   /* Los Analizadores, en sus seis tablas (`056`). Seis frases y no una por el mismo motivo que las de
      arriba: la que llega es la restricción que bloqueó, y cada una manda a vaciar una tabla distinta.
 

@@ -165,10 +165,10 @@ after(async () => {
 // ─── EL CUADRANTE ────────────────────────────────────────────────────────────
 
 test('el cuadrante de la fila es el de la columna, y lo que no es una de las cuatro claves es «Sin clasificar»', async () => {
-  /* La fila y la tarjeta no vuelven a clasificar: leen la columna que la sincronización normalizó. El `rechazo` del
-     catálogo (la `079`), que el CRM no manda, también es «Sin clasificar», como en `claveDelCuadrante`. */
+  /* La fila y la tarjeta no vuelven a clasificar: leen la columna que la sincronización normalizó. Sin cuadrante es
+     NULL (el catálogo de la `079` no tiene una quinta clave): «Sin clasificar», como en `claveDelCuadrante`. */
   await limpiar();
-  const valores = ['prioriza', 'valida', 'financia', 'descarta', 'rechazo', null];
+  const valores = ['prioriza', 'valida', 'financia', 'descarta', null];
   const ids = new Map<string, string | null>();
   for (const c of valores) ids.set(await unContacto({ cuadrante: c }), c);
 

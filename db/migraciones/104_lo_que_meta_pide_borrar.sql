@@ -41,3 +41,15 @@ grant select, insert, update on identidad.pedidos_de_borrado_de_meta to app_iden
 drop policy if exists pedidos_de_borrado_de_meta_identidad on identidad.pedidos_de_borrado_de_meta;
 create policy pedidos_de_borrado_de_meta_identidad on identidad.pedidos_de_borrado_de_meta
   for all to app_identidad using (true) with check (true);
+
+-- Como en la 080 y la 101: el rol de servicio del proveedor administrado no los alcanza. Se le revoca a todo rol que
+-- se salta la RLS y no es superusuario, ni `postgres` ni quien migra. En la base local no hay ninguno.
+do $$
+declare
+  r record;
+begin
+  for r in select rolname from pg_roles
+            where rolbypassrls and not rolsuper and rolname not in ('postgres', current_user) loop
+    execute format('revoke all on identidad.pedidos_de_borrado_de_meta from %I', r.rolname);
+  end loop;
+end $$;

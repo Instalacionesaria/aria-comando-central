@@ -68,6 +68,14 @@
 // **Y una deuda que no se tapa:** si GoHighLevel NO reintenta, ese 503 pierde el evento. No hay
 // número del proveedor en ningún lado para saberlo. Lo que lo vuelve tolerable es que el sondeo lo
 // trae igual, con hasta diez minutos de retraso — que es exactamente lo que esta ruta viene a mejorar.
+//
+// ── LA OPORTUNIDAD NO TIENE SONDEO, Y POR ESO TIENE REPROCESO ───────────────────
+//
+// La etapa y la Salida (`?evento=oportunidad.*`) llegan SÓLO por acá. Así que un aviso de oportunidad guardado que no
+// se pudo procesar por algo transitorio —GoHighLevel respondió 429 al pedir el contacto, la base falló a mitad de
+// camino, faltaba la credencial— lo reprocesa el barrido (`lib/negocio/reprocesoDeAvisos.ts`, en la tarea `contactos`)
+// con la misma fila: el mismo id y la misma hora. Y el tope por hora no los descarta: por encima, se guardan y quedan
+// para el reproceso (paso 5).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -80,6 +88,12 @@ import { resolverAccesoAGhl } from '../../../../lib/credenciales/resolver.ts';
 import { locationIdDelCuerpo } from '../../../../lib/ghl/avisos.ts';
 import { leerCuerpoAcotado } from '../../../../lib/http/cuerpoAcotado.ts';
 import { interpretarAviso } from '../../../../lib/negocio/avisoDelCrm.ts';
+import {
+  MOTIVO_EN_ESPERA,
+  MOTIVO_FALLO,
+  MOTIVO_SIN_CREDENCIAL,
+  motivoDelAviso,
+} from '../../../../lib/negocio/reprocesoDeAvisos.ts';
 
 /**
  * `maxDuration` bajo y declarado EN LA RUTA.
@@ -92,8 +106,27 @@ import { interpretarAviso } from '../../../../lib/negocio/avisoDelCrm.ts';
  */
 export const maxDuration = 10;
 
-/** Cuántos avisos por hora y por empresa antes de frenar. */
+/**
+ * Cuántos avisos por hora y por cliente antes de frenar. Los de oportunidad se cuentan APARTE: una mudanza en bloque
+ * del pipeline no puede dejar sin pasar los mensajes del cliente, ni al revés.
+ */
 const TOPE_POR_HORA = 240;
+
+/**
+ * Por encima de `TOPE_POR_HORA`, un aviso de oportunidad se GUARDA sin interpretar y lo procesa el reproceso: no tiene
+ * otra puerta, así que no se descarta. Éste es el techo de lo que se guarda (diez veces el tope): pasado, 429 como los
+ * demás, para que un workflow desbocado no llene la cuarentena.
+ */
+const TECHO_DE_OPORTUNIDADES_POR_HORA = TOPE_POR_HORA * 10;
+
+/**
+ * La misma rama con el mismo cuerpo, ¿es una reentrega o un hecho nuevo? Si la fila no se vio en los últimos
+ * `MINUTOS_DE_UNA_REENTREGA`, es un hecho nuevo (el lead volvió a faltar días después): la fila toma la hora de ahora
+ * como la del hecho y vuelve a quedar sin procesar. Quince minutos porque una reentrega de GoHighLevel (la función se
+ * cortó a los 10 s y reintenta) llega en segundos o pocos minutos, y un mismo lead que pasa dos veces por la misma rama
+ * en menos de un cuarto de hora es una corrección a mano, no dos hechos. No está medido: ver el doc 23 § 9.
+ */
+const MINUTOS_DE_UNA_REENTREGA = 15;
 
 /**
  * Comparación en tiempo constante, copiada de `app/api/cron/route.ts` y de `app/api/sonda/route.ts`.
@@ -210,23 +243,46 @@ export async function POST(peticion: Request): Promise<Response> {
           ? 'coincide'
           : 'discordante';
 
-  const evento = new URL(peticion.url).searchParams.get('evento');
-  const huella = sha256(leido.texto);
+  const url = new URL(peticion.url);
+  const evento = url.searchParams.get('evento');
+  /* La huella de un aviso de OPORTUNIDAD lleva la consulta de la URL: cada rama de PM-02/PM-03 manda el MISMO cuerpo
+     nativo con su `&etapa=` o `&salida=` fija, y con la huella sólo del cuerpo dos ramas distintas del mismo lead se
+     fundían en una fila (la segunda era una «repetición» y su etapa no se registraba). Los demás eventos siguen con la
+     huella del cuerpo: cambiarla duplicaría las filas que ya están. */
+  const huella =
+    evento !== null && evento.startsWith('oportunidad.')
+      ? sha256(`${url.search.replace(/^\?/, '')}\n${leido.texto}`)
+      : sha256(leido.texto);
+  // Los de oportunidad se cuentan aparte en el tope, guardan su consulta y distinguen un hecho nuevo de una reentrega.
+  const deOportunidad = evento?.startsWith('oportunidad.') === true;
+  const consulta = url.search.replace(/^\?/, '');
 
   // ── 5 · LA CUARENTENA: se guarda CRUDO antes de interpretar ────────────────
-  let guardado: { id: string; repeticiones: number } | undefined;
+  let guardado: { id: string; repeticiones: number; recibido_el: Date; enEspera: boolean } | undefined;
   /* Un 23505 se reintenta UNA vez: mientras conviven la clave vieja (org_id, huella) y la del cliente —de la `090` a la
      `092`— la vieja no es árbitro, y dos entregas simultáneas del mismo cuerpo chocan en ella en vez de sumar una
      repetición. En el segundo intento la fila ya está y el `on conflict` la encuentra. */
   const guardar = () => conOrganizacion(ambito, async () => {
       // El tope por hora va DENTRO del contexto, o sea después de autenticar: acá ya sabemos de quién
-      // es. El techo de lo no autenticado lo pone la pimienta del paso 1.
+      // es. El techo de lo no autenticado lo pone la pimienta del paso 1. Los de oportunidad, aparte.
       const cuantos = await datos()
         .selectFrom('avisos_del_crm')
-        .select(({ fn }) => fn.countAll<string>().as('n'))
+        .select([
+          sql<string>`count(*) filter (where evento like 'oportunidad.%')`.as('de_oportunidad'),
+          sql<string>`count(*) filter (where evento is null or evento not like 'oportunidad.%')`.as('otros'),
+        ])
         .where('recibido_el', '>', new Date(Date.now() - 60 * 60 * 1000))
         .executeTakeFirst();
-      if (Number(cuantos?.n ?? 0) >= TOPE_POR_HORA) return undefined;
+      const n = Number((deOportunidad ? cuantos?.de_oportunidad : cuantos?.otros) ?? 0);
+      if (n >= (deOportunidad ? TECHO_DE_OPORTUNIDADES_POR_HORA : TOPE_POR_HORA)) return undefined;
+      // Por encima del tope, uno de oportunidad se guarda igual y queda para el reproceso (sin interpretar ahora).
+      const enEspera = deOportunidad && n >= TOPE_POR_HORA;
+
+      /* La misma rama con el mismo cuerpo que no se vio en `MINUTOS_DE_UNA_REENTREGA` es un hecho NUEVO: la fila toma
+         la hora de ahora como la del hecho (`recibido_el`, que es la del evento: otra hora es otro evento en el único
+         de `eventos`) y vuelve a quedar sin procesar. Dentro de esos minutos es una reentrega, y no toca nada. Las
+         columnas de la derecha leen la fila VIEJA, así que las tres comparan contra la misma `visto_ultimo_el`. */
+      const hechoNuevo = sql<boolean>`avisos_del_crm.visto_ultimo_el < now() - make_interval(mins => ${MINUTOS_DE_UNA_REENTREGA})`;
 
       /* `do update` y NO `do nothing`, y esa palabra resuelve dos cosas: una entrega repetida deja de
          ser invisible (se cuenta), y `visto_ultimo_el` permite ver que un workflow está disparando de
@@ -239,6 +295,9 @@ export async function POST(peticion: Request): Promise<Response> {
           cuerpo: leido.texto,
           bytes: leido.bytes,
           atribucion,
+          // La rama (`&etapa=`, `&salida=`): el reproceso la necesita, y en la huella está sólo hasheada.
+          consulta: deOportunidad ? consulta.slice(0, 2000) : null,
+          error: enEspera ? MOTIVO_EN_ESPERA : null,
         } as never)
         .onConflict((oc) =>
           // La clave con el cliente (`090`): el mismo cuerpo que llega a dos clientes es de cada uno.
@@ -247,11 +306,21 @@ export async function POST(peticion: Request): Promise<Response> {
             // una sola vez si el valor se calculara en la aplicación.
             repeticiones: sql`avisos_del_crm.repeticiones + 1`,
             visto_ultimo_el: new Date(),
+            ...(deOportunidad
+              ? {
+                  recibido_el: sql`case when ${hechoNuevo} then now() else avisos_del_crm.recibido_el end`,
+                  procesado_el: sql`case when ${hechoNuevo} then null else avisos_del_crm.procesado_el end`,
+                  error: sql`case when ${hechoNuevo} then ${enEspera ? MOTIVO_EN_ESPERA : null}::text else avisos_del_crm.error end`,
+                }
+              : {}),
           } as never),
         )
-        .returning(['id', 'repeticiones'])
+        /* `recibido_el` es la llegada del HECHO: la primera (el `do update` no la toca), salvo un hecho nuevo de la misma
+           rama (arriba). Es la hora determinista de una oportunidad. */
+        .returning(['id', 'repeticiones', 'recibido_el'])
         .execute();
-      return filas[0] as { id: string; repeticiones: number } | undefined;
+      const f = filas[0] as { id: string; repeticiones: number; recibido_el: Date } | undefined;
+      return f && { ...f, enEspera };
     });
   try {
     try {
@@ -268,58 +337,82 @@ export async function POST(peticion: Request): Promise<Response> {
   }
 
   if (guardado === undefined) {
-    console.warn(`avisos/crm: la empresa pasó el tope de ${TOPE_POR_HORA} avisos por hora.`);
+    console.warn(`avisos/crm: el cliente pasó el tope de avisos por hora${deOportunidad ? ' de oportunidad' : ''}.`);
     return rechazo('avisos_demasiados');
+  }
+  const { id: idDelAviso, recibido_el: recibidoEl } = guardado;
+
+  // Por encima del tope por hora: guardado y sin interpretar. Lo procesa el reproceso del barrido, en orden.
+  if (guardado.enEspera) {
+    console.warn(`avisos/crm: ${evento} por encima del tope de ${TOPE_POR_HORA} por hora: queda para el reproceso.`);
+    return ok({ recibido: true, procesado: false, porque: 'en_espera' });
   }
 
   // Un cuerpo que no es JSON se guardó y no se interpreta: es la única evidencia de que el proveedor
   // cambió de forma, y responder 400 la perdería.
   if (cuerpo === null) return ok({ recibido: true, procesado: false, porque: 'ilegible' });
 
-  // Sin credencial del CRM no se puede refrescar el contacto. El aviso queda guardado para reprocesar.
+  /* Sin credencial del CRM no se puede refrescar el contacto. El aviso queda guardado: si es de oportunidad, lo
+     reprocesa el barrido cuando la credencial vuelva (un mensaje lo trae el sondeo). */
   if (acceso.tipo !== 'listo') {
-    await anotarError(ambito, guardado.id, `sin credencial del CRM: ${acceso.que}`);
+    await anotarError(ambito, idDelAviso, recibidoEl, `${MOTIVO_SIN_CREDENCIAL}: ${acceso.que}`);
     return ok({ recibido: true, procesado: false, porque: 'sin_credencial' });
   }
 
   // ── 6 · INTERPRETAR ───────────────────────────────────────────────────────
   try {
-    const r = await interpretarAviso(ambito, acceso, evento, cuerpo);
+    const r = await interpretarAviso(ambito, acceso, evento, cuerpo, undefined, {
+      id: idDelAviso,
+      recibidoEl,
+      parametros: url.searchParams,
+    });
 
     if (r.tipo === 'listo') {
       await conOrganizacion(ambito, async () => {
         await datos()
           .updateTable('avisos_del_crm')
           .set({ procesado_el: new Date(), error: null } as never)
-          .where('id', '=', guardado.id)
+          .where('id', '=', idDelAviso)
+          /* Con SU hora: un hecho nuevo de la misma rama que llegó mientras tanto queda pendiente. Al milisegundo: la base
+             guarda microsegundos y la hora que volvió a JavaScript, no. */
+          .where(sql<boolean>`date_trunc('milliseconds', recibido_el) = ${recibidoEl}`)
           .execute();
       });
       // El territorio viaja en la respuesta: es lo que permite comprobar de un vistazo que el aviso
       // llegó al lugar correcto —closer, setter, o ninguno— sin entrar a la base.
-      return ok({ recibido: true, procesado: true, territorio: r.territorio, mensaje: r.mensaje });
+      return ok({
+        recibido: true,
+        procesado: true,
+        territorio: r.territorio,
+        mensaje: r.mensaje,
+        // De un aviso de oportunidad: si la etapa avanzó, quedó igual o retrocedió, y cuántos eventos escribió.
+        ...(r.historia ? { historia: r.historia } : {}),
+      });
     }
 
     // No se interpretó, y no es un error de entrega. Queda con su motivo para que el monitor lo cuente.
-    await anotarError(ambito, guardado.id, r.tipo === 'desconocido' ? `evento desconocido: ${r.evento ?? '(sin parámetro)'}` : r.tipo);
+    await anotarError(ambito, idDelAviso, recibidoEl, motivoDelAviso(r));
     return ok({ recibido: true, procesado: false, porque: r.tipo });
   } catch (e) {
-    /* El mapeo falló. El evento YA está guardado, así que se anota y se responde 200: reintentar no
-       ayudaría —el problema es nuestro mapeo, no la entrega— y haría que GoHighLevel desactive el
-       workflow por fallos repetidos. El mensaje va al registro, no al cuerpo. */
+    /* El mapeo falló. El evento YA está guardado, así que se anota y se responde 200: GoHighLevel desactiva el
+       workflow por fallos repetidos. Si es de oportunidad, el motivo es transitorio y lo reprocesa el barrido con la
+       misma fila (`lib/negocio/reprocesoDeAvisos.ts`); un mensaje lo trae el sondeo. El mensaje va al registro, no al
+       cuerpo. */
     console.error(`avisos/crm: ${evento ?? '(sin evento)'} falló`, e);
-    await anotarError(ambito, guardado.id, 'el mapeo no pudo completarse');
+    await anotarError(ambito, idDelAviso, recibidoEl, MOTIVO_FALLO);
     return ok({ recibido: true, procesado: false, porque: 'fallo_de_mapeo' });
   }
 }
 
-/** Anota por qué un aviso no se procesó. Su lector es el monitor de frescura. */
-async function anotarError(ambito: AmbitoDeUnCliente, id: string, motivo: string): Promise<void> {
+/** Anota por qué un aviso no se procesó. Sus lectores son el monitor de frescura y el reproceso de las oportunidades. */
+async function anotarError(ambito: AmbitoDeUnCliente, id: string, recibidoEl: Date, motivo: string): Promise<void> {
   try {
     await conOrganizacion(ambito, async () => {
       await datos()
         .updateTable('avisos_del_crm')
         .set({ error: motivo.slice(0, 500) } as never)
         .where('id', '=', id)
+        .where(sql<boolean>`date_trunc('milliseconds', recibido_el) = ${recibidoEl}`)
         .execute();
     });
   } catch (e) {

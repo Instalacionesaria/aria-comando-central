@@ -127,7 +127,7 @@ en el código, las mismas** (comparadas como lista ordenada).
 Las capacidades **no se cargan por migración**. `identidad.permisos` tiene RLS forzada sin política para el migrador,
 así que un `insert` desde una migración escribe cero filas (`db/arranque/001_catalogo.sql:4-11`). Las carga
 `db/arranque/001_catalogo.sql:75-256` con la credencial de nivel clúster, y en producción eso es un paso a mano
-(`scripts/db.mjs:275-280`). Las seis nuevas llegaron así: las de Incidentes con su etapa, `cerebro.usar` con el hito
+(`scripts/db.mjs:297-302`). Las seis nuevas llegaron así: las de Incidentes con su etapa, `cerebro.usar` con el hito
 H2 y las de señales con el H3 (`docs/OTROS/agentes/08-LAS-ETAPAS.md`).
 
 Por familia:
@@ -238,8 +238,8 @@ sesión; no decide ningún permiso.
 (82 el 2026-09-28), **82** declaran `PANTALLA` y **29** están en `SIN_PANTALLA` (`lib/autorizacion/secciones.ts:522-656`):
 son exactamente, archivo por archivo, los que no la declaran (comparadas las dos listas con `diff`). No llaman a
 `exigir(` ni a `sesionOpcional(` en código —sin contar comentarios— **cinco**, las mismas: `salud` y `login`, que son
-las públicas (`pruebas/apoyo/autorizados.ts:779-787`), y la sonda, el cron y el aviso del CRM, que van con secreto
-propio (`pruebas/apoyo/autorizados.ts:929-973`).
+las públicas (`pruebas/apoyo/autorizados.ts:799-807`), y la sonda, el cron y el aviso del CRM, que van con secreto
+propio (`pruebas/apoyo/autorizados.ts:949-993`).
 
 **Rechazos registrados.** En toda la historia de `identidad.auditoria_accesos`, 3 `permiso_denegado` y 0
 `seccion_denegada`; **ninguno** desde el 2026-09-28 (consulta del 2026-10-18 agrupada por `accion`).
@@ -283,7 +283,7 @@ restringe por sección, dársela sería dársela a todos los administradores (`d
 ## 4 · Entrar: contraseña, freno y el segundo factor
 
 **El login** es `app/api/auth/login/route.ts`, fuera del portero pero con verificación de origen
-(`pruebas/apoyo/autorizados.ts:781-786`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
+(`pruebas/apoyo/autorizados.ts:801-806`). El freno por cuenta corta a los 5 intentos y bloquea 15 minutos; el de
 origen, a los 20 (`lib/autenticacion/freno.ts:37-42`); la contraseña es `scrypt` con N=16384, r=8, p=1
 (`lib/datos/hash.ts:17-19`). `ultimo_acceso_el` se sella sólo en un login exitoso (`lib/autenticacion/freno.ts:85-96`).
 
@@ -351,7 +351,7 @@ Medido el 2026-10-18: `negocio.topes_del_executive` tiene **1 fila**, con 50 y 3
 (`app/api/admin/organizaciones/[id]/route.ts:114-115`), y la lista marca «Sin zona horaria» a toda empresa en `UTC`,
 el valor por omisión de la columna (`components/ajustes/Empresas.jsx:332-344`). Desde los agentes pesa más: el día de
 los topes, el de la pasada de los detectores, que corre a cada empresa después de las 6:00 de su zona
-(`lib/negocio/barrido.ts:365-374`), y el de la Reunión. Medido el 2026-10-18: de las 11 activas, **9 en `UTC`**, 1 en
+(`lib/negocio/barrido.ts:366-375`), y el de la Reunión. Medido el 2026-10-18: de las 11 activas, **9 en `UTC`**, 1 en
 `America/Lima` y 1 en `America/Santo_Domingo`; las 2 inactivas, en `UTC`. Desde el 2026-09-28 no hubo ningún
 `organizacion_editada`. Las 9 en `UTC` no tienen datos de negocio; el plan para llevar las ventanas al día de la
 empresa está diagnosticado y dejado para después (`docs/OTROS/futuro/el-dia-de-la-empresa.md`).
@@ -445,14 +445,14 @@ Las pruebas no se corrieron para este archivo; se leyó lo que afirman.
 | Los topes y Meta | Los topes del cerebro en Ajustes; la prueba de conexión con Meta | `pruebas/base/218-los-topes-del-cerebro-en-ajustes.test.ts`, `pruebas/codigo/255-la-conexion-con-meta.test.ts` |
 
 `GET_CON_CAPACIDAD_DISTINTA_DE_SU_SECCION` sigue vacía: no hay ninguna excepción viva
-(`pruebas/apoyo/autorizados.ts:889-896`).
+(`pruebas/apoyo/autorizados.ts:909-916`).
 
 **Un cruce que el código anuncia y no se encontró.** `lib/autorizacion/capacidades.ts:18-21` y
 `db/arranque/001_catalogo.sql:69-72` dicen que una prueba de base cruza el catálogo con la tabla «en las dos
 direcciones». La de código → tabla está (`pruebas/base/22-los-tres-roles.test.ts:368-375`), y la de sección → archivo
 que la carga (`pruebas/codigo/91-closer-y-setter.test.ts:298`); una que lea `identidad.permisos` y busque filas
 ausentes de `CAPACIDADES`, no, con `grep` de `CAPACIDADES` y de `identidad.permisos` sobre `pruebas/` (2026-09-28, no
-repetido). La que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:366-373`, cruza la tabla con el rol de
+repetido). La que más se acerca, `pruebas/base/21-permisos-por-rol.test.ts:400-407`, cruza la tabla con el rol de
 plataforma. Y `pruebas/codigo/110-monitoreo.test.ts:6-7` se apoya en ese cruce como si existiera. Hoy no muerde: las
 dos listas coinciden en producción.
 
@@ -508,7 +508,7 @@ Y la matriz generada de la especificación sigue listando `ADR-0412` y `ADR-0413
 ### 8.4 · Lo demás
 
 - **Agregar una capacidad no es una migración**: hay que correr `db/arranque/001_catalogo.sql` contra producción a
-  mano (`scripts/db.mjs:275-280`), y como una migración, antes del push
+  mano (`scripts/db.mjs:297-302`), y como una migración, antes del push
   ([07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md) § 8). Olvidarlo deja la pantalla en 403 para todos
   (`lib/autorizacion/capacidades.ts:12-16`). Desde el 2026-10-01 se hizo tres veces (Incidentes, H2 y H3), y el
   2026-10-18 las 38 claves de la tabla y del código coinciden.
@@ -536,12 +536,12 @@ ingeniero. Lo que tocan de identidad y permisos, y su orden de subida, en [17-LA
 - **`identidad.cuentas`**, la subcuenta del CRM dentro de su organización, con `cuentas_credenciales` —las credenciales
   **copiadas**, sin mover las de `organizaciones_credenciales`, que el código sigue leyendo—, `usuarios_cuentas` y
   `acuerdos` (`db/migraciones/080_las_cuentas.sql:41`, `db/migraciones/080_las_cuentas.sql:118`,
-  `db/migraciones/080_las_cuentas.sql:150` y `db/migraciones/080_las_cuentas.sql:173`). Las cuentas de las
+  `db/migraciones/080_las_cuentas.sql:164` y `db/migraciones/080_las_cuentas.sql:187`). Las cuentas de las
   organizaciones que ya existen las crea una fase aparte, `cuentas` (`db/arranque/004_las_cuentas_iniciales.sql`).
 - **`conOrganizacion` pone `app.cuentas = '*'`** junto a `app.org_id` (`d424d8b`); sin la variable, la política nueva
   de `negocio` no deja ver nada.
 - **Tres roles nuevos sin login ni contraseña**: `ingestor`, `app_ingesta` y `app_analista`
-  (`db/arranque/000_cluster.sql`). En la Fase 0 ningún servicio se conecta con ellos.
+  (`db/arranque/008_los_roles_del_modelo.sql`). En la Fase 0 ningún servicio se conecta con ellos.
 - Ninguna capacidad nueva, ninguna sección nueva y ningún cambio en Ajustes.
 
 ---

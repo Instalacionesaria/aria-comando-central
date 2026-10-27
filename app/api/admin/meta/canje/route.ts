@@ -8,6 +8,8 @@
 //   2. El `code` se canjea con Meta (el secreto va en el cuerpo, nunca en una URL), y con el token se pide de qué
 //      negocio es y qué cuentas publicitarias dio.
 //   3. Todo se guarda en una transacción: la conexión cifrada y sus cuentas, con su asignación (`guardarConexionDeMeta`).
+//      Una cuenta con algo leído de Meta en OTRO cliente no se mueve (M10): queda en el suyo y la respuesta la nombra en
+//      `cuentasRetenidas`. Lo leído se mira en negocio con las filas de las cuentas bloqueadas.
 //
 // Las llamadas a Meta van FUERA de la transacción, como «Probar conexión»: una transacción abierta mientras se espera a
 // un tercero retiene una conexión de identidad, que es del login de todos.
@@ -17,9 +19,11 @@ import { exigir } from '../../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../../lib/autorizacion/respuesta.ts';
 import { auditarAdministracion } from '../../../../../lib/autenticacion/auditoria.ts';
 import { conIdentidad } from '../../../../../lib/datos/capa.ts';
+import { conOrganizacion } from '../../../../../lib/datos/contexto.ts';
 import { cifrar } from '../../../../../lib/credenciales/cifrado.ts';
 import { faltaDeLaAppDeMeta } from '../../../../../lib/meta/app.ts';
 import { guardarConexionDeMeta, vistaDeMeta } from '../../../../../lib/meta/conexiones.ts';
+import { clientesConLoLeidoDeMeta } from '../../../../../lib/meta/loLeidoDeMeta.ts';
 import { TEXTO_DE_FALLA_DE_META, type FallaDeMeta } from '../../../../../lib/meta/graph.ts';
 import { canjearCodigo, cuentasDelToken, negocioDelToken } from '../../../../../lib/meta/oauth.ts';
 
@@ -81,21 +85,33 @@ export async function POST(peticion: Request): Promise<Response> {
 
   // 3 · Todo junto: la conexión, sus cuentas y la auditoría.
   return conIdentidad(async (db) => {
-    const { conexionId } = await guardarConexionDeMeta(db, {
-      orgId: contexto.orgEfectiva,
-      cuentaId: viaje.cuenta_id,
-      tokenCifrado: cifrar(canje.token),
-      negocio: negocio.negocio,
-      usuarioDeMeta: negocio.usuario,
-      usuarioId: contexto.usuarioId,
-      cuentas: cuentas.cuentas,
-    });
+    /* Lo leído de Meta de estas cuentas, en negocio (otro agrupador), con sus filas ya bloqueadas en identidad. Sólo
+       se LEE: si falla, la transacción de identidad se revierte con el error y no queda nada a medias. */
+    const { conexionId, retenidas } = await guardarConexionDeMeta(
+      db,
+      {
+        orgId: contexto.orgEfectiva,
+        cuentaId: viaje.cuenta_id,
+        tokenCifrado: cifrar(canje.token),
+        negocio: negocio.negocio,
+        usuarioDeMeta: negocio.usuario,
+        usuarioId: contexto.usuarioId,
+        cuentas: cuentas.cuentas,
+      },
+      (acts) => conOrganizacion(contexto.orgEfectiva, () => clientesConLoLeidoDeMeta(acts)),
+    );
     await auditarAdministracion(db, {
       accion: 'meta_conectada',
       actor: contexto.usuarioId,
       objetivo: viaje.cuenta_id ?? contexto.orgEfectiva,
       orgId: contexto.orgEfectiva,
     });
-    return ok({ conexionId, cuentasConectadas: cuentas.cuentas.length, ...(await vistaDeMeta(db, contexto.orgEfectiva)) });
+    return ok({
+      conexionId,
+      cuentasConectadas: cuentas.cuentas.length,
+      // Las que tienen campañas o gasto leídos en otro cliente: quedaron donde estaban (M10).
+      cuentasRetenidas: retenidas,
+      ...(await vistaDeMeta(db, contexto.orgEfectiva)),
+    });
   });
 }

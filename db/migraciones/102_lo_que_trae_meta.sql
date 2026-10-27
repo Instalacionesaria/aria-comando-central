@@ -20,8 +20,9 @@
 --   · `metricas_por_desglose`: lo de cada anuncio por ubicación, plataforma, edad y género, dispositivo y país.
 --
 -- Las cuatro tablas nuevas son de una cuenta (`cuenta_id not null`), con el puente que les pone la cuenta y la política
--- de la organización más la cuenta. Nada se borra: las columnas y tablas de GoHighLevel (`lecturas_de_gasto`, los
--- sellos del cuadre) se retiran después de producción. Reaplicable.
+-- de la organización más la cuenta. Como todas las de negocio, su org_id NO cascadea: una empresa con datos de Meta no
+-- se borra de un clic (lib/administracion/borrado.ts dice por qué). Nada se borra: las columnas y tablas de
+-- GoHighLevel (`lecturas_de_gasto`, los sellos del cuadre) se retiran después de producción. Reaplicable.
 -- ═════════════════════════════════════════════════════════════════════════════
 
 -- ─── Las campañas y los anuncios ────────────────────────────────────────────────
@@ -53,7 +54,7 @@ comment on column negocio.anuncios.act_id is 'La cuenta publicitaria de Meta del
 -- ─── Los conjuntos ──────────────────────────────────────────────────────────────
 
 create table if not exists negocio.conjuntos_de_anuncios (
-  org_id               uuid not null references identidad.organizaciones (id) on delete cascade,
+  org_id               uuid not null references identidad.organizaciones (id),
   cuenta_id            uuid not null,
   meta_conjunto_id     text not null check (meta_conjunto_id ~ '^[0-9]{1,30}$'),
   meta_campana_id      text check (meta_campana_id ~ '^[0-9]{1,30}$'),
@@ -118,7 +119,7 @@ comment on column negocio.gasto_de_la_cuenta.cpm is 'Costo por mil impresiones d
 comment on column negocio.gasto_de_la_cuenta.fuente is 'De dónde salió el día: meta (Meta directo) o ghl. Nula en las de antes de la 102.';
 
 create table if not exists negocio.gasto_por_cuenta_publicitaria (
-  org_id        uuid not null references identidad.organizaciones (id) on delete cascade,
+  org_id        uuid not null references identidad.organizaciones (id),
   cuenta_id     uuid not null,
   act_id        text not null check (act_id ~ '^act_[0-9]{1,30}$'),
   fecha         date not null,
@@ -157,7 +158,7 @@ select negocio.aplicar_aislamiento_de_cuenta('negocio.gasto_por_cuenta_publicita
 -- ─── Los desgloses ──────────────────────────────────────────────────────────────
 
 create table if not exists negocio.metricas_por_desglose (
-  org_id            uuid not null references identidad.organizaciones (id) on delete cascade,
+  org_id            uuid not null references identidad.organizaciones (id),
   cuenta_id         uuid not null,
   meta_anuncio_id   text not null check (meta_anuncio_id ~ '^[0-9]{1,30}$'),
   fecha             date not null,

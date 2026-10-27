@@ -24,8 +24,9 @@
 // La consecuencia es visible y es correcta: la fila no muestra microtexto de actividad. Poner
 // `dateAdded` ahí sería más fácil y diría "respondió hace 3 días" de alguien que nunca escribió.
 //
-// Lo mismo con `etapa` (GHL no expone un campo de etapa: la mueve un workflow) y `score` (nada lo
-// calcula). Lo de `responsable_id` **dejó de ser cierto** y su lugar lo ocupa `crm_asignado_a`,
+// Lo mismo con `etapa` (el contacto de GHL no trae etapa: vive en la oportunidad, y la etapa del
+// Pipeline Maestro llega por el aviso `oportunidad.etapa`, `lib/negocio/etapaDelCrm.ts`) y `score`
+// (nada lo calcula). Lo de `responsable_id` **dejó de ser cierto** y su lugar lo ocupa `crm_asignado_a`,
 // que se explica abajo, en el `on conflict`.
 //
 // ═══════════════════════════════════════════════════════════════════════════════

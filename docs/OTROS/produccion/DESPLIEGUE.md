@@ -57,6 +57,9 @@ idénticas**.
 —`escapeLiteral` para las contraseñas, `escapeIdentifier` para el nombre de la base— enviado por la
 Management API.
 
+Los otros tres roles, los del modelo (`ingestor`, `app_ingesta` y `app_analista`, sin login), no van por este archivo:
+van por `db/arranque/008_los_roles_del_modelo.sql`, que no tiene marcas y se manda con `scripts/supabase.mjs correr --archivo`.
+
 Dos cosas del archivo que existen por este entorno:
 
 - **Verifica en vez de imponer.** Los `alter role … nosuperuser noreplication` no se pueden correr:

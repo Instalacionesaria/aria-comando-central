@@ -3,11 +3,25 @@
 // Asignar cambia de quién es el gasto de esa cuenta: desde la próxima pasada, sus campañas y su gasto entran en ese
 // cliente. Por eso se audita. La base cumple la regla que la pantalla no puede saltar: una cuenta que conectó un cliente
 // con su propio portfolio sólo va a ese cliente (`cuenta_de_meta_en_su_cliente`, 101), y acá ese caso es un 409.
+//
+// ── Y UNA CUENTA CON DATOS EN OTRO CLIENTE NO SE MUEVE (M10, 2026-10-27) ───────────
+//
+// Las claves de lo que trae Meta no llevan el cliente (`campanas (org_id, meta_campana_id)`, `gasto_por_cuenta_publicitaria
+// (org_id, act_id, fecha)`…). Si el `act_` ya tiene filas leídas en el cliente A y se asigna a B, la pasada de B choca en
+// cada `upsert` con la fila de A —la política de UPDATE de B no la ve— y falla en todas las pasadas, sin que nada lo
+// diga en la pantalla. Así que se responde 409 ANTES de tocar la asignación. Soltarla (`null`) sí se puede: no lee nada.
+//
+// La comprobación se hace CON la fila bloqueada (`for update`, dentro de la transacción que reasigna): dos cambios a la
+// vez de la misma cuenta —otro PUT, o un canje de OAuth— no deciden los dos sobre lo que había antes. Y una pasada del
+// recolector ya en curso escribe con la misma fila en `for share` (`escribirSiSigueAsignada`): este candado espera a
+// que su escritura confirme y la ve, o confirma antes y la pasada ya no escribe.
 import { exigir } from '../../../../../../lib/autorizacion/portero.ts';
 import { ok, rechazo } from '../../../../../../lib/autorizacion/respuesta.ts';
 import { auditarAdministracion } from '../../../../../../lib/autenticacion/auditoria.ts';
 import { conIdentidad } from '../../../../../../lib/datos/capa.ts';
+import { conOrganizacion } from '../../../../../../lib/datos/contexto.ts';
 import { vistaDeMeta } from '../../../../../../lib/meta/conexiones.ts';
+import { clientesConLoLeidoDeMeta, tieneDatosEnOtroCliente } from '../../../../../../lib/meta/loLeidoDeMeta.ts';
 
 export const PANTALLA = 'credenciales';
 
@@ -32,6 +46,15 @@ export async function PUT(peticion: Request, ctx: RouteContext<'/api/admin/meta/
 
   try {
     return await conIdentidad(async (db) => {
+      // La fila, bloqueada hasta el final: la comprobación de abajo y la reasignación ven lo mismo.
+      const fila = await db
+        .selectFrom('cuentas_publicitarias_de_meta')
+        .select('act_id')
+        .where('org_id', '=', contexto.orgEfectiva)
+        .where('act_id', '=', act)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!fila) return rechazo('no_encontrado');
       if (cuentaId !== null) {
         const cliente = await db
           .selectFrom('cuentas')
@@ -41,6 +64,16 @@ export async function PUT(peticion: Request, ctx: RouteContext<'/api/admin/meta/
           .where('estado', '<>', 'baja')
           .executeTakeFirst();
         if (!cliente) return rechazo('no_encontrado');
+        /* Lo leído, en negocio (otro agrupador) y CON el candado tomado: se mira después de comprobar el cliente —uno
+           ajeno sigue siendo un 404, no un 409— y antes de tocar la asignación. Si la lectura falla, no se escribió
+           nada: la transacción de identidad se revierte con el error. */
+        const leido = await conOrganizacion(contexto.orgEfectiva, () => clientesConLoLeidoDeMeta([act]));
+        if (tieneDatosEnOtroCliente(leido, act, cuentaId)) {
+          return rechazo(
+            'cuenta_de_meta_con_datos',
+            'Esta cuenta publicitaria ya tiene campañas o gasto leídos en otro cliente. Para moverla, primero hay que borrar lo leído en ese cliente.',
+          );
+        }
       }
       const r = await db
         .updateTable('cuentas_publicitarias_de_meta')

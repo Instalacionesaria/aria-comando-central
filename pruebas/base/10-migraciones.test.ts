@@ -542,11 +542,12 @@ test('ninguna migración lleva `owner to` ni fija la ruta de búsqueda', () => {
   // Por convención va en la misma línea que `security definer`, y así la sentencia —que empieza la línea— se distingue.
   assert.deepEqual(archivosQueContienen(/^\s*set\s+(local\s+)?search_path\b/im, ['db/migraciones']), []);
   assert.deepEqual(archivosQueContienen(/\balter\s+(role|database)\b[^;]*\bset\s+search_path\b/i, ['db/migraciones']), []);
-  // Y la ruta fija sólo junto a `security definer`: en otra función no hace falta, y escrita suelta sería otra cosa.
+  // Y la ruta fija sólo junto a `security definer`, o a un `security invoker` declarado (la trayectoria del lead, la
+  // `106`, que lee varias tablas y la fija para no depender de la ruta de quien la llama): escrita suelta sería otra cosa.
   assert.deepEqual(
-    archivosQueContienen(/(?<!security\s+definer\s)\bset\s+search_path\s*=/i, ['db/migraciones']),
+    archivosQueContienen(/(?<!security\s+(?:definer|invoker)\s)\bset\s+search_path\s*=/i, ['db/migraciones']),
     [],
-    'una ruta de búsqueda fuera de una función `security definer`',
+    'una ruta de búsqueda fuera de una función `security definer` o `security invoker`',
   );
 });
 

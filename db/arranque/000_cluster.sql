@@ -8,7 +8,7 @@
 -- organización: los roles son objetos del CLÚSTER, no de la base. El 10 § 4 lo
 -- convierte en criterio de restauración — "un volcado de una base NO INCLUYE los
 -- roles ni sus contraseñas… El respaldo lleva un volcado de roles APARTE, y el
--- simulacro lo restaura PRIMERO". Este archivo ES ese volcado aparte. Restaurar
+-- simulacro lo restaura PRIMERO". Este archivo, con el `008`, ES ese volcado aparte. Restaurar
 -- una copia en un servidor limpio sin correr esto primero deja una base cuyas
 -- políticas nombran roles que no existen.
 --
@@ -59,44 +59,16 @@ alter role app_inquilino password @CLAVE_INQUILINO@;
 alter role app_identidad password @CLAVE_IDENTIDAD@;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 1b · Los tres roles del modelo multiempresa (Fase 0, 2026-10-16), SIN login todavía
+-- 1b · Los tres roles del modelo multiempresa (`ingestor`, `app_ingesta`, `app_analista`), SIN login
 --
---   ingestor       la puerta de n8n, los webhooks y las landings: sólo va a poder llamar a la función que recibe
---                  lo crudo, y no va a poder leer nada, ni lo que él mismo entregó.
---   app_ingesta    el normalizador: va a leer la bandeja cruda y marcar lo que procesó.
---   app_analista   el cálculo de benchmarks entre agencias: va a leer los hechos sin datos personales de las
---                  empresas que participan, y nada de negocio. Es el único rol que va a cruzar organizaciones.
---
--- Son tres y no uno porque cada uno es una puerta distinta con un riesgo distinto: la credencial del ingestor vive
--- en n8n y es la que más fácil se filtra, por eso no lee nada.
---
--- Nacen NOLOGIN y sin contraseña, a propósito: en la Fase 0 ningún servicio se conecta con ellos. Existen para que
--- las migraciones les den sus permisos —que se prueban leyendo el catálogo, sin conectarse— y para que el día que
--- un servicio los use (Fase 1) baste con darles login y una contraseña propia, que pone una persona en el entorno
--- de ese servicio. Una credencial que nadie usa es una credencial que se puede filtrar sin que nadie lo note.
+-- Viven en `db/arranque/008_los_roles_del_modelo.sql`, que no lleva marcas y por eso también corre en Supabase
+-- por `scripts/supabase.mjs correr` (este archivo no puede: tiene las contraseñas y el nombre de la base).
+-- `scripts/db.mjs arranque` lo corre a continuación de éste, en la misma transacción. No se repiten acá: dos
+-- copias de las mismas sentencias terminan diciendo cosas distintas.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-do $$
-begin
-  if not exists (select 1 from pg_roles where rolname = 'ingestor') then
-    create role ingestor nologin noinherit nobypassrls;
-  end if;
-  if not exists (select 1 from pg_roles where rolname = 'app_ingesta') then
-    create role app_ingesta nologin noinherit nobypassrls;
-  end if;
-  if not exists (select 1 from pg_roles where rolname = 'app_analista') then
-    create role app_analista nologin noinherit nobypassrls;
-  end if;
-end $$;
-
--- Y SIN login aunque ya existieran, por lo mismo que las contraseñas se fijan siempre: el `if not exists` de arriba no
--- corrige un rol que alguien creó antes con login (la validación del modelo del 2026-10-14 los creó así en la base de
--- trabajo). El día que un servicio use uno, esta línea cambia a `login` con su contraseña.
-alter role ingestor     nologin;
-alter role app_ingesta  nologin;
-alter role app_analista nologin;
-
--- Y ninguno superusuario ni con omisión de RLS, aunque alguien los haya tocado.
+-- Y ninguno superusuario ni con omisión de RLS, aunque alguien los haya tocado. Los tres del
+-- modelo los comprueba el `008`, con la misma consulta más la de que sigan sin login.
 --
 -- ── POR QUÉ ESTO VERIFICA Y NO IMPONE ──────────────────────────────────────────
 --
@@ -134,7 +106,7 @@ begin
              case when rolreplication then 'replicación'   end) || ')', '; ')
     into malo
     from pg_roles
-   where rolname in ('migrador', 'app_inquilino', 'app_identidad', 'ingestor', 'app_ingesta', 'app_analista')
+   where rolname in ('migrador', 'app_inquilino', 'app_identidad')
      and (rolsuper or rolbypassrls or rolcreatedb or rolcreaterole or rolreplication);
 
   if malo is not null then

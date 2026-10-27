@@ -162,3 +162,16 @@ revoke all on identidad.estados_de_oauth from public;
 grant select, insert, delete on identidad.estados_de_oauth to app_identidad;
 drop policy if exists estados_de_oauth_identidad on identidad.estados_de_oauth;
 create policy estados_de_oauth_identidad on identidad.estados_de_oauth for all to app_identidad using (true) with check (true);
+
+-- Los tokens de Meta y el state del viaje no son para el rol de servicio del proveedor administrado (la regla por
+-- omisión que la 080 explica): se le revoca a todo rol que se salta la RLS y no es superusuario, ni `postgres` ni
+-- quien migra. En la base local no hay ninguno.
+do $$
+declare
+  r record;
+begin
+  for r in select rolname from pg_roles
+            where rolbypassrls and not rolsuper and rolname not in ('postgres', current_user) loop
+    execute format('revoke all on identidad.conexiones_de_meta, identidad.estados_de_oauth from %I', r.rolname);
+  end loop;
+end $$;

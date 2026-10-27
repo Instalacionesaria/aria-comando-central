@@ -96,7 +96,7 @@ de rama**, sin la cual el rojo de la CI no frena el despliegue, y **un rastro du
 
 ### 2.2 · Los ocho horarios
 
-Del mapa `HORARIOS` (`lib/negocio/barrido.ts:176-406`), indexado por la cadena literal del horario:
+Del mapa `HORARIOS` (`lib/negocio/barrido.ts:177-407`), indexado por la cadena literal del horario:
 
 | horario (UTC) | en Lima | tareas, en orden | umbral de atraso | desde |
 |---|---|---|---|---|
@@ -109,53 +109,53 @@ Del mapa `HORARIOS` (`lib/negocio/barrido.ts:176-406`), indexado por la cadena l
 | `53 * * * *` | al minuto 53 | `anuncios_relleno` | 180 min | 2026-10-07 |
 | `37 * * * *` | al minuto 37 | `activos` | 180 min | 2026-10-15 |
 
-Están en `lib/negocio/barrido.ts:248-252`, `:252-256`, `:289-293`, `:308-312`, `:336-340`, `:367-371`, `:323-327` y
-`:351-355`, y en `vercel.json:6-39`. Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:340-341`). Los minutos
+Están en `lib/negocio/barrido.ts:249-253`, `:252-256`, `:289-293`, `:308-312`, `:336-340`, `:367-371`, `:323-327` y
+`:351-355`, y en `vercel.json:6-39`. Lima está en UTC−5 todo el año (`lib/negocio/barrido.ts:341-342`). Los minutos
 no son adorno: dos horarios en el mismo minuto se frenan por el candado y uno queda `frenada` sin trabajar
-(`lib/negocio/barrido.ts:254-257`, `lib/negocio/barrido.ts:278-280`), y cada horario nuevo eligió el suyo entre los
-libres (`lib/negocio/barrido.ts:329-330`, `lib/negocio/barrido.ts:357-358`). Las pruebas atan el mapa a la
+(`lib/negocio/barrido.ts:255-258`, `lib/negocio/barrido.ts:279-281`), y cada horario nuevo eligió el suyo entre los
+libres (`lib/negocio/barrido.ts:330-331`, `lib/negocio/barrido.ts:358-359`). Las pruebas atan el mapa a la
 configuración:
 
 - cada horario de `vercel.json` tiene entrada en `HORARIOS` y cada entrada está en `vercel.json`
   (`pruebas/codigo/99-cron.test.ts:80`, `:92`);
-- el umbral es al menos `2 × cadencia + 60` (`lib/negocio/barrido.ts:167-174`, prueba en
+- el umbral es al menos `2 × cadencia + 60` (`lib/negocio/barrido.ts:168-175`, prueba en
   `pruebas/codigo/99-cron.test.ts:104`); `senales` dispara cada hora pero su cadencia es diaria, y su umbral es el de
-  una tarea diaria (`lib/negocio/barrido.ts:365-370`);
+  una tarea diaria (`lib/negocio/barrido.ts:366-371`);
 - un horario ausente o desconocido corre **todas** las tareas y lo dice con `horarioDesconocido`
-  (`lib/negocio/barrido.ts:610-620`, prueba en `pruebas/codigo/99-cron.test.ts:227`);
+  (`lib/negocio/barrido.ts:611-621`, prueba en `pruebas/codigo/99-cron.test.ts:227`);
 - el relleno corre sólo en su horario, cada hora (`3bd2d58:pruebas/codigo/99-cron.test.ts:354`).
 
-El plan de Vercel es **Pro, confirmado el 2026-08-28** (`lib/negocio/barrido.ts:186`); con Hobby, un horario más
-frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:180-182`).
+El plan de Vercel es **Pro, confirmado el 2026-08-28** (`lib/negocio/barrido.ts:187`); con Hobby, un horario más
+frecuente que uno diario hace fallar el despliegue (`lib/negocio/barrido.ts:181-183`).
 
 ### 2.3 · El bucle
 
 - **Es reconciliación, no una cola** (`lib/negocio/barrido.ts:15-24`).
-- **La sonda va primero**, en su propio `try/catch` (`lib/negocio/barrido.ts:649-667`).
+- **La sonda va primero**, en su propio `try/catch` (`lib/negocio/barrido.ts:650-668`).
 - **Las empresas van por sello más viejo**, y las que nunca corrieron o quedaron `sin_tiempo`, antes que todas
-  (`lib/negocio/barrido.ts:669-705`, `lib/negocio/barrido.ts:1287`).
-- **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:424`). Es un guardia
+  (`lib/negocio/barrido.ts:670-706`, `lib/negocio/barrido.ts:1305`).
+- **El presupuesto es de 180 s** y se mira antes de cada empresa (`lib/negocio/barrido.ts:425`). Es un guardia
   parcial: una sola llamada colgada puede esperar 240 s y Vercel corta la función a los 300
-  (`lib/negocio/barrido.ts:411-422`). Los Analizadores y la pasada de los detectores, que corren solos, tienen hasta
-  285 s (`lib/negocio/barrido.ts:436`, `lib/negocio/barrido.ts:1000-1004`).
+  (`lib/negocio/barrido.ts:412-423`). Los Analizadores y la pasada de los detectores, que corren solos, tienen hasta
+  285 s (`lib/negocio/barrido.ts:437`, `lib/negocio/barrido.ts:1001-1005`).
 - **Qué credencial pide cada tarea.** `auditoria`, `mejora`, `analizadores`, `reintentos`, `senales` y `activos` no
-  piden el token del CRM (`lib/negocio/barrido.ts:764-772`); cada una se saltea con su propio texto si le falta lo suyo
-  (`lib/negocio/barrido.ts:779-801`).
+  piden el token del CRM (`lib/negocio/barrido.ts:765-773`); cada una se saltea con su propio texto si le falta lo suyo
+  (`lib/negocio/barrido.ts:780-802`).
 - **El sello se escribe siempre**, también si la tarea no corrió, con `on conflict do update` y nunca un `+1`
-  (`lib/negocio/barrido.ts:1303-1344`). Los estados son `corrio`, `saltada`, `frenada`, `sin_tiempo` y `fallo`
-  (`lib/negocio/barrido.ts:151-152`). La pasada de los detectores es la excepción: a la empresa a la que no le tocaba,
-  no la sella (`lib/negocio/barrido.ts:986-1005`).
+  (`lib/negocio/barrido.ts:1321-1362`). Los estados son `corrio`, `saltada`, `frenada`, `sin_tiempo` y `fallo`
+  (`lib/negocio/barrido.ts:152-153`). La pasada de los detectores es la excepción: a la empresa a la que no le tocaba,
+  no la sella (`lib/negocio/barrido.ts:987-1006`).
 
 **Cuánto dura una corrida** se midió el 2026-09-28 (horario `*/10`, 93 s de los 180 del presupuesto, ~75 de la única
 empresa con token). **No se volvió a medir**; desde el 2026-10-11 esa misma corrida suma la pasada de hasta 50
-miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/barrido.ts:1094-1098`).
+miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/barrido.ts:1100-1108`).
 
 ### 2.4 · Las doce tareas
 
 | tarea | módulo | qué hace | llamadas en el último sello de `aria`, 2026-10-18 |
 |---|---|---|---|
 | `sonda` | `lib/deteccion/sonda.ts:103` | busca filas de una organización de control vistas desde la otra | 0 al proveedor; **no deja sello** |
-| `contactos` | `lib/negocio/sincronizar.ts:164` y `lib/negocio/miniaturaDelContacto.ts:159` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
+| `contactos` | `lib/negocio/sincronizar.ts:165` y `lib/negocio/miniaturaDelContacto.ts:159` | trae los contactos por etiqueta de territorio y pide las miniaturas que faltan | 8 |
 | `mensajes` | `lib/negocio/ingesta.ts:108` | camina las conversaciones por marca de agua | 1 |
 | `auditoria` | `lib/auditor/analisis.ts:332` | audita las conversaciones del agente de IA que avanzaron | 0 inferencias |
 | `citas` | `lib/negocio/citas.ts:147` | relee la ventana de −14 a +45 días (`lib/negocio/citas.ts:75`, `:81`) | 11 |
@@ -167,16 +167,16 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/ba
 | `reintentos` | `lib/analizadores/tarea.ts:231` | reintenta los análisis fallidos, con tope de 3 (`lib/analizadores/tarea.ts:207`) | 0 |
 | `senales` | `lib/agentes/detectores/correr.ts:143` | la pasada diaria de los detectores y el Plan de acción de cada departamento | 8 (las redacciones) |
 
-- **`contactos` va antes de `mensajes`, y eso es corrección, no gusto** (`lib/negocio/barrido.ts:200-204`; prueba en
+- **`contactos` va antes de `mensajes`, y eso es corrección, no gusto** (`lib/negocio/barrido.ts:201-205`; prueba en
   `pruebas/codigo/99-cron.test.ts:150`). `auditoria` va después de `mensajes` para no juzgar un transcript incompleto
-  (`lib/negocio/barrido.ts:230-235`).
+  (`lib/negocio/barrido.ts:231-236`).
 - **`anuncios` relee hoy y los dos días anteriores** (`3bd2d58:lib/negocio/recolectarAnuncios.ts:62`), porque Meta corrige
   hacia atrás (`3bd2d58:lib/negocio/recolectarAnuncios.ts:11-19`). Desde la `076` lee también el gasto de toda la cuenta, y lo
-  que no cuadra lo busca el relleno con su propio presupuesto (`lib/negocio/barrido.ts:293-296`,
+  que no cuadra lo busca el relleno con su propio presupuesto (`lib/negocio/barrido.ts:294-297`,
   `3bd2d58:lib/negocio/rellenarAnuncios.ts:66`). Su detalle es de [01-ACQUISITION.md](01-ACQUISITION.md) y
   [06-INTEGRACIONES-GHL.md](06-INTEGRACIONES-GHL.md).
 - **`activos` corre cada hora** porque la URL de la miniatura vence, y sin token se sella `saltada` sin llamar a nadie
-  (`lib/negocio/barrido.ts:350-355`). Su detalle es de [02-CREATIVE.md](02-CREATIVE.md).
+  (`lib/negocio/barrido.ts:351-356`). Su detalle es de [02-CREATIVE.md](02-CREATIVE.md).
 - **Los Analizadores corren solos y cada hora** (`lib/analizadores/tarea.ts:1-25`); su detalle es de
   [14-ANALIZADORES.md](14-ANALIZADORES.md).
 - **La lista de tareas la cierra también la base**: el `check` de `tareas_programadas.tarea` acepta exactamente las
@@ -187,9 +187,9 @@ miniaturas (`lib/negocio/miniaturaDelContacto.ts:45`, llamada en `lib/negocio/ba
 
 `POST /api/avisos/crm` es el webhook. La cabecera trae una pimienta global y el secreto de la empresa, y la global se
 compara antes de tocar la base (`app/api/avisos/crm/route.ts:17`, `:31`); el evento viaja en `?evento=`
-(`app/api/avisos/crm/route.ts:213`); responde **siempre 200** salvo que falle nuestra base
-(`app/api/avisos/crm/route.ts:61-70`); y tiene `maxDuration = 10` (`app/api/avisos/crm/route.ts:93`). Hay siete
-eventos declarados (`lib/ghl/avisos.ts:65`).
+(`app/api/avisos/crm/route.ts:247`); responde **siempre 200** salvo que falle nuestra base
+(`app/api/avisos/crm/route.ts:61-70`); y tiene `maxDuration = 10` (`app/api/avisos/crm/route.ts:107`). Hay siete
+eventos declarados (`lib/ghl/avisos.ts:119`).
 
 Medido el 2026-10-18:
 
@@ -245,7 +245,7 @@ el de los horarios que corren la tarea (`lib/negocio/frescura.ts:72`), y un `fal
 (`lib/agentes/detectores/creative.ts:125`; Conversion y Conversation, por cliente activo desde C6 · D3,
 `lib/agentes/detectores/clientes.ts:68`), y una herramienta del cerebro que lee la frescura de las tareas
 (`lib/agentes/executive/adaptadores/plataforma.ts:58`). **Lo que nadie lee es el motivo del sello**:
-`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:803`).
+`ultimo_motivo` sólo lo nombra el tipo del esquema fuera de quien lo escribe (`lib/datos/esquema.ts:830`).
 
 **La frescura por tabla, medida el 2026-10-18 hacia las 15:42 UTC:**
 
@@ -285,7 +285,7 @@ de `public` a `respaldo_aria_brain`. Medido el 2026-10-18: en `public` hay **0**
 base**: la misma revisión del 2026-10-12 dejó permisos de producción por corregir, revisados ese día, con su plan fuera
 del repositorio a propósito.
 
-**Las `aria_cc_*`.** `lib/datos/esquema.ts:2396-2401` tipa seis; en producción hay seis, y no son las mismas:
+**Las `aria_cc_*`.** `lib/datos/esquema.ts:2602-2607` tipa seis; en producción hay seis, y no son las mismas:
 `aria_cc_scraper_mediciones` **sigue sin existir** (`to_regclass` nulo, 2026-10-18) aunque el código la escribe
 (`lib/tools/medicion.ts:65`, `:94`, dentro de un `catch`, `lib/tools/medicion.ts:71-76`), y `aria_cc_icp_oferta`
 existe sin estar tipada: la lee un disparador (`lib/fundaciones/estado.ts:50-51`). El detalle es de
@@ -463,20 +463,20 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 
 - **La protección de rama en `main`** con `verificar` requerido (§ 5.2).
 - **Un rastro durable de la sonda.** `selloMasViejo` y el bucle la dejan fuera del sello a propósito
-  (`lib/negocio/barrido.ts:1245`, `lib/negocio/barrido.ts:883-893`), así que su resultado vive sólo en la respuesta
+  (`lib/negocio/barrido.ts:1263`, `lib/negocio/barrido.ts:884-894`), así que su resultado vive sólo en la respuesta
   del cron. `negocio.control_aislamiento` tiene sus dos filas de control.
 - **El canal de avisos** (`AVISO_URL`, `AVISO_DESTINO`) figura como pendiente (`docs/OTROS/produccion/DESPLIEGUE.md:241-243`,
   `:444`); sin él, la sonda que detecte una fuga sale como `fallo` en la respuesta del cron
-  (`lib/negocio/barrido.ts:656-666`). **No verificado** si hoy está cargado en Vercel.
+  (`lib/negocio/barrido.ts:657-667`). **No verificado** si hoy está cargado en Vercel.
 - **Verificar el certificado de la base.** Las cadenas piden `sslmode=require`, que **cifra y no verifica el
   certificado** (`docs/OTROS/produccion/DESPLIEGUE.md:596-616`, `:623-632`); el guardia sólo exige que haya `sslmode`
   (`lib/datos/anfitrion.ts:204-208`, `:233-235`).
 - **Leer el motivo del sello.** Desde AG15 las pantallas dicen si una tarea nunca corrió, falló o está atrasada, pero
   una llave rechazada que deja la tarea en `corrio` con motivo no la dice ninguna (§ 3).
 - **Las tres zonas en la CI**, y el arreglo de las pruebas que dependen de la hora (§ 5.1).
-- **La espera externa corta para el camino del cron** (`lib/negocio/barrido.ts:419-422`).
+- **La espera externa corta para el camino del cron** (`lib/negocio/barrido.ts:420-423`).
 - **Los contactos congelados siguen afirmando una frescura que no tienen, y crecen.** `congelarLosQueYaNoEstan` pone
-  `territorio = null` sin tocar `sincronizado_el` (`lib/negocio/sincronizar.ts:320-328`): medido el 2026-10-18, **36 de
+  `territorio = null` sin tocar `sincronizado_el` (`lib/negocio/sincronizar.ts:321-329`): medido el 2026-10-18, **36 de
   624** sin territorio y sin releer, con sellos entre el 2026-08-24 y el 2026-10-09 (25 de 594 el 2026-09-28).
 - **Ocho tablas sin una fila**: las tres de siempre (`llamadas`, `prompts_del_agente`, `versiones_del_prompt`) y cinco
   nuevas que esperan su primer uso —`activos_de_anuncio` (Meta), `briefs_del_closer`, `enlaces_de_pieza`,
@@ -489,11 +489,11 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 ## 9 · Reglas de la plataforma
 
 1. **Reconciliación, no cola** (`lib/negocio/barrido.ts:22-24`, `3bd2d58:lib/negocio/recolectarAnuncios.ts:11-19`).
-2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`** (`lib/negocio/barrido.ts:1293-1344`).
-3. **Un horario desconocido corre todo y lo dice** (`lib/negocio/barrido.ts:604-609`).
+2. **El sello se escribe siempre, y con `on conflict`, nunca con `+1`** (`lib/negocio/barrido.ts:1311-1362`).
+3. **Un horario desconocido corre todo y lo dice** (`lib/negocio/barrido.ts:605-610`).
 4. **Umbral ≥ 2 × cadencia + 60**, y el mapa de horarios es bidireccional con `vercel.json`
-   (`lib/negocio/barrido.ts:159-174`).
-5. **`contactos` antes de `mensajes`, `auditoria` después**, en el mismo horario (`lib/negocio/barrido.ts:200-208`).
+   (`lib/negocio/barrido.ts:160-175`).
+5. **`contactos` antes de `mensajes`, `auditoria` después**, en el mismo horario (`lib/negocio/barrido.ts:201-209`).
 6. **Dos horarios no comparten minuto**, o uno queda `frenada` sin trabajar.
 7. **La migración va antes del push**, y se pregunta qué **toca** la columna nueva: ver
    [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md). La comprobación es comparar `select max(name) from
@@ -503,7 +503,7 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
    (`scripts/supabase.mjs:21-23`, `:71`). Los roles de la aplicación ven **cero filas sin error** fuera de
    `conOrganizacion`.
 9. **Un secreto se compara con `timingSafeEqual`, y nunca se autoriza por el user agent**
-   (`app/api/cron/route.ts:33-45`, `app/api/avisos/crm/route.ts:102-112`).
+   (`app/api/cron/route.ts:33-45`, `app/api/avisos/crm/route.ts:135-145`).
 10. **La suite corre de a un archivo, contra una sola base, sin nadie más usándola**; y en tres zonas antes de empujar,
     por práctica (§ 5.1).
 11. **Lo nuestro se distingue por el esquema.** Ninguna tabla nuestra vive en `public`; antes de cualquier DDL fuera de
@@ -519,10 +519,10 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
 3. **El presupuesto de la corrida de diez minutos.** Medido el 2026-09-28 en 93 s de 180 con una sola empresa; desde
    el 2026-10-11 suma la pasada de miniaturas. Una segunda empresa de tamaño parecido lo acercaría al tope: es una
    inferencia, no una medición.
-4. **Una llamada colgada pasa el tope de la función** (`lib/negocio/barrido.ts:411-422`).
+4. **Una llamada colgada pasa el tope de la función** (`lib/negocio/barrido.ts:412-423`).
 5. **Un cambio de configuración de Vercel apaga el cron sin error** (`app/api/cron/route.ts:56-61`; § 5.3).
 6. **Nueve de once empresas activas en `UTC`.** La pasada de los detectores corre a cada empresa después de las 6:00 de
-   su zona (`lib/negocio/barrido.ts:365-370`): para esas nueve, a la 1 de la madrugada de Lima. Hoy no tienen datos.
+   su zona (`lib/negocio/barrido.ts:366-371`): para esas nueve, a la 1 de la madrugada de Lima. Hoy no tienen datos.
 7. **La base compartida.** La limpieza dejó en `public` una herramienta externa viva sin repositorio y tablas de bots
    ajenos; un DDL hecho sin mirar el esquema apaga un producto que nadie está mirando. Y quedan los pendientes de
    seguridad del 2026-10-12 (§ 4).
@@ -533,9 +533,9 @@ inferencias, con `atrasado = true` (también el 2026-09-28). El 2026-09-28 eran 
      tarea horaria de la sonda» (`:444`), que corre al minuto 3.
    - `app/api/sonda/route.ts:3` dice que a esa ruta «lo llama una tarea programada»; ninguna entrada de `vercel.json`
      la llama.
-   - `lib/negocio/barrido.ts:79` hablaba de «las cinco» tareas; `TAREAS` tiene doce (`lib/negocio/barrido.ts:95-114`).
+   - `lib/negocio/barrido.ts:80` hablaba de «las cinco» tareas; `TAREAS` tiene doce (`lib/negocio/barrido.ts:96-115`).
      **Cerrado el 2026-10-18 (`65669f4`)**: hoy dice «Las doce».
-   - `lib/negocio/barrido.ts:520` y `app/api/cron/route.ts:196-198` dicen que «solo una empresa de cinco tiene llave de
+   - `lib/negocio/barrido.ts:521` y `app/api/cron/route.ts:196-198` dicen que «solo una empresa de cinco tiene llave de
      IA, y todas las que trabajan tienen token del CRM»; hoy 5 de las 11 activas tienen llave de IA y 1 tiene token.
    - `app/api/cron/route.ts:228-230` describe la retención de registros «en el plan Hobby», y el plan es Pro.
    - `app/api/control/route.ts:22-23` presenta esa ruta como la sonda de la Etapa 8; la sonda programada no la usa.
@@ -563,18 +563,18 @@ producción** (medido el 2026-10-18: la última migración aplicada es la `078`,
 |---|---|---|
 | `693a383` | A | el régimen de cada tabla de `negocio`, escrito a mano (`pruebas/apoyo/regimenes-de-negocio.ts`): de una cuenta, de una cuenta o de la organización, o sólo de la organización |
 | `d424d8b` | 1 | `conOrganizacion` pone `app.cuentas = '*'` junto a `app.org_id` (`lib/datos/contexto.ts:60`), sin migración |
-| `c88b7cf` | 2 | `079`: el esquema `catalogo`, 23 tablas de referencia comunes a todas las empresas (`db/migraciones/079_el_idioma_comun.sql:25`); los roles `ingestor`, `app_ingesta` y `app_analista`, **sin login** (`db/arranque/000_cluster.sql:82-97`) |
+| `c88b7cf` | 2 | `079`: el esquema `catalogo`, 23 tablas de referencia comunes a todas las empresas (`db/migraciones/079_el_idioma_comun.sql:25`); los roles `ingestor`, `app_ingesta` y `app_analista`, **sin login** (hoy en `db/arranque/008_los_roles_del_modelo.sql:42-60`) |
 | `01baaf2` | 3 | `080`: `identidad.cuentas`, sus credenciales copiadas, `usuarios_cuentas` y `acuerdos`; la fase `cuentas` de `scripts/db.mjs` crea las de hoy |
-| `99f6e1e` | 4 | `081`: la bandeja de entrada, esquemas `sistema` e `ingesta`, con la puerta `ingesta.recibir` (`db/migraciones/081_la_bandeja_de_entrada.sql:122`); nada la usa todavía |
-| `ce5ed91` | 5a | `082`: `cuenta_id` nulable en 39 tablas de `negocio`, con su puente; la fase `cuenta-en-negocio` rellena las filas de hoy (`scripts/db.mjs:636`) |
+| `99f6e1e` | 4 | `081`: la bandeja de entrada, esquemas `sistema` e `ingesta`, con la puerta `ingesta.recibir` (`db/migraciones/081_la_bandeja_de_entrada.sql:127`); nada la usa todavía |
+| `ce5ed91` | 5a | `082`: `cuenta_id` nulable en 39 tablas de `negocio`, con su puente; la fase `cuenta-en-negocio` rellena las filas de hoy (`scripts/db.mjs:669`) |
 | `8ad73f3` | 5b | `083`: `cuenta_id` obligatoria en 26 tablas, las claves «misma cuenta que la madre» y la política por organización **y** cuenta (`db/migraciones/083_la_cuenta_en_negocio_cerrar.sql:1-8`) |
-| `dc84cb2` | 6 | `084`: `negocio.eventos`, de sólo agregar y particionada por mes (`db/migraciones/084_los_eventos.sql:117-141`), y las particiones que nacen cerradas |
+| `dc84cb2` | 6 | `084`: `negocio.eventos`, de sólo agregar y particionada por mes (`db/migraciones/084_los_eventos.sql:137-161`), y las particiones que nacen cerradas |
 
-Las fases nuevas van en el `reset` local, después de sembrar (`scripts/db.mjs:648`). Lo que el diseño validado el
+Las fases nuevas van en el `reset` local, después de sembrar (`scripts/db.mjs:681`). Lo que el diseño validado el
 2026-10-14 no había visto y se corrigió al construirlo está escrito en el plan de subida y en los mensajes de cada
 commit; el más serio: **una partición de `negocio` no heredaba la RLS de su madre** y, leída directo, mostraba los
 eventos de todas las organizaciones; `sistema.crear_particiones` se redefinió para que nazca cerrada
-(`db/migraciones/084_los_eventos.sql:22`). La suite completa dio **3.074 de 3.074** con la Fase 0 (mensaje de
+(`db/migraciones/084_los_eventos.sql:24`). La suite completa dio **3.074 de 3.074** con la Fase 0 (mensaje de
 `dc84cb2`), con la prueba nueva `pruebas/base/257-el-modelo-fase-0.test.ts`.
 
 **El orden de subida**, según el plan (todo con el OK del usuario y en modo de pedir permiso):
@@ -649,7 +649,7 @@ por cliente bajo la principal. El detalle, en [07-REGLAS-TRANSVERSALES.md](07-RE
 nivel 3».
 
 **El cron gana una tarea y un horario.** La tarea `foto` es de la plataforma, como la sonda: corre una vez por
-corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:120`). Su horario no descifra ninguna
+corrida y no por empresa, y se sella bajo la principal (`lib/negocio/barrido.ts:121`). Su horario no descifra ninguna
 credencial (`app/api/cron/route.ts:180`), y su umbral de atraso es el de las tareas diarias, 2.940 minutos.
 
 **El orden de subida**, cuando la Fase 0 esté aprobada y cada paso con su OK: la `085` con la fase
@@ -691,7 +691,7 @@ fuera de un anfitrión local) y no está en `reset`.
 **El cron barre por cliente (C4).** Las tareas de un cliente corren una vez por cliente activo, con sus credenciales
 (`app/api/cron/route.ts:242`), y su sello lleva su cliente; las de la empresa —los Analizadores, su reintento, los
 detectores— corren una vez, con el sello sin cliente. Un orden global por el sello de cada unidad
-(`lib/negocio/barrido.ts:702`) y el presupuesto mirado antes de cada una hacen que ningún cliente ni ninguna empresa se
+(`lib/negocio/barrido.ts:703`) y el presupuesto mirado antes de cada una hacen que ningún cliente ni ninguna empresa se
 queden sin correr para siempre. Lo que todavía supone una subcuenta está listado en
 [07-REGLAS-TRANSVERSALES.md](07-REGLAS-TRANSVERSALES.md), sección «el nivel 3».
 

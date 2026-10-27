@@ -65,13 +65,13 @@ Siguen siendo los más caros porque **no fallan**: producen cifras plausibles so
 
 ### 2.1 · Treinta y seis contactos congelados, y un archivo que dice cuándo
 
-`congelarLosQueYaNoEstan` (`lib/negocio/sincronizar.ts:320`) hace lo mismo que el 2026-09-15: pone
-`territorio = null` (`lib/negocio/sincronizar.ts:328`) y **no toca `sincronizado_el`**. Como la
+`congelarLosQueYaNoEstan` (`lib/negocio/sincronizar.ts:321`) hace lo mismo que el 2026-09-15: pone
+`territorio = null` (`lib/negocio/sincronizar.ts:329`) y **no toca `sincronizado_el`**. Como la
 búsqueda del barrido es POR ETIQUETA, `guardar()` no vuelve a pasar por esa fila nunca más.
 
 Lo que cambió no es el código sino lo que se sabe. El disparador de la migración `047` archiva cada
 cambio de zona en `negocio.cambios_de_territorio` —el comentario lo dice en
-`lib/negocio/sincronizar.ts:315-319`—, y la tabla tiene su primera fila el 2026-09-15. Medido el
+`lib/negocio/sincronizar.ts:316-320`—, y la tabla tiene su primera fila el 2026-09-15. Medido el
 2026-10-18 a las 15:39 UTC: **52 filas, 40 altas, 11 congelados, 1 descongelado y 0 traspasos**; los
 congelados van del 2026-09-17 al 2026-10-09. Hoy hay **36 contactos congelados**: los 24 viejos, de los que
 no se sabe cuándo porque son anteriores a la primera fila del archivo, y 12 con alta, congelados después
@@ -108,7 +108,7 @@ from negocio.cambios_de_territorio group by 1;
 reaparezca en el CRM, o que alguien abra su ficha — pero un congelado no aparece en ninguna cola.
 Lo mínimo sigue siendo que `congelarLosQueYaNoEstan` escriba `sincronizado_el`; lo correcto, pedirlos
 por identificador cada tanto con `contactoPorId` (`lib/ghl/cliente.ts:545`), que ya usa
-`refrescarUnContacto` (`lib/negocio/sincronizar.ts:622`).
+`refrescarUnContacto` (`lib/negocio/sincronizar.ts:623`).
 
 ### 2.2 · Las citas no tienen resta, y la tarjeta mira treinta días de un barrido que mira catorce
 
@@ -442,7 +442,7 @@ Lo detalla [14-ANALIZADORES.md](14-ANALIZADORES.md) § 7, con cifras del 2026-09
 verificado acá contra el código, otra vez el 2026-10-18:
 
 - **El sello se escribe y no lo lee nadie.** El comentario dice que el motivo «tiene que poder
-  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:849-860`), y en `lib/`, `app/` y
+  leerse desde la pantalla de monitoreo» (`lib/negocio/barrido.ts:850-861`), y en `lib/`, `app/` y
   `components/` `ultimo_motivo` sólo aparece en `lib/negocio/barrido.ts` y en `lib/datos/esquema.ts`;
   fuera de ahí lo lee `scripts/medir-analizadores.sql:88`. Una llave de tl;dv revocada sólo se ve
   con SQL. Y desde la `076` el mismo sello dice cuándo Meta no está vinculado (§ 12): tampoco lo lee nadie.
@@ -454,7 +454,7 @@ verificado acá contra el código, otra vez el 2026-10-18:
   de los agentes (`cd851b3`, 2026-10-04)**: cada llamada de los Analizadores, la clasificación incluida, deja su
   fila en `negocio.uso_de_ia` (`lib/analizadores/pipeline.ts`, `anotarLaLlamada`); el 2026-10-18 hay 24 de ellas.
 - **El contador de reintentos sólo sube** (`lib/analizadores/datos.ts:878-886`), y **el reintento
-  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:785-801`): una transcripción
+  exige la llave de tl;dv aunque no la use** (`lib/negocio/barrido.ts:786-802`): una transcripción
   pegada a mano que falle en una empresa con sólo llave de IA no se reintenta nunca sola.
 - **`scripts/medir-analizadores.sql` no mide el reintento**: el sello que lee es sólo el de
   `analizadores` (`scripts/medir-analizadores.sql:87-89`) y `reintentos_automaticos` no aparece.
@@ -480,7 +480,7 @@ verificado acá contra el código, otra vez el 2026-10-18:
   ventana de 30 días no cayó bajo el piso de 10, como se temía el 2026-09-28: tiene 25.
 - **«Meta desconectado» contra «no se invirtió»: Cerrada a medias el 2026-10-07 (`22ec755`).** El colector ya
   preguntaba el vínculo (`lib/negocio/recolectarAnuncios.ts:622-627@d17e029`), y desde la `076` el sello lo dice:
-  «Meta no está vinculado en GoHighLevel: no se leyó el gasto» (`3bd2d58:lib/negocio/barrido.ts:1161-1164`). Lo que falta es
+  «Meta no está vinculado en GoHighLevel: no se leyó el gasto» (`3bd2d58:lib/negocio/barrido.ts:1179-1182`). Lo que falta es
   quien lea el sello (§ 11): ninguna pantalla lo muestra.
 - **Sólo se pedían las campañas de nuestra atribución: Cerrada el 2026-10-07 (`22ec755`).** Antes, 13 de las 61
   campañas de la cuenta (`lib/negocio/recolectarAnuncios.ts:261-320@d17e029`); hoy se piden las activas y las que
@@ -571,12 +571,12 @@ sistema. Todos re-verificados el 2026-10-18 leyendo las dos puntas.
 
 - **Cerrada el 2026-10-07 (`22ec755`).** `lib/negocio/barrido.ts:243-245@d17e029` contaba **52 llamadas por día**
   «por cuatro días» cuando se releían dos (`DIAS_QUE_SE_RELEEN`, `3bd2d58:lib/negocio/recolectarAnuncios.ts:62`); con la
-  `076` el comentario se reescribió con el costo nuevo, 8 a 14 llamadas por día (`lib/negocio/barrido.ts:293-296`).
+  `076` el comentario se reescribió con el costo nuevo, 8 a 14 llamadas por día (`lib/negocio/barrido.ts:294-297`).
 - **Cerrada el 2026-10-18 (`65669f4`).** `db/migraciones/053_el_desglose_que_ya_llegaba.sql:34-35` ponía la tarea
-  `anuncios` en «el cron de las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:274`), y hoy dice eso.
+  `anuncios` en «el cron de las 17:06 UTC»; es `17 6 * * *`, las 06:17 (`lib/negocio/barrido.ts:275`), y hoy dice eso.
 - `lib/negocio/sincronizar.ts:23-28` dice que `ultimo_entrante_el` y los suyos «quedan nulos» y que
-  `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:350-351` pone `score` y `responsable_id` entre
-  lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:456` y `lib/negocio/sincronizar.ts:523`,
+  `score` «nada lo calcula»; `lib/negocio/sincronizar.ts:351-352` pone `score` y `responsable_id` entre
+  lo que no se pisa. Lo contradicen `lib/negocio/sincronizar.ts:457` y `lib/negocio/sincronizar.ts:524`,
   que escriben `score`, y la `054`, que borró `responsable_id`.
 - `lib/ghl/contrato.ts:356` dice que la carpeta del formulario de Meta tiene 9 campos y
   `lib/ghl/contrato.ts:372` que las siete etiquetas cortas son de esa carpeta; 06 midió hoy 7 campos y

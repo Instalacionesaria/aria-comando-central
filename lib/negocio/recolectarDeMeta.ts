@@ -26,12 +26,20 @@
 //
 // Cada respuesta trae el uso de la cuota de la cuenta y de la app en sus cabeceras. Pasado el 90 % la pasada deja esa
 // cuenta para la próxima corrida: Meta bloquea por minutos a quien insiste, y la historia puede esperar.
+//
+// ── UN `act_` QUE SE REASIGNA A MITAD DE LA PASADA (M10) ─────────────────────────────
+//
+// Las cuentas se resuelven una vez al empezar, y la pasada escribe durante minutos. Cada escritura va por
+// `escribirSiSigueAsignada` (`lib/meta/loLeidoDeMeta.ts`): si el `act_` ya no es de este cliente, no escribe y la cuenta
+// queda `reasignada`. Si no, escribe con la asignación bloqueada, y una reasignación que llega en ese momento espera
+// y ve lo escrito.
 // ═══════════════════════════════════════════════════════════════════════════════
 import { sql } from 'kysely';
 import { datos, conOrganizacion } from '../datos/contexto.ts';
 import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import type { CuentaDeMetaDelCliente } from '../credenciales/resolver.ts';
 import type { FallaDeMeta } from '../meta/graph.ts';
+import { escribirSiSigueAsignada } from '../meta/loLeidoDeMeta.ts';
 import {
   DESGLOSES,
   estructuraDeLaCuenta,
@@ -79,6 +87,8 @@ export interface ResultadoDeLaCuenta {
   falla: FallaDeMeta | null;
   /** La historia de los 12 meses ya está completa (sólo la pasada `historia`). */
   historiaCompleta?: boolean;
+  /** El `act_` dejó de ser de este cliente a mitad de la pasada (se reasignó o se soltó): lo que faltaba no se escribió. */
+  reasignada?: boolean;
 }
 
 export interface ResumenDeMeta {
@@ -508,6 +518,12 @@ export async function recolectarDeMeta(
       falla: null,
     };
     resumen.cuentas.push(r);
+    // Toda escritura, sólo si el `act_` sigue siendo de este cliente, con la asignación bloqueada mientras escribe.
+    const escribir = async <T>(f: () => Promise<T>): Promise<{ escrito: true; valor: T } | { escrito: false }> => {
+      const e = await escribirSiSigueAsignada(ambito, c.act, f);
+      if (!e.escrito) r.reasignada = true;
+      return e;
+    };
     if (reloj() > fin) {
       r.falla = 'sin_respuesta';
       continue;
@@ -570,7 +586,7 @@ export async function recolectarDeMeta(
         continue;
       }
       resumen.llamadas += e.llamadas;
-      await enAmbito(() => guardarEstructura(c.act, c.moneda, e.datos));
+      if (!(await escribir(() => guardarEstructura(c.act, c.moneda, e.datos))).escrito) continue;
       r.campanas = e.datos.campanas.length;
       r.anuncios = e.datos.anuncios.length;
     }
@@ -583,7 +599,7 @@ export async function recolectarDeMeta(
     }
     resumen.llamadas += a.llamadas;
     r.ilegibles += a.datos.ilegibles;
-    await enAmbito(() => guardarMetricas(c.act, a.datos.filas));
+    if (!(await escribir(() => guardarMetricas(c.act, a.datos.filas))).escrito) continue;
     r.metricas = a.datos.filas.length;
 
     // 3 · El total de la cuenta por día, y el del cliente.
@@ -593,7 +609,9 @@ export async function recolectarDeMeta(
       continue;
     }
     resumen.llamadas += d.llamadas;
-    r.dias = await enAmbito(() => guardarDias(c.act, c.moneda, desde, hasta, d.datos));
+    const dias = await escribir(() => guardarDias(c.act, c.moneda, desde, hasta, d.datos));
+    if (!dias.escrito) continue;
+    r.dias = dias.valor;
 
     // 4 · Los desgloses: de los últimos días en la diaria, del tramo entero en la historia. Con la cuota alta, esperan.
     const desdeDelDesglose = modo === 'diario' ? sumarDias(hoy, -(DIAS_DE_DESGLOSES - 1)) : desde;
@@ -609,7 +627,7 @@ export async function recolectarDeMeta(
         if (x.motivo === 'token' && !resumen.conexionesCaidas.includes(c.conexionId)) resumen.conexionesCaidas.push(c.conexionId);
         break;
       }
-      await enAmbito(() => guardarDesglose(g, x.datos));
+      if (!(await escribir(() => guardarDesglose(g, x.datos))).escrito) break;
       r.desgloses += x.datos.length;
     }
   }

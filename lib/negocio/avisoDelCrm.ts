@@ -51,21 +51,70 @@
 
 import { createHash } from 'node:crypto';
 import type { AccesoAGhl } from '../credenciales/resolver.ts';
-import { contactIdDelCuerpo, esEventoConocido, textoDelMensaje } from '../ghl/avisos.ts';
+import {
+  contactIdDelCuerpo,
+  esDelPipelineMaestro,
+  esEventoConocido,
+  loQueDiceLaOportunidad,
+  textoDelMensaje,
+} from '../ghl/avisos.ts';
 import { conOrganizacion, datos, type Ambito } from '../datos/contexto.ts';
+import { ambitoDeUnCliente, porOmisionDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
+import { registrarCambioDelCrm, type ResultadoDelCambio } from './etapaDelCrm.ts';
+import { traducirConMotivo } from './idiomaComun.ts';
 import { escribirMensajes } from './mensajes.ts';
 import { refrescarUnContacto } from './sincronizar.ts';
 
 /** Lo que pasó con un aviso. Viaja a la respuesta y al registro, nunca al cliente con detalle. */
 export type Interpretado =
-  /** Se interpretó. `territorio` es dónde quedó el contacto: `null` = en ninguna pestaña. */
-  | { tipo: 'listo'; evento: string; territorio: 'closer' | 'setter' | null; mensaje: boolean }
+  /**
+   * Se interpretó. `territorio` es dónde quedó el contacto: `null` = en ninguna pestaña. `historia` = qué se registró de
+   * un aviso de oportunidad.
+   */
+  | {
+      tipo: 'listo';
+      evento: string;
+      territorio: 'closer' | 'setter' | null;
+      mensaje: boolean;
+      historia?: ResultadoDelCambio;
+    }
   /** El `?evento=` no es de los nuestros, o falta. Se guardó y NO se interpretó. */
   | { tipo: 'desconocido'; evento: string | null }
   /** El cuerpo no trae contacto en ninguna de sus tres formas. */
   | { tipo: 'sin_contacto' }
   /** GoHighLevel no devolvió ese contacto: puede estar borrado allá. */
-  | { tipo: 'no_esta_en_el_crm' };
+  | { tipo: 'no_esta_en_el_crm' }
+  /** Un aviso de oportunidad sin la etapa (o la Salida) que su evento promete: ni en la URL ni en el cuerpo. */
+  | { tipo: 'sin_dato'; que: 'etapa' | 'salida' }
+  /** La etapa o la Salida llegó y el idioma común no la traduce: quedó contada en `valores_sin_mapear`. */
+  | { tipo: 'sin_mapear'; que: 'etapa' | 'salida'; valor: string };
+
+/** El aviso ya guardado en la cuarentena: lo que hace deterministas los eventos de una oportunidad. */
+export interface AvisoGuardado {
+  /** `negocio.avisos_del_crm.id`: una reentrega del mismo aviso cae en la MISMA fila. */
+  readonly id: string;
+  /** Cuándo llegó por primera vez. Es la hora del cambio: el cuerpo nativo no trae una medida. */
+  readonly recibidoEl: Date;
+  /** Los parámetros de la URL: `&etapa=` y `&salida=` viajan ahí. */
+  readonly parametros: URLSearchParams;
+}
+
+/** ¿Es un aviso de la oportunidad (la etapa del Pipeline Maestro o su Salida)? */
+function esDeOportunidad(evento: string): evento is 'oportunidad.etapa' | 'oportunidad.salida' {
+  return evento === 'oportunidad.etapa' || evento === 'oportunidad.salida';
+}
+
+/**
+ * El cliente del aviso. La ruta ya pasa el ámbito de UN cliente; con un `orgId` suelto (las pruebas de antes del nivel
+ * 3) es el cliente por omisión. La etapa se escribe en un cliente, nunca «en la organización».
+ */
+async function clienteDelAviso(donde: string | Ambito): Promise<AmbitoDeUnCliente> {
+  if (typeof donde === 'string') return porOmisionDe(donde);
+  if (donde.todaLaOrganizacion && donde.cuentas !== '*' && donde.cuentas.length === 1) {
+    return ambitoDeUnCliente(donde.orgId, donde.cuentas[0]!);
+  }
+  throw new Error('interpretarAviso: un aviso de oportunidad va en el ámbito de un solo cliente');
+}
 
 /**
  * La hora del MENSAJE, o la de llegada del aviso.
@@ -141,6 +190,9 @@ export async function interpretarAviso(
   evento: string | null,
   cuerpo: Record<string, unknown>,
   leerContacto: LectorDeContacto = refrescarUnContacto,
+  /* La fila de la cuarentena. Los avisos de oportunidad la necesitan: su id y su hora hacen deterministas los eventos,
+     y sus parámetros traen la etapa o la Salida fija de la rama. */
+  aviso?: AvisoGuardado,
 ): Promise<Interpretado> {
   /* Un evento que no conocemos NO es un error: es un workflow nuevo, o la trampa de la URL sin
      `?evento=`. La fila queda guardada y sin procesar, y el monitor la cuenta — que es lo que
@@ -149,6 +201,14 @@ export async function interpretarAviso(
 
   const contactId = contactIdDelCuerpo(cuerpo);
   if (contactId === null) return { tipo: 'sin_contacto' };
+
+  // Un aviso de oportunidad se lee y se escribe en su cliente: su contacto, su etapa y su traducción son de él.
+  const deOportunidad = esDeOportunidad(evento);
+  const cliente = deOportunidad ? await clienteDelAviso(orgId) : null;
+  if (cliente !== null) orgId = cliente;
+  if (cliente !== null && !aviso) {
+    throw new Error('interpretarAviso: un aviso de oportunidad necesita su fila de la cuarentena');
+  }
 
   /* ── EL CONTACTO Y SU TERRITORIO, QUE ES EL CORAZÓN DE ESTO ───────────────
    *
@@ -165,8 +225,12 @@ export async function interpretarAviso(
    * agua pasa sobre las conversaciones de contactos desconocidos.
    *
    * Los eventos de CONTACTO y de CITA siempre refrescan: su único punto es que las etiquetas
-   * cambiaron, así que leer la caché sería leer justo lo viejo. */
+   * cambiaron, así que leer la caché sería leer justo lo viejo.
+   *
+   * Los de OPORTUNIDAD se tratan como los de mensaje: un contacto conocido cuesta cero llamadas (su etapa no está en
+   * el contacto de GoHighLevel, así que releerlo no aporta nada), y uno desconocido, una. */
   const esDeMensaje = evento === 'mensaje.entrante' || evento === 'mensaje.saliente';
+  const usaLaCache = esDeMensaje || deOportunidad;
   const yaEsta = await conOrganizacion(orgId, async () =>
     datos()
       .selectFrom('contactos')
@@ -181,7 +245,7 @@ export async function interpretarAviso(
     | null;
   let contactoId = yaEsta?.id ?? null;
 
-  if (!esDeMensaje || contactoId === null) {
+  if (!usaLaCache || contactoId === null) {
     const r = await conOrganizacion(orgId, () => leerContacto(acceso, contactId));
     if (r.tipo === 'no_esta_en_el_crm') return { tipo: 'no_esta_en_el_crm' };
     if (r.tipo === 'fallo') throw new Error(`el CRM respondió ${r.fallo.tipo}`);
@@ -199,6 +263,10 @@ export async function interpretarAviso(
     );
     contactoId = ahora?.id ?? null;
     if (contactoId === null) return { tipo: 'no_esta_en_el_crm' };
+  }
+
+  if (cliente !== null && aviso) {
+    return registrarLaOportunidad(cliente, evento as 'oportunidad.etapa' | 'oportunidad.salida', cuerpo, contactoId, territorio, aviso);
   }
 
   if (!esDeMensaje) return { tipo: 'listo', evento, territorio, mensaje: false };
@@ -266,4 +334,83 @@ export async function interpretarAviso(
   );
 
   return { tipo: 'listo', evento, territorio, mensaje: true };
+}
+
+/**
+ * Un aviso de oportunidad: la etapa del Pipeline Maestro (`oportunidad.etapa`) o su Salida (`oportunidad.salida`).
+ *
+ * Lee lo que dice el aviso (la constante de la URL gana si es una clave válida; si no, el cuerpo), lo traduce al
+ * idioma común y lo registra con `registrarCambioDelCrm`, el único escritor. Lo que se traduce se registra aunque lo
+ * otro no: un `&etapa=` bueno con un `&salida=` mal escrito deja la etapa y anota la Salida como sin mapear.
+ *
+ * El aviso es la hora del cambio (`recibido_el` de su fila, la primera vez que llegó) y la base del id del hecho
+ * (`aviso:<id de la fila>`): una reentrega cae en la misma fila y no duplica ningún evento.
+ */
+async function registrarLaOportunidad(
+  cliente: AmbitoDeUnCliente,
+  evento: 'oportunidad.etapa' | 'oportunidad.salida',
+  cuerpo: Record<string, unknown>,
+  contactoId: string,
+  territorio: 'closer' | 'setter' | null,
+  aviso: AvisoGuardado,
+): Promise<Interpretado> {
+  const dice = loQueDiceLaOportunidad(aviso.parametros, cuerpo);
+  // Del cuerpo, la coincidencia directa sólo vale para el Pipeline Maestro; la constante de la URL la ponen sus ramas.
+  const delMaestro = esDelPipelineMaestro(dice.pipeline);
+  const sinMapear: { que: 'etapa' | 'salida'; valor: string }[] = [];
+
+  let etapa: string | undefined;
+  if (dice.etapa !== null) {
+    const t = await traducirConMotivo(cliente, {
+      tipo: 'etapa_del_pipeline',
+      campo: dice.etapa.deLaUrl ? '' : (dice.pipeline ?? ''),
+      valor: dice.etapa.valor,
+      catalogo: 'etapas',
+      directo: dice.etapa.deLaUrl || delMaestro,
+    });
+    if (t.tipo === 'traducido') etapa = t.clave;
+    else if (t.tipo === 'sin_mapear') sinMapear.push({ que: 'etapa', valor: dice.etapa.valor });
+  }
+
+  let salida: string | null | undefined;
+  if (dice.salida !== null) {
+    if (dice.salida.valor === null) {
+      salida = null;
+    } else {
+      const t = await traducirConMotivo(cliente, {
+        tipo: 'salida_de_oportunidad',
+        campo: '',
+        valor: dice.salida.valor,
+        catalogo: 'salidas',
+        directo: dice.salida.deLaUrl || delMaestro,
+      });
+      if (t.tipo === 'traducido') salida = t.clave;
+      else if (t.tipo === 'sin_mapear') sinMapear.push({ que: 'salida', valor: dice.salida.valor });
+    }
+  }
+
+  let historia: ResultadoDelCambio | undefined;
+  if (etapa !== undefined || salida !== undefined) {
+    historia = await registrarCambioDelCrm(cliente, {
+      contactoId,
+      ...(etapa !== undefined ? { etapa } : {}),
+      ...(salida !== undefined ? { salida } : {}),
+      oportunidadId: dice.oportunidadId,
+      pipelineId: dice.pipelineId,
+      ocurrioEl: aviso.recibidoEl,
+      idExterno: `aviso:${aviso.id}`,
+      via: 'aviso',
+      origen: {
+        ...(dice.etapa !== null ? { etapa: dice.etapa.valor } : {}),
+        ...(dice.salida !== null && dice.salida.valor !== null ? { salida: dice.salida.valor } : {}),
+      },
+    });
+  }
+
+  // Lo que el evento promete y no vino por ningún lado es lo primero que hay que mirar: la URL de la rama.
+  const principal = evento === 'oportunidad.etapa' ? 'etapa' : 'salida';
+  if (dice[principal] === null) return { tipo: 'sin_dato', que: principal };
+  const primero = sinMapear.find((s) => s.que === principal) ?? sinMapear[0];
+  if (primero) return { tipo: 'sin_mapear', que: primero.que, valor: primero.valor };
+  return { tipo: 'listo', evento, territorio, mensaje: false, ...(historia ? { historia } : {}) };
 }

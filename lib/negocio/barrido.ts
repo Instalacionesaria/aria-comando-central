@@ -39,6 +39,7 @@ import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
 import { sincronizarContactos } from './sincronizar.ts';
 import { completarMiniaturas } from './miniaturaDelContacto.ts';
+import { reprocesarAvisosDeOportunidad } from './reprocesoDeAvisos.ts';
 import { recolectarDeMeta } from './recolectarDeMeta.ts';
 import { MOTIVO_META_RECHAZADA } from './faltaDeLosClientes.ts';
 import { recolectarActivos, type ResultadoDeActivos } from './recolectarActivos.ts';
@@ -1091,11 +1092,20 @@ async function releerContactos(
   );
   // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle pone el texto genérico.
   if (r.tipo === 'fallo') throw new Error(`el CRM respondió ${r.fallo.tipo}`);
+  /* Los avisos de oportunidad (la etapa y la Salida del Pipeline Maestro) que quedaron sin procesar: un fallo
+     transitorio o el tope por hora. No tienen sondeo, así que el reproceso es su red (`lib/negocio/reprocesoDeAvisos.ts`).
+     Después de sincronizar: el contacto nuevo de un aviso de «Lead» ya está en la caché y no cuesta una llamada. Antes
+     de las miniaturas: la etapa no puede esperar a que sobre tiempo. Acotado por pasada y al fin de la corrida. */
+  const avisos = await reprocesarAvisosDeOportunidad(ambito, acceso, { fin, ahora });
   /* La miniatura del anuncio de cada contacto, que la búsqueda no trae (CF1-11 de docs/creative/16): hasta 50
      pedidos por pasada, una sola vez por contacto. Va después de sincronizar para pedir también los que acaban de
      entrar, y sus llamadas se suman a las de la tarea. */
   const miniaturas = await completarMiniaturas(ambito, acceso, undefined, ahora, fin);
-  return { corrio: true, resultado: { ...r.resumen, miniaturas }, llamadas: r.resumen.llamadas + miniaturas.pedidos };
+  return {
+    corrio: true,
+    resultado: { ...r.resumen, miniaturas, avisos },
+    llamadas: r.resumen.llamadas + miniaturas.pedidos + avisos.llamadas,
+  };
 }
 
 /**
@@ -1158,6 +1168,14 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     tiempo: 'la pasada de miniaturas llegó a su tiempo',
   };
   if (typeof mini?.corte === 'string' && CORTE[mini.corte]) partes.push(`${CORTE[mini.corte]}: lo que faltó se pide en la siguiente`);
+
+  /* El reproceso de los avisos de oportunidad (`lib/negocio/reprocesoDeAvisos.ts`): los que volvieron a fallar y los que
+     no entraron en la pasada. Las dos cosas se arreglan solas en la siguiente, y las dos tienen que verse. */
+  const avisos = (r as { avisos?: { fallaron?: unknown; quedan?: unknown } }).avisos;
+  if (typeof avisos?.fallaron === 'number' && avisos.fallaron > 0) {
+    partes.push(`${avisos.fallaron} aviso(s) de la etapa o la Salida volvieron a fallar: se reintentan en la siguiente`);
+  }
+  if (avisos?.quedan === true) partes.push('quedaron avisos de la etapa o la Salida sin reprocesar: siguen en la siguiente');
 
   /* Los activos de Meta (`078`): un token o un permiso rechazado es lo único de esta tarea que alguien tiene que ir a
      arreglar; el cupo y el tiempo se arreglan solos en la hora siguiente. */
