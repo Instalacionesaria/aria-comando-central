@@ -15,3 +15,8 @@
 # equivocado. Este archivo solo lo lee graphify.
 !lib/credenciales/
 !scripts/credenciales.mjs
+
+# Desde el 2026-10-28 `docs/` es local (esta en el .gitignore: no se sube ni se despliega), pero el grafo la
+# tiene que seguir viendo: es la mitad del conocimiento. Lo privado (nombres de clientes) sigue afuera, como antes.
+!docs/
+docs/_privado/
