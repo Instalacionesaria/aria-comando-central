@@ -214,7 +214,7 @@ test('el archivado corre en su PROPIA transacción, nunca colgado de una abierta
 
 test('el histórico va DESPUÉS de guardar y no puede tumbar un turno', () => {
   const almacen = codigo('lib/fundaciones/almacen.ts');
-  const guardado = almacen.indexOf('const guardado = await escribir(orgId, LLAVES.chats, proximo)');
+  const guardado = almacen.indexOf('const guardado = await fusionar(orgId, LLAVES.chats, { [id]: sellado })');
   const archivo = almacen.indexOf('await archivar(');
   assert.ok(guardado > 0 && archivo > guardado, 'se archiva antes de guardar la conversación viva');
   assert.match(

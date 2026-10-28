@@ -229,28 +229,15 @@ export async function guardarLosInputs(
   const valores = soloTextos(cuerpo.valores);
   if (valores === null) return rechazo('peticion_invalida', 'Los valores tienen que ser texto');
 
-  // Se relee el estado antes de escribir porque las dos llaves del almacén guardan TODAS las
-  // herramientas juntas en un solo documento. Escribir solo con lo que mandó el navegador borraría
-  // los inputs de las otras — y las borraría en silencio.
-  const estado = await leerEstado(alumno.orgId);
-  if (estado.tipo !== 'datos') return rechazoDeAlmacen(estado);
-
+  // Las dos llaves del almacén guardan TODAS las herramientas juntas en un solo documento: el
+  // almacén escribe sólo la parte de ESTA herramienta y la base la mezcla con las demás, así que no
+  // hace falta releer el estado antes (ver `fusionar` en `almacen.ts`).
   const guardado =
     id === 1
       ? // El Research guarda sus criterios junto a sus salidas, en su propia llave: es el formato
-        // que el hub ya escribe, y separarlos haría que el hub leyera un documento a medias.
-        await guardarResearch(
-          alumno.orgId,
-          aValoresDeAlmacen(idsDeCampos(1), valores),
-          estado.datos.researchSalidas,
-          estado.datos.researchMercado,
-        )
-      : await guardarInputs(
-          alumno.orgId,
-          estado.datos,
-          id,
-          aValoresDeAlmacen(idsDeCampos(id), valores),
-        );
+        // que el hub ya escribe. Sólo se tocan los criterios; las salidas y el mercado quedan.
+        await guardarResearch(alumno.orgId, { inputs: aValoresDeAlmacen(idsDeCampos(1), valores) })
+      : await guardarInputs(alumno.orgId, id, aValoresDeAlmacen(idsDeCampos(id), valores));
 
   if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
   return ok({ guardado: true });
@@ -362,9 +349,7 @@ export async function generarElDocumento(
        Latinoamérica» dibujado debajo de un Research que estaba buscando en Arequipa. */
     const guardado = await guardarResearch(
       acceso.orgId,
-      inputs,
-      proximas,
-      paso === 0 ? null : estado.datos.researchMercado,
+      paso === 0 ? { inputs, salidas: proximas, mercado: null } : { inputs, salidas: proximas },
     );
     if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
 
@@ -394,7 +379,7 @@ export async function generarElDocumento(
 
   // Los inputs se guardan ANTES de generar, y salga como salga la generación. El alumno acaba de
   // escribir ocho campos: perderlos porque el modelo devolvió un 529 sería cobrarle el fallo a él.
-  const guardadoDeInputs = await guardarInputs(acceso.orgId, estado.datos, id, inputs);
+  const guardadoDeInputs = await guardarInputs(acceso.orgId, id, inputs);
   if (guardadoDeInputs.tipo !== 'datos') return rechazoDeAlmacen(guardadoDeInputs);
 
   const salida = await generar({
@@ -412,7 +397,7 @@ export async function generarElDocumento(
     });
   }
 
-  const guardado = await guardarVersion(acceso.orgId, estado.datos, id, {
+  const guardado = await guardarVersion(acceso.orgId, id, {
     date: fechaDeVersion(),
     output: salida.datos.texto,
   });
@@ -851,7 +836,7 @@ export async function resumirMercado(peticion: Request, alumno: Alumno): Promise
     : null;
 
   const mercado: MercadoReal = { rubro, ubicacion, miradoEl: new Date().toISOString(), maps, anuncios, paginas };
-  const guardado = await guardarMercado(alumno.orgId, estado.datos, mercado);
+  const guardado = await guardarMercado(alumno.orgId, mercado);
   if (guardado.tipo !== 'datos') return rechazoDeAlmacen(guardado);
   return ok(mercado);
 }

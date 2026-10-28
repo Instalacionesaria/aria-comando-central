@@ -511,11 +511,13 @@ test('si el modelo falla no se guarda nada, ni siquiera el turno de la persona',
 });
 
 test('las nueve conversaciones van en UN documento, y guardar una no borra las otras ocho', () => {
-  /* `tool_chats` guarda las nueve juntas, como `profile` y `history`. Escribir solo con la que
-     cambió se lleva las demás en silencio — el mismo defecto que `guardarLosInputs` documenta y por
-     el que relee el estado antes de escribir. */
+  /* `tool_chats` guarda las nueve juntas, como `profile` y `history`. Escribir la columna entera se
+     lleva las demás en silencio; desde el 2026-10-28 se manda sólo la llave de ESTA herramienta y la
+     base la mezcla con lo que hay al escribir (`||`), así que tampoco pisa lo que otra herramienta
+     guardó mientras el modelo pensaba. Lo prueba de verdad `pruebas/base/334-*`. */
   const almacen = leer('lib/fundaciones/almacen.ts');
-  assert.match(almacen, /const proximo: Record<number, ChatDeHerramienta> = \{ \.\.\.estado\.chats/);
+  assert.match(almacen, /await fusionar\(orgId, LLAVES\.chats, \{ \[id\]: sellado \}\)/);
+  assert.match(almacen, /\$\{columnaComoObjeto\(columna\)\} \|\| \$\{json\}::jsonb/);
 });
 
 test('las dos pantallas arrancan la generación con los valores del turno, no con los del estado', () => {

@@ -160,16 +160,22 @@ test('la mirada se lee tolerante y se conserva al guardar los pasos', () => {
 
   const almacen = sinComentarios(codigo('lib/fundaciones/almacen.ts'));
   assert.match(almacen, /estado\.researchMercado = leerMercado\(research\['mercado'\]\)/);
-  // `guardarResearch` escribe `mercado` SIEMPRE: si lo omitiera, cada paso borraría la mirada.
-  assert.match(almacen, /outputs: salidas, mercado \}/, 'guardarResearch dejó de escribir la mirada');
+  /* Desde el 2026-10-28 `guardarResearch` toca SÓLO las partes que recibe y la base mezcla el resto
+     (`pruebas/base/334-*`): una llamada que no nombra `mercado` lo conserva tal como esté en la base,
+     también si se guardó mientras el paso se generaba. */
+  assert.match(almacen, /if \(cambios\.mercado !== undefined\) parche\['mercado'\] = cambios\.mercado;/);
   const operaciones = sinComentarios(codigo('lib/fundaciones/operaciones.ts'));
   const llamadas = operaciones.match(/guardarResearch\([\s\S]*?\);/g) ?? [];
   assert.ok(llamadas.length >= 2);
-  for (const l of llamadas) assert.match(l, /researchMercado/, `una llamada a guardarResearch no pasa la mirada: ${l}`);
   /* Salvo al generar el paso 1: ahí la mirada anterior queda inválida —su rubro salía del paso 1
      viejo— y se borra, en el servidor y en pantalla. Allpa (2026-09-13): «0 negocios · Latinoamérica»
      dibujado debajo de un Research que buscaba en Arequipa. */
-  assert.match(operaciones, /guardarResearch\(\s*acceso\.orgId,\s*inputs,\s*proximas,\s*paso === 0 \? null : estado\.datos\.researchMercado,?\s*\)/);
+  assert.match(
+    operaciones,
+    /guardarResearch\(\s*acceso\.orgId,\s*paso === 0 \? \{ inputs, salidas: proximas, mercado: null \} : \{ inputs, salidas: proximas \},?\s*\)/,
+  );
+  // Y guardar sólo los criterios no manda ni salidas ni mercado: los dejaría como se leyeron.
+  assert.match(operaciones, /guardarResearch\(alumno\.orgId, \{ inputs: aValoresDeAlmacen\(idsDeCampos\(1\), valores\) \}\)/);
   assert.match(sinComentarios(codigo('components/fundaciones/PanelResearch.jsx')), /if \(paso === 0\) setMirada\(null\);/);
 });
 

@@ -41,6 +41,7 @@
 // En los dos casos el `org_id` sale de la sesión y **nunca del navegador**.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { sql } from 'kysely';
 import type { Trx } from '../datos/capa.ts';
 import { conOrganizacion, datos, hayOrganizacion, organizacionActual } from '../datos/contexto.ts';
 import { archivar, idDeConversacion } from './historico.ts';
@@ -96,22 +97,62 @@ async function enOrganizacion<T>(
   }
 }
 
-/** Escribe una columna de la fila de la organización, creando la fila si no existía. */
-async function escribir(orgId: string, columna: string, valor: unknown): Promise<ResultadoDeAlmacen<null>> {
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * CADA GUARDADO TOCA SÓLO SU PEDAZO, Y LO MEZCLA EN LA BASE (2026-10-28)
+ *
+ * Hasta hoy cada guardado reescribía la columna ENTERA con lo que se había leído al empezar. Generar
+ * y conversar leen, esperan al modelo segundos o minutos, y recién después escriben: lo que otra
+ * persona —u otra herramienta de la cadena «Construir el método»— guardó en esa ventana se perdía
+ * sin ningún error, versiones pagadas incluidas (la investigación de `datos()`, confirmado 1).
+ *
+ * Ahora cada guardado manda sólo las llaves que cambió y la base las mezcla con lo que hay EN ESE
+ * MOMENTO (`||` de jsonb, en la misma sentencia, con la fila bloqueada por el `on conflict`):
+ *   · los inputs, el chat o las versiones de UNA herramienta tocan sólo su llave (`"3"`);
+ *   · el Research toca sólo `inputs`, `outputs` o `mercado`;
+ *   · una versión nueva se agrega ADELANTE de las que haya en la base, no de las que se leyeron.
+ * El formato del documento no cambia: quien lo lea (el hub, otra app) lo ve igual que antes.
+ * Lo que queda a propósito (decidido por el usuario): dos turnos simultáneos sobre el chat de la MISMA
+ * herramienta se quedan con el último en el chat vivo. Ninguno de los dos textos se pierde, pero
+ * quedan en lugares distintos: el histórico archiva por (conversación, posición) con `on conflict do
+ * nothing`, así que guarda el turno que archivó PRIMERO —que puede ser justo el que el chat vivo
+ * descartó— y el otro queda sólo en el chat vivo (ver `historico.ts`).
+ * Tampoco se cubre que dos pasos del Research terminen a la vez: cada uno escribe la lista de salidas
+ * que armó con lo leído antes (la pantalla los corre en orden, uno después del otro). Y como ya no se
+ * reescribe la columna entera, lo que un lector tolerante descarta (una versión rota heredada del hub)
+ * queda en la base hasta que las versiones nuevas lo empujen fuera de las diez.
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+/** La columna tal como está en la base, o un objeto vacío si no es un objeto (null o un documento roto). */
+function columnaComoObjeto(columna: string) {
+  const ref = sql.ref(`${TABLA}.${columna}`);
+  return sql`(case when jsonb_typeof(${ref}) = 'object' then ${ref} else '{}'::jsonb end)`;
+}
+
+/**
+ * Mezcla `parche` en las llaves de primer nivel de la columna, creando la fila si no existía.
+ * Las llaves que el parche no nombra quedan como están EN LA BASE.
+ */
+async function fusionar(
+  orgId: string,
+  columna: string,
+  parche: Record<string, unknown>,
+): Promise<ResultadoDeAlmacen<null>> {
   // `JSON.stringify` y no el objeto: el controlador de Postgres serializa un objeto igual, pero un
   // arreglo lo mandaría como arreglo de Postgres y no como JSON. El texto es JSON siempre.
-  const json = JSON.stringify(valor);
-  const r = await enOrganizacion(orgId, async (db) => {
+  const json = JSON.stringify(parche);
+  return enOrganizacion(orgId, async (db) => {
     await db
       .insertInto(TABLA)
       .values({ org_id: orgId, [columna]: json } as never)
       .onConflict((oc) =>
-        oc.column('org_id').doUpdateSet({ [columna]: json, actualizado_el: new Date() } as never),
+        oc.column('org_id').doUpdateSet({
+          [columna]: sql`${columnaComoObjeto(columna)} || ${json}::jsonb`,
+          actualizado_el: new Date(),
+        } as never),
       )
       .execute();
     return null;
   });
-  return r;
 }
 
 // ── Lectores tolerantes ──────────────────────────────────────────────────────
@@ -261,63 +302,73 @@ export async function leerEstado(orgId: string): Promise<ResultadoDeAlmacen<Esta
   return { tipo: 'datos', datos: estado };
 }
 
-/** Guarda los inputs de una herramienta, mezclándolos con los de las demás. */
+/** Guarda los inputs de UNA herramienta. Los de las demás quedan como estén en la base. */
 export async function guardarInputs(
   orgId: string,
-  estado: EstadoDeFundaciones,
   id: number,
   inputs: Record<string, string>,
 ): Promise<ResultadoDeAlmacen<null>> {
-  const proximo: Record<number, Record<string, string>> = { ...estado.perfil, [id]: inputs };
-  return escribir(orgId, LLAVES.perfil, proximo);
+  return fusionar(orgId, LLAVES.perfil, { [id]: inputs });
 }
 
 /** Cuántas versiones se conservan por herramienta. El hub usaba diez; se conserva el número. */
 export const MAX_VERSIONES = 10;
 
-/** Agrega una versión al historial de una herramienta y lo guarda. */
+/**
+ * Agrega una versión ADELANTE del historial de una herramienta, conservando las `MAX_VERSIONES` más
+ * nuevas. La lista que se alarga es la que está en la base al escribir, no la que se leyó antes de
+ * generar: dos generaciones que terminan juntas dejan las dos versiones.
+ */
 export async function guardarVersion(
   orgId: string,
-  estado: EstadoDeFundaciones,
   id: number,
   version: Version,
 ): Promise<ResultadoDeAlmacen<null>> {
-  const previas = estado.historial[id];
-  const lista = previas ? [version, ...previas] : [version];
-  const proximo: Record<number, Version[]> = {
-    ...estado.historial,
-    [id]: lista.slice(0, MAX_VERSIONES),
-  };
-  return escribir(orgId, LLAVES.historial, proximo);
+  const llave = String(id);
+  const nueva = JSON.stringify(version);
+  const columna = LLAVES.historial;
+  const actual = sql`${columnaComoObjeto(columna)} -> ${llave}`;
+  return enOrganizacion(orgId, async (db) => {
+    await db
+      .insertInto(TABLA)
+      .values({ org_id: orgId, [columna]: JSON.stringify({ [llave]: [version] }) } as never)
+      .onConflict((oc) =>
+        oc.column('org_id').doUpdateSet({
+          [columna]: sql`${columnaComoObjeto(columna)} || jsonb_build_object(${llave}::text, (
+            select coalesce(jsonb_agg(v.elemento order by v.orden), '[]'::jsonb)
+              from jsonb_array_elements(
+                     jsonb_build_array(${nueva}::jsonb)
+                     || (case when jsonb_typeof(${actual}) = 'array' then ${actual} else '[]'::jsonb end)
+                   ) with ordinality as v(elemento, orden)
+             where v.orden <= ${MAX_VERSIONES}))`,
+          actualizado_el: new Date(),
+        } as never),
+      )
+      .execute();
+    return null;
+  });
 }
 
 /**
- * Guarda los criterios y las salidas del Research (una sola columna, las dos cosas juntas).
- *
- * `mercado` viaja SIEMPRE, aunque sea `null`: el documento se reescribe entero, así que omitirlo
- * borraría la mirada al mercado cada vez que sale un paso. Quien guarda pasa la que el estado ya
- * tiene; solo `guardarMercado` la cambia.
+ * Guarda lo que cambió del Research: los criterios (`inputs`), las salidas de los pasos (`outputs`)
+ * y la mirada al mercado (`mercado`). **Sólo se tocan las partes que vienen**: una que no viene
+ * queda como esté en la base. Así, guardar los criterios no pisa un paso que se está generando, y
+ * un paso no pisa la mirada al mercado que se guardó mientras tanto.
  */
 export async function guardarResearch(
   orgId: string,
-  inputs: Record<string, string>,
-  salidas: string[],
-  mercado: MercadoReal | null,
+  cambios: { inputs?: Record<string, string>; salidas?: string[]; mercado?: MercadoReal | null },
 ): Promise<ResultadoDeAlmacen<null>> {
-  return escribir(orgId, LLAVES.research, { inputs, outputs: salidas, mercado });
+  const parche: Record<string, unknown> = {};
+  if (cambios.inputs !== undefined) parche['inputs'] = cambios.inputs;
+  if (cambios.salidas !== undefined) parche['outputs'] = cambios.salidas;
+  if (cambios.mercado !== undefined) parche['mercado'] = cambios.mercado;
+  return fusionar(orgId, LLAVES.research, parche);
 }
 
-/** Guarda la mirada al mercado real, conservando criterios y salidas tal como están. */
-export async function guardarMercado(
-  orgId: string,
-  estado: EstadoDeFundaciones,
-  mercado: MercadoReal,
-): Promise<ResultadoDeAlmacen<null>> {
-  return escribir(orgId, LLAVES.research, {
-    inputs: estado.researchInputs,
-    outputs: estado.researchSalidas,
-    mercado,
-  });
+/** Guarda la mirada al mercado real. Los criterios y las salidas quedan como estén en la base. */
+export async function guardarMercado(orgId: string, mercado: MercadoReal): Promise<ResultadoDeAlmacen<null>> {
+  return guardarResearch(orgId, { mercado });
 }
 
 /**
@@ -329,9 +380,9 @@ export async function guardarMercado(
  * ya preguntó el nicho, junto con un juego de respuestas donde el nicho está vacío. El modelo no
  * tiene forma de saber cuál de los dos miente.
  *
- * Y se relee el estado antes de escribir por lo mismo que `guardarInputs`: las nueve conversaciones
- * viven en UNA columna, así que escribir solo con la que cambió borraría las otras ocho — en
- * silencio.
+ * Las nueve conversaciones viven en UNA columna: se escribe sólo la llave de esta herramienta y la
+ * base la mezcla con las otras ocho tal como estén al escribir (`fusionar`). `estado` sirve para
+ * archivar la conversación que había antes.
  */
 export async function guardarChat(
   orgId: string,
@@ -351,8 +402,7 @@ export async function guardarChat(
     ...chatDeHerramienta,
     conversation_id: idDeConversacion(chatDeHerramienta, orgId, id),
   };
-  const proximo: Record<number, ChatDeHerramienta> = { ...estado.chats, [id]: sellado };
-  const guardado = await escribir(orgId, LLAVES.chats, proximo);
+  const guardado = await fusionar(orgId, LLAVES.chats, { [id]: sellado });
 
   /* ── Y RECIÉN AHORA EL HISTÓRICO, QUE NO PUEDE COSTAR UN TURNO ──────────────
      Después de guardar y sin `await` sobre su resultado en el camino de error: `archivar` no lanza
