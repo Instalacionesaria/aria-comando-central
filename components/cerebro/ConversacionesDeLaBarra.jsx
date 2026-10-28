@@ -26,18 +26,39 @@ import { usarHilosDeLaBarra } from '../../lib/agentes/hilos-de-la-barra.ts';
 export default function ConversacionesDeLaBarra({ inicio }) {
   const hilos = usarHilosDeLaBarra();
   const mostrados = hilos ?? [];
+  /* Desplegada SIEMPRE al cargar (pedido del usuario, 2026-10-28): el botón chico del rótulo la repliega mientras dure
+     la página, sin guardarlo en ningún lado. Replegada se esconde con `hidden` y no se deja de dibujar, como los
+     departamentos. Sin `id` ni `aria-controls`: los componentes del cerebro no estrenan ids (`217`), y el
+     `aria-expanded` del botón ya dice si la lista está a la vista. */
+  const [desplegada, setDesplegada] = useState(true);
   return (
     <div className="nb-conversaciones">
-      <span className="nb-rotulo">CONVERSACIONES</span>
-      {hilos === null ? null : mostrados.length === 0 ? (
-        <span className="nb-vacio">Todavía no hay ninguna.</span>
-      ) : (
-        <ul className="nb-hilos">
-          {mostrados.map((h) => (
-            <Hilo key={h.id} h={h} inicio={inicio} />
-          ))}
-        </ul>
-      )}
+      <div className="nb-rotulo-con-boton">
+        <span className="nb-rotulo">CONVERSACIONES</span>
+        <button
+          type="button"
+          className={desplegada ? 'nb-replegar abierta' : 'nb-replegar'}
+          aria-expanded={desplegada}
+          aria-label={desplegada ? 'Replegar las conversaciones' : 'Desplegar las conversaciones'}
+          title={desplegada ? 'Replegar' : 'Desplegar'}
+          onClick={() => setDesplegada(!desplegada)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+      </div>
+      <div hidden={!desplegada}>
+        {hilos === null ? null : mostrados.length === 0 ? (
+          <span className="nb-vacio">Todavía no hay ninguna.</span>
+        ) : (
+          <ul className="nb-hilos">
+            {mostrados.map((h) => (
+              <Hilo key={h.id} h={h} inicio={inicio} />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

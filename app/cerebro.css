@@ -480,6 +480,50 @@
 
 /* ── CONVERSACIONES, EN LA BARRA ──────────────────────────────────────────── */
 
+/* El rótulo y, a su derecha, el botón chico que repliega la lista: el mismo galón de los departamentos, que gira
+   abierto. El botón lleva el relleno derecho que el rótulo deja (12 px), para que el galón quede alineado con los
+   de las cabeceras. */
+.nb-rotulo-con-boton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nb-rotulo-con-boton .nb-rotulo {
+  flex: 1 1 auto;
+}
+.nb-replegar {
+  width: 22px;
+  height: 22px;
+  margin: -6px 8px 0 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--txt-faint);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.nb-replegar:hover,
+.nb-replegar:focus-visible {
+  color: var(--txt);
+  background: rgb(var(--c-nube) / .06);
+}
+.nb-replegar svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .18s ease;
+}
+.nb-replegar.abierta svg {
+  transform: rotate(90deg);
+}
+
 /* Una columna acotada: sin `minmax(0, 1fr)` la pista crece al ancho del título y el texto se sale de la
    barra en vez de cortarse con puntos suspensivos (medido en el preview). */
 .nb-hilos {
