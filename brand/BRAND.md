@@ -83,7 +83,7 @@ este archivo sí se versiona.
 ## Estado de la migración
 
 La aplicación **ya usa la marca** en su tipografía, su paleta y sus superficies desde las etapas 4 y 5 de
-la nueva estructura (`docs/OTROS/nueva-estructura/06-LAS-ETAPAS.md`). Lo hizo cambiando valores de los
+la nueva estructura (`docs/6-historial/nueva-estructura/06-LAS-ETAPAS.md`). Lo hizo cambiando valores de los
 tokens de `app/temas.css`, no las pantallas, así que los tokens de esta carpeta siguen en la capa `marca`,
 debajo de los de la aplicación. Lo que queda, pantalla por pantalla, está en `MIGRACION.md`.
 

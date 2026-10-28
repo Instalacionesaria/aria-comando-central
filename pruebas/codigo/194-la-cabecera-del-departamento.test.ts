@@ -1,7 +1,7 @@
 // La cabecera del departamento dice dónde estás, con las pestañas que la persona ve. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md, NE-17 y NE-19)
+// LO QUE ESTO CUIDA (docs/6-historial/nueva-estructura/01-LA-ESTRUCTURA.md, NE-17 y NE-19)
 //
 // La etapa E11 pone arriba de cada pantalla de un departamento la ceja, el nombre de la entrada abierta
 // y la fila de pestañas, y se lleva las barras propias de Tools y de Analizadores, cuyas pestañas pasaron

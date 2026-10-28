@@ -177,7 +177,7 @@ export interface CierreDeUnCloser {
   ventas: number;
   /**
    * El monto que esta persona reportó en esas ventas: la suma de `monto` de sus resultados `venta` en la
-   * ventana. Es lo REPORTADO, no un pago verificado (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-08
+   * ventana. Es lo REPORTADO, no un pago verificado (`docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-08
    * y S15-09). Una venta sin monto no suma: la cuenta `ventasSinMonto`, y con alguna el monto no es la cifra.
    */
   montoDeVentas: number;

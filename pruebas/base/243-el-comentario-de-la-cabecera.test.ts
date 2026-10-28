@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// AG15 de los agentes (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-77 y AG-78): el GET de
+// AG15 de los agentes (`docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-77 y AG-78): el GET de
 // Acquisition y el de Conversation traen `comentario`, y por la prioridad:
 //
 //   · sin la lectura de los anuncios, lo que falta configurar; al día y sin nada más, nada;

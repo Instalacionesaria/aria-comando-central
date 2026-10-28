@@ -215,13 +215,13 @@ test('toda vista que se anota en la estética trae el chrome entero', () => {
      exacto, sumar o sacar una obliga a venir acá y decirlo. */
   /* 12 desde el 2026-09-22: entró Analizadores, que es del grupo Operación y se dibuja con su
      estética como el Closer. 11 desde el 2026-09-30: salió Acquisition, que volvió al front del
-     prototipo con su estética al 100 %, como Leads Portal (docs/acquisition/14, A14-01).
+     prototipo con su estética al 100 %, como Leads Portal (docs/2-departamentos/acquisition/14, A14-01).
      12 desde el 2026-10-01: entró el Panel de Incidentes, con el mismo envoltorio que Monitoreo.
      11 desde el 2026-10-09: salió Conversion, que volvió al front del prototipo con su estética al 100 %, como
-     Acquisition (docs/conversion/15, CV15-01). 10 el mismo día: salió Sales, por el mismo camino
-     (docs/sales/15, S15-01). 9 desde el 2026-10-10: salió Conversation, por el mismo camino; sus modos Auditoría y
-     Prompts llevan la estética en un contenedor del panel, no en la sección (docs/conversation/01, CN1-13).
-     8 desde el 2026-10-11: salió Creative, por el mismo camino (docs/creative/16, CF1-01). 9 desde el 2026-10-18:
+     Acquisition (docs/2-departamentos/conversion/15, CV15-01). 10 el mismo día: salió Sales, por el mismo camino
+     (docs/2-departamentos/sales/15, S15-01). 9 desde el 2026-10-10: salió Conversation, por el mismo camino; sus modos Auditoría y
+     Prompts llevan la estética en un contenedor del panel, no en la sección (docs/2-departamentos/conversation/01, CN1-13).
+     8 desde el 2026-10-11: salió Creative, por el mismo camino (docs/2-departamentos/creative/16, CF1-01). 9 desde el 2026-10-18:
      entró Negocios (el nivel 3), con el envoltorio de Monitoreo. */
   assert.equal(
     vistas.length,

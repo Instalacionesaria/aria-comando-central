@@ -1,12 +1,12 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// La pantalla de Sales: el front del prototipo con los datos reales (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
+// La pantalla de Sales: el front del prototipo con los datos reales (`docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`).
 //
 // Lee UNA lectura, `lecturaDeSales`, la misma que las herramientas del cerebro que publican lo armado (S15-14):
 // `pantalla` es lo que dibuja el front —las cuatro cifras, la tabla, los motivos y la tarjeta de abajo, de 0 a 1—
 // y los bloques de siempre siguen viajando con su forma (S15-13). Los huecos de `huecosDeSales.ts` ya no viajan:
-// la pantalla dice cada «—» con su motivo, y lo que no mide está en `docs/OTROS/futuro/lo-que-sales-no-mide.md`.
+// la pantalla dice cada «—» con su motivo, y lo que no mide está en `docs/5-pendiente/lo-que-sales-no-mide.md`.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // ES LA PRIMERA OPERACIÓN DE SERVIDOR DE ESTA PANTALLA, Y ESO BAJA UN CABLE TRAMPA

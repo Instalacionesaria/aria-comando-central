@@ -1,7 +1,7 @@
 // Creative dibuja el front del prototipo, con sus clases y sin capas encima. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF-3)
+// LO QUE ESTO CUIDA (docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF-3)
 //
 // El 2026-10-11 la pestaña volvió al marcado de `aios-command-center_1.html:2746-2804`, con la estética al 100 %, y se
 // llena con `lecturaDeCreative`. Volver atrás es fácil sin darse cuenta: pegar `estetica-op` en la sección, cambiar un
@@ -36,6 +36,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { existsSync as hayCarpeta } from 'node:fs';
+/* `docs/` es local desde el 2026-10-28 (`.gitignore`): en un clon sin la carpeta, lo que se compara con un documento se
+   saltea en vez de fallar. */
+const SIN_DOCS = hayCarpeta(join(import.meta.dirname, '..', '..', 'docs')) ? false : 'docs/ es local y no está en este clon';
 import { runInNewContext } from 'node:vm';
 import { RAIZ } from '../apoyo/fuente.ts';
 
@@ -230,12 +234,12 @@ test('la tarjeta es la `cc` del prototipo: el estado, el nombre, la etapa y las 
   assert.match(tarjeta, /title=\{motivo\(cifra\) \?\? undefined\}/, 'una cifra en «—» de la tarjeta no dice por qué');
 });
 
-test('las frases son las de CF1-02, ni una más ni una menos', () => {
+test('las frases son las de CF1-02, ni una más ni una menos', { skip: SIN_DOCS }, () => {
   const c = comun();
   const bloque = c.slice(c.indexOf('export const FRASE = {'), c.indexOf('};', c.indexOf('export const FRASE = {')));
   const delPanel = [...bloque.matchAll(/:\s*'([^']+)'/g)].map((m) => m[1]!).sort();
   assert.ok(delPanel.length >= 10, 'no se leyeron las frases del panel');
-  const doc = leer('docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md');
+  const doc = leer('docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md');
   const seccion = doc.slice(doc.indexOf('### CF1-02'), doc.indexOf('**Los desvíos de rótulo'));
   const delDoc = [...seccion.matchAll(/^\|[^|]+\|\s*«([^»]+)»\s*\|\r?$/gm)].map((m) => m[1]!).sort();
   assert.deepEqual(delPanel, delDoc, 'la lista del panel y la de CF1-02 no coinciden: una frase nueva entra primero al documento');

@@ -10,7 +10,7 @@
 //
 // Con dos implementaciones, el día que una sume `acuerdo_sin_pago` al cobrado las dos pantallas
 // publican dos revenues distintos **y ninguna falla**. No es hipotético: es el defecto que la
-// migración `015` midió y que la regla 2 de `docs/sales/02-METRICAS.md` nombra.
+// migración `015` midió y que la regla 2 de `docs/2-departamentos/sales/02-METRICAS.md` nombra.
 //
 // **Es una extracción sin cambio de comportamiento.** El cuerpo se movió tal cual; `cockpitDelMes`
 // lo compone y su firma, su tipo y su único llamador no cambiaron una línea. Lo que lo verifica son

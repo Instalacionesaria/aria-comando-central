@@ -484,7 +484,7 @@ test('los títulos de las columnas viajan en la respuesta, no se importan', asyn
 });
 
 test('la fila de la pieza lista sus anuncios, del de más impresiones al de menos, con claves contadas', async () => {
-  /* Es lo que dibuja el cajón de la pieza (docs/creative/15, C15-02) y de donde sale la miniatura que
+  /* Es lo que dibuja el cajón de la pieza (docs/2-departamentos/creative/15, C15-02) y de donde sale la miniatura que
      la representa (C15-01). Dos anuncios con el MISMO nombre: la pieza es una, los anuncios dos.
      Mutaciones: no hacer el `push` deja la lista vacía; hacer spread de la fila de costo mete
      `nombre`, `creativo` y las tasas del anuncio en la respuesta; sin el orden, el primero es el que

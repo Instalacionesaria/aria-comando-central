@@ -6,7 +6,7 @@
 --
 -- Cuenta lo mismo que `lib/negocio/leadsDelPortal.ts`, en las cuatro ventanas de `periodo.ts`, para
 -- cotejar la pestaña contra la base sin pasar por ella: es el paso 3 de la verificación del plan, y la
--- medición que contestó `LP09-P01` el 2026-09-27 (docs/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md).
+-- medición que contestó `LP09-P01` el 2026-09-27 (docs/2-departamentos/leads-portal/09-DE-DONDE-VIENE-CADA-DATO.md).
 --
 -- ── LOS PREDICADOS ESTÁN COPIADOS, Y ESO HAY QUE SABERLO ─────────────────────
 --

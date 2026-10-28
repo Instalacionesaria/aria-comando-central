@@ -88,3 +88,6 @@ next-env.d.ts
 /CLAUDE.md
 /AGENTS.md
 /tools/graphify/
+
+# La documentación es local (pedido del usuario, 2026-10-28): nada de docs/ se sube ni se despliega. Ver docs/LEEME.md.
+/docs/

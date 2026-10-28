@@ -1,7 +1,7 @@
 // El único escritor de `negocio.planes_de_accion` (migración 072). **Corre dentro de `conOrganizacion(`.**
 //
 // Una fila por departamento, ventana y día local, también vacía: el plan vacío dice que se miró y no hubo
-// nada (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-32). Y es la marca de que ese departamento ya
+// nada (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-32). Y es la marca de que ese departamento ya
 // corrió ese día (AG-35), así que se guarda en la misma transacción que sus señales: un departamento que
 // falla a mitad no deja plan, y la hora siguiente lo vuelve a intentar.
 //

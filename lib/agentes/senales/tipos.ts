@@ -1,4 +1,4 @@
-// Lo que un detector entrega y lo que la tabla común guarda (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`,
+// Lo que un detector entrega y lo que la tabla común guarda (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`,
 // AG-20 a AG-26). Sin base y sin red: lo usan el escritor, la pasada diaria y las pruebas.
 
 import { PISO_DE_UNA_TASA } from '../../negocio/indicadoresDeCitas.ts';

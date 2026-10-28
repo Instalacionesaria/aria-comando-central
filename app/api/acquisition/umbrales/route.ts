@@ -1,5 +1,5 @@
 // Firmar el umbral de una regla de Acquisition: pasa de provisional a firme, con quién y cuándo (AG9 de los
-// agentes; `D-11`; `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-33; `05`, AG-80 y AG-82).
+// agentes; `D-11`; `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-33; `05`, AG-80 y AG-82).
 //
 // La firma es del Admin DE LA EMPRESA: `umbrales.firmar` la tienen administrador y superadministrador, y bajo
 // delegación se rechaza. Las señales ya guardadas conservan en foto el umbral con que se calcularon; la firma

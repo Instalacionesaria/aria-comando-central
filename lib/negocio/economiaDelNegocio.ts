@@ -1,5 +1,5 @@
 // La economía del mes: lo vendido contra lo invertido en anuncios, con el retorno y el costo por venta.
-// Para el cerebro (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-42; A7-08 la asigna a Executive).
+// Para el cerebro (`docs/3-agentes/03-EL-CEREBRO.md`, AG-42; A7-08 la asigna a Executive).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // NO SE CALCULA NADA QUE NO EXISTA YA

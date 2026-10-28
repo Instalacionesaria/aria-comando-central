@@ -40,7 +40,7 @@ test('los módulos que fuerzan su herramienta no usan un modelo que la rechaza',
   /* La lista de válidos acepta `claude-sonnet-5-5` desde AG1. Los tres módulos que ya existían y fuerzan
      su herramienta (`tool_choice` de tipo `tool`) no pueden pasar a ese modelo sin dejar de forzarla: sería
      un 400 en cada conversación, cada relleno y cada auditoría, con todas las pruebas de red falsa en verde
-     (`docs/OTROS/agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-90). */
+     (`docs/3-agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-90). */
   const FUERZAN = [
     { ruta: 'lib/fundaciones/conversacion.ts', nombre: 'MODELO', modelo: MODELO },
     { ruta: 'lib/fundaciones/relleno.ts', nombre: 'MODELO', modelo: MODELO },

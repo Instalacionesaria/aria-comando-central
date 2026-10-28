@@ -1,6 +1,6 @@
 'use client';
 
-/* El cajón de un paso de Conversion: Landing, Formulario o Agenda (docs/conversion/15, CV15-17).
+/* El cajón de un paso de Conversion: Landing, Formulario o Agenda (docs/2-departamentos/conversion/15, CV15-17).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * LA FORMA DEL `stepDetail` DEL PROTOTIPO, SÓLO CON LO QUE SE MIDE
@@ -242,7 +242,7 @@ function agenda(p) {
             <Caja k="No calificados" v={miles(c.noCalificados.valor)} />
           </div>
         </div>
-        {/* Depende del VSL, que no tiene fuente (docs/conversion/04-LOS-CAJONES.md:90-99). */}
+        {/* Depende del VSL, que no tiene fuente (docs/2-departamentos/conversion/04-LOS-CAJONES.md:90-99). */}
         <Hueco titulo="Qué pasa después" />
       </>
     ),

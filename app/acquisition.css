@@ -4,7 +4,7 @@
    El panel dibuja el marcado de `aios-command-center_1.html` —`cre-head`, `acq-kpis`, `acq-note`,
    `acq-fgrid`, las tablas plegables— y lo visten las reglas del prototipo, que siguen en
    `app/aios.css:1585-1727` y no se tocan: esa hoja tiene que seguir siendo comparable contra el HTML
-   (docs/acquisition/14, A14-01). La sección no lleva `estetica-op`, que es la capa que había
+   (docs/2-departamentos/acquisition/14, A14-01). La sección no lleva `estetica-op`, que es la capa que había
    cambiado el look. Es el método de Leads Portal (`app/leads-portal.css`).
 
    Lo de abajo es sólo lo que el prototipo no tenía: el selector de funnel de cada campaña, la

@@ -1,7 +1,7 @@
 'use client';
 
 /* El pie de la barra lateral: la persona, ADMIN o USUARIO, y el engranaje con el único menú de la
- * cuenta (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-14` y `NE-15`).
+ * cuenta (`docs/6-historial/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-14` y `NE-15`).
  *
  * ── DESDE LA ETAPA E10 ──────────────────────────────────────────────────────
  *

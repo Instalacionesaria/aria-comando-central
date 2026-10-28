@@ -1,7 +1,7 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// El cerebro en la caja del pie de Conversion (AG6 de los agentes, `docs/OTROS/agentes/03-EL-CEREBRO.md`,
+// El cerebro en la caja del pie de Conversion (AG6 de los agentes, `docs/3-agentes/03-EL-CEREBRO.md`,
 // AG-40): preguntar con el contexto de esta pantalla, ver los hilos propios de esta sección y borrarlos.
 //
 // El GET pide `tablero.ver`, la capacidad de la sección, como las demás lecturas de esta pantalla; el POST

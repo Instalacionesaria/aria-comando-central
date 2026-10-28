@@ -1,4 +1,4 @@
-// El detector de Creative Insights (`docs/OTROS/agentes/fichas/F06-CREATIVE-INSIGHTS.md`; `02`, AG-20 a AG-35).
+// El detector de Creative Insights (`docs/3-agentes/F06-CREATIVE-INSIGHTS.md`; `02`, AG-20 a AG-35).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL GRANO ES LA PIEZA

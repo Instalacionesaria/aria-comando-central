@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAS REGLAS DE TODAS
 //
-// `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-41, AG-42 y AG-45:
+// `docs/3-agentes/03-EL-CEREBRO.md`, AG-41, AG-42 y AG-45:
 //
 //   · **Consume, no recalcula.** Cada herramienta llama a la misma función, con los mismos argumentos, que
 //     la ruta de su pantalla. Lo que el cerebro dice es lo que la pantalla muestra.

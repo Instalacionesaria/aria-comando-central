@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // PARA QUÉ, Y LO QUE NO ES
 //
-// Es el respaldo del video (docs/creative/15, C15-06): para la pieza cuyo video Meta no entregue,
+// Es el respaldo del video (docs/2-departamentos/creative/15, C15-06): para la pieza cuyo video Meta no entregue,
 // alguien pega el link del post o del reel y la pantalla lo ofrece como «Ver en Facebook /
 // Instagram». **Es un enlace y nada más**: no se reproduce, no se embebe, no se descarga.
 //

@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `lib/agentes/plan/redaccion.ts` (AG9 de los agentes; `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`,
-// AG-32; `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`, A6-18):
+// `lib/agentes/plan/redaccion.ts` (AG9 de los agentes; `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`,
+// AG-32; `docs/2-departamentos/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`, A6-18):
 //
 //   · una frase con una cifra que no está en su renglón se quita: el modelo no calcula ni redondea;
 //   · un superlativo sin su ranking se quita —«el más», «la mejor», «máximo»—, y un comparativo («más barato

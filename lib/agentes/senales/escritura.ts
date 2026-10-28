@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // RECONCILIACIÓN, NO UNA COLA
 //
-// `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-22 y AG-23. Cada pasada de un departamento y una
+// `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-22 y AG-23. Cada pasada de un departamento y una
 // ventana compara lo que detectó con lo que ya había:
 //
 //   · lo detectado que ya existe se actualiza —nunca nace dos veces—; lo nuevo nace `abierta`;

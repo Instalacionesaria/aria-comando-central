@@ -157,7 +157,7 @@ test('la dirección y la versión de la API tienen UN lugar, y las copias que qu
 
      Desde AG1 la referencia es `lib/agentes/proveedor.ts`. El transporte de los agentes nuevos las
      importa de ahí; los cinco módulos que ya llamaban al modelo conservan su copia —su cuerpo es suyo,
-     `docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-09— y tienen que decir lo mismo. El día que uno
+     `docs/3-agentes/01-LA-ARQUITECTURA.md`, AG-09— y tienen que decir lo mismo. El día que uno
      importe, sale de `COPIAS` y del barrido. */
   const fuente = (ruta: string) => {
     const a = archivosFuente(['lib']).find((x) => x.ruta === ruta);

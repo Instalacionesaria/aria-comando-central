@@ -7,7 +7,7 @@
 // `useSesion()`, pero `app/guardia.tsx` —el paso del medio— no lo copiaba al contexto. El botón
 // «Eliminar» no aparecía para nadie, tampoco para el superadministrador, y la prueba que lo vigilaba
 // (`144`) miraba las dos puntas y no el medio, así que estaba verde. Lo encontró la planificación de
-// la nueva estructura (docs/OTROS/estado actual/09-DEUDA-ABIERTA.md, nota del 2026-10-01).
+// la nueva estructura (docs/1-plataforma/09-DEUDA-ABIERTA.md, nota del 2026-10-01).
 //
 // Esta prueba cierra el paso del medio en las dos direcciones que importan: toda clave que la ruta
 // manda a una sesión activa está declarada en `DatosDeSesion` y la guarda la copia, salvo las que

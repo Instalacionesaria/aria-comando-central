@@ -16,7 +16,7 @@
 // ── UNA SOLA LECTURA, Y TRES PIEZAS DE LA MISMA VENTANA ───────────────────
 //
 // Desde el 2026-10-08 todo sale de `lecturaDeConversion` (`lib/negocio/pasosDeConversion.ts`), con los días
-// cerrados de Acquisition (CV15-04 y CV15-21 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`):
+// cerrados de Acquisition (CV15-04 y CV15-21 de `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`):
 //
 //   · `pasos`       · la tira y las cinco tarjetas del prototipo, con sus flechas contra la anterior
 //   · `recorrido`   · la cohorte ENTERA repartida por el camino de entrada: la tabla del cajón de Landing. Siete

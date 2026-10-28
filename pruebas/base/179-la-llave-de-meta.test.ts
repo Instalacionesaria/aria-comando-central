@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE SE AFIRMA, Y LA MUTACIÓN QUE CADA COSA TIENE QUE PONER EN ROJO
 //
-// El token lo genera una persona en el Business Manager y lo carga en Ajustes (docs/creative/15 § 4).
+// El token lo genera una persona en el Business Manager y lo carga en Ajustes (docs/2-departamentos/creative/15 § 4).
 // Desde ahí, la aplicación no lo vuelve a mostrar nunca (`064`). Se vigila:
 //
 //   · el orden de lo que falta: el token antes que la cuenta — mutación: mirar la cuenta primero;

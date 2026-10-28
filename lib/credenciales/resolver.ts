@@ -706,7 +706,7 @@ export async function resolverAccesoAlAnalizador(db: Trx, orgId: string): Promis
 
 /**
  * Lo que le falta a una empresa para que Creative lea la miniatura y el video de sus anuncios en Meta
- * (docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md). Sin nada de esto la pantalla funciona igual: dice
+ * (docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md). Sin nada de esto la pantalla funciona igual: dice
  * el hueco y ofrece el link manual de cada pieza.
  */
 export type FaltaParaMeta = 'sin_token_de_meta' | 'token_de_meta_ilegible' | 'sin_cuenta_de_meta';

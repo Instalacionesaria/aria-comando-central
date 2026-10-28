@@ -1,7 +1,7 @@
 'use client';
 
 /* El Plan de acción y la tarjeta de Señales de un departamento con detector, en las cuatro pantallas que lo tienen:
- * Acquisition desde AG9 de los agentes (`docs/OTROS/agentes/fichas/F03-ACQUISITION.md`), Creative Insights desde
+ * Acquisition desde AG9 de los agentes (`docs/3-agentes/F03-ACQUISITION.md`), Creative Insights desde
  * AG10 (`fichas/F06-CREATIVE-INSIGHTS.md`), Conversation desde AG13 (`F05`) y Conversion desde AG14 (`F04`).
  *
  * ═══════════════════════════════════════════════════════════════════════════════

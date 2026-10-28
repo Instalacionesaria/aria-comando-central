@@ -18,7 +18,7 @@
 // ocurrido» es `citaCerrable`, el plantón es `marcadaComoPlanton` y la venta es `tieneVenta`. Todos
 // vienen de donde ya los usan Sales, Creative y Conversion. El cuadrante del ICP lo manda el CRM
 // (`contactos.cuadrante`, la `105`), y su orden y sus rótulos son los de `cuadrantesDelIcp.ts`. Desde el
-// 2026-10-26 reemplaza al puntaje de 0 a 100 y sus tramos (`docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
+// 2026-10-26 reemplaza al puntaje de 0 a 100 y sus tramos (`docs/2-departamentos/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
 //
 // ── LA VENTANA ──────────────────────────────────────────────────────────────
 //

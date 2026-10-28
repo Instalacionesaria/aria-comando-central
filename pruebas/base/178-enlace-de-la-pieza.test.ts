@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE SE AFIRMA, Y LA MUTACIÓN QUE CADA COSA TIENE QUE PONER EN ROJO
 //
-// El link manual es el respaldo del video (docs/creative/15, C15-06): un «Ver en Facebook» que abre
+// El link manual es el respaldo del video (docs/2-departamentos/creative/15, C15-06): un «Ver en Facebook» que abre
 // el post de la pieza. Se vigila lo que haría que llevara a otro lado o que lo cargara quien no debe:
 //
 //   · quien administra lo carga y queda auditado — mutación: no auditar;

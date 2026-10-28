@@ -4,7 +4,7 @@
    El panel dibuja el marcado de `aios-command-center_1.html` —`cv-wrap`, `cre-head`, `cs-panels cv-panels`,
    `ghead`, `journey` con sus cinco `jstep`, la alarma— y lo visten las reglas del prototipo, que siguen en
    `app/aios.css` y no se tocan: esa hoja tiene que seguir siendo comparable contra el HTML
-   (docs/conversion/15, CV15-01). La sección no lleva `estetica-op`, que es la capa que había cambiado el look,
+   (docs/2-departamentos/conversion/15, CV15-01). La sección no lleva `estetica-op`, que es la capa que había cambiado el look,
    y `#v-conversion` salió de los `:is()` de `app/inteligencia-estetica.css`, que se borró el 2026-10-11, cuando
    Creative salió por el mismo camino.
 

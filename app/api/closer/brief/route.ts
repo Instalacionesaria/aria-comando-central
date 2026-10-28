@@ -1,7 +1,7 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// El Brief del closer de una cita (AG12 de los agentes; `docs/OTROS/agentes/fichas/F13-CLOSER-Y-BRIEF.md`,
+// El Brief del closer de una cita (AG12 de los agentes; `docs/3-agentes/F13-CLOSER-Y-BRIEF.md`,
 // `D-19`): leer el guardado y generarlo al abrir la cita, o regenerarlo a mano.
 //
 // ═══════════════════════════════════════════════════════════════════════════════

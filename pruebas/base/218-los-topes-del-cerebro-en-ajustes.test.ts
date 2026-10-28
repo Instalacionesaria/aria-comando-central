@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `app/api/admin/cerebro/route.ts` (AG7 de los agentes; `docs/OTROS/agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`,
+// `app/api/admin/cerebro/route.ts` (AG7 de los agentes; `docs/3-agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`,
 // AG-96 y AG-97), con la regla 31: una ruta nueva nace con su prueba de base.
 //
 //   · Quién entra: el GET con `credenciales.ver`, el PUT con `credenciales.editar`; el rol `usuario` no

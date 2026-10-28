@@ -1,7 +1,7 @@
 // La paleta de la aplicación es la de la marca, y está medida. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// UN RECOLOR SE ROMPE EN VERDE (docs/OTROS/nueva-estructura/03-LA-MARCA.md, NE-25 a NE-27)
+// UN RECOLOR SE ROMPE EN VERDE (docs/6-historial/nueva-estructura/03-LA-MARCA.md, NE-25 a NE-27)
 //
 // La marca v2 entró cambiando VALORES de tokens, no pantallas, y casi todo lo que puede salir mal en
 // eso no lo ve ninguna prueba anterior a esta:

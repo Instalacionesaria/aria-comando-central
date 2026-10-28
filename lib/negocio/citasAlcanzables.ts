@@ -14,7 +14,7 @@
 // tres departamentos agregó una copia.
 //
 // La regla 9 del departamento de Sales lo dice con su commit: *«el filtro de citas "alcanzables y no
-// descartadas" es del sistema, no de una pantalla»* (`docs/OTROS/estado actual/05-SALES.md:474-481@51b5d25`).
+// descartadas" es del sistema, no de una pantalla»* (`docs/1-plataforma/05-SALES.md:474-481@51b5d25`).
 //
 // ── SON DOS PREGUNTAS DISTINTAS, Y CONFUNDIRLAS ES EL DEFECTO FINO ──────────
 //
@@ -121,7 +121,7 @@ export function marcadaComoPlanton(alias = 'citas'): RawBuilder<boolean> {
  * que más fácil se confunde con `alcanzable`.
  *
  * `exists` y no un `join` con `count`: un contacto con dos citas pesaría doble. Ese defecto ya se
- * midió una vez y está anotado en `docs/OTROS/estado actual/02-CREATIVE.md:445-448@63b8cd1`, donde infló una pieza de
+ * midió una vez y está anotado en `docs/1-plataforma/02-CREATIVE.md:445-448@63b8cd1`, donde infló una pieza de
  * 109 a 112.
  *
  * @param alias El nombre con el que la consulta llama a la tabla `contactos`.
@@ -183,8 +183,8 @@ export function cuadranteCalificado(alias = 'contactos'): RawBuilder<boolean> {
 
 /**
  * **¿Esta PERSONA es un calificado?** Agendó, su cuadrante del ICP es Prioriza, Valida o Financia, y no está
- * descartada (A14-07 de `docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, y desde la `105` la decisión del
- * usuario del 2026-10-26: `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
+ * descartada (A14-07 de `docs/2-departamentos/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, y desde la `105` la decisión del
+ * usuario del 2026-10-26: `docs/2-departamentos/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
  *
  * El cuadrante entró el 2026-10-26: hasta ahí, calificado era agendó y no descartado. Ahora el que agendó sin cuadrante
  * no cuenta, y un contacto en Prioriza con una etiqueta de descarte tampoco —las dos fuentes de descarte valen igual—.
@@ -211,7 +211,7 @@ export function esCalificado(alias = 'contactos', reservadaHaceDias: number | nu
  * alcanzables sigue sin cancelar.
  *
  * Es la pregunta de la cifra «Cancelaron» que pide Conversion (CV15-18 de
- * `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y su unidad es la persona: quien canceló y volvió a
+ * `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y su unidad es la persona: quien canceló y volvió a
  * reservar no canceló. **No es la tasa de cancelación**
  * de `indicadoresDeCitas.ts`, que cuenta citas en una ventana móvil; las dos se rotulan distinto para que
  * nadie las compare.

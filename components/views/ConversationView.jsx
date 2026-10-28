@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
- * LA VISTA `conversation` — Conversation Intelligence, con el front del prototipo (docs/conversation/01, CN-3)
+ * LA VISTA `conversation` — Conversation Intelligence, con el front del prototipo (docs/2-departamentos/conversation/01, CN-3)
  *
  * Desde septiembre de 2026 (`833fc51`, `f0f09b7`) hasta el 2026-10-10 esta vista llevó la estética de operación
  * (`estetica-op`) y un panel de cuatro pestañas —Lead Flow, Appointment Flow, Auditoría y Prompts— con las notas

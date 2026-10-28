@@ -1,6 +1,6 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 //
-// Cargar y sacar el link manual de una pieza de Creative (docs/creative/15, C15-06). **La lectura no
+// Cargar y sacar el link manual de una pieza de Creative (docs/2-departamentos/creative/15, C15-06). **La lectura no
 // está acá**: los links viajan con la respuesta de `GET /api/creative`, que pide `tablero.ver`.
 //
 // ═══════════════════════════════════════════════════════════════════════════════

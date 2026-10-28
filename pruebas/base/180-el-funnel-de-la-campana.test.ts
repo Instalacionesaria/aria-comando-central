@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE SE AFIRMA, Y LA MUTACIÓN QUE CADA COSA TIENE QUE PONER EN ROJO
 //
-// El funnel lo asigna una persona (docs/acquisition/14, A14-03), y una campaña en el funnel equivocado
+// El funnel lo asigna una persona (docs/2-departamentos/acquisition/14, A14-03), y una campaña en el funnel equivocado
 // se ve igual de bien que en el bueno. Se vigila lo que haría que la asignara quien no debe, que
 // quedara sin rastro o que apuntara a una campaña ajena:
 //

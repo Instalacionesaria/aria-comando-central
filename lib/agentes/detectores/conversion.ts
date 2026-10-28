@@ -1,5 +1,5 @@
-// El detector de Conversion (AG14 de los agentes; `docs/OTROS/agentes/fichas/F04-CONVERSION.md`, la especificación
-// que el usuario validó el 2026-10-04; `docs/conversion/06` y `07`, CV6 y CV7).
+// El detector de Conversion (AG14 de los agentes; `docs/3-agentes/F04-CONVERSION.md`, la especificación
+// que el usuario validó el 2026-10-04; `docs/2-departamentos/conversion/06` y `07`, CV6 y CV7).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LEE LO QUE LEE LA PANTALLA
@@ -7,7 +7,7 @@
 // `lecturaDeConversion`, la misma de `app/api/conversion/route.ts`: el reparto, el formulario y el reparto de la
 // ventana anterior, con los días CERRADOS de Acquisition (`bordesDelPeriodo`) y la zona de la empresa. Así cumple
 // AG-28 —7 y 30 días cerrados— y una señal habla de los mismos contactos que la pantalla (CV15-23 de
-// `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Hasta el 2026-10-08 leía días de calendario hasta
+// `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Hasta el 2026-10-08 leía días de calendario hasta
 // hoy, y la anterior salía del doble de días menos la actual. Si la lectura no compara —sin historia que cubra la
 // anterior, o con la lectura de contactos o de citas atrasada—, el cambio de ruta queda sin medición.
 //

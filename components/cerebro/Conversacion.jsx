@@ -1,7 +1,7 @@
 'use client';
 
 /* Los turnos de una conversación con el cerebro: la del Inicio y la del panel de la caja del pie
- * (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-51 y AG-55).
+ * (`docs/3-agentes/03-EL-CEREBRO.md`, AG-51 y AG-55).
  *
  * La pregunta que se está respondiendo se dibuja aparte (`pendiente`), con la mascota en `pensando`, y no
  * dentro de los turnos: si falla, vuelve al campo, y el hilo se vuelve a leer para mostrarla como la guardó

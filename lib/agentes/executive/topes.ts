@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL CANDADO
 //
-// `docs/OTROS/agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-96. Contar y reservar tienen que pasar
+// `docs/3-agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-96. Contar y reservar tienen que pasar
 // juntos: dos preguntas en paralelo que cuentan 49 antes de que cualquiera reserve pasarían las dos el 50.
 // Por eso `bloquearYContar` toma `select … for update` sobre la fila de topes de la empresa —la casa
 // bloquea filas, como `lib/negocio/pulso.ts`— y quien reserva lo hace en la MISMA transacción, antes de

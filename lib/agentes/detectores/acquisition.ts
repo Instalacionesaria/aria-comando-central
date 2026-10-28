@@ -1,4 +1,4 @@
-// El detector de Acquisition: el piloto (`docs/OTROS/agentes/fichas/F03-ACQUISITION.md`; `02`, AG-20 a AG-35).
+// El detector de Acquisition: el piloto (`docs/3-agentes/F03-ACQUISITION.md`; `02`, AG-20 a AG-35).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSUME LA LECTURA DE LA PANTALLA, NO LA RECALCULA

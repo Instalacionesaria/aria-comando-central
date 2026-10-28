@@ -1,5 +1,5 @@
 // Lo que una persona ve de la Reunión de hoy, y abrir uno de sus temas como conversación (AG15 de los agentes;
-// `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-73, AG-74 y AG-76). **Corre dentro de
+// `docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-73, AG-74 y AG-76). **Corre dentro de
 // `conOrganizacion(`.**
 //
 // Abrir un tema no llama al modelo ni cuenta para el tope: el primer intercambio lo arma este servidor con lo

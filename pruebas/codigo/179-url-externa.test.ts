@@ -4,7 +4,7 @@
 // LA PRUEBA DE UN VALIDADOR ES SOBRE LO QUE RECHAZA
 //
 // `lib/negocio/urlExterna.ts` decide qué link manual se acepta como «Ver en Facebook / Instagram» y
-// qué miniatura o video puede cargar el navegador solo (docs/creative/15, C15-06 y C15-07). Aceptar lo
+// qué miniatura o video puede cargar el navegador solo (docs/2-departamentos/creative/15, C15-06 y C15-07). Aceptar lo
 // bueno es fácil; lo que esta prueba vigila son los disfraces de un host: el sufijo sin punto, el
 // usuario delante de la arroba, el protocolo, el puerto. Cada uno tiene su mutación en el encabezado
 // de su caso.

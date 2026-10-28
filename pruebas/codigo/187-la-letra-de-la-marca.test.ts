@@ -1,7 +1,7 @@
 // Geist es la letra de la aplicación, y ninguna hoja la esquiva. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// TRES FORMAS DE VER OTRA LETRA SIN QUE NADA FALLE (docs/OTROS/nueva-estructura/03-LA-MARCA.md, NE-24)
+// TRES FORMAS DE VER OTRA LETRA SIN QUE NADA FALLE (docs/6-historial/nueva-estructura/03-LA-MARCA.md, NE-24)
 //
 // Antes de la nueva estructura la aplicación tenía tres letras a la vez, y ninguna era un error:
 //

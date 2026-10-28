@@ -449,7 +449,7 @@
  *
  * La del prototipo (`aios.css`) tiene tres columnas y tres filas: el menú, el cuerpo y el panel
  * lateral de la maqueta del Executive, y la barra «Pregúntale a Executive sobre …» abajo. Los dos se fueron con
- * la maqueta el 2026-10-01 (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-30`), y con ellos la
+ * la maqueta el 2026-10-01 (`docs/6-historial/nueva-estructura/04-EL-INICIO.md`, `NE-30`), y con ellos la
  * clase `.solo` que escondía el panel en las demás pantallas.
  *
  * Van las TRES propiedades, y las tres hacen falta: sin las filas queda la tercera de 64 px vacía
@@ -617,7 +617,7 @@
   }
 }
 
-/* ── EL INICIO (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-29`) ───────
+/* ── EL INICIO (`docs/6-historial/nueva-estructura/04-EL-INICIO.md`, `NE-29`) ───────
  *
  * Del lienzo, pantalla «Inicio · el cerebro»: la mascota, el saludo y la caja, centrados, a 28 px uno
  * del otro. Todo por token: la caja es `surface-raised` —la marca la reserva para «la caja de
@@ -661,7 +661,7 @@
   padding: 18px 18px 14px;
   /* El borde de control, a 3:1 contra el fondo y contra la caja, desde que la caja pregunta (AG7 de los
      agentes): con `--line-strong` daba 2,07:1, que la WCAG 1.4.11 sólo le perdona a un control
-     deshabilitado (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`). */
+     deshabilitado (`docs/6-historial/nueva-estructura/04-EL-INICIO.md`). */
   border: 1px solid var(--line-control);
   border-radius: var(--radius-sm);
   background: var(--bg-raise);

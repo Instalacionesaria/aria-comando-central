@@ -54,7 +54,7 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'scripts/medir-contacto.mjs',
   // El cuarto, con el mismo argumento (2026-09-29): mide si alguna lectura del Ad Manager de
   // GoHighLevel trae la miniatura, el video o el link al post de cada anuncio, antes de conectar
-  // Meta directo (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`). Lista de organizaciones, sus clientes
+  // Meta directo (`docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`). Lista de organizaciones, sus clientes
   // activos y la credencial de cada uno, y después de a uno. Sólo `GET`; claves y hosts, nunca valores, y una
   // clave con forma de secreto —`/integration` trae el token de la Página— se nombra y no se sigue.
   'scripts/medir-activos-en-ghl.mjs',

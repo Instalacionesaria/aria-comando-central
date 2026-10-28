@@ -1,5 +1,5 @@
-// El Plan de acción de Creative Insights, armado con plantillas (`docs/OTROS/agentes/fichas/F06-CREATIVE-INSIGHTS.md`;
-// `docs/creative/06-EL-PLAN-DE-ACCION.md`, C6-01 a C6-10). Puro.
+// El Plan de acción de Creative Insights, armado con plantillas (`docs/3-agentes/F06-CREATIVE-INSIGHTS.md`;
+// `docs/2-departamentos/creative/06-EL-PLAN-DE-ACCION.md`, C6-01 a C6-10). Puro.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL FORMATO

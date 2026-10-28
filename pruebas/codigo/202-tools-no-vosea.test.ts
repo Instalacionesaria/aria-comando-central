@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `D-26` del plan de los agentes (`docs/OTROS/agentes/00-MAPA.md`): tú neutro. La pantalla del Espía decía
+// `D-26` del plan de los agentes (`docs/3-agentes/00-MAPA.md`): tú neutro. La pantalla del Espía decía
 // «Escribí un nicho…», «Espiá la Meta Ad Library…», «Intentá de nuevo», y el Scraper, Mis leads, el saldo y
 // el plan de prospección, lo mismo, mientras el prompt del Espía ya tuteaba. Desde AG3 todo Tools tutea.
 //

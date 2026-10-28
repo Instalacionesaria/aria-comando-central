@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA PREGUNTA, Y POR QUÉ SE VUELVE A HACER
 //
-// El 2026-09-18 se midió que no (`docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`, C14-07 y
+// El 2026-09-18 se midió que no (`docs/2-departamentos/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`, C14-07 y
 // C14-08): `/entity?entityType=AD` trae cuatro claves y `/creatives`, `/ads` y `/campaigns` dan 404.
 // Pero esa medición dejó afuera una ruta que la especificación pública de GoHighLevel SÍ documenta
 // —`GET /ad-publishing/facebook/campaign/{campaignId}`, «Get campaign with linked entities», con
@@ -11,7 +11,7 @@
 // creadas DESDE el Ad Manager del CRM. El esquema de `PUT /ads-v2` dice qué guarda GoHighLevel de
 // esos anuncios: `imageUrl`, `mediaType`, `primaryText`, `headline` y `media[]` con `src` y
 // `thumbnailUrl`. Si alguna lectura lo devuelve, la miniatura y el video salen del CRM y no hace
-// falta conectar Meta por segunda vez (docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md).
+// falta conectar Meta por segunda vez (docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md).
 //
 //   node --env-file=.env.supabase scripts/medir-activos-en-ghl.mjs
 //

@@ -373,7 +373,7 @@ async function unContactoEn(alta: string, ultima: Record<string, string> = {}): 
 
 test('con una ventana explícita cuenta sus dos días de borde enteros, y ni un segundo más', async () => {
   /* Conversion pasa a los días cerrados de Acquisition (CV15-21 de
-     `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`): `[desde, hasta]`, los dos días enteros. Los
+     `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`): `[desde, hasta]`, los dos días enteros. Los
      cuatro contactos están en los bordes. Entran la medianoche de `desde` y el último segundo de `hasta`; no
      entran el segundo anterior ni la medianoche siguiente.
      *

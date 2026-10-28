@@ -1,7 +1,7 @@
 // La lectura de Creative: lo que dibuja el front del prototipo, hecho en el servidor.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// QUÉ ES (docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF1-15)
+// QUÉ ES (docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF1-15)
 //
 // La pestaña vuelve al front del prototipo: la tira de seis cifras, la biblioteca partida en «Funciona» y «No
 // funciona» para el criterio elegido, la tarjeta de cada pieza con su miniatura, la ficha y, debajo, una fila de

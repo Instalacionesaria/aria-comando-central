@@ -1,7 +1,7 @@
 // La conexión con Meta: el cliente de lectura y «Probar conexión» en Ajustes. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md, etapa M-1 del 2026-10-15)
+// LO QUE ESTO CUIDA (docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md, etapa M-1 del 2026-10-15)
 //
 // Que el encargado pueda cargar el token de Meta y saber en el momento si sirve. Cada prueba dice qué mira y la
 // mutación que la pone en rojo:

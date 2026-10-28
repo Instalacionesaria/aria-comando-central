@@ -1,4 +1,4 @@
-// Lo común del Plan de acción de cada departamento (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-32).
+// Lo común del Plan de acción de cada departamento (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-32).
 // Puro.
 //
 // Cada departamento pone su formato —sus grupos y su orden, a qué grupo va cada regla, la frase de cada una y

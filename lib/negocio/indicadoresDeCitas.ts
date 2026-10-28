@@ -214,7 +214,7 @@ const CONFIRMO = 'Si';
  * **¿Esta PERSONA confirmó su agendamiento?** Su campo `CAMPO_DE_CONFIRMACION` vale `CONFIRMO`.
  *
  * La única definición de «confirmó». La usa esta tarjeta, y la cifra «Confirmados» que pide Conversion (CV15-18
- * de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`) tiene que usar ésta: las dos cuentan sobre
+ * de `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`) tiene que usar ésta: las dos cuentan sobre
  * poblaciones distintas, y lo que no pueden es preguntar distinto.
  *
  * @param alias El nombre con el que la consulta llama a la tabla `contactos`.

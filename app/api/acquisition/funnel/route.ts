@@ -1,6 +1,6 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 //
-// Asignar y quitar el funnel de una campaña en Acquisition (docs/acquisition/14, A14-03). **La lectura
+// Asignar y quitar el funnel de una campaña en Acquisition (docs/2-departamentos/acquisition/14, A14-03). **La lectura
 // no está acá**: las asignaciones van a viajar con la respuesta de `GET /api/acquisition` (AQ-3), que
 // pide `tablero.ver`.
 //

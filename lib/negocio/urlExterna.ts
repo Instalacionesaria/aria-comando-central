@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // DOS LISTAS, PORQUE SON DOS PELIGROS DISTINTOS
 //
-// La pantalla va a mostrar dos clases de URL que no vienen de nosotros (docs/creative/15, C15-03 y
+// La pantalla va a mostrar dos clases de URL que no vienen de nosotros (docs/2-departamentos/creative/15, C15-03 y
 // C15-06):
 //
 //   · PUBLICACIONES — el link de un post o de un reel, que la persona abre con un click en una

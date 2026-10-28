@@ -1,7 +1,7 @@
 'use client';
 
 /* La evidencia de una respuesta del cerebro: un desplegable dentro de la burbuja (`D-28`;
- * `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-48), con lo que leyó cada herramienta.
+ * `docs/3-agentes/03-EL-CEREBRO.md`, AG-48), con lo que leyó cada herramienta.
  *
  * La forma de cada evidencia es la proyección de su adaptador (`lib/agentes/executive/adaptadores/`), que
  * cambia de una herramienta a otra, así que se dibuja por su FORMA y no por su nombre: un valor suelto como

@@ -400,7 +400,7 @@ export default function CloserView({ activa }) {
 
             O sea: quien solo tenga la sección Closer no puede traer contactos. La solución
             durable es agregar `contactos` a las tareas del cron, y está anotada como pendiente
-            en `docs/OTROS/produccion/DESPLIEGUE.md`. */}
+            en `docs/4-produccion/DESPLIEGUE.md`. */}
       </div>
     </section>
     </>

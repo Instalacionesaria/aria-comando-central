@@ -9,7 +9,7 @@
  * `renderFunnels`, `renderTables`, líneas 5482-5594) sobre 58 cifras inventadas. Acá se dibuja el
  * MISMO marcado —`cre-head`, `acq-kpis`, `acq-note`, `acq-fgrid`, las tablas plegables—, con las
  * mismas clases y en el mismo orden, y las reglas siguen siendo las de `app/aios.css:1585-1727`, que
- * nadie toca (docs/acquisition/14, A14-01). Lo nuevo —el selector de funnel, los huecos, el teléfono—
+ * nadie toca (docs/2-departamentos/acquisition/14, A14-01). Lo nuevo —el selector de funnel, los huecos, el teléfono—
  * vive en `app/acquisition.css`.
  *
  * Lo que cambia es de dónde salen los números: el navegador **no calcula nada**. Las tasas, los costos

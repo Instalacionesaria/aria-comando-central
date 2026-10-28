@@ -1,6 +1,6 @@
 // Los departamentos: la capa de navegación de la estructura nueva (`NE-11` a `NE-16`,
-// `docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`), con los grupos de la segunda edición (`NE-45`,
-// `docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`).
+// `docs/6-historial/nueva-estructura/01-LA-ESTRUCTURA.md`), con los grupos de la segunda edición (`NE-45`,
+// `docs/6-historial/nueva-estructura/09-LA-SEGUNDA-EDICION.md`).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE ESTO NO DECIDE: QUIÉN VE QUÉ
@@ -318,7 +318,7 @@ export function lugarDe(seccion: string, pestana: string): string | null {
  * una sola casilla («Tools») abre seis entradas en tres departamentos. Repetirla en los tres sería
  * peor: tres casillas que se tildan y se destildan juntas, sin que se vea por qué —destildarla en un
  * departamento la saca de los tres—, con su descripción repetida para el lector de pantalla
- * (`docs/OTROS/nueva-estructura/07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`). Y cada sección sale con todos sus
+ * (`docs/6-historial/nueva-estructura/07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`). Y cada sección sale con todos sus
  * campos, `abre` aparte: la pantalla lee `soloDesdeLaPrincipal` para no ofrecer Monitoreo e Incidentes
  * fuera de la organización principal.
  *

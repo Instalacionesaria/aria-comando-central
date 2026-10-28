@@ -36,7 +36,7 @@
 // El problema no es la lista de hosts: es que `atribucion_ultima` es el ÚLTIMO toque, y para 124 de
 // 590 contactos ese último toque **es la reserva**. Cualquier tasa sobre esa población divide
 // «agendó» por un denominador definido en parte por haber agendado. Es la regla 3 del departamento
-// —`docs/OTROS/estado actual/03-CONVERSION.md:387-395@b3ca9ad`— y no se puede esquivar con una lista mejor.
+// —`docs/1-plataforma/03-CONVERSION.md:387-395@b3ca9ad`— y no se puede esquivar con una lista mejor.
 //
 // **Así que se publican CONTEOS y no tasas**, y cada familia dice cuántos de los suyos traen la
 // dirección capturada al reservar: con ese número al lado, quien mire sabe cuánto de esa fila es
@@ -136,7 +136,7 @@ function puesto(f: Familia): number {
  *
  * @param ventana Días de calendario `[desde, hasta]`, los dos incluidos, en vez de los últimos `dias` hasta
  *   hoy: los días cerrados de `bordesDelPeriodo`, los mismos que corta Acquisition (CV15-21 de
- *   `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Con ella, `dias` sólo viaja en la respuesta.
+ *   `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Con ella, `dias` sólo viaja en la respuesta.
  * @param cuentaId La cohorte de UN cliente (el nivel 3, C6 · D3): la del detector de Conversion, que mide a cada cliente
  *   contra su cohorte. El corte de época sigue siendo el de la empresa. Sin él, la de toda la empresa, como siempre.
  */
@@ -160,7 +160,7 @@ export async function recorridoDelLead(
            cómo darse cuenta de cuál de las dos está mal.
            *
            * Y `exists` y no un `join` con `count(*)`: un contacto con dos citas pesaría doble.
-           Verificado en `docs/OTROS/estado actual/02-CREATIVE.md:445-448@63b8cd1`, donde ese defecto infló una pieza
+           Verificado en `docs/1-plataforma/02-CREATIVE.md:445-448@63b8cd1`, donde ese defecto infló una pieza
            de 109 a 112. */
         sql<number>`count(*) filter (where ${tieneCitaAlcanzable('contactos')})`.as('agendaron'),
         // Los que traen dirección: el numerador de la cobertura.
@@ -254,7 +254,7 @@ function avisoDe(filas: FilaDeRecorrido[], cohorte: number, corte: CorteDeEpoca)
   /* ── «NO HAY TRÁFICO» Y «NO HAY DATO» SON DOS AFIRMACIONES DISTINTAS ───────
    *
    * Con la ventana de «hoy» la cohorte son cero contactos, y no porque falte un campo: porque la
-   * pauta está en cero desde el 2026-09-14 (medido, `docs/conversion/14-…md`). Una pantalla que
+   * pauta está en cero desde el 2026-09-14 (medido, `docs/2-departamentos/conversion/14-…md`). Una pantalla que
    * diga «no hay dato» sobre una ventana sin tráfico manda a buscar un defecto que no existe. */
   if (cohorte === 0) {
     return (

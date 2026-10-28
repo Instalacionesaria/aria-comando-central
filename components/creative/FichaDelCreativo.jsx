@@ -1,6 +1,6 @@
 'use client';
 
-/* La ficha de una pieza de Creative: el `aside.drawer` del prototipo, con los datos reales (docs/creative/16, CF1-10).
+/* La ficha de una pieza de Creative: el `aside.drawer` del prototipo, con los datos reales (docs/2-departamentos/creative/16, CF1-10).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * EL CAJÓN DEL PROTOTIPO, SIN LO QUE NO TIENE FUENTE

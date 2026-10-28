@@ -1,7 +1,7 @@
 // La barra lateral reparte lo que el servidor dejó ver, marca lo que se ve y no promete. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md, NE-11 a NE-18)
+// LO QUE ESTO CUIDA (docs/6-historial/nueva-estructura/01-LA-ESTRUCTURA.md, NE-11 a NE-18)
 //
 // La barra de la etapa E10 dibuja los departamentos de `sesion.navegacion`. Cinco formas de romperla
 // no fallan:
@@ -225,7 +225,7 @@ test('las pantallas anuncian la pestaña que dibujan, sin pedirse nada a sí mis
   /* La inversa de la traducción: lo que se ve. Con un `id` que no es del catálogo, el panel dibuja la
      primera herramienta (`find ?? herramientas[0]`), y eso es lo que se anuncia: la barra dice lo que
      se ve. Que un chip «Hereda de» lleve a un `id` de ICP es otro defecto, anotado en
-     `docs/OTROS/estado actual/09-DEUDA-ABIERTA.md`; esto no lo da por bueno. */
+     `docs/1-plataforma/09-DEUDA-ABIERTA.md`; esto no lo da por bueno. */
   const vistas = [{ clave: 'espia' }, { clave: 'scraper' }, { clave: 'mis-leads' }];
   for (const h of TOOLS) assert.equal(pestanaDeLaActiva(TOOLS, vistas, h.id), h.clave);
   for (const v of vistas) assert.equal(pestanaDeLaActiva(TOOLS, vistas, v.clave), v.clave);

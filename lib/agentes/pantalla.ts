@@ -1,5 +1,5 @@
 // Lo que la pantalla del cerebro necesita saber del servidor sin pedírselo: a qué ruta preguntar desde cada
-// sección, y cómo se dice cada rechazo (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-40 y AG-52).
+// sección, y cómo se dice cada rechazo (`docs/3-agentes/03-EL-CEREBRO.md`, AG-40 y AG-52).
 
 /** La ruta del chat del Inicio. */
 export const RUTA_DEL_INICIO = '/api/executive';

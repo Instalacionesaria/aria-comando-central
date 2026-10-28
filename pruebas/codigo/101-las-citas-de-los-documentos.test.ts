@@ -8,7 +8,7 @@
 // formato: manda a leer un archivo a una línea donde dice otra cosa, o donde no dice nada.
 //
 // **Y se rompen sin que nadie las toque.** La etapa 2 de Sales sacó `dineroDelMes` de `inicio.ts` y
-// el archivo pasó de 268 a 177 líneas. Trece citas de `docs/sales/` quedaron apuntando al vacío en
+// el archivo pasó de 268 a 177 líneas. Trece citas de `docs/2-departamentos/sales/` quedaron apuntando al vacío en
 // ese mismo commit, y tres commits después seguían ahí. Medido el 2026-09-21, antes de escribir esta
 // prueba: **122 citas en rango, 13 fuera**.
 //
@@ -21,7 +21,7 @@
 // Se hace igual porque la mitad que sí atrapa es la que aparece cuando un archivo **se acorta**, que
 // es justo lo que pasa al extraer un módulo — o sea, la operación que este proyecto hace seguido.
 //
-// ── Y EL ALCANCE ES `docs/sales/` A PROPÓSITO ───────────────────────────────
+// ── Y EL ALCANCE ES `docs/2-departamentos/sales/` A PROPÓSITO ───────────────────────────────
 //
 // Las otras carpetas de `docs/` tienen sus propias citas y no se auditaron. Ampliar esto a todas sin
 // medirlas antes pondría la suite en rojo por deuda ajena, y una prueba que nace roja se apaga. El
@@ -30,41 +30,44 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const RAIZ = join(import.meta.dirname, '..', '..');
-/* `docs/leads-portal` entró el día que nació (2026-09-26): una carpeta nueva no trae deuda, así que
+/* Desde el 2026-10-28 `docs/` es local (está en `.gitignore`, pedido del usuario): en un clon sin la carpeta —el
+   chequeo de GitHub— no hay citas que auditar y la prueba se saltea, en vez de fallar por una carpeta que no se sube. */
+const SIN_DOCS = existsSync(join(RAIZ, 'docs')) ? false : 'docs/ es local y no está en este clon';
+/* `docs/2-departamentos/leads-portal` entró el día que nació (2026-09-26): una carpeta nueva no trae deuda, así que
    auditarla desde el primer commit es gratis y evita que junte la que juntó Sales.
-   `docs/OTROS/estado actual` entró el 2026-09-28, el día que se reescribió entera: es la carpeta que
+   `docs/1-plataforma` entró el 2026-09-28, el día que se reescribió entera: es la carpeta que
    más cita al código —cada afirmación de la foto lleva su `archivo:línea`— y la que más rápido se
    pudre, porque describe el código de un día y el código sigue. Reescrita, tampoco trae deuda. */
-/* Y un ARCHIVO suelto, `docs/creative/15-…`, que entró el día que nació (2026-09-29). La carpeta
-   `docs/creative/` entera no puede entrar todavía: sus documentos citan `lib/aios/creative.js`, que se
+/* Y un ARCHIVO suelto, `docs/2-departamentos/creative/15-…`, que entró el día que nació (2026-09-29). La carpeta
+   `docs/2-departamentos/creative/` entera no puede entrar todavía: sus documentos citan `lib/aios/creative.js`, que se
    borró el 2026-09-19, como referencia histórica, y esas citas darían «el archivo no está». El 15 no
    arrastra ninguna, así que se audita solo. */
-/* Y otro, `docs/OTROS/futuro/miniatura-y-video-de-meta.md` (2026-09-30): el plan de lo que falta
+/* Y otro, `docs/5-pendiente/miniatura-y-video-de-meta.md` (2026-09-30): el plan de lo que falta
    de ese mismo 15, escrito para retomarlo mucho después. Es el documento que más tiempo va a pasar
    sin que nadie lo lea, y cada cita suya es un lugar del código que la etapa pendiente va a tocar:
    si una se corre, quien lo retome tiene que enterarse por la suite y no por abrir la línea
    equivocada. El resto de `futuro/` no entra: no se revisó. */
 /* Y los dos del 2026-09-30 que devuelven Acquisition al front del prototipo: el `14` de la carpeta,
    que nace ese día y fija qué dato va en cada lugar de la maqueta, y el plan de lo que se dejó para
-   los agentes de IA. El resto de `docs/acquisition/` no entra: cita `lib/aios/acquisition.js`, que
+   los agentes de IA. El resto de `docs/2-departamentos/acquisition/` no entra: cita `lib/aios/acquisition.js`, que
    se borró el 2026-09-16, como referencia histórica, igual que Creative. */
 const AUDITADAS = [
-  'docs/sales',
-  'docs/leads-portal',
-  'docs/OTROS/estado actual',
-  'docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md',
-  'docs/OTROS/futuro/miniatura-y-video-de-meta.md',
+  'docs/2-departamentos/sales',
+  'docs/2-departamentos/leads-portal',
+  'docs/1-plataforma',
+  'docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md',
+  'docs/5-pendiente/miniatura-y-video-de-meta.md',
   // El plan de las ventanas en el día de la empresa (2026-10-07): diagnosticado y dejado para después.
-  'docs/OTROS/futuro/el-dia-de-la-empresa.md',
-  'docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
-  'docs/OTROS/futuro/plan-y-senales-de-acquisition.md', 'docs/OTROS/nueva-estructura', 'docs/OTROS/futuro/permisos-por-herramienta.md', 'docs/OTROS/futuro/el-cerebro.md', 'docs/OTROS/agentes', 'docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-conversion-no-mide.md', 'docs/OTROS/futuro/lo-que-sales-no-mide.md', 'docs/conversation', 'docs/OTROS/futuro/lo-que-conversation-no-mide.md', 'docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/OTROS/futuro/lo-que-creative-no-mide.md', 'docs/creative/17-CONECTAR-META-PASO-A-PASO.md', // ver «LA NUEVA ESTRUCTURA», «LOS AGENTES», «EL FRONT DE CONVERSION», «EL FRONT DE SALES», «EL FRONT DE CONVERSATION» y «EL FRONT DE CREATIVE», al final
+  'docs/5-pendiente/el-dia-de-la-empresa.md',
+  'docs/2-departamentos/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md',
+  'docs/5-pendiente/plan-y-senales-de-acquisition.md', 'docs/6-historial/nueva-estructura', 'docs/5-pendiente/permisos-por-herramienta.md', 'docs/5-pendiente/el-cerebro.md', 'docs/3-agentes', 'docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/5-pendiente/lo-que-conversion-no-mide.md', 'docs/5-pendiente/lo-que-sales-no-mide.md', 'docs/2-departamentos/conversation', 'docs/5-pendiente/lo-que-conversation-no-mide.md', 'docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md', 'docs/5-pendiente/lo-que-creative-no-mide.md', 'docs/2-departamentos/creative/17-CONECTAR-META-PASO-A-PASO.md', // ver «LA NUEVA ESTRUCTURA», «LOS AGENTES», «EL FRONT DE CONVERSION», «EL FRONT DE SALES», «EL FRONT DE CONVERSATION» y «EL FRONT DE CREATIVE», al final
 ];
 /** Dónde puede vivir un archivo citado. No se camina `node_modules` ni `.next`. */
-const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'];
+const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db'].filter((d) => existsSync(join(RAIZ, d)));
 
 /**
  * Una cita: `` `ruta.ts:12` `` o `` `ruta.ts:12-40` ``, siempre entre acentos graves.
@@ -76,7 +79,7 @@ const FUENTES = ['lib', 'app', 'components', 'pruebas', 'scripts', 'docs', 'db']
  *
  * Hasta el 2026-09-28 el patrón no admitía corchetes ni espacios, y dos familias de citas pasaban
  * **sin que nadie las mirara y sin ningún aviso**: las rutas dinámicas de Next
- * (`app/api/leads-portal/[id]/route.ts:12`) y las que entran a `docs/OTROS/estado actual/`, que es la
+ * (`app/api/leads-portal/[id]/route.ts:12`) y las que entran a `docs/1-plataforma/`, que es la
  * única carpeta del repositorio con un espacio en el nombre. No eran casos raros: la reescritura de
  * esa carpeta encontró citas de las dos formas en las tres carpetas auditadas.
  *
@@ -130,7 +133,7 @@ interface Citada {
 }
 
 const CITAS: Citada[] = [];
-for (const dir of AUDITADAS) {
+for (const dir of SIN_DOCS ? [] : AUDITADAS) {
   for (const doc of dir.endsWith('.md') ? [dir] : archivosDe(dir, (n) => n.endsWith('.md'))) {
     for (const [i, l] of readFileSync(join(RAIZ, doc), 'utf8').split('\n').entries()) {
       for (const m of l.matchAll(CITA)) {
@@ -148,7 +151,7 @@ for (const dir of AUDITADAS) {
 
 const listar = (cs: Citada[]): string[] => cs.map((c) => `${c.documento}:${c.linea} → ${c.texto}`);
 
-test('la prueba encuentra citas: sin esto, un patrón roto la deja verde sobre nada', () => {
+test('la prueba encuentra citas: sin esto, un patrón roto la deja verde sobre nada', { skip: SIN_DOCS }, () => {
   /* Es la afirmación que sostiene a las otras tres. Un `CITA` que deje de casar las vuelve las tres
      triviales, y el archivo entero pasaría a no proteger nada sin que nada fallara.
      *
@@ -159,21 +162,17 @@ test('la prueba encuentra citas: sin esto, un patrón roto la deja verde sobre n
   );
 });
 
-test('el patrón ve las rutas con corchetes y las que pasan por «estado actual»', () => {
-  /* Las dos familias que el patrón viejo salteaba en silencio (ver `CITA`). Si el patrón vuelve a
-     perder una, las otras pruebas siguen verdes —auditan menos citas, no citas malas— y esto es lo
-     único que se entera. */
+test('el patrón ve las rutas con corchetes', { skip: SIN_DOCS }, () => {
+  /* La familia que el patrón viejo salteaba en silencio (ver `CITA`). Si el patrón vuelve a perderla, las otras
+     pruebas siguen verdes —auditan menos citas, no citas malas— y esto es lo único que se entera. La otra familia,
+     la carpeta con un espacio en el nombre, dejó de existir con el orden nuevo de `docs/` (2026-10-28). */
   assert.ok(
     CITAS.some((c) => c.ruta.includes('[')),
     'ninguna cita con corchetes: el patrón dejó de ver las rutas dinámicas de Next',
   );
-  assert.ok(
-    CITAS.some((c) => c.ruta.includes('estado actual/')),
-    'ninguna cita a «docs/OTROS/estado actual/»: el patrón dejó de admitir el espacio de esa carpeta',
-  );
 });
 
-test('cada archivo citado por los documentos existe', () => {
+test('cada archivo citado por los documentos existe', { skip: SIN_DOCS }, () => {
   assert.deepEqual(
     listar(CITAS.filter((c) => resolver(c.ruta) === null)),
     [],
@@ -181,7 +180,7 @@ test('cada archivo citado por los documentos existe', () => {
   );
 });
 
-test('ninguna cita apunta más allá del final de su archivo', () => {
+test('ninguna cita apunta más allá del final de su archivo', { skip: SIN_DOCS }, () => {
   /* El caso que lo motivó: la etapa 2 de Sales extrajo `dineroDelMes` e `inicio.ts` pasó de 268 a
      177 líneas. Trece citas quedaron apuntando al vacío, en el commit de la extracción, y sobre esas
      trece se apoyaban los documentos que describen la pantalla que se estaba construyendo. */
@@ -199,7 +198,7 @@ test('ninguna cita apunta más allá del final de su archivo', () => {
   );
 });
 
-test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden distinguir', () => {
+test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden distinguir', { skip: SIN_DOCS }, () => {
   /* Una cita a `esquema.ts` con dos `esquema.ts` en el repositorio no dice cuál. La prueba no
      adivina —elegir el primero validaría el archivo equivocado— así que exige más ruta.
      *
@@ -215,7 +214,7 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
 });
 
 /* ── LA NUEVA ESTRUCTURA (2026-10-01) ─────────────────────────────────────────
-   `docs/OTROS/nueva-estructura/` entró el día que nació, con los dos planes de `futuro/` que salieron
+   `docs/6-historial/nueva-estructura/` entró el día que nació, con los dos planes de `futuro/` que salieron
    de ella: los permisos por herramienta y el cerebro. Dice qué se va a hacer, etapa por etapa, y cada
    etapa va a mover el código que cita, así que es la carpeta que más rápido se pudriría sin auditar.
    Las tres entradas van en la misma línea que la última de la lista, y esta nota al final del
@@ -234,7 +233,7 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
    las citas fijadas, y la prueba quedó verde; dejando una sola sin fijar, en rojo. */
 
 /* ── LOS AGENTES (2026-10-04) ─────────────────────────────────────────────────
-   `docs/OTROS/agentes/` entró el día que nació, por lo mismo que la nueva estructura: es el plan de los
+   `docs/3-agentes/` entró el día que nació, por lo mismo que la nueva estructura: es el plan de los
    agentes de IA, cada etapa va a mover el código que cita, y una carpeta nueva no trae deuda. La entrada
    va en la misma línea que la última de la lista, para no correr las líneas de esta prueba. */
 
@@ -242,21 +241,21 @@ test('ninguna cita es ambigua: dos archivos con el mismo nombre no se pueden dis
    Los dos documentos que devuelven Conversion al front del prototipo entraron el día que nacieron: el `15`
    de la carpeta, que fija qué dato va en cada lugar de la maqueta, y el plan de lo que esa pantalla no mide.
    Las etapas CV-1 a CV-4 van a mover casi todo el código que el `15` cita, así que es el documento que más
-   rápido se pudriría sin auditar. El resto de `docs/conversion/` no entra: cita `lib/aios/conversion.js`,
+   rápido se pudriría sin auditar. El resto de `docs/2-departamentos/conversion/` no entra: cita `lib/aios/conversion.js`,
    que se borró el 2026-09-20, como referencia histórica, igual que Creative y Acquisition. Las dos entradas
    van en la misma línea que la última de la lista, para no correr las líneas de esta prueba. */
 
 /* ── EL FRONT DE SALES (2026-10-09) ───────────────────────────────────────────
-   El `15` de `docs/sales/` ya entra con la carpeta. Entra además el plan de lo que esa pantalla no mide, que vive en
+   El `15` de `docs/2-departamentos/sales/` ya entra con la carpeta. Entra además el plan de lo que esa pantalla no mide, que vive en
    `futuro/`. La entrada va en la misma línea que la última de la lista, para no correr las líneas de esta prueba. */
 
 /* ── EL FRONT DE CONVERSATION ───────────────────────────────────────────────
-   `docs/conversation/` nace el 2026-10-10, con lo que se hizo y el plan del front del prototipo, y entra entera el
-   día que nace, con `docs/OTROS/futuro/lo-que-conversation-no-mide.md`: son los documentos que el plan va a ir
+   `docs/2-departamentos/conversation/` nace el 2026-10-10, con lo que se hizo y el plan del front del prototipo, y entra entera el
+   día que nace, con `docs/5-pendiente/lo-que-conversation-no-mide.md`: son los documentos que el plan va a ir
    corriendo etapa por etapa, y el plan de Sales mostró que una cita corrida sin auditar no la ve nadie. */
 
 /* ── EL FRONT DE CREATIVE ───────────────────────────────────────────────────
-   El `16` de `docs/creative/` nace el 2026-10-11 con el plan del front del prototipo, y entra el día que nace, con
-   `docs/OTROS/futuro/lo-que-creative-no-mide.md`. El resto de la carpeta no entra: sus citas son de la maqueta borrada
+   El `16` de `docs/2-departamentos/creative/` nace el 2026-10-11 con el plan del front del prototipo, y entra el día que nace, con
+   `docs/5-pendiente/lo-que-creative-no-mide.md`. El resto de la carpeta no entra: sus citas son de la maqueta borrada
    y su `00-MAPA.md` explica por qué valen como historia. El `17`, la guía para conectar Meta, también entra el día que
    nace (2026-10-15). */

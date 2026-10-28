@@ -1,5 +1,5 @@
 // Los umbrales de las reglas: provisionales en el código, firmes cuando el Admin los firma (`D-11`;
-// `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-33). El único escritor de `negocio.umbrales`
+// `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-33). El único escritor de `negocio.umbrales`
 // (migración 072). Lo que lee o escribe la base corre dentro de `conOrganizacion(`.
 //
 // El catálogo nació vacío en AG8: cada detector suma sus reglas en la etapa que lo construye (Acquisition en

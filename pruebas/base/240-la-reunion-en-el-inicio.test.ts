@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// AG15 de los agentes (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-73, AG-74 y AG-76): el GET de
+// AG15 de los agentes (`docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-73, AG-74 y AG-76): el GET de
 // `app/api/executive/route.ts` y la ruta nueva `app/api/executive/reunion/route.ts` (la regla 31: una ruta
 // nueva nace con su prueba de base):
 //

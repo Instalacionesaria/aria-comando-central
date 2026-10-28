@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ ES, Y DE DÓNDE SALE CADA CIFRA
 //
-// El front que vuelve el 2026-10-08 (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`) dibuja una
+// El front que vuelve el 2026-10-08 (`docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`) dibuja una
 // tira de tres paneles y un recorrido de cinco tarjetas —Landing, VSL, Formulario, Agenda, Gracias—. Este
 // módulo arma todo eso en el servidor, y **compone lo que ya se mide**: lo que otro módulo sabe, lo toma de él.
 //

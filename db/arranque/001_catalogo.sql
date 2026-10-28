@@ -52,7 +52,7 @@
 --
 -- El costo, dicho de frente: agregar una capacidad deja de ser "escribir una migración" y
 -- pasa a ser "escribir acá y correr el arranque". Es un paso más en el despliegue, y está
--- documentado en `docs/OTROS/produccion/DESPLIEGUE.md`.
+-- documentado en `docs/4-produccion/DESPLIEGUE.md`.
 --
 -- ── Y ES IDEMPOTENTE, QUE NO ES OPCIONAL ────────────────────────────────────
 --
@@ -244,9 +244,9 @@ insert into identidad.permisos (clave, descripcion) values
   ('analizadores.editar', 'Analizar llamadas, sincronizar con tl;dv, reencaminar y borrar (consume tokens de la organización)'),
   -- El cerebro (AG5 de los agentes): preguntar y borrar los hilos propios. Gasta la llave de IA de la
   -- empresa, y por eso es una capacidad aparte de `tablero.ver`, que sólo deja mirar el Inicio. La reciben
-  -- los TRES roles por el reparto derivado (`docs/OTROS/agentes/05-PERMISOS-Y-PRIVACIDAD.md`).
+  -- los TRES roles por el reparto derivado (`docs/3-agentes/05-PERMISOS-Y-PRIVACIDAD.md`).
   ('cerebro.usar',        'Preguntarle al cerebro y borrar los hilos propios (consume tokens de la organización)'),
-  -- Las señales de los detectores (AG9 de los agentes; `docs/OTROS/agentes/05-PERMISOS-Y-PRIVACIDAD.md`, AG-80).
+  -- Las señales de los detectores (AG9 de los agentes; `docs/3-agentes/05-PERMISOS-Y-PRIVACIDAD.md`, AG-80).
   -- Marcar vista, resolver y descartar las locales los tres roles; las que requieren validación ejecutiva y la
   -- firma de un umbral, sólo administrador y superadministrador: al `usuario` se le niegan en su reparto.
   ('senales.resolver',    'Marcar vista, resolver y descartar las señales de los detectores de las pantallas que ve'),

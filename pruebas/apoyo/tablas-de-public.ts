@@ -5,7 +5,7 @@
 //
 // `public.aria_cc_scraper_leads`, `public.aria_cc_scraper_trabajos` y `public.aria_cc_foundations` las crea
 // el backend de Python en el Supabase de producción, no una migración de este repositorio, así que **no
-// existen en la base local** (`docs/OTROS/estado actual/12-ICP-Y-OFERTA.md`, deuda 6; y la prueba 130 impide
+// existen en la base local** (`docs/1-plataforma/12-ICP-Y-OFERTA.md`, deuda 6; y la prueba 130 impide
 // que una migración cree la de Fundaciones). Sin ellas, `leads_del_scraper`, `espia` y `fundaciones` no se
 // podrían probar contra filas, y las tres son justamente las que cuentan o recortan filas con correos y
 // teléfonos.

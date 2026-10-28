@@ -1,9 +1,9 @@
 // El cliente de la API de Meta (Graph). SÓLO LECTURA.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// POR QUÉ EXISTE (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, CR-6)
+// POR QUÉ EXISTE (`docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, CR-6)
 //
-// GoHighLevel no entrega el creativo de los anuncios del Business Manager (`docs/creative/14`, C14-16 a C14-22): la
+// GoHighLevel no entrega el creativo de los anuncios del Business Manager (`docs/2-departamentos/creative/14`, C14-16 a C14-22): la
 // miniatura de cada anuncio sólo la da Meta, con un token propio que una persona del equipo carga en Ajustes
 // (`resolverAccesoAMeta`). Este archivo es el único que habla con Meta.
 //

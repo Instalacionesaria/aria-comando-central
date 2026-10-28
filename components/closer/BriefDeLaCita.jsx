@@ -1,7 +1,7 @@
 'use client';
 
 /* El Brief del closer de una cita, dentro de la ficha (AG12 de los agentes;
- * `docs/OTROS/agentes/fichas/F13-CLOSER-Y-BRIEF.md`, `D-19`).
+ * `docs/3-agentes/F13-CLOSER-Y-BRIEF.md`, `D-19`).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * SE GENERA AL ABRIR LA CITA, Y NO SE REGENERA SOLO

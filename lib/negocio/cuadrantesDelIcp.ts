@@ -1,7 +1,7 @@
 // Los cuadrantes del ICP: las cuatro palabras con las que el CRM clasifica a cada lead, y cómo se nombran acá.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE REEMPLAZA (decidido por el usuario el 2026-10-26, `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`)
+// LO QUE REEMPLAZA (decidido por el usuario el 2026-10-26, `docs/2-departamentos/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`)
 //
 // Hasta acá el ICP era un número de 0 a 100 («Puntaje | ICP») y `tramosDelIcp.ts` lo cortaba en 75 y 50. Ahora el CRM
 // lo calcula de otra forma y manda una palabra en `contact.cuadrante_de_clasificacion`, que la sincronización guarda en

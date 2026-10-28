@@ -1,5 +1,5 @@
 // Los temas de la Reunión de hoy: de dónde salen y en qué orden (AG15 de los agentes;
-// `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-70 a AG-73; `fichas/F17-LA-REUNION-DE-HOY.md`).
+// `docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-70 a AG-73; `fichas/F17-LA-REUNION-DE-HOY.md`).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // DOS FUENTES, Y NINGUNA ES EL MODELO

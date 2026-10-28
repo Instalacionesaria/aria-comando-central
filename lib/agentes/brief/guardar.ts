@@ -1,5 +1,5 @@
 // El único escritor de `negocio.briefs_del_closer` (migración 074) y lo que lee la pantalla del Closer (AG12 de
-// los agentes; `docs/OTROS/agentes/fichas/F13-CLOSER-Y-BRIEF.md`). **Corre dentro de `conOrganizacion(`.**
+// los agentes; `docs/3-agentes/F13-CLOSER-Y-BRIEF.md`). **Corre dentro de `conOrganizacion(`.**
 
 import { datos } from '../../datos/contexto.ts';
 import type { Brief } from './brief.ts';

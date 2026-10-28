@@ -1,7 +1,7 @@
 'use client';
 
-/* La Reunión de hoy, en la barra (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-75;
- * `docs/OTROS/agentes/fichas/F17-LA-REUNION-DE-HOY.md`): un botón que lleva al Inicio, donde están las
+/* La Reunión de hoy, en la barra (`docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-75;
+ * `docs/3-agentes/F17-LA-REUNION-DE-HOY.md`): un botón que lleva al Inicio, donde están las
  * tarjetas, con el número de temas de HOY que esa persona ve.
  *
  * No le pide nada al servidor, como la barra entera (`pruebas/codigo/193-*`): el número lo publica el Inicio

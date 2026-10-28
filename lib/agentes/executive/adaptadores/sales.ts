@@ -5,7 +5,7 @@
 //
 // Las dos que publican lo que la pantalla ARMA —las cuatro cifras de arriba con la tabla, y los motivos— leen la
 // mitad del cierre de esa lectura, `lecturaDelCierre`, la misma que la ruta usa: lo que el cerebro dice de una
-// cifra es lo que la pantalla dibuja (S15-14 de `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), sin la
+// cifra es lo que la pantalla dibuja (S15-14 de `docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), sin la
 // cadena, el ciclo ni el dinero. Las demás llaman a la misma función con los mismos argumentos que la lectura.
 //
 // Lo que no viaja: los textos de rótulo de cada eslabón (son de la pantalla), el identificador del CRM de cada

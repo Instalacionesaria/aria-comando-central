@@ -1,7 +1,7 @@
 // La maqueta del Executive se fue, y el Inicio que la reemplaza no la trae de vuelta. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/04-EL-INICIO.md, NE-29 y NE-30)
+// LO QUE ESTO CUIDA (docs/6-historial/nueva-estructura/04-EL-INICIO.md, NE-29 y NE-30)
 //
 // La pantalla Executive era una maqueta: el mapa de departamentos, el embudo ejecutivo y la reunión
 // tenían las cifras escritas a mano en tres módulos del navegador, el chat elegía entre respuestas
@@ -141,7 +141,7 @@ test('no hay atajo Cmd+K', () => {
 test('nadie navega haciendo clic en una fila del menú', () => {
   /* Los módulos de la maqueta navegaban sintetizando `.nav-item[data-view=…].click()`: dependían de que
      la fila existiera en el DOM y de que el armazón le hubiera enganchado su oyente. Se navega con
-     `irALaVista` (`docs/OTROS/nueva-estructura/07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`). Se marca cualquier
+     `irALaVista` (`docs/6-historial/nueva-estructura/07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`). Se marca cualquier
      clic sintetizado —`.click()` o `dispatchEvent` de un evento de clic— en un archivo que nombre las
      filas del menú, sin medir la distancia entre las dos cosas. */
   const CLIC = /\.click\(\s*\)|dispatchEvent\(\s*new\s+(Mouse|Pointer)?Event\(\s*['"`]click/;

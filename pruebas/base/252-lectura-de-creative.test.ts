@@ -1,7 +1,7 @@
 // La lectura de Creative y sus piezas nuevas, contra la base de verdad. Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF-1)
+// LO QUE ESTO CUIDA (docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF-1)
 //
 // La mitad pura la cuida `pruebas/codigo/252-lectura-de-creative.test.ts`. Acá se mira lo que sólo se ve con filas:
 //

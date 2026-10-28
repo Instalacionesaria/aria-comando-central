@@ -1,7 +1,7 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// La pantalla de Creative: qué pieza funciona, contra su etapa (docs/creative/16).
+// La pantalla de Creative: qué pieza funciona, contra su etapa (docs/2-departamentos/creative/16).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // ES LA PRIMERA OPERACIÓN DE SERVIDOR DE ESTA PANTALLA, Y ESO BAJA UN CABLE TRAMPA
@@ -69,8 +69,8 @@ export async function GET(peticion: Request): Promise<Response> {
     const lista = ventana === null ? [] : await senalesDeLaPantalla('creative', ventana, textoDeCreative);
     return [
       /* La calidad, el rendimiento, la fatiga, los links manuales de las piezas y lo que el front del prototipo
-         dibuja con todo eso (docs/creative/16, CF1-15): una sola lectura, con la ventana del período. Los links
-         (docs/creative/15, C15-06) no dependen de la ventana. */
+         dibuja con todo eso (docs/2-departamentos/creative/16, CF1-15): una sola lectura, con la ventana del período. Los links
+         (docs/2-departamentos/creative/15, C15-06) no dependen de la ventana. */
       await lecturaDeCreative(periodo.dias),
       {
         ventana,

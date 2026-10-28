@@ -7,7 +7,7 @@
 // caracteres de la respuesta (`text.slice(0, 200)`). Ese error se guarda en la llamada, se dibuja en la
 // lista de los Analizadores y viaja en la respuesta de la API, y la respuesta de un análisis empieza por
 // lo que dijo el cliente: su nombre, su negocio, cuánto factura. Desde AG2 de los agentes
-// (`docs/OTROS/agentes/08-LAS-ETAPAS.md`) el error es `sin_estructura`, con el uso de lo que se pagó y
+// (`docs/3-agentes/08-LAS-ETAPAS.md`) el error es `sin_estructura`, con el uso de lo que se pagó y
 // sin una palabra de la respuesta.
 //
 // Y de paso, que ese error y los demás del transporte se traduzcan a las situaciones `IA-*` con los mismos

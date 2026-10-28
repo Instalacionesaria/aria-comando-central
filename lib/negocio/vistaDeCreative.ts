@@ -36,7 +36,7 @@ export interface PantallaDeCreative {
   rendimiento: RendimientoDeLosCreativos;
   /** La caída del CTR contra el tiempo. */
   fatiga: FatigaDeLosCreativos;
-  /** El link manual de cada pieza que lo tiene: el respaldo del video (docs/creative/15, C15-06). */
+  /** El link manual de cada pieza que lo tiene: el respaldo del video (docs/2-departamentos/creative/15, C15-06). */
   enlaces: EnlaceDePieza[];
   /** Las señales del detector (AG10 de los agentes): las vivas de la ventana, el último plan y las reglas. */
   senales: SenalesDelDepartamento<PlanDeCreative>;

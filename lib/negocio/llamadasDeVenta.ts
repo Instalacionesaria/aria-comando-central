@@ -1,5 +1,5 @@
 // Lo que dicen las llamadas de venta analizadas, sumado (AG11 de los agentes;
-// `docs/OTROS/agentes/fichas/F14-LLAMADAS-DE-VENTA.md`). Sin modelo: cuenta lo que los Analizadores ya
+// `docs/3-agentes/F14-LLAMADAS-DE-VENTA.md`). Sin modelo: cuenta lo que los Analizadores ya
 // guardaron y la categoría que `lib/analizadores/objeciones.ts` le puso a cada objeción. Corre dentro de
 // `conOrganizacion(`. La pantalla de las llamadas no lo usa: lo leen el cerebro y, después, la Reunión y el
 // Brief.

@@ -45,7 +45,7 @@ export interface ParametroVisible {
  *
  * **Lo que no está, a propósito:** `ip`, `userAgent`, `fbclid`, `fbp`, `fbc` y `gaClientId`
  * identifican a la persona o a su navegador. `medium`, `mediumId`, `campaignId` y `adSource` no
- * identifican a nadie, pero tampoco se decidió mostrarlos (`docs/leads-portal/05-LA-FICHA-DEL-LEAD.md`,
+ * identifican a nadie, pero tampoco se decidió mostrarlos (`docs/2-departamentos/leads-portal/05-LA-FICHA-DEL-LEAD.md`,
  * LP05-P02): la lista es blanca, y entrar a ella es una decisión.
  */
 export const CLAVES_VISIBLES: readonly { clave: string; rotulo: string }[] = [

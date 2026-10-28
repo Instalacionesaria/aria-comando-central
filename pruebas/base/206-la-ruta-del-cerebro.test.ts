@@ -4,7 +4,7 @@
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
 // `app/api/executive/route.ts` (AG5 de los agentes), con la regla 31 de
-// `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md`: la ruta que baja la bandera `sinOperacionesTodavia`
+// `docs/1-plataforma/07-REGLAS-TRANSVERSALES.md`: la ruta que baja la bandera `sinOperacionesTodavia`
 // nace con su prueba de base.
 //
 //   · Quién entra: el GET con `tablero.ver`, el POST y el DELETE con `cerebro.usar`; una persona restringida

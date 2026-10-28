@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `lib/agentes/cabecera.ts` en Sales (2026-10-07, después del cierre de los agentes; `docs/OTROS/agentes/04-LA-
+// `lib/agentes/cabecera.ts` en Sales (2026-10-07, después del cierre de los agentes; `docs/3-agentes/04-LA-
 // REUNION-Y-LA-CABECERA.md`, AG-77):
 //
 //   · las citas sin registrar son las que Avanzar ofrece cerrar —ya ocurrieron, no canceladas, con calendario,

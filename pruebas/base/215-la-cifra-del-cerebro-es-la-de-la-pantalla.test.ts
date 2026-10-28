@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `lib/agentes/executive/adaptadores/` (AG6; `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-42; `07`, AG-101):
+// `lib/agentes/executive/adaptadores/` (AG6; `docs/3-agentes/03-EL-CEREBRO.md`, AG-42; `07`, AG-101):
 // «consume, no recalcula». Cada herramienta llama a la misma función, con los mismos argumentos, que la
 // ruta de su pantalla, así que da la misma cifra. Se compara contra la RUTA de verdad, con la sesión de
 // quien mira, sobre la empresa sembrada de `db/sembrado/casos-de-los-agentes.ts`:

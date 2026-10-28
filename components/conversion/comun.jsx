@@ -1,5 +1,5 @@
 /* Lo que comparten el tablero de Conversion y su cajón: los pasos, la lista cerrada de frases y los formatos
- * (docs/conversion/15, CV-4). Vive aparte para que `PanelDeConversion.jsx` y `CajonDelPaso.jsx` lo tomen de un
+ * (docs/2-departamentos/conversion/15, CV-4). Vive aparte para que `PanelDeConversion.jsx` y `CajonDelPaso.jsx` lo tomen de un
  * solo lugar sin importarse entre ellos. */
 
 /* Los cinco pasos del prototipo (`STEPS`, `aios-command-center_1.html:3969`), con sus claves y en su orden: son

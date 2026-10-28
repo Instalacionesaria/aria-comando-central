@@ -1,7 +1,7 @@
 // La caja del cerebro al pie y CONVERSACIONES hablan con el cerebro, y no con otra cosa. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/OTROS/agentes/03-EL-CEREBRO.md, AG-40, AG-44, AG-51 y AG-57; NE-50)
+// LO QUE ESTO CUIDA (docs/3-agentes/03-EL-CEREBRO.md, AG-40, AG-44, AG-51 y AG-57; NE-50)
 //
 // La segunda edición devolvió como «Próximamente» dos piezas del cerebro: la caja «Pregúntale al cerebro
 // sobre …» al pie de cada pantalla de un departamento (`components/ConsultaAlCerebro.jsx`) y

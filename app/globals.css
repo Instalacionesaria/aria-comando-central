@@ -66,7 +66,7 @@
    que las de arriba — esta pantalla no existe en el prototipo, así que `aios.css` no tiene nada
    que decir sobre ella y no se toca. */
 /* Acá iba `inteligencia-estetica.css`, la estética de operación de los cinco tableros de Inteligencia. Se borró
-   el 2026-10-11, cuando Creative —la última que la usaba— volvió al front del prototipo (docs/creative/16, CF1-01). */
+   el 2026-10-11, cuando Creative —la última que la usaba— volvió al front del prototipo (docs/2-departamentos/creative/16, CF1-01). */
 
 @import "./monitoreo.css" layer(components);
 @import "./incidentes.css" layer(components);

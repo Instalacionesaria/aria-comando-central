@@ -4,7 +4,7 @@
 //
 // `creative_en_cifras` publica lo que la pantalla ARMA: lee la misma lectura que la ruta, `lecturaDeCreative`, y
 // devuelve su `pantalla` —lo que el cerebro dice de una cifra es lo que se dibuja (CF1-16 de
-// `docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`)— SIN las URLs: ni la miniatura ni el enlace de cada pieza
+// `docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`)— SIN las URLs: ni la miniatura ni el enlace de cada pieza
 // viajan, sólo si la pieza tiene una.
 //
 // La pieza es (cliente, nombre) (el nivel 3), y el cerebro NUNCA lee un uuid: con piezas de dos clientes o más, cada

@@ -7,7 +7,7 @@
 // cron no tiene a nadie mirando y llama al modelo muchas veces por corrida —el auditor, hasta veinte
 // conversaciones cada diez minutos; los Analizadores, todas las llamadas pendientes—. Con el proveedor
 // caído, una fila por llamada llenaría el Panel de Incidentes con el mismo hecho repetido
-// (`docs/OTROS/agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-98). Lo mismo vale para el botón que
+// (`docs/3-agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-98). Lo mismo vale para el botón que
 // sincroniza los Analizadores: lo aprieta una persona, pero clasifica hasta cuarenta reuniones de una vez.
 //
 // ── EL PRIMERO SE ESCRIBE EN EL ACTO ─────────────────────────────────────────

@@ -1,6 +1,6 @@
 // Las instrucciones del cerebro. Tú neutro (`D-26`), y las reglas de Executive: consume y no recalcula, el
 // dinero es del mes y es venta reportada, correlación no es causa
-// (`docs/OTROS/estado actual/11-EXECUTIVE.md`, `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-43 y AG-46).
+// (`docs/1-plataforma/11-EXECUTIVE.md`, `docs/3-agentes/03-EL-CEREBRO.md`, AG-43 y AG-46).
 //
 // Se arman UNA vez por pregunta y no cambian entre sus rondas: el historial del modelo es de sólo agregar
 // («preserved thinking»), y cambiar las instrucciones a mitad invalidaría lo que ya pensó. Por la misma

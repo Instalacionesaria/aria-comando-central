@@ -1,5 +1,5 @@
 // Firmar el umbral de una regla de Conversion: pasa de provisional a firme, con quién y cuándo (AG14 de los
-// agentes; `D-11`; `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-33; `05`, AG-80 y AG-82). Gemela
+// agentes; `D-11`; `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-33; `05`, AG-80 y AG-82). Gemela
 // de `app/api/acquisition/umbrales/route.ts`, por lo mismo que la de las señales.
 //
 // La firma es del Admin DE LA EMPRESA: `umbrales.firmar` la tienen administrador y superadministrador, y bajo

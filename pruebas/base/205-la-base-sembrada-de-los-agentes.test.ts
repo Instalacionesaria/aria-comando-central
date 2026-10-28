@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `db/sembrado/casos-de-los-agentes.ts` (AG4). Las preguntas aprobadas de `docs/OTROS/agentes/07-LA-EVALUACION.md`
+// `db/sembrado/casos-de-los-agentes.ts` (AG4). Las preguntas aprobadas de `docs/3-agentes/07-LA-EVALUACION.md`
 // esperan cifras exactas —«0 de 46 citas pasadas tienen resultado», «precio, 9 contra 3»—, y esas cifras las
 // dan las funciones de las pantallas sobre la empresa sintética. Si una columna nueva o un cambio en una
 // función las mueve, esto lo dice antes de que una evaluación real gaste la llave en preguntas cuyas

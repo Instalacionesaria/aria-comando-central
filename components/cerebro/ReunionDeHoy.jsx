@@ -1,6 +1,6 @@
 'use client';
 
-/* La Reunión de hoy en el Inicio (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-73, AG-74 y AG-76;
+/* La Reunión de hoy en el Inicio (`docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-73, AG-74 y AG-76;
  * `fichas/F17-LA-REUNION-DE-HOY.md`): la cinta con la hora de la pasada y hasta tres tarjetas, cada una con
  * su etiqueta, su texto y su origen.
  *

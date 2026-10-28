@@ -1,5 +1,5 @@
 /* Lo que usa el tablero de Conversation para escribir: la lista cerrada de frases, los rótulos y los formatos
- * (docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN-3). Vive aparte del panel, como en Sales, para
+ * (docs/2-departamentos/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN-3). Vive aparte del panel, como en Sales, para
  * que la prueba lea la lista sin el marcado alrededor. */
 
 /* ── LA LISTA CERRADA DE FRASES (CN1-02) ───────────────────────────────────

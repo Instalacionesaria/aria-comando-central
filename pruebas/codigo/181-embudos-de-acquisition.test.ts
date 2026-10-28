@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE SE AFIRMA, Y LA MUTACIÓN QUE CADA COSA TIENE QUE PONER EN ROJO
 //
-// El front del prototipo (docs/acquisition/14) dibuja lo que este módulo arma: no calcula nada. Acá se
+// El front del prototipo (docs/2-departamentos/acquisition/14) dibuja lo que este módulo arma: no calcula nada. Acá se
 // prueba la mitad PURA —A14-05 (sin tasa), A14-08 (el piso de las porciones del ICP, desde la `105`), A14-09, A14-11, A14-14 y el
 // orden de A14-18—. Lo que vive en el SQL —A14-07, los días de A14-10, los clics nulos de A14-05, los
 // cortes del ICP— se prueba contra la base en `pruebas/base/181-embudos-de-acquisition.test.ts`.

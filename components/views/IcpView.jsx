@@ -10,7 +10,7 @@
    `VISTAS` de `scripts/paridad.mjs`. Fue la primera en salir; las otras nueve la siguieron,
    y el 2026-10-01 la compuerta quedó retirada (nueva estructura, E7). Su valor era que, al
    reactificar una, la comparación siguiera siendo confiable para las que no cambiaban.
-   El razonamiento completo está en `docs/OTROS/capa-base/ETAPA-9.md`.
+   El razonamiento completo está en `docs/6-historial/capa-base/ETAPA-9.md`.
 
    El envoltorio —`.view` > `.view-scroll cre-scroll` > `.cre-head`— sí se conserva,
    porque es el que hace que la vista se comporte como las otras nueve: el mismo

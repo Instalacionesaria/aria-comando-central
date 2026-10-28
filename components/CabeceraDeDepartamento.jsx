@@ -1,17 +1,17 @@
 'use client';
 
-/* La cabecera de un departamento (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-17`), del
+/* La cabecera de un departamento (`docs/6-historial/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-17`), del
  * lienzo «Departamentos por dentro»: la ceja, el nombre de la entrada abierta y la fila de pestañas con
  * las entradas del departamento. Si la entrada abierta es un grupo —Radar, Funnel, Leads—, debajo de la
  * línea va una segunda fila con sus sub-pestañas, como las píldoras del diseño de la segunda edición
- * (`docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`, `NE-45`). Debajo va la pantalla de siempre.
+ * (`docs/6-historial/nueva-estructura/09-LA-SEGUNDA-EDICION.md`, `NE-45`). Debajo va la pantalla de siempre.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * DÓNDE VIVE, Y POR QUÉ AHÍ
  *
  * En su propia área de la rejilla del armazón (`app/armazon.css`), fuera de `.main`: las pantallas de
  * operación se estiran sobre el relleno de `.main` con márgenes negativos, y una cabecera adentro les
- * cortaría el pie (`docs/OTROS/nueva-estructura/07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`).
+ * cortaría el pie (`docs/6-historial/nueva-estructura/07-LO-QUE-SE-ROMPE-EN-SILENCIO.md`).
  *
  * Y ANTES de `<main>` en el árbol (`components/CommandCenter.jsx`), por el orden de lectura y del
  * tabulador: el nombre de la pantalla y sus pestañas se leen antes que el contenido, como se ven. El
@@ -38,7 +38,7 @@
  *
  * ── EL COMENTARIO DEL CEREBRO (AG15 de los agentes) ─────────────────────────
  *
- * Una línea con la mascota de 28 px (`NE-17`.3; `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-77
+ * Una línea con la mascota de 28 px (`NE-17`.3; `docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-77
  * a AG-79). No la escribe nadie acá: la sirve el GET de la pantalla abierta, de reglas y sin modelo, y el
  * panel la publica para la sección (`lib/agentes/comentario-de-la-cabecera.ts`). Sin comentario no se dibuja
  * nada —la regla del silencio—, y en el teléfono tampoco (`D-27`): lo esconde la hoja. Va al final, debajo

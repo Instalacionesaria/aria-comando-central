@@ -1,4 +1,4 @@
-// Una pregunta al cerebro, de punta a punta: el ciclo de `docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-04.
+// Una pregunta al cerebro, de punta a punta: el ciclo de `docs/3-agentes/01-LA-ARQUITECTURA.md`, AG-04.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL ORDEN, Y POR QUÉ ASÍ

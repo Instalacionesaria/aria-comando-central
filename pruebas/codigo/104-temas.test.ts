@@ -44,7 +44,7 @@ const HOJAS = [
   // Client OS, el marco de la herramienta en prueba, el día que nace.
   'app/client-os.css',
   'app/auditoria.css',
-  // Acá iba `inteligencia-estetica.css`, la de los cinco tableros: se borró el 2026-10-11 (docs/creative/16).
+  // Acá iba `inteligencia-estetica.css`, la de los cinco tableros: se borró el 2026-10-11 (docs/2-departamentos/creative/16).
   // Una hoja entra el día que se crea, no después: es la regla que el comentario de arriba se pone a sí misma.
   // Leads Portal, el día que nace.
   'app/leads-portal.css',

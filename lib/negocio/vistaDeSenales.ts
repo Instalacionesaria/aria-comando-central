@@ -1,5 +1,5 @@
 // Las señales de un departamento desde el navegador: lo que llega en el GET de su pantalla y las dos escrituras
-// (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-24 a AG-34). Lo comparten los cuatro
+// (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-24 a AG-34). Lo comparten los cuatro
 // departamentos con detector; cada uno tiene sus rutas (`<ruta de su pantalla>/senales` y `…/umbrales`, la de
 // Conversation bajo `app/api/auditoria`), que vuelven a comprobar la capacidad y la delegación.
 

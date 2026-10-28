@@ -1,7 +1,7 @@
 // La pasada que completa la miniatura de cada contacto con `GET /contacts/{id}`. Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF1-11)
+// LO QUE ESTO CUIDA (docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF1-11)
 //
 // La búsqueda de contactos no trae el «Video Url»; el pedido por contacto sí. La pasada pide, una sola vez, los
 // contactos que llegaron por un anuncio, y guarda lo que vuelve aparte de `atribucion_primera`, que la sincronización

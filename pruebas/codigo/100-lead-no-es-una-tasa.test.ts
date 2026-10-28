@@ -22,7 +22,7 @@
 // `lead` —o cualquiera de sus siete alias— a `ACCIONES_QUE_LEEMOS`.
 //
 // El conteo de leads de la pantalla sale de `calidadDelCreativo`, que cuenta contactos de nuestra
-// base y sabe cuáles son. Ver `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` § C14-15.
+// base y sabe cuáles son. Ver `docs/2-departamentos/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` § C14-15.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';

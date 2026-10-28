@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `lib/agentes/detectores/acquisition.ts` (AG9 de los agentes; `docs/OTROS/agentes/fichas/F03-ACQUISITION.md`),
+// `lib/agentes/detectores/acquisition.ts` (AG9 de los agentes; `docs/3-agentes/F03-ACQUISITION.md`),
 // sobre embudos armados con la misma función pura de la pantalla (`armarEmbudos`):
 //
 //   · debajo del piso de 10 no hay señal: se cuenta (A6-02);

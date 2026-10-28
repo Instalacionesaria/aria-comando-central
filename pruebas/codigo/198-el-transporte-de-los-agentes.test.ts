@@ -468,7 +468,7 @@ function escribe(tabla: string, fuente: string): boolean {
 }
 
 /**
- * Las tablas de los agentes y su único escritor (`docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-08). La
+ * Las tablas de los agentes y su único escritor (`docs/3-agentes/01-LA-ARQUITECTURA.md`, AG-08). La
  * 111 vigila sólo `negocio.mensajes`: cada etapa que crea una tabla de los agentes suma su fila acá.
  */
 const ESCRITORES = [

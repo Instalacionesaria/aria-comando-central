@@ -1,7 +1,7 @@
 // La mitad pura de la lectura de Conversation: los paneles, las tarjetas, los agentes y la fila de cifras. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN-1 y CN-4)
+// LO QUE ESTO CUIDA (docs/2-departamentos/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN-1 y CN-4)
 //
 // `armarConversation` decide qué número va en cada lugar del prototipo y, cuando no hay número, por qué. Cada prueba
 // dice qué mira y la mutación que la pone en rojo:

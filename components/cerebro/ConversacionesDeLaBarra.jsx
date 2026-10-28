@@ -1,7 +1,7 @@
 'use client';
 
-/* CONVERSACIONES, en la barra (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-51;
- * `docs/OTROS/agentes/fichas/F19-CONVERSACIONES.md`): los hilos propios con el cerebro, del más reciente al
+/* CONVERSACIONES, en la barra (`docs/3-agentes/03-EL-CEREBRO.md`, AG-51;
+ * `docs/3-agentes/F19-CONVERSACIONES.md`): los hilos propios con el cerebro, del más reciente al
  * más viejo, de cualquier origen —el Inicio o la caja del pie de una sección—.
  *
  * No le pide nada al servidor, como la barra entera (`pruebas/codigo/193-*`): lee los hilos que publica el

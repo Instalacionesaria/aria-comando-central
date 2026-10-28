@@ -4,8 +4,8 @@
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
 // La pasada diaria con el detector de Acquisition de verdad (AG9 de los agentes;
-// `docs/OTROS/agentes/fichas/F03-ACQUISITION.md`), sobre `db/sembrado/casos-de-los-agentes.ts`
-// (`docs/OTROS/agentes/07-LA-EVALUACION.md`, AG-100): la pauta parada hace 15 días, Webinar con dos tercios
+// `docs/3-agentes/F03-ACQUISITION.md`), sobre `db/sembrado/casos-de-los-agentes.ts`
+// (`docs/3-agentes/07-LA-EVALUACION.md`, AG-100): la pauta parada hace 15 días, Webinar con dos tercios
 // del gasto de 30 días, y Remarketing sin ninguna agenda.
 //
 //   · en 7 días, la crítica de «sin entrega», de la empresa —las dos campañas activas paradas, y la pausada

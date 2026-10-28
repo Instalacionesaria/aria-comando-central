@@ -1,7 +1,7 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// Los topes del cerebro en Ajustes (`docs/OTROS/agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-96 y
+// Los topes del cerebro en Ajustes (`docs/3-agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-96 y
 // AG-97): cuántas preguntas por día admite, por persona y por empresa, y lo usado hoy contra eso.
 //
 // Es de Ajustes como las demás rutas de `app/api/admin/`: el GET pide `credenciales.ver` y el PUT

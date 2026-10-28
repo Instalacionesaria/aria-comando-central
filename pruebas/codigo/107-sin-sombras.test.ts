@@ -244,7 +244,7 @@ test('el foco NO se fue con las sombras: pasó a `outline`', () => {
    Acá había una prueba de que las seis tarjetas del organigrama de Executive se pintaban por token y
    no por literal (`--nodo-fondo`, `--fosforo`): en tema claro, un degradado escrito a mano dejaba seis
    nombres de área ilegibles. El organigrama se fue con la maqueta del Executive
-   (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-30`), y lo que la prueba afirmaba ya no tiene
+   (`docs/6-historial/nueva-estructura/04-EL-INICIO.md`, `NE-30`), y lo que la prueba afirmaba ya no tiene
    dónde dibujarse: afirmarlo sería verde sobre nada. Que `executive` no vuelva a `VISTAS` de
    `scripts/paridad.mjs` lo exige `90-fundaciones`, que además pide la lista vacía. Los tokens de esas
    tarjetas siguen en `app/temas.css` y los fija la `188`; borrarlos es otra tarea. */

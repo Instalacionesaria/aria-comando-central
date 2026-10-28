@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRES PREGUNTAS SOBRE UNA PERSONA, CADA UNA EN UN SOLO LUGAR
 //
-// El front del prototipo de Conversion (`docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`) dibuja en
+// El front del prototipo de Conversion (`docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`) dibuja en
 // la Agenda cuántos de la cohorte calificaron, cuántos cancelaron todo lo que reservaron y cuántos confirmaron
 // (CV15-09, CV15-15, CV15-18). Las tres preguntas ya se hacían en otro lado —«calificado» en Acquisition,
 // «confirmó» en la tarjeta de citas— o no se hacían, y CV-1 las sacó a predicados compartidos para que

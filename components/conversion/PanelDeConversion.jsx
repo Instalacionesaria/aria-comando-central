@@ -1,6 +1,6 @@
 'use client';
 
-/* El tablero de Conversion: el front del prototipo, con los datos reales (docs/conversion/15, CV-4).
+/* El tablero de Conversion: el front del prototipo, con los datos reales (docs/2-departamentos/conversion/15, CV-4).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * EL MARCADO ES EL DEL PROTOTIPO, Y LOS NÚMEROS LLEGAN HECHOS

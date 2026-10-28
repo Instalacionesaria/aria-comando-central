@@ -1,6 +1,6 @@
 'use client';
 
-/* Los topes del cerebro, en Ajustes › Credenciales (`docs/OTROS/agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`,
+/* Los topes del cerebro, en Ajustes › Credenciales (`docs/3-agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`,
  * AG-96 y AG-97): cuántas preguntas por día admite el cerebro, por persona y por empresa, y lo usado hoy.
  *
  * Lee y escribe `app/api/admin/cerebro/route.ts`. Los números de omisión, el máximo y lo usado los manda el

@@ -1,7 +1,7 @@
 // El saludo del Inicio se cuenta en la hora de la empresa. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LA HORA EQUIVOCADA NO FALLA: SALUDA MAL (docs/OTROS/nueva-estructura/04-EL-INICIO.md, NE-29)
+// LA HORA EQUIVOCADA NO FALLA: SALUDA MAL (docs/6-historial/nueva-estructura/04-EL-INICIO.md, NE-29)
 //
 // «Buenos días» hasta las 12, «Buenas tardes» hasta las 19, «Buenas noches» después, en la zona de la
 // ORGANIZACIÓN (`lib/negocio/tiempo.ts`: toda hora que una persona lee). Con la hora del navegador,

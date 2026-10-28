@@ -1,5 +1,5 @@
 /* Lo que usa el tablero de Sales para escribir: la lista cerrada de frases y los formatos
- * (docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, SA-3). Vive aparte del panel, como en Conversion, para
+ * (docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, SA-3). Vive aparte del panel, como en Conversion, para
  * que la prueba lea la lista sin el marcado alrededor. */
 
 /* ── LA LISTA CERRADA DE FRASES (S15-02) ───────────────────────────────────

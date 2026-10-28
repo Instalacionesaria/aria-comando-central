@@ -2,7 +2,7 @@
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
 // El cerebro en el Inicio: preguntar, ver los hilos propios y borrarlos (AG5 de los agentes,
-// `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-40).
+// `docs/3-agentes/03-EL-CEREBRO.md`, AG-40).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA PRIMERA OPERACIÓN DEL INICIO, Y LA BANDERA QUE BAJA

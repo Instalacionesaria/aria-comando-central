@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // GOHIGHLEVEL LA MUEVE; COMANDO CENTRAL LA REGISTRA
 //
-// Decidido el 2026-10-27 (cierra la F1 de `docs/modelo de datos/23-REVISION-PARA-PRODUCCION.md`): la etapa estándar
+// Decidido el 2026-10-27 (cierra la F1 de `docs/_privado/modelo-de-datos/23-REVISION-PARA-PRODUCCION.md`): la etapa estándar
 // (lead › conversacion › calificado › agendado › asistio › venta › onboarding) y la Salida las mueven los workflows de
 // GoHighLevel en la oportunidad del lead. Acá se REGISTRA cada cambio con su hora, como un evento:
 //

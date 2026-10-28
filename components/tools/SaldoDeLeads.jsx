@@ -10,7 +10,7 @@
    La dibuja `ToolsView` arriba de las dos pestañas que gastan el saldo —Prospección y Scraper, con el
    mismo buscador— y sólo ahí, desde la etapa E11. Una sola lectura al montar, y se vuelve a montar en
    cada visita a esas pestañas; pero después de un scraping no se refresca mientras se mira
-   (deuda en `docs/OTROS/estado actual/15-TOOLS-Y-MONITOREO.md`). */
+   (deuda en `docs/1-plataforma/15-TOOLS-Y-MONITOREO.md`). */
 
 import { useEffect, useState } from 'react';
 

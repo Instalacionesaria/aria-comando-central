@@ -1,7 +1,7 @@
 // La lectura de Conversation y sus tres piezas nuevas, contra la base de verdad. Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN-1)
+// LO QUE ESTO CUIDA (docs/2-departamentos/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN-1)
 //
 // La mitad pura la cuida `pruebas/codigo/250-lectura-de-conversation.test.ts`. Acá se mira lo que sólo se ve con filas:
 //

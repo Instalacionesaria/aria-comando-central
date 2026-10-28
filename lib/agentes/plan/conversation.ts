@@ -1,4 +1,4 @@
-// El Plan de acción de Conversation, armado con plantillas (`docs/OTROS/agentes/fichas/F05-CONVERSATION.md`;
+// El Plan de acción de Conversation, armado con plantillas (`docs/3-agentes/F05-CONVERSATION.md`;
 // `02`, AG-32 y AG-37). Puro.
 //
 // Un grupo por agente del CRM —LeadFlow y AppFlow, con los nombres de la pantalla (`NOMBRE_DEL_AGENTE`)—, y en

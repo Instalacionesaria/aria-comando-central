@@ -1,6 +1,6 @@
 'use client';
 
-/* El panel que sube desde la caja del pie (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-51 y AG-57; `D-12`).
+/* El panel que sube desde la caja del pie (`docs/3-agentes/03-EL-CEREBRO.md`, AG-51 y AG-57; `D-12`).
  *
  * La respuesta de una pregunta hecha al pie se lee acá, sobre el cuerpo del departamento, y acá se sigue
  * la conversación y se ven los hilos propios de esta sección, con borrar: quien no ve el Inicio no tiene

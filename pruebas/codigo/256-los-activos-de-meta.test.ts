@@ -1,7 +1,7 @@
 // Los activos de cada anuncio leídos de Meta: la miniatura y el post. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md, etapa M-2 del 2026-10-15)
+// LO QUE ESTO CUIDA (docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md, etapa M-2 del 2026-10-15)
 //
 // La mitad con filas la cuida `pruebas/base/256-los-activos-de-meta.test.ts`. Acá, lo que se ve sin base. Cada prueba
 // dice qué mira y la mutación que la pone en rojo:

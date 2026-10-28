@@ -1,5 +1,5 @@
 // El estado del cerebro para quien mira: una unión, nunca un booleano (`T-13`;
-// `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-52). La pantalla dibuja la caja según esto, y el servidor
+// `docs/3-agentes/03-EL-CEREBRO.md`, AG-52). La pantalla dibuja la caja según esto, y el servidor
 // rechaza el POST con lo mismo: lo que la caja promete es lo que la ruta cumple.
 
 import type { LlaveDeIa } from '../../credenciales/resolver.ts';

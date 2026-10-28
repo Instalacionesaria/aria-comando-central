@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// AG15 de los agentes (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-70 y AG-71): la pasada diaria,
+// AG15 de los agentes (`docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-70 y AG-71): la pasada diaria,
 // después de los detectores, mide la Reunión y guarda todos sus temas en `negocio.reuniones_del_dia`, sobre
 // `db/sembrado/casos-de-los-agentes.ts`:
 //

@@ -1,7 +1,7 @@
 // Los departamentos reparten el menú y no deciden quién ve qué. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE SE ROMPE SIN QUE FALLE NADA (docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md, NE-11 a NE-16)
+// LO QUE SE ROMPE SIN QUE FALLE NADA (docs/6-historial/nueva-estructura/01-LA-ESTRUCTURA.md, NE-11 a NE-16)
 //
 // La barra nueva dibuja departamentos, y un departamento es una tabla: qué sección abre cada entrada y
 // con qué pestaña (`lib/autorizacion/departamentos.ts`). Hay tres formas de romperla que no fallan:
@@ -25,6 +25,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { existsSync as hayCarpeta } from 'node:fs';
+/* `docs/` es local desde el 2026-10-28 (`.gitignore`): en un clon sin la carpeta, lo que se compara con un documento se
+   saltea en vez de fallar. */
+const SIN_DOCS = hayCarpeta(join(import.meta.dirname, '..', '..', 'docs')) ? false : 'docs/ es local y no está en este clon';
 import { RAIZ } from '../apoyo/fuente.ts';
 import {
   DEPARTAMENTOS,
@@ -173,7 +177,7 @@ test('la visibilidad sale sólo del menú', () => {
   assert.deepEqual(navegacion(new Set()).departamentos, [], 'sin ninguna sección aparece un departamento');
 });
 
-test('el orden es el de `NE-45`, y cada ceja la del documento', () => {
+test('el orden es el de `NE-45`, y cada ceja la del documento', { skip: SIN_DOCS }, () => {
   assert.deepEqual(forma(navegacion(TODAS)), {
     inicio: 'Inicio',
     departamentos: [
@@ -188,7 +192,7 @@ test('el orden es el de `NE-45`, y cada ceja la del documento', () => {
   // Desde una empresa que no es la principal, el engranaje pierde lo que mira a todas (`NE-14`).
   assert.deepEqual(navegacion(TODAS, SIN_RESTRICCION, false).engranaje.map((e) => e.nombre), ['Ajustes']);
 
-  const tabla = [...fuente('docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md').matchAll(/^\| \*\*([^*|]+)\*\* \| `([^`]+)` \|/gm)]
+  const tabla = [...fuente('docs/6-historial/nueva-estructura/01-LA-ESTRUCTURA.md').matchAll(/^\| \*\*([^*|]+)\*\* \| `([^`]+)` \|/gm)]
     .map((m) => [m[1]!, m[2]!]);
   assert.deepEqual(DEPARTAMENTOS.map((d) => [d.nombre, d.ceja]), tabla, 'los departamentos o sus cejas no son los de `NE-12`');
   // La ceja es el departamento, nada más (`NE-48`): la de «· SE INSTALA EN …» se fue con la segunda edición.

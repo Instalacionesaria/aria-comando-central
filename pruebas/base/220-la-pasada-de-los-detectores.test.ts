@@ -4,7 +4,7 @@
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
 // `lib/agentes/detectores/correr.ts` y la tarea `senales` de `lib/negocio/barrido.ts` (AG8 de los agentes;
-// `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35):
+// `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35):
 //
 //   · le toca a la empresa que ya pasó las 6:00 de SU zona: a las 10:23 UTC, a Tokio sí y a Lima no;
 //   · a la que no le toca no se la sella —un sello cada hora haría parecer al día una tarea diaria—, y la

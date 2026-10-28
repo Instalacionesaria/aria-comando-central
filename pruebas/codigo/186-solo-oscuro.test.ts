@@ -1,7 +1,7 @@
 // La aplicación es sólo oscura, y nada la devuelve al claro. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LA TRAMPA DE SACAR UN BOTÓN (docs/OTROS/nueva-estructura/03-LA-MARCA.md, NE-23)
+// LA TRAMPA DE SACAR UN BOTÓN (docs/6-historial/nueva-estructura/03-LA-MARCA.md, NE-23)
 //
 // Hasta el 2026-10-01 cada persona elegía oscuro o claro, y la elección se leía de DOS lugares: un
 // guion de arranque leía la copia del navegador (`aios:tema` en `localStorage`) y la barra lateral

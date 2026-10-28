@@ -14,7 +14,7 @@
 //       recomienda pausar lo que alimenta el embudo.
 //
 //   3 · **Contar CITAS donde hay que contar CONTACTOS.** Verificado en
-//       `docs/OTROS/estado actual/02-CREATIVE.md:445-448@63b8cd1`: un `count(*)` sobre el `left join` inflaba
+//       `docs/1-plataforma/02-CREATIVE.md:445-448@63b8cd1`: un `count(*)` sobre el `left join` inflaba
 //       «agendamiento - yaping» de 109 a 112. No lanza: devuelve un número más grande.
 //
 // Y el cuarto, que es de otra clase: **contar el ICP con otra regla que la de las demás pantallas**. Desde la `105`

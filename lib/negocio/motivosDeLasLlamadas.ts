@@ -1,7 +1,7 @@
 // Los motivos de no venta de la pantalla de Sales: por qué no se cerraron las llamadas de venta analizadas.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// DE DÓNDE SALEN (docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, S15-19)
+// DE DÓNDE SALEN (docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, S15-19)
 //
 // De los Analizadores, no del registro del closer: el 2026-10-09 el usuario pidió que la tarjeta se llene sola con
 // lo que ya hay, y lo que hay son las llamadas HT analizadas. Cada una trae su resultado, que el modelo lee en la

@@ -1,5 +1,5 @@
-// La redacción del Plan de acción con el modelo (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-32;
-// `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`, A6-18).
+// La redacción del Plan de acción con el modelo (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-32;
+// `docs/2-departamentos/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`, A6-18).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL MODELO SÓLO REDACTA, Y LO QUE REDACTA SE VALIDA

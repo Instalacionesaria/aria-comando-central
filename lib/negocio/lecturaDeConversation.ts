@@ -1,7 +1,7 @@
 // La lectura de Conversation: lo que dibuja el front del prototipo, hecho en el servidor.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// QUÉ ES (docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN1-15)
+// QUÉ ES (docs/2-departamentos/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN1-15)
 //
 // La pestaña vuelve al front del prototipo: tres paneles, el modo Estado con las dos tarjetas de flujo, el modo
 // Agentes con las cuatro tarjetas y, debajo, una fila de cifras. Este módulo compone lo que ya se mide

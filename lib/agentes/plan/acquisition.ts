@@ -1,5 +1,5 @@
-// El Plan de acción de Acquisition, armado con plantillas (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`,
-// AG-32; `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`, A6-17 a A6-23). Puro.
+// El Plan de acción de Acquisition, armado con plantillas (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`,
+// AG-32; `docs/2-departamentos/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`, A6-17 a A6-23). Puro.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL FORMATO

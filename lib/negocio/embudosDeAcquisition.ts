@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ ES, Y DE DÓNDE SALE CADA CIFRA
 //
-// El front que vuelve el 2026-09-30 (`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`)
+// El front que vuelve el 2026-09-30 (`docs/2-departamentos/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`)
 // reparte las campañas en tres funnels y, para cada uno, dibuja una cadena de etapas con su tasa, su
 // costo y su variación contra la ventana anterior. Este módulo arma todo eso en el servidor, por
 // campaña y por funnel. El navegador no calcula nada: dibuja lo que llega, igual que antes
@@ -17,7 +17,7 @@
 //   · agendados: `tieneCitaAlcanzable`; calificados: `esCalificado`, agendados con Prioriza, Valida o Financia y
 //     sin descarte (A14-07, y la `105`);
 //   · ICP: el reparto de los calificados en Prioriza, Valida y Financia, y la porción de Descarta entre todos los
-//     contactos clasificados de la campaña (A14-08, reemplazado por `docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`);
+//     contactos clasificados de la campaña (A14-08, reemplazado por `docs/2-departamentos/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`);
 //   · el funnel de cada campaña: `negocio.funnels_de_campana`, asignado a mano (A14-03);
 //   · el nombre y el estado: `negocio.campanas` (A14-13).
 //
@@ -837,7 +837,7 @@ async function filasDelUniverso() {
  *     después de terminar en la zona de la empresa, y el detalle por campaña cuadrando con él. Hasta el
  *     2026-10-07 bastaba con que el día tuviera alguna fila de métricas, y así se escondió que el colector pedía
  *     13 de las 61 campañas: las filas nulas de las pausadas tapaban a la única que gastó. El precio de un día
- *     sin cerrar está dicho en docs/acquisition/14, A14-10: las ventanas que lo contienen no comparan ni
+ *     sin cerrar está dicho en docs/2-departamentos/acquisition/14, A14-10: las ventanas que lo contienen no comparan ni
  *     publican costos hasta que el día sale de ellas. Una empresa sin ningún gasto guardado y sin contactos de
  *     campaña no frena: nunca pautó, y su inversión cero compara bien. Si tiene contactos de campaña, sí pautó y
  *     lo que falta es la recolección: el gasto no está entero.

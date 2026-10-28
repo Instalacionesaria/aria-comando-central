@@ -1,5 +1,5 @@
 // Abrir un tema de la Reunión de hoy como conversación (AG15 de los agentes;
-// `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-74).
+// `docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-74).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUIÉN Y CÓMO

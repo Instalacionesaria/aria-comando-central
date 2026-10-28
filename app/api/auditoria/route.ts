@@ -1,7 +1,7 @@
 // ADR-0301 — Toda operación llama al portero. INNEGOCIABLE.
 // ADR-0304 — Las operaciones de una misma pantalla piden el mismo conjunto de capacidades.
 //
-// La pantalla de Conversation: lo que dibuja el tablero (`pantalla`, CN-2 de docs/conversation/01), y las tarjetas,
+// La pantalla de Conversation: lo que dibuja el tablero (`pantalla`, CN-2 de docs/2-departamentos/conversation/01), y las tarjetas,
 // los patrones, las conversaciones y los prompts del supervisor.
 //
 // ═══════════════════════════════════════════════════════════════════════════════

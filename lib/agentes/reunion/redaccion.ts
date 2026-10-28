@@ -1,4 +1,4 @@
-// La redacción de la Reunión de hoy con el modelo (`docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`,
+// La redacción de la Reunión de hoy con el modelo (`docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`,
 // AG-72; `fichas/F17-LA-REUNION-DE-HOY.md`, AG-F17-1 y AG-F17-4).
 //
 // ═══════════════════════════════════════════════════════════════════════════════

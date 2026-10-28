@@ -5,7 +5,7 @@
 //
 // Hasta AG1 sólo los Analizadores guardaban sus tokens, y en su propio registro de análisis; los demás los
 // devolvían o ni los leían, y nadie los persistía. Esta tabla es la única fuente del consumo de IA
-// (`docs/OTROS/agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-94). Guarda el agente, el modelo, los
+// (`docs/3-agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-94). Guarda el agente, el modelo, los
 // cuatro contadores, la duración, el resultado, quién pidió y una referencia; ni el prompt ni la
 // respuesta (`ADR-0407`).
 //
@@ -27,7 +27,7 @@
 //     (`lib/fundaciones/historico.ts`, `enSuPropiaTransaccion`): colgado de la de afuera, un fallo al
 //     anotar el uso se llevaría puesto lo que esa transacción ya había escrito.
 //
-// Pero no se la llama con una abierta (`docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-05): el modelo se
+// Pero no se la llama con una abierta (`docs/3-agentes/01-LA-ARQUITECTURA.md`, AG-05): el modelo se
 // espera fuera de toda transacción y el uso se anota después. Si igual pasa, se escribe en la suya y se
 // deja una línea que lo dice, en vez de perder la fila: el defecto —una de las cinco conexiones del
 // agrupador retenida mientras se esperaba al modelo— queda a la vista. Con el agrupador lleno, esta
@@ -66,7 +66,7 @@ export type AgenteDeUso = (typeof AGENTES_DE_USO)[number];
 
 /**
  * Los que llaman al modelo por el transporte de los agentes (`llamada.ts`). Los demás conservan su
- * propio transporte (`docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-09) y anotan su uso directo con
+ * propio transporte (`docs/3-agentes/01-LA-ARQUITECTURA.md`, AG-09) y anotan su uso directo con
  * `registrarUso`: desde AG2 el Espía, el auditor y los Analizadores; Fundaciones, cuando se integre la
  * rama `feature/icp-oferta-v2`. El compilador no los deja entrar por la puerta equivocada.
  */

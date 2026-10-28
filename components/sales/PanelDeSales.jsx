@@ -1,13 +1,13 @@
 'use client';
 
-/* El tablero de Sales: el front del prototipo, con los datos reales (docs/sales/15, SA-3).
+/* El tablero de Sales: el front del prototipo, con los datos reales (docs/2-departamentos/sales/15, SA-3).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * EL MARCADO ES EL DEL PROTOTIPO, Y LOS NÚMEROS LLEGAN HECHOS
  *
  * `aios-command-center_1.html:2931-2995` dibujaba esta pantalla con cifras escritas a mano: cuatro tarjetas,
  * la tabla de closers y los motivos de no venta, 23 valores que cerraban entre sí y no salían de ninguna tabla
- * (`docs/sales/03-LOS-CUATRO-KPI.md`). Acá se dibuja el MISMO marcado —`cre-head`, `grid-4` con cuatro `card`
+ * (`docs/2-departamentos/sales/03-LOS-CUATRO-KPI.md`). Acá se dibuja el MISMO marcado —`cre-head`, `grid-4` con cuatro `card`
  * de `stat`, la tarjeta «Closers» con `col-head` y `row-i`, y la de «Motivos de no venta» con `mini-bar`—, con
  * las mismas clases y en el mismo orden. Las reglas siguen siendo las de `app/aios.css`, que nadie toca
  * (S15-01); lo nuevo vive en `app/sales.css`.

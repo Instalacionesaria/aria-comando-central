@@ -1,7 +1,7 @@
 // La navegación pide la pestaña, y la pantalla la toma una vez. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md, NE-19 y NE-20)
+// LO QUE ESTO CUIDA (docs/6-historial/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md, NE-19 y NE-20)
 //
 // Tools y Analizadores son una sección cada uno, y sus pestañas viven en departamentos distintos:
 // abrir «Research › Radar › Espía a tus competidores» es abrir `tools` PIDIÉNDOLE `espia`. El pedido lo deja

@@ -1,7 +1,7 @@
 // La lectura de Sales y sus dos piezas nuevas, contra la base de verdad. Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, SA-1)
+// LO QUE ESTO CUIDA (docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, SA-1)
 //
 // La mitad pura la cuida `pruebas/codigo/248-lectura-de-sales.test.ts`. Acá se mira lo que sólo se ve con filas:
 //

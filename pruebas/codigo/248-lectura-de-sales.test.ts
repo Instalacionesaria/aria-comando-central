@@ -1,7 +1,7 @@
 // La mitad pura de la lectura de Sales: las cuatro cifras, la tabla, los motivos y la tarjeta de abajo. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, SA-1)
+// LO QUE ESTO CUIDA (docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, SA-1)
 //
 // `armarSales` y `repartirMotivos` deciden qué número va en cada lugar del prototipo y, cuando no hay número, por
 // qué. Cada prueba dice qué mira y la mutación que la pone en rojo:

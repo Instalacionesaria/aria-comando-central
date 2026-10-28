@@ -118,7 +118,7 @@ export interface EmbudoDelFormulario {
  *
  * Hasta CV-4 (2026-10-09) la pantalla dibujaba esta lista al final. Desde entonces los que tienen lugar en el
  * prototipo dicen «Sin dato» ahí, y las sesiones y la tasa de la landing no lo tienen (CV15-27); lo que haría falta
- * para cada uno vive en `docs/OTROS/futuro/lo-que-conversion-no-mide.md`, y esta lista la lee el cerebro.
+ * para cada uno vive en `docs/5-pendiente/lo-que-conversion-no-mide.md`, y esta lista la lee el cerebro.
  */
 export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
   {

@@ -1,7 +1,7 @@
 'use client';
 
 // La conversación con el cerebro, para React: el chat del Inicio y el panel de la caja del pie la usan igual,
-// cada uno con su ruta (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-40, AG-51 y AG-52).
+// cada uno con su ruta (`docs/3-agentes/03-EL-CEREBRO.md`, AG-40, AG-51 y AG-52).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE SE DIBUJA SALE DEL SERVIDOR

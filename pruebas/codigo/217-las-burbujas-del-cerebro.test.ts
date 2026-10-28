@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// La pantalla del cerebro (AG7 de los agentes; `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-48, AG-52, AG-55 y
+// La pantalla del cerebro (AG7 de los agentes; `docs/3-agentes/03-EL-CEREBRO.md`, AG-48, AG-52, AG-55 y
 // AG-57):
 //
 //   · la evidencia es un desplegable DENTRO de la primera burbuja de la respuesta, no un panel aparte

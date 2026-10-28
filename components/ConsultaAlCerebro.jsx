@@ -1,7 +1,7 @@
 'use client';
 
 /* La caja «Pregúntale al cerebro sobre …» al pie de cada pantalla de un departamento
- * (`docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md`, `NE-50`; `docs/OTROS/agentes/03-EL-CEREBRO.md`,
+ * (`docs/6-historial/nueva-estructura/09-LA-SEGUNDA-EDICION.md`, `NE-50`; `docs/3-agentes/03-EL-CEREBRO.md`,
  * AG-40, AG-44 y AG-57).
  *
  * ═══════════════════════════════════════════════════════════════════════════════

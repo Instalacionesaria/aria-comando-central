@@ -4,7 +4,7 @@
 // POR QUÉ REEMPLAZA AL AD MANAGER DE GOHIGHLEVEL (Meta directo, M3)
 //
 // GoHighLevel daba 11 campos fijos, una llamada por campaña y por día, una serie que se cortaba en 25 filas, y nada de
-// video, desgloses, presupuesto, moneda ni zona (`docs/creative/14`, `docs/acquisition/08`). Meta, con el token de la
+// video, desgloses, presupuesto, moneda ni zona (`docs/2-departamentos/creative/14`, `docs/2-departamentos/acquisition/08`). Meta, con el token de la
 // conexión del cliente, da todo eso por cuenta publicitaria: una consulta de insights por rango trae todos los anuncios
 // de todos los días, paginada.
 //

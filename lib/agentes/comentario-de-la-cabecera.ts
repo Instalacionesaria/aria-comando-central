@@ -1,7 +1,7 @@
 'use client';
 
 // El comentario de la cabecera, del panel a la cabecera (AG15 de los agentes;
-// `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-78).
+// `docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-78).
 //
 // Lo sirve el GET de la pantalla abierta (`lib/agentes/cabecera.ts`), y lo recibe el panel de esa pantalla. La
 // cabecera vive fuera de `<main>` y no le pide nada al servidor: el panel lo PUBLICA acá cada vez que lee su

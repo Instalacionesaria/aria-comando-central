@@ -14,8 +14,8 @@
 //
 // ── DÓNDE VIVE HOY LA LISTA, Y POR QUÉ LA PRUEBA LA SIGUIÓ ──────────────────
 //
-// Desde CN-3 la pantalla no dibuja párrafos (docs/conversation/01, CN1-05): cada lugar sin dato va en «—» con una
-// línea, y lo que haría falta para medirlo vive en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`. El
+// Desde CN-3 la pantalla no dibuja párrafos (docs/2-departamentos/conversation/01, CN1-05): cada lugar sin dato va en «—» con una
+// línea, y lo que haría falta para medirlo vive en `docs/5-pendiente/lo-que-conversation-no-mide.md`. El
 // defecto puede volver ahí: una sección que declare faltante una cifra que la
 // pantalla dibuja con su valor. Así que la relación se sigue declarando acá, a mano, un renglón por cifra publicada.
 // ══════════════════════════════════════════════════════════════════════════════
@@ -24,12 +24,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { existsSync as hayCarpeta } from 'node:fs';
+/* `docs/` es local desde el 2026-10-28 (`.gitignore`): en un clon sin la carpeta, lo que se compara con un documento se
+   saltea en vez de fallar. */
+const SIN_DOCS = hayCarpeta(join(import.meta.dirname, '..', '..', 'docs')) ? false : 'docs/ es local y no está en este clon';
 import { RAIZ } from '../apoyo/fuente.ts';
 
 const leer = (r: string): string => readFileSync(join(RAIZ, r), 'utf8');
 const PANEL = 'components/conversation/PanelDeConversation.jsx';
 const LECTURA = 'lib/negocio/lecturaDeConversation.ts';
-const FUTURO = 'docs/OTROS/futuro/lo-que-conversation-no-mide.md';
+const FUTURO = 'docs/5-pendiente/lo-que-conversation-no-mide.md';
 
 /** Las cifras que la pantalla dibuja con valor, el campo de la lectura que las da y el título que las negaría. */
 const YA_SE_MIDE: readonly { cifra: string; campo: string; prohibido: RegExp }[] = [
@@ -40,7 +44,7 @@ const YA_SE_MIDE: readonly { cifra: string; campo: string; prohibido: RegExp }[]
   { cifra: 'el sentimiento', campo: 'sentimientoDe(', prohibido: /^el sentimiento\b/i },
 ];
 
-test('el panel no tiene su propia lista de lo que falta: vive en el documento de futuro', () => {
+test('el panel no tiene su propia lista de lo que falta: vive en el documento de futuro', { skip: SIN_DOCS }, () => {
   const panel = leer(PANEL);
   assert.ok(!/const FLUJOS|\.falta\b/.test(panel), 'el panel volvió a escribir su lista de lo que falta: es un párrafo, y vive en el documento');
   const futuro = leer(FUTURO);
@@ -53,7 +57,7 @@ test('el panel no tiene su propia lista de lo que falta: vive en el documento de
   }
 });
 
-test('una cifra que la pantalla dibuja NO puede estar declarada como faltante', () => {
+test('una cifra que la pantalla dibuja NO puede estar declarada como faltante', { skip: SIN_DOCS }, () => {
   const lectura = leer(LECTURA);
   const titulos = [...leer(FUTURO).matchAll(/^## \d+ · (.+)$/gm)].map((m) => m[1]!.trim());
   assert.ok(titulos.length > 0, 'no se leyó ningún título: la prueba dejó de poder leer el documento, y pasaría siempre');

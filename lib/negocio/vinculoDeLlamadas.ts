@@ -1,5 +1,5 @@
 // El vínculo de cada llamada analizada con su contacto (AG11 de los agentes; `T-19`;
-// `docs/OTROS/agentes/fichas/F14-LLAMADAS-DE-VENTA.md`). **Se calcula al leer**: sin tabla nueva y sin un
+// `docs/3-agentes/F14-LLAMADAS-DE-VENTA.md`). **Se calcula al leer**: sin tabla nueva y sin un
 // segundo escritor de las tablas del analizador. Corre dentro de `conOrganizacion(`.
 //
 // ═══════════════════════════════════════════════════════════════════════════════

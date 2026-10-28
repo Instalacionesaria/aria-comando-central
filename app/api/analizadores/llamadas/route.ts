@@ -34,7 +34,7 @@ export async function GET(peticion: Request): Promise<Response> {
     const { llamadas, cuenta, comentario } = await conOrganizacion(orgId, async () => ({
       llamadas: await listarLlamadas(orgId, tipo, filtro),
       cuenta: await contarPorFiltro(orgId, tipo),
-      /* El comentario de la cabecera (AG15 de los agentes, `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`,
+      /* El comentario de la cabecera (AG15 de los agentes, `docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`,
          AG-77): va con la lista y no con `…/estado`, que es de identidad y no puede leer negocio (ADR-0209). */
       comentario: await comentarioDeLasLlamadas(contexto.organizacion.zonaHoraria),
     }));

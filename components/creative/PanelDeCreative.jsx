@@ -1,6 +1,6 @@
 'use client';
 
-/* El tablero de Creative: el front del prototipo, con los datos reales (docs/creative/16, CF-3).
+/* El tablero de Creative: el front del prototipo, con los datos reales (docs/2-departamentos/creative/16, CF-3).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * EL MARCADO ES EL DEL PROTOTIPO, Y LOS NÚMEROS LLEGAN HECHOS

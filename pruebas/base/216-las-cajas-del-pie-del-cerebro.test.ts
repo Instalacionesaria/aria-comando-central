@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `app/api/<carpeta>/cerebro/route.ts` (AG6; `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-40 y AG-41), con la
-// regla 31 de `docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md`: una ruta nueva nace con su prueba de base.
+// `app/api/<carpeta>/cerebro/route.ts` (AG6; `docs/3-agentes/03-EL-CEREBRO.md`, AG-40 y AG-41), con la
+// regla 31 de `docs/1-plataforma/07-REGLAS-TRANSVERSALES.md`: una ruta nueva nace con su prueba de base.
 //
 //   · Cada sección con herramientas tiene su ruta; cada ruta declara la `PANTALLA` de su sección, pide en el
 //     GET la capacidad de esa sección y en el POST y el DELETE `cerebro.usar`.

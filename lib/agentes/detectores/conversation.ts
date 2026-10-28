@@ -1,4 +1,4 @@
-// Conversation en la tabla común de señales (AG13 de los agentes; `docs/OTROS/agentes/fichas/F05-CONVERSATION.md`;
+// Conversation en la tabla común de señales (AG13 de los agentes; `docs/3-agentes/F05-CONVERSATION.md`;
 // `02`, AG-37). No es un detector que mida: **traduce**. El auditor de los agentes del CRM sigue siendo el que
 // juzga cada conversación y el único escritor de `negocio.hallazgos`; esto lee sus hallazgos abiertos y publica
 // una señal por agente y patrón, con su `issue_source`.

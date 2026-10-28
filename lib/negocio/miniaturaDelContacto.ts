@@ -1,7 +1,7 @@
 // La miniatura del anuncio por el que llegó cada contacto, pedida a GoHighLevel contacto por contacto.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// POR QUÉ EXISTE (docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF1-11 y CF1-12)
+// POR QUÉ EXISTE (docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF1-11 y CF1-12)
 //
 // Medido el 2026-10-11: `GET /contacts/{id}` trae en `attributionSource` un `videoUrl` —la imagen del anuncio por el
 // que llegó el contacto, en `www.facebook.com`—, más `photoUrl`, `postId` e `igSid`. `POST /contacts/search`, que es
@@ -22,7 +22,7 @@
 // Medido el 2026-10-11 en producción: GoHighLevel adjunta la imagen sólo cuando el contacto entra desde un anuncio de
 // Instagram, y siempre con `adId`. Los que sólo traen `mediumId` —formularios externos y el calendario: su `mediumId`
 // es el del formulario, no el de un anuncio— no trajeron ninguna en 255 pedidos: pedirlos gastaba un pedido por cada
-// contacto nuevo de un formulario (docs/creative/16, § 2). La miniatura de las piezas de Facebook necesita Meta directo.
+// contacto nuevo de un formulario (docs/2-departamentos/creative/16, § 2). La miniatura de las piezas de Facebook necesita Meta directo.
 //
 // La pasada se corta —y lo que faltó se pide en la siguiente— ante un 429 (insistir sólo gasta el cupo), un 401 (la
 // credencial no sirve para ninguno), un GoHighLevel que no contesta, o el tiempo: corre dentro de la tarea `contactos`,

@@ -30,7 +30,7 @@
 //
 // No lo usan los módulos que ya llamaban al modelo (Fundaciones, el auditor, los Analizadores): cada uno
 // conserva su cuerpo, fijado por pruebas que nacieron de un 400 en producción
-// (`docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-09). El tipo `AgenteNuevo` lo hace cumplir.
+// (`docs/3-agentes/01-LA-ARQUITECTURA.md`, AG-09). El tipo `AgenteNuevo` lo hace cumplir.
 //
 // No va en flujo (`D-16`), así que la espera nunca pasa de `ESPERA_EXTERNA_MS`. Sin flujo, Anthropic no
 // manda una cabecera hasta terminar y el `fetch` de Node corta solo a los 300 s (el comentario de

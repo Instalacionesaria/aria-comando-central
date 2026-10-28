@@ -5,7 +5,7 @@
 //
 // El front de Acquisition reparte las campañas en los tres funnels del prototipo, y ningún dato dice
 // cuál es cuál (la cabecera de la `066` lo mide). Lo decide una persona con `credenciales.editar`,
-// campaña por campaña, y esto lo guarda (docs/acquisition/14, A14-03).
+// campaña por campaña, y esto lo guarda (docs/2-departamentos/acquisition/14, A14-03).
 //
 // ── LA CAMPAÑA SE IDENTIFICA POR SU ID, NUNCA POR SU NOMBRE ────────────────
 //

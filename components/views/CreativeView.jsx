@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
- * LA VISTA `creative` — Creative Intelligence, con el front del prototipo (docs/creative/16, CF-3)
+ * LA VISTA `creative` — Creative Intelligence, con el front del prototipo (docs/2-departamentos/creative/16, CF-3)
  *
  * Desde septiembre de 2026 hasta el 2026-10-11 esta vista llevó la estética de operación (`estetica-op`) y un
  * tablero propio: la cobertura del puente nombre↔anuncio, una tabla de gente por etapa, otra de la subasta, la fatiga

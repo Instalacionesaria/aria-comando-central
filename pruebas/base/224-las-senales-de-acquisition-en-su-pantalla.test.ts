@@ -4,7 +4,7 @@
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
 // `app/api/acquisition/route.ts` (las señales del GET), `app/api/acquisition/senales/route.ts` y
-// `app/api/acquisition/umbrales/route.ts` (AG9 de los agentes; `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`,
+// `app/api/acquisition/umbrales/route.ts` (AG9 de los agentes; `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`,
 // AG-24, AG-25 y AG-33; `05`, AG-80 y AG-82), con la regla 31: una ruta nueva nace con su prueba de base.
 //
 //   · El GET trae las señales vivas de la ventana elegida, con el nombre de la campaña resuelto; con «hoy» no

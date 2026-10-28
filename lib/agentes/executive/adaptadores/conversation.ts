@@ -10,7 +10,7 @@
 //
 // `conversation_en_cifras` publica lo que la pantalla ARMA con esas cifras: lee la misma lectura que la ruta,
 // `lecturaDeConversation`, con la misma ventana y el mismo «audita», y devuelve su `pantalla` entera —lo que el
-// cerebro dice de una cifra es lo que se dibuja (CN1-16 de `docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`)—.
+// cerebro dice de una cifra es lo que se dibuja (CN1-16 de `docs/2-departamentos/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`)—.
 // No lleva nada de una persona: son conteos, tasas y claves.
 
 import { laPantallaDelTecnico, TOPE_DE_CASOS } from '../../../auditor/pantalla.ts';

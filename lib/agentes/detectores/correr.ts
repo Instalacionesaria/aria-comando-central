@@ -1,5 +1,5 @@
 // La pasada diaria de los detectores de una empresa: la tarea `senales` del cron
-// (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35). Corre FUERA de todo contexto de organización y
+// (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35). Corre FUERA de todo contexto de organización y
 // abre el suyo, como las demás tareas del barrido.
 //
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -315,7 +315,7 @@ test('el corte se detecta del dato y dice si la ventana lo cruza, en las dos dir
 
 test('con una ventana explícita, el corte se mide contra su comienzo: la cruza la que empieza ese mismo día', async () => {
   /* Conversion pasa a los días cerrados de Acquisition (CV15-21 de
-     `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y el corte se dice contra esa ventana y no
+     `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y el corte se dice contra esa ventana y no
      contra los días que terminan hoy. Una ventana que empieza el mismo día del corte lo cruza —ese día todavía
      hubo formulario—; la que empieza al día siguiente, no.
      *

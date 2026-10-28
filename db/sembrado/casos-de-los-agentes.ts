@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ ES Y POR QUÉ ASÍ
 //
-// `docs/OTROS/agentes/07-LA-EVALUACION.md`, AG-100. El negocio real está detenido —sin gasto, sin ventas—,
+// `docs/3-agentes/07-LA-EVALUACION.md`, AG-100. El negocio real está detenido —sin gasto, sin ventas—,
 // así que producción no sirve para probar casi ninguna regla de los agentes. Esto arma, SÓLO EN LOCAL, una
 // empresa con datos que dispara cada caso del conjunto de preguntas (`AG-102`) y una vacía, sin datos ni
 // llave.

@@ -4,7 +4,7 @@
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
 // `lib/agentes/senales/escritura.ts` y la migración 072 (AG8 de los agentes;
-// `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-22 y AG-23). La reconciliación diaria, contra la base:
+// `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-22 y AG-23). La reconciliación diaria, contra la base:
 //
 //   · lo detectado nace una vez y después se actualiza; debajo del piso no nace, se cuenta;
 //   · una descartada no renace mientras la condición siga, y sí cuando vuelve más grave o cuando la condición

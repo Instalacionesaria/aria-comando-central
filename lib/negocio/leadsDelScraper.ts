@@ -1,5 +1,5 @@
 // Los leads que trajo el scraper de Tools, contados: por fuente, con y sin correo, teléfono y sitio, y de
-// cuántas búsquedas salieron. Para el cerebro (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-42).
+// cuántas búsquedas salieron. Para el cerebro (`docs/3-agentes/03-EL-CEREBRO.md`, AG-42).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // SÓLO AGREGADOS, Y POR QUÉ ES UNA FUNCIÓN NUEVA

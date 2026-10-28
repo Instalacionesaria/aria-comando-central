@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `lib/agentes/plan/acquisition.ts` (AG9 de los agentes; `docs/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`,
+// `lib/agentes/plan/acquisition.ts` (AG9 de los agentes; `docs/2-departamentos/acquisition/06-SENALES-Y-PLAN-DE-ACCION.md`,
 // A6-06, A6-07, A6-11, A6-17, A6-22 y A6-23):
 //
 //   · los cuatro grupos en su orden, y «Requiere validación ejecutiva» aparte, también vacíos;

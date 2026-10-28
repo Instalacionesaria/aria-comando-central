@@ -171,7 +171,7 @@ test('el supervisor son DOS de los cuatro modos de Conversation, al final, y abr
    * Intelligence. Se archivó donde correspondía.
    *
    * Desde el 2026-10-10 (CN-3) las dos son los dos últimos modos del selector del prototipo, después de
-   * Estado y Agentes, y dibujan lo mismo que antes (docs/conversation/01, CN1-13). */
+   * Estado y Agentes, y dibujan lo mismo que antes (docs/2-departamentos/conversation/01, CN1-13). */
   const jsx = leer(CONVERSATION);
 
   const bloque = jsx.slice(jsx.indexOf('const MODOS = ['), jsx.indexOf('];', jsx.indexOf('const MODOS = [')));
@@ -349,7 +349,7 @@ test('la pantalla NO afirma en ningún caso que no se puede calcular nada', () =
   /* El defecto que esta prueba persigue: la pestaña mostraba un número Y decía tres centímetros más abajo que
      «sus indicadores todavía no se pueden calcular». Las dos cosas en la misma pantalla se desmienten, y la que
      pierde credibilidad es la cifra. Desde CN-3 la pantalla no dibuja ningún párrafo (CN1-05): lo que falta para
-     medir lo demás está en `docs/OTROS/futuro/lo-que-conversation-no-mide.md`, y cada «—» dice su porqué en una
+     medir lo demás está en `docs/5-pendiente/lo-que-conversation-no-mide.md`, y cada «—» dice su porqué en una
      línea. */
   const jsx = leer(CONVERSATION);
   /* La guarda dentro de una cadena, no en un comentario: un `indexOf` de la frase suelta encontraría una

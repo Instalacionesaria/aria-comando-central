@@ -1,4 +1,4 @@
-// Lo que una pantalla lee de las señales y del plan (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-28 a
+// Lo que una pantalla lee de las señales y del plan (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-28 a
 // AG-34). **Corre dentro de `conOrganizacion(`.** Sólo lee: «vista» la marca un POST aparte (AG-24).
 //
 // La entidad viaja como identificador y el nombre de una campaña o de un anuncio se resuelve acá, al mostrar

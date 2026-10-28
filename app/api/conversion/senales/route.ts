@@ -1,5 +1,5 @@
 // Marcar vista, resolver y descartar una señal de Conversion (AG14 de los agentes;
-// `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-24 y AG-25; `05`, AG-80 y AG-82).
+// `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-24 y AG-25; `05`, AG-80 y AG-82).
 //
 // Es la gemela de `app/api/acquisition/senales/route.ts` y no una función compartida: cada ruta llama al
 // portero con su pantalla y abre su `conOrganizacion(` a la vista (ADR-0301), y lo que cambia entre las dos
@@ -14,7 +14,7 @@
 //   · Resolver y descartar, siempre con motivo; el autor y la fecha los pone el servidor.
 //   · «Vista» es un POST explícito, el de «Ver evidencia»: un GET nunca escribe (AG-24).
 //   · Bajo delegación no se escribe nada: un autor de la principal dentro de un cliente da `23503`
-//     (`docs/OTROS/estado actual/09-DEUDA-ABIERTA.md:871-906@972972e`), y decidir por la empresa no es de ARIA.
+//     (`docs/1-plataforma/09-DEUDA-ABIERTA.md:871-906@972972e`), y decidir por la empresa no es de ARIA.
 //   · Sólo señales de Conversion: el escritor filtra por departamento, así que el id de una de otro da 404
 //     aunque exista.
 // ═══════════════════════════════════════════════════════════════════════════════

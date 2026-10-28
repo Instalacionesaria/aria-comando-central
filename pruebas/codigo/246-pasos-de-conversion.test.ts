@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE SE AFIRMA, Y LA MUTACIÓN QUE CADA COSA TIENE QUE PONER EN ROJO
 //
-// El front del prototipo (docs/conversion/15) dibuja lo que arma `armarPasos`: no calcula nada. Acá se prueba la
+// El front del prototipo (docs/2-departamentos/conversion/15) dibuja lo que arma `armarPasos`: no calcula nada. Acá se prueba la
 // mitad PURA —los huecos (CV15-13), la caída (CV15-16), las flechas (CV15-20), el formulario y su corte
 // (CV15-14), los confirmados (CV15-18, `CV15-P10`) y el reparto de las señales (CV15-19)—. Lo que vive en el SQL
 // —la ventana, la misma edad, las congeladas, las vistas de Meta— se prueba contra la base en

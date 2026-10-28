@@ -1,5 +1,5 @@
 /* Lo que usa el tablero de Creative para escribir: la lista cerrada de frases, los rótulos y los formatos
- * (docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF-3). Vive aparte del panel, como en Conversation, para
+ * (docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF-3). Vive aparte del panel, como en Conversation, para
  * que la prueba lea la lista sin el marcado alrededor. */
 
 /* ── LA LISTA CERRADA DE FRASES (CF1-02) ───────────────────────────────────

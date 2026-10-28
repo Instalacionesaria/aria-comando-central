@@ -18,7 +18,7 @@
 // de la decimocuarta"*.
 //
 // Esta lista NO está en `PRUEBAS.md`. Es una decisión propia, registrada en
-// `docs/OTROS/capa-base/ETAPA-3.md`.
+// `docs/6-historial/capa-base/ETAPA-3.md`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test from 'node:test';

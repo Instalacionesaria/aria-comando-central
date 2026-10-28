@@ -7,7 +7,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // POR QUÉ PIDE UN NÚMERO
 //
-// `docs/OTROS/agentes/07-LA-EVALUACION.md`, AG-104, y `D-31`: cada tanda gasta la llave de ARIA, y se hace
+// `docs/3-agentes/07-LA-EVALUACION.md`, AG-104, y `D-31`: cada tanda gasta la llave de ARIA, y se hace
 // con el OK del usuario en el chat, con el número de pedidos. Sin `--confirmo`, el guion sólo dice cuántos
 // pedidos va a hacer y sale. Con `--confirmo` y otro número, se niega: el número que se aprobó tiene que
 // ser el que se va a gastar, no uno cualquiera que destrabe la corrida.

@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `lib/agentes/executive/respuesta.ts` y `herramientas.ts` (AG5; `docs/OTROS/agentes/03-EL-CEREBRO.md`,
+// `lib/agentes/executive/respuesta.ts` y `herramientas.ts` (AG5; `docs/3-agentes/03-EL-CEREBRO.md`,
 // AG-47): el esquema estricto garantiza la forma, no que lo dicho sea cierto.
 //
 //   · Una cifra sin evidencia, con una evidencia que no existe, o cuyo valor no es el del CAMPO que cita, se

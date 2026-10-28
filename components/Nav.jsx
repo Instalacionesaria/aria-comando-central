@@ -1,6 +1,6 @@
 'use client';
 
-/* La barra lateral de la estructura nueva (`docs/OTROS/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-11` a
+/* La barra lateral de la estructura nueva (`docs/6-historial/nueva-estructura/01-LA-ESTRUCTURA.md`, `NE-11` a
  * `NE-18`), sobre el lienzo «Departamentos por dentro»: el logotipo y la empresa, «Nueva conversación»,
  * la Reunión de hoy, los cinco departamentos como acordeones y el pie con el engranaje.
  *

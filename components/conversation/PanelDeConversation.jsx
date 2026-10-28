@@ -1,6 +1,6 @@
 'use client';
 
-/* El tablero de Conversation: el front del prototipo, con los datos reales (docs/conversation/01, CN-3).
+/* El tablero de Conversation: el front del prototipo, con los datos reales (docs/2-departamentos/conversation/01, CN-3).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * EL MARCADO ES EL DEL PROTOTIPO, Y LOS NÚMEROS LLEGAN HECHOS

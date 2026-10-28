@@ -1,5 +1,5 @@
 // El comentario de la cabecera de un departamento: una línea, de reglas, sin modelo (AG15 de los agentes;
-// `docs/OTROS/agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-77 a AG-79; `fichas/F18-EL-COMENTARIO-DE-LA-CABECERA.md`).
+// `docs/3-agentes/04-LA-REUNION-Y-LA-CABECERA.md`, AG-77 a AG-79; `fichas/F18-EL-COMENTARIO-DE-LA-CABECERA.md`).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LA PRIORIDAD, Y LA REGLA DEL SILENCIO
@@ -11,7 +11,7 @@
 //      antes que la alta y, entre iguales, la que más contactos pierde.
 //   3. Una regla medible de la Reunión de HOY de esa sección (las `REU-…`, no las señales que la Reunión ya
 //      trae): sale de la fila que guardó la pasada, no se vuelve a medir.
-//   4. Nada. Sin una de las anteriores no se dibuja nada (`docs/OTROS/estado actual/07-REGLAS-TRANSVERSALES.md`).
+//   4. Nada. Sin una de las anteriores no se dibuja nada (`docs/1-plataforma/07-REGLAS-TRANSVERSALES.md`).
 //
 // ── SALES (2026-10-07) ───────────────────────────────────────────────────
 //

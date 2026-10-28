@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // POR QUÉ UNA POR AGENTE, Y NO UNA «POR OMISIÓN» QUE COMPARTAN
 //
-// `D-15` (`docs/OTROS/agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-90). Compartirla haría que cambiar
+// `D-15` (`docs/3-agentes/06-MODELOS-USO-TOPES-E-INCIDENTES.md`, AG-90). Compartirla haría que cambiar
 // el modelo de un agente cambie en silencio cuánto cuestan y cómo contestan los otros: es la razón por la
 // que el auditor no importa el de Fundaciones (el comentario de `MODELO_DEL_AUDITOR`,
 // `lib/auditor/modelo.ts`). Hoy cuatro valen lo mismo; cambiar uno es una línea y no arrastra a nadie.

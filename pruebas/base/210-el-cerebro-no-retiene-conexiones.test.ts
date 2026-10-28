@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `docs/OTROS/agentes/01-LA-ARQUITECTURA.md`, AG-05. El agrupador tiene cinco conexiones, y una pregunta
+// `docs/3-agentes/01-LA-ARQUITECTURA.md`, AG-05. El agrupador tiene cinco conexiones, y una pregunta
 // espera al modelo hasta dos minutos por ronda. Una transacción abierta durante esa espera retiene una
 // conexión de cinco: tres personas preguntando a la vez dejan a la empresa entera esperando, y nada falla
 // en una prueba de un solo usuario. La prueba 207 lo mira en el código; ésta lo mide en la base: con el

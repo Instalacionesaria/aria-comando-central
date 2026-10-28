@@ -34,7 +34,7 @@ import type { TokenUsage } from '../analizadores/nucleo/pricing.ts';
  *
  * Decía que `claude-sonnet-4-6` «no existe en la API de Anthropic». **Sí existe** — es un modelo
  * activo, con un millón de tokens de ventana. Lo afirmé sin comprobarlo, a partir de que la
- * generación fallaba, y lo escribí en tres lugares con seguridad: acá, en `docs/OTROS/capa-base/ETAPA-9.md` y en la
+ * generación fallaba, y lo escribí en tres lugares con seguridad: acá, en `docs/6-historial/capa-base/ETAPA-9.md` y en la
  * prueba que vigila esta línea.
  *
  * Y la diferencia no es anécdota, porque cambia el diagnóstico entero: si el identificador era

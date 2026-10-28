@@ -498,7 +498,7 @@ export const RESULTADOS_DEL_SETTER: readonly ResultadoEnElCrm[] = [
  * La etapa ESTÁNDAR del Pipeline Maestro (`contactos.etapa_estandar`) y su Salida son lo contrario:
  * las mueven los workflows de GoHighLevel en la oportunidad del lead, y Comando Central sólo las
  * REGISTRA con su hora (eventos `etapa_cambiada` y `salida_marcada`). Decidido por el usuario el
- * 2026-10-27: cierra la F1 de `docs/modelo de datos/23-REVISION-PARA-PRODUCCION.md`.
+ * 2026-10-27: cierra la F1 de `docs/_privado/modelo-de-datos/23-REVISION-PARA-PRODUCCION.md`.
  *
  * Consecuencia práctica: las columnas del pipeline funcionan desde el día uno, y la escritura
  * al CRM **se enciende sola** el día que estas tres pasen a `confirmado`.

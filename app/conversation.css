@@ -3,7 +3,7 @@
 
    El panel dibuja el marcado de `aios-command-center_1.html:2865-2929` —`cre-head` con el selector de modos bajo
    el título, `cs-panels` con tres `.pn`, las dos `.csf` del modo Estado y las cuatro `.csa` del modo Agentes— y lo
-   visten las reglas del prototipo, que siguen en `app/aios.css` y no se tocan (docs/conversation/01, CN1-01). La
+   visten las reglas del prototipo, que siguen en `app/aios.css` y no se tocan (docs/2-departamentos/conversation/01, CN1-01). La
    sección no lleva `estetica-op`, y `#v-conversation` salió de los `:is()` de `app/inteligencia-estetica.css`, que se
    borró el 2026-10-11, cuando Creative salió por el mismo camino.
 

@@ -1,7 +1,7 @@
 'use client';
 
 // El período que está mirando cada pantalla, para la caja del cerebro de su pie
-// (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-44): «¿cómo va esto?» desde una pantalla en «7 días» se contesta
+// (`docs/3-agentes/03-EL-CEREBRO.md`, AG-44): «¿cómo va esto?» desde una pantalla en «7 días» se contesta
 // con siete días si la pregunta no dice otra cosa.
 //
 // El período vive en el estado de cada pantalla (`useState(PERIODO_POR_OMISION)` en cada panel) y la caja

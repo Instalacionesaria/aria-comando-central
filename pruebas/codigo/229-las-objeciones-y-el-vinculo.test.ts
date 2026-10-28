@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// AG11 de los agentes (`docs/OTROS/agentes/fichas/F14-LLAMADAS-DE-VENTA.md` y `F15-LLAMADAS-DE-ONBOARDING.md`):
+// AG11 de los agentes (`docs/3-agentes/F14-LLAMADAS-DE-VENTA.md` y `F15-LLAMADAS-DE-ONBOARDING.md`):
 //
 //   · las categorías son un juego cerrado con «otra», el mismo en el código, en el tipo y en el `check` de la
 //     migración 073;

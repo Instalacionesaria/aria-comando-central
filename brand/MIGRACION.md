@@ -11,14 +11,14 @@ y el propio `app/brand/`, que ya es el sistema nuevo).
 La medición es de la base del PR #2, 28 commits antes de entrar a `main` el 2026-10-01. Desde entonces los
 conteos se movieron unas unidades —las hojas que `main` sumó, las reglas del botón de tema que salieron
 con la aplicación sólo oscura y las pilas de letra que pasaron a Geist—, y la etapa 5 de la nueva estructura los vuelve a medir
-(`docs/OTROS/nueva-estructura/06-LAS-ETAPAS.md`).
+(`docs/6-historial/nueva-estructura/06-LAS-ETAPAS.md`).
 
 ## Lo que ya se hizo (nueva estructura, etapas 4 y 5, 2026-10-01)
 
 - **La tipografía**: Geist y Geist Mono en toda la aplicación (ver «Tipografía»).
 - **La paleta**: el tema oscuro de `app/temas.css` lleva los valores de la marca, token por token, y las
   pantallas de operación dejaron de tener paleta propia. El mapa aplicado está en el comentario de ese
-  bloque y en `docs/OTROS/nueva-estructura/03-LA-MARCA.md` (`NE-25` y `NE-26`), y lo exige
+  bloque y en `docs/6-historial/nueva-estructura/03-LA-MARCA.md` (`NE-25` y `NE-26`), y lo exige
   `pruebas/codigo/188-la-paleta-de-la-marca.test.ts`. La tabla de más abajo es la propuesta original;
   donde se decidió distinto, lo dice su última columna.
 - **Las superficies**: el fondo es liso (la grilla y la viñeta del prototipo no se generan), los radios
@@ -192,7 +192,7 @@ en `app/temas.css`.
 | `--font-ui` → Inter (`next/font/google`) | `--font-ui` → **Geist** |
 | `--font-mono` → IBM Plex Mono | `--font-mono` → **Geist Mono** |
 
-**Hecho el 2026-10-01**, en la etapa 4 de la nueva estructura (`docs/OTROS/nueva-estructura/03-LA-MARCA.md`,
+**Hecho el 2026-10-01**, en la etapa 4 de la nueva estructura (`docs/6-historial/nueva-estructura/03-LA-MARCA.md`,
 `NE-24`). `--font-ui` y `--font-mono` apuntan a Geist y Geist Mono, que se cargan con `next/font/google`
 —el paquete `geist` salió, y el porqué está en `app/layout.js`—, y se borraron las cargas de Inter e IBM
 Plex Mono. Las pantallas de operación y los Incidentes, que tenían su propia letra, usan la variable.

@@ -5,7 +5,7 @@
  * por anuncio y el monitor de atribución, con la estética de operación (`estetica-op`). Era honesto y
  * perdía la forma que había pedido el product owner. El usuario pidió volver a esa forma —la de
  * `aios-command-center_1.html`, sección `#v-acquisition`, líneas 2679-2744— con la estética al 100 %
- * (docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md).
+ * (docs/2-departamentos/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md).
  *
  * Por eso la sección **no lleva `estetica-op`**: esa capa es la que cambió el look, y sin ella las
  * reglas del prototipo, que siguen en `app/aios.css`, vuelven a mandar (A14-01). Es el método de

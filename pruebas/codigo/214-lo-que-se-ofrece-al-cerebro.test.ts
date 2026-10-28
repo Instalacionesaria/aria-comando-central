@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// `lib/agentes/executive/herramientas.ts`, `herramientasPara` (AG6; `docs/OTROS/agentes/03-EL-CEREBRO.md`,
+// `lib/agentes/executive/herramientas.ts`, `herramientasPara` (AG6; `docs/3-agentes/03-EL-CEREBRO.md`,
 // AG-41): una herramienta que no se ofrece no existe para el modelo, así que lo que se ofrece ES el permiso.
 //
 //   · Cada sección, sola, recibe exactamente su juego, escrito acá y no derivado del catálogo: un closer no

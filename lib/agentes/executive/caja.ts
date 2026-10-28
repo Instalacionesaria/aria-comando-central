@@ -1,5 +1,5 @@
 // Lo que comparten las rutas del cerebro: la del Inicio (`app/api/executive/route.ts`) y las de la caja del
-// pie de cada sección (`app/api/<carpeta>/cerebro/route.ts`, `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-40).
+// pie de cada sección (`app/api/<carpeta>/cerebro/route.ts`, `docs/3-agentes/03-EL-CEREBRO.md`, AG-40).
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // LO QUE QUEDA EN CADA RUTA, Y POR QUÉ

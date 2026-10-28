@@ -1,6 +1,6 @@
 'use client';
 
-/* La mascota de la marca en React (`docs/OTROS/nueva-estructura/03-LA-MARCA.md`, `NE-28`).
+/* La mascota de la marca en React (`docs/6-historial/nueva-estructura/03-LA-MARCA.md`, `NE-28`).
  *
  * Envuelve `<aria-mascot>` (`public/brand/mascota/aria-mascot.js`), que `app/layout.js` registra con
  * `defer`. Este archivo no escribe colores: el orbe, los ojos y el halo los dibuja el elemento en su

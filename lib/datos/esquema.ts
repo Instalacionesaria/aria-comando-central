@@ -1099,7 +1099,7 @@ export interface TablaAnuncios {
  *
  * Se llena desde `/entity?entityType=CAMPAIGN` de GoHighLevel, una vez por pasada del colector de
  * anuncios. Existe porque el front de Acquisition agrupa por campaña y `anuncios` sólo guarda el
- * identificador (`docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, A14-13).
+ * identificador (`docs/2-departamentos/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, A14-13).
  */
 export interface TablaCampanas {
   org_id: ColumnaInquilino;
@@ -1258,7 +1258,7 @@ export interface TablaIncidentes {
  * A qué funnel del front de Acquisition pertenece cada campaña. Migración 066.
  *
  * Lo asigna una persona con `credenciales.editar`; el único escritor es
- * `lib/negocio/funnelDeLaCampana.ts` (docs/acquisition/14, A14-03).
+ * `lib/negocio/funnelDeLaCampana.ts` (docs/2-departamentos/acquisition/14, A14-03).
  */
 export interface TablaFunnelsDeCampana {
   org_id: ColumnaInquilino;
@@ -1482,7 +1482,7 @@ export interface TablaPromptsDelAgente {
  */
 /**
  * El link manual de una pieza de Creative (migración 063): el respaldo del video cuando Meta no lo
- * entrega (`docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, C15-06). Es un ENLACE: nunca se embebe.
+ * entrega (`docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md`, C15-06). Es un ENLACE: nunca se embebe.
  *
  * `pieza` llega normalizada —`lower(btrim(nombre))`, la misma expresión que `llaveDelCreativo`— y la
  * base lo hace cumplir con un `check`. El único escritor es `lib/negocio/enlaceDeLaPieza.ts`.

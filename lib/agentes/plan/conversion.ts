@@ -1,5 +1,5 @@
-// El Plan de acción de Conversion, armado con plantillas (`docs/OTROS/agentes/fichas/F04-CONVERSION.md`;
-// `docs/conversion/06`, CV6-02 a CV6-08). Puro.
+// El Plan de acción de Conversion, armado con plantillas (`docs/3-agentes/F04-CONVERSION.md`;
+// `docs/2-departamentos/conversion/06`, CV6-02 a CV6-08). Puro.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL FORMATO

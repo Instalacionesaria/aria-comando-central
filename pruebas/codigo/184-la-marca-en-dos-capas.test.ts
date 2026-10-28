@@ -1,7 +1,7 @@
 // La marca v2 vive en dos capas, y la de la marca nunca le gana a la aplicación. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/03-LA-MARCA.md, NE-22)
+// LO QUE ESTO CUIDA (docs/6-historial/nueva-estructura/03-LA-MARCA.md, NE-22)
 //
 // El PR #2 instaló la marca sin cambiar un píxel; que la app siga mandando depende de dos cosas:
 //

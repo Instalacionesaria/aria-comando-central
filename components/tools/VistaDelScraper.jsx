@@ -18,7 +18,7 @@
  * Sin `tools.editar` el buscador no se dibuja, como en el Espía, y el aviso va en la misma tarjeta:
  * sus botones gastan leads de un monedero con saldo real. Hereda del Espía también una deuda: la
  * vista recibe sólo `puedeEditar`, que es falso también cuando falló la lectura del estado de Tools,
- * y entonces el aviso culpa al rol (`docs/OTROS/estado actual/15-TOOLS-Y-MONITOREO.md`). */
+ * y entonces el aviso culpa al rol (`docs/1-plataforma/15-TOOLS-Y-MONITOREO.md`). */
 import { useState } from 'react';
 
 import { lugarDe } from '../../lib/autorizacion/departamentos.ts';

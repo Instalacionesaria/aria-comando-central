@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAS CONVERSACIONES SON DE QUIEN LAS ESCRIBIÓ
 //
-// `D-14` y `docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-51. La RLS separa empresas, no personas: dentro de una
+// `D-14` y `docs/3-agentes/03-EL-CEREBRO.md`, AG-51. La RLS separa empresas, no personas: dentro de una
 // empresa, todo lo que lee o borra un hilo filtra por `usuario_id`, y un hilo ajeno se contesta igual que
 // uno que no existe (404). Ninguna función de acá recibe un hilo sin recibir también quién pregunta.
 //

@@ -11,7 +11,7 @@
 // del prototipo (`closeReco()`, que no existía, o un clic sintetizado sobre `#dwClose`).
 //
 // El 2026-10-01 se fue el último que los abría, la maqueta del Executive, y con ella los overlays
-// (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-30`). Los cajones que quedan son de React y cada
+// (`docs/6-historial/nueva-estructura/04-EL-INICIO.md`, `NE-30`). Los cajones que quedan son de React y cada
 // uno trae su velo y su `Escape`. La pregunta pasó a ser la inversa: **que esa capa no vuelva**, ni
 // el archivo, ni sus ids, ni un cierre que escuche a la nada.
 //

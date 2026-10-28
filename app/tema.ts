@@ -6,7 +6,7 @@
  * Desde la migración 019 cada persona elegía oscuro o claro con un botón en el pie del menú, y la
  * preferencia se guardaba en la base (`identidad.usuarios.tema`). El brandbook v2 dice que el claro
  * es para documentos y PDFs, no para la aplicación, y la nueva estructura lo adoptó el 2026-10-01
- * (`docs/OTROS/nueva-estructura/03-LA-MARCA.md`, `NE-23`).
+ * (`docs/6-historial/nueva-estructura/03-LA-MARCA.md`, `NE-23`).
  *
  * ── LA TRAMPA QUE ESTO EVITA ────────────────────────────────────────────────
  *

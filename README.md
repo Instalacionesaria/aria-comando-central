@@ -77,7 +77,7 @@ app/fundaciones.css       lo que el prototipo nunca tuvo: formularios
 ```
 
 Tres cosas que hay que saber antes de tocarla, cada una con su motivo
-completo en `docs/OTROS/capa-base/ETAPA-9.md`:
+completo en `docs/6-historial/capa-base/ETAPA-9.md`:
 
 1. **Su estado vive en el almacén de ARIA-brain**, compartido con el hub
    mientras el hub siga en pie. No está en esta base y el aislamiento de
@@ -131,7 +131,7 @@ capa tiene prioridad sobre cualquier `@layer`.
 Todas las secciones salvo **Executive** tienen operaciones de servidor y
 piden sus datos con `pedir()`, sin números escritos: la última en sumarse
 fue **Leads Portal**, el 2026-09-26, que dibuja la cohorte real de leads
-(`docs/leads-portal/`). Lo vigila el conteo literal de
+(`docs/2-departamentos/leads-portal/`). Lo vigila el conteo literal de
 `SIN_OPERACIONES_TODAVIA` en `pruebas/codigo/90-fundaciones.test.ts`, que
 vale 1. Executive —incluido el cajón «Grupo de contactos»— sigue en los
 módulos de `lib/aios/`, con los números de ejemplo del prototipo. Una

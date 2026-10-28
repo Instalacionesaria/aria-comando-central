@@ -222,7 +222,7 @@ export const HORARIOS = {
 
      Y no reemplaza al webhook: el aviso del CRM baja esto a segundos de latencia y a ~cero llamadas.
      Lo que este cambio hace es cerrar el agujero de las 24 horas **hoy**, sin esperar una ruta pública.
-     Ver `docs/OTROS/capa-base/ETAPA-5.5-EL-AVISO-DEL-CRM.md`. ══════════════════════════════════════════ */
+     Ver `docs/6-historial/capa-base/ETAPA-5.5-EL-AVISO-DEL-CRM.md`. ══════════════════════════════════════════ */
 
   /* ── CADA DIEZ MINUTOS, Y `auditoria` VA TERCERA ─────────────────────────
 
@@ -365,7 +365,7 @@ export const HORARIOS = {
 
   /* ── LOS DETECTORES, CADA HORA PARA QUE A CADA EMPRESA LE LLEGUE SU MAÑANA ─
 
-     `docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35. El cron dispara cada hora en UTC y la pasada
+     `docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35. El cron dispara cada hora en UTC y la pasada
      corre a la empresa que ya pasó las 6:00 de su zona y no corrió hoy (`lib/agentes/detectores/correr.ts`).
      Así que la cadencia de cada empresa es DIARIA aunque el disparo sea horario, y el umbral es el de una
      tarea diaria: 2 × 1440 + 60 = 2940. Con el de una horaria, la frescura diría «atrasada» todas las tardes.
@@ -1097,7 +1097,7 @@ async function releerContactos(
      Después de sincronizar: el contacto nuevo de un aviso de «Lead» ya está en la caché y no cuesta una llamada. Antes
      de las miniaturas: la etapa no puede esperar a que sobre tiempo. Acotado por pasada y al fin de la corrida. */
   const avisos = await reprocesarAvisosDeOportunidad(ambito, acceso, { fin, ahora });
-  /* La miniatura del anuncio de cada contacto, que la búsqueda no trae (CF1-11 de docs/creative/16): hasta 50
+  /* La miniatura del anuncio de cada contacto, que la búsqueda no trae (CF1-11 de docs/2-departamentos/creative/16): hasta 50
      pedidos por pasada, una sola vez por contacto. Va después de sincronizar para pedir también los que acaban de
      entrar, y sus llamadas se suman a las de la tarea. */
   const miniaturas = await completarMiniaturas(ambito, acceso, undefined, ahora, fin);

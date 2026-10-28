@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ ES, Y POR QUÉ UNA SOLA
 //
-// La pestaña vuelve al front del prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`): cuatro
+// La pestaña vuelve al front del prototipo (`docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`): cuatro
 // cifras, la tabla de closers, los motivos de no venta y, debajo, la cadena comercial. Este módulo compone lo que
 // ya se mide —`dineroDelMes`, `tasaDeCancelacion`, `cadenaDeCierre`, `cicloHastaLaCita`, `cierrePorCloser`,
 // `motivosDeLasLlamadas` y `motivosDeNoVenta`— y arma con eso lo que la pantalla dibuja. La ruta lee la lectura entera; las herramientas

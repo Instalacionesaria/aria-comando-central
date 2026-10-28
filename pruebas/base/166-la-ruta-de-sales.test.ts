@@ -189,13 +189,13 @@ test('ningún módulo de Sales lee los campos personalizados del CRM', () => {
 });
 
 test('`pantalla` trae lo que dibuja el front del prototipo, y nada más', async () => {
-  /* `docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-13: el servidor arma las cuatro cifras, la tabla, los
+  /* `docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-13: el servidor arma las cuatro cifras, la tabla, los
      motivos y la tarjeta de abajo; los bloques de siempre siguen viajando con su forma. */
   const cuerpo = await pedir('30d');
   const p = bloque(cuerpo, 'pantalla');
   assert.deepEqual(Object.keys(p).sort(), ['cifras', 'closers', 'comercial', 'motivos', 'registrados']);
   /* Los huecos ya no viajan: cada «—» dice su motivo, y lo que no se mide está en
-     `docs/OTROS/futuro/lo-que-sales-no-mide.md` (S15-17). */
+     `docs/5-pendiente/lo-que-sales-no-mide.md` (S15-17). */
   assert.equal('huecos' in cuerpo, false, 'volvieron los huecos: la pantalla del prototipo no los dibuja');
   assert.deepEqual(Object.keys(bloque(p, 'cifras')).sort(), ['asistencias', 'revenue', 'tasaDeCierre', 'ventas']);
   /* La cancelación de la tarjeta es la del bloque de siempre, de 0 a 1: la función la da de 0 a 100. */

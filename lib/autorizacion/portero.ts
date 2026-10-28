@@ -39,7 +39,7 @@
 //     sin sesión: *"quien escriba `si no contexto: devolver` sobre la forma nueva NUNCA
 //     corta, porque un objeto siempre es verdadero"*.
 //
-// Queda registrado como desviación en `docs/OTROS/capa-base/ETAPA-3.md` y `docs/OTROS/especificacion/LEXICO.md`. La cadena que
+// Queda registrado como desviación en `docs/6-historial/capa-base/ETAPA-3.md` y `docs/1-plataforma/LEXICO.md`. La cadena que
 // buscan las pruebas sigue siendo `exigir(`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -107,7 +107,7 @@ export function verificarOrigen(peticion: Request): Response | null {
     // cuerpos, que no es el caso.
     console.error(
       'verificarOrigen: la variable de dominio esperado no está configurada. Toda petición ' +
-        'que modifica va a ser rechazada, incluido el login. Ver docs/OTROS/produccion/DESPLIEGUE.md.',
+        'que modifica va a ser rechazada, incluido el login. Ver docs/4-produccion/DESPLIEGUE.md.',
     );
     return rechazo('origen_no_permitido');
   }

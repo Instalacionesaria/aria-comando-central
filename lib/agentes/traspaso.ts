@@ -1,6 +1,6 @@
 'use client';
 
-// Los traspasos del cerebro en el navegador (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-49 y AG-51): qué hilo
+// Los traspasos del cerebro en el navegador (`docs/3-agentes/03-EL-CEREBRO.md`, AG-49 y AG-51): qué hilo
 // tiene que abrir el chat del Inicio cuando se lo pide otra parte de la pantalla —una fila de
 // CONVERSACIONES en la barra, «Nueva conversación»—.
 //

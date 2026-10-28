@@ -1,7 +1,7 @@
 // La mitad pura de la lectura de Creative: la tira, las piezas, los grupos por criterio y la fila de abajo. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF-1)
+// LO QUE ESTO CUIDA (docs/2-departamentos/creative/16-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CF-1)
 //
 // `armarCreative` decide qué número va en cada lugar del prototipo y, cuando no hay número, por qué. Los datos son
 // asimétricos a propósito: cruzar dos cifras, dos bases o dos piezas cambia el resultado. Cada prueba dice qué mira y

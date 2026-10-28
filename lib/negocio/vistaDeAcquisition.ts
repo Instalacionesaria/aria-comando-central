@@ -10,7 +10,7 @@
 //
 // Acá el cliente pide y dibuja. Cada cifra ya llega con su piso aplicado y su nulo donde no se puede
 // decir: `embudosDeAcquisition` trae las tasas, los costos, las variaciones y los motivos como claves,
-// y el texto lo pone el front con su lista cerrada de frases (docs/acquisition/14, A14-02). Tiene
+// y el texto lo pone el front con su lista cerrada de frases (docs/2-departamentos/acquisition/14, A14-02). Tiene
 // pruebas verificadas por mutación contra la base de verdad. Desde AQ-4 la respuesta ya no trae el
 // costo por anuncio ni el monitor de atribución: eran la pantalla anterior (A14-15).
 // ═══════════════════════════════════════════════════════════════════════════════

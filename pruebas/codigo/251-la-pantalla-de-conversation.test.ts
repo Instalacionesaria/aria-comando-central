@@ -1,7 +1,7 @@
 // Conversation dibuja el front del prototipo, con sus clases y sin capas encima. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN-3)
+// LO QUE ESTO CUIDA (docs/2-departamentos/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md, CN-3)
 //
 // El 2026-10-10 la pestaña volvió al marcado de `aios-command-center_1.html:2865-2929`, con la estética al 100 %,
 // y se llena con `lecturaDeConversation`. Volver atrás es fácil sin darse cuenta: pegar `estetica-op` en la sección,
@@ -32,6 +32,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { existsSync as hayCarpeta } from 'node:fs';
+/* `docs/` es local desde el 2026-10-28 (`.gitignore`): en un clon sin la carpeta, lo que se compara con un documento se
+   saltea en vez de fallar. */
+const SIN_DOCS = hayCarpeta(join(import.meta.dirname, '..', '..', 'docs')) ? false : 'docs/ es local y no está en este clon';
 import { RAIZ } from '../apoyo/fuente.ts';
 import { CUADRANTES } from '../../lib/negocio/cuadrantesDelIcp.ts';
 
@@ -176,12 +180,12 @@ test('cada bloque sale del lugar que le toca en `pantalla`, y en el orden del pr
   }
 });
 
-test('las frases son las de CN1-02, ni una más ni una menos', () => {
+test('las frases son las de CN1-02, ni una más ni una menos', { skip: SIN_DOCS }, () => {
   const c = comun();
   const bloque = c.slice(c.indexOf('export const FRASE = {'), c.indexOf('};', c.indexOf('export const FRASE = {')));
   const delPanel = [...bloque.matchAll(/:\s*'([^']+)'/g)].map((m) => m[1]!).sort();
   assert.ok(delPanel.length >= 10, 'no se leyeron las frases del panel');
-  const doc = leer('docs/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md');
+  const doc = leer('docs/2-departamentos/conversation/01-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md');
   const seccion = doc.slice(doc.indexOf('### CN1-02'), doc.indexOf('**Los desvíos de rótulo'));
   const delDoc = [...seccion.matchAll(/^\|[^|]+\|\s*«([^»]+)»\s*\|\r?$/gm)].map((m) => m[1]!).sort();
   assert.deepEqual(delPanel, delDoc, 'la lista del panel y la de CN1-02 no coinciden: una frase nueva entra primero al documento');

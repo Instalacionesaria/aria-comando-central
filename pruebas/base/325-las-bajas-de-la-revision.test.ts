@@ -1,7 +1,7 @@
 // LAS BAJAS DE LA REVISIÓN PARA PRODUCCIÓN: la cita con resultado se borra, y un alta no se cae por su cuenta. Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// QUÉ DEFIENDE ESTE ARCHIVO (docs/modelo de datos/23-REVISION-PARA-PRODUCCION.md § 6, Bajas)
+// QUÉ DEFIENDE ESTE ARCHIVO (docs/_privado/modelo-de-datos/23-REVISION-PARA-PRODUCCION.md § 6, Bajas)
 //
 //   · la `083`: borrar una cita con resultado deja el resultado con cita_id nulo y su org_id intacto. La clave vieja de
 //     la `049` (`resultados_cita_fk`, set null sin lista de columnas) intentaba poner org_id en nulo y el borrado

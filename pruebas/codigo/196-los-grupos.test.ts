@@ -1,7 +1,7 @@
 // Un grupo es una entrada con sub-pestañas, y cada una se ve por su propia sección. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/09-LA-SEGUNDA-EDICION.md, NE-45 y NE-46)
+// LO QUE ESTO CUIDA (docs/6-historial/nueva-estructura/09-LA-SEGUNDA-EDICION.md, NE-45 y NE-46)
 //
 // La segunda edición junta entradas que ya existían en una sola de la barra: Radar (el Espía y el
 // Scraper), Funnel (Tu landing y Tu VSL) y Leads (Todos, De GHL, De Radar y el Plan de prospección).

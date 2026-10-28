@@ -12,7 +12,7 @@
 // Medido el 2026-09-18, ventana de 30 días: el ICP promedio va de **29,2 a 69,2** según la pieza
 // —factor 2,4— y la tasa de agenda de **31 % a 77 %**. Seis piezas sobre el piso. Desde el 2026-10-26 (la `105`)
 // el ICP ya no es un número: es el cuadrante que manda el CRM, y por pieza se cuentan los calificados (Prioriza,
-// Valida o Financia) y la porción de Descarta (`docs/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
+// Valida o Financia) y la porción de Descarta (`docs/2-departamentos/leads-portal/15-EL-CUADRANTE-DEL-ICP.md`).
 //
 // Y no necesita nada de Meta: ni una credencial nueva, ni una llamada, ni el colector. Por eso este
 // módulo es el que hace que Creative deje de ser una maqueta, y por eso se escribe antes que el que
@@ -82,7 +82,7 @@ export interface FilaDeCreativo {
   porcionDeDescarta: number | null;
   /**
    * Cuántos son calificados por su cuadrante: Prioriza, Valida o Financia (`CALIFICADOS`), hayan agendado o no. Son los
-   * «Calificados» del front del prototipo (docs/creative/16, CF1-06), que hasta la `105` eran los de puntaje 75 o más.
+   * «Calificados» del front del prototipo (docs/2-departamentos/creative/16, CF1-06), que hasta la `105` eran los de puntaje 75 o más.
    * Un conteo, sin piso.
    */
   calificados: number;

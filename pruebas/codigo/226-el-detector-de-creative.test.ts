@@ -4,7 +4,7 @@
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
 // `lib/agentes/detectores/creative.ts` y `lib/agentes/plan/creative.ts` (AG10 de los agentes;
-// `docs/OTROS/agentes/fichas/F06-CREATIVE-INSIGHTS.md`; `docs/creative/06` y `11`):
+// `docs/3-agentes/F06-CREATIVE-INSIGHTS.md`; `docs/2-departamentos/creative/06` y `11`):
 //
 //   · el grano: sólo piezas y anuncios, nunca campañas ni conjuntos, que son de Acquisition (C11-04);
 //   · la caída del CTR sólo con veredicto de la fatiga y desde el 25 %, no desde el 20 % de la pantalla;

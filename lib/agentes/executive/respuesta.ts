@@ -5,7 +5,7 @@
 //
 // `responder` sale con `strict: true`: el proveedor garantiza la FORMA. No garantiza que lo que dice sea
 // cierto. Un modelo puede escribir un número plausible y falso con la forma perfecta, y eso es lo peor que
-// le puede pasar a una pantalla de cifras (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-47). Así que cada cifra
+// le puede pasar a una pantalla de cifras (`docs/3-agentes/03-EL-CEREBRO.md`, AG-47). Así que cada cifra
 // dice de qué evidencia sale (`ev`), y el servidor comprueba que esa evidencia exista y que el número
 // aparezca en ella. **La que no pasa se quita**, y la respuesta lo dice. Es el patrón de la ficha del
 // prospecto (`lib/analizadores/nucleo/prospect-card.ts`): lo detectado sin cita se degrada.

@@ -1,7 +1,7 @@
 // Las herramientas de Conversion del cerebro: los pasos del prototipo, el recorrido de los leads y el embudo del
 // formulario de la landing, de la MISMA lectura que `app/api/conversion/route.ts` —`lecturaDeConversion`, con los
 // días cerrados de Acquisition y la zona de la empresa—: lo que el cerebro dice de una cifra es lo que la pantalla
-// dibuja (CV15-23 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Son conteos y proporciones de la
+// dibuja (CV15-23 de `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Son conteos y proporciones de la
 // cohorte: ninguna fila es de una persona.
 
 import { lecturaDeConversion } from '../../../negocio/pasosDeConversion.ts';

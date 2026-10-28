@@ -1,7 +1,7 @@
 // UNA CUENTA DE META CON DATOS EN UN CLIENTE NO SE ASIGNA A OTRO. Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// QUÉ DEFIENDE ESTE ARCHIVO (M10 de `docs/modelo de datos/23-REVISION-PARA-PRODUCCION.md`, 2026-10-27)
+// QUÉ DEFIENDE ESTE ARCHIVO (M10 de `docs/_privado/modelo-de-datos/23-REVISION-PARA-PRODUCCION.md`, 2026-10-27)
 //
 // Las claves de lo que trae Meta no llevan el cliente: `campanas (org_id, meta_campana_id)`, `gasto_por_cuenta_publicitaria
 // (org_id, act_id, fecha)`… Si el `act_` ya tiene filas leídas en el cliente X y se asigna a Z, la pasada de Z choca en

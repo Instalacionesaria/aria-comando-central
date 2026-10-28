@@ -1,6 +1,6 @@
 'use client';
 
-/* Una respuesta del cerebro, en burbujas (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-46 a AG-49 y AG-55).
+/* Una respuesta del cerebro, en burbujas (`docs/3-agentes/03-EL-CEREBRO.md`, AG-46 a AG-49 y AG-55).
  *
  * ═══════════════════════════════════════════════════════════════════════════════
  * LO QUE SE DIBUJA, EN ESTE ORDEN

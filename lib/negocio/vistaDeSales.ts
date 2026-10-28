@@ -10,7 +10,7 @@
 //
 // Acá el cliente pide y dibuja. Cada cifra llega con su piso aplicado, su nulo donde no se puede
 // decir —con el motivo— y su aviso escrito. Desde el 2026-10-09 lo que dibuja el front del prototipo
-// llega armado en `pantalla` (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-13).
+// llega armado en `pantalla` (`docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-13).
 //
 // ── EL TIPO ES EL CONTRATO, Y SE ESCRIBE UNA SOLA VEZ ───────────────────────
 //

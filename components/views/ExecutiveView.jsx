@@ -1,14 +1,14 @@
 'use client';
 
-/* El Inicio (`docs/OTROS/nueva-estructura/04-EL-INICIO.md`, `NE-29`): la mascota, el saludo y el chat del
- * cerebro (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-40 a AG-55; AG7 de los agentes).
+/* El Inicio (`docs/6-historial/nueva-estructura/04-EL-INICIO.md`, `NE-29`): la mascota, el saludo y el chat del
+ * cerebro (`docs/3-agentes/03-EL-CEREBRO.md`, AG-40 a AG-55; AG7 de los agentes).
  *
  * ── LO QUE HABÍA ACÁ ────────────────────────────────────────────────────────
  *
  * La maqueta del Executive: un organigrama, un embudo y una reunión con cifras escritas a mano, y un
  * chat que elegía entre respuestas fijas por palabras clave. Se fue el 2026-10-01 con sus seis módulos
  * del navegador, el panel lateral y la barra «Pregúntale a Executive sobre …» (`NE-30`). El inventario de
- * lo que era está en `docs/OTROS/estado actual/11-EXECUTIVE.md`. Después, hasta AG7, la caja estuvo
+ * lo que era está en `docs/1-plataforma/11-EXECUTIVE.md`. Después, hasta AG7, la caja estuvo
  * deshabilitada, diciendo que el cerebro llegaba en una próxima etapa.
  *
  * ── EL CHAT ─────────────────────────────────────────────────────────────────

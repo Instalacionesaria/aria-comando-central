@@ -11,7 +11,7 @@
 // Dos de las seis métricas de «video y creativo» del § 18.7 y **las tres de «interacción» que
 // faltaban**. Lo que sigue sin fuente —cuartiles, tiempo medio visto, retención de seis segundos,
 // placement y el activo creativo— está medido como imposible en
-// `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`, con el código de error de cada intento.
+// `docs/2-departamentos/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md`, con el código de error de cada intento.
 //
 // ── EL ERROR MÁS FÁCIL DE COMETER ACÁ, Y NO FALLA ──────────────────────────
 //
@@ -142,7 +142,7 @@ export const ACCIONES_QUE_LEEMOS = {
  * éste es el motivo» es lo único que distingue un hueco declarado de una regresión.
  *
  * Las cuatro mediciones son del 2026-09-18 contra la subcuenta real, y están en
- * `docs/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` con la sonda para repetirlas.
+ * `docs/2-departamentos/creative/14-LO-QUE-GHL-SI-DA-Y-LO-QUE-NO.md` con la sonda para repetirlas.
  */
 export const FUERA_DE_ALCANCE: { punto: string; porque: string }[] = [
   {
@@ -256,7 +256,7 @@ export interface FilaDeRendimiento {
   interaccion: TasaDeAccion;
   /**
    * Los anuncios de la pieza en la ventana, uno por uno, del que más impresiones tuvo al que menos
-   * (desempate: el id). Es lo que lista el cajón de la pieza (docs/creative/15, C15-02), y de donde
+   * (desempate: el id). Es lo que lista el cajón de la pieza (docs/2-departamentos/creative/15, C15-02), y de donde
    * sale el anuncio cuya miniatura representa a la pieza (C15-01).
    *
    * Se arma con las MISMAS filas de `costoDelAnuncio` que se suman arriba, en el mismo bucle: una

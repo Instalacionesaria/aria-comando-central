@@ -1,5 +1,5 @@
 // Lo que dicen las llamadas de onboarding analizadas, contado (AG11 de los agentes;
-// `docs/OTROS/agentes/fichas/F15-LLAMADAS-DE-ONBOARDING.md`). Sin modelo y sólo lectura (AG-F15-1): no escribe
+// `docs/3-agentes/F15-LLAMADAS-DE-ONBOARDING.md`). Sin modelo y sólo lectura (AG-F15-1): no escribe
 // al cliente ni al CRM. Corre dentro de `conOrganizacion(`.
 //
 // ═══════════════════════════════════════════════════════════════════════════════

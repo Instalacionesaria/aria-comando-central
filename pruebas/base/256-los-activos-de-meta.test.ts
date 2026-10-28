@@ -1,7 +1,7 @@
 // Los activos de cada anuncio leídos de Meta, contra la base de verdad. Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/creative/15-LA-MINIATURA-Y-EL-VIDEO.md, etapa M-2 del 2026-10-15)
+// LO QUE ESTO CUIDA (docs/2-departamentos/creative/15-LA-MINIATURA-Y-EL-VIDEO.md, etapa M-2 del 2026-10-15)
 //
 // La mitad pura la cuida `pruebas/codigo/256-los-activos-de-meta.test.ts`. Acá, lo que sólo se ve con filas:
 //

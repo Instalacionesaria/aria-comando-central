@@ -1,5 +1,5 @@
 // La categoría de cada objeción de una llamada de venta analizada (AG11 de los agentes; `T-18`;
-// `docs/OTROS/agentes/fichas/F14-LLAMADAS-DE-VENTA.md`). El único escritor de `negocio.objeciones_clasificadas`
+// `docs/3-agentes/F14-LLAMADAS-DE-VENTA.md`). El único escritor de `negocio.objeciones_clasificadas`
 // (migración 073).
 //
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -24,11 +24,11 @@
 //
 // Publicaba además `costo` —la tabla por anuncio de `costoDelAnuncio`— y `calidad` —el monitor de
 // atribución de `calidadDeLaAtribucion`—, que eran la pantalla anterior. La del prototipo no los
-// dibuja (docs/acquisition/14, A14-15), y calcularlos en cada carga para nadie costaba dos lecturas.
+// dibuja (docs/2-departamentos/acquisition/14, A14-15), y calcularlos en cada carga para nadie costaba dos lecturas.
 // Con ellos se va el «Hoy» de dos significados de la misma respuesta: el monitor contaba 24 horas
 // móviles por día, y los funnels, días de calendario (A14-10). `costoDelAnuncio` sigue vivo porque
 // lo usa Creative. El monitor quedó dormido el 2026-09-30 por decisión del usuario
-// (`docs/OTROS/futuro/monitor-de-atribucion.md`) y volvió con AG9 de los agentes como señales del detector
+// (`docs/5-pendiente/monitor-de-atribucion.md`) y volvió con AG9 de los agentes como señales del detector
 // de Acquisition, en los mismos días cerrados que los funnels: esta ruta las publica en `senales`, ya
 // guardadas por la pasada diaria, y no las calcula en cada carga.
 // ═══════════════════════════════════════════════════════════════════════════════

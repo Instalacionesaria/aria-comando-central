@@ -1,5 +1,5 @@
 // El Brief del closer: qué se le pide al modelo y qué se acepta de lo que contesta (AG12 de los agentes;
-// `docs/OTROS/agentes/fichas/F13-CLOSER-Y-BRIEF.md`). La validación es pura.
+// `docs/3-agentes/F13-CLOSER-Y-BRIEF.md`). La validación es pura.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // CUATRO SECCIONES, COMO EL LIENZO

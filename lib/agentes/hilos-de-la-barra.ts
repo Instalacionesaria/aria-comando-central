@@ -1,6 +1,6 @@
 'use client';
 
-// Los hilos del cerebro que lista CONVERSACIONES en la barra (`docs/OTROS/agentes/03-EL-CEREBRO.md`, AG-51;
+// Los hilos del cerebro que lista CONVERSACIONES en la barra (`docs/3-agentes/03-EL-CEREBRO.md`, AG-51;
 // `fichas/F19-CONVERSACIONES.md`).
 //
 // La barra no le pide nada al servidor (`pruebas/codigo/193-*`): los hilos los trae el chat del Inicio, que

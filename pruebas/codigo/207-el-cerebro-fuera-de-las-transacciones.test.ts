@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // QUÉ DEFIENDE ESTE ARCHIVO
 //
-// Dos reglas de `docs/OTROS/agentes/01-LA-ARQUITECTURA.md` que no fallan en una prueba de un solo usuario:
+// Dos reglas de `docs/3-agentes/01-LA-ARQUITECTURA.md` que no fallan en una prueba de un solo usuario:
 //
 //   · AG-05: el modelo no se espera dentro de `conOrganizacion(`. Una transacción abierta durante dos
 //     minutos retiene una de las cinco conexiones del agrupador. La 210 lo mide en la base; ésta lo mira en

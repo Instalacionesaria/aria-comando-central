@@ -4,9 +4,9 @@
 // POR QUÉ ESTO VIVE APARTE
 //
 // La regla nació en Acquisition, decidida por el usuario el 2026-09-30 (A14-10 de
-// `docs/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y vivía dentro de `lecturaDeAcquisition`. El
+// `docs/2-departamentos/acquisition/14-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y vivía dentro de `lecturaDeAcquisition`. El
 // 2026-10-08 se tomó por defecto que Conversion pase a la misma regla (CV15-04, CV15-21 y `CV15-P01` de
-// `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y la condición es que las dos pantallas corten
+// `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`), y la condición es que las dos pantallas corten
 // **los mismos días**: con la misma ventana, la cohorte de Conversion es exactamente el `cobertura.sobre` de
 // Acquisition. Una copia de este cálculo divergiría el primer día que alguien arregle un borde en una sola, y
 // las dos pantallas dirían «30 días» sobre gente distinta. Por eso se mudó, y no se copió.

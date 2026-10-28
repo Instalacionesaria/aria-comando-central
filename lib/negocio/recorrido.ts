@@ -195,7 +195,7 @@ function comillas(v: string): string {
  * entre treinta de leads.
  *
  * **Conversion la usa sólo cuando no recibe una ventana explícita.** El 2026-10-08 se tomó por defecto (`CV15-P01`) que su pantalla
- * pase a los días cerrados de Acquisition (CV15-04 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`),
+ * pase a los días cerrados de Acquisition (CV15-04 de `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`),
  * con `cohorteEntre` y los días que corta `diasCerrados.ts`: desde CV-3 la ruta, el cerebro y el detector la pasan.
  */
 export function ventanaDeLaCohorte(alias: string, dias: number) {
@@ -205,7 +205,7 @@ export function ventanaDeLaCohorte(alias: string, dias: number) {
 /**
  * La cohorte de contactos dados de alta en `[desde, hasta]`, los dos días incluidos: desde la medianoche de
  * `desde` hasta antes de la de `hasta + 1`. **La usan Acquisition y Conversion**: con la misma ventana, las dos
- * pantallas cuentan a la misma gente (CV15-21 de `docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Era
+ * pantallas cuentan a la misma gente (CV15-21 de `docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`). Era
  * una expresión escrita a mano en `embudosDeAcquisition.ts`, y una segunda copia divergiría sin que nada falle.
  *
  * Las fechas llegan como texto `YYYY-MM-DD` desde la base (`bordesDelPeriodo`) y se comparan como `date`:
@@ -271,7 +271,7 @@ export async function ultimoDiaDelFormulario(): Promise<string | null> {
  * Si la ventana pedida cruza el corte de época.
  *
  * Es la regla 2 del departamento —*«nunca mezclar cohortes de antes y después del 2026-08-31»*,
- * `docs/OTROS/estado actual/03-CONVERSION.md:368@b3ca9ad`— convertida en un campo que la pantalla no puede
+ * `docs/1-plataforma/03-CONVERSION.md:368@b3ca9ad`— convertida en un campo que la pantalla no puede
  * ignorar por descuido. Una regla que vive sólo en un documento es una regla que el próximo viola.
  *
  * Medido el 2026-09-20 con las cuatro ventanas del sistema: **las dos que NO cruzan el corte no

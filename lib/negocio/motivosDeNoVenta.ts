@@ -5,13 +5,13 @@
 //
 // Del catálogo real de Avanzar: al registrar «No le interesa» el closer elige un motivo de una lista cerrada
 // (`lib/negocio/salidas.ts`), y se guarda en `resultados.detalle`. Es la tarjeta «Motivos de no venta» del
-// prototipo (`docs/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-11), con los motivos de verdad: los del
+// prototipo (`docs/2-departamentos/sales/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md`, S15-11), con los motivos de verdad: los del
 // prototipo no son de «No le interesa» —«No es quien decide» no existe en ningún catálogo, y «Pidió tiempo» es una
 // opción de `nurture`, otra salida—.
 //
 // No salen de las objeciones que el modelo clasifica en las llamadas analizadas —son de una llamada, no de una
 // pérdida, y piden otra capacidad— ni de los campos del CRM, que no los tienen
-// (`docs/sales/05-LOS-MOTIVOS-DE-NO-VENTA.md`).
+// (`docs/2-departamentos/sales/05-LOS-MOTIVOS-DE-NO-VENTA.md`).
 //
 // Un `detalle` que no está en el catálogo —o que falta— no se reparte entre los motivos: se cuenta aparte. El
 // texto nunca viaja: sólo el motivo cuando casa con el catálogo, y el conteo de los que no.

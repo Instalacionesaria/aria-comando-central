@@ -58,7 +58,7 @@
 // del despliegue redirige al muro de SSO. Comprobado con `curl`: `/api/salud` responde 200 en
 // `aria-comando-central.vercel.app` y 302 en `aria-comando-central-<hash>.vercel.app`. El cron pega
 // en la URL de producción, así que anda — pero **el día que alguien pase la protección a «All
-// Deployments», el cron deja de correr en silencio**. Está anotado en `docs/OTROS/produccion/DESPLIEGUE.md`.
+// Deployments», el cron deja de correr en silencio**. Está anotado en `docs/4-produccion/DESPLIEGUE.md`.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { timingSafeEqual } from 'node:crypto';
@@ -117,7 +117,7 @@ export async function GET(peticion: Request): Promise<Response> {
     // programada se lee como «el cron anda y no había nada que hacer».
     console.error(
       'cron: el secreto de las tareas programadas no está configurado, así que la ruta responde ' +
-        '403 y EL BARRIDO NO CORRIÓ. Ver docs/OTROS/produccion/DESPLIEGUE.md.',
+        '403 y EL BARRIDO NO CORRIÓ. Ver docs/4-produccion/DESPLIEGUE.md.',
     );
     return rechazo('sin_permiso');
   }
@@ -151,7 +151,7 @@ export async function GET(peticion: Request): Promise<Response> {
    * de una empresa a otra sin ningún error.
    */
   /* La llave de IA para redactar el Plan de acción se descifra SÓLO en la corrida que trae la pasada de los
-     detectores (`docs/OTROS/agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35): en las demás no hace falta. */
+     detectores (`docs/3-agentes/02-EL-CONTRATO-DE-SENALES.md`, AG-35): en las demás no hace falta. */
   const conLaPasada = tareasDelHorario(horario).tareas.includes('senales');
   // Las cuentas de Meta, igual: sólo en las corridas que le hablan a Meta (Meta directo: anuncios, su historia, activos).
   const conLosActivos = tareasDelHorario(horario).tareas.some((t) => TAREAS_DE_META.includes(t));

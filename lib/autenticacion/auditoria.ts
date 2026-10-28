@@ -121,11 +121,11 @@ export type Accion =
      reportar que antes de esa fecha nadie tocó nada. */
   | 'enlace_rapido_creado'
   | 'enlace_rapido_borrado'
-  /* El link manual de una pieza de Creative (docs/creative/15, C15-06). Se audita por lo mismo que un
+  /* El link manual de una pieza de Creative (docs/2-departamentos/creative/15, C15-06). Se audita por lo mismo que un
      link de pago: un «Ver en Facebook» que lleva a otro lado se ve igual que el bueno. */
   | 'enlace_de_pieza_cargado'
   | 'enlace_de_pieza_borrado'
-  /* El funnel de una campaña en Acquisition (docs/acquisition/14, A14-03). Se audita porque mover una
+  /* El funnel de una campaña en Acquisition (docs/2-departamentos/acquisition/14, A14-03). Se audita porque mover una
      campaña de funnel cambia las tres tarjetas y el costo por calificado de cada una, y la pantalla
      se ve igual de bien con la campaña en el funnel equivocado. Son DOS, por el mismo criterio que
      los links: asignar y quitar son hechos distintos. */

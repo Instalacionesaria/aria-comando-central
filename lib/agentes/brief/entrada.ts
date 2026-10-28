@@ -1,4 +1,4 @@
-// Lo que lee el Brief del closer de una cita (AG12 de los agentes; `docs/OTROS/agentes/fichas/F13-CLOSER-Y-BRIEF.md`,
+// Lo que lee el Brief del closer de una cita (AG12 de los agentes; `docs/3-agentes/F13-CLOSER-Y-BRIEF.md`,
 // «El Brief: qué lee»). **Corre dentro de `conOrganizacion(`.** Sólo lee.
 //
 // ═══════════════════════════════════════════════════════════════════════════════

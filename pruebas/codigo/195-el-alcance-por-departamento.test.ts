@@ -1,7 +1,7 @@
 // Ajustes › Usuarios ofrece las pestañas agrupadas por departamento, cada una una sola vez. Tipo: Código.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// LO QUE ESTO CUIDA (docs/OTROS/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md, NE-21)
+// LO QUE ESTO CUIDA (docs/6-historial/nueva-estructura/02-DONDE-VA-CADA-PANTALLA.md, NE-21)
 //
 // Las casillas de pestañas de una persona se agrupan desde la etapa E12 por departamento, con la lista de
 // lo que abre cada una. Tres formas de romperlo no fallan:

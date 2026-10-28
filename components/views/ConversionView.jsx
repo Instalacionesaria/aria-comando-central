@@ -6,7 +6,7 @@
  * la cohorte por camino de entrada, con la estética de operación (`estetica-op`). Era honesto y perdía la
  * forma que había pedido el product owner. El usuario pidió volver a esa forma —la de
  * `aios-command-center_1.html`, sección `#v-conversion`, líneas 2806-2862— con la estética al 100 % y los
- * datos reales (docs/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md).
+ * datos reales (docs/2-departamentos/conversion/15-EL-FRONT-ORIGINAL-CON-DATOS-REALES.md).
  *
  * Por eso la sección **no lleva `estetica-op`**: esa capa es la que cambió el look, y sin ella las reglas del
  * prototipo, que siguen en `app/aios.css`, vuelven a mandar (CV15-01). Es el método de Acquisition
