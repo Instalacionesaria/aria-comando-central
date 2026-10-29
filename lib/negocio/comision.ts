@@ -29,6 +29,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
+import { closerDelResultado } from './aNombreDelCloser.ts';
 
 /** Hoy hay un solo tramo. Ver el encabezado de la migración 015. */
 export const TIPO_CLOSER = 'closer';
@@ -91,7 +92,8 @@ export async function comisionDelMes(
 
   /* ── LA BASE, FILTRADA POR PERSONA ─────────────────────────────────────────
    *
-   * `where registrado_por = usuarioId` es la línea que hace honesto todo el resto, y es de la clase
+   * `where coalesce(closer_id, registrado_por) = usuarioId` (`closerDelResultado`, la `107`: lo registrado A SU
+   * NOMBRE, aunque lo cargue quien supervisa) es la línea que hace honesto todo el resto, y es de la clase
    * que este repositorio llama «el único lugar donde olvidarse un `where` devuelve filas ajenas sin
    * ningún error»: la política de RLS aísla por ORGANIZACIÓN, no por persona, así que sin esta línea
    * la consulta devuelve las ventas de todos los compañeros y el número sale más alto.
@@ -102,7 +104,7 @@ export async function comisionDelMes(
   const r = await datos()
     .selectFrom('resultados')
     .where('creado_el', '>=', desdeElPrimero)
-    .where('registrado_por', '=', usuarioId)
+    .where(closerDelResultado(), '=', usuarioId)
     .select(({ fn, eb }) => [
       fn
         .sum<string | null>(

@@ -100,7 +100,8 @@ const dosDigitos = (n) => String(n).padStart(2, '0');
 const armarDia = (a, m, d) => `${a}-${dosDigitos(m)}-${dosDigitos(d)}`;
 
 /**
- * @param verComo El closer que eligió quien administra en el selector de Inicio, o `null`.
+ * @param verComo Lo elegido en el selector de closer de la cabecera (`SelectorDeCloser.jsx`): el id de un closer,
+ *   `todo` o `sin_asignar`; o `null`. El servidor lo ignora si quien pide no puede elegir.
  *
  * ── VIAJA AL SERVIDOR Y NO SE USA ACÁ PARA NADA MÁS ────────────────────────
  *

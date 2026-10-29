@@ -537,6 +537,8 @@ async function guardar(
           : {}),
         ...('pais' in valores ? { pais: valores.pais } : {}),
         sincronizado_el: valores.sincronizado_el,
+        // El CRM lo devolvió: si tenía baja (la `108`), ya no la tiene. Ver `marcarLaBaja`.
+        baja_en_el_crm: null,
       } as never),
     )
     .execute();
@@ -626,7 +628,11 @@ export async function refrescarUnContacto(
 ): Promise<ResultadoDeRefresco> {
   const r = await contactoPorId(acceso, ghlContactId);
   if (r.tipo === 'fallo') return { tipo: 'fallo', fallo: r.fallo };
-  if (!r.datos) return { tipo: 'no_esta_en_el_crm' };
+  if (!r.datos) {
+    // La fila no se toca, salvo la marca: la baja con su fecha (la `108`), que la saca de las colas.
+    await marcarLaBaja(ghlContactId);
+    return { tipo: 'no_esta_en_el_crm' };
+  }
 
   // El territorio, con la MISMA precedencia que la sincronización completa: el orden de `ETIQUETAS`
   // es el orden de prioridad y el closer gana. Se recorre esa lista y no se escribe otra
@@ -638,4 +644,110 @@ export async function refrescarUnContacto(
   const guardado = await guardar(r.datos, territorio, await camposDelPuntaje(), await camposDelCuadrante());
   if (guardado !== true) return { tipo: 'salteado', motivo: guardado };
   return { tipo: 'listo', territorio };
+}
+
+/**
+ * Marca la baja de un contacto que el CRM ya no tiene (la `108`). **Sólo con un 404**: quien llama lo decide con
+ * `contactoPorId`, que devuelve `datos: null` para ese caso; cualquier otro rechazo es un fallo y no llega acá.
+ *
+ * Se marca y no se borra —el encabezado de `refrescarUnContacto`—, y la fecha es la PRIMERA vez que se vio: el
+ * `is null` hace que una segunda lectura no la corra. No toca `sincronizado_el`: la fila sigue siendo la foto del
+ * último día que el CRM la devolvió, y la ficha dice de cuándo es.
+ */
+async function marcarLaBaja(ghlContactId: string): Promise<boolean> {
+  const r = await datos()
+    .updateTable('contactos')
+    .set({ baja_en_el_crm: sql<Date>`now()` } as never)
+    .where('ghl_contact_id', '=', ghlContactId)
+    .where('baja_en_el_crm', 'is', null)
+    .executeTakeFirst();
+  return Number(r?.numUpdatedRows ?? 0) > 0;
+}
+
+/** Cuántos congelados se releen por pasada. Ver `releerLosCongelados`. */
+export const TOPE_DE_CONGELADOS = 40;
+
+/** Lo que dejó una pasada de la relectura de los congelados. */
+export interface RelecturaDeCongelados {
+  /** Cuántos se pidieron al CRM: es lo que cuesta, una llamada cada uno. */
+  pedidos: number;
+  /** El CRM los devolvió y se guardaron (descongelados si recuperaron una etiqueta de zona). */
+  releidos: number;
+  /** 404: el CRM ya no los tiene. Quedan con `baja_en_el_crm`. */
+  dadosDeBaja: number;
+  /** Otro rechazo: se registran y se saltean; la pasada siguiente los vuelve a pedir. */
+  fallidos: number;
+  /** `true` si la pasada se cortó por el fin de la corrida o por un rechazo que vale para todos (token, tasa). */
+  cortada: boolean;
+}
+
+/**
+ * Relee por id los contactos CONGELADOS (`territorio` nulo) que hace más de un día que nadie lee.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * EL CONGELADO ERA UNA FOTO QUE NADIE VOLVÍA A MIRAR
+ *
+ * La búsqueda es por etiqueta, así que un contacto sin etiqueta de zona no vuelve a aparecer: medido el 2026-10-29,
+ * 41 congelados y el más viejo con 65,7 días sin leer. Y un contacto borrado en el CRM se ve igual que uno al que le
+ * quitaron la etiqueta. Esta pasada los distingue, de a uno, con `GET /contacts/{id}`:
+ *
+ *   · **200** → `guardar()`, con el territorio de sus etiquetas: se refresca la foto, se descongela si recuperó una
+ *     zona y se le quita la baja si la tenía.
+ *   · **404** → `baja_en_el_crm = now()`. Sólo un 404: es el único que dice algo del contacto.
+ *   · **otro rechazo** → se registra y se saltea. Un 401, 403 o 429 vale para todos los que faltan, así que corta la
+ *     pasada en vez de gastar el resto de las llamadas en el mismo rechazo.
+ *
+ * Los que ya tienen baja no se vuelven a pedir: cada pasada costaría una llamada por cada contacto borrado, para
+ * siempre. El de lectura más vieja va primero, y el tope (`TOPE_DE_CONGELADOS`) acota el costo por pasada: 41 llamadas
+ * el primer día y después una por congelado por día. Corre dentro de `conOrganizacion(` con el ámbito de UN cliente:
+ * el token es el de su subcuenta, y la política de fila deja ver sólo sus contactos.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+export async function releerLosCongelados(
+  acceso: { token: string; locationId: string },
+  tope: number = TOPE_DE_CONGELADOS,
+  // El fin de la corrida del cron (opcional): no se empieza un pedido después.
+  plazo?: { fin: number; ahora: () => number },
+): Promise<RelecturaDeCongelados> {
+  const r: RelecturaDeCongelados = { pedidos: 0, releidos: 0, dadosDeBaja: 0, fallidos: 0, cortada: false };
+  const congelados = await datos()
+    .selectFrom('contactos')
+    .select(['ghl_contact_id'])
+    .where('territorio', 'is', null)
+    .where('baja_en_el_crm', 'is', null)
+    .where(sql<boolean>`coalesce(sincronizado_el, '-infinity') < now() - interval '1 day'`)
+    .orderBy(sql`sincronizado_el asc nulls first`)
+    .limit(tope)
+    .execute();
+  if (congelados.length === 0) return r;
+
+  const puntaje = await camposDelPuntaje();
+  const cuadrante = await camposDelCuadrante();
+  for (const { ghl_contact_id: id } of congelados) {
+    if (plazo && plazo.ahora() >= plazo.fin) {
+      r.cortada = true;
+      break;
+    }
+    r.pedidos++;
+    const leido = await contactoPorId(acceso, id);
+    if (leido.tipo === 'fallo') {
+      r.fallidos++;
+      console.error(`releerLosCongelados: el CRM respondió ${leido.fallo.tipo} para un congelado`);
+      if (leido.fallo.tipo === 'no_autorizado' || leido.fallo.tipo === 'demasiadas_peticiones') {
+        r.cortada = true;
+        break;
+      }
+      continue;
+    }
+    if (!leido.datos) {
+      if (await marcarLaBaja(id)) r.dadosDeBaja++;
+      continue;
+    }
+    const etiquetas = leido.datos.tags ?? [];
+    const territorio = ETIQUETAS.find((e) => etiquetas.includes(e.etiqueta))?.territorio ?? null;
+    const guardado = await guardar(leido.datos, territorio, puntaje, cuadrante);
+    if (guardado === true) r.releidos++;
+    else r.fallidos++;
+  }
+  return r;
 }

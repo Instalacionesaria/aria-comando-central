@@ -512,6 +512,11 @@ export interface TablaContactos {
    * escritura guarda antes lo que ya tenía (la foto inicial). La ponen la base y su disparador; el código no la escribe.
    */
   historia_desde: Generated<Date | null>;
+  /**
+   * Cuándo se vio que el CRM ya no lo tiene: un 404 de `GET /contacts/{id}` (la `108`). Nula = vigente. Se marca, no se
+   * borra: sigue en las cohortes y sale de las colas. La vuelve a nulo `guardar()` de `sincronizar.ts`.
+   */
+  baja_en_el_crm: Date | null;
 }
 
 /**
@@ -661,6 +666,11 @@ export interface TablaCitas {
   tipo: string | null;
   cuadrante_al_agendar: string | null;
   calificada: boolean | null;
+  /**
+   * Cuándo se vio que el CRM la borró: vino con `deleted: true`, o faltó en un barrido completo y su GET lo confirmó (la
+   * `108`). Nula = vigente. Con baja no es alcanzable (`citasAlcanzables.ts`). La vuelve a nulo `guardar()` de `citas.ts`.
+   */
+  baja_en_el_crm: Date | null;
 }
 
 export interface TablaMensajes {
@@ -943,6 +953,11 @@ export interface TablaResultados {
   detalle: string | null;
   nota: string | null;
   registrado_por: string | null;
+  /**
+   * El closer al que se le acredita (la `107`). `null` en las filas viejas y en las del setter: las métricas leen
+   * `coalesce(closer_id, registrado_por)` (`closerDelResultado`). `registrado_por` sigue siendo quien lo registró.
+   */
+  closer_id: string | null;
   /**
    * La apertura de «Avanzar» que produjo este resultado, para que un reintento no escriba dos.
    *

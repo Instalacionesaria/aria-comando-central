@@ -96,9 +96,9 @@ function esDeLaAgenda(linea: string): boolean {
   return /#v-closer \.ag[- ]|#v-closer \.ag\b|data-cola='agenda'/.test(linea);
 }
 
-/** `QuienEsElCloser` y el selector «ver como». No tienen equivalente en las otras dos. */
+/** `QuienEsElCloser`. No tiene equivalente en las otras. (El selector «ver como» se fue a la cabecera, en `closer.css`.) */
 function esDelCloserSolo(linea: string): boolean {
-  return /#v-closer \.ck-closer|#v-closer \.ck-vercomo/.test(linea);
+  return /#v-closer \.ck-closer/.test(linea);
 }
 
 /**

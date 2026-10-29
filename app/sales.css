@@ -63,6 +63,13 @@
   color: var(--txt-faint);
 }
 
+/* Las citas del período que el barrido ya no relee (la `108`): una línea chica debajo de todo, como las notas. */
+#v-sales .sl-relectura {
+  margin: 10px 2px 0;
+  font-size: 11.5px;
+  color: var(--txt-faint);
+}
+
 /* ── LA TARJETA DE ABAJO, EN CIFRAS (S15-20) ───────────────────────────────
  *
  * Dos filas de cifras con el vocabulario de las cuatro de arriba —`stat`, `s-l`, `s-v`—: los cinco eslabones, y

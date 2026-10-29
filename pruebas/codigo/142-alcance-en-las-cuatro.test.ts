@@ -96,11 +96,12 @@ const CAJA_DEL_CEREBRO = 'app/api/closer/cerebro/route.ts';
  * Las que resuelven el alcance PROPIO de quien pide, sin «ver como», cada una con su motivo.
  *
  *   · `brief` (AG12 de los agentes) — el Brief de UNA cita que quien pide abrió. Con «mío», sólo de sus
- *     contactos, y eso lo decide `entradaDelBrief` con el alcance. «Ver como» sólo estrecha lo que ve quien ya
- *     ve todo: la cita que abrió es de su territorio, y no hay una lista que el selector tenga que acotar.
+ *     contactos, y eso lo decide `entradaDelBrief` con el alcance. Desde el selector de closer de la cabecera
+ *     (2026-10-29) también atiende `verComo`, como las pantallas: no es una lista, así que no está en
+ *     `CON_ALCANCE`, y lo cuida su prueba de abajo.
  */
 const ALCANCE_PROPIO: Record<string, string> = {
-  'app/api/closer/brief/route.ts': 'el Brief de una cita abierta; «mío» lo acota, «ver como» no aplica',
+  'app/api/closer/brief/route.ts': 'el Brief de una cita abierta, con el alcance que eligió el selector',
 };
 const HERRAMIENTAS_DEL_CLOSER = 'lib/agentes/executive/adaptadores/closer.ts';
 
@@ -120,12 +121,19 @@ test('las CUATRO pantallas del Closer resuelven el alcance con la misma función
       /\balcance\b/,
       `\`${ruta}\` resuelve el alcance y no lo usa: la consulta sigue trayendo el territorio entero`,
     );
-    // Y atiende «ver como», que es lo que hace que el selector de Inicio no mienta en una pestaña.
+    // Y atiende «ver como», que es lo que hace que el selector de la cabecera no mienta en una pestaña.
     assert.match(
       src,
       /verComoDeLaUrl\s*\(/,
       `\`${ruta}\` ignora «ver como»: quien administra elige un closer y esta pantalla le sigue ` +
         'mostrando la empresa entera, sin decir que dejó de obedecer al selector',
+    );
+    /* Y le pasa a `alcanceDeQuienMira` si quien pide supervisa, calculado con la SESIÓN. Sin esto, un supervisor que
+       además es closer elige en la cabecera y esta pantalla le sigue mostrando lo suyo. */
+    assert.match(
+      src,
+      /alcanceDeQuienMira\(\s*contexto\.usuarioId,\s*(?:verComo|verComoDeLaUrl\(peticion\)),\s*(?:supervisa|puedeSupervisarClosers\(contexto\.permisos\)),?\s*\)/,
+      `\`${ruta}\` no le pasa al alcance si quien pide supervisa: el selector no le sirve a quien es closer`,
     );
   }
 });
@@ -183,14 +191,19 @@ test('la Agenda corta por asignación en SUS TRES consultas, no solo en la lista
      manda a esa persona a buscar citas que su Agenda no le va a mostrar nunca. */
   /* El corte es `contactoDelCloser` (el nivel 3: por par cliente-usuario del CRM), y la columna ya no
      se nombra suelta en este archivo: un `crm_asignado_a` a mano sería un corte que no mira el cliente. */
+  /* Desde el selector de closer (2026-10-29) el corte es `corteDelAlcance` —«mío» o «sin asignar»—, armado una vez
+     por consulta con `corteDe` y aplicado con el mismo `q.where(corte)` en las tres. */
   const src = sinComentarios(leer('lib/negocio/agenda.ts'));
-  const cortes = (src.match(/contactoDelCloser\(/g) ?? []).length;
+  assert.match(src, /corteDelAlcance\('k', alcance\)/, '`agenda.ts` dejó de armar el corte con `corteDelAlcance`');
+  assert.equal((src.match(/const corte = corteDe\(/g) ?? []).length, 3, 'una consulta de la Agenda no arma el corte');
+  const cortes = (src.match(/if \(corte !== null\) q = q\.where\(corte\);/g) ?? []).length;
   assert.equal(
     cortes,
     3,
     `\`agenda.ts\` corta por asignación en ${cortes} consultas y tiene TRES que lo necesitan: la ` +
       'lista y los dos conteos que explican un cero',
   );
+  assert.doesNotMatch(src, /tipo === 'mio'/, '`agenda.ts` corta con un `tipo === \'mio\'` suelto: «sin asignar» pasaría como todo');
   assert.doesNotMatch(src, /crm_asignado_a/, '`agenda.ts` corta a mano por `crm_asignado_a`, sin el cliente del contacto');
 });
 
@@ -221,14 +234,109 @@ test('el selector «ver como» viaja a las sub-pestañas que lo obedecen', () =>
   );
 });
 
-test('el Brief resuelve el alcance propio y se lo pasa a lo que lee, en el GET y en el POST', () => {
+test('el Brief resuelve el alcance elegido y se lo pasa a lo que lee, en el GET y en el POST', () => {
   for (const ruta of Object.keys(ALCANCE_PROPIO)) {
     const src = sinComentarios(leer(ruta));
     assert.equal((src.match(/alcanceDeQuienMira\s*\(/g) ?? []).length, 2, `\`${ruta}\` no resuelve el alcance en sus dos operaciones`);
+    /* Con el selector de closer (2026-10-29) el Brief obedece la elección, con el candado de la sesión: antes pasaba
+       `null` y un supervisor que era closer no podía abrir el Brief de la cita de otro. */
+    assert.equal(
+      (src.match(/alcanceDeQuienMira\(contexto\.usuarioId, verComoDeLaUrl\(peticion\), puedeSupervisarClosers\(contexto\.permisos\)\)/g) ?? []).length,
+      2,
+      `\`${ruta}\` no atiende el selector de closer en sus dos operaciones, o no le pasa el permiso de la sesión`,
+    );
     assert.equal(
       (src.match(/entradaDelBrief\(\s*cita\s*,\s*alcance\s*\)/g) ?? []).length,
       2,
       `\`${ruta}\` resuelve el alcance y no se lo pasa a lo que lee: serviría el Brief de la cita de otro closer`,
     );
   }
+});
+
+test('el selector de closer vive en la cabecera del Closer, y ya no en Inicio', () => {
+  /* El pedido (2026-10-29): «en el menú de dashboard de closer debe estar la parte para seleccionar el closer». Estaba
+     dentro de Inicio, y sólo para quien ve todo: el administrador que además es closer no lo veía nunca, y en Mi Día,
+     Pipeline y Agenda no estaba. */
+  const vista = sinComentarios(leer('components/views/CloserView.jsx'));
+  const cabecera = vista.slice(vista.indexOf('className="cre-head"'), vista.indexOf('className="cl-page"'));
+  assert.ok(cabecera.length > 0, 'no se encontró la cabecera del Closer');
+  assert.match(
+    cabecera,
+    /<div className="ch-r">\s*<SelectorDeCloser\b/,
+    'el selector de closer no está en la cabecera (`.cre-head > .ch-r`): no se ve en todas las sub-pestañas',
+  );
+  // Lo ofrece el SERVIDOR, no la pantalla comparando identificadores.
+  assert.match(cabecera, /datos\?\.puedeElegirCloser \?/, 'el selector no cuelga de `puedeElegirCloser`, que decide el servidor');
+  // Y lo elegido viaja: el `todo` de arranque y el Brief, que lee por fuera de la vista.
+  assert.match(vista, /useState\('todo'\)/, 'quien puede elegir no arranca en «Toda la empresa»');
+  assert.match(vista, /<VerComoDelCloser\.Provider value=\{verComo\}>/, 'el Brief no recibe la elección del selector');
+
+  const inicio = sinComentarios(leer('components/closer/Inicio.jsx'));
+  assert.doesNotMatch(inicio, /<select\b|ck-vercomo|alVerComo/, 'Inicio volvió a dibujar su propio selector «ver como»');
+
+  const brief = sinComentarios(leer('components/closer/BriefDeLaCita.jsx'));
+  assert.equal(
+    (brief.match(/conVerComo\(/g) ?? []).length,
+    2,
+    'el Brief no manda la elección del selector en sus dos pedidos (leer y generar)',
+  );
+
+  const selector = sinComentarios(leer('components/closer/SelectorDeCloser.jsx'));
+  // La píldora del sistema, la del selector de cliente, y accesible: menú con su estado y el cierre con Escape.
+  for (const pieza of [/className="acct"/, /className="menu-pop" role="menu"/, /className="mp-head"/, /role="menuitemradio"/, /aria-checked=/, /aria-expanded=\{abierto\}/, /usarCierreDeMenu\(abierto, caja, cerrar\)/]) {
+    assert.match(selector, pieza, `al selector le falta ${pieza}`);
+  }
+  for (const opcion of ["'Lo mío'", "'Toda la empresa'", "'Sin asignar'"]) {
+    assert.ok(selector.includes(opcion), `al selector le falta la opción ${opcion}`);
+  }
+
+  const midia = sinComentarios(leer('app/api/closer/mi-dia/route.ts'));
+  assert.match(midia, /const supervisa = puedeSupervisarClosers\(contexto\.permisos\);/, 'Mi Día no calcula con la sesión quién supervisa');
+  assert.match(midia, /puedeElegirCloser: puedeElegirCloser\(propio, closers, supervisa\)/, 'Mi Día no le dice a la pantalla si ofrecer el selector');
+});
+
+test('el selector de la cabecera usa sólo tokens del tema, y a 375 px va a todo el ancho', () => {
+  const hoja = readFileSync(join(RAIZ, 'app/closer.css'), 'utf8');
+  const i = hoja.indexOf('#v-closer .sc-closer .acct-wrap {');
+  assert.ok(i > 0, 'no están las reglas del selector de closer en `app/closer.css`');
+  const reglas = hoja.slice(i, hoja.indexOf('\n}', hoja.indexOf('@media (max-width: 760px)', i)) + 2);
+  assert.doesNotMatch(reglas, /#[0-9a-f]{3,8}\b(?![\w-]*\s*\{)|rgb\(\d/i, 'el selector de closer tiene un color literal: no cambia con el tema');
+  assert.match(reglas, /@media \(max-width: 760px\)[\s\S]*#v-closer \.cre-head \.ch-r \{\s*width: 100%;/, 'a 375 px la columna del selector no ocupa el ancho');
+});
+
+test('con «Sin asignar», el anillo de comisión lo dice y no habla de la suma de toda la empresa', () => {
+  /* Revisión de la etapa 8a (2026-10-29): con «Sin asignar» en el selector, `comision` llega nula y el anillo decía
+     «TODA LA EMPRESA · La comisión es de una persona, así que sumada no sería de nadie»: una suma que no se estaba
+     mirando. Inicio le pasa la elección a `Comision`, y `Comision` tiene su texto. */
+  const inicio = sinComentarios(leer('components/closer/Inicio.jsx'));
+  assert.match(
+    inicio,
+    /sinComision=\{\s*\(closers \?\? \[\]\)\.length === 0 \? 'sin_closer' : eleccion === 'sin_asignar' \? 'sin_asignar' : 'toda_la_empresa'\s*\}/,
+    'Inicio no le dice al anillo de comisión que se está mirando «Sin asignar»',
+  );
+  const comision = sinComentarios(leer('components/negocio/Comision.jsx'));
+  assert.match(comision, /sinComision === 'sin_asignar'\s*\?\s*'SIN ASIGNAR'/, 'el anillo no rotula «SIN ASIGNAR»');
+  assert.match(
+    comision,
+    /sinComision === 'sin_asignar'\s*\?\s*'Los contactos sin asignar no son de ningún closer/,
+    'el anillo de «Sin asignar» no explica por qué no hay comisión',
+  );
+});
+
+test('una respuesta de Mi Día pedida con la elección anterior no pisa la del closer elegido', () => {
+  /* Revisión de la etapa 8a (2026-10-29): `cargar` no miraba si la elección había cambiado mientras esperaba. Un tic
+     del reloj con el closer anterior que volvía tarde pisaba los datos: la píldora volvía a marcar al anterior, Pipeline
+     y Agenda ya mostraban el nuevo, y elegirlo de nuevo no hacía nada. */
+  const vista = sinComentarios(leer('components/views/CloserView.jsx'));
+  assert.match(
+    vista,
+    /const elegirCloser = useCallback\(\(valor\) => \{\s*verComoVigente\.current = valor;\s*setVerComo\(valor\);/,
+    'elegir un closer no marca cuál es la elección vigente antes de pedir',
+  );
+  assert.match(vista, /alElegir=\{elegirCloser\}/, 'el selector cambia la elección sin marcarla como vigente');
+  assert.match(
+    vista,
+    /await pedir\(conVerComo\('\/api\/closer\/mi-dia', verComo\)\);\s*if \(verComo !== verComoVigente\.current\) return;\s*/,
+    'Mi Día acepta una respuesta pedida con una elección que ya no es la vigente',
+  );
 });

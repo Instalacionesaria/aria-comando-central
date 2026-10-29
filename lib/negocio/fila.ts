@@ -49,9 +49,9 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
-import { noCancelada } from './citas.ts';
+import { noCancelada, sinBaja } from './citas.ts';
 import { armarPildora, type Pildora } from './pildora.ts';
-import { type AlcanceDelCloser, contactoDelCloser } from './alcanceDelCloser.ts';
+import { type AlcanceDelCloser, corteDelAlcance } from './alcanceDelCloser.ts';
 import type { Territorio } from '../datos/esquema.ts';
 import { type Cuadrante, claveDelCuadrante } from './cuadrantesDelIcp.ts';
 
@@ -502,6 +502,7 @@ function conLosSeisIconos() {
         .whereRef('citas.contacto_id', '=', 'c.id')
         .where('citas.inicio_el', '<', sql<Date>`now()`)
         .where(noCancelada('citas.estado_ghl'))
+        .where(sinBaja('citas.baja_en_el_crm'))
         .select(({ fn }) => fn.countAll<string>().as('n'))
         .as('reuniones_tenidas'),
 
@@ -515,6 +516,7 @@ function conLosSeisIconos() {
             .whereRef('citas.contacto_id', '=', 'c.id')
             .where('citas.inicio_el', '>=', sql<Date>`now()`)
             .where(noCancelada('citas.estado_ghl'))
+            .where(sinBaja('citas.baja_en_el_crm'))
             .select(sql`1`.as('x')),
         )
         .as('cita_futura'),
@@ -714,6 +716,8 @@ export async function filasDeTerritorio(
         ? eb.or([eb('c.territorio', '=', territorio), eb('c.territorio', 'is', null)])
         : eb('c.territorio', '=', territorio),
     )
+    // Un contacto que el CRM ya no tiene (la `108`) no es trabajo de nadie: sale de las listas y de las colas.
+    .where(sinBaja('c.baja_en_el_crm'))
     /* ── EL SEGUNDO CORTE: DE QUIÉN SON ESTOS LEADS ─────────────────────────
      *
      * Va como `$if` y no como un `where` condicional suelto porque tiene que poder NO estar: sin
@@ -727,9 +731,7 @@ export async function filasDeTerritorio(
      * Los SIN asignar quedan afuera, y es la decisión de producto: los ve quien no es closer, con
      * un contador para que alguien los asigne en el CRM. Un `or … is null` acá se los daría a los
      * tres closers a la vez, y dos closers llamarían al mismo contacto sin saberlo. */
-    .$if(opciones.alcance?.tipo === 'mio', (q) =>
-      q.where(contactoDelCloser('c', (opciones.alcance as Extract<AlcanceDelCloser, { tipo: 'mio' }>).vinculos)),
-    )
+    .$if(corteDelAlcance('c', opciones.alcance) !== null, (q) => q.where(corteDelAlcance('c', opciones.alcance)!))
     // Por actividad entrante, y los que nunca escribieron al final. `nulls last` explícito:
     // en PostgreSQL `desc` pone los nulos PRIMERO por omisión, así que sin esto la lista
     // arranca con los contactos que nunca dijeron nada.

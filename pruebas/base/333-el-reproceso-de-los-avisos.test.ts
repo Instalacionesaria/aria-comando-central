@@ -301,5 +301,6 @@ test('la tarea `contactos` reprocesa después de sincronizar y antes de las mini
   assert.ok(cuerpo.indexOf('sincronizarContactos(') < reproceso, 'el reproceso va antes de sincronizar: el contacto nuevo no está');
   assert.ok(reproceso < cuerpo.indexOf('completarMiniaturas('), 'el reproceso espera a que sobre tiempo de las miniaturas');
   assert.match(cuerpo, /miniaturas\.pedidos \+ avisos\.llamadas/, 'las llamadas del reproceso no se cuentan');
-  assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas, avisos \}/, 'el sello no lleva el resumen del reproceso');
+  // Y al final la relectura de los congelados (la 108, ver la prueba 336).
+  assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas, avisos(, congeladosReleidos: congelados)? \}/, 'el sello no lleva el resumen del reproceso');
 });

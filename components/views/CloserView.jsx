@@ -31,7 +31,7 @@
  * una persona— y no en mirarlos.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 import { CADENCIA, usarReloj } from '../../lib/reloj.ts';
 import { estaALaVista } from '../../lib/vista.ts';
@@ -42,6 +42,7 @@ import Agenda from '../closer/Agenda.jsx';
 import Inicio from '../closer/Inicio.jsx';
 import { horaEnZona } from '../../lib/negocio/tiempo.ts';
 import MiDia from '../closer/MiDia.jsx';
+import SelectorDeCloser, { RegistroDelCloser, VerComoDelCloser, conVerComo } from '../closer/SelectorDeCloser.jsx';
 import { usarPublicarComentario } from '../../lib/agentes/comentario-de-la-cabecera.ts';
 
 const SUB = [
@@ -82,18 +83,35 @@ export default function CloserView({ activa }) {
   );
   /* ── DE QUIEN SE ESTAN MIRANDO LOS NUMEROS ────────────────────────────────
    *
-   * `null` = de toda la empresa, que es lo que ve quien administra por omision. Viaja en la URL de
-   * la peticion y no en el cuerpo porque este `GET` lo repite un reloj cada diez segundos: en el
-   * parametro, la recarga lo arrastra sola.
+   * Arranca en `todo`: de toda la empresa, que es lo que ve por omision quien puede elegir —tambien el
+   * supervisor que ademas es closer (2026-10-29)—. Viaja en la URL de la peticion y no en el cuerpo
+   * porque este `GET` lo repite un reloj cada diez segundos: en el parametro, la recarga lo arrastra sola.
    *
-   * Quien es closer NO puede cambiarlo, y no porque la pantalla lo esconda: el servidor ignora el
-   * parametro cuando el alcance propio no es `todo`. Esconder el selector es comodidad; lo que
-   * cierra la puerta esta en `alcancePedido`. */
-  const [verComo, setVerComo] = useState(null);
+   * Un closer `usuario` NO puede cambiarlo, y no porque la pantalla le esconda el selector: el servidor
+   * ignora el parametro cuando el alcance propio no es `todo` y quien pide no supervisa. Por eso el `todo`
+   * de arranque no le cambia nada. Esconder el selector es comodidad; lo que cierra la puerta esta en
+   * `alcancePedido`. */
+  const [verComo, setVerComo] = useState('todo');
+  /* La elección VIGENTE, para descartar una respuesta de Mi Día pedida con la anterior. Sin esto, un tic del reloj
+     (o la carga de la elección de antes) que volvía DESPUÉS de cambiar de closer pisaba los datos: la píldora volvía
+     a marcar al closer anterior mientras Pipeline y Agenda ya mostraban el nuevo, y elegirlo otra vez no hacía nada
+     (para la píldora ya estaba elegido). Se actualiza al elegir, antes del render, y no en un efecto. */
+  const verComoVigente = useRef(verComo);
+  const elegirCloser = useCallback((valor) => {
+    verComoVigente.current = valor;
+    setVerComo(valor);
+  }, []);
   /* De la sesión sale una sola cosa acá: si esta persona puede configurar los porcentajes del
      equipo. Lo responde el SERVIDOR con la condición exacta del endpoint, no se deduce del rol. */
   const sesion = useSesion();
   const [datos, setDatos] = useState(null);
+  /* Para Avanzar (la `107`): si quien mira puede registrar a nombre de otro, y qué closer aplicó el servidor. Sólo si esos datos se pidieron con la elección VIGENTE (`pedidoCon`): recién elegido otro closer —o si esa carga falló— los de antes nombran al closer anterior, y Avanzar registraría a SU nombre. Mientras tanto no se elige a nadie: el servidor acredita al closer del contacto, y la línea lo dice. */
+  const registro = useMemo(
+    () => (datos?.puedeRegistrarANombre
+      ? { supervisa: true, eleccion: datos.pedidoCon === verComo ? datos.eleccion : null, closers: datos.closers ?? [], miCloserId: datos.miCloserId ?? null }
+      : null),
+    [datos, verComo],
+  );
   // El comentario de la cabecera llega con la pantalla, y se le entrega a la cabecera (AG15, `04`, AG-78).
   usarPublicarComentario('closer', datos ? (datos.comentario ?? null) : undefined);
   const [situacion, setSituacion] = useState('cargando');
@@ -120,9 +138,9 @@ export default function CloserView({ activa }) {
    */
   const cargar = useCallback(async () => {
     setSituacion((antes) => (antes === 'listo' ? antes : 'cargando'));
-    const r = await pedir(
-      verComo ? `/api/closer/mi-dia?verComo=${encodeURIComponent(verComo)}` : '/api/closer/mi-dia',
-    );
+    const r = await pedir(conVerComo('/api/closer/mi-dia', verComo));
+    // Pedida con una elección que ya no es la vigente: la respuesta es de otro closer, y la de ahora ya viene.
+    if (verComo !== verComoVigente.current) return;
     /* Las tres ramas sin colapsar (`ADR-0305`). Un rechazo por permiso NO es «no hay datos»:
        con una sola rama, alguien sin `closer.ver` vería un cockpit en cero y creería que no
        vendió nada. */
@@ -140,7 +158,7 @@ export default function CloserView({ activa }) {
       setSituacion((antes) => (antes === 'listo' ? antes : 'rechazado'));
       return;
     }
-    setDatos(r.datos);
+    setDatos({ ...r.datos, pedidoCon: verComo });
     // Y se limpia el aviso: un fallo viejo que no se borra es como se aprende a ignorar un cartel.
     setCausa(null);
     setSituacion('listo');
@@ -270,9 +288,7 @@ export default function CloserView({ activa }) {
           puedeConfigurarComisiones={sesion?.puedeConfigurarComisiones ?? false}
           closers={datos?.closers ?? []}
           mirando={datos?.mirando ?? null}
-          puedeVerTodo={datos?.puedeVerTodo ?? false}
-          verComo={verComo}
-          alVerComo={setVerComo}
+          eleccion={datos?.eleccion ?? null}
           soyElCloser={datos?.soyElCloser ?? false}
           /* Y la recarga completa, para cuando se cierra la ventana de los porcentajes: ahí sí puede
              haber cambiado el número de quien mira. */
@@ -315,7 +331,7 @@ export default function CloserView({ activa }) {
     /* ── «VER COMO» VALE PARA LAS CUATRO SUB-PESTAÑAS, Y VALÍA PARA UNA ────────
      *
      * Las cuatro rutas atienden `verComo` —con el candado de `alcancePedido`, que solo lo contesta
-     * cuando el alcance propio es `todo`— pero solo Mi Día lo MANDABA. O sea que quien administra
+     * cuando el alcance propio es `todo` o quien pide supervisa— pero solo Mi Día lo MANDABA. O sea que quien administra
      * elegía a un closer, veía su día, cambiaba de sub-pestaña, y el Pipeline y la Agenda le
      * mostraban la empresa entera sin decir que habían dejado de obedecer al selector.
      *
@@ -326,11 +342,8 @@ export default function CloserView({ activa }) {
      * Para quien ES closer esto no cambia nada —el servidor le ignora el parámetro— y va en la URL
      * y no en el cuerpo por lo mismo que en Mi Día: forma parte de la clave de `usarLectura`, así
      * que cambiar de closer no puede devolver lo que quedó guardado del anterior. */
-    const conVerComo = (camino) =>
-      verComo ? `${camino}${camino.includes('?') ? '&' : '?'}verComo=${encodeURIComponent(verComo)}` : camino;
-
     if (sub === 'pipeline') {
-      return <Pipeline camino={conVerComo('/api/closer/pipeline')} tablero="closer/pipeline" />;
+      return <Pipeline camino={conVerComo('/api/closer/pipeline', verComo)} tablero="closer/pipeline" />;
     }
 
     return <Agenda zonaHoraria={datos.zonaHoraria} verComo={verComo} />;
@@ -372,6 +385,20 @@ export default function CloserView({ activa }) {
               ))}
             </div>
           </div>
+          {/* ── DE QUIÉN SON LOS NÚMEROS, EN LA CABECERA ──────────────────────
+              Acá y no en Inicio: vale para las cuatro sub-pestañas. Lo ofrece el SERVIDOR (`puedeElegirCloser`):
+              a quien ve todo o supervisa, con algún closer elegible. A un closer `usuario` no: el servidor le
+              ignoraría la elección y el control mentiría. */}
+          {datos?.puedeElegirCloser ? (
+            <div className="ch-r">
+              <SelectorDeCloser
+                closers={datos.closers}
+                eleccion={datos.eleccion}
+                miCloserId={datos.miCloserId ?? null}
+                alElegir={elegirCloser}
+              />
+            </div>
+          ) : null}
         </div>
 
         {/* El aviso de una recarga que no salió. Aparece SOBRE los datos, no en lugar de ellos:
@@ -383,7 +410,13 @@ export default function CloserView({ activa }) {
           </div>
         ) : null}
 
-        <div className="cl-page">{cuerpo()}</div>
+        {/* El Brief (dentro de la ficha) lee con la misma elección: sin esto, se abría con el alcance propio. */}
+        <VerComoDelCloser.Provider value={verComo}>
+          {/* Y Avanzar registra a nombre del closer que se está mirando (la `107`): lo aplicado por el servidor. */}
+          <RegistroDelCloser.Provider value={registro}>
+            <div className="cl-page">{cuerpo()}</div>
+          </RegistroDelCloser.Provider>
+        </VerComoDelCloser.Provider>
 
         {/* ── MI DÍA MUESTRA SUS COLAS Y NADA MÁS ──────────────────────────
             Acá se dibujaba, debajo de las cinco colas, la lista COMPLETA del territorio con su

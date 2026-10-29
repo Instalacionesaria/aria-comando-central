@@ -35,7 +35,8 @@
 //
 // Los contactos **sin asignar** —17 de los 152— quedan fuera de todo `mio` y dentro de `todo`. Fue
 // la decisión de producto: *«solo quien no es closer»*, con un contador para que alguien los asigne
-// en el CRM. Ningún lead desaparece, y dos closers nunca trabajan el mismo.
+// en el CRM. Ningún lead desaparece, y dos closers nunca trabajan el mismo. Quien supervisa puede pedirlos solos con
+// el selector de closer: el tercer alcance, `sin_asignar` (2026-10-29), que nunca es el propio de nadie.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
 // EL VÍNCULO ES DE UN CLIENTE (el nivel 3, C5 · G2)
@@ -77,7 +78,11 @@ export interface VinculoConElCrm {
  */
 export type AlcanceDelCloser =
   | { tipo: 'todo' }
-  | { tipo: 'mio'; usuarioId: string; vinculos: readonly VinculoConElCrm[] };
+  | { tipo: 'mio'; usuarioId: string; vinculos: readonly VinculoConElCrm[] }
+  /* Los contactos que no son de ningún closer vinculado: sin asignar en el CRM, o asignados a un usuario del CRM
+     que no es closer. Sólo lo pide quien supervisa, con el selector. `asignados` son los pares de TODOS los closers
+     (como `mio`, no los de la vista: la política de `contactos` ya recorta al foco). */
+  | { tipo: 'sin_asignar'; asignados: readonly VinculoConElCrm[] };
 
 /** Un closer configurado, con sus vínculos al CRM. */
 export interface CloserConfigurado {
@@ -112,6 +117,28 @@ export function contactoDelCloser(alias: string, vinculos: readonly VinculoConEl
   return sql<boolean>`(${sql.ref(`${alias}.cuenta_id`)}, ${sql.ref(`${alias}.crm_asignado_a`)}) in (${sql.join(
     vinculos.map((v) => sql`(${v.cuentaId}::uuid, ${v.crmUsuarioId}::text)`),
   )})`;
+}
+
+/**
+ * El corte de «sin asignar»: el contacto no es de ningún par de un closer. `is null` va aparte porque una tupla con
+ * un nulo no está `in` ni `not in` nada (da nulo), y sin él los que el CRM no asignó —el grueso— no saldrían. Sin
+ * closers vinculados, nadie tiene contactos: todos están sin asignar.
+ */
+export function contactoSinCloser(alias: string, asignados: readonly VinculoConElCrm[]): RawBuilder<boolean> {
+  if (asignados.length === 0) return sql<boolean>`true`;
+  return sql<boolean>`(${sql.ref(`${alias}.crm_asignado_a`)} is null or (${sql.ref(`${alias}.cuenta_id`)}, ${sql.ref(
+    `${alias}.crm_asignado_a`,
+  )}) not in (${sql.join(asignados.map((v) => sql`(${v.cuentaId}::uuid, ${v.crmUsuarioId}::text)`))}))`;
+}
+
+/**
+ * El corte de un alcance sobre los contactos de `alias`, o `null` si no corta (`todo`, o sin alcance). Es lo que
+ * aplican las consultas del Closer: un `if (alcance.tipo === 'mio')` suelto dejaba pasar `sin_asignar` como si fuera
+ * `todo`, sin que nada fallara.
+ */
+export function corteDelAlcance(alias: string, alcance: AlcanceDelCloser | undefined): RawBuilder<boolean> | null {
+  if (!alcance || alcance.tipo === 'todo') return null;
+  return alcance.tipo === 'mio' ? contactoDelCloser(alias, alcance.vinculos) : contactoSinCloser(alias, alcance.asignados);
 }
 
 /**
@@ -194,33 +221,64 @@ export function alcanceDe(
 }
 
 /**
- * El alcance que pidió quien administra con el selector «ver como».
+ * Quién puede elegir de quién ver los números del Closer aunque sea closer vinculado: quien supervisa, con
+ * `credenciales.editar` (administrador, superadministrador). Lo decide el SERVIDOR con los permisos de la sesión;
+ * el navegador nunca lo manda. Un closer con rol `usuario` no la tiene, así que su `verComo` se sigue ignorando.
+ */
+export function puedeSupervisarClosers(permisos: ReadonlySet<string>): boolean {
+  return permisos.has('credenciales.editar');
+}
+
+/**
+ * Si a esta persona se le ofrece el selector de closer: quien ve todo, o quien supervisa (aunque sea closer), y sólo
+ * si hay algún closer vinculado a la vista. Sin ninguno, cada opción daría lo mismo que «Toda la empresa».
+ */
+export function puedeElegirCloser(
+  propio: AlcanceDelCloser,
+  closers: readonly CloserConfigurado[],
+  puedeSupervisar: boolean,
+): boolean {
+  return (propio.tipo === 'todo' || puedeSupervisar) && closers.some((c) => c.vinculosALaVista.length > 0);
+}
+
+/**
+ * El alcance que pidió con el selector de closer quien puede elegirlo.
  *
  * ── POR QUÉ ESTO NO ES UN AGUJERO ──────────────────────────────────────────
  *
  * Deja que una petición elija de quién ver los leads, que es exactamente la forma que tiene una
  * escalada. Lo que lo cierra son dos cosas, y hacen falta las dos:
  *
- *   1 · **Solo se atiende cuando el alcance propio es `todo`.** Un closer vinculado que mande
- *       `verComo` a mano recibe su propio alcance igual: la petición se ignora, no se rechaza. Se
- *       ignora y no se rechaza porque un 403 acá sería un oráculo — le confirmaría a quien prueba
- *       que ese identificador existe y es closer.
- *   2 · **El identificador pedido tiene que estar en la lista de SU empresa.** La lista sale de
- *       `closer_asignado` leída por la conexión del inquilino, así que ya viene acotada por la
- *       política de fila: un identificador de otra organización no está y cae en `todo`.
+ *   1 · **Solo se atiende cuando el alcance propio es `todo` o quien pide supervisa** (`puedeSupervisar`, que
+ *       calcula la ruta con la sesión). Un closer `usuario` que mande `verComo` a mano recibe su propio alcance
+ *       igual: la petición se ignora, no se rechaza. Se ignora y no se rechaza porque un 403 acá sería un
+ *       oráculo — le confirmaría a quien prueba que ese identificador existe y es closer.
+ *   2 · **El identificador pedido tiene que estar en la lista de SU empresa**, con algún vínculo a la vista. La
+ *       lista sale de `closer_asignado` leída por la conexión del inquilino, así que ya viene acotada por la
+ *       política de fila: un identificador de otra organización no está y cae en el alcance propio.
  *
- * Y lo que se pide es el identificador de NUESTRO usuario, no el del CRM. Con el del CRM, alguien
- * podría inventar uno que no esté vinculado a nadie y ver una lista que ninguna pantalla ofrece.
+ * Además del identificador de un closer valen dos palabras: `todo` (la empresa entera) y `sin_asignar` (lo que
+ * no es de ningún closer vinculado). Cualquier otra cosa cae en el alcance propio. Y lo que se pide es el
+ * identificador de NUESTRO usuario, no el del CRM: con el del CRM, alguien podría inventar uno que no esté
+ * vinculado a nadie y ver una lista que ninguna pantalla ofrece.
  */
 export function alcancePedido(
   propio: AlcanceDelCloser,
   verComo: string | null,
   closers: readonly CloserConfigurado[],
+  puedeSupervisar = false,
 ): AlcanceDelCloser {
-  if (propio.tipo !== 'todo' || !verComo) return propio;
+  if (!verComo || (propio.tipo !== 'todo' && !puedeSupervisar)) return propio;
+  if (verComo === 'todo') return { tipo: 'todo' };
+  if (verComo === 'sin_asignar') return { tipo: 'sin_asignar', asignados: closers.flatMap((c) => c.vinculos) };
   const elegido = closers.find((c) => c.usuarioId === verComo);
-  if (!elegido || elegido.vinculos.length === 0) return propio;
+  if (!elegido || elegido.vinculosALaVista.length === 0) return propio;
   return { tipo: 'mio', usuarioId: elegido.usuarioId, vinculos: elegido.vinculos };
+}
+
+/** Lo que el selector tiene marcado: el closer elegido, `todo` o `sin_asignar`. Sale del alcance aplicado. */
+export function eleccionDelAlcance(alcance: AlcanceDelCloser): string {
+  return alcance.tipo === 'mio' ? alcance.usuarioId : alcance.tipo;
 }
 
 
@@ -241,27 +299,32 @@ export interface QuienMira {
  * pregunta con una sola llamada. Repetir los tres pasos en cada ruta es cómo se llega a que una
  * de las tres se olvide de aplicar el alcance: las otras dos filtran, ésa no, y el closer ve en
  * Contactos los leads que Mi Día le esconde. No falla nada.
+ *
+ * `puedeSupervisar` lo calcula la ruta con `puedeSupervisarClosers(contexto.permisos)`; sin él, `verComo` sólo
+ * vale para quien ve todo.
  */
 export async function alcanceDeQuienMira(
   usuarioId: string,
   verComo: string | null = null,
+  puedeSupervisar = false,
 ): Promise<QuienMira> {
   const closers = await closersDeLaEmpresa();
   const propio = alcanceDe(usuarioId, closers);
-  return { closers, propio, alcance: alcancePedido(propio, verComo, closers) };
+  return { closers, propio, alcance: alcancePedido(propio, verComo, closers, puedeSupervisar) };
 }
 
 /**
- * El parámetro `verComo` de la URL, ya validado como forma.
+ * El parámetro `verComo` de la URL, ya validado como forma: un identificador, `todo` o `sin_asignar`.
  *
- * Un identificador mal formado no llega a la consulta: `alcancePedido` lo buscaría en la lista y
- * no lo encontraría —así que caería en `todo`, que es correcto— pero de paso evita que un valor
+ * Un valor mal formado no llega a la consulta: `alcancePedido` lo buscaría en la lista y
+ * no lo encontraría —así que caería en el alcance propio, que es correcto— pero de paso evita que un valor
  * absurdo viaje por tres funciones. Se devuelve `null` y no se rechaza, por lo mismo que
  * `alcancePedido` ignora en vez de rechazar: un 400 acá sería un oráculo.
  */
 export function verComoDeLaUrl(peticion: Request): string | null {
   const crudo = new URL(peticion.url).searchParams.get('verComo');
   if (!crudo) return null;
+  if (crudo === 'todo' || crudo === 'sin_asignar') return crudo;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(crudo)
     ? crudo
     : null;

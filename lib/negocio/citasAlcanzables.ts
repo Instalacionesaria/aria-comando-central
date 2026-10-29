@@ -50,10 +50,16 @@ import { CALIFICADOS } from './cuadrantesDelIcp.ts';
  * eventos, así que su estado no va a cambiar nunca más — contarlas es contar una foto vieja como si
  * fuera de hoy.
  *
+ * Y las que el CRM BORRÓ (`baja_en_el_crm`, la `108`) tampoco: no son una cita cancelada, son una que ya no existe, y
+ * salen de todas las cifras (decisión del usuario, 2026-10-29). La ficha del Leads Portal las muestra marcadas.
+ *
+ * Entre paréntesis porque son dos condiciones: un `not ${alcanzable(…)}` tiene que negar las dos.
+ *
  * @param alias El nombre con el que la consulta llama a la tabla `citas`. Sin alias, `citas`.
  */
 export function alcanzable(alias = 'citas'): RawBuilder<boolean> {
-  return sql<boolean>`${sql.raw(alias)}.ghl_calendario_id is not null`;
+  const a = sql.raw(alias);
+  return sql<boolean>`(${a}.ghl_calendario_id is not null and ${a}.baja_en_el_crm is null)`;
 }
 
 /**

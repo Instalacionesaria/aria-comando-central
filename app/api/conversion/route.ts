@@ -41,6 +41,7 @@ import { estadoDelDepartamento, reglasDelDepartamento, senalesDeLaPantalla, ulti
 import { textoDeConversion } from '../../../lib/agentes/plan/conversion.ts';
 import { comentarioDelDepartamento, faltaPorFrescura, LO_QUE_LEE } from '../../../lib/agentes/cabecera.ts';
 import { frescuraDe } from '../../../lib/negocio/frescura.ts';
+import { citasSinReleer } from '../../../lib/negocio/citasSinReleer.ts';
 
 export const PANTALLA = 'conversion';
 
@@ -68,7 +69,7 @@ export async function GET(peticion: Request): Promise<Response> {
      según su entidad (CV15-19), para que la pantalla dibuje cada una en la tarjeta y el cajón de su paso; la
      tarjeta de señales del final las muestra todas. */
   const ventana = periodo.clave === '7d' || periodo.clave === '30d' ? periodo.clave : null;
-  const [lectura, senales, comentario, frescura] = await conOrganizacion(contexto.orgEfectiva, async () => {
+  const [lectura, senales, comentario, frescura, relectura] = await conOrganizacion(contexto.orgEfectiva, async () => {
     const lista = ventana === null ? [] : await senalesDeLaPantalla('conversion', ventana, textoDeConversion);
     const porPaso = Object.fromEntries(PASOS.map((p) => [p, [] as string[]])) as Record<ClaveDePaso, string[]>;
     for (const s of lista) {
@@ -90,6 +91,8 @@ export async function GET(peticion: Request): Promise<Response> {
          de la tarea y no del día, así que no depende del período. Su `aviso`, para el `title` del chip, es la frase
          de la cabecera del departamento: la de `frescuraDe` promete una lectura al abrir la pantalla, y ésta no lee. */
       await frescuraDelChip(),
+      // Cuántas citas del período ya no se releen (la `108`): el aviso de frescura, debajo de los pasos.
+      await citasSinReleer(periodo.dias),
     ] as const;
   });
 
@@ -104,6 +107,7 @@ export async function GET(peticion: Request): Promise<Response> {
     recorrido: lectura.recorrido,
     formulario: lectura.formulario,
     frescura,
+    relectura,
     senales,
     /* Lo que esta sesión puede hacer con las señales: las capacidades de `app/api/conversion/senales` y
        `…/umbrales`, y nada bajo delegación (AG-82). */

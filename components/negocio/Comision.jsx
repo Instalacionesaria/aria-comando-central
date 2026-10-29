@@ -219,13 +219,24 @@ export default function Comision({
         <div className="ring">
           <div>
             <b>—</b>
-            <span>{sinComision === 'toda_la_empresa' ? 'TODA LA EMPRESA' : 'SIN CLOSER'}</span>
+            <span>
+              {sinComision === 'toda_la_empresa'
+                ? 'TODA LA EMPRESA'
+                : sinComision === 'sin_asignar'
+                  ? 'SIN ASIGNAR'
+                  : 'SIN CLOSER'}
+            </span>
           </div>
         </div>
         <p className="ck-nota">
           {sinComision === 'toda_la_empresa'
-            ? 'La comisión es de una persona, así que sumada no sería de nadie. Elegí un closer ' +
+            ? 'La comisión es de una persona, así que sumada no sería de nadie. Elige un closer ' +
               'arriba para ver la suya.'
+            : sinComision === 'sin_asignar'
+              /* El selector de la cabecera eligió «Sin asignar» (2026-10-29): no es la suma de nadie, son los
+                 contactos de nadie. Con el texto de «toda la empresa», hablaba de una suma que no se está mirando. */
+              ? 'Los contactos sin asignar no son de ningún closer, así que no hay comisión que mostrar. ' +
+                'Elige un closer arriba para ver la suya.'
             : 'Todavía no hay ningún closer configurado. Lo elige quien administra la empresa, acá ' +
               'mismo en esta pantalla, y a partir de ahí los números son suyos.'}
         </p>

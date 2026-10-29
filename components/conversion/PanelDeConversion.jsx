@@ -326,6 +326,8 @@ function Nota({ p }) {
     motivos.push(poner(FRASE.cruzaElCorte, { corte: fechaCorta(c.formulario.corte) }));
   }
   if (ps.sinAlta) motivos.push(poner(FRASE.sinAlta, { N: miles(ps.sinAlta) }));
+  // Las citas del período que el barrido ya no relee (la `108`): la frase la arma el servidor, y sin ninguna no viene.
+  if (p.relectura?.texto) motivos.push(p.relectura.texto);
 
   return (
     <p className="cv-note">

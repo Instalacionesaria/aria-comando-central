@@ -382,10 +382,13 @@ function Persona({ l, alAbrir }) {
           )}
         </span>
       </span>
-      {l.descartado || l.territorio === 'congelado' || l.planton ? (
+      {l.descartado || l.territorio === 'congelado' || l.planton || l.bajaEnElCrm ? (
         <span className="lp-marcas">
           {l.descartado ? <span className="lp-marca lp-marca-descarte">descartado</span> : null}
-          {l.territorio === 'congelado' ? <span className="lp-marca">congelado</span> : null}
+          {l.bajaEnElCrm ? <span className="lp-marca lp-marca-descarte">borrado en el CRM</span> : null}
+          {l.territorio === 'congelado' ? (
+            <span className="lp-marca">congelado{l.leidoEl ? ` · última lectura: ${fechaCorta(l.leidoEl)}` : ''}</span>
+          ) : null}
           {l.planton ? <span className="lp-marca">plantón según el calendario</span> : null}
         </span>
       ) : null}

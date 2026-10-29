@@ -60,6 +60,7 @@ import { sql } from 'kysely';
 import { conOrganizacion, datos } from '../datos/contexto.ts';
 import {
   ESTADOS_CANCELADOS,
+  citaPorId,
   citasDelCalendario,
   estaCancelada,
   listarCalendarios,
@@ -72,7 +73,14 @@ import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
  * La ventana. Hacia atrás lo que la Agenda necesita para marcar vencidas; hacia adelante lo que
  * alguien puede tener agendado.
  */
-const DIAS_ATRAS = 14;
+export const DIAS_ATRAS = 14;
+
+/**
+ * Cuántas citas ausentes se confirman por barrido, una llamada cada una (la `108`). Una ausencia es rara —medido el
+ * 2026-10-29: 4 en la ventana—, así que el tope casi nunca se alcanza; está por el día en que un calendario entero
+ * desaparezca, que serían decenas de llamadas en una pasada. Las que no entran se confirman en la siguiente.
+ */
+const TOPE_DE_CONFIRMACIONES = 20;
 /**
  * Hacia adelante. **Se exporta porque es el techo real de lo que se puede mostrar**: pedir la agenda
  * de los próximos 90 días devolvería vacíos los días 46 a 90 —nunca se le preguntaron al CRM— y ese
@@ -107,6 +115,15 @@ export function noCancelada(columna: string) {
   return sql<boolean>`(${col} is null or lower(${col}) not in (${lista}))`;
 }
 
+/**
+ * **¿El CRM todavía lo tiene?** La baja (`baja_en_el_crm`, la `108`) de una cita o de un contacto, en SQL y en un solo
+ * lugar, para las colas de trabajo: Mi Día, la Agenda, la fila y sus íconos. Una cita o un contacto borrado en el CRM
+ * no es trabajo de nadie. Las cifras no usan esto: usan `alcanzable()` (`citasAlcanzables.ts`), que ya lo incluye.
+ */
+export function sinBaja(columna = 'baja_en_el_crm') {
+  return sql<boolean>`(${sql.ref(columna)} is null)`;
+}
+
 export interface ResultadoDelBarrido {
   calendarios: number;
   /** Cuántas citas devolvió el CRM, de todos los calendarios juntos. */
@@ -116,6 +133,11 @@ export interface ResultadoDelBarrido {
   guardadas: number;
   /** Marcadas como borradas por el CRM. Se cuentan porque **no se guardan**. */
   borradas: number;
+  /**
+   * Citas YA GUARDADAS que quedaron con `baja_en_el_crm` en esta pasada (la `108`): las que volvieron con
+   * `deleted: true`, y las que un barrido completo no trajo y su GET confirmó borradas.
+   */
+  dadasDeBaja: number;
   /** Sin hora de inicio. También se cuentan, y también se descartan: ver abajo. */
   sinHora: number;
   /** Cuántas de las nuestras están canceladas. No se descartan — ver abajo. */
@@ -142,13 +164,18 @@ export interface ResultadoDelBarrido {
 export interface LectoresDelCalendario {
   listar: typeof listarCalendarios;
   citas: typeof citasDelCalendario;
+  /**
+   * Una cita por su id, para confirmar una ausencia antes de marcar su baja. Opcional: sin él no se confirma nada y
+   * no se marca ninguna ausente —un doble de prueba que no lo declara no puede salir a la red por la puerta de atrás—.
+   */
+  cita?: typeof citaPorId;
 }
 
 export async function barrerCitas(
   // Las citas de UN cliente (el nivel 3), con el token de su subcuenta.
   ambito: AmbitoDeUnCliente,
   acceso: { token: string; locationId: string },
-  lectores: LectoresDelCalendario = { listar: listarCalendarios, citas: citasDelCalendario },
+  lectores: LectoresDelCalendario = { listar: listarCalendarios, citas: citasDelCalendario, cita: citaPorId },
 ): Promise<ResultadoDelPulso<ResultadoDelBarrido>> {
   return conElPulso(ambito, 'citas', async () => {
     // UNA consulta, y de acá sale el filtro por territorio. Igual que la ingesta de mensajes: las
@@ -182,9 +209,12 @@ export async function barrerCitas(
     let nuestras = 0;
     let guardadas = 0;
     let borradas = 0;
+    let dadasDeBaja = 0;
     let sinHora = 0;
     let canceladas = 0;
     let atrasado = false;
+    // Todo id que el CRM devolvió, de cualquier contacto y borrado o no: es contra esto que se resta (la `108`).
+    const devueltas = new Set<string>();
 
     for (const cal of calendarios) {
       const r = await lectores.citas(acceso, cal.id, desde, hasta);
@@ -199,6 +229,7 @@ export async function barrerCitas(
 
       for (const cita of r.datos) {
         vistas++;
+        devueltas.add(cita.id);
         const contactoId = cita.contactId ? conocidos.get(cita.contactId) : undefined;
         if (!contactoId) continue;
         nuestras++;
@@ -207,8 +238,12 @@ export async function barrerCitas(
         //
         // Y hay que decirlo porque sorprende: **el CRM sigue devolviendo las citas borradas** en la
         // lista, con `deleted: true`. Sin este filtro aparecerían en la agenda de alguien.
+        //
+        // Una que YA estaba guardada queda con su baja (la `108`): antes se salteaba y su fila se quedaba con el último
+        // estado para siempre, contada como viva. Nunca se inserta una borrada.
         if (cita.borrada) {
           borradas++;
+          if (await darDeBaja(ambito, cita.id)) dadasDeBaja++;
           continue;
         }
 
@@ -239,6 +274,18 @@ export async function barrerCitas(
       }
     }
 
+    /* ── LA RESTA: LO QUE ESTABA EN LA VENTANA Y EL CRM YA NO DEVUELVE (la `108`) ──
+     *
+     * Las dos guardas de `congelarLosQueYaNoEstan`, por el mismo motivo: «lo que no vino ya no está» es cierto sólo
+     * con una lectura COMPLETA. Con un calendario que falló (`atrasado`) sus citas faltan sin haberse borrado, y con
+     * cero citas vistas la lectura pudo venir vacía por cualquier cosa. Y aun completa, cada ausente se CONFIRMA con
+     * su GET antes de marcarla: sólo un 404 o un `deleted: true` la dan de baja. */
+    if (!atrasado && vistas > 0 && lectores.cita) {
+      const resta = await restarLasAusentes(ambito, acceso, lectores.cita, devueltas, desde, hasta);
+      llamadas += resta.llamadas;
+      dadasDeBaja += resta.dadasDeBaja;
+    }
+
     return {
       cierre: cierreDe(llamadas, atrasado, null),
       resultado: {
@@ -247,6 +294,7 @@ export async function barrerCitas(
         nuestras,
         guardadas,
         borradas,
+        dadasDeBaja,
         sinHora,
         canceladas,
         llamadas,
@@ -281,11 +329,73 @@ function vacio(llamadas: number, atrasado: boolean): ResultadoDelBarrido {
     nuestras: 0,
     guardadas: 0,
     borradas: 0,
+    dadasDeBaja: 0,
     sinHora: 0,
     canceladas: 0,
     llamadas,
     atrasado,
   };
+}
+
+/**
+ * Marca la baja de una cita YA guardada (la `108`). `true` si marcó. No inserta nunca, y la fecha es la primera vez
+ * que se vio: una cita que sigue volviendo con `deleted: true` no corre su baja en cada pasada.
+ */
+async function darDeBaja(ambito: AmbitoDeUnCliente, ghlEventoId: string): Promise<boolean> {
+  const r = await conOrganizacion(ambito, () =>
+    datos()
+      .updateTable('citas')
+      .set({ baja_en_el_crm: sql<Date>`now()` } as never)
+      .where('ghl_evento_id', '=', ghlEventoId)
+      .where('baja_en_el_crm', 'is', null)
+      .executeTakeFirst(),
+  );
+  return Number(r?.numUpdatedRows ?? 0) > 0;
+}
+
+/**
+ * Las citas guardadas de la ventana que el barrido completo no trajo, confirmadas de a una (la `108`).
+ *
+ * Dentro de la ventana por su inicio: el CRM casa por solapamiento, así que una cita que EMPIEZA en la ventana siempre
+ * se pide. Sin baja (ya está marcada) y en el ámbito del cliente: la política de fila deja ver sólo las suyas, que son
+ * las que este token puede pedir. Cada una cuesta una llamada, acotadas por `TOPE_DE_CONFIRMACIONES`:
+ *
+ *   · 404, o la cita con `deleted: true` → baja.
+ *   · viva → se guarda con lo que dice el CRM (se movió fuera de la ventana, o de calendario): `guardar()` la refresca.
+ *   · otro rechazo → no se marca nada; la pasada siguiente la vuelve a pedir.
+ */
+async function restarLasAusentes(
+  ambito: AmbitoDeUnCliente,
+  acceso: { token: string; locationId: string },
+  leer: typeof citaPorId,
+  devueltas: ReadonlySet<string>,
+  desde: Date,
+  hasta: Date,
+): Promise<{ llamadas: number; dadasDeBaja: number }> {
+  const guardadas = await conOrganizacion(ambito, () =>
+    datos()
+      .selectFrom('citas')
+      .select(['ghl_evento_id', 'contacto_id'])
+      .where('baja_en_el_crm', 'is', null)
+      .where('inicio_el', '>=', desde)
+      .where('inicio_el', '<', hasta)
+      .orderBy('inicio_el')
+      .execute(),
+  );
+  const ausentes = guardadas.filter((c) => !devueltas.has(c.ghl_evento_id)).slice(0, TOPE_DE_CONFIRMACIONES);
+  let llamadas = 0;
+  let dadasDeBaja = 0;
+  for (const a of ausentes) {
+    const r = await leer(acceso, a.ghl_evento_id);
+    llamadas++;
+    if (r.tipo === 'fallo') continue;
+    if (r.datos === null || r.datos.borrada) {
+      if (await darDeBaja(ambito, a.ghl_evento_id)) dadasDeBaja++;
+    } else if (r.datos.inicioEl !== null && r.datos.id === a.ghl_evento_id) {
+      await guardar(ambito, a.contacto_id, r.datos);
+    }
+  }
+  return { llamadas, dadasDeBaja };
 }
 
 function describir(f: { tipo: string; estado?: number; causa?: string }): string {
@@ -429,6 +539,8 @@ async function guardar(ambito: AmbitoDeUnCliente, contactoId: string, cita: Cita
            * acá y no sólo por omisión. */
 
           sincronizado_el: valores.sincronizado_el,
+          // El CRM la devolvió viva: si tenía baja (la `108`), ya no la tiene.
+          baja_en_el_crm: null,
         } as never),
       )
       .returning('id')

@@ -352,6 +352,7 @@ test('la tarea `contactos` pide las miniaturas después de sincronizar, y suma s
   const miniaturas = cuerpo.indexOf('await completarMiniaturas(ambito, acceso,');
   assert.ok(miniaturas > 0 && cuerpo.indexOf('sincronizarContactos(') < miniaturas, 'las miniaturas no van después de sincronizar');
   // `avisos`, después: el reproceso de los avisos de oportunidad va en la misma tarea (ver la prueba 333).
-  assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas(, avisos)? \}/, 'el sello no lleva el resumen de las miniaturas');
+  // Y la relectura de los congelados (la `108`, ver la prueba 336), al final.
+  assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas(, avisos)?(, congeladosReleidos: congelados)? \}/, 'el sello no lleva el resumen de las miniaturas');
   assert.match(cuerpo, /llamadas: r\.resumen\.llamadas \+ miniaturas\.pedidos/, 'las llamadas de las miniaturas no se cuentan');
 });

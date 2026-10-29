@@ -561,11 +561,11 @@ export async function contactoPorId(
     return { tipo: 'fallo', fallo: traducirFallo(r) };
   }
 
-  // La respuesta envuelve el contacto en `contact`. Si no viene con esa forma se devuelve `null`
-  // en vez de un objeto a medias: un contacto sin `id` ni `tags` haría que el refresco borre las
-  // etiquetas que sí teníamos.
+  // La respuesta envuelve el contacto en `contact`. Sin esa forma es un FALLO y no un objeto a medias (un contacto sin
+  // `tags` borraría las etiquetas que teníamos) ni un `null`: `null` es el 404, y desde la `108` marca la baja.
+  // Un 200 raro no dice que el contacto no exista (ver `citaPorId`, que hace lo mismo con la cita).
   const c = r.datos?.contact;
-  if (!c || typeof c !== 'object') return { tipo: 'datos', datos: null };
+  if (!c || typeof c !== 'object') return { tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 200, codigo: 'contacto_sin_forma' } };
   return { tipo: 'datos', datos: c as ContactoDeGhl };
 }
 
@@ -768,4 +768,59 @@ export async function nombreDeCarpeta(
   if (r.tipo !== 'datos') return null;
   const n = r.datos?.customField?.name;
   return typeof n === 'string' && n.trim() !== '' ? n.trim() : null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LA ESCRITURA DE UN CAMPO DEL CONTACTO (el relleno del cuadrante, 2026-10-29)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Lo que se puede escribir en el campo del cuadrante: una de las cuatro opciones del RADIO, o `''` para deshacer. */
+export type ValorDelCuadranteEnElCrm = 'Prioriza' | 'Valida' | 'Financia' | 'Descarta' | '';
+
+/** Las opciones del RADIO «Cuadrante de Clasificacion» tal como las escribe el CRM (medido el 2026-10-26), y el vacío. */
+export const VALORES_DEL_CUADRANTE_EN_EL_CRM: readonly ValorDelCuadranteEnElCrm[] = ['Prioriza', 'Valida', 'Financia', 'Descarta', ''];
+
+/**
+ * Escribe UN campo personalizado de un contacto: el del cuadrante del ICP. `PUT /contacts/{id}`.
+ *
+ * ── SÓLO `customFields`, NUNCA `tags` ───────────────────────────────────────
+ *
+ * En un PUT de contacto, `tags` REEMPLAZA la lista entera: un cuerpo con las etiquetas que creíamos que tenía le borraría
+ * al contacto las que el CRM sumó después (su zona, su resultado, la que pausa al agente), y nadie lo notaría. Por eso el
+ * cuerpo se arma acá, con una sola clave, y no recibe nada de quien llama más que el id del campo y el valor.
+ *
+ * ── SÓLO LAS CUATRO PALABRAS, O EL VACÍO ────────────────────────────────────
+ *
+ * Es un RADIO del CRM: un texto que no es una de sus opciones se aceptaría o no según el proveedor, y si se aceptara la
+ * sincronización lo leería como `null` (`cuadranteDeUnValor`). Se rechaza antes de llamar. `''` vacía el campo: es el
+ * deshacer del relleno (`scripts/clasificar-calificados-viejos.mjs --deshacer`).
+ *
+ * ── UN 200 NO GARANTIZA LA ESCRITURA ────────────────────────────────────────
+ *
+ * Como `ponerEtiquetas`: devolver éxito significa «el CRM aceptó la petición», nunca «el campo quedó con ese valor». Un
+ * id de campo de otra subcuenta, o una opción que el RADIO no tiene, pueden contestar 200 sin escribir nada. La
+ * comprobación real es la relectura (`refrescarUnContacto`), y por eso el relleno relee cada contacto después del PUT.
+ *
+ * Es la tercera escritura de contactos al CRM (después de poner y quitar etiquetas) y la usa SÓLO el relleno del
+ * cuadrante: ninguna ruta ni tarea del producto escribe campos del CRM.
+ */
+export async function escribirCampoDelContacto(
+  acceso: { token: string },
+  ghlContactId: string,
+  campoId: string,
+  valor: ValorDelCuadranteEnElCrm,
+): Promise<ResultadoDeGhl<{ escrito: ValorDelCuadranteEnElCrm }>> {
+  if (!(VALORES_DEL_CUADRANTE_EN_EL_CRM as readonly unknown[]).includes(valor)) {
+    throw new Error(`escribirCampoDelContacto: «${String(valor)}» no es una opción del cuadrante`);
+  }
+  if (typeof ghlContactId !== 'string' || ghlContactId.trim() === '') throw new Error('escribirCampoDelContacto: falta el contacto');
+  if (typeof campoId !== 'string' || campoId.trim() === '') throw new Error('escribirCampoDelContacto: falta el campo');
+
+  const r = await pedirExterno<unknown>(`${BASE}/contacts/${encodeURIComponent(ghlContactId)}`, {
+    metodo: 'PUT',
+    cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS),
+    cuerpo: { customFields: [{ id: campoId, field_value: valor }] },
+  });
+  if (r.tipo !== 'datos') return { tipo: 'fallo', fallo: traducirFallo(r) };
+  return { tipo: 'datos', datos: { escrito: valor } };
 }

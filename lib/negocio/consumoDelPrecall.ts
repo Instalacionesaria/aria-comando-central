@@ -55,6 +55,7 @@ import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { ESTADOS_CANCELADOS } from '../ghl/calendarios.ts';
 import { campoPorNombre, valorDelCampo } from './camposDelCrm.ts';
+import { alcanzable } from './citasAlcanzables.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 
 /**
@@ -198,7 +199,7 @@ export async function consumoDelPrecall(dias = DIAS_DE_LA_TASA): Promise<Consumo
       sql<boolean>`exists (
         select 1 from negocio.citas ci
          where ci.org_id = ct.org_id and ci.contacto_id = ct.id
-           and ci.ghl_calendario_id is not null
+           and ${alcanzable('ci')}
            and ci.inicio_el < now()
            and ci.inicio_el >= now() - make_interval(days => ${dias})
            and lower(coalesce(ci.estado_ghl, '')) <> all(${sql.val(ESTADOS_CANCELADOS)}))`,

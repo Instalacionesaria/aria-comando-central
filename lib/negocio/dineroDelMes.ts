@@ -38,6 +38,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import type { VinculoConElCrm } from './alcanceDelCloser.ts';
+import { closerDelResultado } from './aNombreDelCloser.ts';
 
 /** Un indicador del cockpit. `valor: null` = **no hay de dónde medirlo**. */
 export interface Indicador {
@@ -74,7 +75,12 @@ export type SujetoDelCockpit =
    * Un closer concreto, con sus vínculos con el CRM (uno por cliente, el nivel 3). Vacío = designado
    * sin vincular: sus contactos son todos.
    */
-  | { tipo: 'persona'; usuarioId: string; vinculos: readonly VinculoConElCrm[] };
+  | { tipo: 'persona'; usuarioId: string; vinculos: readonly VinculoConElCrm[] }
+  /**
+   * Los contactos que no son de ningún closer (el selector, 2026-10-29). No tienen ventas a su nombre: las cifras de
+   * dinero salen `—` con su motivo, y los conteos por etiqueta sí se cortan (`asignados`: los pares de los closers).
+   */
+  | { tipo: 'sin_asignar'; asignados: readonly VinculoConElCrm[] };
 
 export interface DineroDelMes {
   /** El mes al que corresponden los tres números, en la zona de la organización. */
@@ -113,7 +119,7 @@ export async function dineroDelMes(
   // trabajo que no hace falta.
   /* ── EL `where` QUE HACE HONESTO EL NÚMERO GRANDE ──────────────────────────
    *
-   * `registrado_por = closerId`, y es de la clase que este repositorio llama «el único lugar donde
+   * `coalesce(closer_id, registrado_por) = closerId` (`closerDelResultado`, la `107`), y es de la clase que este repositorio llama «el único lugar donde
    * olvidarse un `where` devuelve filas ajenas sin ningún error»: la política de RLS aísla por
    * ORGANIZACIÓN, no por persona. Sin esta línea el cobrado vuelve a ser de todos y sale más alto,
    * que es la forma en que este defecto se ve: un número plausible y equivocado.
@@ -127,7 +133,7 @@ export async function dineroDelMes(
    * puede llegar acá: la construye `app/api/closer/mi-dia/route.ts` a partir de la lista, y sin
    * closers el sujeto es `nadie`. */
   const deQuien: readonly string[] =
-    sujeto.tipo === 'nadie'
+    sujeto.tipo === 'nadie' || sujeto.tipo === 'sin_asignar'
       ? []
       : sujeto.tipo === 'empresa'
         ? sujeto.usuarioIds
@@ -138,7 +144,7 @@ export async function dineroDelMes(
     : await datos()
     .selectFrom('resultados')
     .where('creado_el', '>=', desdeElPrimero)
-    .where('registrado_por', 'in', deQuien)
+    .where(closerDelResultado(), 'in', deQuien)
     .select(({ fn, eb }) => [
       fn
         .sum<string | null>(
@@ -174,7 +180,9 @@ export async function dineroDelMes(
      que no corresponde. */
   const SIN_CLOSER = 'Todavía no hay ningún closer configurado, así que no hay de quién mostrar ' +
     'números. Se configuran más abajo, en esta misma pantalla.';
-  const porQueFalta = sujeto.tipo === 'nadie' ? SIN_CLOSER : SIN_AVANZAR;
+  const SIN_DUENO = 'Los contactos sin asignar no son de ningún closer, así que no hay ventas a su nombre. ' +
+    'Asígnalos en el CRM para que cuenten.';
+  const porQueFalta = sujeto.tipo === 'nadie' ? SIN_CLOSER : sujeto.tipo === 'sin_asignar' ? SIN_DUENO : SIN_AVANZAR;
 
   return {
     mes: new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric', timeZone: zonaHoraria }).format(

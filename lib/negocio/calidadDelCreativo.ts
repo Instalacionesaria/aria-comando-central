@@ -50,7 +50,7 @@ import { seNombranLosClientes } from './faltaDeLosClientes.ts';
 import { ETAPAS, type Etapa, etapaDelNombre, llaveDelCreativo, llaveOSinCreativo } from './creativo.ts';
 import { llaveInterna } from './idDeLaPieza.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
-import { tieneCitaAlcanzable } from './citasAlcanzables.ts';
+import { alcanzable, tieneCitaAlcanzable } from './citasAlcanzables.ts';
 
 export { ETAPAS, type Etapa };
 
@@ -293,7 +293,7 @@ async function extremosDeLaCohorte(dias: number): Promise<{ desde: string | null
 async function congeladasDeLaVentana(dias: number): Promise<number> {
   const f = await datos()
     .selectFrom('citas')
-    .select(sql<number>`count(*) filter (where citas.ghl_calendario_id is null)`.as('n'))
+    .select(sql<number>`count(*) filter (where not ${alcanzable('citas')})`.as('n')) // y las borradas en el CRM (la 108)
     /* Por la cohorte de CONTACTOS y no por la fecha de la cita: la pantalla habla de los contactos
        que entraron en la ventana, así que las congeladas que importan son las suyas. Medir por la
        fecha de la cita daría otra población y la resta no cerraría. */

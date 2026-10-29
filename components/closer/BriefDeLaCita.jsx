@@ -15,8 +15,9 @@
  * que viene de las llamadas de la empresa se marca como tal: no es algo que esta persona dijo.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
+import { VerComoDelCloser, conVerComo } from './SelectorDeCloser.jsx';
 
 /* La ruta declara `maxDuration = 300` (una llamada al modelo de hasta 120 s): quien la llama espera al menos
    eso, o el navegador cortaría una generación que el servidor termina y guarda (la regla de `lib/http/cliente.ts`). */
@@ -63,22 +64,25 @@ export default function BriefDeLaCita({ citaId }) {
   const [estado, setEstado] = useState({ tipo: 'cargando' });
   const [generando, setGenerando] = useState(false);
   const pedido = useRef(false);
+  /* La elección del selector de la cabecera: el Brief se lee y se genera con el mismo alcance que la pantalla. Fuera
+     del Closer no hay proveedor y es `null`: el alcance propio. */
+  const verComo = useContext(VerComoDelCloser);
 
   const generar = useCallback(
     async (regenerar) => {
       setGenerando(true);
-      const r = await pedir('/api/closer/brief', { metodo: 'POST', cuerpo: { cita: citaId, regenerar }, espera: ESPERA_DEL_BRIEF_MS });
+      const r = await pedir(conVerComo('/api/closer/brief', verComo), { metodo: 'POST', cuerpo: { cita: citaId, regenerar }, espera: ESPERA_DEL_BRIEF_MS });
       setGenerando(false);
       if (r.tipo === 'datos') setEstado((antes) => ({ tipo: 'listo', ...r.datos, noSePuede: antes.noSePuede ?? null }));
       else setEstado((antes) => ({ ...antes, fallo: r.tipo === 'rechazado' ? r.detalle || 'No se pudo generar el Brief.' : 'No se pudo conectar para generar el Brief.' }));
     },
-    [citaId],
+    [citaId, verComo],
   );
 
   useEffect(() => {
     let vigente = true;
     void (async () => {
-      const r = await pedir(`/api/closer/brief?cita=${encodeURIComponent(citaId)}`, { espera: ESPERA_DEL_BRIEF_MS });
+      const r = await pedir(conVerComo(`/api/closer/brief?cita=${encodeURIComponent(citaId)}`, verComo), { espera: ESPERA_DEL_BRIEF_MS });
       if (!vigente) return;
       if (r.tipo !== 'datos') {
         setEstado({ tipo: 'error', mensaje: r.tipo === 'rechazado' ? r.detalle || 'No se pudo leer el Brief.' : 'No se pudo conectar para leer el Brief.' });

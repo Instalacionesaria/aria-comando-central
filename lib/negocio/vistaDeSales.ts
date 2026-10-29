@@ -31,6 +31,7 @@ import type { CicloHastaLaCita } from './cicloHastaLaCita.ts';
 import type { CierreDeLosClosers } from './cierrePorCloser.ts';
 import type { VENTANAS } from './ventanasDeSales.ts';
 import type { PantallaDeSalesArmada } from './lecturaDeSales.ts';
+import type { CitasSinReleer } from './citasSinReleer.ts';
 
 const RUTA = '/api/sales';
 
@@ -60,6 +61,8 @@ export interface PantallaDeSales {
    * 1. Los eslabones y el dinero los lee de los bloques de arriba.
    */
   pantalla: PantallaDeSalesArmada;
+  /** Cuántas citas del período ya no se releen (la `108`), con su frase o `null`. */
+  relectura: CitasSinReleer;
 }
 
 export type ResultadoDeSales =

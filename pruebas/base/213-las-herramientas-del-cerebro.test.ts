@@ -245,7 +245,8 @@ const ESPERADAS: Record<string, { arriba: string[]; filas?: [string, string[]][]
   },
   cohorte_de_leads: {
     arriba: ['aviso', 'cohorte', 'cuadrantes', 'dias', 'hayVentasRegistradas', 'leads', 'piso', 'sinClasificar', 'todos', 'truncado'],
-    filas: [['leads', ['altaEl', 'asistencia', 'campana', 'cita', 'creativo', 'cuadrante', 'descartado', 'id', 'monto', 'nombre', 'planton', 'territorio', 'vendio']]],
+    // `leidoEl` y `bajaEnElCrm` (la 108): de cuándo es la foto y si el CRM lo borró. Ningún dato de contacto.
+    filas: [['leads', ['altaEl', 'asistencia', 'bajaEnElCrm', 'campana', 'cita', 'creativo', 'cuadrante', 'descartado', 'id', 'leidoEl', 'monto', 'nombre', 'planton', 'territorio', 'vendio']]],
   },
   colas_del_setter: { arriba: ['colas', 'tareasPendientes', 'truncado'], argumentos: {} },
   inicio_del_setter: {

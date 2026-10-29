@@ -64,6 +64,8 @@ export interface FichaDelLead {
   altaEl: string | null;
   /** La última vez que la sincronización lo vio. La ficha no refresca: esto dice de cuándo es la foto. */
   sincronizadoEl: string | null;
+  /** Cuándo se vio que el CRM ya no lo tiene (la `108`). `null` = vigente. La ficha dice «borrado en el CRM». */
+  bajaEnElCrmEl: string | null;
   territorio: 'closer' | 'setter' | 'congelado';
   /**
    * Por qué está descartado: las etiquetas de descarte que tiene, tal como las escribió el CRM, y «Descarta (ICP)» si
@@ -109,7 +111,8 @@ export interface FichaDelLead {
     entrantes: number | null;
     salientes: number | null;
   };
-  citas: { inicioEl: string; estado: string | null; alcanzable: boolean; asistio: boolean | null }[];
+  /** `borrada` = el CRM la borró (la `108`): no es alcanzable y la ficha la marca «borrada en el CRM». */
+  citas: { inicioEl: string; estado: string | null; alcanzable: boolean; borrada: boolean; asistio: boolean | null }[];
   resultados: { salida: string; nombre: string; creadoEl: string; monto: number | null }[];
   publicidad: ParametroVisible[];
   closer: CloserDeLaFicha;
@@ -137,6 +140,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
       'c.pais',
       'c.alta_en_el_crm',
       'c.sincronizado_el',
+      'c.baja_en_el_crm',
       'c.territorio',
       'c.cuadrante',
       'c.etiquetas',
@@ -183,7 +187,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
     await Promise.all([
       datos()
         .selectFrom('citas')
-        .select(['inicio_el', 'estado_ghl', 'ghl_calendario_id', 'asistio'])
+        .select(['inicio_el', 'estado_ghl', 'ghl_calendario_id', 'baja_en_el_crm', 'asistio'])
         .where('contacto_id', '=', id)
         .orderBy('inicio_el', 'desc')
         .execute(),
@@ -254,6 +258,7 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
     pais: c.pais,
     altaEl: iso(alta),
     sincronizadoEl: iso(c.sincronizado_el),
+    bajaEnElCrmEl: iso(c.baja_en_el_crm),
     territorio: c.territorio ?? 'congelado',
     descarte: [
       ...(c.etiquetas ?? []).filter((e) => descarte.has(e.toLowerCase())),
@@ -301,7 +306,9 @@ export async function fichaDelLeadDelPortal(id: string): Promise<FichaDelLead | 
     citas: citas.map((ci) => ({
       inicioEl: iso(ci.inicio_el)!,
       estado: ci.estado_ghl,
-      alcanzable: ci.ghl_calendario_id !== null,
+      // La misma regla que `alcanzable()`: con calendario y sin baja en el CRM.
+      alcanzable: ci.ghl_calendario_id !== null && ci.baja_en_el_crm === null,
+      borrada: ci.baja_en_el_crm !== null,
       asistio: ci.asistio,
     })),
     resultados: resultados.map((r) => ({

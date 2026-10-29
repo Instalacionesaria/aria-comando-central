@@ -138,7 +138,7 @@ test('qué contestan: con un cliente, lo de siempre; con varios, la suma y el in
 
 test('las cifras de varios clientes se juntan campo por campo', () => {
   const barrido = (n: number, atrasado: boolean) => ({
-    calendarios: n, vistas: n * 2, nuestras: n * 3, guardadas: n * 4, borradas: n * 5, sinHora: n * 6, canceladas: n * 7, llamadas: n * 8, atrasado,
+    calendarios: n, vistas: n * 2, nuestras: n * 3, guardadas: n * 4, borradas: n * 5, dadasDeBaja: n * 9, sinHora: n * 6, canceladas: n * 7, llamadas: n * 8, atrasado,
   });
   assert.deepEqual(sumarBarridos([barrido(1, false), barrido(10, true)]), { ...barrido(11, true) });
   assert.equal(sumarBarridos([barrido(1, false), barrido(10, false)]).atrasado, false);

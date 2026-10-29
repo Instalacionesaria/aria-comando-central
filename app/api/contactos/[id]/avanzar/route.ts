@@ -66,6 +66,9 @@ import {
 import type { ParDeResultado } from '../../../../../lib/negocio/salidas.ts';
 import type { ClienteDeLaCredencial } from '../../../../../lib/credenciales/resolver.ts';
 import { clienteDelContacto } from '../../../../../lib/negocio/clienteDelContacto.ts';
+import { closersDeLaEmpresa, puedeSupervisarClosers } from '../../../../../lib/negocio/alcanceDelCloser.ts';
+import { aNombreDeQuien, closerDeLaAsignacion } from '../../../../../lib/negocio/aNombreDelCloser.ts';
+import { auditar } from '../../../../../lib/autenticacion/auditoria.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -109,6 +112,11 @@ const MOTIVOS = {
   asistencia_invalida:
     'Si se elige una cita hay que decir si la persona se presentó: sí o no. Sin eso, la cita ' +
     'quedaría contada como que nadie sabe, que es lo que ya pasaba antes.',
+  /* Los tres de «a nombre de» (la `107`). El primero es un 403: registrar a nombre de otro es supervisar. El segundo
+     no distingue «no existe» de «es de otra empresa»: decirlo sería un oráculo. */
+  a_nombre_sin_permiso: 'Sólo quien supervisa a los closers puede registrar a nombre de otro.',
+  a_nombre_ajeno: 'Esa persona no es un closer vinculado de esta empresa. No se registró nada.',
+  a_nombre_de_setter: 'Este contacto es del setter: su resultado no se acredita a ningún closer.',
 } as const;
 
 export async function POST(
@@ -243,6 +251,24 @@ export async function POST(
   // Todo esto vive ahora en `loQueDependeDelRol`, abajo: el catálogo de modos es del rol, y los dos
   // tienen una salida `seguimiento` con modos distintos.
 
+  /* ── A NOMBRE DE QUIÉN (la `107`) ───────────────────────────────────────────
+   *
+   * El navegador sólo puede PEDIR un closer; quién puede pedirlo sale de la sesión (`puedeSupervisarClosers`, la misma
+   * regla del selector de la 8a). Sin supervisar, pedir a otro es un 403 acá, ANTES de leer la base: así el rechazo no
+   * depende de que el contacto o el closer existan. Pedirse a sí mismo vale: es lo que pasa igual. */
+  const supervisa = puedeSupervisarClosers(contexto.permisos);
+  const pedidoCrudo = cuerpo?.aNombreDe;
+  let pedido: string | null = null;
+  if (pedidoCrudo !== undefined && pedidoCrudo !== null) {
+    if (typeof pedidoCrudo !== 'string' || !UUID.test(pedidoCrudo)) {
+      return rechazo('peticion_invalida', MOTIVOS.a_nombre_ajeno);
+    }
+    pedido = pedidoCrudo.toLowerCase();
+  }
+  if (pedido !== null && !supervisa && pedido !== contexto.usuarioId) {
+    return rechazo('sin_permiso', MOTIVOS.a_nombre_sin_permiso);
+  }
+
   // ── PASO 1 · LA BASE, en una transacción ──────────────────────────────────
   const registrado = await conOrganizacion(contexto.orgEfectiva, async () => {
     // Que el contacto exista EN ESTA ORGANIZACIÓN. La clave foránea compuesta ya lo garantiza,
@@ -251,7 +277,7 @@ export async function POST(
     // más barato.
     const contacto = await datos()
       .selectFrom('contactos')
-      .select(['id', 'ghl_contact_id', 'territorio'])
+      .select(['id', 'ghl_contact_id', 'territorio', 'cuenta_id', 'crm_asignado_a'])
       .where('id', '=', id)
       .executeTakeFirst();
     if (!contacto) return { tipo: 'no_encontrado' as const };
@@ -305,6 +331,25 @@ export async function POST(
       if (!suya) return { tipo: 'rechazo' as const, motivo: MOTIVOS.cita_ajena };
     }
 
+    /* A nombre de quién: sólo en un contacto del closer. Los closers salen por la conexión del inquilino, así que uno
+       de otra empresa no está en la lista y cae en `closer_ajeno`. */
+    let aNombreDe: string | null = null;
+    if (({ closer: true, setter: false } satisfies Record<Territorio, boolean>)[par.rol]) {
+      const closers = await closersDeLaEmpresa();
+      const decision = aNombreDeQuien({
+        registrador: contexto.usuarioId,
+        supervisa,
+        pedido,
+        closers,
+        delContacto: closerDeLaAsignacion(contacto.cuenta_id, contacto.crm_asignado_a, closers),
+      });
+      if (decision.tipo === 'sin_permiso') return { tipo: 'rechazo' as const, motivo: MOTIVOS.a_nombre_sin_permiso };
+      if (decision.tipo === 'closer_ajeno') return { tipo: 'rechazo' as const, motivo: MOTIVOS.a_nombre_ajeno };
+      aNombreDe = decision.closerId;
+    } else if (pedido !== null) {
+      return { tipo: 'rechazo' as const, motivo: MOTIVOS.a_nombre_de_setter };
+    }
+
     const r = await registrarResultado(id, {
       // Anidado y no esparcido: ver el comentario de `LoQueSeRegistra`.
       que: par,
@@ -317,7 +362,18 @@ export async function POST(
       quien: contexto.usuarioId,
       claveDeIntento,
       cita,
+      aNombreDe,
     });
+    /* La auditoría, en la MISMA transacción: un resultado mueve comisiones, y registrar a nombre de otro es lo que más
+       hay que poder reconstruir. Sólo si se escribió: un reintento con la misma clave no registró nada. */
+    if (!r.yaEstaba) {
+      await auditar(datos(), {
+        accion: 'resultado_registrado',
+        usuarioId: contexto.usuarioId,
+        orgId: contexto.orgEfectiva,
+        detalle: { closer: r.closerId, contacto: id, salida, monto: lo.monto },
+      });
+    }
     return {
       tipo: 'listo' as const,
       ...r,
@@ -348,6 +404,8 @@ export async function POST(
       etapa: registrado.etapa,
       nota: registrado.nota,
       tarea: registrado.tarea,
+      // A quién quedó acreditado (la `107`). `null` = a quien registró. Con `yaEstaba`, el de la primera vez.
+      aNombreDe: registrado.closerId,
       // ── LO QUE PASÓ CON EL CRM, dicho aparte ──────────────────────────────
       //
       // No es un detalle de implementación: mientras el aviso no llegue, el CRM **no disparó sus

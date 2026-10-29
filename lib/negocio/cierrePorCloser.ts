@@ -37,7 +37,8 @@
 // Este departamento tiene DOS identificadores de persona y no son intercambiables:
 //
 //   · `contactos.crm_asignado_a` — el del CRM. Corta contactos y citas.
-//   · `resultados.registrado_por` — el nuestro. Corta lo registrado.
+//   · `resultados.registrado_por` — el nuestro. Corta lo registrado: `coalesce(closer_id, registrado_por)` desde la
+//     `107`, porque quien supervisa registra a nombre del closer (`closerDelResultado`).
 //
 // El puente es `closer_asignado.crm_usuario_id` —con el nivel 3, uno por cliente: el eje del CRM es
 // el PAR (cliente, usuario del CRM)—, y `inicio.ts:124-127` ya advierte qué pasa si se
@@ -80,6 +81,7 @@ import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
 import { type CloserConfigurado, type VinculoConElCrm, closersDeLaEmpresa } from './alcanceDelCloser.ts';
+import { closerDelResultado } from './aNombreDelCloser.ts';
 import { DIAS_DE_LA_TASA, PISO_DE_UNA_TASA } from './indicadoresDeCitas.ts';
 import { alcanzable, cancelada, descartado, marcadaComoPlanton } from './citasAlcanzables.ts';
 
@@ -312,12 +314,12 @@ export async function cierrePorCloser(
      * `venta_chica` si aparece y `ventas` no la suma. */
   const ejePropio = await datos()
     .selectFrom('resultados')
-    .select(['registrado_por', 'salida', sql<number>`count(*)`.as('n'), sql<string>`coalesce(sum(monto::numeric), 0)`.as('monto'), sql<number>`count(*) filter (where monto is null)`.as('sin_monto')])
+    .select([closerDelResultado().as('acreditado'), 'salida', sql<number>`count(*)`.as('n'), sql<string>`coalesce(sum(monto::numeric), 0)`.as('monto'), sql<number>`count(*) filter (where monto is null)`.as('sin_monto')])
     /* La misma cantidad de días, anclada a otra columna: acá el hecho es cuándo se REGISTRÓ, no
        cuándo era la cita. Que las dos ventanas midan lo mismo y cuenten cosas distintas es propio de
        las dos columnas, y el aviso de la tabla lo dice. */
     .where(sql<boolean>`creado_el >= now() - make_interval(days => ${dias})`)
-    .groupBy(['registrado_por', 'salida'])
+    .groupBy([closerDelResultado(), 'salida'])
     .execute();
 
   const par = (cuenta: string, crm: string) => JSON.stringify([cuenta, crm]);
@@ -358,7 +360,7 @@ export async function cierrePorCloser(
     let montoDeVentas = 0;
     let ventasSinMonto = 0;
     for (const r of ejePropio) {
-      if (r.registrado_por !== c.usuarioId) continue;
+      if (r.acreditado !== c.usuarioId) continue;
       porSalida[r.salida] = Number(r.n);
       intentos += Number(r.n);
       if (r.salida === 'venta') [montoDeVentas, ventasSinMonto] = [Number(r.monto), Number(r.sin_monto)];

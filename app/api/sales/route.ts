@@ -69,6 +69,7 @@ import { ambitoDe, zonaDe } from '../../../lib/autorizacion/ambito.ts';
 import { periodoDe } from '../../../lib/negocio/periodo.ts';
 import { lecturaDeSales, sinLasPersonasDeLaEmpresa } from '../../../lib/negocio/lecturaDeSales.ts';
 import { VENTANAS } from '../../../lib/negocio/ventanasDeSales.ts';
+import { citasSinReleer } from '../../../lib/negocio/citasSinReleer.ts';
 
 /** A qué pantalla pertenece esta operación. Es un `export`, no un comentario. */
 export const PANTALLA = 'sales';
@@ -93,9 +94,11 @@ export async function GET(peticion: Request): Promise<Response> {
      hablan de las mismas personas. La cancelación es el segundo consumidor de `tasaDeCancelacion` y NO se
      recalcula: reescribirla republicaría el 62,7 % que el commit `9931f4d` ya corrigió mezclando el descarte
      propio con la pérdida. */
-  const leida = await conOrganizacion(ambitoDe(contexto, PANTALLA), () =>
-    lecturaDeSales(periodo.dias, zonaDe(contexto, PANTALLA)),
-  );
+  const [leida, relectura] = await conOrganizacion(ambitoDe(contexto, PANTALLA), async () => [
+    await lecturaDeSales(periodo.dias, zonaDe(contexto, PANTALLA)),
+    // Cuántas citas del período ya no se releen (la `108`): el aviso de frescura. No nombra a nadie.
+    await citasSinReleer(periodo.dias),
+  ] as const);
   /* El cliente final no recibe el uuid de ninguna persona de la empresa: cada closer le llega con su rótulo
      (el nivel 3). La empresa, con o sin foco, recibe lo de siempre. */
   const lectura = contexto.cuentas.limitado ? sinLasPersonasDeLaEmpresa(leida) : leida;
@@ -112,5 +115,6 @@ export async function GET(peticion: Request): Promise<Response> {
     closers: lectura.closers,
     /* Lo que dibuja el front del prototipo, hecho en el servidor (S15-13). */
     pantalla: lectura.pantalla,
+    relectura,
   });
 }

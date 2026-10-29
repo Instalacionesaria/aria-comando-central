@@ -56,6 +56,8 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   contactos_org_id_sello_setter_id_fkey: 'agendó contactos que siguen en el sistema',
   notas_org_id_autor_id_fkey: 'escribió notas en fichas de contactos',
   resultados_org_id_registrado_por_fkey: 'registró resultados de ventas',
+  // La `107`: el closer al que se le acreditan. Frena en vez de soltar: soltarla pasaría su comisión a quien registró.
+  resultados_org_id_closer_id_fkey: 'tiene resultados de ventas a su nombre',
   mensajes_org_id_autor_usuario_id_fkey: 'envió mensajes a contactos',
   tareas_org_id_creada_por_fkey: 'creó tareas',
   tareas_org_id_completada_por_fkey: 'completó tareas',

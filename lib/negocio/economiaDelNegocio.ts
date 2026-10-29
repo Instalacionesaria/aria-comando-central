@@ -34,6 +34,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { closersDeLaEmpresa } from './alcanceDelCloser.ts';
+import { closerDelResultado } from './aNombreDelCloser.ts';
 import { dineroDelMes, type Indicador } from './dineroDelMes.ts';
 
 export interface EconomiaDelNegocio {
@@ -119,7 +120,7 @@ export async function economiaDelNegocio(zona: string): Promise<EconomiaDelNegoc
             await datos()
               .selectFrom('resultados')
               .where('creado_el', '>=', sql<Date>`date_trunc('month', timezone(${zona}, now())) at time zone ${zona}`)
-              .where('registrado_por', 'in', deQuien)
+              .where(closerDelResultado(), 'in', deQuien)
               .where('salida', '=', 'venta')
               .where('monto', 'is', null)
               .select(sql<string>`count(*)`.as('n'))

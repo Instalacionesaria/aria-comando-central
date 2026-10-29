@@ -21,6 +21,7 @@ import { sql } from 'kysely';
 
 import { datos } from '../datos/contexto.ts';
 import type { CloserConfigurado } from './alcanceDelCloser.ts';
+import { closerDelResultado } from './aNombreDelCloser.ts';
 import { DIAS_DE_LA_TASA } from './indicadoresDeCitas.ts';
 import { SALIDAS_DEL_CLOSER } from './salidas.ts';
 
@@ -90,7 +91,7 @@ export async function motivosDeNoVenta(
     .selectFrom('resultados')
     .select(['detalle', sql<number>`count(*)`.as('n')])
     .where('salida', '=', 'no_interesa')
-    .where('registrado_por', 'in', closers.map((c) => c.usuarioId))
+    .where(closerDelResultado(), 'in', closers.map((c) => c.usuarioId))
     .where(sql<boolean>`creado_el >= now() - make_interval(days => ${dias})`)
     .groupBy('detalle')
     .execute();

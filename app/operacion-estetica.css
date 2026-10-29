@@ -65,8 +65,8 @@
  *
  *   · **la Agenda** (sección 5) — la cuarta sub-pestaña del Setter es Contactos, y Auditoría tiene
  *     dos pestañas y ninguna es un calendario;
- *   · **`.ck-closer` y `.ck-vercomo`** — de `QuienEsElCloser` y del selector «ver como», que no
- *     tienen equivalente en ninguna otra pantalla.
+ *   · **`.ck-closer`** — de `QuienEsElCloser`, que no tiene equivalente en ninguna otra pantalla. (El
+ *     selector «ver como», `.ck-vercomo`, se fue de Inicio a la cabecera el 2026-10-29: `app/closer.css`.)
  *
  * Ojo con la diferencia, que es la que confunde: `#v-closer .ag-mes` está acotado A PROPÓSITO,
  * mientras que el `#v-closer` de `:is(#v-closer, .estetica-op)` es el ancla y alcanza a todas.
@@ -853,14 +853,6 @@
 }
 :is(#v-closer, .estetica-op) .ck-hero .fd-aviso { background: rgb(var(--c-blanco) / .04); }
 
-/* El selector «ver como»: una cápsula. */
-#v-closer .ck-vercomo label {
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: var(--txt-dim);
-}
 /* ── LA CÁPSULA ES DEL CONTROL SUELTO, NO DEL CAMPO DE FORMULARIO ──────────
  *
  * Esta regla se escribió acá abajo, pegada al comentario de «ver como», para UN control: el

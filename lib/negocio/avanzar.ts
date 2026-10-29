@@ -73,6 +73,12 @@ export interface LoQueSeRegistra extends LoComunDeUnResultado {
    * apuntar. Ver la migración `049`.
    */
   cita: { id: string; asistio: boolean } | null;
+  /**
+   * El closer al que se le acredita (la `107`): lo decide la ruta con la sesión (`aNombreDeQuien`). Sin él, o `null`,
+   * la columna queda nula y las métricas acreditan a `quien` (`coalesce(closer_id, registrado_por)`). En un resultado
+   * del setter no se escribe nunca: no es una venta de ningún closer.
+   */
+  aNombreDe?: string | null;
 }
 
 interface LoComunDeUnResultado {
@@ -117,6 +123,8 @@ export interface Registrado {
   /** `true` = se guardó la nota. `false` = se pidió y NO se pudo. Ver abajo. */
   nota: boolean;
   tarea: boolean;
+  /** El closer acreditado tal como QUEDÓ en la fila: con `yaEstaba`, el de la primera vez, no el de este pedido. */
+  closerId: string | null;
   /**
    * Cuántos seguimientos abiertos de este contacto se cerraron con este resultado.
    *
@@ -187,6 +195,8 @@ export async function registrarResultado(
       // persona la va a buscar. Borrar una de `notas` no debe cambiar lo que se registró.
       nota: lo.nota,
       registrado_por: lo.quien,
+      // A quién se le acredita (la `107`). `registrado_por` sigue siendo quien lo registró de verdad.
+      closer_id: ({ closer: lo.aNombreDe ?? null, setter: null } satisfies Record<Territorio, string | null>)[lo.que.rol],
       /* A qué cita corresponde. Sin esto, «cuántos se presentaron» no tiene denominador: un
          resultado es un intento del closer, que no es el conjunto de las citas. Es literalmente el
          motivo por el que `indicadoresDeCitas` declara los no-show como un CONTEO y no una tasa. */
@@ -206,7 +216,7 @@ export async function registrarResultado(
   if (resultado === undefined) {
     const yaEstaba = await datos()
       .selectFrom('resultados')
-      .select('id')
+      .select(['id', 'closer_id'])
       .where('clave_de_intento', '=', lo.claveDeIntento)
       .executeTakeFirstOrThrow();
 
@@ -215,6 +225,7 @@ export async function registrarResultado(
       etapa,
       nota: false,
       tarea: false,
+      closerId: yaEstaba.closer_id,
       seguimientosCerrados: 0,
       yaEstaba: true,
     };
@@ -358,6 +369,7 @@ export async function registrarResultado(
     etapa,
     nota,
     tarea,
+    closerId: ({ closer: lo.aNombreDe ?? null, setter: null } satisfies Record<Territorio, string | null>)[lo.que.rol],
     seguimientosCerrados: Number(cerradas?.numUpdatedRows ?? 0),
     yaEstaba: false,
   };

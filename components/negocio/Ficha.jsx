@@ -500,6 +500,8 @@ export default function Ficha({ contactoId, alCerrar, citaId = null }) {
   const [enlacesDeCita, setEnlacesDeCita] = useState(null);
   /** Las citas que ya ocurrieron, para preguntar en Avanzar si se presentó. `[]` = ninguna. */
   const [citasPorCerrar, setCitasPorCerrar] = useState([]);
+  /** El closer que el CRM le asignó (la `107`), para que Avanzar diga a nombre de quién queda. `null` = ninguno. */
+  const [closerAsignado, setCloserAsignado] = useState(null);
   const [refresco, setRefresco] = useState(null);
   /** El enlace para agendar, ya armado por el servidor. `null` = no hay calendario configurado. */
   const [situacion, setSituacion] = useState('cargando');
@@ -597,6 +599,7 @@ export default function Ficha({ contactoId, alCerrar, citaId = null }) {
     setContacto(r.datos.contacto);
     setEnlacesDeCita(r.datos.enlacesDeCita ?? null);
     setCitasPorCerrar(r.datos.citasPorCerrar ?? []);
+    setCloserAsignado(r.datos.closerAsignado ?? null);
     setRefresco(r.datos.refresco);
     setSituacion('listo');
   }, [contactoId]);
@@ -1215,6 +1218,7 @@ export default function Ficha({ contactoId, alCerrar, citaId = null }) {
              propio reloj, y calcularlo acá con el del navegador haría que una cita de hace diez
              minutos apareciera o no según la máquina de quien mira. */
           citas={citasPorCerrar}
+          closerAsignado={closerAsignado}
           alCerrar={() => setAvanzando(false)}
           alRegistrar={(lo) => {
             setLoRegistrado(lo);

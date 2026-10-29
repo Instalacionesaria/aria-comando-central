@@ -29,6 +29,9 @@ import { clientesParaBarrer } from '../../lib/administracion/cuentas.ts';
 import { frescuraDe, frescuraDelAviso } from '../../lib/negocio/frescura.ts';
 import { mensajesDeLaFicha } from '../../lib/negocio/ficha.ts';
 import { agendaDelCloser } from '../../lib/negocio/agenda.ts';
+import { barrerCitas } from '../../lib/negocio/citas.ts';
+import { ambitoDeUnCliente } from '../../lib/negocio/ambitoDelCliente.ts';
+import type { CitaDeGhl } from '../../lib/ghl/calendarios.ts';
 import {
   TEXTO_DE_FALTA_AUDITOR,
   TEXTO_DE_FALTA_CUENTAS_DE_META,
@@ -371,4 +374,57 @@ test('el vacío de la agenda mira el peor pulso de los clientes', async () => {
   } finally {
     await admin.query(`update identidad.cuentas set estado = 'activa' where id = $1`, [y]);
   }
+});
+
+test('la baja de una cita ausente (la 108) es del cliente que se barrió: las del otro ni se piden', async () => {
+  // Sin el pulso de las pruebas de arriba: el antirrebote no dejaría correr el barrido.
+  await admin.query('delete from negocio.ingesta_pulso where org_id = $1', [org]);
+  // Un contacto y una cita en la ventana por cliente, guardados como los dejó un barrido anterior.
+  const contacto = async (cuenta: string, ghl: string) =>
+    (
+      await unaFila<{ id: string }>(
+        admin,
+        `insert into negocio.contactos (org_id, cuenta_id, ghl_contact_id, nombre, territorio, alta_en_el_crm)
+         values ($1, $2, $3, 'Contacto 278 baja', 'closer', now()) returning id`,
+        [org, cuenta, ghl],
+      )
+    )!.id;
+  const cita = async (cuenta: string, contactoId: string, ghl: string) =>
+    admin.query(
+      `insert into negocio.citas (org_id, cuenta_id, contacto_id, ghl_evento_id, inicio_el, ghl_calendario_id)
+       values ($1, $2, $3, $4, now() + interval '1 hour', 'cal-278')`,
+      [org, cuenta, contactoId, ghl],
+    );
+  const deP = await contacto(p, 'c278-baja-p');
+  const deY = await contacto(y, 'c278-baja-y');
+  await cita(p, deP, 'ev278-p-sigue');
+  await cita(p, deP, 'ev278-p-falta');
+  await cita(y, deY, 'ev278-y-falta');
+
+  // El barrido de P: su calendario trae sólo la que sigue, y el GET de cualquier ausente dice 404.
+  const pedidas: string[] = [];
+  const delCrm = (id: string, contactId: string): CitaDeGhl => ({
+    id, calendarioId: 'cal-278', contactId, titulo: 'Llamada', inicioEl: new Date(Date.now() + 3_600_000), finEl: null,
+    estado: 'confirmed', sala: null, usuarioAsignadoId: null, borrada: false, reagendadaEl: null, reservadaEl: null,
+  });
+  const r = await barrerCitas(ambitoDeUnCliente(org, p), { token: 'no-se-usa', locationId: 'loc-p' }, {
+    listar: async () => ({ tipo: 'datos', datos: [{ id: 'cal-278', nombre: 'Cal', tipo: 'personal', activo: true }] }),
+    citas: async () => ({ tipo: 'datos', datos: [delCrm('ev278-p-sigue', 'c278-baja-p')] }),
+    cita: async (_a, id) => {
+      pedidas.push(id);
+      return { tipo: 'datos', datos: null };
+    },
+  });
+  assert.ok(r.corrio);
+  assert.deepEqual(pedidas, ['ev278-p-falta'], 'el barrido de P salió a confirmar una cita de Y con el token de P');
+  const marcadas = await filas<{ ghl_evento_id: string; baja: boolean }>(
+    admin,
+    `select ghl_evento_id, baja_en_el_crm is not null as baja from negocio.citas where org_id = $1 order by 1`,
+    [org],
+  );
+  assert.deepEqual(
+    marcadas.map((m) => `${m.ghl_evento_id}:${m.baja}`),
+    ['ev278-p-falta:true', 'ev278-p-sigue:false', 'ev278-y-falta:false'],
+    'el barrido de P dio de baja una cita de Y',
+  );
 });

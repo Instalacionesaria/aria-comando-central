@@ -33,6 +33,7 @@ import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { agendaDelCloser, DIAS_DE_LA_AGENDA } from '../../../../lib/negocio/agenda.ts';
 import {
   alcanceDeQuienMira,
+  puedeSupervisarClosers,
   verComoDeLaUrl,
 } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { DIAS_ADELANTE } from '../../../../lib/negocio/citas.ts';
@@ -78,14 +79,18 @@ export async function GET(peticion: Request): Promise<Response> {
      * veía las citas de los tres, con nombre, teléfono y el botón de la sala.
      *
      * `verComo` se atiende igual que en las otras tres, y lo que impide que sea una escalada está en
-     * `alcancePedido`: solo se contesta cuando el alcance PROPIO es `todo`, y el identificador tiene
+     * `alcancePedido`: solo se contesta cuando el alcance PROPIO es `todo` o quien pide supervisa, y el identificador tiene
      * que estar en la lista de su empresa. Un closer vinculado que lo mande a mano recibe su propio
      * alcance de todas formas.
      *
      * Va adentro de `conOrganizacion` porque `closersDeLaEmpresa` lee `negocio.closer_asignado` por
      * la conexión del inquilino: afuera, la política de fila no tiene organización con la que
      * acotar y la consulta no devuelve nada. */
-    const { alcance } = await alcanceDeQuienMira(contexto.usuarioId, verComoDeLaUrl(peticion));
+    const { alcance } = await alcanceDeQuienMira(
+      contexto.usuarioId,
+      verComoDeLaUrl(peticion),
+      puedeSupervisarClosers(contexto.permisos),
+    );
 
     // El territorio va EXPLÍCITO. Esta ruta es la de la pantalla del closer, así que es `closer` —y
     // decirlo acá en vez de dejar que la consulta lo suponga es lo que hizo visible que antes no

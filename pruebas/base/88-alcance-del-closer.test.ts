@@ -29,14 +29,21 @@ import assert from 'node:assert/strict';
 import { cerrarTodo } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { conOrganizacion, datos } from '../../lib/datos/contexto.ts';
-import { montar, unContacto, type Escenario } from '../apoyo/closer.ts';
+import { leerRespuesta, montar, pedirComo, sesionDe, unaCita, unContacto, type Escenario } from '../apoyo/closer.ts';
 import {
   alcanceDe,
+  alcanceDeQuienMira,
   alcancePedido,
   closersDeLaEmpresa,
+  eleccionDelAlcance,
+  puedeElegirCloser,
+  puedeSupervisarClosers,
   verComoDeLaUrl,
+  type AlcanceDelCloser,
   type CloserConfigurado,
 } from '../../lib/negocio/alcanceDelCloser.ts';
+import { GET as verMiDia } from '../../app/api/closer/mi-dia/route.ts';
+import { GET as verBrief } from '../../app/api/closer/brief/route.ts';
 import { asignarCloser, quitarCloser, TOPE_DE_CLOSERS } from '../../lib/negocio/closer.ts';
 import { cockpitDelMes } from '../../lib/negocio/inicio.ts';
 import { filasDeTerritorio } from '../../lib/negocio/fila.ts';
@@ -450,4 +457,230 @@ test('la columna existe y acepta nulos, que es el caso de 17 de los 152', async 
       .executeTakeFirst(),
   );
   assert.equal(leido?.crm_asignado_a, null);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6 · EL SELECTOR DE CLOSER DE LA CABECERA (2026-10-29)
+//
+// El pedido: *«en el menú de dashboard de closer debe estar la parte para seleccionar el closer como antes estaba»*.
+// El selector existía, pero el administrador principal de la empresa también estaba designado y vinculado como
+// closer: su alcance era «mío» y `alcancePedido` le ignoraba `verComo`, así que operaba el Closer viendo 27 de 314
+// contactos. Ahora elige quien ve todo O supervisa (`credenciales.editar`, calculado con la sesión), y además de un
+// closer valen `todo` y `sin_asignar`. Un closer `usuario` sigue sin poder: se le ignora, sin 403.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Un closer `usuario` de verdad: rol `usuario`, la sección `closer` y una sesión. Como los dos de producción. */
+async function unCloserUsuario(nombre: string): Promise<{ id: string; token: string }> {
+  const id = await unaPersona(nombre);
+  await esc.admin.query(
+    `insert into identidad.usuarios_roles (usuario_id, rol_id, asignado_por)
+     select $1, id, null from identidad.roles where clave = 'usuario'`,
+    [id],
+  );
+  await esc.admin.query(
+    `insert into identidad.usuarios_secciones (usuario_id, seccion, concedida_por) values ($1, 'closer', null)`,
+    [id],
+  );
+  return { id, token: await sesionDe(id) };
+}
+
+/** Los nombres que ve un alcance en la cartera del Closer. */
+async function nombresDe(alcance: AlcanceDelCloser): Promise<string[]> {
+  return conOrganizacion(esc.org, async () => {
+    const { filas } = await filasDeTerritorio('closer', { todas: true, alcance });
+    return filas.map((f) => f.nombre).sort();
+  });
+}
+
+test('quien supervisa ELIGE aunque sea closer vinculado: otro closer, toda la empresa o los sin asignar', async () => {
+  await limpiar();
+  await tresContactos();
+  // Uno asignado a un usuario del CRM que no es closer: tampoco es de ningún closer, así que va con los sin asignar.
+  await unContacto(esc, { nombre: 'Alcance de nadie del equipo', crmAsignadoA: 'crmQueNoEsCloser' });
+  const dos = await unaPersona('Dos');
+  await conOrganizacion(esc.org, async () => {
+    await asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal);
+    await asignarCloser(dos, CRM_DOS, esc.quien, esc.principal);
+  });
+
+  const como = (verComo: string | null, supervisa: boolean) =>
+    conOrganizacion(esc.org, () => alcanceDeQuienMira(esc.quien, verComo, supervisa));
+
+  // Sin elegir, lo suyo: la omisión «Toda la empresa» la pone la pantalla (`useState('todo')`), no el servidor.
+  assert.deepEqual(await nombresDe((await como(null, true)).alcance), ['Alcance de uno']);
+  assert.deepEqual(
+    await nombresDe((await como(dos, true)).alcance),
+    ['Alcance de dos'],
+    'un supervisor que también es closer no pudo ver los números de otro closer',
+  );
+  assert.deepEqual(
+    await nombresDe((await como('todo', true)).alcance),
+    ['Alcance de dos', 'Alcance de nadie del equipo', 'Alcance de uno', 'Alcance sin asignar'],
+    'un supervisor que también es closer no pudo ver toda la empresa',
+  );
+  assert.deepEqual(
+    await nombresDe((await como('sin_asignar', true)).alcance),
+    ['Alcance de nadie del equipo', 'Alcance sin asignar'],
+    '«sin asignar» no es lo que no es de ningún closer: o trae contactos de un closer, o pierde los que el CRM no asignó',
+  );
+  // Y la elección que la píldora marca es la aplicada.
+  assert.equal(eleccionDelAlcance((await como(dos, true)).alcance), dos);
+  assert.equal(eleccionDelAlcance((await como('sin_asignar', true)).alcance), 'sin_asignar');
+  assert.equal(eleccionDelAlcance((await como(esc.quien, true)).alcance), esc.quien, '«Lo mío» es su propio identificador');
+
+  // Sin la capacidad, el MISMO closer vinculado no elige nada: ni un closer, ni `todo`, ni `sin_asignar`.
+  for (const pedido of [dos, 'todo', 'sin_asignar']) {
+    assert.deepEqual(
+      await nombresDe((await como(pedido, false)).alcance),
+      ['Alcance de uno'],
+      `un closer sin \`credenciales.editar\` eligió «${pedido}» mandándolo a mano`,
+    );
+  }
+});
+
+test('«sin asignar» es el complemento exacto: con el «mío» de cada closer, suma la empresa entera', async () => {
+  await limpiar();
+  await tresContactos();
+  await unContacto(esc, { nombre: 'Alcance de nadie del equipo', crmAsignadoA: 'crmQueNoEsCloser', etiquetas: ['noshow'] });
+  // Y un no-show de un closer: sin el corte, el cockpit de «sin asignar» lo contaría como suyo.
+  await unContacto(esc, { nombre: 'Alcance noshow de uno', crmAsignadoA: CRM_UNO, etiquetas: ['noshow'] });
+  const dos = await unaPersona('Dos');
+  await conOrganizacion(esc.org, async () => {
+    await asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal);
+    await asignarCloser(dos, CRM_DOS, esc.quien, esc.principal);
+  });
+  const closers = await conOrganizacion(esc.org, () => closersDeLaEmpresa());
+  const partes = [
+    ...(await nombresDe(alcancePedido({ tipo: 'todo' }, esc.quien, closers))),
+    ...(await nombresDe(alcancePedido({ tipo: 'todo' }, dos, closers))),
+    ...(await nombresDe(alcancePedido({ tipo: 'todo' }, 'sin_asignar', closers))),
+  ].sort();
+  assert.deepEqual(partes, await nombresDe({ tipo: 'todo' }), 'un contacto quedó en dos partes o en ninguna');
+
+  // Y el cockpit cuenta los mismos: el conteo por etiqueta se corta con el mismo complemento, y el dinero no es de nadie.
+  const cockpit = await conOrganizacion(esc.org, () =>
+    cockpitDelMes('UTC', 0, { tipo: 'sin_asignar', asignados: closers.flatMap((k) => k.vinculos) }),
+  );
+  assert.equal(cockpit.noShows.valor, 1, 'el cockpit de «sin asignar» no cuenta lo que no es de ningún closer');
+  assert.equal(cockpit.cobrado.valor, null, '«sin asignar» mostró dinero, y no es de ningún closer');
+  assert.match(cockpit.cobrado.falta ?? '', /sin asignar/);
+});
+
+test('un `verComo` de OTRA empresa cae en el alcance propio, también para quien supervisa', async () => {
+  await limpiar();
+  await tresContactos();
+  await conOrganizacion(esc.org, () => asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal));
+  // Un closer real de `beta`, vinculado allá: el identificador existe y es closer, pero no de esta empresa.
+  const deBeta = await esc.admin.query<{ id: string; cuenta: string }>(
+    `select u.id, (select c.id from identidad.cuentas c where c.org_id = u.org_id and c.es_por_omision) as cuenta
+       from identidad.usuarios u where u.org_id = $1 order by u.creado_el limit 1`,
+    [esc.otraOrg],
+  );
+  const beta = deBeta.rows[0]!;
+  assert.ok(beta?.id && beta.cuenta, 'el sembrado no tiene una persona y un cliente en `beta`');
+  await conOrganizacion(esc.otraOrg, () => asignarCloser(beta.id, CRM_DOS, beta.id, beta.cuenta));
+  try {
+    const { alcance } = await conOrganizacion(esc.org, () => alcanceDeQuienMira(esc.quien, beta.id, true));
+    assert.deepEqual(
+      alcance,
+      { tipo: 'mio', usuarioId: esc.quien, vinculos: [{ cuentaId: esc.principal, crmUsuarioId: CRM_UNO }] },
+      'el closer de otra empresa se pudo elegir desde ésta',
+    );
+  } finally {
+    await esc.admin.query('delete from negocio.closer_asignado where org_id = $1 and usuario_id = $2', [esc.otraOrg, beta.id]);
+  }
+
+  // Y la forma: sólo un uuid, `todo` o `sin_asignar` llegan a `alcancePedido`.
+  const url = (v: string) => new Request(`https://ejemplo.test/api/closer/mi-dia?verComo=${v}`);
+  assert.equal(verComoDeLaUrl(url('todo')), 'todo');
+  assert.equal(verComoDeLaUrl(url('sin_asignar')), 'sin_asignar');
+  assert.equal(verComoDeLaUrl(url('TODO')), null);
+  assert.equal(verComoDeLaUrl(url('mio')), null);
+});
+
+test('la ruta de Mi Día: el supervisor-closer recibe el selector y elige; el closer `usuario`, ni lo uno ni lo otro', async () => {
+  await limpiar();
+  await tresContactos();
+  const k = await unCloserUsuario('Usuario');
+  await conOrganizacion(esc.org, async () => {
+    await asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal);
+    await asignarCloser(k.id, CRM_DOS, esc.quien, esc.principal);
+  });
+
+  type MiDia = {
+    puedeElegirCloser: boolean;
+    eleccion: string;
+    miCloserId: string | null;
+    mirando: { usuarioId: string } | null;
+  };
+  const pedir = async (token: string, verComo: string | null): Promise<MiDia> => {
+    const r = await verMiDia(pedirComo(`/api/closer/mi-dia${verComo ? `?verComo=${verComo}` : ''}`, token));
+    const { estado, cuerpo } = await leerRespuesta<MiDia>(r);
+    assert.equal(estado, 200, `Mi Día respondió ${estado}: ${JSON.stringify(cuerpo)}`);
+    return cuerpo;
+  };
+
+  // El administrador (tiene `credenciales.editar`) que además es closer vinculado.
+  const deAna = await pedir(esc.token, 'todo');
+  assert.equal(deAna.puedeElegirCloser, true, 'al supervisor que es closer no se le ofrece el selector');
+  assert.equal(deAna.eleccion, 'todo', 'el supervisor que es closer pidió «Toda la empresa» y no la recibió');
+  assert.equal(deAna.miCloserId, esc.quien, '«Lo mío» no se ofrece a quien es closer vinculado');
+  assert.equal((await pedir(esc.token, k.id)).mirando?.usuarioId, k.id, 'el supervisor eligió un closer y Mi Día no lo obedeció');
+
+  // El closer `usuario`: sin selector, y lo que mande se ignora —200 con lo suyo, no 403—.
+  for (const pedido of ['todo', 'sin_asignar', esc.quien]) {
+    const deK = await pedir(k.token, pedido);
+    assert.equal(deK.puedeElegirCloser, false, 'a un closer `usuario` se le ofreció el selector');
+    assert.equal(deK.eleccion, k.id, `un closer \`usuario\` eligió «${pedido}» mandándolo a mano`);
+  }
+});
+
+test('el Brief obedece el alcance elegido, con el mismo candado', async () => {
+  await limpiar();
+  const k = await unCloserUsuario('Brief');
+  await conOrganizacion(esc.org, async () => {
+    await asignarCloser(esc.quien, CRM_UNO, esc.quien, esc.principal);
+    await asignarCloser(k.id, CRM_DOS, esc.quien, esc.principal);
+  });
+  const deK = await unContacto(esc, { nombre: 'Alcance brief de dos', crmAsignadoA: CRM_DOS });
+  const cita = await unaCita(esc, deK.id, { inicioEl: new Date(Date.now() + 86_400_000) });
+
+  const estado = async (token: string, verComo: string | null): Promise<number> =>
+    (await verBrief(pedirComo(`/api/closer/brief?cita=${cita}${verComo ? `&verComo=${verComo}` : ''}`, token))).status;
+
+  // El supervisor-closer: sin elegir, la cita de otro no existe para él; eligiendo, sí.
+  assert.equal(await estado(esc.token, null), 404);
+  assert.equal(await estado(esc.token, 'todo'), 200, 'el Brief no obedece «Toda la empresa» del selector');
+  assert.equal(await estado(esc.token, k.id), 200, 'el Brief no obedece al closer elegido');
+  assert.equal(await estado(esc.token, 'sin_asignar'), 404, 'el Brief de un contacto asignado salió en «sin asignar»');
+  // El closer dueño la ve.
+  assert.equal(await estado(k.token, null), 200);
+
+  // Y el candado del lado de un closer `usuario`: la cita de ana no la abre ni pidiendo «Toda la empresa».
+  const deAna = await unContacto(esc, { nombre: 'Alcance brief de uno', crmAsignadoA: CRM_UNO });
+  const citaDeAna = await unaCita(esc, deAna.id, { inicioEl: new Date(Date.now() + 86_400_000) });
+  const r = await verBrief(pedirComo(`/api/closer/brief?cita=${citaDeAna}&verComo=todo`, k.token));
+  assert.equal(r.status, 404, 'un closer `usuario` abrió el Brief de otro pidiendo «Toda la empresa»');
+});
+
+test('el selector se ofrece a quien ve todo o supervisa, y sólo con algún closer elegible', async () => {
+  const vinculo = [{ cuentaId: esc.principal, crmUsuarioId: CRM_UNO }];
+  const elegible: CloserConfigurado = {
+    usuarioId: 'a',
+    nombre: 'A',
+    vinculos: vinculo,
+    vinculosALaVista: vinculo,
+    actualizadoEl: new Date(),
+  };
+  // Vinculado sólo en un cliente que no está a la vista: con el foco en otro, no se puede elegir.
+  const fuera: CloserConfigurado = { ...elegible, usuarioId: 'b', vinculosALaVista: [] };
+  const mio: AlcanceDelCloser = { tipo: 'mio', usuarioId: 'a', vinculos: vinculo };
+
+  assert.equal(puedeElegirCloser({ tipo: 'todo' }, [elegible], false), true);
+  assert.equal(puedeElegirCloser(mio, [elegible], true), true);
+  assert.equal(puedeElegirCloser(mio, [elegible], false), false, 'al closer `usuario` se le ofrece el selector');
+  assert.equal(puedeElegirCloser({ tipo: 'todo' }, [fuera], true), false);
+  assert.deepEqual(alcancePedido({ tipo: 'todo' }, 'b', [fuera], true), { tipo: 'todo' }, 'se eligió un closer sin vínculo a la vista');
+  assert.equal(puedeSupervisarClosers(new Set(['closer.ver'])), false);
+  assert.equal(puedeSupervisarClosers(new Set(['credenciales.editar'])), true);
 });

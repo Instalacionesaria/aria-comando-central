@@ -21,7 +21,13 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
-import { type VinculoConElCrm, contactoDelCloser } from './alcanceDelCloser.ts';
+import {
+  type AlcanceDelCloser,
+  type CloserConfigurado,
+  type VinculoConElCrm,
+  contactoDelCloser,
+  contactoSinCloser,
+} from './alcanceDelCloser.ts';
 import {
   type DineroDelMes,
   type Indicador,
@@ -131,6 +137,10 @@ export async function cockpitDelMes(
     .$if(sujeto.tipo === 'persona' && sujeto.vinculos.length > 0, (q) =>
       q.where(contactoDelCloser('contactos', (sujeto as { vinculos: readonly VinculoConElCrm[] }).vinculos)),
     )
+    // Y «sin asignar», con el corte complementario: los que no son de ningún closer.
+    .$if(sujeto.tipo === 'sin_asignar', (q) =>
+      q.where(contactoSinCloser('contactos', (sujeto as Extract<SujetoDelCockpit, { tipo: 'sin_asignar' }>).asignados)),
+    )
     .select(({ fn }) => [
       fn
         .countAll<string>()
@@ -172,4 +182,16 @@ export async function cockpitDelMes(
     // Viene de Mi Día, calculado con su regla: los seguimientos automáticos NO cuentan.
     tareasPendientes: { valor: tareasPendientes },
   };
+}
+
+/**
+ * El sujeto del cockpit para un alcance: de quién son los números. Lo usan la ruta de Mi Día y la herramienta del
+ * cerebro, de las mismas dos piezas. Sin closers no hay de quién; `todo` suma a los closers; `mio` es una persona;
+ * `sin_asignar` son los contactos de nadie.
+ */
+export function sujetoDelAlcance(closers: readonly CloserConfigurado[], alcance: AlcanceDelCloser): SujetoDelCockpit {
+  if (closers.length === 0) return { tipo: 'nadie' };
+  if (alcance.tipo === 'todo') return { tipo: 'empresa', usuarioIds: closers.map((k) => k.usuarioId) };
+  if (alcance.tipo === 'sin_asignar') return { tipo: 'sin_asignar', asignados: alcance.asignados };
+  return { tipo: 'persona', usuarioId: alcance.usuarioId, vinculos: alcance.vinculos };
 }

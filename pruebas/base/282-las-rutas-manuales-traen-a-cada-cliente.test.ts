@@ -508,7 +508,7 @@ test('el cliente final no llega a ninguna de las tres, y el rechazo queda en la 
 test('con un solo cliente, la respuesta es la de siempre: sin `clientes` y sin nombre delante', async () => {
   const r = await leerRespuesta<Record<string, unknown>>(await refrescar(pedirComo('/api/closer/agenda/refrescar', tokenUno, POST)));
   assert.equal(r.estado, 200, JSON.stringify(r.cuerpo));
-  assert.deepEqual(Object.keys(r.cuerpo), ['corrio', 'calendarios', 'vistas', 'nuestras', 'guardadas', 'borradas', 'sinHora', 'canceladas', 'llamadas', 'atrasado']);
+  assert.deepEqual(Object.keys(r.cuerpo), ['corrio', 'calendarios', 'vistas', 'nuestras', 'guardadas', 'borradas', 'dadasDeBaja', 'sinHora', 'canceladas', 'llamadas', 'atrasado']);
   const i = await leerRespuesta<Record<string, unknown>>(await ingesta(pedirComo('/api/mensajes/ingesta', tokenUno, POST)));
   assert.equal(i.estado, 200, JSON.stringify(i.cuerpo));
   assert.deepEqual(Object.keys(i.cuerpo), ['corrio', 'llamadas', 'miradas', 'nuestras', 'mensajesNuevos', 'sinFecha', 'atrasado', 'entregasRevisadas', 'entregasResueltas']);

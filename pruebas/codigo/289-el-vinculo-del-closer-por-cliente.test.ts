@@ -38,16 +38,24 @@ test('ningún corte del closer compara `crm_asignado_a` solo: los cinco sitios u
     .map((a) => a.ruta);
   assert.deepEqual(comparan, [], 'un corte compara el usuario del CRM sin su cliente: el mismo id en otra subcuenta es otra persona');
 
+  /* Desde el selector de closer (2026-10-29) los sitios cortan con `corteDelAlcance`, que para «mío» es
+     `contactoDelCloser` y para «sin asignar» su complemento; el cockpit, que recibe un sujeto y no un alcance, llama a
+     `contactoDelCloser` directo. La Agenda arma el corte una vez (`corteDe`) y lo aplica en sus tres consultas (142). */
   const sitios: [string, number][] = [
-    ['lib/negocio/agenda.ts', 3],
-    ['lib/negocio/fila.ts', 1],
+    ['lib/negocio/agenda.ts', 1],
+    ['lib/negocio/fila.ts', 2],
     ['lib/negocio/inicio.ts', 1],
     ['lib/agentes/brief/entrada.ts', 1],
-    ['lib/agentes/cabecera.ts', 1],
+    ['lib/agentes/cabecera.ts', 2],
   ];
   for (const [ruta, n] of sitios) {
-    assert.equal(cuantas(leer(ruta), /contactoDelCloser\(/g), n, `${ruta} dejó de cortar con \`contactoDelCloser\``);
+    assert.equal(cuantas(leer(ruta), /(?:contactoDelCloser|corteDelAlcance)\(/g), n, `${ruta} dejó de cortar con \`contactoDelCloser\``);
   }
+  assert.match(
+    leer('lib/negocio/alcanceDelCloser.ts'),
+    /alcance\.tipo === 'mio' \? contactoDelCloser\(alias, alcance\.vinculos\)/,
+    '`corteDelAlcance` dejó de usar el corte por par para «mío»',
+  );
   // Y el corte es por PAR: la tupla (cuenta_id, crm_asignado_a) contra la lista de vínculos.
   const corte = leer('lib/negocio/alcanceDelCloser.ts');
   assert.match(corte, /\$\{alias\}\.cuenta_id`\)\}, \$\{sql\.ref\(`\$\{alias\}\.crm_asignado_a`\)\}\) in \(/);

@@ -56,13 +56,13 @@
 // esta función sin haber decidido de quién son las citas.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { sql } from 'kysely';
+import { type RawBuilder, sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { estaCancelada } from '../ghl/calendarios.ts';
-import { noCancelada } from './citas.ts';
+import { noCancelada, sinBaja } from './citas.ts';
 import { frescuraDe, type Frescura } from './frescura.ts';
 import { diaEnZona } from './tiempo.ts';
-import { type AlcanceDelCloser, type VinculoConElCrm, contactoDelCloser } from './alcanceDelCloser.ts';
+import { type AlcanceDelCloser, corteDelAlcance } from './alcanceDelCloser.ts';
 import { avisoSinConexion, clientesSinConexion, delAlcance } from './faltaDeLosClientes.ts';
 import type { Territorio } from '../datos/esquema.ts';
 
@@ -173,7 +173,7 @@ export interface Agenda {
 export const DIAS_DE_LA_AGENDA = 15;
 
 /**
- * El usuario del CRM cuyas citas hay que mostrar, o `null` para no cortar.
+ * El corte del alcance sobre el contacto de la cita (`k`), o `null` para no cortar.
  *
  * ── EXISTE PARA QUE LAS TRES CONSULTAS DE ESTE ARCHIVO CORTEN IGUAL ─────────
  *
@@ -186,12 +186,12 @@ export const DIAS_DE_LA_AGENDA = 15;
  * escrito ahí abajo: *«explicar un cero con un número de otra pantalla»*. El alcance es el mismo
  * problema un piso más adentro.
  *
- * Devuelve los vínculos y no un booleano para que quien llama pueda hacer `if (mio !== null)` y
- * usarlos ya estrechados: sin eso, cada uno de los tres sitios necesitaría su propia conversión de
- * tipo, que es tres lugares donde equivocarse.
+ * Devuelve el corte ya armado (`corteDelAlcance`: «mío» o «sin asignar») para que los tres sitios hagan
+ * `if (corte !== null)` igual: con un `tipo === 'mio'` en cada uno, «sin asignar» pasaba como «todo» en el que
+ * se olvidara, y eran tres lugares donde equivocarse.
  */
-function soloDe(alcance: AlcanceDelCloser | undefined): readonly VinculoConElCrm[] | null {
-  return alcance?.tipo === 'mio' ? alcance.vinculos : null;
+function corteDe(alcance: AlcanceDelCloser | undefined): RawBuilder<boolean> | null {
+  return corteDelAlcance('k', alcance);
 }
 
 /**
@@ -211,7 +211,7 @@ export async function agendaDelCloser(
   opciones: { dias?: number; incluirCanceladas?: boolean; alcance?: AlcanceDelCloser } = {},
 ): Promise<Agenda> {
   const dias = Math.max(1, Math.trunc(opciones.dias ?? DIAS_DE_LA_AGENDA));
-  const mio = soloDe(opciones.alcance);
+  const corte = corteDe(opciones.alcance);
 
   /* ── UN SOLO RELOJ, Y ANTES HABÍA DOS ──────────────────────────────────────
    *
@@ -270,6 +270,9 @@ export async function agendaDelCloser(
      * `closer`»— es cómo la omisión vuelve la próxima vez.
      */
     .where('k.territorio', '=', territorio)
+    // Ni una cita ni un contacto que el CRM borró (la `108`): en la agenda serían reuniones que no van a ocurrir.
+    .where(sinBaja('c.baja_en_el_crm'))
+    .where(sinBaja('k.baja_en_el_crm'))
     .where('c.inicio_el', '>=', desdeLaMedianoche)
     .where('c.inicio_el', '<', hastaElFin)
     .select([
@@ -297,7 +300,7 @@ export async function agendaDelCloser(
    *
    * Los SIN asignar quedan afuera, igual que allá y por el mismo motivo de producto: un contacto que
    * el CRM no asignó no es de nadie, y un `or … is null` acá le daría la misma cita a los tres. */
-  if (mio !== null) q = q.where(contactoDelCloser('k', mio));
+  if (corte !== null) q = q.where(corte);
 
   if (opciones.incluirCanceladas !== true) {
     /* La condición estaba escrita a mano acá, otra vez a mano en `miDia.ts`, y en ningún lado en
@@ -487,6 +490,9 @@ export async function porQueNoHayCitasHoy(
     // y no del setter, o el número que explica un cero es de otro lado.
     .innerJoin('contactos as k', 'k.id', 'c.contacto_id')
     .where('k.territorio', '=', territorio)
+    // Ni una cita ni un contacto que el CRM borró (la `108`): en la agenda serían reuniones que no van a ocurrir.
+    .where(sinBaja('c.baja_en_el_crm'))
+    .where(sinBaja('k.baja_en_el_crm'))
     .select(({ fn }) => fn.countAll<string>().as('n'))
     .where(
       'c.inicio_el',
@@ -497,8 +503,8 @@ export async function porQueNoHayCitasHoy(
 
   /* Y el mismo alcance, por lo mismo un piso más adentro: «se ven en Closer → Agenda» sobre citas
      que la Agenda de esa persona NO le va a mostrar es mandarla a una pantalla vacía. */
-  const mio = soloDe(alcance);
-  if (mio !== null) q = q.where(contactoDelCloser('k', mio));
+  const corte = corteDe(alcance);
+  if (corte !== null) q = q.where(corte);
 
   const adelante = await q.executeTakeFirst();
 
@@ -544,6 +550,9 @@ async function porQueNoHayCitas(
     // un cero con un número de otra pantalla.
     .innerJoin('contactos as k', 'k.id', 'c.contacto_id')
     .where('k.territorio', '=', territorio)
+    // Ni una cita ni un contacto que el CRM borró (la `108`): en la agenda serían reuniones que no van a ocurrir.
+    .where(sinBaja('c.baja_en_el_crm'))
+    .where(sinBaja('k.baja_en_el_crm'))
     .select(({ fn }) => fn.countAll<string>().as('n'))
     .where(
       'c.inicio_el',
@@ -553,8 +562,8 @@ async function porQueNoHayCitas(
 
   // Y el alcance, que es la otra mitad del mismo cuidado: el número que vuelve honesto a un cero
   // tiene que ser de las MISMAS citas que la lista habría mostrado.
-  const mio = soloDe(alcance);
-  if (mio !== null) q = q.where(contactoDelCloser('k', mio));
+  const corte = corteDe(alcance);
+  if (corte !== null) q = q.where(corte);
 
   const recientes = await q.executeTakeFirst();
 

@@ -207,6 +207,7 @@ export function sumarBarridos(rs: readonly ResultadoDelBarrido[]): ResultadoDelB
     nuestras: suma((r) => r.nuestras),
     guardadas: suma((r) => r.guardadas),
     borradas: suma((r) => r.borradas),
+    dadasDeBaja: suma((r) => r.dadasDeBaja),
     sinHora: suma((r) => r.sinHora),
     canceladas: suma((r) => r.canceladas),
     llamadas: suma((r) => r.llamadas),

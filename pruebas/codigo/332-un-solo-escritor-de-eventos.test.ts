@@ -36,6 +36,8 @@ import {
 
 const ESCRITOR = 'lib/negocio/etapaDelCrm.ts';
 const DISPARADORES = 'db/migraciones/106_la_historia_del_lead.sql';
+/** La `109` redefine UNO de los disparadores de la 106 (el del cuadrante), con su mismo insert: no es otro escritor. */
+const REDEFINICION = 'db/migraciones/109_quien_clasifico.sql';
 
 /** Una escritura en la tabla de eventos, por Kysely o en SQL. */
 const ESCRIBE_EVENTOS =
@@ -50,7 +52,15 @@ test('en el código, sólo etapaDelCrm.ts escribe en negocio.eventos; en la base
   const base = archivosFuente(['db'])
     .filter((a) => ESCRIBE_EVENTOS.test(a.limpio))
     .map((a) => a.ruta);
-  assert.deepEqual(base, [DISPARADORES], 'otra migración o el sembrado escriben en negocio.eventos');
+  assert.deepEqual(base, [DISPARADORES, REDEFINICION], 'otra migración o el sembrado escriben en negocio.eventos');
+  // La 109 escribe eventos SÓLO dentro de la redefinición de `registrar_cambio_de_cuadrante`, con la misma clave
+  // idempotente (`on conflict do nothing`): es el mismo escritor de la 106, no uno nuevo.
+  const redefinicion = archivosFuente(['db']).find((a) => a.ruta === REDEFINICION)!.limpio;
+  const funciones = redefinicion.split(/(?=create or replace function )/);
+  const conEventos = funciones.filter((f) => ESCRIBE_EVENTOS.test(f));
+  assert.equal(conEventos.length, 1);
+  assert.match(conEventos[0]!, /^create or replace function negocio\.registrar_cambio_de_cuadrante\(\) returns trigger/);
+  assert.match(conEventos[0]!, /'cuadrante_cambiado'[\s\S]*on conflict do nothing;/);
 
   // Y el escritor lo hace como lo pide la ESPEC: con `insertInto` (un `sql` crudo no recibe el org_id), sin pisar un
   // hecho ya registrado, con el contacto bloqueado.

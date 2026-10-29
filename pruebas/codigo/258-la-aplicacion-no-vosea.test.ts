@@ -44,7 +44,6 @@ const TODAVIA_VOSEAN = [
   'components/closer/QuienEsElCloser.jsx',
   'components/incidentes/PanelDeIncidentes.jsx',
   'components/negocio/Avanzar.jsx',
-  'components/negocio/Comision.jsx',
   'components/negocio/EnlacesRapidos.jsx',
   'components/negocio/Ficha.jsx',
   'components/negocio/ListaDeContactos.jsx',

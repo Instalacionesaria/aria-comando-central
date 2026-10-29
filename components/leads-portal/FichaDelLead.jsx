@@ -139,6 +139,7 @@ function Meta({ f }) {
       {textoDelCuadrante(f.clasificacion)} · entró el {fecha(f.altaEl)}
       {f.pais ? ` · ${f.pais}` : ''}
       {f.descarte.length > 0 ? <span className="lp-marca lp-marca-descarte">descartado: {f.descarte.join(', ')}</span> : null}
+      {f.bajaEnElCrmEl ? <span className="lp-marca lp-marca-descarte">borrado en el CRM el {fecha(f.bajaEnElCrmEl)}</span> : null}
     </div>
   );
 }
@@ -304,7 +305,7 @@ function Contenido({ f }) {
                 k={fechaYHora(c.inicioEl)}
                 v={[
                   ESTADO_DE_CITA[(c.estado ?? '').toLowerCase()] ?? c.estado ?? 'sin estado',
-                  c.alcanzable ? null : 'congelada',
+                  c.borrada ? 'borrada en el CRM' : c.alcanzable ? null : 'congelada',
                   c.asistio === true ? 'asistió' : c.asistio === false ? 'no asistió' : null,
                 ]
                   .filter(Boolean)
@@ -367,7 +368,13 @@ function Contenido({ f }) {
           <Fila
             k="Última sincronización"
             v={fechaYHora(f.sincronizadoEl)}
-            nota={f.territorio === 'congelado' ? 'Contacto congelado: ya no se refresca, así que esto es la última foto.' : undefined}
+            nota={
+              f.bajaEnElCrmEl
+                ? 'Borrado en el CRM: ya no se refresca, así que esto es la última foto.'
+                : f.territorio === 'congelado'
+                  ? 'Contacto congelado: se relee una vez por día, así que esto es la última foto.'
+                  : undefined
+            }
           />
         </div>
       </div>

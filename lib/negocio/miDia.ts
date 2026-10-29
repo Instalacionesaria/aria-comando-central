@@ -31,7 +31,7 @@
 
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
-import { noCancelada } from './citas.ts';
+import { noCancelada, sinBaja } from './citas.ts';
 import type { AlcanceDelCloser } from './alcanceDelCloser.ts';
 import { nucleoDeColas, type CasoDeSeguimiento, type EnLaCola } from './colas.ts';
 
@@ -108,6 +108,7 @@ export async function colasDelDia(
        y en ningún lado allá: los íconos contaban las canceladas y esta cola no, así que la misma
        cita estaba y no estaba según dónde se la mirara. */
     .where(noCancelada('estado_ghl'))
+    .where(sinBaja())
     .orderBy('inicio_el', 'asc')
     .execute();
 

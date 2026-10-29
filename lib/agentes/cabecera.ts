@@ -33,7 +33,7 @@ import { datos } from '../datos/contexto.ts';
 import { enPalabras, frescuraDe, type Frescura } from '../negocio/frescura.ts';
 import { citaCerrable } from '../negocio/citasAlcanzables.ts';
 import { DIAS_DE_LA_TASA } from '../negocio/indicadoresDeCitas.ts';
-import { type AlcanceDelCloser, contactoDelCloser } from '../negocio/alcanceDelCloser.ts';
+import { type AlcanceDelCloser, corteDelAlcance } from '../negocio/alcanceDelCloser.ts';
 import { avisoSinConexion, clientesSinConexion, delAlcance } from '../negocio/faltaDeLosClientes.ts';
 import { diaEnZona } from '../negocio/tiempo.ts';
 import { ventanaDeMetricas } from '../negocio/costoDelAnuncio.ts';
@@ -161,7 +161,7 @@ export async function citasSinRegistrar(alcance: AlcanceDelCloser): Promise<numb
     .where(citaCerrable('ci'))
     .where('ci.asistio', 'is', null)
     .where(sql<boolean>`ci.inicio_el >= now() - make_interval(days => ${DIAS_DE_LA_TASA})`)
-    .$if(alcance.tipo === 'mio', (q) => q.where(contactoDelCloser('c', (alcance as Extract<AlcanceDelCloser, { tipo: 'mio' }>).vinculos)))
+    .$if(corteDelAlcance('c', alcance) !== null, (q) => q.where(corteDelAlcance('c', alcance)!))
     .executeTakeFirstOrThrow();
   return Number(fila.n);
 }

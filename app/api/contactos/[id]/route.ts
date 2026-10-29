@@ -46,6 +46,7 @@ import { citasParaCerrar } from '../../../../lib/negocio/citasParaCerrar.ts';
 import { enlacesDeLaCita } from '../../../../lib/negocio/enlacesDeLaCita.ts';
 import { refrescarUnContacto } from '../../../../lib/negocio/sincronizar.ts';
 import { clienteDelContacto } from '../../../../lib/negocio/clienteDelContacto.ts';
+import { closerDelContacto } from '../../../../lib/negocio/aNombreDelCloser.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -150,10 +151,12 @@ export async function GET(
      hora— podría escribir en el medio y la ficha mostraría el enlace de una cita y la lista de
      asistencia de otro momento: dos cosas de la misma tabla contradiciéndose en la misma pantalla,
      sin que nada falle. */
-  const [enlacesDeCita, citasPorCerrar] = await conOrganizacion(orgId, async () => [
+  const [enlacesDeCita, citasPorCerrar, closerAsignado] = await conOrganizacion(orgId, async () => [
     await enlacesDeLaCita(id, dominio),
     await citasParaCerrar(id),
-  ]);
+    // El closer que el CRM le asignó (la `107`): Avanzar dice a nombre de quién queda lo que registra quien supervisa.
+    await closerDelContacto(id),
+  ] as const);
 
   /* ── ACÁ SE ARMABA `enlaceAgendar`, Y SE FUE CON SU BOTÓN ────────────────
    *
@@ -173,6 +176,9 @@ export async function GET(
     /* Las citas que ya ocurrieron y sobre las que Avanzar puede preguntar si se presentó. Vacío es
        normal: un contacto de zona setter no tiene ninguna. Ver `lib/negocio/citasParaCerrar.ts`. */
     citasPorCerrar,
+    /* `{ usuarioId, nombre }` o `null` (sin asignar, o asignado a alguien que no es closer). Es el mismo cálculo con el
+       que la ruta de Avanzar acredita lo que registra quien supervisa sin elegir closer. */
+    closerAsignado,
     refresco: { actualizado: porque === null, porque },
   });
 }

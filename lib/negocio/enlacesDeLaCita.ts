@@ -33,7 +33,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { enlaceDeReagendamiento } from '../ghl/agendar.ts';
-import { noCancelada } from './citas.ts';
+import { noCancelada, sinBaja } from './citas.ts';
 
 export interface EnlacesDeLaCita {
   /** Cuándo es o fue. La interfaz lo dibuja en la zona de la empresa. */
@@ -60,6 +60,7 @@ export async function enlacesDeLaCita(
     .select(['inicio_el', 'sala_url', 'ghl_calendario_id', 'ghl_evento_id'])
     .where('contacto_id', '=', contactoId)
     .where(noCancelada('estado_ghl'))
+    .where(sinBaja())
     /* ── EL ORDEN ES LA REGLA, ESCRITO EN TRES LÍNEAS ──────────────────────
      *
      * 1 · Las futuras primero. `inicio_el >= now()` es un booleano, y `desc` pone `true` arriba.

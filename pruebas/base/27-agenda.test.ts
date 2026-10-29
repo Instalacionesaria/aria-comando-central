@@ -603,6 +603,164 @@ test('el segundo barrido seguido devuelve `corrio: false` y NO cuesta llamadas',
   assert.equal(cuenta.llamadas, gasto, 'y sobre todo: no gastó ninguna llamada');
 });
 
+// ═══ La baja en el CRM (la `108`): marcar, nunca borrar ═════════════════
+
+/** La baja de cada cita de alfa, por su id del CRM. */
+async function bajas(): Promise<Record<string, boolean>> {
+  const f = await conOrganizacion(alfa, () =>
+    datos().selectFrom('citas').select(['ghl_evento_id', 'baja_en_el_crm']).orderBy('ghl_evento_id').execute(),
+  );
+  return Object.fromEntries(f.map((x) => [x.ghl_evento_id, x.baja_en_el_crm !== null]));
+}
+
+/** Los lectores de siempre, más el GET de una cita: `porId` dice qué contesta y `pedidas` anota a quién se pidió. */
+function conLaConfirmacion(
+  base: LectoresDelCalendario,
+  porId: (id: string) => ResultadoDeGhl<CitaDeGhl | null>,
+  pedidas: string[],
+): LectoresDelCalendario {
+  return {
+    ...base,
+    cita: async (_acceso, id) => {
+      pedidas.push(id);
+      return porId(id);
+    },
+  };
+}
+
+test('BAJA · una cita YA GUARDADA que vuelve borrada queda con baja, y una borrada nueva no se inserta', async () => {
+  // El `continue` de antes la salteaba: la fila se quedaba con su último estado para siempre, contada como viva.
+  await limpiar();
+  const marca = `bb${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const enUnaHora = new Date(Date.now() + 3_600_000);
+  const cal = [calendario('a')];
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('bb-1', marca, enUnaHora)] }));
+  await liberarPulso();
+
+  const r = await barrerCitas(
+    await porOmisionDe(alfa),
+    ACCESO,
+    lectores(cal, { a: [delCrm('bb-1', marca, enUnaHora, { borrada: true }), delCrm('bb-nueva', marca, enUnaHora, { borrada: true })] }),
+  );
+  assert.ok(r.corrio);
+  assert.equal(r.resultado.borradas, 2);
+  assert.equal(r.resultado.dadasDeBaja, 1, 'la guardada que volvió borrada no quedó con baja');
+  assert.deepEqual(await bajas(), { 'bb-1': true }, 'una borrada se insertó, o la guardada no quedó marcada');
+});
+
+test('BAJA · la cita que falta en un barrido COMPLETO se confirma con su GET, y sólo un 404 o `deleted` la marcan', async () => {
+  await limpiar();
+  const marca = `ba${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const enUnaHora = new Date(Date.now() + 3_600_000);
+  const cal = [calendario('a')];
+  const todas = ['ba-404', 'ba-borrada', 'ba-viva', 'ba-falla', 'ba-sigue'].map((id) => delCrm(id, marca, enUnaHora));
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: todas }));
+  await liberarPulso();
+
+  // El segundo barrido sólo trae una: las otras cuatro faltan, y cada una contesta distinto a su GET.
+  const pedidas: string[] = [];
+  const enDosHoras = new Date(Date.now() + 7_200_000);
+  const r = await barrerCitas(
+    await porOmisionDe(alfa),
+    ACCESO,
+    conLaConfirmacion(
+      lectores(cal, { a: [delCrm('ba-sigue', marca, enUnaHora)] }),
+      (id) =>
+        id === 'ba-404'
+          ? datosDe<CitaDeGhl | null>(null)
+          : id === 'ba-borrada'
+            ? datosDe<CitaDeGhl | null>(delCrm(id, marca, enUnaHora, { borrada: true }))
+            : id === 'ba-viva'
+              ? datosDe<CitaDeGhl | null>(delCrm(id, marca, enDosHoras))
+              : falloDe<CitaDeGhl | null>(),
+      pedidas,
+    ),
+  );
+  assert.ok(r.corrio);
+  assert.deepEqual([...pedidas].sort(), ['ba-404', 'ba-borrada', 'ba-falla', 'ba-viva'], 'se pidió una que vino, o faltó pedir una ausente');
+  assert.equal(r.resultado.llamadas, 2 + 4, 'las confirmaciones no se contaron en las llamadas');
+  assert.equal(r.resultado.dadasDeBaja, 2);
+  assert.deepEqual(await bajas(), {
+    'ba-404': true,
+    'ba-borrada': true,
+    'ba-falla': false,
+    'ba-sigue': false,
+    'ba-viva': false,
+  });
+  // La viva se refrescó con lo que dijo su GET: se movió.
+  const viva = await conOrganizacion(alfa, () =>
+    datos().selectFrom('citas').select('inicio_el').where('ghl_evento_id', '=', 'ba-viva').executeTakeFirstOrThrow(),
+  );
+  assert.equal(viva.inicio_el.getTime(), enDosHoras.getTime(), 'la ausente viva no se refrescó con su GET');
+});
+
+test('BAJA · con un calendario que falla, o sin ninguna cita vista, no se resta nada ni se pide nada', async () => {
+  await limpiar();
+  const marca = `bf${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const enUnaHora = new Date(Date.now() + 3_600_000);
+  const dos = [calendario('a'), calendario('b')];
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(dos, { a: [delCrm('bf-a', marca, enUnaHora)], b: [delCrm('bf-b', marca, enUnaHora)] }));
+  await liberarPulso();
+
+  const pedidas: string[] = [];
+  const todoFalta = () => datosDe<CitaDeGhl | null>(null);
+  // El calendario `a` falla: su cita falta sin haberse borrado.
+  const r = await barrerCitas(
+    await porOmisionDe(alfa),
+    ACCESO,
+    conLaConfirmacion(lectores(dos, { a: 'falla', b: [delCrm('bf-b', marca, enUnaHora)] }), todoFalta, pedidas),
+  );
+  assert.ok(r.corrio && r.resultado.atrasado);
+  assert.deepEqual(pedidas, [], 'con un calendario caído se salió a confirmar ausencias');
+  assert.deepEqual(await bajas(), { 'bf-a': false, 'bf-b': false }, 'un calendario que falla dio de baja sus citas');
+
+  // Los dos responden, pero vacíos: cero vistas no es «no hay ninguna».
+  await liberarPulso();
+  const vacio = await barrerCitas(await porOmisionDe(alfa), ACCESO, conLaConfirmacion(lectores(dos, { a: [], b: [] }), todoFalta, pedidas));
+  assert.ok(vacio.corrio && !vacio.resultado.atrasado);
+  assert.deepEqual(pedidas, [], 'con cero citas vistas se salió a confirmar ausencias');
+  assert.deepEqual(await bajas(), { 'bf-a': false, 'bf-b': false }, 'una lectura vacía dio de baja todo');
+});
+
+test('BAJA · la cita que REAPARECE viva pierde la baja', async () => {
+  await limpiar();
+  const marca = `br${randomUUID().slice(0, 6)}`;
+  await contacto(marca);
+  const enUnaHora = new Date(Date.now() + 3_600_000);
+  const cal = [calendario('a')];
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('br-1', marca, enUnaHora)] }));
+  await liberarPulso();
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('br-1', marca, enUnaHora, { borrada: true })] }));
+  assert.deepEqual(await bajas(), { 'br-1': true });
+  await liberarPulso();
+  await barrerCitas(await porOmisionDe(alfa), ACCESO, lectores(cal, { a: [delCrm('br-1', marca, enUnaHora)] }));
+  assert.deepEqual(await bajas(), { 'br-1': false }, 'la cita volvió viva y siguió con baja');
+});
+
+test('BAJA · la Agenda y Mi Día no muestran una cita ni un contacto borrados en el CRM', async () => {
+  await limpiar();
+  await marcarPulso({});
+  const viva = await contacto(`bv${randomUUID().slice(0, 6)}`, 'Viva Baja');
+  const deBaja = await contacto(`bc${randomUUID().slice(0, 6)}`, 'Contacto De Baja');
+  // Empezaron hace minutos: son de hoy para la Agenda y para la cola de Mi Día.
+  const hace = (min: number) => new Date(Date.now() - min * MIN);
+  await citaEnTabla(viva, hace(10), { fin_el: new Date(Date.now() + 20 * MIN) });
+  await citaEnTabla(viva, hace(5), { fin_el: new Date(Date.now() + 20 * MIN), baja_en_el_crm: new Date() });
+  await citaEnTabla(deBaja, hace(10), { fin_el: new Date(Date.now() + 20 * MIN) });
+  await admin.query('update negocio.contactos set baja_en_el_crm = now() where id = $1', [deBaja]);
+
+  const a = await laAgenda({ dias: 3 });
+  const enLaAgenda = a.dias.flatMap((d) => d.citas.map((c) => c.contactoId));
+  assert.deepEqual(enLaAgenda, [viva], 'la agenda mostró una cita borrada en el CRM o la de un contacto borrado');
+  const colas = await conOrganizacion(alfa, () => colasDelDia(ZONA));
+  assert.equal(colas.agenda.length, 1, 'Mi Día trajo una cita borrada en el CRM o la de un contacto borrado');
+  const filas = await conOrganizacion(alfa, () => filasDeTerritorio('closer', { todas: true }));
+  assert.deepEqual(filas.filas.map((f) => f.nombre), ['Viva Baja'], 'la lista del closer trajo a un contacto borrado en el CRM');
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 2 · LA AGENDA
 // ═══════════════════════════════════════════════════════════════════════════════

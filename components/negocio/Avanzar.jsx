@@ -27,7 +27,7 @@
  * que el aspecto sea el que ya estaba diseñado.
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { pedir } from '../../lib/http/cliente.ts';
 
 /* Lo que declara `app/api/contactos/[id]/avanzar/route.ts` en su `maxDuration`, en milisegundos.
@@ -42,6 +42,7 @@ const ESPERA_DE_AVANZAR_MS = 30_000;
 import { salidasDe, modosDe } from '../../lib/negocio/salidas.ts';
 import Ventana from '../Ventana.jsx';
 import { useSesion } from '../../app/sesion-contexto.tsx';
+import { RegistroDelCloser, aNombreDelRegistro } from '../closer/SelectorDeCloser.jsx';
 
 /** El día de hoy en `YYYY-MM-DD`, para el mínimo del campo de fecha. */
 function hoy() {
@@ -62,7 +63,7 @@ function hoy() {
  * servidor lo rechaza con ese motivo. Es lo mismo que decir el `07` § 4: no se muestra un control
  * que no puede cumplir.
  */
-export default function Avanzar({ contactoId, nombre, territorio, citas = [], alCerrar, alRegistrar }) {
+export default function Avanzar({ contactoId, nombre, territorio, citas = [], closerAsignado = null, alCerrar, alRegistrar }) {
   /* La zona de la EMPRESA, igual que el resto de la ficha. Con la del navegador, un closer que
      viaja vería la cita de las 9 rotulada a las 11 y elegiría la equivocada de una lista de dos. */
   const zona = useSesion()?.organizacion.zonaHoraria ?? 'UTC';
@@ -86,6 +87,16 @@ export default function Avanzar({ contactoId, nombre, territorio, citas = [], al
   const [citaId, setCitaId] = useState(() => (citas.length === 1 ? citas[0].id : ''));
   const [asistio, setAsistio] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  /* ── A NOMBRE DE QUIÉN (la `107`) ──────────────────────────────────────────
+   *
+   * Dentro del Closer, quien supervisa registra a nombre del closer que está mirando, y la pantalla lo dice ANTES de
+   * registrar: una venta que se acredita a otra persona sin avisar es una comisión movida a ciegas. Fuera del Closer
+   * (o sin supervisar) no hay contexto y no se dice ni se manda nada. Quien decide es el servidor: esto pide. */
+  const registroDelCloser = useContext(RegistroDelCloser);
+  const aNombre = useMemo(
+    () => aNombreDelRegistro(registroDelCloser, closerAsignado, territorio),
+    [registroDelCloser, closerAsignado, territorio],
+  );
 
   /* ────────────────────────── UNA CLAVE POR APERTURA DE ESTE PANEL ──────────────────────────
 
@@ -191,6 +202,8 @@ export default function Avanzar({ contactoId, nombre, territorio, citas = [], al
         ...(laCita !== null && respuesta !== null
           ? { citaId: laCita.id, asistio: respuesta }
           : {}),
+        // El closer que se está mirando. Sin él, el servidor acredita al del contacto (o a quien registra).
+        ...(aNombre?.aNombreDe ? { aNombreDe: aNombre.aNombreDe } : {}),
       },
     });
     setEnviando(false);
@@ -252,7 +265,7 @@ export default function Avanzar({ contactoId, nombre, territorio, citas = [], al
       modo,
     });
     alCerrar?.();
-  }, [def, contactoId, detalle, monto, nota, volverEl, laCita, respuesta, alRegistrar, alCerrar]);
+  }, [def, contactoId, detalle, monto, nota, volverEl, laCita, respuesta, aNombre, alRegistrar, alCerrar]);
 
   // ─── Paso 1 · las seis tarjetas ───────────────────────────────────────────
 
@@ -312,6 +325,13 @@ export default function Avanzar({ contactoId, nombre, territorio, citas = [], al
       >
         ← Elegir otro resultado
       </button>
+
+      {/* A nombre de quién queda, arriba y en una línea: es lo que decide de quién es la comisión. */}
+      {aNombre ? (
+        <div className="aj-ayuda av-a-nombre" role="note" style={{ marginBottom: 12 }}>
+          {aNombre.texto}
+        </div>
+      ) : null}
 
       {/* ── LA ASISTENCIA, ARRIBA DE TODO ────────────────────────────────────
           Va primero y no al final porque es lo único de este paso que **no se puede reconstruir

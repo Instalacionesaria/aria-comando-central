@@ -163,6 +163,10 @@ export type Accion =
   | 'meta_conectada'
   | 'meta_desconectada'
   | 'meta_cuenta_asignada'
+  /* Un resultado de Avanzar (la `107`). Mueve comisiones y, desde la fase 2 del selector de closer, quien supervisa
+     puede registrarlo a nombre de otro closer: `detalle.closer` dice a quién quedó acreditado y `usuario_id` quién lo
+     registró. Sólo cuando se escribió: un reintento con la misma clave no registra nada. */
+  | 'resultado_registrado'
   // ── Etapa 6 ──
   | 'credenciales_cargadas'
   // ── Etapa 8 · las TRES que el `10` § 1 dice que faltan ────────────────────────
@@ -271,6 +275,14 @@ export interface Detalle {
   regla?: string;
   valor?: number;
   provisional?: number;
+  /**
+   * En `resultado_registrado` (la `107`): el closer al que quedó acreditado (`null` = a quien lo registró), el contacto,
+   * la salida y el monto (`null` = la salida no lo pide). Identificadores y una cifra: ni la nota ni el nombre.
+   */
+  closer?: string | null;
+  contacto?: string;
+  salida?: string;
+  monto?: string | null;
 }
 
 /**

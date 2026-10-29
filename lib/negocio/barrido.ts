@@ -37,7 +37,7 @@ import { correrAnalizadores, llamadasDeLaTarea, reintentarAnalizadores } from '.
 import { auditarEmpresa } from '../auditor/analisis.ts';
 import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
 import { ingerirMensajes } from './ingesta.ts';
-import { sincronizarContactos } from './sincronizar.ts';
+import { releerLosCongelados, sincronizarContactos, TOPE_DE_CONGELADOS } from './sincronizar.ts';
 import { completarMiniaturas } from './miniaturaDelContacto.ts';
 import { reprocesarAvisosDeOportunidad } from './reprocesoDeAvisos.ts';
 import { recolectarDeMeta } from './recolectarDeMeta.ts';
@@ -1092,6 +1092,12 @@ async function releerContactos(
   );
   // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle pone el texto genérico.
   if (r.tipo === 'fallo') throw new Error(`el CRM respondió ${r.fallo.tipo}`);
+  /* Los congelados, por id (la `108`): la búsqueda por etiqueta no los vuelve a traer. Un 404 los marca con baja; un
+     200 refresca la foto y los descongela si recuperaron la zona. Acotado por pasada y al fin de la corrida, y sus
+     pedidos se suman a las llamadas de la tarea. */
+  const congelados = await conOrganizacion(ambito, () =>
+    releerLosCongelados({ token: acceso.token, locationId: acceso.locationId }, TOPE_DE_CONGELADOS, { fin, ahora }),
+  );
   /* Los avisos de oportunidad (la etapa y la Salida del Pipeline Maestro) que quedaron sin procesar: un fallo
      transitorio o el tope por hora. No tienen sondeo, así que el reproceso es su red (`lib/negocio/reprocesoDeAvisos.ts`).
      Después de sincronizar: el contacto nuevo de un aviso de «Lead» ya está en la caché y no cuesta una llamada. Antes
@@ -1103,8 +1109,8 @@ async function releerContactos(
   const miniaturas = await completarMiniaturas(ambito, acceso, undefined, ahora, fin);
   return {
     corrio: true,
-    resultado: { ...r.resumen, miniaturas, avisos },
-    llamadas: r.resumen.llamadas + miniaturas.pedidos + avisos.llamadas,
+    resultado: { ...r.resumen, miniaturas, avisos, congeladosReleidos: congelados },
+    llamadas: r.resumen.llamadas + miniaturas.pedidos + avisos.llamadas + congelados.pedidos,
   };
 }
 

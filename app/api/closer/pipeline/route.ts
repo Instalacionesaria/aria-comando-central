@@ -18,6 +18,7 @@ import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import {
   alcanceDeQuienMira,
+  puedeSupervisarClosers,
   verComoDeLaUrl,
 } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { pipelineDe } from '../../../../lib/negocio/pipeline.ts';
@@ -35,7 +36,11 @@ export async function GET(peticion: Request): Promise<Response> {
   /* El alcance, igual que en Mi Dia y en Contactos. Las tres pantallas del Closer hacen la misma
      pregunta con la misma funcion: tres respuestas distintas serian tres listas que no coinciden. */
   const pipeline = await conOrganizacion(contexto.orgEfectiva, async () => {
-    const { alcance } = await alcanceDeQuienMira(contexto.usuarioId, verComoDeLaUrl(peticion));
+    const { alcance } = await alcanceDeQuienMira(
+      contexto.usuarioId,
+      verComoDeLaUrl(peticion),
+      puedeSupervisarClosers(contexto.permisos),
+    );
     return pipelineDe('closer', { conCongelados: true, alcance });
   });
   return ok(pipeline);

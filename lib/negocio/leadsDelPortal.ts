@@ -85,6 +85,10 @@ export interface LeadDelPortal {
   /** El cuadrante del ICP que mandó el CRM, o «Sin clasificar». Nunca un número: el puntaje no se muestra (la `105`). */
   cuadrante: ClaveDeCuadrante;
   territorio: 'closer' | 'setter' | 'congelado';
+  /** La última lectura del CRM, en ISO. Junto a «congelado» dice de cuándo es la foto. */
+  leidoEl: string | null;
+  /** El CRM ya no lo tiene (la `108`). Sigue en la cohorte —entró— y la fila lo marca. */
+  bajaEnElCrm: boolean;
   descartado: boolean;
   cita: EstadoDeCita;
   asistencia: Asistencia | null;
@@ -112,6 +116,8 @@ export const CLAVES_DE_LA_FILA = [
   'creativo',
   'cuadrante',
   'territorio',
+  'leidoEl',
+  'bajaEnElCrm',
   'descartado',
   'cita',
   'asistencia',
@@ -286,6 +292,8 @@ export async function leadsDelPortal(
                   else 'sin_clasificar' end as cuadrante,
              ${trae('c')} as trae_el_campo,
              coalesce(c.territorio, 'congelado') as territorio,
+             c.sincronizado_el as leido_el,
+             c.baja_en_el_crm is not null as baja_en_el_crm,
              ${contactoDescartado('c')} as descartado,
              ${estadoDeCita('c')} as cita,
              ${asistenciaDe('c')} as asistencia,
@@ -304,6 +312,7 @@ export async function leadsDelPortal(
                 'id', f.id, 'nombre', f.nombre, 'altaEl', f.alta_el,
                 'campana', f.campana, 'creativo', f.creativo,
                 'cuadrante', f.cuadrante, 'territorio', f.territorio,
+                'leidoEl', f.leido_el, 'bajaEnElCrm', f.baja_en_el_crm,
                 'descartado', f.descartado, 'cita', f.cita, 'asistencia', f.asistencia,
                 'planton', f.planton, 'vendio', f.vendio,
                 'monto', case when f.vendio then f.monto end)
@@ -382,6 +391,8 @@ export async function leadsDelPortal(
     creativo: l.creativo,
     cuadrante: l.cuadrante,
     territorio: l.territorio,
+    leidoEl: l.leidoEl === null ? null : new Date(l.leidoEl).toISOString(),
+    bajaEnElCrm: l.bajaEnElCrm,
     descartado: l.descartado,
     cita: l.cita,
     asistencia: l.asistencia,

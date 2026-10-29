@@ -20,6 +20,7 @@ import type { ClaveDePaso, PasosDeConversion } from './pasosDeConversion.ts';
 import type { RecorridoDeLosLeads } from './recorridoDelLead.ts';
 import type { EmbudoDelFormulario } from './embudoDelFormulario.ts';
 import type { Frescura } from './frescura.ts';
+import type { CitasSinReleer } from './citasSinReleer.ts';
 import type { PlanDeConversion } from '../agentes/plan/conversion.ts';
 import type { PuedeConSenales, SenalesDelDepartamento } from './vistaDeSenales.ts';
 
@@ -35,6 +36,8 @@ export interface PantallaDeConversion {
   formulario: EmbudoDelFormulario;
   /** La lectura de contactos, para el punto del chip «GoHighLevel» (CV15-03), con la frase de la cabecera. */
   frescura: { contactos: { estado: Frescura['estado']; aviso: string | null } };
+  /** Cuántas citas del período ya no se releen (la `108`), con su frase o `null`. */
+  relectura: CitasSinReleer;
   /**
    * Las señales del detector (AG14 de los agentes): las vivas de la ventana, el último plan y las reglas, y los ids
    * de las de cada paso (CV15-19).

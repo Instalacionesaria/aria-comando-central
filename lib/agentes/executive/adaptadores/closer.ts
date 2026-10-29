@@ -9,9 +9,9 @@
 // contacto, su teléfono, el título ni la sala.
 
 import { agendaDelCloser, DIAS_DE_LA_AGENDA } from '../../../negocio/agenda.ts';
-import { alcanceDeQuienMira } from '../../../negocio/alcanceDelCloser.ts';
+import { type AlcanceDelCloser, alcanceDeQuienMira } from '../../../negocio/alcanceDelCloser.ts';
 import { comisionDelMes } from '../../../negocio/comision.ts';
-import { cockpitDelMes } from '../../../negocio/inicio.ts';
+import { cockpitDelMes, sujetoDelAlcance } from '../../../negocio/inicio.ts';
 import { colasDelDia } from '../../../negocio/miDia.ts';
 import { pipelineDe } from '../../../negocio/pipeline.ts';
 import { SIN_ARGUMENTOS, type DefinicionDeHerramienta, cuantos, primeras, tomar } from './comun.ts';
@@ -20,7 +20,7 @@ import { columnas, comision } from './setter.ts';
 const COLAS_DEL_CLOSER = ['urgentes', 'agenda', 'buzon', 'seguimientos', 'completadas'] as const;
 
 /** De quién son los números: «empresa» o «propio». Los nombres de los closers no hacen falta acá. */
-const deQuien = (tipo: 'todo' | 'mio') => (tipo === 'todo' ? 'empresa' : 'propio');
+const deQuien = (tipo: AlcanceDelCloser['tipo']) => (tipo === 'todo' ? 'empresa' : tipo === 'mio' ? 'propio' : 'sin_asignar');
 
 export const HERRAMIENTAS_DEL_CLOSER: readonly DefinicionDeHerramienta[] = [
   {
@@ -49,12 +49,7 @@ export const HERRAMIENTAS_DEL_CLOSER: readonly DefinicionDeHerramienta[] = [
       const { closers, alcance } = await alcanceDeQuienMira(contexto.usuarioId, null);
       const colas = await colasDelDia(contexto.zona, alcance);
       // El mismo sujeto que arma la ruta, de las mismas dos piezas: la persona y sus vínculos, del alcance.
-      const sujeto =
-        closers.length === 0
-          ? ({ tipo: 'nadie' } as const)
-          : alcance.tipo === 'todo'
-            ? ({ tipo: 'empresa', usuarioIds: closers.map((k) => k.usuarioId) } as const)
-            : ({ tipo: 'persona', usuarioId: alcance.usuarioId, vinculos: alcance.vinculos } as const);
+      const sujeto = sujetoDelAlcance(closers, alcance);
       const cockpit = await cockpitDelMes(contexto.zona, colas.tareasPendientes, sujeto);
       const c = sujeto.tipo === 'persona' ? await comisionDelMes(sujeto.usuarioId, contexto.zona) : null;
       return {

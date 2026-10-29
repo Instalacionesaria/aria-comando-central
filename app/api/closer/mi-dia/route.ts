@@ -34,9 +34,12 @@
 import { exigir } from '../../../../lib/autorizacion/portero.ts';
 import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
-import { cockpitDelMes } from '../../../../lib/negocio/inicio.ts';
+import { cockpitDelMes, sujetoDelAlcance } from '../../../../lib/negocio/inicio.ts';
 import {
   alcanceDeQuienMira,
+  eleccionDelAlcance,
+  puedeElegirCloser,
+  puedeSupervisarClosers,
   verComoDeLaUrl,
 } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { comisionDelMes } from '../../../../lib/negocio/comision.ts';
@@ -58,14 +61,16 @@ export async function GET(peticion: Request): Promise<Response> {
 
   /* ── EL SELECTOR «VER COMO», Y POR QUÉ VIAJA EN LA URL ────────────────────
    *
-   * Quien administra y no es closer puede mirar los números de UNO de ellos. Va como parámetro
+   * Quien ve todo, o supervisa aunque sea closer, elige de quién ver los números: un closer, toda la empresa o
+   * los sin asignar (`SelectorDeCloser.jsx`, en la cabecera). Va como parámetro
    * de consulta y no en el cuerpo porque esto es un `GET` que el navegador repite cada diez
    * segundos: en la URL, el reloj lo arrastra solo y la pantalla no tiene que recordarlo.
    *
    * Lo que impide que sea una escalada está en `alcancePedido`: solo se atiende cuando el
-   * alcance propio es `todo`, y el identificador tiene que estar en la lista de SU empresa.
-   * Un closer vinculado que lo mande a mano recibe su propio alcance igual. */
+   * alcance propio es `todo` o quien pide supervisa —lo dice la sesión, nunca el navegador—, y el identificador
+   * tiene que estar en la lista de SU empresa. Un closer `usuario` que lo mande a mano recibe su propio alcance. */
   const verComo = verComoDeLaUrl(peticion);
+  const supervisa = puedeSupervisarClosers(contexto.permisos);
 
   const { colas, cockpit, comision, closers, alcance, propio, briefs, comentario } = await conOrganizacion(
     contexto.orgEfectiva,
@@ -80,7 +85,7 @@ export async function GET(peticion: Request): Promise<Response> {
        * Se resuelve ANTES de las colas porque las colas lo necesitan: sin el alcance,
        * `colasDelDia` trae el territorio entero y el filtro tendría que hacerse después, sobre
        * filas ya traídas — trabajo de más y, peor, un segundo lugar donde filtrar. */
-      const { closers, alcance, propio } = await alcanceDeQuienMira(contexto.usuarioId, verComo);
+      const { closers, alcance, propio } = await alcanceDeQuienMira(contexto.usuarioId, verComo, supervisa);
 
       const colas = await colasDelDia(zona, alcance);
 
@@ -94,12 +99,7 @@ export async function GET(peticion: Request): Promise<Response> {
        * resultados de una persona sobre los contactos de otra. El alcance `mio` los lleva a los dos
        * porque salen de la MISMA fila de `closersDeLaEmpresa`: no se cruzan, y ya no hace falta buscar
        * a la persona por su usuario del CRM (con el nivel 3 tiene uno por cliente). */
-      const sujeto =
-        closers.length === 0
-          ? ({ tipo: 'nadie' } as const)
-          : alcance.tipo === 'todo'
-            ? ({ tipo: 'empresa', usuarioIds: closers.map((k) => k.usuarioId) } as const)
-            : ({ tipo: 'persona', usuarioId: alcance.usuarioId, vinculos: alcance.vinculos } as const);
+      const sujeto = sujetoDelAlcance(closers, alcance);
 
       // El contador se le PASA al cockpit, no se recalcula. Ver el encabezado.
       const cockpit = await cockpitDelMes(zona, colas.tareasPendientes, sujeto);
@@ -146,6 +146,8 @@ export async function GET(peticion: Request): Promise<Response> {
       nombre: k.nombre,
       // Vinculado en algún cliente: es lo que decide su alcance (`alcanceDe`).
       vinculado: k.vinculos.length > 0,
+      // Con algún vínculo en los clientes a la vista: sólo ésos se pueden elegir en el selector (`alcancePedido`).
+      elegible: k.vinculosALaVista.length > 0,
     })),
     /* De quién son los números en pantalla, o `null` si son de toda la empresa. */
     mirando: mirando === null ? null : { usuarioId: mirando.usuarioId, nombre: mirando.nombre },
@@ -157,6 +159,15 @@ export async function GET(peticion: Request): Promise<Response> {
      * apretaría y no pasaría nada —`alcancePedido` lo ignora— y desconfiaría de la pantalla.
      */
     puedeVerTodo: propio.tipo === 'todo',
+    /* Si se le ofrece el selector de closer: quien ve todo o supervisa, con algún closer elegible. Lo que el
+       selector marca es `eleccion` (un closer, `todo` o `sin_asignar`), y «Lo mío» sólo si quien mira es closer
+       vinculado: `miCloserId`. */
+    puedeElegirCloser: puedeElegirCloser(propio, closers, supervisa),
+    eleccion: eleccionDelAlcance(alcance),
+    miCloserId: propio.tipo === 'mio' ? propio.usuarioId : null,
+    /* Si puede registrar a nombre de otro closer en Avanzar (la `107`): la MISMA regla con la que la ruta de Avanzar lo
+       acepta. No es `puedeElegirCloser`: quien ve todo sin supervisar elige qué mirar, pero no a nombre de quién. */
+    puedeRegistrarANombre: supervisa,
     /* Y si quien mira ES el closer cuyos números se muestran. Lo decide el SERVIDOR, por lo mismo
        que todo lo demás: es lo que habilita el formulario de la META, que es del closer y no de
        quien administra. Un administrador ve los números y el porcentaje —lo fija él— pero no le

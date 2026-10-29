@@ -252,6 +252,34 @@ export async function citasDelCalendario(
   return { tipo: 'datos', datos: lista.map(leerCita) };
 }
 
+/**
+ * UNA cita por su id: `GET /calendars/events/appointments/{id}`. **Sólo la usa la confirmación de una baja** (la
+ * `108`, `lib/negocio/citas.ts`): una cita guardada que un barrido completo ya no trajo.
+ *
+ * `datos: null` es un **404** y nada más: el CRM no la tiene. Una respuesta 200 sin la cita adentro NO es una baja —es
+ * una forma que no se midió— y vuelve como fallo: marcar la baja de una cita viva la sacaría de todas las cifras. La
+ * cita viene envuelta en `appointment` (o en `event`, el nombre de la lista): se aceptan las dos. Si viene con
+ * `deleted: true`, `borrada` lo dice y quien llama decide.
+ */
+export async function citaPorId(
+  acceso: { token: string; locationId: string },
+  eventoId: string,
+): Promise<ResultadoDeGhl<CitaDeGhl | null>> {
+  const r = await pedirExterno<{ appointment?: unknown; event?: unknown }>(
+    `${BASE}/calendars/events/appointments/${encodeURIComponent(eventoId)}`,
+    { cabeceras: cabeceras(acceso.token) },
+  );
+  if (r.tipo !== 'datos') {
+    if (r.tipo === 'rechazado' && r.estado === 404) return { tipo: 'datos', datos: null };
+    return { tipo: 'fallo', fallo: traducirFallo(r) };
+  }
+  const c = r.datos?.appointment ?? r.datos?.event;
+  if (!c || typeof c !== 'object') {
+    return { tipo: 'fallo', fallo: { tipo: 'rechazado', estado: 200, codigo: 'cita_sin_forma' } };
+  }
+  return { tipo: 'datos', datos: leerCita(c) };
+}
+
 /** Exportada para poder probarla contra respuestas reales grabadas, sin red. */
 export function leerCita(c: unknown): CitaDeGhl {
   const o = (c ?? {}) as Record<string, unknown>;

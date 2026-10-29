@@ -267,7 +267,7 @@ async function confirmacionEnLaVentana(
         select 1 from negocio.citas ci
         where ci.org_id = ct.org_id
           and ci.contacto_id = ct.id
-          and ci.ghl_calendario_id is not null
+          and ${esAlcanzable('ci')}
           and ci.inicio_el >= now() - make_interval(days => ${dias})
           and ci.inicio_el < now()
       )`,
@@ -367,7 +367,7 @@ export async function tasaDeCancelacion(dias = DIAS_DE_LA_TASA): Promise<Cancela
       sql<number>`count(*) filter (
         where ${alcanzable} and ${descartado} and ${cancelada}
       )`.as('desc_canceladas'),
-      sql<number>`count(*) filter (where ghl_calendario_id is null)`.as('congeladas'),
+      sql<number>`count(*) filter (where not ${alcanzable})`.as('congeladas'), // con las borradas en el CRM (la 108)
       /* Los otros dos, en la MISMA pasada. Tres consultas separadas podrían ver estados distintos de
          la tabla —el barrido escribe cada hora— y entonces las cifras de una misma tarjeta no
          cuadrarían entre sí, sin que nada falle. */

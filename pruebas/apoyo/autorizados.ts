@@ -63,6 +63,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   // cada una de las cuatro palabras. Sólo `GET`; un valor que no es una de las cuatro se cuenta por su largo, nunca se
   // imprime.
   'scripts/medir-cuadrante.mjs',
+  // El relleno del cuadrante (2026-10-29, `docs/4-produccion/RELLENO-DEL-CUADRANTE.md`): lee de identidad la empresa
+  // por su slug, sus clientes activos y, SÓLO con `--escribir`, la credencial de cada uno; después trabaja de a un
+  // cliente con `conOrganizacion()`. Es el caso que el 04 § 4 nombra como legítimo. En seco no resuelve credenciales.
+  'scripts/clasificar-calificados-viejos.mjs',
   // Define la función. Es el dominio de identidad entero.
   'lib/datos/capa.ts',
   // El sembrado de desarrollo escribe organizaciones y usuarios, que son identidad.
@@ -790,6 +794,13 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // `conOrganizacion()`, la lista y lo que se mide. **Qué queda a medias si la segunda mitad falla: nada, porque el GET
   // NO ESCRIBE**: son dos lecturas. El POST del mismo archivo (el alta) no abre identidad: escribe sólo por el inquilino.
   'app/api/admin/cuentas/route.ts',
+  // El relleno del cuadrante. **Qué queda a medias si la segunda mitad falla: nada de identidad**, porque de identidad
+  // sólo LEE (la empresa, sus clientes, la credencial; el resolvedor puede dejar el registro de una credencial ilegible,
+  // que no es negocio) y lo hace ANTES de escribir nada. Lo que sí puede quedar a medias es la escritura EXTERNA: un PUT
+  // aceptado por el CRM cuya relectura falla. El guion lo anota en el diario igual (el `finally` de
+  // `correrElRelleno`), así se puede deshacer, y la sincronización alcanza el valor en diez minutos (con origen `crm`,
+  // no `persona`: está dicho en el guion). No es atomicidad entre dominios y no se arregla con una transacción.
+  'scripts/clasificar-calificados-viejos.mjs',
 ];
 
 /**

@@ -29,7 +29,7 @@
 import { createHash } from 'node:crypto';
 import { sql } from 'kysely';
 import { datos } from '../../datos/contexto.ts';
-import { type AlcanceDelCloser, contactoDelCloser } from '../../negocio/alcanceDelCloser.ts';
+import { type AlcanceDelCloser, corteDelAlcance } from '../../negocio/alcanceDelCloser.ts';
 import { camposQueSeMuestran } from '../../negocio/camposDelCrm.ts';
 import { fichaDelLeadDelPortal } from '../../negocio/fichaDelLeadDelPortal.ts';
 import { llamadasDeVenta } from '../../negocio/llamadasDeVenta.ts';
@@ -114,7 +114,8 @@ export async function entradaDelBrief(citaId: string, alcance: AlcanceDelCloser)
     .select(['c.id', 'c.inicio_el', 'c.contacto_id', 'k.nombre', 'k.email'])
     .where('c.id', '=', citaId)
     .where('k.territorio', '=', 'closer');
-  if (alcance.tipo === 'mio') q = q.where(contactoDelCloser('k', alcance.vinculos));
+  const corte = corteDelAlcance('k', alcance);
+  if (corte !== null) q = q.where(corte);
   const c = await q.executeTakeFirst();
   if (!c) return null;
 

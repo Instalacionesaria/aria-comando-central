@@ -13,7 +13,7 @@
 //     no es un cierre de 0 %.
 //   · **Clasificar dos veces.** El cuadrante que la tarjeta cuenta y el que la fila muestra salen de la
 //     misma columna (la `105`); lo que no es una de las cuatro claves cae en «Sin clasificar» en las dos.
-//   · **Mandar al navegador lo que no va.** La fila tiene exactamente trece claves, y ningún número del ICP.
+//   · **Mandar al navegador lo que no va.** La fila tiene exactamente quince claves, y ningún número del ICP.
 //
 // Todas las pruebas comparten la organización `alfa` con el resto de la suite. Por eso cada una
 // siembra con el prefijo `portal-`, limpia antes, y lo que es de toda la empresa —los que no tienen
@@ -471,7 +471,7 @@ test('«ICP_Rechazado» marca al descartado aunque venga con otra caja, y no lo 
   assert.equal(r.cohorte.total, 3, 'el descartado salió de la cohorte: es un atributo de la fila, no un filtro');
 });
 
-test('la fila trae exactamente sus trece claves: ni teléfono, ni correo, ni atribución cruda, ni el puntaje', async () => {
+test('la fila trae exactamente sus quince claves: ni teléfono, ni correo, ni atribución cruda, ni el puntaje', async () => {
   /* «Exactamente» y no «no contiene»: una clave nueva tiene que poner esto en rojo aunque hoy no esté
      prohibida. El contacto sembrado TIENE teléfono, correo, atribución con IP y etiquetas: si alguna
      se colara, está ahí para colarse. */

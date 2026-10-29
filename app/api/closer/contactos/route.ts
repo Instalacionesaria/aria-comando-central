@@ -34,6 +34,7 @@ import { ok } from '../../../../lib/autorizacion/respuesta.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import {
   alcanceDeQuienMira,
+  puedeSupervisarClosers,
   verComoDeLaUrl,
 } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { filasDeTerritorio } from '../../../../lib/negocio/fila.ts';
@@ -67,6 +68,7 @@ export async function GET(peticion: Request): Promise<Response> {
     const { closers, alcance } = await alcanceDeQuienMira(
       contexto.usuarioId,
       verComoDeLaUrl(peticion),
+      puedeSupervisarClosers(contexto.permisos),
     );
     const { filas, hayMas } = await filasDeTerritorio(TERRITORIO, { pagina, alcance });
     return { filas, hayMas, closers };

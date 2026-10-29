@@ -31,6 +31,7 @@
 import { sql } from 'kysely';
 import { datos } from '../datos/contexto.ts';
 import { noCancelada } from './citas.ts';
+import { alcanzable } from './citasAlcanzables.ts';
 import { DIAS_DE_LA_TASA } from './indicadoresDeCitas.ts';
 
 /** Una cita que ya pasó y sobre la que se puede responder. */
@@ -64,7 +65,8 @@ export async function citasParaCerrar(
     .select(['id', 'inicio_el', 'titulo', 'asistio'])
     .where('contacto_id', '=', contactoId)
     .where(noCancelada('estado_ghl'))
-    .where('ghl_calendario_id', 'is not', null)
+    // Alcanzable (`citasAlcanzables.ts`): con calendario y sin baja en el CRM (la `108`). Una sola definición.
+    .where(alcanzable())
     /* La ventana la calcula la BASE. Es el mismo recurso que `indicadoresDeCitas` y por el mismo
        motivo: el «ahora» tiene que ser el reloj que escribió las filas, no el del proceso. */
     .where(sql<boolean>`inicio_el < now()`)

@@ -11,7 +11,8 @@
 //     tokens, como preguntarle al cerebro desde la caja del pie (`app/api/closer/cerebro/route.ts`).
 //   · **Más estricto que la ficha** (AG-F13-4): la cita tiene que ser de un contacto del territorio del
 //     closer y, para un closer con «mío», de uno suyo. Si no, 404: para quien pide no existe. Lo decide
-//     `entradaDelBrief`, también en el GET: leer un Brief guardado es leer datos de esa persona.
+//     `entradaDelBrief`, también en el GET: leer un Brief guardado es leer datos de esa persona. Con el selector de
+//     closer (`?verComo=`, en el GET y en el POST), el alcance es el elegido, con el mismo candado que las pantallas.
 //   · **Bajo delegación no se genera** (AG-F13-5): gastaría la llave del cliente. El ya guardado se lee.
 //   · **Sin llave** no se genera (AG-F13-6), y el GET lo dice para que la pantalla no ofrezca un botón que
 //     va a fallar.
@@ -27,7 +28,7 @@ import { ok, rechazo } from '../../../../lib/autorizacion/respuesta.ts';
 import { conIdentidad } from '../../../../lib/datos/capa.ts';
 import { conOrganizacion } from '../../../../lib/datos/contexto.ts';
 import { resolverLlaveDeIa } from '../../../../lib/credenciales/resolver.ts';
-import { alcanceDeQuienMira } from '../../../../lib/negocio/alcanceDelCloser.ts';
+import { alcanceDeQuienMira, puedeSupervisarClosers, verComoDeLaUrl } from '../../../../lib/negocio/alcanceDelCloser.ts';
 import { entradaDelBrief } from '../../../../lib/agentes/brief/entrada.ts';
 import { generarBrief } from '../../../../lib/agentes/brief/brief.ts';
 import { guardarBrief, leerBrief } from '../../../../lib/agentes/brief/guardar.ts';
@@ -51,7 +52,7 @@ export async function GET(peticion: Request): Promise<Response> {
 
   const llave = await conIdentidad((db) => resolverLlaveDeIa(db, contexto.orgEfectiva));
   const leido = await conOrganizacion(contexto.orgEfectiva, async () => {
-    const { alcance } = await alcanceDeQuienMira(contexto.usuarioId, null);
+    const { alcance } = await alcanceDeQuienMira(contexto.usuarioId, verComoDeLaUrl(peticion), puedeSupervisarClosers(contexto.permisos));
     const entrada = await entradaDelBrief(cita, alcance);
     if (!entrada) return null;
     return { entrada, guardado: await leerBrief(cita) };
@@ -99,7 +100,7 @@ export async function POST(peticion: Request): Promise<Response> {
 
   const zona = contexto.organizacion.zonaHoraria;
   const preparado = await conOrganizacion(contexto.orgEfectiva, async () => {
-    const { alcance } = await alcanceDeQuienMira(contexto.usuarioId, null);
+    const { alcance } = await alcanceDeQuienMira(contexto.usuarioId, verComoDeLaUrl(peticion), puedeSupervisarClosers(contexto.permisos));
     const entrada = await entradaDelBrief(cita, alcance);
     if (!entrada) return { tipo: 'no_encontrado' as const };
     const guardado = await leerBrief(cita);

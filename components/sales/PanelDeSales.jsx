@@ -165,6 +165,8 @@ function Cuerpo({ p }) {
       <Closers t={closers} />
       <Motivos m={motivos} />
       <LaCadenaComercial c={comercial} cadena={p.cadena} dinero={p.dinero} sinClosers={closers.filas.length === 0} />
+      {/* Las citas del período que el barrido ya no relee (la `108`): la frase la arma el servidor, y sin ninguna no viene. */}
+      {p.relectura?.texto ? <p className="sl-relectura">{p.relectura.texto}</p> : null}
     </>
   );
 }
