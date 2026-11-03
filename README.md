@@ -2,7 +2,9 @@
 
 Port a Next.js del prototipo `aios-command-center_1.html`.
 
-**Producción:** https://aria-comando-central.vercel.app
+**Producción:** https://app.ariaia.com (desde el 2026-11-03; las pantallas de
+`aria-comando-central.vercel.app` redirigen ahí, y su `/api/` sigue sirviendo a
+los webhooks)
 
 Vercel está conectado a este repo: cada push a `main` despliega a
 producción y cada rama o PR genera su propia URL de vista previa. El

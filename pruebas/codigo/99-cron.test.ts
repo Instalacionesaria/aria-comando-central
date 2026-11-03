@@ -37,8 +37,20 @@ interface Cron {
   schedule: string;
 }
 
-function configuracion(): { crons?: Cron[]; functions?: unknown } {
-  return JSON.parse(leer('vercel.json')) as { crons?: Cron[]; functions?: unknown };
+interface Redireccion {
+  source: string;
+  destination: string;
+  has?: { type: string; value: string }[];
+}
+
+interface Configuracion {
+  crons?: Cron[];
+  functions?: unknown;
+  redirects?: Redireccion[];
+}
+
+function configuracion(): Configuracion {
+  return JSON.parse(leer('vercel.json')) as Configuracion;
 }
 
 // ─── 1 · El camino existe y responde al método que Vercel usa ───────────────
@@ -272,6 +284,23 @@ test('el camino del cron empieza con `/api/`, que es lo único que el proxy no r
   // registros**. O sea: cron apagado, sin trabajo y sin rastro.
   for (const c of configuracion().crons ?? []) {
     assert.match(c.path, /^\/api\//, `el camino «${c.path}» no está bajo /api/`);
+  }
+});
+
+test('la redirección del dominio viejo a `app.ariaia.com` lleva las pantallas y nunca `/api/`', () => {
+  // Desde el 2026-11-03 el portero sólo acepta `app.ariaia.com`, y `vercel.json` manda ahí las pantallas
+  // pedidas a `aria-comando-central.vercel.app` (sin eso, el login por el link viejo da «origen no
+  // permitido»). Pero por ese host siguen entrando los webhooks, n8n y la sonda: un 3xx en `/api/` los corta
+  // en silencio, igual que al cron. Mutación: `"source": "/(.*)"`.
+  const redirecciones = configuracion().redirects ?? [];
+  assert.ok(redirecciones.length > 0, 'falta la redirección del dominio viejo en vercel.json');
+  const deApi = ['/api/cron', '/api/mensajes/ingesta', '/api/sonda', '/api/meta/borrado', '/api/salud'];
+  const pantallas = ['/', '/entrar', '/meta/retorno', '/apis'];
+  for (const r of redirecciones) {
+    assert.ok(r.has?.some((h) => h.type === 'host'), `la redirección «${r.source}» no está atada a un host`);
+    const patron = new RegExp(`^${r.source}$`);
+    for (const camino of deApi) assert.doesNotMatch(camino, patron, `«${r.source}» redirige ${camino}`);
+    for (const camino of pantallas) assert.match(camino, patron, `«${r.source}» no lleva ${camino}`);
   }
 });
 

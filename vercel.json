@@ -3,6 +3,19 @@
   "regions": [
     "gru1"
   ],
+  "redirects": [
+    {
+      "source": "/((?!api/).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "aria-comando-central.vercel.app"
+        }
+      ],
+      "destination": "https://app.ariaia.com/$1",
+      "permanent": false
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron",
