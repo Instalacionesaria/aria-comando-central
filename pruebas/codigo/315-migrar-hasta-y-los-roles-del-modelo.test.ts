@@ -222,7 +222,9 @@ test('una sola copia: el 000 ya no crea los tres roles y `db.mjs arranque` corre
   const db = sinComentarios(leer('scripts/db.mjs'));
   const arranque = db.slice(db.indexOf('async function arranque()'), db.indexOf('async function catalogo()'));
   assert.match(arranque, /008_los_roles_del_modelo\.sql/, '`db.mjs arranque` no corre el 008');
-  assert.match(arranque, /await cliente\.query\(`\$\{sql\}\\n\$\{modelo\}`\)/, 'el 000 y el 008 no van en la misma query');
+  assert.match(arranque, /await cliente\.query\(`\$\{sql\}\\n\$\{modelo\}\\n\$\{agentes\}`\)/, 'el 000, el 008 y el 011 no van en la misma query');
+  // El 011 (el rol de los managed agents, 2026-11-10) va en la misma query, y sin marcas, por lo mismo que el 008.
+  assert.match(arranque, /011_el_rol_de_los_agentes\.sql/, '`db.mjs arranque` no corre el 011');
 
   const despacho = db.slice(db.indexOf('const comando = process.argv[2]'));
   assert.match(despacho, /comando === 'migrar'\) await migrar\(process\.argv\.slice\(3\)\)/, '`migrar` no recibe sus argumentos');

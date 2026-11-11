@@ -6,7 +6,7 @@
 //   node scripts/db.mjs reset       bajar + levantar + arranque + migrar + catalogo + sembrar + cuentas + verificar
 //   node scripts/db.mjs levantar    el contenedor, y esperar a que esté sano
 //   node scripts/db.mjs bajar       el contenedor y su volumen
-//   node scripts/db.mjs arranque    los seis roles y sus rutas de búsqueda (superusuario; 000 + 008)
+//   node scripts/db.mjs arranque    los seis roles, el de los agentes y sus rutas de búsqueda (superusuario; 000 + 008 + 011)
 //   node scripts/db.mjs catalogo    capacidades, roles y reparto (superusuario, tras migrar)
 //   node scripts/db.mjs permisos-del-catalogo   privilegios del rol del catálogo (`migrador`)
 //   node scripts/db.mjs retiro      retira los roles que salieron del catálogo (`app_identidad`)
@@ -175,8 +175,17 @@ async function arranque() {
       throw new Error(`008_los_roles_del_modelo.sql tiene marcas y no debe: ${[...new Set(marcasDelModelo)].join(', ')}`);
     }
 
-    await cliente.query(`${sql}\n${modelo}`);
-    console.log('  seis roles (tres sin login todavía), rutas de búsqueda y permisos de esquema');
+    // Y el rol de los managed agents (`agente_mcp`, del `011`, 2026-11-10): sin login, se lo hereda `postgres`, que es
+    // quien corre el SQL del MCP de Supabase. Sin marcas por el mismo motivo que el `008`.
+    const agentes = readFileSync(new URL('../db/arranque/011_el_rol_de_los_agentes.sql', import.meta.url), 'utf8')
+      .replace(/\r\n/g, '\n');
+    const marcasDeAgentes = agentes.match(/@[A-Z_]+@/g);
+    if (marcasDeAgentes) {
+      throw new Error(`011_el_rol_de_los_agentes.sql tiene marcas y no debe: ${[...new Set(marcasDeAgentes)].join(', ')}`);
+    }
+
+    await cliente.query(`${sql}\n${modelo}\n${agentes}`);
+    console.log('  seis roles (tres sin login todavía), el de los agentes, rutas de búsqueda y permisos de esquema');
   } finally {
     await cliente.end();
   }

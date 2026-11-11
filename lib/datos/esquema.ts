@@ -919,6 +919,19 @@ export interface TablaLlamadas {
   duracion_segundos: number | null;
   resumen: string | null;
   creado_el: Generated<Date>;
+  // Las de Sales Assistant (111): todas nulables, porque las llamadas que ya existían no las tienen.
+  /** Una clave de `catalogo.tipos_de_llamada`. */
+  tipo: string | null;
+  /** Una clave de `catalogo.proveedores`. */
+  proveedor: string | null;
+  cita_id: string | null;
+  /** La persona de la organización que hizo la llamada (`identidad.usuarios`). */
+  persona_id: string | null;
+  direccion: 'entrante' | 'saliente' | null;
+  url_de_la_grabacion: string | null;
+  estado_de_transcripcion: 'sin_grabar' | 'pendiente' | 'lista' | 'fallida' | null;
+  vinculada_por: 'ghl' | 'correo' | 'cita' | 'persona' | 'agente' | null;
+  corrida_id: string | null;
 }
 
 export interface TablaTareas {
@@ -2510,6 +2523,516 @@ export interface VistaRespuestasDelLeadTraducidas {
   evento_id: string | null;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOS AGENTES GESTIONADOS · migraciones `110` a `114`
+//
+// Todas de una cuenta (`cuenta_id not null`), como dice `AGENTES_GESTIONADOS` en
+// `pruebas/apoyo/regimenes-de-negocio.ts`. Los `jsonb` van como `unknown` (con su default,
+// `Generated`), los `numeric` como `string`, igual que el resto del archivo. Todavía no las lee
+// nadie de la aplicación: los tipos existen para que el día que se lean no mientan.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Cada corrida de un agente sobre un sujeto (110): qué leyó, qué devolvió, cuánto costó. */
+export interface TablaCorridasDeAgente {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  /** Una clave de `catalogo.agentes`. */
+  agente: string;
+  modo: Generated<'activo' | 'sombra'>;
+  sujeto_clave: string;
+  contacto_id: string | null;
+  ghl_contact_id: string | null;
+  cita_id: string | null;
+  llamada_id: string | null;
+  cliente_id: string | null;
+  /** La cuenta del vendedor cuando el agente trabaja para el comprador. Van juntas o no van. */
+  vendedor_org_id: string | null;
+  vendedor_cuenta_id: string | null;
+  vendedor_contacto_id: string | null;
+  disparador: string | null;
+  clave_de_idempotencia: string;
+  motivo: Generated<'primera_vez' | 'datos_nuevos' | 'reintento' | 'manual' | 'reproceso'>;
+  estado: Generated<
+    'abierta' | 'lista' | 'esperando_aprobacion' | 'aprobada' | 'rechazada' | 'fallida' | 'cancelada' | 'reemplazada'
+  >;
+  entrada: Generated<unknown>;
+  entrada_huella: string;
+  leido: Generated<unknown>;
+  conocimiento: Generated<unknown>;
+  salida: unknown | null;
+  degradados: Generated<number>;
+  errores: unknown | null;
+  intentos: Generated<number>;
+  ultimo_error: string | null;
+  sesion_externa_id: string | null;
+  version_del_agente: string | null;
+  version_de_la_skill: string | null;
+  modelo: string | null;
+  tokens_entrada: number | null;
+  tokens_salida: number | null;
+  costo_usd: string | null;
+  abierta_el: Generated<Date>;
+  terminada_el: Date | null;
+  duracion_ms: number | null;
+  reemplazada_por: string | null;
+}
+
+/** Lo que el negocio sabe de sí mismo, versionado por tipo (110): ICP, oferta, guion… */
+export interface TablaConocimientoDeLaCuenta {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  /** Una clave de `catalogo.tipos_de_conocimiento`. */
+  tipo: string;
+  version: number;
+  contenido: Generated<unknown>;
+  contenido_texto: string | null;
+  origen: Generated<'manual' | 'entregable' | 'importado'>;
+  entregable_version_id: string | null;
+  aprobado_por: string | null;
+  aprobado_el: Date | null;
+  creado_el: Generated<Date>;
+}
+
+/** Lo que un agente leyó de fuentes públicas, con su extracto (110). */
+export interface TablaFuentesPublicas {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  corrida_id: string | null;
+  contacto_id: string | null;
+  cliente_id: string | null;
+  /** Una clave de `catalogo.tipos_de_fuente_publica`. */
+  tipo: string;
+  url: string | null;
+  titulo: string | null;
+  extracto: string;
+  datos: Generated<unknown>;
+  obtenida_por: string;
+  observada_el: Generated<Date>;
+  vigente_hasta: Date | null;
+}
+
+/** Lo que una corrida hizo fuera de la base: en el CRM, en Slack… (110). */
+export interface TablaAccionesExternas {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  corrida_id: string;
+  contacto_id: string | null;
+  tipo: 'campo_del_crm' | 'etiqueta' | 'nota' | 'mensaje' | 'aviso_slack' | 'workflow' | 'otra';
+  destino: string;
+  contenido: Generated<unknown>;
+  id_externo: string | null;
+  ocurrio_el: Generated<Date>;
+  registrada_el: Generated<Date>;
+}
+
+/** Las rutas de venta de cada cuenta (111): a dónde puede ir un lead. */
+export interface TablaRutasDeLaCuenta {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  clave: string;
+  nombre: string;
+  /** Una clave de `catalogo.clases_de_ruta`. */
+  clase: string;
+  precio_desde: string | null;
+  precio_hasta: string | null;
+  moneda: string | null;
+  requiere_llamada: Generated<boolean>;
+  descripcion: string | null;
+  activa: Generated<boolean>;
+  creada_el: Generated<Date>;
+}
+
+/** Cada triaje de un lead (111): cuadrante propuesto, prioridad y ruta. */
+export interface TablaTriajes {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  corrida_id: string;
+  contacto_id: string | null;
+  ghl_contact_id: string | null;
+  cuadrante_del_crm: string | null;
+  cuadrante_propuesto: string | null;
+  encaje: 'alto' | 'bajo' | null;
+  capacidad: 'alta' | 'baja' | null;
+  puntaje_encaje: string | null;
+  puntaje_capacidad: string | null;
+  knockouts: Generated<unknown>;
+  prioridad: number;
+  ruta: string | null;
+  ruta_clase: string;
+  razones: Generated<unknown>;
+  datos_dudosos: Generated<unknown>;
+  faltantes: Generated<string[]>;
+  confianza: 'alta' | 'media' | 'baja';
+  version_icp: number | null;
+  version_matriz: number | null;
+  aplicado: Generated<boolean>;
+  creado_el: Generated<Date>;
+}
+
+/** La transcripción de una llamada (111). */
+export interface TablaTranscripciones {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  llamada_id: string;
+  texto: string;
+  segmentos: Generated<unknown>;
+  idioma: string | null;
+  /** Una clave de `catalogo.proveedores`. */
+  proveedor: string;
+  creada_el: Generated<Date>;
+}
+
+/** La ficha del lead para el closer, versionada (111). */
+export interface TablaFichasDelLead {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  contacto_id: string;
+  cita_id: string | null;
+  corrida_id: string;
+  version: number;
+  resumen: string;
+  quien_es: Generated<unknown>;
+  que_dijo: Generated<unknown>;
+  estrategia: Generated<unknown>;
+  alertas: Generated<unknown>;
+  faltantes: Generated<unknown>;
+  cuadrante_al_generar: string | null;
+  prioridad_al_generar: number | null;
+  degradados: Generated<number>;
+  leida_por: string | null;
+  leida_el: Date | null;
+  valoracion_del_closer: 'util' | 'poco_util' | null;
+  comentario_del_closer: string | null;
+  creada_el: Generated<Date>;
+}
+
+/** El resultado que un agente propone tras la llamada, hasta que una persona lo decide (112). */
+export interface TablaResultadosPropuestos {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  contacto_id: string;
+  cita_id: string | null;
+  llamada_id: string | null;
+  corrida_id: string;
+  closer_id: string | null;
+  compro: boolean;
+  salida:
+    | 'venta'
+    | 'acuerdo_sin_pago'
+    | 'seguimiento'
+    | 'no_interesa'
+    | 'no_show'
+    | 'nurture'
+    | 'agendo'
+    | 'venta_chica'
+    | 'no_califica';
+  salida_estandar: string | null;
+  ruta: string | null;
+  ruta_clase: string | null;
+  monto: string | null;
+  moneda: string | null;
+  monto_usd: string | null;
+  forma_pago: string | null;
+  motivo: string | null;
+  objeciones: Generated<unknown>;
+  next_steps: Generated<unknown>;
+  evidencia: Generated<unknown>;
+  datos_del_negocio: Generated<unknown>;
+  confianza: 'alta' | 'media' | 'baja';
+  estado: Generated<'propuesto' | 'confirmado' | 'corregido' | 'rechazado'>;
+  resultado_id: string | null;
+  decidido_por: string | null;
+  decidido_el: Date | null;
+  motivo_decision: string | null;
+  diferencias: unknown | null;
+  creado_el: Generated<Date>;
+}
+
+/** La evaluación de una llamada contra el guion (112). */
+export interface TablaEvaluacionesDeLlamada {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  llamada_id: string;
+  contacto_id: string;
+  closer_id: string | null;
+  corrida_id: string;
+  version_script: number | null;
+  puntaje: string;
+  fases: Generated<unknown>;
+  lo_que_hizo_bien: Generated<unknown>;
+  donde_se_perdio: unknown | null;
+  siguio_el_script: string | null;
+  vista_por_el_closer_el: Date | null;
+  creada_el: Generated<Date>;
+}
+
+/** Cada objeción que apareció en una llamada (112). */
+export interface TablaObjecionesDeLlamada {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  llamada_id: string;
+  contacto_id: string;
+  corrida_id: string;
+  categoria: 'precio' | 'momento' | 'decisor' | 'confianza' | 'encaje' | 'otra';
+  texto: string;
+  marca_de_tiempo_seg: string | null;
+  respuesta_del_closer: string | null;
+  resuelta: boolean | null;
+  cita_verificada: Generated<boolean>;
+  creada_el: Generated<Date>;
+}
+
+/** Un mensaje que un agente redactó y espera aprobación (112). */
+export interface TablaBorradoresDeMensaje {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  contacto_id: string;
+  corrida_id: string;
+  motivo: 'seguimiento_post_llamada' | 'nutricion' | 'no_show' | 'bienvenida' | 'otro';
+  /** Una clave de `catalogo.canales`. */
+  canal: string;
+  asunto: string | null;
+  cuerpo: string;
+  programar_para: Date | null;
+  estado: Generated<'borrador' | 'aprobado' | 'enviado' | 'descartado'>;
+  aprobado_por: string | null;
+  aprobado_el: Date | null;
+  enviado_el: Date | null;
+  mensaje_ghl_id: string | null;
+  creado_el: Generated<Date>;
+}
+
+/** El comprador: el lead que compró, y su camino hasta quedar instalado (112). */
+export interface TablaClientes {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  contacto_id: string;
+  resultado_id: string | null;
+  resultado_propuesto_id: string | null;
+  ruta: string | null;
+  ruta_clase: string | null;
+  /** Va junto con la cuenta del cliente: nulo = el cliente no tiene cuenta propia. */
+  nivel: 2 | 3 | null;
+  estado: Generated<
+    | 'vendido'
+    | 'pago_confirmado'
+    | 'contrato_firmado'
+    | 'en_onboarding'
+    | 'brief_enviado'
+    | 'research_aprobado'
+    | 'estrategia_aprobada'
+    | 'funnel_listo'
+    | 'instalado'
+    | 'activo'
+    | 'pausado'
+    | 'baja'
+  >;
+  nombre_del_negocio: string | null;
+  a_quien_vende: 'negocios' | 'consumidores' | null;
+  coach_id: string | null;
+  success_manager_id: string | null;
+  /** La organización y la cuenta propias del cliente. Van juntas o no van. */
+  organizacion_cliente_id: string | null;
+  cuenta_cliente_id: string | null;
+  vendido_el: Generated<Date>;
+  pago_confirmado_el: Date | null;
+  contrato_firmado_el: Date | null;
+  kickoff_el: Date | null;
+  instalado_el: Date | null;
+  creado_el: Generated<Date>;
+}
+
+/** Cada pago de un comprador, uno por id externo del proveedor (112). */
+export interface TablaPagos {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  contacto_id: string;
+  cliente_id: string | null;
+  /** Una clave de `catalogo.proveedores`. */
+  proveedor: string;
+  id_externo: string;
+  monto: string;
+  moneda: string;
+  monto_usd: string | null;
+  concepto: string | null;
+  cuota_numero: number | null;
+  cuotas_total: number | null;
+  estado: 'pendiente' | 'pagado' | 'fallido' | 'reembolsado';
+  pagado_el: Date | null;
+  registrado_el: Generated<Date>;
+}
+
+/** Un entregable del onboarding, uno por tipo y por cuenta (113). */
+export interface TablaEntregables {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  /** Una clave de `catalogo.tipos_de_entregable`. */
+  tipo: string;
+  cliente_id: string | null;
+  estado: Generated<'vacio' | 'propuesto' | 'en_revision' | 'aprobado' | 'desactualizado'>;
+  version_vigente_id: string | null;
+  version_aprobada_id: string | null;
+  creado_el: Generated<Date>;
+  actualizado_el: Generated<Date>;
+}
+
+/** Cada versión de un entregable, de un agente, una persona o el cliente (113). */
+export interface TablaVersionesDeEntregable {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  entregable_id: string;
+  numero: number;
+  autor_tipo: 'agente_ia' | 'persona' | 'cliente';
+  corrida_id: string | null;
+  autor_usuario_id: string | null;
+  contenido: Generated<unknown>;
+  contenido_texto: string | null;
+  fuentes: Generated<unknown>;
+  estado: Generated<'propuesta' | 'aprobada' | 'rechazada' | 'corregida'>;
+  decidida_por: string | null;
+  decidida_el: Date | null;
+  motivo: string | null;
+  creada_el: Generated<Date>;
+}
+
+/** Cada respuesta del brief, de sólo agregar: la vigente es la última (113). */
+export interface TablaRespuestasDelBrief {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  entregable_id: string;
+  version_del_brief: string;
+  pregunta: string;
+  valor_texto: string | null;
+  valor_json: unknown | null;
+  estado: 'prellenado_detectado' | 'prellenado_inferido' | 'vacio' | 'confirmado' | 'corregido' | 'completado';
+  autor_tipo: 'agente_ia' | 'cliente' | 'persona';
+  fuente: string | null;
+  cita: string | null;
+  confianza: 'alta' | 'media' | 'baja' | null;
+  texto_para_el_cliente: string | null;
+  degradado: Generated<boolean>;
+  corrida_id: string | null;
+  autor_usuario_id: string | null;
+  reemplaza_a: string | null;
+  registrada_el: Generated<Date>;
+}
+
+/** Los segmentos del mercado que propone el research (114). */
+export interface TablaSegmentosDelMercado {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  version_id: string;
+  nombre: string;
+  descripcion: string | null;
+  criterios: Generated<unknown>;
+  valor_del_cliente: string | null;
+  contrato_inicial: string | null;
+  senales_de_tamano: string | null;
+  elegido: Generated<boolean>;
+  creado_el: Generated<Date>;
+}
+
+/** Los dolores de cada segmento (114). */
+export interface TablaDoloresDelSegmento {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  version_id: string;
+  segmento_id: string | null;
+  segmento_nombre: string | null;
+  etapa_del_recorrido: string | null;
+  descripcion: string;
+  intensidad: number | null;
+  es_critico: Generated<boolean>;
+  /** Una clave de `catalogo.dolores_comunes`. */
+  dolor_comun: string | null;
+  creado_el: Generated<Date>;
+}
+
+/** Quién ya resolvió el dolor, o quién lo provee (114). */
+export interface TablaReferentesDelMercado {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  version_id: string;
+  segmento_id: string | null;
+  tipo: 'resolvio_el_dolor' | 'proveedor';
+  nombre: string;
+  url: string | null;
+  que_ofrece: string | null;
+  precio: string | null;
+  fuente_publica_id: string | null;
+  creado_el: Generated<Date>;
+}
+
+/** Las citas textuales del mercado, cada una con su fuente pública (114). */
+export interface TablaCitasDelMercado {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  version_id: string;
+  segmento_id: string | null;
+  dolor_id: string | null;
+  fuente_publica_id: string;
+  texto: string;
+  cita_verificada: Generated<boolean>;
+  creado_el: Generated<Date>;
+}
+
+/** Lo que se decidió en el kickoff (114). */
+export interface TablaDecisionesDeKickoff {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  sobre: 'research' | 'segmento' | 'oferta' | 'precio' | 'reglas_de_agentes' | 'otro';
+  decision: string;
+  autor: string | null;
+  cita_ghl_id: string | null;
+  creada_el: Generated<Date>;
+}
+
+/** Las piezas de contenido que propone el funnel: anuncios, VSL, landings (114). */
+export interface TablaPiezasDeContenido {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  version_id: string;
+  tipo: 'anuncio' | 'vsl' | 'landing';
+  codigo_de_nomenclatura: string | null;
+  angulo: string | null;
+  segmento_id: string | null;
+  dolor_id: string | null;
+  dolor_del_creativo: string | null;
+  nivel_de_consciencia: string | null;
+  formato: string | null;
+  titular: string | null;
+  texto_principal: string | null;
+  guion: string | null;
+  llamado_a_la_accion: string | null;
+  /** Los ids de `citas_del_mercado` que usa la pieza. */
+  citas_usadas: Generated<string[]>;
+  estado: Generated<'propuesta' | 'aprobada' | 'publicada' | 'pausada' | 'descartada'>;
+  anuncio_id_externo: string | null;
+  creada_el: Generated<Date>;
+}
+
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
 export interface BaseDeDatos {
   control_aislamiento: TablaControlAislamiento;
@@ -2603,6 +3126,30 @@ export interface BaseDeDatos {
   toques_de_marketing: TablaToquesDeMarketing;
   etapas_del_lead: VistaEtapasDelLead;
   respuestas_del_lead_traducidas: VistaRespuestasDelLeadTraducidas;
+  // Los agentes gestionados (110 a 114).
+  corridas_de_agente: TablaCorridasDeAgente;
+  conocimiento_de_la_cuenta: TablaConocimientoDeLaCuenta;
+  fuentes_publicas: TablaFuentesPublicas;
+  acciones_externas: TablaAccionesExternas;
+  rutas_de_la_cuenta: TablaRutasDeLaCuenta;
+  triajes: TablaTriajes;
+  transcripciones: TablaTranscripciones;
+  fichas_del_lead: TablaFichasDelLead;
+  resultados_propuestos: TablaResultadosPropuestos;
+  evaluaciones_de_llamada: TablaEvaluacionesDeLlamada;
+  objeciones_de_llamada: TablaObjecionesDeLlamada;
+  borradores_de_mensaje: TablaBorradoresDeMensaje;
+  clientes: TablaClientes;
+  pagos: TablaPagos;
+  entregables: TablaEntregables;
+  versiones_de_entregable: TablaVersionesDeEntregable;
+  respuestas_del_brief: TablaRespuestasDelBrief;
+  segmentos_del_mercado: TablaSegmentosDelMercado;
+  dolores_del_segmento: TablaDoloresDelSegmento;
+  referentes_del_mercado: TablaReferentesDelMercado;
+  citas_del_mercado: TablaCitasDelMercado;
+  decisiones_de_kickoff: TablaDecisionesDeKickoff;
+  piezas_de_contenido: TablaPiezasDeContenido;
 
   // El catálogo común (079): lo leen todos los roles y no lo escribe ninguno de la aplicación. Calificado, porque
   // `catalogo` no está en la ruta de búsqueda de ningún rol.

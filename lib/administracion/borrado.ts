@@ -219,6 +219,46 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   /* La Reunión de cada día (`075`): lo que la empresa vio como temas del día, con su texto. */
   reuniones_del_dia_org_id_fkey: 'tiene reuniones del día guardadas',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
+
+  // ── Los managed agents (`110` a `114`, 2026-11-10) ─────────────────────────
+  /* Lo que referencia a una PERSONA: quien confirmó, aprobó, leyó o atiende. Frenan: soltarlas borraría quién decidió
+     lo que propuso un agente, que es justo el dato con el que se mide al agente. */
+  borradores_de_mensaje_org_id_aprobado_por_fkey: 'aprobó mensajes de seguimiento',
+  clientes_org_id_coach_id_fkey: 'es coach de clientes',
+  clientes_org_id_success_manager_id_fkey: 'es success manager de clientes',
+  conocimiento_de_la_cuenta_org_id_aprobado_por_fkey: 'aprobó el conocimiento de una cuenta (ICP, script, matriz)',
+  evaluaciones_de_llamada_org_id_closer_id_fkey: 'tiene llamadas evaluadas a su nombre',
+  fichas_del_lead_org_id_leida_por_fkey: 'leyó fichas de leads',
+  llamadas_persona_de_la_organizacion: 'hizo llamadas registradas',
+  resultados_propuestos_org_id_closer_id_fkey: 'tiene resultados propuestos a su nombre',
+  resultados_propuestos_org_id_decidido_por_fkey: 'confirmó resultados de llamadas',
+  /* Lo que referencia a una EMPRESA: lo que sus agentes produjeron. */
+  acciones_externas_org_id_fkey: 'tiene acciones de sus agentes registradas',
+  borradores_de_mensaje_org_id_fkey: 'tiene mensajes redactados por sus agentes',
+  citas_del_mercado_org_id_fkey: 'tiene citas del mercado investigadas',
+  clientes_org_id_fkey: 'tiene ventas registradas',
+  /* La organización del COMPRADOR: la venta que la creó vive en la empresa que le vendió. */
+  clientes_organizacion_cliente_id_fkey: 'es cliente de otra empresa, que tiene registrada su venta',
+  conocimiento_de_la_cuenta_org_id_fkey: 'tiene conocimiento cargado (ICP, script, matriz)',
+  corridas_de_agente_org_id_fkey: 'tiene corridas de sus agentes',
+  corridas_de_agente_vendedor_org_id_fkey: 'vendió a un cliente que tiene corridas de agentes',
+  decisiones_de_kickoff_org_id_fkey: 'tiene decisiones de la Kickoff guardadas',
+  dolores_del_segmento_org_id_fkey: 'tiene dolores del mercado investigados',
+  entregables_org_id_fkey: 'tiene entregables de onboarding',
+  evaluaciones_de_llamada_org_id_fkey: 'tiene llamadas evaluadas',
+  fichas_del_lead_org_id_fkey: 'tiene fichas de leads',
+  fuentes_publicas_org_id_fkey: 'tiene evidencia pública investigada',
+  objeciones_de_llamada_org_id_fkey: 'tiene objeciones de llamadas registradas',
+  pagos_org_id_fkey: 'tiene pagos registrados',
+  piezas_de_contenido_org_id_fkey: 'tiene piezas de contenido',
+  referentes_del_mercado_org_id_fkey: 'tiene referentes del mercado investigados',
+  respuestas_del_brief_org_id_fkey: 'tiene respuestas del Brief',
+  resultados_propuestos_org_id_fkey: 'tiene resultados propuestos por sus agentes',
+  rutas_de_la_cuenta_org_id_fkey: 'tiene rutas comerciales',
+  segmentos_del_mercado_org_id_fkey: 'tiene segmentos del mercado investigados',
+  transcripciones_org_id_fkey: 'tiene transcripciones de llamadas',
+  triajes_org_id_fkey: 'tiene leads clasificados por el Triage',
+  versiones_de_entregable_org_id_fkey: 'tiene versiones de entregables',
 };
 
 /** El `SQLSTATE` de una violación de clave foránea. */

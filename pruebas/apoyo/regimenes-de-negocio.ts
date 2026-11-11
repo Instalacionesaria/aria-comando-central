@@ -19,6 +19,19 @@
 // nació después de diseñado el modelo.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Las de los managed agents (`110` a `114`, 2026-11-10): las corridas, el conocimiento de cada cuenta y las salidas de
+ * los siete agentes. Todas de una cuenta: la del vendedor (los agentes del lead) o la del comprador (los del cliente).
+ */
+export const AGENTES_GESTIONADOS = [
+  'corridas_de_agente', 'conocimiento_de_la_cuenta', 'fuentes_publicas', 'acciones_externas',
+  'rutas_de_la_cuenta', 'triajes', 'transcripciones', 'fichas_del_lead',
+  'resultados_propuestos', 'evaluaciones_de_llamada', 'objeciones_de_llamada', 'borradores_de_mensaje', 'clientes', 'pagos',
+  'entregables', 'versiones_de_entregable', 'respuestas_del_brief',
+  'segmentos_del_mercado', 'dolores_del_segmento', 'referentes_del_mercado', 'citas_del_mercado', 'decisiones_de_kickoff',
+  'piezas_de_contenido',
+] as const;
+
 /** Siempre de una subcuenta: `cuenta_id not null`. */
 export const DE_UNA_CUENTA = [
   'contactos', 'citas', 'mensajes', 'notas', 'tareas', 'resultados', 'comisiones', 'closer_asignado',
@@ -33,6 +46,7 @@ export const DE_UNA_CUENTA = [
   'conjuntos_de_anuncios', 'gasto_por_cuenta_publicitaria', 'metricas_por_desglose',
   // La historia del lead (`106`): las clasificaciones, las respuestas y los toques. Las escriben los disparadores.
   'clasificaciones', 'respuestas_del_lead', 'toques_de_marketing',
+  ...AGENTES_GESTIONADOS,
 ] as const;
 
 /**
@@ -49,6 +63,7 @@ export const NACIERON_CON_CUENTA = [
   'clasificaciones',
   'respuestas_del_lead',
   'toques_de_marketing',
+  ...AGENTES_GESTIONADOS,
 ] as const;
 
 /** De una subcuenta o de la organización entera: `cuenta_id` nulable. */
@@ -74,4 +89,5 @@ export const NACIERON_DESPUES_DE_LA_086 = ['foto_de_las_empresas', 'foto_de_las_
 export const DE_UNA_CUENTA_DESPUES_DE_LA_086 = [
   'conjuntos_de_anuncios', 'gasto_por_cuenta_publicitaria', 'metricas_por_desglose',
   'clasificaciones', 'respuestas_del_lead', 'toques_de_marketing',
+  ...AGENTES_GESTIONADOS,
 ] as const;

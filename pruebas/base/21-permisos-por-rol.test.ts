@@ -278,10 +278,39 @@ test('toda tabla de negocio es accesible para el inquilino, con las cuatro opera
     clasificaciones: ['SELECT', 'INSERT'],
     respuestas_del_lead: ['SELECT', 'INSERT'],
     toques_de_marketing: ['SELECT', 'INSERT'],
+    /* Y los managed agents (`110` a `114`): lo que proponen y lo que decide una persona no se pisa ni se borra. Lo que
+       tiene estado (la corrida, el cliente, el pago, el entregable) se actualiza, pero no se borra. Las que sólo
+       aceptan cambios en algunas columnas (la lectura de la ficha, la decisión de una versión) no tienen UPDATE de
+       tabla: tienen el de esas columnas. */
+    corridas_de_agente: ['SELECT', 'INSERT', 'UPDATE'],
+    conocimiento_de_la_cuenta: ['SELECT', 'INSERT'],
+    fuentes_publicas: ['SELECT', 'INSERT'],
+    acciones_externas: ['SELECT', 'INSERT'],
+    triajes: ['SELECT', 'INSERT'],
+    transcripciones: ['SELECT', 'INSERT'],
+    fichas_del_lead: ['SELECT', 'INSERT'],
+    resultados_propuestos: ['SELECT', 'INSERT'],
+    evaluaciones_de_llamada: ['SELECT', 'INSERT', 'UPDATE'],
+    objeciones_de_llamada: ['SELECT', 'INSERT'],
+    borradores_de_mensaje: ['SELECT', 'INSERT', 'UPDATE'],
+    clientes: ['SELECT', 'INSERT', 'UPDATE'],
+    pagos: ['SELECT', 'INSERT', 'UPDATE'],
+    entregables: ['SELECT', 'INSERT', 'UPDATE'],
+    versiones_de_entregable: ['SELECT', 'INSERT'],
+    respuestas_del_brief: ['SELECT', 'INSERT'],
+    segmentos_del_mercado: ['SELECT', 'INSERT', 'UPDATE'],
+    dolores_del_segmento: ['SELECT', 'INSERT'],
+    referentes_del_mercado: ['SELECT', 'INSERT'],
+    citas_del_mercado: ['SELECT', 'INSERT'],
+    decisiones_de_kickoff: ['SELECT', 'INSERT'],
+    piezas_de_contenido: ['SELECT', 'INSERT', 'UPDATE'],
   };
 
   for (const { relname } of tablas) {
-    for (const priv of SOLO_AGREGAR[relname] ?? TODOS) {
+    // Las de la lista se miden en LOS DOS SENTIDOS: tiene lo que dice y NO tiene lo demás. Sin la segunda mitad, borrar
+    // el `revoke update, delete` de una tabla de sólo agregar dejaría esto en verde.
+    const esperados = SOLO_AGREGAR[relname] ?? TODOS;
+    for (const priv of TODOS) {
       const f = await unaFila<{ tiene: boolean }>(
         mig,
         'select has_table_privilege($1, $2, $3) as tiene',
@@ -291,7 +320,13 @@ test('toda tabla de negocio es accesible para el inquilino, con las cuatro opera
       // PRODUCCIÓN." La función `aplicar_aislamiento()` otorga las cuatro; si alguien
       // creara una tabla de negocio sin llamarla, el corredor de migraciones la rechaza
       // antes — y si igual llegara, esto la agarra.
-      assert.equal(f?.tiene, true, `app_inquilino no tiene ${priv} sobre negocio.${relname}`);
+      assert.equal(
+        f?.tiene,
+        esperados.includes(priv),
+        esperados.includes(priv)
+          ? `app_inquilino no tiene ${priv} sobre negocio.${relname}`
+          : `app_inquilino tiene ${priv} sobre negocio.${relname}, que es de sólo agregar`,
+      );
     }
 
     // Y el rol de IDENTIDAD no la alcanza, en ninguna de las cuatro. Es la mitad
@@ -359,7 +394,10 @@ test('toda vista de negocio corre con los permisos de QUIEN LA INVOCA, y el inqu
   );
   assert.deepEqual(
     vistas.map((v) => v.relname),
-    ['embudo_por_dia', 'etapas_del_lead', 'metricas_meta_del_dia', 'respuestas_del_lead_traducidas'],
+    [
+      'brief_vigente', 'conocimiento_vigente', 'embudo_por_dia', 'entregable_vigente', 'etapas_del_lead', 'ficha_vigente',
+      'metricas_meta_del_dia', 'respuestas_del_lead_traducidas', 'triaje_vigente',
+    ],
     'apareció una vista nueva en negocio: tiene que declarar security_invoker y sumarse acá',
   );
   for (const v of vistas) {

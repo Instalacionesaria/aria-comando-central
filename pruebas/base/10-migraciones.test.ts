@@ -168,9 +168,9 @@ test('los esquemas DE MIGRADOR son exactamente los nuestros — `comun` NO exist
       order by n.nspname`,
   );
   const nombres = r.map((x) => x.nspname);
-  // `catalogo` nace con la `079` y `sistema` e `ingesta` con la `081` (modelo multiempresa, Fase 0); cada esquema del
-  // modelo se suma acá en su paso.
-  assert.deepEqual(nombres, [ESQUEMA_CONTABILIDAD, 'catalogo', 'identidad', 'ingesta', 'negocio', 'sistema'].sort());
+  // `catalogo` nace con la `079` y `sistema` e `ingesta` con la `081` (modelo multiempresa, Fase 0); `agentes` (sólo
+  // funciones, la puerta de los managed agents) con la `110`. Cada esquema del modelo se suma acá en su paso.
+  assert.deepEqual(nombres, [ESQUEMA_CONTABILIDAD, 'agentes', 'catalogo', 'identidad', 'ingesta', 'negocio', 'sistema'].sort());
 
   // `comun` se comprueba sobre TODO el clúster y no solo sobre lo de `migrador`: la
   // prohibición de EJECUCION § 2 y § 3 es sobre el nombre, sin importar quién lo cree.
@@ -357,7 +357,9 @@ test('la regla de permisos por omisión existe para `negocio` y nombra a `migrad
   // que la consulta de arriba se equivoque en el nombre del rol.
   // `sistema` e `ingesta` (`081`) van como `identidad`: cada permiso a mano, y una tabla nueva nace sin acceso para
   // nadie. En la bandeja es lo que hace que la credencial de n8n no pueda leer nada.
-  for (const sinRegla of ['sistema', 'ingesta']) {
+  // `agentes` (`110`, la puerta de los managed agents) va igual: sólo funciones, cada `execute` a mano y el de PUBLIC
+  // quitado en cada migración (una regla por esquema no puede quitarlo: sólo suma). Lo vigila la `500`.
+  for (const sinRegla of ['sistema', 'ingesta', 'agentes']) {
     assert.deepEqual(
       r.filter((x) => x.nspname === sinRegla),
       [],
@@ -365,7 +367,7 @@ test('la regla de permisos por omisión existe para `negocio` y nombra a `migrad
     );
   }
   assert.deepEqual(
-    esquemas.map((e) => e.nspname).filter((e) => e !== 'sistema' && e !== 'ingesta').sort(),
+    esquemas.map((e) => e.nspname).filter((e) => e !== 'sistema' && e !== 'ingesta' && e !== 'agentes').sort(),
     ['catalogo', 'negocio'],
     'se esperaban exactamente `catalogo` y `negocio` como esquemas de `migrador` que necesitan la regla',
   );
@@ -377,7 +379,7 @@ test('la regla de permisos por omisión existe para `negocio` y nombra a `migrad
   for (const rol of ['app_inquilino', 'app_identidad', 'app_ingesta', 'app_analista']) {
     assert.match(delCatalogo.acl, new RegExp(`${rol}=r/`), `${rol} tiene que poder leer el catálogo, y sólo leerlo`);
   }
-  for (const e of esquemas.filter((x) => x.nspname !== 'sistema' && x.nspname !== 'ingesta')) {
+  for (const e of esquemas.filter((x) => x.nspname !== 'sistema' && x.nspname !== 'ingesta' && x.nspname !== 'agentes')) {
     assert.ok(
       r.some((x) => x.nspname === e.nspname && x.tipo === 'r'),
       `el esquema \`${e.nspname}\` no tiene regla de permisos por omisión para migrador`,

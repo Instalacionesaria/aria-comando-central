@@ -38,6 +38,9 @@ const ESCRITOR = 'lib/negocio/etapaDelCrm.ts';
 const DISPARADORES = 'db/migraciones/106_la_historia_del_lead.sql';
 /** La `109` redefine UNO de los disparadores de la 106 (el del cuadrante), con su mismo insert: no es otro escritor. */
 const REDEFINICION = 'db/migraciones/109_quien_clasifico.sql';
+/** La `110` (los managed agents): SU escritor único, `agentes._registrar_evento`, idempotente por (cuenta, fuente,
+ *  id externo). Todo lo demás de las 110 a 114 escribe eventos llamándolo a él. */
+const AGENTES = 'db/migraciones/110_los_agentes_y_sus_corridas.sql';
 
 /** Una escritura en la tabla de eventos, por Kysely o en SQL. */
 const ESCRIBE_EVENTOS =
@@ -52,7 +55,13 @@ test('en el código, sólo etapaDelCrm.ts escribe en negocio.eventos; en la base
   const base = archivosFuente(['db'])
     .filter((a) => ESCRIBE_EVENTOS.test(a.limpio))
     .map((a) => a.ruta);
-  assert.deepEqual(base, [DISPARADORES, REDEFINICION], 'otra migración o el sembrado escriben en negocio.eventos');
+  assert.deepEqual(base, [DISPARADORES, REDEFINICION, AGENTES], 'otra migración o el sembrado escriben en negocio.eventos');
+  const deLosAgentes = archivosFuente(['db'])
+    .find((a) => a.ruta === AGENTES)!
+    .limpio.split(/(?=create or replace function )/)
+    .filter((f) => ESCRIBE_EVENTOS.test(f));
+  assert.equal(deLosAgentes.length, 1, 'en la 110 escribe eventos UNA sola función');
+  assert.match(deLosAgentes[0]!, /^create or replace function agentes\._registrar_evento\(/);
   // La 109 escribe eventos SÓLO dentro de la redefinición de `registrar_cambio_de_cuadrante`, con la misma clave
   // idempotente (`on conflict do nothing`): es el mismo escritor de la 106, no uno nuevo.
   const redefinicion = archivosFuente(['db']).find((a) => a.ruta === REDEFINICION)!.limpio;

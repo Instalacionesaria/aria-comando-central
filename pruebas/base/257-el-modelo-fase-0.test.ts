@@ -211,6 +211,8 @@ test('las semillas están: los nichos v1 y los tipos de evento, cada uno con el 
   // El tipo de cita es un catálogo (el destino del mapeo «calendario»), no un CHECK: sólo la de venta es de venta.
   assert.deepEqual(await filas(mig, `select clave, es_de_venta from catalogo.tipos_de_cita order by clave`), [
     { clave: 'coaching', es_de_venta: false },
+    // La Kickoff (`110`): la primera llamada con el coach, donde se aprueba el Research.
+    { clave: 'kickoff', es_de_venta: false },
     { clave: 'onboarding', es_de_venta: false },
     { clave: 'otra', es_de_venta: false },
     { clave: 'venta', es_de_venta: true },
