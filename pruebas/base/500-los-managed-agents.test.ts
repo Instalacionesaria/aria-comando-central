@@ -18,9 +18,8 @@
 //   · el Triage no toca contactos.cuadrante ni crea clasificaciones (el cuadrante es del CRM);
 //   · el lead que llega después: la corrida y el triaje se vinculan al crearse el contacto;
 //   · un resultado propuesto NO es una venta hasta que el closer lo confirma; la corrección guarda las diferencias;
-//   · el alta del comprador: si vende ARIA, una organización de nivel 2; si vende una agencia, una cuenta de nivel 3;
-//   · el Brief se escribe en la cuenta del comprador, y al enviarlo vuelve al lead la respuesta estándar;
-//   · la cascada: corregir el ICP aprobado desactualiza la oferta; el ICP aprobado es conocimiento de la cuenta;
+//   · desde la 115: los agentes del cliente trabajan sobre el lead (haya comprado o no), confirmar y pagar no crean
+//     cuentas, el ICP aprobado de un lead no se publica en la cuenta y «desactualizado» se calcula al leer;
 //   · no_contactar_desde impide el borrador del seguimiento;
 //   · los permisos: las tablas de sólo agregar no se editan ni como agente_mcp, y ninguna función es de PUBLIC.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -325,75 +324,58 @@ test('un resultado propuesto no es una venta; la corrección guarda las diferenc
   );
 });
 
-test('el alta del comprador: de ARIA, una organización de nivel 2; de una agencia, una cuenta de nivel 3', async () => {
+test('confirmar una venta y pagar no crean cuentas (115): el alta del comprador ya no es automática ni la ejecuta el agente', async () => {
   await enUnEnsayo(
     async () => {
       await unLead(principal, 'ghl-500-h', 'loc-500-p');
-      await unLead(agencia, 'ghl-500-i', 'loc-500-a');
     },
     async () => {
-      for (const [ghl, loc, nivel, persona] of [
-        ['ghl-500-h', 'loc-500-p', 2, principal.persona],
-        ['ghl-500-i', 'loc-500-a', 3, agencia.persona],
-      ] as const) {
-        const v = await hastaLaVenta(ghl, loc, persona);
-        const p = await jsonDe(`select agentes.registrar_pago($1, $2, 'pasarela', $3, 1000, 'USD') as r`, [loc, ghl, `pago-${ghl}`]);
-        assert.equal(p.alta_del_comprador.nivel, nivel);
-        const k = await unaFila<{ org: string; cuenta_org: string; es_por_omision: boolean }>(
-          admin,
-          `select k.organizacion_cliente_id as org, c.org_id as cuenta_org, c.es_por_omision
-             from negocio.clientes k join identidad.cuentas c on c.id = k.cuenta_cliente_id where k.id = $1`,
-          [v.cliente],
-        );
-        if (nivel === 2) {
-          assert.notEqual(k!.org, principal.org);
-          assert.equal(k!.es_por_omision, true);
-        } else {
-          assert.equal(k!.org, agencia.org);
-          assert.equal(k!.es_por_omision, false);
-        }
-        // Repetir el pago no crea otra cuenta.
-        const p2 = await jsonDe(`select agentes.registrar_pago($1, $2, 'pasarela', $3, 1000, 'USD', 'pagado', now() - interval '1 hour') as r`, [loc, ghl, `pago-${ghl}`]);
-        assert.equal(p2.alta_del_comprador.creada, false);
-        // Y el reintento del aviso no duplica el evento del pago (la clave única de eventos lleva la hora).
-        const ev = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.eventos where tipo = 'pago_recibido' and id_externo = $1`, [`pago:pago-${ghl}`]);
-        assert.equal(Number(ev!.n), 1);
-      }
+      const orgsAntes = await unaFila<{ n: string }>(admin, `select count(*) as n from identidad.organizaciones`);
+      const v = await hastaLaVenta('ghl-500-h', 'loc-500-p', principal.persona);
+      const p = await jsonDe(`select agentes.registrar_pago('loc-500-p', 'ghl-500-h', 'pasarela', 'pago-h', 1000, 'USD') as r`);
+      assert.equal(p.ok, true);
+      assert.equal(p.alta_del_comprador, null);
+      const k = await unaFila<{ nivel: number | null; cuenta: string | null; estado: string }>(
+        admin, `select nivel, cuenta_cliente_id as cuenta, estado from negocio.clientes where id = $1`, [v.cliente]);
+      assert.deepEqual([k!.nivel, k!.cuenta, k!.estado], [null, null, 'pago_confirmado']);
+      const orgsDespues = await unaFila<{ n: string }>(admin, `select count(*) as n from identidad.organizaciones`);
+      assert.equal(orgsDespues!.n, orgsAntes!.n);
+      // El rol de los agentes no ejecuta el alta (lo hace una persona).
+      await fallaCon('42501', `select agentes.alta_del_comprador($1)`, [v.cliente]);
+      // Y el reintento del aviso, con otra hora, no duplica el evento del pago.
+      await jsonDe(`select agentes.registrar_pago('loc-500-p', 'ghl-500-h', 'pasarela', 'pago-h', 1000, 'USD', 'pagado', now() - interval '1 hour') as r`);
+      const ev = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.eventos where tipo = 'pago_recibido' and id_externo = 'pago:pago-h'`);
+      assert.equal(Number(ev!.n), 1);
     },
   );
 });
 
-test('el Brief va a la cuenta del comprador y, al enviarlo, la respuesta estándar vuelve al lead; la cascada del ICP', async () => {
+test('el Brief, el Research y la estrategia son del lead y no tocan nada fuera de su expediente (115)', async () => {
   await enUnEnsayo(
     async () => {
       await unLead(principal, 'ghl-500-j', 'loc-500-p');
     },
     async () => {
+      const lead = await unaFila<{ id: string }>(admin, `select id from negocio.contactos where ghl_contact_id = 'ghl-500-j'`);
       const v = await hastaLaVenta('ghl-500-j', 'loc-500-p', principal.persona);
-      await jsonDe(`select agentes.registrar_pago('loc-500-p', 'ghl-500-j', 'pasarela', 'pj', 1000, 'USD') as r`);
-      const cli = await unaFila<{ cuenta: string }>(admin, `select cuenta_cliente_id as cuenta from negocio.clientes where id = $1`, [v.cliente]);
       const b = await jsonDe(`select agentes.abrir_corrida('brief', 'loc-500-p', 'ghl-500-j', 'b1') as r`);
-      assert.equal(b.cuenta_id, cli!.cuenta);
+      assert.equal(b.cuenta_id, principal.cuenta, 'el Brief trabaja en la misma cuenta, sobre el lead');
+      assert.equal(b.contacto_id, lead!.id);
+      assert.equal(b.cliente_id, v.cliente, 'la venta queda como referencia');
       await jsonDe(`select agentes.leer_brief($1) as r`, [b.corrida_id]);
       const s = await jsonDe(`select agentes.registrar_brief($1, $2) as r`, [b.corrida_id, {
         a_quien_vende: 'negocios',
         respuestas: [{ pregunta: 'facturacion_mensual', estado: 'detectado', valor: 'USD 5-10 mil', fuente: 'formulario:facturacion_mensual', cita: 'entre 5 y 10 mil' }],
       }]);
       assert.equal(s.prellenadas, 1);
-      const e = await jsonDe(`select agentes.responder_brief($1, $2, true, $3) as r`, [cli!.cuenta, JSON.stringify([{ pregunta: 'facturacion_mensual', valor: 'USD 12 mil' }, { pregunta: 'a_quien_vende', valor: 'consumidores' }]), principal.persona]);
+      const e = await jsonDe(`select agentes.responder_brief($1, $2, true, $3) as r`, [lead!.id, JSON.stringify([{ pregunta: 'facturacion_mensual', valor: 'USD 12 mil' }, { pregunta: 'a_quien_vende', valor: 'consumidores' }]), principal.persona]);
       assert.equal(e.enviado, true);
-      assert.equal(e.copiadas_al_lead, 1);
-      const r = await unaFila<{ valor_texto: string; obtenida_por: string }>(
-        admin,
-        `select r.valor_texto, r.obtenida_por from negocio.respuestas_del_lead r join negocio.contactos k on k.id = r.contacto_id
-          where k.ghl_contact_id = 'ghl-500-j' and r.obtenida_por = 'brief'`,
-      );
-      assert.equal(r!.valor_texto, 'USD 12 mil');
+      // Enviar el Brief no copia nada al formulario del lead ni cambia el estado de la venta; la pregunta 9 sí va a la venta.
+      const copias = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.respuestas_del_lead where contacto_id = $1 and obtenida_por = 'brief'`, [lead!.id]);
+      assert.equal(Number(copias!.n), 0);
       const k = await unaFila<{ a_quien_vende: string; estado: string }>(admin, `select a_quien_vende, estado from negocio.clientes where id = $1`, [v.cliente]);
-      assert.equal(k!.a_quien_vende, 'consumidores', 'manda lo que respondió el cliente, no lo que propuso el agente');
-      assert.equal(k!.estado, 'brief_enviado');
+      assert.deepEqual([k!.a_quien_vende, k!.estado], ['consumidores', 'vendido']);
 
-      // Research (sólo la decisión, con su segmento) → ICP → oferta, y la corrección del ICP desactualiza la oferta.
       const seg = await jsonDe(`select agentes.abrir_corrida('research', 'loc-500-p', 'ghl-500-j', 'r1', '{}', null, '{"paso": "mr_segmentos"}') as r`);
       const vs = await jsonDe(`select agentes.registrar_research($1, '{"texto": "# S", "segmentos": [{"nombre": "Clínicas"}]}') as r`, [seg.corrida_id]);
       await jsonDe(`select agentes.decidir_entregable($1, 'aprobada', $2) as r`, [vs.version_id, principal.persona]);
@@ -405,35 +387,24 @@ test('el Brief va a la cuenta del comprador y, al enviarlo, la respuesta estánd
       assert.equal(malo.ok, false);
       const vi = await jsonDe(`select agentes.registrar_estratega($1, '{"texto": "# ICP", "contenido": {"a_quien_si": [{"criterio": "clínicas"}], "a_quien_no": []}}') as r`, [icp.corrida_id]);
       const ap = await jsonDe(`select agentes.decidir_entregable($1, 'aprobada', $2) as r`, [vi.version_id, principal.persona]);
-      assert.equal(ap.conocimiento_publicado.tipo, 'icp');
+      assert.equal(ap.conocimiento_publicado, undefined, 'aprobar el ICP del lead no publica nada en la cuenta');
+      const kv = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.conocimiento_de_la_cuenta where cuenta_id = $1`, [principal.cuenta]);
+      assert.equal(Number(kv!.n), 0);
       const of = await jsonDe(`select agentes.abrir_corrida('estratega', 'loc-500-p', 'ghl-500-j', 'e2', '{}', null, '{"etapa": "categoria_y_oferta"}') as r`);
       const vo = await jsonDe(`select agentes.registrar_estratega($1, '{"texto": "# O", "contenido": {"categoria": {"nombre": "a"}, "mecanismo": {"nombre": "b"}, "oferta": {"promesa": "c"}}}') as r`, [of.corrida_id]);
       await jsonDe(`select agentes.decidir_entregable($1, 'aprobada', $2) as r`, [vo.version_id, principal.persona]);
-      const pp = await jsonDe(`select agentes.abrir_corrida('estratega', 'loc-500-p', 'ghl-500-j', 'e3', '{}', null, '{"etapa": "precio_y_process_map"}') as r`);
-      const vp = await jsonDe(`select agentes.registrar_estratega($1, '{"texto": "# P", "contenido": {"precio": {"monto": 2000, "moneda": "USD"}, "metodo": {"fases": [{"nombre": "Diagnóstico"}]}}}') as r`, [pp.corrida_id]);
-      await jsonDe(`select agentes.decidir_entregable($1, 'aprobada', $2) as r`, [vp.version_id, principal.persona]);
-      // Un conocimiento «de un entregable» que no es su versión aprobada del mismo tipo no pasa sin persona.
-      await fallaCon('22023', `select agentes.cargar_conocimiento($1, 'icp', '{"a_quien_si": []}', '# x', true, null, 'entregable', $2)`, [cli!.cuenta, vo.version_id]);
+      // Corregir el ICP NO escribe nada en la oferta: «desactualizado» se calcula al leer.
       const corr = await jsonDe(`select agentes.decidir_entregable($1, 'corregida', $2, 'ajuste', '{"a_quien_si": [{"criterio": "clínicas grandes"}], "a_quien_no": []}') as r`, [vi.version_id, principal.persona]);
-      // Transitiva: la oferta consumió el ICP viejo, y el precio consumió la oferta.
-      assert.equal(corr.desactualizados, 2);
-      const pr = await unaFila<{ estado: string }>(admin, `select estado from negocio.entregables where cuenta_id = $1 and tipo = 'precio_y_process_map'`, [cli!.cuenta]);
-      assert.equal(pr!.estado, 'desactualizado');
-      // Corregir el Brief con decidir_entregable no se puede: se corrige respondiéndolo.
-      const bv = await unaFila<{ id: string }>(admin, `select version_aprobada_id as id from negocio.entregables where cuenta_id = $1 and tipo = 'brief'`, [cli!.cuenta]);
+      assert.equal(corr.desactualizados, 0);
+      const o = await unaFila<{ estado: string; desactualizado: boolean }>(admin,
+        `select e.estado, ev.desactualizado from negocio.entregables e join negocio.entregable_vigente ev on ev.entregable_id = e.id
+          where e.contacto_id = $1 and e.tipo = 'categoria_y_oferta'`, [lead!.id]);
+      assert.deepEqual([o!.estado, o!.desactualizado], ['aprobado', true]);
+      // El Brief no se aprueba ni se corrige con decidir_entregable; una versión superada no se corrige.
+      const bv = await unaFila<{ id: string }>(admin, `select version_aprobada_id as id from negocio.entregables where contacto_id = $1 and tipo = 'brief'`, [lead!.id]);
       await fallaCon('22023', `select agentes.decidir_entregable($1, 'corregida', $2, 'x', '{}')`, [bv!.id, principal.persona]);
-      // Una versión ya superada no se corrige.
       const vieja = await jsonDe(`select agentes.decidir_entregable($1, 'corregida', $2, 'x', '{"a_quien_si": [{"criterio": "y"}]}') as r`, [vi.version_id, principal.persona]);
       assert.equal(vieja.ok, false);
-      // El ICP depende de la decisión del Research, no de los segmentos: sólo la recursión lo alcanza.
-      await jsonDe(`select agentes.decidir_entregable($1, 'corregida', $2, 'segmentos', null, '# S2') as r`, [vs.version_id, principal.persona]);
-      const ic = await unaFila<{ estado: string }>(admin, `select estado from negocio.entregables where cuenta_id = $1 and tipo = 'icp'`, [cli!.cuenta]);
-      assert.equal(ic!.estado, 'desactualizado');
-      const o = await unaFila<{ estado: string }>(admin, `select estado from negocio.entregables where cuenta_id = $1 and tipo = 'categoria_y_oferta'`, [cli!.cuenta]);
-      assert.equal(o!.estado, 'desactualizado');
-      const kv = await unaFila<{ version: number; origen: string }>(admin, `select version, origen from negocio.conocimiento_vigente where cuenta_id = $1 and tipo = 'icp'`, [cli!.cuenta]);
-      assert.equal(kv!.version, 2);
-      assert.equal(kv!.origen, 'entregable');
     },
   );
 });
@@ -463,10 +434,11 @@ test('los permisos: lo de sólo agregar no se edita, y ninguna función de la pu
   const soloAgregar = ['triajes', 'transcripciones', 'objeciones_de_llamada', 'respuestas_del_brief', 'acciones_externas',
     'conocimiento_de_la_cuenta', 'citas_del_mercado', 'dolores_del_segmento', 'decisiones_de_kickoff'];
   // Lo único que se puede cambiar en una tabla de sólo agregar, por rol: el lead que llega después (el disparador lo
-  // escribe como el inquilino) y la versión a la que pasan las filas del Research al corregir.
+  // escribe como el inquilino; desde la 115 también en lo que el agente hizo afuera) y la versión a la que pasan las filas
+  // del Research al corregir.
   const editables: Record<string, Record<string, string[]>> = {
     agente_mcp: { dolores_del_segmento: ['version_id'], citas_del_mercado: ['version_id'] },
-    app_inquilino: { triajes: ['contacto_id'], dolores_del_segmento: ['version_id'], citas_del_mercado: ['version_id'] },
+    app_inquilino: { triajes: ['contacto_id'], acciones_externas: ['contacto_id'], dolores_del_segmento: ['version_id'], citas_del_mercado: ['version_id'] },
   };
   for (const t of soloAgregar) {
     for (const rol of ['agente_mcp', 'app_inquilino']) {
@@ -529,39 +501,31 @@ test('el agente no se aprueba solo: confirmar, aprobar un borrador y decidir una
       // El modo sombra, sólo para el Triage.
       await fallaCon('22023', `select agentes.abrir_corrida('sales_coach', 'loc-500-p', 'ghl-500-l', 'sombra-1', '{}', null, $1, null, null, 'sombra')`,
         [{ llamada_id: llamada.llamada_id }]);
-      // Cargar conocimiento vigente a mano también pide quién lo aprueba.
-      await fallaCon('22023', `select agentes.cargar_conocimiento($1, 'icp', '{"a_quien_si": []}', '# ICP')`, [principal.cuenta]);
+      // El rol de los agentes no carga conocimiento de la cuenta (115): lo hace una persona.
+      await fallaCon('42501', `select agentes.cargar_conocimiento($1, 'icp', '{"a_quien_si": []}', '# ICP')`, [principal.cuenta]);
+      await fallaCon('42501', `select agentes.cargar_rutas($1, '[]', $2)`, [principal.cuenta, principal.persona]);
     },
   );
 });
 
-test('el alta del comprador con su location de GHL, y la versión la decide alguien del cliente o de quien vendió', async () => {
+test('el Brief de un lead que no compró: lo decide una persona de la organización, y el agente no lo aprueba', async () => {
   await enUnEnsayo(
     async () => {
       await unLead(principal, 'ghl-500-m', 'loc-500-p');
     },
     async () => {
-      const v = await hastaLaVenta('ghl-500-m', 'loc-500-p', principal.persona, { nombre_del_negocio: 'Clínica Ñandú' });
-      // Sin el pago, no hay cuenta del comprador.
-      await fallaCon('55000', `select agentes.alta_del_comprador($1)`, [v.cliente]);
-      const pago = await jsonDe(`select agentes.registrar_pago('loc-500-p', 'ghl-500-m', 'pasarela', 'pm', 1000, 'USD') as r`);
-      assert.equal(pago.alta_del_comprador.creada, true);
-      assert.match(pago.alta_del_comprador.slug, /^clinica-nandu-/);
-      // La location de GHL del cliente llega después, y se pone.
-      const alta = await jsonDe(`select agentes.alta_del_comprador($1, null, 'loc-del-cliente-500') as r`, [v.cliente]);
-      assert.equal(alta.creada, false);
-      const c = await unaFila<{ crm_cuenta_id: string }>(admin, `select crm_cuenta_id from identidad.cuentas where id = $1`, [alta.cuenta_id]);
-      assert.equal(c!.crm_cuenta_id, 'loc-del-cliente-500');
+      const lead = await unaFila<{ id: string }>(admin, `select id from negocio.contactos where ghl_contact_id = 'ghl-500-m'`);
       const b = await jsonDe(`select agentes.abrir_corrida('brief', 'loc-500-p', 'ghl-500-m', 'bm') as r`);
+      assert.equal(b.cliente_id, null, 'sin venta: corre igual');
       await jsonDe(`select agentes.leer_brief($1) as r`, [b.corrida_id]);
       const s = await jsonDe(`select agentes.registrar_brief($1, $2) as r`, [b.corrida_id, {
         respuestas: [{ pregunta: 'facturacion_mensual', estado: 'detectado', valor: 'USD 5-10 mil', fuente: 'formulario:facturacion_mensual', cita: 'entre 5 y 10 mil' }],
       }]);
       await fallaCon('22023', `select agentes.decidir_entregable($1, 'aprobada')`, [s.version_id]);
-      // Alguien de una organización que no es ni el cliente ni quien le vendió, tampoco.
       await fallaCon('22023', `select agentes.decidir_entregable($1, 'aprobada', $2)`, [s.version_id, agencia.persona]);
       await fallaCon('22023', `select agentes.decidir_entregable($1, 'aprobada', $2)`, [s.version_id, principal.persona]);
-      const env = await jsonDe(`select agentes.responder_brief($1, $2, true, $3) as r`, [alta.cuenta_id, JSON.stringify([{ pregunta: 'facturacion_mensual', valor: 'USD 5-10 mil' }]), principal.persona]);
+      await fallaCon('22023', `select agentes.responder_brief($1, '[{"pregunta": "facturacion_mensual", "valor": "x"}]', true, $2)`, [lead!.id, agencia.persona]);
+      const env = await jsonDe(`select agentes.responder_brief($1, $2, true, $3) as r`, [lead!.id, JSON.stringify([{ pregunta: 'facturacion_mensual', valor: 'USD 5-10 mil' }]), principal.persona]);
       assert.equal(env.enviado, true);
     },
   );
@@ -597,7 +561,7 @@ test('el formulario mapeado: una respuesta con la pregunta nula se lee por el ma
   );
 });
 
-test('el pago que llega antes que la confirmación del closer crea la cuenta al confirmar; un aviso viejo no lo despaga', async () => {
+test('el pago que llega antes que la confirmación se une a la venta sin crear cuentas; un aviso viejo no lo despaga', async () => {
   await enUnEnsayo(
     async () => {
       await unLead(principal, 'ghl-500-o', 'loc-500-p');
@@ -606,10 +570,11 @@ test('el pago que llega antes que la confirmación del closer crea la cuenta al 
       const antes = await jsonDe(`select agentes.registrar_pago('loc-500-p', 'ghl-500-o', 'pasarela', 'po', 1000, 'USD') as r`);
       assert.equal(antes.cliente_id, null);
       const v = await hastaLaVenta('ghl-500-o', 'loc-500-p', principal.persona);
-      const k = await unaFila<{ nivel: number; cuenta: string | null; estado: string }>(
+      const k = await unaFila<{ nivel: number | null; cuenta: string | null; estado: string }>(
         admin, `select nivel, cuenta_cliente_id as cuenta, estado from negocio.clientes where id = $1`, [v.cliente]);
-      assert.equal(k!.nivel, 2);
-      assert.ok(k!.cuenta);
+      assert.deepEqual([k!.nivel, k!.cuenta, k!.estado], [null, null, 'pago_confirmado']);
+      const unido = await unaFila<{ cliente_id: string }>(admin, `select cliente_id from negocio.pagos where id = $1`, [antes.pago_id]);
+      assert.equal(unido!.cliente_id, v.cliente);
       const viejo = await jsonDe(`select agentes.registrar_pago('loc-500-p', 'ghl-500-o', 'pasarela', 'po', 1000, 'USD', 'pendiente') as r`);
       assert.equal(viejo.ok, true);
       const p = await unaFila<{ estado: string }>(admin, `select estado from negocio.pagos where id = $1`, [antes.pago_id]);
@@ -618,15 +583,13 @@ test('el pago que llega antes que la confirmación del closer crea la cuenta al 
   );
 });
 
-test('corregir un paso del Research se lleva sus filas; enviar el Brief pide una persona y algo del cliente; el borrador no salta estados', async () => {
+test('corregir un paso del Research se lleva sus filas; enviar el Brief pide una persona y algo del lead', async () => {
   await enUnEnsayo(
     async () => {
       await unLead(principal, 'ghl-500-q', 'loc-500-p');
     },
     async () => {
-      const v = await hastaLaVenta('ghl-500-q', 'loc-500-p', principal.persona);
-      await jsonDe(`select agentes.registrar_pago('loc-500-p', 'ghl-500-q', 'pasarela', 'pq', 1000, 'USD') as r`);
-      const cli = await unaFila<{ cuenta: string }>(admin, `select cuenta_cliente_id as cuenta from negocio.clientes where id = $1`, [v.cliente]);
+      const cli = await unaFila<{ cuenta: string }>(admin, `select id as cuenta from negocio.contactos where ghl_contact_id = 'ghl-500-q'`);
       const b = await jsonDe(`select agentes.abrir_corrida('brief', 'loc-500-p', 'ghl-500-q', 'bq') as r`);
       await jsonDe(`select agentes.leer_brief($1) as r`, [b.corrida_id]);
       await jsonDe(`select agentes.registrar_brief($1, $2) as r`, [b.corrida_id, {
@@ -641,7 +604,7 @@ test('corregir un paso del Research se lleva sus filas; enviar el Brief pide una
       // Y un nulo repetido no se vuelve a guardar.
       await jsonDe(`select agentes.responder_brief($1, '[{"pregunta": "meta_a_un_ano", "valor": null}]', false) as r`, [cli!.cuenta]);
       await jsonDe(`select agentes.responder_brief($1, '[{"pregunta": "meta_a_un_ano", "valor": null}]', false) as r`, [cli!.cuenta]);
-      const nulas = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.respuestas_del_brief where cuenta_id = $1 and pregunta = 'meta_a_un_ano'`, [cli!.cuenta]);
+      const nulas = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.respuestas_del_brief where contacto_id = $1 and pregunta = 'meta_a_un_ano'`, [cli!.cuenta]);
       assert.equal(Number(nulas!.n), 1);
       const env = await jsonDe(`select agentes.responder_brief($1, $2, true, $3) as r`, [cli!.cuenta, JSON.stringify([{ pregunta: 'facturacion_mensual', valor: 'USD 5-10 mil' }]), principal.persona]);
       assert.equal(env.enviado, true);

@@ -395,7 +395,7 @@ test('toda vista de negocio corre con los permisos de QUIEN LA INVOCA, y el inqu
   assert.deepEqual(
     vistas.map((v) => v.relname),
     [
-      'brief_vigente', 'conocimiento_vigente', 'embudo_por_dia', 'entregable_vigente', 'etapas_del_lead', 'ficha_vigente',
+      'brief_vigente', 'conocimiento_vigente', 'embudo_por_dia', 'entregable_vigente', 'etapas_del_lead', 'expediente_del_lead', 'ficha_vigente',
       'metricas_meta_del_dia', 'respuestas_del_lead_traducidas', 'triaje_vigente',
     ],
     'apareció una vista nueva en negocio: tiene que declarar security_invoker y sumarse acá',

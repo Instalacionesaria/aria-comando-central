@@ -2576,6 +2576,8 @@ export interface TablaCorridasDeAgente {
   terminada_el: Date | null;
   duracion_ms: number | null;
   reemplazada_por: string | null;
+  /** Cómo se identificó al lead (115). */
+  identificado_por: Generated<'workflow' | 'correo' | 'persona'>;
 }
 
 /** Lo que el negocio sabe de sí mismo, versionado por tipo (110): ICP, oferta, guion… */
@@ -2680,6 +2682,8 @@ export interface TablaTranscripciones {
   cuenta_id: ColumnaCuenta;
   id: Generated<string>;
   llamada_id: string;
+  /** El lead de la llamada (115): una clave foránea compuesta lo ata al de `negocio.llamadas`. */
+  contacto_id: string;
   texto: string;
   segmentos: Generated<unknown>;
   idioma: string | null;
@@ -2879,6 +2883,8 @@ export interface TablaPagos {
 export interface TablaEntregables {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   /** Una clave de `catalogo.tipos_de_entregable`. */
   tipo: string;
@@ -2894,6 +2900,8 @@ export interface TablaEntregables {
 export interface TablaVersionesDeEntregable {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   entregable_id: string;
   numero: number;
@@ -2914,6 +2922,8 @@ export interface TablaVersionesDeEntregable {
 export interface TablaRespuestasDelBrief {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   entregable_id: string;
   version_del_brief: string;
@@ -2937,6 +2947,8 @@ export interface TablaRespuestasDelBrief {
 export interface TablaSegmentosDelMercado {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   version_id: string;
   nombre: string;
@@ -2953,6 +2965,8 @@ export interface TablaSegmentosDelMercado {
 export interface TablaDoloresDelSegmento {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   version_id: string;
   segmento_id: string | null;
@@ -2970,6 +2984,8 @@ export interface TablaDoloresDelSegmento {
 export interface TablaReferentesDelMercado {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   version_id: string;
   segmento_id: string | null;
@@ -2986,6 +3002,8 @@ export interface TablaReferentesDelMercado {
 export interface TablaCitasDelMercado {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   version_id: string;
   segmento_id: string | null;
@@ -3000,6 +3018,8 @@ export interface TablaCitasDelMercado {
 export interface TablaDecisionesDeKickoff {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   sobre: 'research' | 'segmento' | 'oferta' | 'precio' | 'reglas_de_agentes' | 'otro';
   decision: string;
@@ -3012,6 +3032,8 @@ export interface TablaDecisionesDeKickoff {
 export interface TablaPiezasDeContenido {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
+  /** El lead dueño de la fila (115). */
+  contacto_id: string;
   id: Generated<string>;
   version_id: string;
   tipo: 'anuncio' | 'vsl' | 'landing';
