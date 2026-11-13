@@ -12,8 +12,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // CÓMO SE ENCUENTRA AL LEAD (decisiones del usuario, 2026-11-13)
 //
-//   1. POR CORREO: cada candidato (un invitado externo con correo que no es del equipo) contra `contactos.email` de la
-//      subcuenta, sin mayúsculas ni espacios, sin los que el CRM dio de baja (108).
+//   1. POR CORREO: cada candidato (un invitado con correo que no es del equipo; primero los externos) contra
+//      `contactos.email` de la subcuenta, sin mayúsculas ni espacios, sin los que el CRM dio de baja (108). Si casa
+//      algún externo, sólo cuentan los externos.
 //        · uno → ése;
 //        · varios (el correo no es único en `contactos`, o el lead vino con su socio) → si exactamente uno tiene una
 //          cita a ±12 h, ése; si no, el de alta más reciente, marcado `ambiguo`.
@@ -118,10 +119,10 @@ function citaUnica(citas: Map<string, string[]>, contactoId: string): string | n
   return suyas.length === 1 ? (suyas[0] ?? null) : null;
 }
 
-async function buscarLead(cuentaId: string, candidatos: string[], fecha: Date | null): Promise<Vinculo> {
+async function buscarLead(cuentaId: string, candidatos: string[], externos: string[], fecha: Date | null): Promise<Vinculo> {
   const citas = await citasCercanas(cuentaId, fecha);
 
-  const porCorreo =
+  const todosPorCorreo =
     candidatos.length === 0
       ? []
       : (
@@ -133,6 +134,9 @@ async function buscarLead(cuentaId: string, candidatos: string[], fecha: Date | 
                and lower(btrim(k.email)) = any(${candidatos}::text[])
              order by k.alta_en_el_crm desc nulls last, k.id`.execute(datos())
         ).rows;
+  // Si casó algún invitado externo, el lead está entre ellos: un interno que también es contacto no compite.
+  const deExternos = todosPorCorreo.filter((k) => externos.includes(k.email));
+  const porCorreo = deExternos.length > 0 ? deExternos : todosPorCorreo;
 
   const primero = porCorreo[0];
   if (porCorreo.length === 1 && primero) {
@@ -175,7 +179,7 @@ async function buscarLead(cuentaId: string, candidatos: string[], fecha: Date | 
       por: 'cita',
       ambiguo: false,
       correo: candidatos[0] ?? null,
-      motivo: candidatos.length > 0 ? 'Ningún correo casó; lo encontró la única cita a ±12 h.' : 'Sin correo externo; lo encontró la única cita a ±12 h.',
+      motivo: candidatos.length > 0 ? 'Ningún correo casó; lo encontró la única cita a ±12 h.' : 'Sin correo de invitados; lo encontró la única cita a ±12 h.',
     };
   }
   const deCitas = citados.length > 1 ? ` ${citados.length} contactos con cita a ±12 h: no se elige.` : ' Ninguna cita a ±12 h.';
@@ -188,7 +192,7 @@ async function buscarLead(cuentaId: string, candidatos: string[], fecha: Date | 
     motivo:
       candidatos.length > 0
         ? `Ningún contacto de la subcuenta con ${candidatos.length === 1 ? 'el correo' : 'los correos'} ${candidatos.join(', ')}.${deCitas}`
-        : `Sin invitados externos con correo.${deCitas}`,
+        : `Sin invitados con correo fuera del equipo.${deCitas}`,
   };
 }
 
@@ -255,8 +259,8 @@ export async function guardarReunionDeFathom(e: EntradaDeFathom): Promise<Result
 
   const r = e.reunion;
   const clasificacion = esVentaPorTitulo(r.meeting_title, r.title);
-  const { participantes, candidatos } = participantesDe(r, e.equipo.map((m) => m.email));
-  const vinculo = await buscarLead(e.cuentaId, candidatos, fechaDe(r));
+  const { participantes, candidatos, externos } = participantesDe(r, e.equipo.map((m) => m.email));
+  const vinculo = await buscarLead(e.cuentaId, candidatos, externos, fechaDe(r));
   const transcripcion = transcripcionDe(r);
 
   let estado: EstadoDeFathom;

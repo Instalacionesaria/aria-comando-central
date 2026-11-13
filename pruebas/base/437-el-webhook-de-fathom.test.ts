@@ -312,6 +312,32 @@ test('una venta sin transcripción no crea la llamada', async () => {
   assert.equal((await llamadasDe(lead)).length, 0);
 });
 
+test('un lead con el correo del dominio del equipo (interno para Fathom) se encuentra igual; un externo que casa le gana', async () => {
+  const dominio = usuario.email.split('@')[1] ?? 'ejemplo.test';
+  const interno = await contacto({ email: `lead-interno-437@${dominio}` });
+  const g = grabacion(15, {
+    calendar_invitees: [
+      { name: 'Closer', email: usuario.email, is_external: false },
+      { name: 'Lead', email: `lead-interno-437@${dominio}`, is_external: false },
+    ],
+  });
+  assert.deepEqual((await enviar(g)).cuerpo, { recibido: true, estado: 'guardada', ya_estaba: false });
+  assert.equal((await recepcion(g.recording_id!))?.contacto_id, interno);
+
+  const externo = await contacto({ email: 'externo-gana-437@ejemplo.test' });
+  const g2 = grabacion(16, {
+    calendar_invitees: [
+      { name: 'Closer', email: usuario.email, is_external: false },
+      { name: 'Lead interno', email: `lead-interno-437@${dominio}`, is_external: false },
+      { name: 'Lead externo', email: 'externo-gana-437@ejemplo.test', is_external: true },
+    ],
+  });
+  await enviar(g2);
+  const rec = await recepcion(g2.recording_id!);
+  assert.equal(rec?.contacto_id, externo);
+  assert.equal(rec?.ambiguo, false);
+});
+
 // ─── El correo repetido y la cita ─────────────────────────────────────────────
 
 test('el correo de dos contactos: desempata la única cita; sin cita, el de alta más reciente y «ambiguo»', async () => {

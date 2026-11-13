@@ -82,6 +82,38 @@ test('un closer con Gmail personal, marcado externo por Fathom, es del equipo y 
   assert.equal(participantes.find((p) => p.email === 'closer.personal@gmail.com')?.del_equipo, true);
 });
 
+test('un lead del mismo dominio que el equipo (interno para Fathom) es candidato si no es usuario ni quien grabó', () => {
+  const { participantes, candidatos, externos } = participantesDe(
+    reunion({
+      recorded_by: { name: 'Soporte', email: 'soporte@ariaia.com', email_domain: 'ariaia.com' },
+      calendar_invitees: [
+        { name: 'Soporte', email: 'soporte@ariaia.com', is_external: false },
+        { name: 'Mruiz', email: 'mruiz@ariaia.com', is_external: false },
+        { name: 'Closer', email: 'closer@ariaia.com', is_external: false },
+      ],
+    }),
+    ['closer@ariaia.com'],
+  );
+  assert.deepEqual(candidatos, ['mruiz@ariaia.com']);
+  assert.deepEqual(externos, []);
+  assert.equal(participantes.find((p) => p.email === 'mruiz@ariaia.com')?.del_equipo, false);
+  assert.equal(participantes.find((p) => p.email === 'soporte@ariaia.com')?.del_equipo, true);
+});
+
+test('los externos van primero entre los candidatos', () => {
+  const { candidatos, externos } = participantesDe(
+    reunion({
+      calendar_invitees: [
+        { name: 'Colega', email: 'colega@ariaia.com', is_external: false },
+        { name: 'Juan', email: 'juan@gmail.com', is_external: true },
+      ],
+    }),
+    [],
+  );
+  assert.deepEqual(candidatos, ['juan@gmail.com', 'colega@ariaia.com']);
+  assert.deepEqual(externos, ['juan@gmail.com']);
+});
+
 test('un externo sin correo no es candidato pero queda en la lista; quien no habló, «hablo» falso', () => {
   const { participantes, candidatos } = participantesDe(
     reunion({
