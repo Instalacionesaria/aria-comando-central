@@ -199,6 +199,10 @@ export const ARCHIVOS_AUTORIZADOS: readonly string[] = [
   'app/api/meta/desautorizado/route.ts',
   'app/api/meta/borrado/route.ts',
   'app/meta/borrado/[codigo]/page.tsx',
+  // El webhook de Fathom (la 116, 2026-11-13): la ÚNICA lectura de identidad es la organización principal y los correos
+  // de sus usuarios, para saber quién es del equipo (y no el lead) y quién grabó. Sólo lectura, y DESPUÉS de comprobar
+  // la firma: nada sin firma llega al agrupador de identidad. Está también en `CRUZAN_LOS_DOS_DOMINIOS`.
+  'app/api/fathom/webhook/route.ts',
   // ── Etapa 8 ──────────────────────────────────────────────────────────────────
   // El portero, para emitir `permiso_denegado`. La auditoría es una tabla de identidad, y en el
   // paso 5 el portero ya resolvió la sesión — así que sabe de qué organización se trata y filtra
@@ -801,6 +805,13 @@ export const CRUZAN_LOS_DOS_DOMINIOS: readonly string[] = [
   // `correrElRelleno`), así se puede deshacer, y la sincronización alcanza el valor en diez minutos (con origen `crm`,
   // no `persona`: está dicho en el guion). No es atomicidad entre dominios y no se arregla con una transacción.
   'scripts/clasificar-calificados-viejos.mjs',
+  /* El webhook de Fathom (la 116). Dos dominios, dos transacciones, y la primera sólo LEE:
+   *   1. IDENTIDAD: la organización principal y los correos de sus usuarios. Cero escrituras.
+   *   2. NEGOCIO: la recepción y, si es una venta con lead, la llamada y su transcripción, juntas en UNA transacción.
+   *
+   * Si falla la primera no hay nada escrito. Si falla la segunda por los datos, una tercera deja la recepción en
+   * `error`; si falla por la conexión, nada quedó escrito y se responde 503 para que Fathom reintente. */
+  'app/api/fathom/webhook/route.ts',
 ];
 
 /**
@@ -1020,6 +1031,17 @@ export const RUTAS_CON_SECRETO_PROPIO: readonly string[] = [
   // sale del servidor.
   'app/api/meta/desautorizado/route.ts',
   'app/api/meta/borrado/route.ts',
+  // ── Fathom (la 116) · el webhook de las grabaciones ─────────────────────────
+  //
+  // La sexta, deliberada por las mismas dos razones: **no puede pasar por el portero** —la llama Fathom, sin sesión, cuando
+  // una grabación termina de procesarse— y **no puede ser pública**: cualquiera podría inventar llamadas de venta y
+  // transcripciones a nombre de un lead.
+  //
+  // Su autenticación es la firma «Standard Webhooks»: el HMAC-SHA256 de `id.timestamp.cuerpo` con el secreto `whsec_` de
+  // `FATHOM_SECRETO_WEBHOOK` (varios, separados por coma, para rotarlo), comparado con `timingSafeEqual` en la ruta, con
+  // el guardia de «el secreto no está» antes, el timestamp a menos de 5 minutos y las longitudes comparadas antes. Fathom
+  // no deja agregar cabeceras propias, así que no hay pimienta: la firma es el portón, y va antes de tocar la base.
+  'app/api/fathom/webhook/route.ts',
 ];
 
 /**

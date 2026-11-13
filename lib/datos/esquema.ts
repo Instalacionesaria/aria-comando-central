@@ -932,6 +932,10 @@ export interface TablaLlamadas {
   estado_de_transcripcion: 'sin_grabar' | 'pendiente' | 'lista' | 'fallida' | null;
   vinculada_por: 'ghl' | 'correo' | 'cita' | 'persona' | 'agente' | null;
   corrida_id: string | null;
+  // Las de Fathom (116): sirven para cualquier proveedor. Nulas en las de antes.
+  titulo: string | null;
+  /** `[{nombre, email, externo, del_equipo, hablo}]`. Se escribe con `JSON.stringify`. */
+  participantes: unknown;
 }
 
 export interface TablaTareas {
@@ -2692,6 +2696,41 @@ export interface TablaTranscripciones {
   creada_el: Generated<Date>;
 }
 
+/**
+ * Cada grabación que mandó el webhook de Fathom (116), sea o no de venta: lo normalizado, sin el JSON crudo ni la
+ * transcripción. La de venta con lead además está en `llamadas` y `transcripciones`. La escribe `lib/fathom/guardar.ts`.
+ */
+export interface TablaRecepcionesDeFathom {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  id: Generated<string>;
+  /** El id de la grabación en Fathom. `bigint`: el controlador lo devuelve como texto. */
+  recording_id: ColumnType<string, string | number, string | number>;
+  webhook_id: string | null;
+  recibido_el: Generated<Date>;
+  procesado_el: Date | null;
+  intentos: Generated<number>;
+  titulo: string | null;
+  titulo_del_calendario: string | null;
+  tipo_de_reunion_fathom: string | null;
+  fecha_de_la_reunion: Date | null;
+  duracion_seg: number | null;
+  url_de_la_grabacion: string | null;
+  idioma: string | null;
+  grabado_por_email: string | null;
+  grabado_por_nombre: string | null;
+  /** `[{nombre, email, externo, del_equipo, hablo}]`. Se escribe con `JSON.stringify`. */
+  participantes: Generated<unknown>;
+  correo_del_lead: string | null;
+  contacto_id: string | null;
+  cita_id: string | null;
+  llamada_id: string | null;
+  vinculada_por: 'correo' | 'cita' | null;
+  ambiguo: Generated<boolean>;
+  estado: 'guardada' | 'no_es_venta' | 'sin_correo_externo' | 'sin_lead' | 'sin_transcripcion' | 'error';
+  motivo: string | null;
+}
+
 /** La ficha del lead para el closer, versionada (111). */
 export interface TablaFichasDelLead {
   org_id: ColumnaInquilino;
@@ -3156,6 +3195,7 @@ export interface BaseDeDatos {
   rutas_de_la_cuenta: TablaRutasDeLaCuenta;
   triajes: TablaTriajes;
   transcripciones: TablaTranscripciones;
+  recepciones_de_fathom: TablaRecepcionesDeFathom;
   fichas_del_lead: TablaFichasDelLead;
   resultados_propuestos: TablaResultadosPropuestos;
   evaluaciones_de_llamada: TablaEvaluacionesDeLlamada;

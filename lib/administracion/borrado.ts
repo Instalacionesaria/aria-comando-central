@@ -248,6 +248,8 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   evaluaciones_de_llamada_org_id_fkey: 'tiene llamadas evaluadas',
   fichas_del_lead_org_id_fkey: 'tiene fichas de leads',
   fuentes_publicas_org_id_fkey: 'tiene evidencia pública investigada',
+  /* Las grabaciones que mandó el webhook de Fathom (la 116). */
+  recepciones_de_fathom_org_id_fkey: 'tiene grabaciones de Fathom recibidas',
   objeciones_de_llamada_org_id_fkey: 'tiene objeciones de llamadas registradas',
   pagos_org_id_fkey: 'tiene pagos registrados',
   piezas_de_contenido_org_id_fkey: 'tiene piezas de contenido',

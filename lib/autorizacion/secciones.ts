@@ -549,6 +549,9 @@ export const SIN_PANTALLA: readonly string[] = [
      No muestran nada y su único cliente es Meta: el mismo motivo que el aviso del CRM y el cron. */
   'app/api/meta/desautorizado/route.ts',
   'app/api/meta/borrado/route.ts',
+  /* ── EL WEBHOOK DE FATHOM (la 116) ─────────────────────────────
+     No muestra nada y su único cliente es Fathom: el mismo motivo que el aviso del CRM y el cron. */
+  'app/api/fathom/webhook/route.ts',
   // El login. No pertenece a una pantalla: es la puerta.
   'app/api/auth/login/route.ts',
   // El segundo factor: son trámites de la propia cuenta, no de una pantalla del producto.

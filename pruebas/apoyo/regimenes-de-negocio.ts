@@ -32,6 +32,12 @@ export const AGENTES_GESTIONADOS = [
   'piezas_de_contenido',
 ] as const;
 
+/**
+ * Las de Fathom (`116`, 2026-11-13): la recepción de cada grabación del webhook. De la subcuenta de ARIA, nacida con su
+ * cuenta y con su política de cuenta.
+ */
+export const FATHOM = ['recepciones_de_fathom'] as const;
+
 /** Siempre de una subcuenta: `cuenta_id not null`. */
 export const DE_UNA_CUENTA = [
   'contactos', 'citas', 'mensajes', 'notas', 'tareas', 'resultados', 'comisiones', 'closer_asignado',
@@ -47,6 +53,7 @@ export const DE_UNA_CUENTA = [
   // La historia del lead (`106`): las clasificaciones, las respuestas y los toques. Las escriben los disparadores.
   'clasificaciones', 'respuestas_del_lead', 'toques_de_marketing',
   ...AGENTES_GESTIONADOS,
+  ...FATHOM,
 ] as const;
 
 /**
@@ -64,6 +71,7 @@ export const NACIERON_CON_CUENTA = [
   'respuestas_del_lead',
   'toques_de_marketing',
   ...AGENTES_GESTIONADOS,
+  ...FATHOM,
 ] as const;
 
 /** De una subcuenta o de la organización entera: `cuenta_id` nulable. */
@@ -90,4 +98,5 @@ export const DE_UNA_CUENTA_DESPUES_DE_LA_086 = [
   'conjuntos_de_anuncios', 'gasto_por_cuenta_publicitaria', 'metricas_por_desglose',
   'clasificaciones', 'respuestas_del_lead', 'toques_de_marketing',
   ...AGENTES_GESTIONADOS,
+  ...FATHOM,
 ] as const;
