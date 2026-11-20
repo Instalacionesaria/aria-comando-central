@@ -85,7 +85,7 @@ const NOMBRE: Record<Tarea, string> = {
      objeto en rojo, que es exactamente lo que tenía que pasar. Con un `Partial` o un `?? tarea`, el
      aviso habría dicho «… y contactos tendría que correr cada …», con la palabra interna adentro de
      una frase para una persona. */
-  contactos: 'la lectura de las etiquetas de los contactos',
+  contactos: 'la traída de los contactos nuevos',
   // Y la quinta dejó este objeto en rojo otra vez, que es la prueba de que el `Record` total sirve.
   auditoria: 'la auditoría de los agentes de IA',
   mejora: 'la revisión en frío del carril amarillo',

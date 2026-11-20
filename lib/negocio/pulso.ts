@@ -75,8 +75,8 @@ import { cuentaDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
  * que alguien la lea sería falsa.
  */
 /**
- * `contactos` es del cron de contactos sin etiqueta (`contactosSinEtiqueta.ts`): su marca afirma «todo contacto nuevo
- * con `dateUpdated` anterior o igual ya se guardó».
+ * `contactos` es la tarea de contactos del cron (`contactosSinEtiqueta.ts`): su marca afirma «todo contacto nuevo con
+ * `dateUpdated` anterior o igual ya se guardó».
  */
 export type ClaveDePulso = 'mensajes' | 'citas' | 'auditoria' | 'contactos';
 
@@ -127,6 +127,10 @@ export interface Pulso {
   /** El piso de la cobertura. `null` mientras no haya corrido nunca. */
   marcaDesdeEl: Date | null;
   corridas: number;
+  /** `true` = la corrida anterior quedó a medias. Lo usa la traída de contactos para no releer lo mismo sin fin. */
+  atrasado?: boolean;
+  /** El fallo que anotó la corrida anterior, o `null`. Con `atrasado`, distingue «cortada» de «falló». */
+  ultimoFallo?: string | null;
 }
 
 /** Lo que el ciclo devuelve para que quede anotado. */
@@ -193,7 +197,7 @@ export async function conElPulso<T>(
     // alguien abre este reclamo con más de un cliente a la vista.
     const fila = await datos()
       .selectFrom('ingesta_pulso')
-      .select(['marca_el', 'marca_desde_el', 'ultima_corrida_el', 'corridas'])
+      .select(['marca_el', 'marca_desde_el', 'ultima_corrida_el', 'corridas', 'atrasado', 'ultimo_fallo'])
       .where('clave', '=', clave)
       .where('cuenta_id', '=', cuenta)
       .forUpdate()
@@ -225,6 +229,8 @@ export async function conElPulso<T>(
         marcaEl: fila.marca_el,
         marcaDesdeEl: fila.marca_desde_el,
         corridas: Number(fila.corridas),
+        atrasado: fila.atrasado === true,
+        ultimoFallo: fila.ultimo_fallo ?? null,
       },
     };
   });

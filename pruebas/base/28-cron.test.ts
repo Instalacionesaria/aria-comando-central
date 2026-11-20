@@ -198,13 +198,15 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
   } finally {
     globalThis.fetch = fetchOriginal;
   }
-  const porSlug = new Map(r.renglones.filter((x) => x.tarea === 'mensajes').map((x) => [x.slug, x.estado]));
+  // Por `contactos`: desde el 2026-11-20 `mensajes` no se despacha en el cron (se sella saltada), así que ya no falla.
+  const porSlug = new Map(r.renglones.filter((x) => x.tarea === 'contactos').map((x) => [x.slug, x.estado]));
   assert.equal(porSlug.get('rota'), 'fallo');
   assert.equal(porSlug.get('alfa'), 'saltada', 'la de antes tiene que estar');
   assert.equal(porSlug.get('beta'), 'saltada', 'la de DESPUÉS tiene que estar: es la que se perdía');
 
   /* ═══════════════════════════════════════════════════════════════════════
-     Y LAS TRES TAREAS DE LA EMPRESA ROTA FALLAN, CADA UNA POR SU CUENTA
+     Y LAS TAREAS DEL CRM DE LA EMPRESA ROTA FALLAN, CADA UNA POR SU CUENTA (`contactos` y `citas`; `mensajes` ya no
+     se despacha desde el 2026-11-20)
 
      Esta parte se agregó porque un mutante sobrevivió: reemplazar el despacho de `contactos` por un
      `{ corrio: false }` fijo —o sea una tarea que se anuncia y no hace nada— dejaba TODO el archivo
@@ -248,7 +250,9 @@ test('una empresa que FALLA no se lleva puestas a las que vienen después', asyn
       ['citas', 'fallo'],
       ['contactos', 'fallo'],
       ['mejora', 'saltada'],
-      ['mensajes', 'fallo'],
+      /* `mensajes` sale SALTADA desde el 2026-11-20: el cron ya no trae conversaciones y la sella sin despacharla, con
+         `MOTIVO_SIN_CONVERSACIONES`, después del control de la credencial (esta empresa tiene token). */
+      ['mensajes', 'saltada'],
       /* `reintentos` sale SALTADA por lo mismo que `analizadores`: pide las mismas dos llaves. */
       ['reintentos', 'saltada'],
       /* `senales` sale FALLO, como las del CRM: no pide el token (AG-35) y a las 12:00 de Lima le toca, así

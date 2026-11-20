@@ -9,8 +9,9 @@
 //
 // Una empresa con P (el principal, con las credenciales de la empresa) e Y (con su propia subcuenta y su token):
 //
-//   · el cron lee los contactos y los mensajes de cada cliente con SU token, y cada fila queda en SU cliente;
-//   · cada cliente tiene su pulso y sus sellos, y los de los dos dicen `corrio`;
+//   · el cron lee los contactos de cada cliente con SU token, y cada fila queda en SU cliente; desde el 2026-11-20 trae
+//     los nuevos sin etiqueta (`contactosSinEtiqueta.ts`) y no trae conversaciones;
+//   · cada cliente tiene su pulso y sus sellos: `contactos` corrió y `mensajes` quedó saltada en los dos;
 //   · ningún pedido cruzó tokens: si uno lo hubiera hecho, el GoHighLevel falso lo habría rechazado y el sello lo diría;
 //   · la sincronización manual (Setter › Contactos, «Traer de GoHighLevel») trae a cada cliente con SU token, y la
 //     resta de uno no congela al otro (G4).
@@ -40,7 +41,7 @@ let secretoPrevio: string | undefined;
 const fetchOriginal = globalThis.fetch;
 /** Lo que el GoHighLevel falso vio: el token y la location de cada pedido, y lo que rechazó. */
 const vistos: { token: string; location: string | null; rechazo: number | null }[] = [];
-/** Qué contactos devuelve la búsqueda por etiqueta de cada subcuenta. Las pruebas lo cambian. */
+/** Qué contactos devuelve la búsqueda de cada subcuenta (por etiqueta o la de los nuevos). Las pruebas lo cambian. */
 let contactosDe: Record<'p' | 'y', string[]> = { p: ['c280p1'], y: ['c280y1'] };
 
 /** De quién es un token, o `null` si no es de nadie. */
@@ -76,9 +77,15 @@ function ghlFalso(): typeof globalThis.fetch {
     const sufijo = de!;
 
     if (url.includes('/contacts/search')) {
-      const etiqueta = (cuerpo as { filters?: { value?: string }[] } | null)?.filters?.[0]?.value;
-      const ids = etiqueta === 'zona_closer' ? contactosDe[sufijo] : [];
-      return json({ contacts: ids.map((id) => ({ id, contactName: `Contacto ${id}`, tags: ['zona_closer'], dateAdded: new Date().toISOString() })), total: ids.length });
+      const filtros = (cuerpo as { filters?: { field?: string; value?: unknown }[] } | null)?.filters ?? [];
+      // La del cron (los nuevos, con el filtro del alta) o la del botón (por etiqueta): las dos ven los de su subcuenta.
+      const nuevos = filtros.some((f) => f.field === 'dateAdded');
+      const ids = nuevos || filtros[0]?.value === 'zona_closer' ? contactosDe[sufijo] : [];
+      const ahora = new Date().toISOString();
+      return json({
+        contacts: ids.map((id) => ({ id, contactName: `Contacto ${id}`, tags: ['zona_closer'], dateAdded: ahora, dateUpdated: ahora })),
+        total: ids.length,
+      });
     }
     if (url.includes('/conversations/search')) {
       return json({
@@ -179,7 +186,7 @@ after(async () => {
   }
 });
 
-test('el cron trae los contactos y los mensajes de cada cliente con SU token, y cada fila queda en SU cliente', async () => {
+test('el cron trae los contactos de cada cliente con SU token, cada fila queda en SU cliente, y no trae mensajes', async () => {
   vistos.length = 0;
   const r = await cron(
     new Request('https://ejemplo.test/api/cron', {
@@ -204,10 +211,11 @@ test('el cron trae los contactos y los mensajes de cada cliente con SU token, y 
     `select ghl_mensaje_id as ghl, cuenta_id as cuenta from negocio.mensajes where org_id = $1 order by 1`,
     [org],
   );
-  assert.deepEqual(mensajes.map((m) => `${m.ghl}:${deCuenta(m.cuenta)}`), ['m-c280p1:P', 'm-c280y1:Y']);
+  // Desde el 2026-11-20 el cron no trae conversaciones: `mensajes` se sella saltada sin hablarle al CRM.
+  assert.deepEqual(mensajes, [], 'el cron trajo conversaciones');
 });
 
-test('cada cliente tiene su pulso y sus sellos, y los dos corrieron', async () => {
+test('cada cliente tiene su pulso y sus sellos: contactos corrió y mensajes quedó saltada en los dos', async () => {
   const pulsos = await filas<{ cuenta: string; clave: string }>(
     admin,
     `select cuenta_id as cuenta, clave from negocio.ingesta_pulso where org_id = $1 order by clave, cuenta_id`,
@@ -215,7 +223,7 @@ test('cada cliente tiene su pulso y sus sellos, y los dos corrieron', async () =
   );
   assert.deepEqual(
     pulsos.map((x) => `${x.clave}:${deCuenta(x.cuenta)}`).sort(),
-    ['mensajes:P', 'mensajes:Y'],
+    ['contactos:P', 'contactos:Y'],
   );
   const sellos = await filas<{ cuenta: string | null; tarea: string; estado: string }>(
     admin,
@@ -225,7 +233,7 @@ test('cada cliente tiene su pulso y sus sellos, y los dos corrieron', async () =
   );
   assert.deepEqual(
     sellos.map((s) => `${s.tarea}:${deCuenta(s.cuenta)}:${s.estado}`).sort(),
-    ['contactos:P:corrio', 'contactos:Y:corrio', 'mensajes:P:corrio', 'mensajes:Y:corrio'],
+    ['contactos:P:corrio', 'contactos:Y:corrio', 'mensajes:P:saltada', 'mensajes:Y:saltada'],
   );
 });
 

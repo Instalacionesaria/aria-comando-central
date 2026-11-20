@@ -65,11 +65,13 @@ test('releer los contactos abre el ámbito del cliente, y el barrido despacha ca
   const barrido = leer('lib/negocio/barrido.ts');
   const i = barrido.indexOf('async function releerContactos(');
   const releer = barrido.slice(i, barrido.indexOf('\n}\n', i));
-  assert.match(releer, /conOrganizacion\(ambito,/);
+  // La traída de los nuevos abre el ámbito del cliente adentro (`contactosSinEtiqueta.ts`, por `conElPulso`).
+  assert.match(releer, /sincronizarLosNuevos\(ambito, acceso,/);
   assert.match(releer, /completarMiniaturas\(ambito, acceso,/);
+  // Desde el 2026-11-20 el cron no trae conversaciones: `mensajes` se sella saltada y no se despacha.
+  assert.doesNotMatch(barrido, /ingerirMensajes\(/, 'el cron volvió a traer conversaciones');
   for (const llamada of [
     /releerContactos\(elAmbito\(\)/,
-    /ingerirMensajes\(elAmbito\(\)/,
     // Meta directo: el diario, la historia y los activos, con el cliente.
     /recolectarDeMeta\(elAmbito\(\), meta\.cuentas, 'diario'/,
     /recolectarDeMeta\(elAmbito\(\), meta\.cuentas, 'historia'/,

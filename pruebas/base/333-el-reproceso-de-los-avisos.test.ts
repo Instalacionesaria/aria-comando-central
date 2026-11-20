@@ -298,9 +298,9 @@ test('la tarea `contactos` reprocesa después de sincronizar y antes de las mini
   const cuerpo = barrido.slice(i, barrido.indexOf('\n}\n', i));
   const reproceso = cuerpo.indexOf('await reprocesarAvisosDeOportunidad(ambito, acceso, { fin, ahora })');
   assert.ok(reproceso > 0, 'la tarea `contactos` no reprocesa los avisos de oportunidad: un fallo transitorio pierde la etapa');
-  assert.ok(cuerpo.indexOf('sincronizarContactos(') < reproceso, 'el reproceso va antes de sincronizar: el contacto nuevo no está');
+  const traida = cuerpo.indexOf('sincronizarLosNuevos(');
+  assert.ok(traida > 0 && traida < reproceso, 'el reproceso va antes de traer los contactos: el contacto nuevo no está');
   assert.ok(reproceso < cuerpo.indexOf('completarMiniaturas('), 'el reproceso espera a que sobre tiempo de las miniaturas');
   assert.match(cuerpo, /miniaturas\.pedidos \+ avisos\.llamadas/, 'las llamadas del reproceso no se cuentan');
-  // Y al final la relectura de los congelados (la 108, ver la prueba 336).
-  assert.match(cuerpo, /resultado: \{ \.\.\.r\.resumen, miniaturas, avisos(, congeladosReleidos: congelados)? \}/, 'el sello no lleva el resumen del reproceso');
+  assert.match(cuerpo, /resultado: \{ sinEtiqueta: [^\n]*, miniaturas, avisos \}/, 'el sello no lleva el resumen del reproceso');
 });

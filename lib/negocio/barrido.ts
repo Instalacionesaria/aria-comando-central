@@ -36,8 +36,6 @@ import { TEXTO_DE_FALTA_ANALIZADOR, TEXTO_DE_FALTA_AUDITOR, TEXTO_DE_FALTA_CUENT
 import { correrAnalizadores, llamadasDeLaTarea, reintentarAnalizadores } from '../analizadores/tarea.ts';
 import { auditarEmpresa } from '../auditor/analisis.ts';
 import { buscarUnaMejora } from '../auditor/buscarMejora.ts';
-import { ingerirMensajes } from './ingesta.ts';
-import { releerLosCongelados, sincronizarContactos, TOPE_DE_CONGELADOS } from './sincronizar.ts';
 import { completarMiniaturas } from './miniaturaDelContacto.ts';
 import { reprocesarAvisosDeOportunidad } from './reprocesoDeAvisos.ts';
 import { recolectarDeMeta } from './recolectarDeMeta.ts';
@@ -49,10 +47,10 @@ import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 import type { ConfiguracionDeLosNegocios } from '../cartera/configuracion.ts';
 import { tomarLaFoto, type ResumenDeLaFoto } from '../cartera/foto.ts';
 import { correrLaPasada } from '../agentes/detectores/correr.ts';
-import { sincronizarLosNuevos, traeTodosLosContactos } from './contactosSinEtiqueta.ts';
+import { sincronizarLosNuevos } from './contactosSinEtiqueta.ts';
 
-/** El motivo del sello de `mensajes` en un cliente que trae sus contactos nuevos sin etiqueta. Ver el bucle del barrido. */
-export const MOTIVO_SIN_CONVERSACIONES = 'este cliente trae sus contactos nuevos sin etiqueta y el cron no trae sus conversaciones';
+/** El motivo del sello de `mensajes`: el cron ya no trae conversaciones (2026-11-20). Ver el bucle del barrido. */
+export const MOTIVO_SIN_CONVERSACIONES = 'el cron no trae conversaciones: sólo los contactos nuevos';
 
 /**
  * Las tareas que el cron sabe hacer. Es la misma lista que el `check` de `tareas_programadas`,
@@ -249,7 +247,14 @@ export const HORARIOS = {
      El costo, contado: la primera corrida son hasta veinte inferencias por empresa —medido en
      producción, dieciocho— y después el antirrebote las baja a las conversaciones que de verdad
      avanzaron. Y el presupuesto de tiempo del propio auditor evita que una empresa con cola larga se
-     coma los 300 segundos de la función. */
+     coma los 300 segundos de la función.
+
+     ── DESDE EL 2026-11-20 EL CRON NO TRAE CONVERSACIONES ──────────────
+
+     Lo de arriba es la historia de por qué el horario quedó así. Hoy `contactos` trae los leads NUEVOS sin etiqueta
+     (los creados en el último mes que cambiaron desde la marca: una llamada por corrida, `contactosSinEtiqueta.ts`) y
+     `mensajes` se sella `saltada` con `MOTIVO_SIN_CONVERSACIONES` en el bucle, sin hablarle al CRM. Las tres siguen en
+     la lista y en este orden para que la frescura, los sellos y las pruebas del orden sigan leyendo lo mismo. */
   '*/10 * * * *': {
     tareas: ['contactos', 'mensajes', 'auditoria'],
     cadenciaMinutos: 10,
@@ -753,17 +758,6 @@ export async function barrerTodo(
     }
 
     for (const tarea of tareasDeLaUnidad) {
-      /* ── EL CLIENTE QUE TRAE SUS CONTACTOS SIN ETIQUETA NO TRAE CONVERSACIONES ───
-       *
-       * Decidido el 2026-11-20 (`contactosSinEtiqueta.ts`): con el interruptor encendido, el cron trae los leads nuevos
-       * sin etiqueta y ya no sondea los mensajes: con ellos en la base, la ingesta empezaría a traer también sus
-       * conversaciones. Se sella `saltada` con su motivo, que no es una falta de conexión: el aviso de
-       * «cliente sin conexión» (`faltaDeLosClientes.ts`) sólo mira los motivos de credencial. */
-      if (tarea === 'mensajes' && traeTodosLosContactos(cuentaId)) {
-        renglon({ tarea, estado: 'saltada', porque: MOTIVO_SIN_CONVERSACIONES, llamadas: 0 });
-        await sellarAca(tarea, 'saltada', MOTIVO_SIN_CONVERSACIONES, 0);
-        continue;
-      }
       // ── LA CREDENCIAL AUSENTE NO ES UN FALLO, Y SU MOTIVO NO SE COLAPSA ───
       //
       // Una empresa sin token cargado es el caso NORMAL de una empresa recién creada. Y las cinco
@@ -815,6 +809,19 @@ export async function barrerTodo(
         await sellarAca(tarea, 'saltada', que, 0);
         continue;
       }
+      /* ── EL CRON NO TRAE CONVERSACIONES (2026-11-20) ─────────────────────
+       *
+       * La tarea `contactos` trae los leads nuevos sin etiqueta (`contactosSinEtiqueta.ts`) y el cron ya no sondea los
+       * mensajes: con esos leads en la base, la ingesta empezaría a traer también sus conversaciones. Se sella `saltada`
+       * con su motivo, y DESPUÉS del control de la credencial: un cliente sin token sigue sellando `sin_token`, que es
+       * lo único que mira el aviso de «cliente sin conexión» (`faltaDeLosClientes.ts`). Antes de ese control, este
+       * motivo sería el sello más nuevo del cliente y apagaría el aviso. La ingesta sigue existiendo (la usa el reloj
+       * de las pestañas Setter y Closer, `app/api/mensajes/ingesta`); lo que cambia es sólo el cron. */
+      if (tarea === 'mensajes') {
+        renglon({ tarea, estado: 'saltada', porque: MOTIVO_SIN_CONVERSACIONES, llamadas: 0 });
+        await sellarAca(tarea, 'saltada', MOTIVO_SIN_CONVERSACIONES, 0);
+        continue;
+      }
 
       // ── TRY/CATCH POR VUELTA, Y ES OBLIGATORIO ───────────────────────────
       //
@@ -825,9 +832,7 @@ export async function barrerTodo(
         const r =
           tarea === 'contactos'
             ? await releerContactos(elAmbito(), conToken(acceso), arranque + FIN_PARA_LOS_ANALIZADORES_MS, ahora)
-            : tarea === 'mensajes'
-              ? await ingerirMensajes(elAmbito(), conToken(acceso))
-              : tarea === 'auditoria'
+            : tarea === 'auditoria'
                 ? await auditar(org, elAmbito(), esPorOmision, auditor, acceso, arranque, ahora)
                 : tarea === 'mejora'
                   ? await mejorar(org, elAmbito(), esPorOmision, auditor)
@@ -1074,25 +1079,16 @@ async function mejorar(
 }
 
 /**
- * Releer las etiquetas de los contactos, con la forma que espera el bucle de arriba.
+ * La tarea `contactos`, con la forma que espera el bucle de arriba: los contactos nuevos sin etiqueta (2026-11-20).
  *
- * ════════════════════════════════════════════════════════════════════════════
- * POR QUÉ NO PASA POR `conElPulso`, A DIFERENCIA DE LAS OTRAS DOS
+ * Trae los creados en el último mes que cambiaron desde la marca (`sincronizarLosNuevos`, que pasa por `conElPulso`
+ * con la clave `contactos`); no busca por etiqueta, no congela y no relee congelados (`contactosSinEtiqueta.ts` dice
+ * por qué). Después, como siempre, el reproceso de los avisos de oportunidad y las miniaturas, en ese orden y con sus
+ * llamadas sumadas. El botón de la pestaña Setter no pasa por acá: sigue llamando a `sincronizarContactos` desde su
+ * ruta, que busca por etiqueta.
  *
- * `ingerirMensajes` y `barrerCitas` lo usan porque las dispara **el reloj del navegador cada diez
- * segundos**, y sin candado N pestañas son N veces el tráfico contra el proveedor.
- *
- * Esta tarea no tiene reloj del navegador: la dispara el cron, cada diez minutos (`HORARIOS`). El botón
- * de la pestaña Setter no pasa por acá —llama a `sincronizarContactos` desde su ruta— y meter esta tarea
- * en el candado no acotaría ningún tráfico.
- *
- * El día que esta tarea gane un reloj, el candado es lo primero que hay que ponerle.
- *
- * ── Y UN FALLO SE LANZA, no se devuelve ───────────────────────────────
- *
- * El bucle de arriba ya tiene su try/catch por vuelta, y su rama de `fallo` deja el sello con el
- * motivo. Devolver `corrio: false` sería mentir con el vocabulario del candado: ese valor significa
- * «no le tocaba» —que **no es un error**— y un token rechazado por el CRM sí lo es.
+ * Un fallo del CRM en la primera página se lanza (no se devuelve): el bucle de arriba tiene su try/catch por vuelta y
+ * deja el sello con el motivo. `corrio: false` significa «no le tocaba», que no es un error.
  */
 async function releerContactos(
   ambito: AmbitoDeUnCliente,
@@ -1101,52 +1097,19 @@ async function releerContactos(
   fin: number,
   ahora: () => number,
 ): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
-  // El cliente que trae sus contactos nuevos sin etiqueta (2026-11-20): otra traída. Ver `releerLosNuevos`.
-  if (traeTodosLosContactos(cuentaDe(ambito))) return releerLosNuevos(ambito, acceso, fin, ahora);
-  // En el ámbito del cliente: la resta de la sincronización congela sólo a los suyos (`exigirUnSoloCliente`).
-  const r = await conOrganizacion(ambito, () =>
-    sincronizarContactos({ token: acceso.token, locationId: acceso.locationId }),
-  );
-  // El tipo del fallo va al registro y NO al cuerpo (`ADR-0704`); el bucle pone el texto genérico.
-  if (r.tipo === 'fallo') throw new Error(`el CRM respondió ${r.fallo.tipo}`);
-  /* Los congelados, por id (la `108`): la búsqueda por etiqueta no los vuelve a traer. Un 404 los marca con baja; un
-     200 refresca la foto y los descongela si recuperaron la zona. Acotado por pasada y al fin de la corrida, y sus
-     pedidos se suman a las llamadas de la tarea. */
-  const congelados = await conOrganizacion(ambito, () =>
-    releerLosCongelados({ token: acceso.token, locationId: acceso.locationId }, TOPE_DE_CONGELADOS, { fin, ahora }),
-  );
+  const nuevos = await sincronizarLosNuevos(ambito, acceso, { fin, ahora });
   /* Los avisos de oportunidad (la etapa y la Salida del Pipeline Maestro) que quedaron sin procesar: un fallo
      transitorio o el tope por hora. No tienen sondeo, así que el reproceso es su red (`lib/negocio/reprocesoDeAvisos.ts`).
-     Después de sincronizar: el contacto nuevo de un aviso de «Lead» ya está en la caché y no cuesta una llamada. Antes
-     de las miniaturas: la etapa no puede esperar a que sobre tiempo. Acotado por pasada y al fin de la corrida. */
+     Después de traer los contactos: el contacto nuevo de un aviso de «Lead» ya está en la caché y no cuesta una
+     llamada. Antes de las miniaturas: la etapa no puede esperar a que sobre tiempo. Acotado al fin de la corrida. */
   const avisos = await reprocesarAvisosDeOportunidad(ambito, acceso, { fin, ahora });
-  /* La miniatura del anuncio de cada contacto, que la búsqueda no trae (CF1-11 de docs/2-departamentos/creative/16): hasta 50
-     pedidos por pasada, una sola vez por contacto. Va después de sincronizar para pedir también los que acaban de
-     entrar, y sus llamadas se suman a las de la tarea. */
+  /* La miniatura del anuncio de cada contacto, que la búsqueda no trae (CF1-11 de docs/2-departamentos/creative/16): hasta
+     50 pedidos por pasada, una sola vez por contacto. Va después de traer los contactos para pedir también los que
+     acaban de entrar, y sus llamadas se suman a las de la tarea. */
   const miniaturas = await completarMiniaturas(ambito, acceso, undefined, ahora, fin);
   return {
     corrio: true,
-    resultado: { ...r.resumen, miniaturas, avisos, congeladosReleidos: congelados },
-    llamadas: r.resumen.llamadas + miniaturas.pedidos + avisos.llamadas + congelados.pedidos,
-  };
-}
-
-/**
- * La tarea `contactos` de un cliente con el interruptor encendido (`contactosSinEtiqueta.ts`, 2026-11-20): los creados
- * en el último mes que cambiaron desde la marca, en vez de releer por etiqueta, y sin congelar ni releer congelados.
- * Después, como siempre, el reproceso de los avisos y las miniaturas, en ese orden y con sus llamadas sumadas.
- */
-async function releerLosNuevos(
-  ambito: AmbitoDeUnCliente,
-  acceso: { token: string; locationId: string },
-  fin: number,
-  ahora: () => number,
-): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
-  const nuevos = await sincronizarLosNuevos(ambito, acceso, { fin, ahora });
-  const avisos = await reprocesarAvisosDeOportunidad(ambito, acceso, { fin, ahora });
-  const miniaturas = await completarMiniaturas(ambito, acceso, undefined, ahora, fin);
-  return {
-    corrio: true,
+    // `sinEtiqueta` es la clave que lee `motivoDeLoIncompleto` para decir que la traída sigue en la próxima corrida.
     resultado: { sinEtiqueta: nuevos.corrio ? nuevos.resultado : { frenada: nuevos.porque }, miniaturas, avisos },
     llamadas: (nuevos.corrio ? nuevos.llamadas : 0) + miniaturas.pedidos + avisos.llamadas,
   };
@@ -1213,7 +1176,7 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
   };
   if (typeof mini?.corte === 'string' && CORTE[mini.corte]) partes.push(`${CORTE[mini.corte]}: lo que faltó se pide en la siguiente`);
 
-  /* El cron de contactos sin etiqueta (`contactosSinEtiqueta.ts`): la traída que sigue en la próxima corrida. */
+  /* La tarea `contactos` (`contactosSinEtiqueta.ts`): la traída que sigue en la próxima corrida. */
   const sinEtiqueta = (r as { sinEtiqueta?: { pendientes?: unknown; fallo?: unknown } }).sinEtiqueta;
   if (sinEtiqueta?.pendientes === true) {
     partes.push(

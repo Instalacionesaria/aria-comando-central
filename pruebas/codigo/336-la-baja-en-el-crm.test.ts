@@ -56,11 +56,12 @@ test('las colas de trabajo dejan afuera lo que el CRM borró', () => {
   assert.match(leer('lib/negocio/enlacesDeLaCita.ts'), /\.where\(noCancelada\('estado_ghl'\)\)\s*\.where\(sinBaja\(\)\)/);
 });
 
-test('la tarea de contactos relee los congelados y cuenta sus pedidos en el sello', () => {
+test('el cron ya no relee los congelados (2026-11-20); la baja la marcan el 404 de la ficha y el de la relectura', () => {
+  /* Desde el 2026-11-20 la tarea `contactos` trae sólo los leads nuevos sin etiqueta (`contactosSinEtiqueta.ts`): no
+     busca por etiqueta, así que no hay congelados que releer de a uno —con todos los sin zona en la base serían miles de
+     `GET`—. `releerLosCongelados` sigue existiendo (la prueba base 336 la cubre), pero el cron no la llama. */
   const b = leer('lib/negocio/barrido.ts');
-  assert.match(b, /releerLosCongelados\(\{ token: acceso\.token, locationId: acceso\.locationId \}, TOPE_DE_CONGELADOS, \{ fin, ahora \}\)/);
-  assert.match(b, /resultado: \{ \.\.\.r\.resumen, miniaturas, avisos, congeladosReleidos: congelados \},/);
-  assert.match(b, /llamadas: r\.resumen\.llamadas \+ miniaturas\.pedidos \+ avisos\.llamadas \+ congelados\.pedidos,/);
+  assert.doesNotMatch(b, /releerLosCongelados\(/, 'el cron volvió a releer los congelados de a uno');
   // Y sólo un 404 marca: la relectura marca cuando `contactoPorId` devuelve `datos: null`, nunca con un fallo.
   const s = leer('lib/negocio/sincronizar.ts');
   assert.match(s, /if \(!leido\.datos\) \{\s*if \(await marcarLaBaja\(id\)\) r\.dadosDeBaja\+\+;/);

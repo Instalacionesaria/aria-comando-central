@@ -10,8 +10,11 @@
 //     mutación: no restar el margen, mandar `page` con el cursor;
 //   · un fallo del CRM en la primera página se lanza y no mueve la marca; uno a mitad guarda lo traído y la marca llega
 //     hasta ahí; sin tiempo no se pide nada — mutación: mover la marca con un fallo, no mirar el reloj;
-//   · el barrido de diez minutos, con el interruptor: trae los nuevos y saltea `mensajes` con su motivo; sin él, la
-//     búsqueda por etiqueta y la ingesta, como antes.
+//   · sólo tras una corrida cortada por el tope o el tiempo DESPUÉS de avanzar se sigue sin el margen (si no, con más de
+//     10 páginas en esos 5 minutos la marca no avanzaría nunca); tras un fallo o sin páginas, el margen vuelve — mutación:
+//     restar siempre el margen, o no restarlo con cualquier `atrasado`;
+//   · el barrido de diez minutos, para todos los clientes y sin interruptor: trae los nuevos, nunca por etiqueta, y
+//     saltea `mensajes` con su motivo sin pedir conversaciones; un cliente sin token sigue sellando `sin_token`.
 //
 // El GoHighLevel falso intercepta `globalThis.fetch`, como `98-closer-sincronizar` y `336-la-baja-en-el-crm`.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -22,12 +25,7 @@ import type { Client } from 'pg';
 import { cerrarTodo, conectar, filas, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
 import { ambitoDeUnCliente } from '../../lib/negocio/ambitoDelCliente.ts';
-import {
-  DIAS_HACIA_ATRAS,
-  MARGEN_MS,
-  VARIABLE_DEL_INTERRUPTOR,
-  sincronizarLosNuevos,
-} from '../../lib/negocio/contactosSinEtiqueta.ts';
+import { DIAS_HACIA_ATRAS, MARGEN_MS, sincronizarLosNuevos } from '../../lib/negocio/contactosSinEtiqueta.ts';
 import { POR_PAGINA_SIN_ETIQUETA, type ContactoDeGhl } from '../../lib/ghl/cliente.ts';
 import { barrerTodo, MOTIVO_SIN_CONVERSACIONES, type EmpresaParaBarrer } from '../../lib/negocio/barrido.ts';
 
@@ -142,7 +140,6 @@ before(async () => {
 
 after(async () => {
   globalThis.fetch = fetchOriginal;
-  delete process.env[VARIABLE_DEL_INTERRUPTOR];
   try {
     await limpiar();
   } finally {
@@ -240,17 +237,64 @@ test('un fallo en la primera página se lanza y no mueve la marca; a mitad, guar
   assert.equal((await laMarca())?.toISOString(), llena.at(-1)?.dateUpdated, 'la marca no llegó hasta lo guardado');
 });
 
-test('sin tiempo no se pide nada y la marca no se mueve', async () => {
+/** Un reloj que devuelve estos instantes en orden, y el último para siempre. */
+function reloj(...instantes: number[]): () => number {
+  let i = 0;
+  return () => instantes[Math.min(i++, instantes.length - 1)]!;
+}
+
+test('sólo tras una corrida CORTADA a mitad de camino se sigue sin el margen; tras un fallo, el margen vuelve', async () => {
+  // 1 · Una corrida que guarda una página llena y la corta el tiempo: queda atrasada y sin fallo.
+  const antes = await laMarca();
+  assert.ok(antes);
+  await sinAntirrebote();
+  const llena = paginaLlena(new Date(antes.getTime() + 1000));
+  paginas = [ok(llena), ok([contacto(new Date(antes.getTime() + 600_000))])];
+  const t = Date.now();
+  const cortada = await sincronizarLosNuevos(ambito(), ACCESO, { fin: t + 285_000, ahora: reloj(t, t, t + 70_000) });
+  assert.equal(cortada.corrio && cortada.resultado.pendientes, true, 'el tiempo no cortó la corrida');
+  const marca = await laMarca();
+  assert.equal(marca?.toISOString(), llena.at(-1)?.dateUpdated);
+
+  // 2 · La siguiente sigue exactamente desde la marca: con el margen, el tope podría trabarla para siempre.
+  await sinAntirrebote();
+  busquedas = [];
+  paginas = [ok([])];
+  await sincronizarLosNuevos(ambito(), ACCESO, plazo());
+  assert.equal(Date.parse(gte(busquedas[0], 'dateUpdated') ?? ''), marca!.getTime(), 'tras una corrida cortada se restó el margen');
+
+  // 3 · Una que falla en la primera página (queda atrasada CON fallo): la siguiente vuelve a restar el margen, que es
+  //     el que protege al lead que el índice de GHL publicó tarde.
+  await sinAntirrebote();
+  paginas = [{ estado: 502, cuerpo: { message: 'caído' } }];
+  await assert.rejects(() => sincronizarLosNuevos(ambito(), ACCESO, plazo()));
+  await sinAntirrebote();
+  busquedas = [];
+  paginas = [ok([])];
+  await sincronizarLosNuevos(ambito(), ACCESO, plazo());
+  assert.equal(Date.parse(gte(busquedas[0], 'dateUpdated') ?? ''), marca!.getTime() - MARGEN_MS, 'tras un fallo no se restó el margen');
+});
+
+test('sin tiempo no se pide nada, ni el catálogo, y la marca no se mueve', async () => {
   const antes = await laMarca();
   await sinAntirrebote();
   busquedas = [];
+  otras = [];
   paginas = [ok([contacto(new Date())])];
   const r = await sincronizarLosNuevos(ambito(), ACCESO, { fin: Date.now() - 1, ahora: Date.now });
   assert.equal(r.corrio, true);
   if (!r.corrio) return;
   assert.equal(busquedas.length, 0, 'se pidió sin tiempo');
+  assert.deepEqual(otras, [], 'sin tiempo se pidió el catálogo de campos');
   assert.equal(r.resultado.pendientes, true);
   assert.equal((await laMarca())?.getTime(), antes?.getTime());
+
+  // Sin páginas no avanzó nada que pueda trabarse: la siguiente resta el margen.
+  await sinAntirrebote();
+  busquedas = [];
+  paginas = [ok([])];
+  await sincronizarLosNuevos(ambito(), ACCESO, plazo());
+  assert.equal(Date.parse(gte(busquedas[0], 'dateUpdated') ?? ''), (antes?.getTime() ?? 0) - MARGEN_MS, 'sin tiempo para pedir nada, la siguiente no restó el margen');
 });
 
 function laEmpresa(): EmpresaParaBarrer {
@@ -289,9 +333,8 @@ async function selloDe(tarea: string): Promise<{ estado: string; motivo: string 
   );
 }
 
-test('el barrido de diez minutos con el interruptor trae los nuevos y saltea los mensajes; sin él, como antes', async () => {
+test('el barrido de diez minutos trae los nuevos para todos, nunca por etiqueta, y saltea los mensajes', async () => {
   await deCero();
-  process.env[VARIABLE_DEL_INTERRUPTOR] = `otra-cuenta, ${cuenta}`;
   paginas = [ok([contacto(new Date(Date.now() - 60_000))])];
   await barrerTodo('*/10 * * * *', [laEmpresa()], Date.now);
 
@@ -299,22 +342,18 @@ test('el barrido de diez minutos con el interruptor trae los nuevos y saltea los
   assert.equal((await selloDe('contactos'))?.estado, 'corrio');
   assert.equal(busquedas.length, 1);
   assert.ok(gte(busquedas[0], 'dateAdded'), 'el barrido no usó la búsqueda de los nuevos');
-  assert.ok(!otras.some((u) => u.includes('/conversations/')), 'con el interruptor se pidieron conversaciones');
+  assert.ok(!busquedas.some((b) => JSON.stringify(b.filters ?? []).includes('zona_')), 'el barrido buscó por etiqueta');
+  assert.ok(!otras.some((u) => u.includes('/conversations/')), 'el cron pidió conversaciones');
   const n = await unaFila<{ n: number }>(admin, `select count(*)::int as n from negocio.contactos where org_id = $1`, [org]);
   assert.equal(n?.n, 1);
+});
 
-  // Sin el interruptor: la búsqueda por etiqueta y la ingesta de mensajes, como siempre.
-  delete process.env[VARIABLE_DEL_INTERRUPTOR];
-  await admin.query(`update negocio.ingesta_pulso set ultima_corrida_el = now() - interval '1 hour' where org_id = $1`, [org]);
-  busquedas = [];
-  otras = [];
-  paginas = [];
-  await barrerTodo('*/10 * * * *', [laEmpresa()], Date.now);
-  assert.ok(
-    busquedas.some((b) => JSON.stringify(b.filters ?? []).includes('zona_closer')),
-    'sin el interruptor no se buscó por etiqueta',
-  );
-  assert.ok(!busquedas.some((b) => gte(b, 'dateAdded')), 'sin el interruptor se usó la búsqueda de los nuevos');
-  assert.notEqual((await selloDe('mensajes'))?.motivo, MOTIVO_SIN_CONVERSACIONES, 'sin el interruptor se salteó la ingesta');
-  assert.ok(otras.some((u) => u.includes('/conversations/')), 'sin el interruptor no se pidieron conversaciones');
+test('un cliente sin token sigue sellando `sin_token` en `mensajes`: el salto va después de la credencial', async () => {
+  await deCero();
+  const empresa = laEmpresa();
+  empresa.clientes = [{ ...empresa.clientes![0]!, acceso: { tipo: 'falta', que: 'sin_token' } }];
+  await barrerTodo('*/10 * * * *', [empresa], Date.now);
+  assert.deepEqual(await selloDe('mensajes'), { estado: 'saltada', motivo: 'sin_token' });
+  assert.deepEqual(await selloDe('contactos'), { estado: 'saltada', motivo: 'sin_token' });
+  assert.equal(busquedas.length, 0);
 });

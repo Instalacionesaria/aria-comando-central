@@ -1,15 +1,14 @@
-// El cron de contactos SIN etiqueta: traer a los leads NUEVOS de la subcuenta, tengan zona o no.
+// La tarea `contactos` del cron: traer a los leads NUEVOS de la subcuenta, tengan zona o no.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// POR QUÉ EXISTE (decidido por el usuario el 2026-11-20)
+// LA REGLA (decidida por el usuario el 2026-11-20)
 //
-// La tarea `contactos` buscaba por etiqueta de zona, y releía a todos los que la tenían en cada corrida. Las pruebas
-// que se están haciendo con los managed agents son leads nuevos SIN etiqueta de zona: nunca entraban a la base, y el
-// Sales Assistant fallaba con «el lead todavía no está en la base» (564 corridas del 13 al 17/11).
+// Hasta acá la tarea `contactos` buscaba por etiqueta de zona y releía a todos los que la tenían en cada corrida. Las
+// pruebas que se están haciendo con los managed agents son leads nuevos SIN etiqueta de zona: nunca entraban a la
+// base, y el Sales Assistant fallaba con «el lead todavía no está en la base» (564 corridas del 13 al 17/11).
 //
-// Lo pedido es un cron MÁS LIVIANO, no uno que traiga todo: sólo lo nuevo, a lo sumo un mes atrás, sin llenar la
-// base de contactos viejos que probablemente no se usen. Con el interruptor encendido para un cliente
-// (`CONTACTOS_SIN_ETIQUETA`), su tarea `contactos` hace esto y nada más:
+// Lo pedido es el MISMO cron con la regla cambiada, más liviano: sólo lo nuevo, a lo sumo un mes atrás, sin llenar la
+// base de contactos viejos que probablemente no se usen. Para todos los clientes, sin interruptor:
 //
 //   · **Trae los contactos creados en los últimos 30 días que cambiaron desde la marca de agua** (menos un margen),
 //     por `dateUpdated` ascendente, de a 500, con el cursor `searchAfter`. La primera vez la marca no existe y se
@@ -19,12 +18,11 @@
 //   · **El territorio sale de las etiquetas de cada contacto** (`territorioDeLasEtiquetas`). Sin zona entra con
 //     `territorio = null`: está en la base y no en las colas. La zona se ignora, no se borra.
 //   · **No congela, no relee congelados, no concilia bajas**: nada que recorra la subcuenta entera.
-//   · **El cron no trae conversaciones** de ese cliente: el barrido saltea `mensajes` (lo decide `barrido.ts`).
+//   · **El cron no trae conversaciones**: el barrido saltea `mensajes` (lo decide `barrido.ts`).
 //
 // Lo que se deja de hacer, a sabiendas: un contacto creado hace más de 30 días ya no se refresca por el cron (sí al
-// abrir su ficha o por un aviso del CRM), y uno borrado en el CRM no se marca con baja.
-//
-// Sin el interruptor, nada cambia: la tarea sigue buscando por etiqueta (`sincronizarContactos`).
+// abrir su ficha, por un aviso del CRM o con el botón «Traer de GoHighLevel», que sigue buscando por etiqueta), y uno
+// borrado en el CRM no se marca con baja.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { conOrganizacion } from '../datos/contexto.ts';
@@ -41,25 +39,6 @@ import { conElPulso, type ResultadoDelPulso } from './pulso.ts';
 import type { AmbitoDeUnCliente } from './ambitoDelCliente.ts';
 import { guardarUnContacto, territorioDeLasEtiquetas } from './sincronizar.ts';
 
-/**
- * La variable de entorno que enciende el modo: ids de cuenta (`identidad.cuentas.id`) separados por comas, o `*` para
- * todos los clientes. Vacía o ausente = apagado, y todo sigue como antes.
- */
-export const VARIABLE_DEL_INTERRUPTOR = 'CONTACTOS_SIN_ETIQUETA';
-
-/** ¿Este cliente trae a sus contactos nuevos sin etiqueta? Puro: el valor de la variable entra como parámetro. */
-export function traeTodosLosContactos(
-  cuentaId: string | null,
-  valor: string | undefined = process.env[VARIABLE_DEL_INTERRUPTOR],
-): boolean {
-  if (!cuentaId || !valor) return false;
-  const lista = valor
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return lista.includes('*') || lista.includes(cuentaId);
-}
-
 /** Hasta cuándo atrás: sólo los contactos creados en los últimos 30 días (decidido el 2026-11-20: «máximo un mes»). */
 export const DIAS_HACIA_ATRAS = 30;
 
@@ -67,6 +46,13 @@ export const DIAS_HACIA_ATRAS = 30;
  * Cuánto se vuelve atrás desde la marca en cada corrida. La búsqueda de GHL es un índice que se actualiza con algo de
  * demora: un contacto que cambió justo antes de la marca puede no haber estado en la página que la fijó. Releerlo
  * cuesta nada —el upsert es idempotente y a este ritmo cabe en la misma llamada—, perderlo sería para siempre.
+ *
+ * **Salvo tras una corrida cortada a mitad de camino.** Si la anterior avanzó y la cortó el tope o el tiempo, se sigue
+ * exactamente desde la marca: con el margen, más de `TOPE_DE_PAGINAS_POR_CORRIDA` páginas cambiadas en esos cinco
+ * minutos (una importación, un workflow que toca a todos) se releerían en cada corrida y la marca no avanzaría nunca.
+ * Esa corrida, y sólo ésa, cierra con `atrasado` y sin fallo. Una que falló (con o sin páginas) o que no alcanzó a pedir
+ * nada no avanzó lo suficiente para trabar nada: la siguiente vuelve a restar el margen, que es el que protege al lead
+ * que el índice publicó tarde.
  */
 export const MARGEN_MS = 5 * 60_000;
 
@@ -99,7 +85,7 @@ export interface ResumenDeLosNuevos {
   pendientes: boolean;
   /** El tipo de fallo del CRM que cortó la traída a mitad, o `null`. */
   fallo: string | null;
-  /** Igual que en la traída por etiqueta: `null` = no se pudo leer. */
+  /** Igual que en la traída por etiqueta: `null` = no se pudo leer, o no quedó tiempo para leerlo. */
   catalogoDeCampos: ResumenDelCatalogo | null;
 }
 
@@ -119,10 +105,11 @@ export async function sincronizarLosNuevos(
     const inicio = plazo.ahora();
     const corte = Math.min(plazo.fin, inicio + PRESUPUESTO_MS);
     const creadosDesde = new Date(inicio - DIAS_HACIA_ATRAS * 24 * 3600_000);
-    // La marca, con su margen, pero nunca antes del mes: más atrás no hay nada que este filtro deje traer.
+    // La marca, con su margen sólo si la anterior terminó, y nunca antes del mes: más atrás no hay nada que traer.
+    const margen = pulso.atrasado && !pulso.ultimoFallo ? 0 : MARGEN_MS;
     const cambiadosDesde =
-      pulso.marcaEl && pulso.marcaEl.getTime() - MARGEN_MS > creadosDesde.getTime()
-        ? new Date(pulso.marcaEl.getTime() - MARGEN_MS)
+      pulso.marcaEl && pulso.marcaEl.getTime() - margen > creadosDesde.getTime()
+        ? new Date(pulso.marcaEl.getTime() - margen)
         : creadosDesde;
     const resumen: ResumenDeLosNuevos = {
       creadosDesde: creadosDesde.toISOString(),
@@ -176,11 +163,14 @@ export async function sincronizarLosNuevos(
     }
 
     /* El catálogo de campos y el recálculo de los cuadrantes, igual que la traída por etiqueta y por lo mismo: después
-       de los contactos, y su fallo no rompe nada. El catálogo se relee sólo cuando está viejo (casi siempre 0 llamadas). */
-    resumen.catalogoDeCampos = await conOrganizacion(ambito, () => refrescarCatalogoDeCampos(acceso));
-    llamadas += resumen.catalogoDeCampos?.llamadas ?? 1;
-    if (resumen.catalogoDeCampos !== null && !resumen.catalogoDeCampos.saltado) {
-      await conOrganizacion(ambito, () => recalcularLosCuadrantes());
+       de los contactos, y su fallo no rompe nada. El catálogo se relee sólo cuando está viejo (casi siempre 0 llamadas).
+       Sin tiempo se deja para la próxima corrida: pasado el corte, una llamada más puede llevar la función a sus 300 s. */
+    if (plazo.ahora() < corte) {
+      resumen.catalogoDeCampos = await conOrganizacion(ambito, () => refrescarCatalogoDeCampos(acceso));
+      llamadas += resumen.catalogoDeCampos?.llamadas ?? 1;
+      if (resumen.catalogoDeCampos !== null && !resumen.catalogoDeCampos.saltado) {
+        await conOrganizacion(ambito, () => recalcularLosCuadrantes());
+      }
     }
 
     resumen.marca = marca?.toISOString() ?? null;
@@ -190,7 +180,9 @@ export async function sincronizarLosNuevos(
         // El piso de la cobertura, una sola vez (`coalesce`): desde dónde arrancó la primera traída.
         marcaDesdeEl: cambiadosDesde,
         llamadas,
-        atrasado: resumen.pendientes,
+        // `atrasado` sólo para la cortada por el tope o el tiempo después de avanzar: es lo que lee el margen de arriba.
+        // Las demás pendientes (sin tiempo para pedir nada, un fallo a mitad) las dice el resumen y el motivo del sello.
+        atrasado: resumen.pendientes && resumen.paginas > 0 && resumen.fallo === null,
         fallo: resumen.fallo,
       },
       resultado: resumen,
