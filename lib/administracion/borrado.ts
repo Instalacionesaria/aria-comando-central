@@ -255,6 +255,8 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   piezas_de_contenido_org_id_fkey: 'tiene piezas de contenido',
   referentes_del_mercado_org_id_fkey: 'tiene referentes del mercado investigados',
   respuestas_del_brief_org_id_fkey: 'tiene respuestas del Brief',
+  /* Lo que deja cada managed agent en la fase 1 (la 118): el cuadrante y las fichas de sus leads. */
+  respuestas_de_los_agentes_org_id_fkey: 'tiene fichas y cuadrantes guardados por sus agentes',
   resultados_propuestos_org_id_fkey: 'tiene resultados propuestos por sus agentes',
   rutas_de_la_cuenta_org_id_fkey: 'tiene rutas comerciales',
   segmentos_del_mercado_org_id_fkey: 'tiene segmentos del mercado investigados',

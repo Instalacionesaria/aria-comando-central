@@ -474,6 +474,8 @@ export interface TablaContactos {
   zona_horaria_del_lead: string | null;
   /** El país del contacto. 100 de 100 — es lo que queda cuando `zona_horaria_del_lead` falta. */
   pais: string | null;
+  /** La empresa del contacto en GHL (`companyName`), pisada en cada sincronización (118). */
+  empresa: string | null;
   creado_el: Generated<Date>;
   // Las columnas estándar del modelo (084).
   /**
@@ -3068,6 +3070,24 @@ export interface TablaDecisionesDeKickoff {
 }
 
 /** Las piezas de contenido que propone el funnel: anuncios, VSL, landings (114). */
+/**
+ * Lo que deja cada managed agent en la fase 1 (118): una fila por lead y una columna por agente, en el orden del flujo.
+ * La escriben sólo las funciones `agentes.guardar_respuesta` y `agentes.registrar_cuadrante`; la aplicación sólo la lee.
+ */
+export interface TablaRespuestasDeLosAgentes {
+  org_id: ColumnaInquilino;
+  cuenta_id: ColumnaCuenta;
+  contacto_id: string;
+  triage_cuadrante_de_clasificacion: string | null;
+  sales_assistant_ficha_de_lead_1: string | null;
+  sales_coach_ficha_de_lead_2: string | null;
+  brief_ficha_de_cliente_1: string | null;
+  /** Por columna: `{corrida_id, agente, guardado_el, version, bytes}` y, en el Triage, la razón. */
+  procedencia: Generated<Record<string, unknown>>;
+  creado_el: Generated<Date>;
+  actualizado_el: Generated<Date>;
+}
+
 export interface TablaPiezasDeContenido {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
@@ -3212,6 +3232,7 @@ export interface BaseDeDatos {
   citas_del_mercado: TablaCitasDelMercado;
   decisiones_de_kickoff: TablaDecisionesDeKickoff;
   piezas_de_contenido: TablaPiezasDeContenido;
+  respuestas_de_los_agentes: TablaRespuestasDeLosAgentes;
 
   // El catálogo común (079): lo leen todos los roles y no lo escribe ninguno de la aplicación. Calificado, porque
   // `catalogo` no está en la ruta de búsqueda de ningún rol.

@@ -304,6 +304,9 @@ test('toda tabla de negocio es accesible para el inquilino, con las cuatro opera
     citas_del_mercado: ['SELECT', 'INSERT'],
     decisiones_de_kickoff: ['SELECT', 'INSERT'],
     piezas_de_contenido: ['SELECT', 'INSERT', 'UPDATE'],
+    // 118: se inserta sólo la fila vacía del lead y se actualizan sólo las salidas (los dos, de columna, no de tabla);
+    // no se borra.
+    respuestas_de_los_agentes: ['SELECT'],
   };
 
   for (const { relname } of tablas) {
@@ -396,7 +399,7 @@ test('toda vista de negocio corre con los permisos de QUIEN LA INVOCA, y el inqu
     vistas.map((v) => v.relname),
     [
       'brief_vigente', 'conocimiento_vigente', 'embudo_por_dia', 'entregable_vigente', 'etapas_del_lead', 'expediente_del_lead', 'ficha_vigente',
-      'metricas_meta_del_dia', 'respuestas_del_lead_traducidas', 'triaje_vigente',
+      'metricas_meta_del_dia', 'respuestas_del_lead_traducidas', 'respuestas_por_lead', 'triaje_vigente',
     ],
     'apareció una vista nueva en negocio: tiene que declarar security_invoker y sumarse acá',
   );

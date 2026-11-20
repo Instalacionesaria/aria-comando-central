@@ -491,6 +491,8 @@ async function guardar(
       : { atribucion_ultima: JSON.stringify(atribucionDelContacto(c.lastAttributionSource)) }),
     ...(c.timezone === undefined ? {} : { zona_horaria_del_lead: c.timezone || null }),
     ...(c.country === undefined ? {} : { pais: c.country || null }),
+    // La empresa (118): un hecho de GoHighLevel, así que se pisa; y sólo si la respuesta la traía, como el país.
+    ...(c.companyName === undefined ? {} : { empresa: c.companyName.trim().slice(0, 300) || null }),
     sincronizado_el: sql<Date>`now()`,
   };
 
@@ -536,6 +538,7 @@ async function guardar(
           ? { zona_horaria_del_lead: valores.zona_horaria_del_lead }
           : {}),
         ...('pais' in valores ? { pais: valores.pais } : {}),
+        ...('empresa' in valores ? { empresa: valores.empresa } : {}),
         sincronizado_el: valores.sincronizado_el,
         // El CRM lo devolvió: si tenía baja (la `108`), ya no la tiene. Ver `marcarLaBaja`.
         baja_en_el_crm: null,

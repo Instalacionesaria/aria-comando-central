@@ -123,6 +123,11 @@ export interface ContactoDeGhl {
   /** El país del contacto. 100 de 100 — es el que hace útil a `timezone` cuando falta. */
   country?: string;
   /**
+   * El nombre de la empresa del contacto (`{{contact.company_name}}` en los workflows). Lo necesita el Brief en la
+   * venta (doc LEAD, 2026-11-20); se guarda en `contactos.empresa` (118).
+   */
+  companyName?: string;
+  /**
    * A QUÉ USUARIO DEL CRM está asignado este contacto. **Es la señal que reparte los leads.**
    *
    * ── VIENE HACE RATO Y SE ESTABA DESCARTANDO ─────────────────────────────

@@ -30,6 +30,8 @@ export const AGENTES_GESTIONADOS = [
   'entregables', 'versiones_de_entregable', 'respuestas_del_brief',
   'segmentos_del_mercado', 'dolores_del_segmento', 'referentes_del_mercado', 'citas_del_mercado', 'decisiones_de_kickoff',
   'piezas_de_contenido',
+  // 118: lo que deja cada agente en la fase 1, una fila por lead y una columna por agente.
+  'respuestas_de_los_agentes',
 ] as const;
 
 /**

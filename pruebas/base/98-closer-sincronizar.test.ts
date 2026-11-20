@@ -543,6 +543,7 @@ test('sincronizar guarda la atribución del anuncio, y refrescar la ficha NO la 
     lastAttributionSource: { utmSource: 'google', campaignId: 'c-9' },
     timezone: 'America/Bogota',
     country: 'CO',
+    companyName: '  Agencia Norte  ',
   };
   preparar(porEtiqueta({ zona_closer: [contacto] }));
 
@@ -559,6 +560,7 @@ test('sincronizar guarda la atribución del anuncio, y refrescar la ficha NO la 
           'atribucion_ultima',
           'zona_horaria_del_lead',
           'pais',
+          'empresa',
           'creado_el',
         ])
         .where('ghl_contact_id', '=', id)
@@ -578,6 +580,8 @@ test('sincronizar guarda la atribución del anuncio, y refrescar la ficha NO la 
   );
   assert.equal(antes?.zona_horaria_del_lead, 'America/Bogota');
   assert.equal(antes?.pais, 'CO');
+  // La empresa (118), recortada: la necesita el Brief en la venta.
+  assert.equal(antes?.empresa, 'Agencia Norte', 'la sincronización no guardó la empresa del contacto (companyName)');
 
   /* ── Y `alta_en_el_crm` NO ES `creado_el` ────────────────────────────────
    *
@@ -615,6 +619,7 @@ test('sincronizar guarda la atribución del anuncio, y refrescar la ficha NO la 
   assert.equal(despues?.alta_en_el_crm?.getTime(), antes?.alta_en_el_crm?.getTime());
   assert.equal(despues?.zona_horaria_del_lead, 'America/Bogota');
   assert.equal(despues?.pais, 'CO');
+  assert.equal(despues?.empresa, 'Agencia Norte', 'abrir la ficha borró la empresa que había traído la sincronización');
 });
 
 test('una atribución VACÍA se guarda vacía: no es lo mismo que no venir', async () => {
