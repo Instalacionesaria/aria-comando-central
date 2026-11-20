@@ -622,6 +622,23 @@ test('sincronizar guarda la atribución del anuncio, y refrescar la ficha NO la 
   assert.equal(despues?.empresa, 'Agencia Norte', 'abrir la ficha borró la empresa que había traído la sincronización');
 });
 
+test('un contacto con companyName null (sin empresa en GHL) se sincroniza igual y queda sin empresa', async () => {
+  /* El 2026-11-20 la sincronización entera se cayó dos horas: GHL manda `companyName: null` y el escritor hacía
+     `.trim()` sobre él. Un contacto así tiene que guardarse, y el que sí tiene empresa, también en la misma pasada. */
+  const sin = idDeGhl();
+  const con = idDeGhl();
+  preparar(porEtiqueta({ zona_closer: [
+    { id: sin, contactName: 'Sin Empresa', tags: ['zona_closer'], companyName: null },
+    { id: con, contactName: 'Con Empresa', tags: ['zona_closer'], companyName: 'Agencia Sur' },
+  ] }));
+  const r = await conOrganizacion(esc.org, async () => sincronizarContactos(ACCESO));
+  assert.equal(r.tipo, 'listo', JSON.stringify(r));
+  const filas = await conOrganizacion(esc.org, async () =>
+    datos().selectFrom('contactos').select(['ghl_contact_id', 'empresa']).where('ghl_contact_id', 'in', [sin, con]).execute());
+  const empresaDe = Object.fromEntries(filas.map((f) => [f.ghl_contact_id, f.empresa]));
+  assert.deepEqual(empresaDe, { [sin]: null, [con]: 'Agencia Sur' });
+});
+
 test('una atribución VACÍA se guarda vacía: no es lo mismo que no venir', async () => {
   /* La otra mitad del patrón, y la que se rompe sola si alguien escribe `...(c.attributionSource ?
    * … : {})` —el patrón de `source`— creyendo que son el mismo.

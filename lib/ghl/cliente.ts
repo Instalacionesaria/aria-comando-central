@@ -126,7 +126,7 @@ export interface ContactoDeGhl {
    * El nombre de la empresa del contacto (`{{contact.company_name}}` en los workflows). Lo necesita el Brief en la
    * venta (doc LEAD, 2026-11-20); se guarda en `contactos.empresa` (118).
    */
-  companyName?: string;
+  companyName?: string | null;
   /**
    * A QUÉ USUARIO DEL CRM está asignado este contacto. **Es la señal que reparte los leads.**
    *

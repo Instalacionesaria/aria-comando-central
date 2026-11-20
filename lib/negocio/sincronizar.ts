@@ -491,8 +491,12 @@ async function guardar(
       : { atribucion_ultima: JSON.stringify(atribucionDelContacto(c.lastAttributionSource)) }),
     ...(c.timezone === undefined ? {} : { zona_horaria_del_lead: c.timezone || null }),
     ...(c.country === undefined ? {} : { pais: c.country || null }),
-    // La empresa (118): un hecho de GoHighLevel, así que se pisa; y sólo si la respuesta la traía, como el país.
-    ...(c.companyName === undefined ? {} : { empresa: c.companyName.trim().slice(0, 300) || null }),
+    /* La empresa (118): un hecho de GoHighLevel, así que se pisa; y sólo si la respuesta la traía, como el país.
+       GHL manda `companyName: null` cuando el contacto no tiene empresa: un `.trim()` directo rompía la sincronización
+       entera (2026-11-20, desde las 12:50). Cualquier cosa que no sea texto se guarda como vacía. */
+    ...(c.companyName === undefined
+      ? {}
+      : { empresa: (typeof c.companyName === 'string' ? c.companyName.trim().slice(0, 300) : '') || null }),
     sincronizado_el: sql<Date>`now()`,
   };
 
