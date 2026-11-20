@@ -115,12 +115,14 @@ const cuadrante = (corrida: string, valor: string, razon: string | null) =>
 
 const leer = (corrida: string, columna: string) => j(`select agentes.leer_respuesta($1, $2) as r`, [corrida, columna]);
 
-/** La ficha 1 se guarda con el estilo de la base (120): devuelve lo que mandó el agente y falla si no quedó envuelta. */
+/** Las fichas 1 y 2 se guardan con el estilo de la base (120 y 121): devuelve lo que mandó el agente y falla si no
+ *  quedó envuelta. La ficha 2 tiene el mismo estilo con su propio título. */
 let ENVOLTURA = '';
-function cuerpo(html: string | null | undefined): string {
+function cuerpo(html: string | null | undefined, ficha: 1 | 2 = 1): string {
+  const env = ficha === 1 ? ENVOLTURA : ENVOLTURA.replace('<title>Ficha del Lead</title>', '<title>Ficha post-llamada</title>');
   const fin = '\n</body></html>';
-  assert.ok(html && html.startsWith(`${ENVOLTURA}\n`) && html.endsWith(fin), 'la ficha 1 no quedó con el estilo de la base');
-  return html.slice(ENVOLTURA.length + 1, html.length - fin.length);
+  assert.ok(html && html.startsWith(`${env}\n`) && html.endsWith(fin), `la ficha ${ficha} no quedó con el estilo de la base`);
+  return html.slice(env.length + 1, html.length - fin.length);
 }
 
 async function unLead(marca: string): Promise<{ ghl: string; id: string }> {
@@ -190,13 +192,16 @@ test('1 y 2 · cada agente escribe sólo su columna de la fila del lead, y el si
 
     // Brief: lee la ficha 2 y guarda la del cliente.
     const br = await abrir('brief', a.ghl);
-    assert.equal((await leer(br.corrida_id, 'sales_coach_ficha_de_lead_2')).valor, '<section id="analisis_de_llamada">Ficha 2 de A</section>');
+    // La ficha 2 incluye la ficha 1 entera (121).
+    assert.equal(cuerpo((await leer(br.corrida_id, 'sales_coach_ficha_de_lead_2')).valor, 2),
+      '<section id="resumen"><h1>Ficha 1 de A</h1></section>\n<section id="analisis_de_llamada">Ficha 2 de A</section>');
     assert.equal((await guardar(br.corrida_id, '<section id="enlace_brief"><a href="https://welcome.ariaia.com">Brief</a></section>')).ok, true);
 
     const f = await fila(a.id);
     assert.equal(f!.triage_cuadrante_de_clasificacion, 'prioriza');
     assert.equal(cuerpo(f!.sales_assistant_ficha_de_lead_1), '<section id="resumen"><h1>Ficha 1 de A</h1></section>');
-    assert.equal(f!.sales_coach_ficha_de_lead_2, '<section id="analisis_de_llamada">Ficha 2 de A</section>');
+    assert.equal(cuerpo(f!.sales_coach_ficha_de_lead_2, 2),
+      '<section id="resumen"><h1>Ficha 1 de A</h1></section>\n<section id="analisis_de_llamada">Ficha 2 de A</section>');
     assert.match(f!.brief_ficha_de_cliente_1, /welcome\.ariaia\.com/);
     assert.deepEqual(Object.keys(f!.procedencia).sort(), [...COLUMNAS].sort());
     assert.equal(f!.procedencia.triage_cuadrante_de_clasificacion.razon, 'factura 8 mil al mes y quiere empezar ya');

@@ -15,7 +15,9 @@
 //       sin ese rechazo (quedaría un documento con dos estilos);
 //   3 · un documento entero (con <html>) se guarda tal cual, como antes de la 120;
 //   4 · las reglas del HTML valen para lo que se guarda: un <script> en el contenido se rechaza, y el vacío también;
-//   5 · el Sales Coach no tiene envoltura: guarda lo que manda;
+//   5 · la ficha del Sales Coach (121) es la ficha del lead vigente entera más lo que él manda, con el mismo estilo y
+//       su propio título; sin ficha del lead (o con una que no envolvió la base) va sólo lo suyo; el Brief no tiene
+//       envoltura y guarda lo que manda — mutación: guardar_respuesta que no incluye la ficha 1;
 //   6 · la envoltura es sólo de columnas HTML y pasa las reglas del HTML (CHECK) — mutación: sin el CHECK.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -183,23 +185,66 @@ test('3 y 4 · un documento entero se guarda tal cual, y las reglas valen para l
   });
 });
 
-test('5 · el Sales Coach no tiene envoltura: guarda lo que manda', async () => {
+test('5 · el Sales Coach guarda envuelto con su propio título (121), y el Brief guarda lo que manda', async () => {
+  const sc = await unaFila<{ envoltura: string }>(admin,
+    `select envoltura from catalogo.salidas_de_los_agentes where clave = 'sales_coach_ficha_de_lead_2'`);
+  assert.ok(sc?.envoltura, 'la ficha post-llamada no tiene el estilo de la base (121)');
+  assert.match(sc.envoltura, /<title>Ficha post-llamada<\/title>/);
+  assert.equal(sc.envoltura.replace('Ficha post-llamada', 'Ficha del Lead'), ENVOLTURA,
+    'el estilo de la ficha post-llamada no es el mismo que el de la ficha del lead');
   await enUnEnsayo(async () => {
+    const coach = async (ghl: string, contenido: string) => {
+      const ll = await j(`select agentes.registrar_llamada($1, $2, $3, 'venta', 'ghl', 'Lead: lo pienso.') as r`,
+        [LOC, ghl, `grab-${ghl}-${randomUUID().slice(0, 6)}`]);
+      const c = await abrir('sales_coach', ghl, { llamada_id: ll.llamada_id });
+      return { corrida: c.corrida_id as string, r: await guardar(c.corrida_id, contenido) };
+    };
+
+    // Sin ficha del lead: va sólo lo del Sales Coach, con su estilo.
     const a = await unLead('d');
-    const ll = await j(`select agentes.registrar_llamada($1, $2, $3, 'venta', 'ghl', 'Lead: lo pienso.') as r`,
-      [LOC, a.ghl, `grab-${a.ghl}`]);
-    const sc = await abrir('sales_coach', a.ghl, { llamada_id: ll.llamada_id });
-    const r = await guardar(sc.corrida_id, '<section id="analisis">Ficha 2</section>');
+    const { r } = await coach(a.ghl, '<div class="hoja" id="post-llamada">Ficha 2</div>');
     assert.equal(r.ok, true, JSON.stringify(r));
-    assert.equal(r.con_el_estilo_de_la_base, false);
-    assert.equal((await fila(a.id))!.sales_coach_ficha_de_lead_2, '<section id="analisis">Ficha 2</section>');
+    assert.equal(r.con_el_estilo_de_la_base, true);
+    assert.equal(r.incluye, null);
+    assert.equal((await fila(a.id))!.sales_coach_ficha_de_lead_2, `${sc.envoltura}\n<div class="hoja" id="post-llamada">Ficha 2</div>${FIN}`);
+
+    // Con ficha del lead: la ficha 2 es la ficha 1 entera (sin su envoltura) y debajo lo del Sales Coach.
+    const b = await unLead('e');
+    const sa = await abrir('sales_assistant', b.ghl);
+    assert.equal((await guardar(sa.corrida_id, CONTENIDO)).ok, true);
+    const sa2 = await abrir('sales_assistant', b.ghl);
+    assert.equal((await guardar(sa2.corrida_id, `${CONTENIDO}<p>v2</p>`)).ok, true);
+    const { corrida, r: rb2 } = await coach(b.ghl, '<div class="hoja" id="post-llamada">Lo de la llamada</div>');
+    assert.equal(rb2.ok, true, JSON.stringify(rb2));
+    const esperado = `${sc.envoltura}\n${CONTENIDO}<p>v2</p>\n<div class="hoja" id="post-llamada">Lo de la llamada</div>${FIN}`;
+    const fb = await fila(b.id);
+    assert.equal(fb!.sales_coach_ficha_de_lead_2, esperado, 'la ficha 2 no es la ficha 1 vigente más lo del Sales Coach');
+    assert.equal((fb!.sales_coach_ficha_de_lead_2.match(/<style>/g) ?? []).length, 1);
+    assert.deepEqual(fb!.procedencia.sales_coach_ficha_de_lead_2.incluye,
+      { columna: 'sales_assistant_ficha_de_lead_1', version: 2, corrida_id: sa2.corrida_id });
+    assert.equal((await salida(corrida))!.salida.incluye.version, 2);
+    assert.equal(fb!.sales_assistant_ficha_de_lead_1, `${ENVOLTURA}\n${CONTENIDO}<p>v2</p>${FIN}`, 'la ficha 1 cambió');
+
+    // Una ficha 1 que no envolvió la base (un documento entero) no se incluye: no se puede separar de su estilo.
+    const c = await unLead('f');
+    const sac = await abrir('sales_assistant', c.ghl);
+    assert.equal((await guardar(sac.corrida_id, '<!DOCTYPE html><html><body><p>entera</p></body></html>')).ok, true);
+    const { r: rc } = await coach(c.ghl, '<div class="hoja" id="post-llamada">Sola</div>');
+    assert.equal(rc.incluye, null);
+    assert.equal((await fila(c.id))!.sales_coach_ficha_de_lead_2, `${sc.envoltura}\n<div class="hoja" id="post-llamada">Sola</div>${FIN}`);
+
+    const br = await abrir('brief', a.ghl);
+    const rb = await guardar(br.corrida_id, '<section id="enlace_brief">Brief</section>');
+    assert.equal(rb.ok, true, JSON.stringify(rb));
+    assert.equal(rb.con_el_estilo_de_la_base, false);
+    assert.equal((await fila(a.id))!.brief_ficha_de_cliente_1, '<section id="enlace_brief">Brief</section>');
   });
 });
 
 test('6 · la envoltura es sólo de columnas HTML y pasa las reglas del HTML', async () => {
   const conEnvoltura = await unaFila<{ claves: string[] }>(admin,
     `select array_agg(clave::text order by orden) as claves from catalogo.salidas_de_los_agentes where envoltura is not null`);
-  assert.deepEqual(conEnvoltura!.claves, ['sales_assistant_ficha_de_lead_1']);
+  assert.deepEqual(conEnvoltura!.claves, ['sales_assistant_ficha_de_lead_1', 'sales_coach_ficha_de_lead_2']);
 
   const intentar = async (sql: string): Promise<string | null> => {
     await admin.query('begin');
@@ -220,5 +265,5 @@ test('6 · la envoltura es sólo de columnas HTML y pasa las reglas del HTML', a
   assert.equal(await intentar(`update catalogo.salidas_de_los_agentes set envoltura = '<p>no es un comienzo</p>'
     where clave = 'sales_assistant_ficha_de_lead_1'`), '23514', 'la envoltura aceptó algo que no es un comienzo de documento');
   assert.equal(await intentar(`update catalogo.salidas_de_los_agentes set envoltura = '<!DOCTYPE html><html><head></head><body>'
-    where clave = 'sales_coach_ficha_de_lead_2'`), null, 'una envoltura buena no se pudo poner');
+    where clave = 'brief_ficha_de_cliente_1'`), null, 'una envoltura buena no se pudo poner');
 });
