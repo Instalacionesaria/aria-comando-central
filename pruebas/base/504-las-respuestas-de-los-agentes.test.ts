@@ -47,6 +47,10 @@ before(async () => {
   );
   assert.ok(a, 'falta el sembrado');
   aria = a;
+  const e = await unaFila<{ envoltura: string }>(admin,
+    `select envoltura from catalogo.salidas_de_los_agentes where clave = 'sales_assistant_ficha_de_lead_1'`);
+  assert.ok(e?.envoltura, 'la ficha 1 no tiene el estilo de la base (120)');
+  ENVOLTURA = e.envoltura;
 });
 
 after(async () => {
@@ -111,6 +115,14 @@ const cuadrante = (corrida: string, valor: string, razon: string | null) =>
 
 const leer = (corrida: string, columna: string) => j(`select agentes.leer_respuesta($1, $2) as r`, [corrida, columna]);
 
+/** La ficha 1 se guarda con el estilo de la base (120): devuelve lo que mandó el agente y falla si no quedó envuelta. */
+let ENVOLTURA = '';
+function cuerpo(html: string | null | undefined): string {
+  const fin = '\n</body></html>';
+  assert.ok(html && html.startsWith(`${ENVOLTURA}\n`) && html.endsWith(fin), 'la ficha 1 no quedó con el estilo de la base');
+  return html.slice(ENVOLTURA.length + 1, html.length - fin.length);
+}
+
 async function unLead(marca: string): Promise<{ ghl: string; id: string }> {
   const ghl = `ghl-504-${marca}-${randomUUID().slice(0, 8)}`;
   const c = await comoAdmin(() => unaFila<{ id: string }>(admin,
@@ -170,7 +182,7 @@ test('1 y 2 · cada agente escribe sólo su columna de la fila del lead, y el si
     // Sales Coach: lee la ficha 1 y la anota en lo leído; guarda la ficha 2.
     const sc = await unSalesCoach(a.ghl);
     const l1 = await leer(sc, 'sales_assistant_ficha_de_lead_1');
-    assert.equal(l1.valor, '<section id="resumen"><h1>Ficha 1 de A</h1></section>');
+    assert.equal(cuerpo(l1.valor), '<section id="resumen"><h1>Ficha 1 de A</h1></section>');
     assert.equal(l1.corrida_id, sa.corrida_id);
     assert.ok(Object.keys((await estado(sc))!.leido.fuentes).includes(`respuesta:sales_assistant_ficha_de_lead_1@${sa.corrida_id}`),
       'la lectura de la ficha 1 no quedó en lo leído del Sales Coach');
@@ -183,7 +195,7 @@ test('1 y 2 · cada agente escribe sólo su columna de la fila del lead, y el si
 
     const f = await fila(a.id);
     assert.equal(f!.triage_cuadrante_de_clasificacion, 'prioriza');
-    assert.equal(f!.sales_assistant_ficha_de_lead_1, '<section id="resumen"><h1>Ficha 1 de A</h1></section>');
+    assert.equal(cuerpo(f!.sales_assistant_ficha_de_lead_1), '<section id="resumen"><h1>Ficha 1 de A</h1></section>');
     assert.equal(f!.sales_coach_ficha_de_lead_2, '<section id="analisis_de_llamada">Ficha 2 de A</section>');
     assert.match(f!.brief_ficha_de_cliente_1, /welcome\.ariaia\.com/);
     assert.deepEqual(Object.keys(f!.procedencia).sort(), [...COLUMNAS].sort());
@@ -210,11 +222,11 @@ test('3 · una corrida nueva reemplaza su columna, la anterior queda en su corri
     assert.equal(r2.version, 2);
 
     const f = await fila(a.id);
-    assert.equal(f!.sales_assistant_ficha_de_lead_1, '<p>versión 2 (reagendó)</p>');
+    assert.equal(cuerpo(f!.sales_assistant_ficha_de_lead_1), '<p>versión 2 (reagendó)</p>');
     assert.equal(f!.procedencia.sales_assistant_ficha_de_lead_1.version, 2);
     assert.equal(f!.procedencia.sales_assistant_ficha_de_lead_1.corrida_id, s2.corrida_id);
     assert.equal(f!.triage_cuadrante_de_clasificacion, 'valida', 'la ficha nueva pisó la columna del Triage');
-    assert.equal((await estado(s1.corrida_id))!.salida.html, '<p>versión 1</p>', 'la versión anterior se perdió');
+    assert.equal(cuerpo((await estado(s1.corrida_id))!.salida.html), '<p>versión 1</p>', 'la versión anterior se perdió');
   });
 });
 
@@ -227,11 +239,11 @@ test('4 · dos leads de la misma cuenta no se mezclan, y otra organización no v
     const sb = await abrir('sales_assistant', b.ghl);
     assert.equal((await guardar(sb.corrida_id, '<p>de B</p>')).ok, true);
 
-    assert.equal((await fila(a.id))!.sales_assistant_ficha_de_lead_1, '<p>de A</p>');
-    assert.equal((await fila(b.id))!.sales_assistant_ficha_de_lead_1, '<p>de B</p>');
+    assert.equal(cuerpo((await fila(a.id))!.sales_assistant_ficha_de_lead_1), '<p>de A</p>');
+    assert.equal(cuerpo((await fila(b.id))!.sales_assistant_ficha_de_lead_1), '<p>de B</p>');
     // Una corrida del lead B lee lo de B, nunca lo de A.
     const scB = await unSalesCoach(b.ghl);
-    assert.equal((await leer(scB, 'sales_assistant_ficha_de_lead_1')).valor, '<p>de B</p>');
+    assert.equal(cuerpo((await leer(scB, 'sales_assistant_ficha_de_lead_1')).valor), '<p>de B</p>');
 
     const deAria = await comoInquilino(aria.org, () => filas<{ contacto_id: string }>(admin,
       `select contacto_id from negocio.respuestas_por_lead where contacto_id = any($1::uuid[])`, [[a.id, b.id]]));
@@ -258,7 +270,7 @@ test('4b · por el camino del inquilino (el futuro ARIA MCP) se guarda y se lee 
     assert.equal(r.ok, true, JSON.stringify(r));
     const sc = await unSalesCoach(a.ghl);
     const l = await comoInquilino(aria.org, () => leer(sc, 'sales_assistant_ficha_de_lead_1'));
-    assert.equal(l.valor, '<p>guardada por el inquilino</p>');
+    assert.equal(cuerpo(l.valor), '<p>guardada por el inquilino</p>');
     const t = await abrir('triage', a.ghl);
     assert.equal((await comoInquilino(aria.org, () => cuadrante(t.corrida_id, 'prioriza', 'factura bien'))).ok, true);
   });
@@ -419,6 +431,6 @@ test('9 · el expediente trae la sección sin el HTML, y la vista para mirar va 
     const porLead = await comoInquilino(aria.org, () => unaFila<Record<string, any>>(admin,
       `select * from negocio.respuestas_por_lead where contacto_id = $1`, [a.id]));
     assert.equal(porLead!.ghl_contact_id, a.ghl);
-    assert.equal(porLead!.sales_assistant_ficha_de_lead_1, '<section id="resumen">SECRETO-DEL-HTML</section>');
+    assert.equal(cuerpo(porLead!.sales_assistant_ficha_de_lead_1), '<section id="resumen">SECRETO-DEL-HTML</section>');
   });
 });
