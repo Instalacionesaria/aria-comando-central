@@ -74,7 +74,11 @@ import { cuentaDe, type AmbitoDeUnCliente } from './ambitoDelCliente.ts';
  * resta del antirrebote. Escribirle una marca sería dejar una afirmación que nadie lee — y que el día
  * que alguien la lea sería falsa.
  */
-export type ClaveDePulso = 'mensajes' | 'citas' | 'auditoria';
+/**
+ * `contactos` es del cron de contactos sin etiqueta (`contactosSinEtiqueta.ts`): su marca afirma «todo contacto nuevo
+ * con `dateUpdated` anterior o igual ya se guardó».
+ */
+export type ClaveDePulso = 'mensajes' | 'citas' | 'auditoria' | 'contactos';
 
 /**
  * El antirrebote. **El candado impide corridas simultáneas, no seguidas**: sin esto, dos pestañas

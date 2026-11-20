@@ -92,6 +92,16 @@ export const ETIQUETAS: readonly { etiqueta: string; territorio: Territorio }[] 
   { etiqueta: 'zona_setter', territorio: 'setter' },
 ];
 
+/**
+ * El territorio de un contacto según SUS etiquetas: la primera de `ETIQUETAS` que tenga, o `null` (congelado, en
+ * ninguna cola). El único lugar que lo decide para un contacto suelto —el refresco de la ficha, la relectura de los
+ * congelados y el cron sin etiqueta—: dos comparaciones serían dos lugares donde divergir.
+ */
+export function territorioDeLasEtiquetas(etiquetas: readonly string[] | undefined): Territorio | null {
+  const suyas = etiquetas ?? [];
+  return ETIQUETAS.find((e) => suyas.includes(e.etiqueta))?.territorio ?? null;
+}
+
 /** Lo que pasó en una sincronización. */
 export interface Resumen {
   /** Cuántos contactos trajo GoHighLevel, por etiqueta. */
@@ -645,8 +655,7 @@ export async function refrescarUnContacto(
   // es el orden de prioridad y el closer gana. Se recorre esa lista y no se escribe otra
   // comparación — dos lugares que decidan el territorio es un lugar donde divergir, y el síntoma
   // sería un contacto que aparece en las dos pestañas o en ninguna.
-  const etiquetas = r.datos.tags ?? [];
-  const territorio = ETIQUETAS.find((e) => etiquetas.includes(e.etiqueta))?.territorio ?? null;
+  const territorio = territorioDeLasEtiquetas(r.datos.tags);
 
   const guardado = await guardar(r.datos, territorio, await camposDelPuntaje(), await camposDelCuadrante());
   if (guardado !== true) return { tipo: 'salteado', motivo: guardado };
@@ -750,11 +759,16 @@ export async function releerLosCongelados(
       if (await marcarLaBaja(id)) r.dadosDeBaja++;
       continue;
     }
-    const etiquetas = leido.datos.tags ?? [];
-    const territorio = ETIQUETAS.find((e) => etiquetas.includes(e.etiqueta))?.territorio ?? null;
+    const territorio = territorioDeLasEtiquetas(leido.datos.tags);
     const guardado = await guardar(leido.datos, territorio, puntaje, cuadrante);
     if (guardado === true) r.releidos++;
     else r.fallidos++;
   }
   return r;
 }
+
+/**
+ * `guardar()` para el cron de contactos sin etiqueta (`contactosSinEtiqueta.ts`): el mismo upsert, con la misma regla
+ * —lo que decide GoHighLevel se pisa; lo que decidimos acá, no—. Corre dentro de `conOrganizacion(`.
+ */
+export const guardarUnContacto = guardar;

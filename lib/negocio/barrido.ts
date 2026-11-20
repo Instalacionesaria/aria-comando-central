@@ -49,6 +49,10 @@ import { sondaDeAislamiento } from '../deteccion/sonda.ts';
 import type { ConfiguracionDeLosNegocios } from '../cartera/configuracion.ts';
 import { tomarLaFoto, type ResumenDeLaFoto } from '../cartera/foto.ts';
 import { correrLaPasada } from '../agentes/detectores/correr.ts';
+import { sincronizarLosNuevos, traeTodosLosContactos } from './contactosSinEtiqueta.ts';
+
+/** El motivo del sello de `mensajes` en un cliente que trae sus contactos nuevos sin etiqueta. Ver el bucle del barrido. */
+export const MOTIVO_SIN_CONVERSACIONES = 'este cliente trae sus contactos nuevos sin etiqueta y el cron no trae sus conversaciones';
 
 /**
  * Las tareas que el cron sabe hacer. Es la misma lista que el `check` de `tareas_programadas`,
@@ -749,6 +753,17 @@ export async function barrerTodo(
     }
 
     for (const tarea of tareasDeLaUnidad) {
+      /* ── EL CLIENTE QUE TRAE SUS CONTACTOS SIN ETIQUETA NO TRAE CONVERSACIONES ───
+       *
+       * Decidido el 2026-11-20 (`contactosSinEtiqueta.ts`): con el interruptor encendido, el cron trae los leads nuevos
+       * sin etiqueta y ya no sondea los mensajes: con ellos en la base, la ingesta empezaría a traer también sus
+       * conversaciones. Se sella `saltada` con su motivo, que no es una falta de conexión: el aviso de
+       * «cliente sin conexión» (`faltaDeLosClientes.ts`) sólo mira los motivos de credencial. */
+      if (tarea === 'mensajes' && traeTodosLosContactos(cuentaId)) {
+        renglon({ tarea, estado: 'saltada', porque: MOTIVO_SIN_CONVERSACIONES, llamadas: 0 });
+        await sellarAca(tarea, 'saltada', MOTIVO_SIN_CONVERSACIONES, 0);
+        continue;
+      }
       // ── LA CREDENCIAL AUSENTE NO ES UN FALLO, Y SU MOTIVO NO SE COLAPSA ───
       //
       // Una empresa sin token cargado es el caso NORMAL de una empresa recién creada. Y las cinco
@@ -1086,6 +1101,8 @@ async function releerContactos(
   fin: number,
   ahora: () => number,
 ): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
+  // El cliente que trae sus contactos nuevos sin etiqueta (2026-11-20): otra traída. Ver `releerLosNuevos`.
+  if (traeTodosLosContactos(cuentaDe(ambito))) return releerLosNuevos(ambito, acceso, fin, ahora);
   // En el ámbito del cliente: la resta de la sincronización congela sólo a los suyos (`exigirUnSoloCliente`).
   const r = await conOrganizacion(ambito, () =>
     sincronizarContactos({ token: acceso.token, locationId: acceso.locationId }),
@@ -1111,6 +1128,27 @@ async function releerContactos(
     corrio: true,
     resultado: { ...r.resumen, miniaturas, avisos, congeladosReleidos: congelados },
     llamadas: r.resumen.llamadas + miniaturas.pedidos + avisos.llamadas + congelados.pedidos,
+  };
+}
+
+/**
+ * La tarea `contactos` de un cliente con el interruptor encendido (`contactosSinEtiqueta.ts`, 2026-11-20): los creados
+ * en el último mes que cambiaron desde la marca, en vez de releer por etiqueta, y sin congelar ni releer congelados.
+ * Después, como siempre, el reproceso de los avisos y las miniaturas, en ese orden y con sus llamadas sumadas.
+ */
+async function releerLosNuevos(
+  ambito: AmbitoDeUnCliente,
+  acceso: { token: string; locationId: string },
+  fin: number,
+  ahora: () => number,
+): Promise<{ corrio: true; resultado: unknown; llamadas: number }> {
+  const nuevos = await sincronizarLosNuevos(ambito, acceso, { fin, ahora });
+  const avisos = await reprocesarAvisosDeOportunidad(ambito, acceso, { fin, ahora });
+  const miniaturas = await completarMiniaturas(ambito, acceso, undefined, ahora, fin);
+  return {
+    corrio: true,
+    resultado: { sinEtiqueta: nuevos.corrio ? nuevos.resultado : { frenada: nuevos.porque }, miniaturas, avisos },
+    llamadas: (nuevos.corrio ? nuevos.llamadas : 0) + miniaturas.pedidos + avisos.llamadas,
   };
 }
 
@@ -1174,6 +1212,16 @@ export function motivoDeLoIncompleto(resultado: unknown): string | null {
     tiempo: 'la pasada de miniaturas llegó a su tiempo',
   };
   if (typeof mini?.corte === 'string' && CORTE[mini.corte]) partes.push(`${CORTE[mini.corte]}: lo que faltó se pide en la siguiente`);
+
+  /* El cron de contactos sin etiqueta (`contactosSinEtiqueta.ts`): la traída que sigue en la próxima corrida. */
+  const sinEtiqueta = (r as { sinEtiqueta?: { pendientes?: unknown; fallo?: unknown } }).sinEtiqueta;
+  if (sinEtiqueta?.pendientes === true) {
+    partes.push(
+      typeof sinEtiqueta.fallo === 'string'
+        ? `GoHighLevel cortó la traída de contactos (${sinEtiqueta.fallo}): lo que falta entra en la siguiente`
+        : 'la traída de contactos sigue: lo que falta entra en la siguiente',
+    );
+  }
 
   /* El reproceso de los avisos de oportunidad (`lib/negocio/reprocesoDeAvisos.ts`): los que volvieron a fallar y los que
      no entraron en la pasada. Las dos cosas se arreglan solas en la siguiente, y las dos tienen que verse. */

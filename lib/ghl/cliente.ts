@@ -90,6 +90,16 @@ export interface ContactoDeGhl {
    */
   dateAdded?: string;
   /**
+   * **Cuándo cambió por última vez en el CRM.** Es la marca de agua del cron de contactos sin etiqueta
+   * (`sincronizarLosCambiados`). Medido el 2026-11-20: viene en 100 de 100, en UTC con `Z`.
+   */
+  dateUpdated?: string;
+  /**
+   * El cursor de la búsqueda: `[dateUpdated en milisegundos, id]` con el orden por `dateUpdated`. Se manda tal cual
+   * en `searchAfter` para pedir la página siguiente. Medido el 2026-11-20.
+   */
+  searchAfter?: unknown[];
+  /**
    * **La atribución del PRIMER toque.** Medido el 2026-09-14: el objeto viene en 100 de 100, y
    * adentro `sessionSource` en 98, `utmSource` en 20, `fbclid`/`fbc`/`fbp` en 3.
    *
@@ -356,6 +366,58 @@ export async function todosLosContactosPorEtiqueta(
   }
 
   return { tipo: 'datos', datos: { contactos: juntos, truncado: true, paginas: TOPE_DE_PAGINAS } };
+}
+
+/**
+ * De a cuántos se piden los contactos SIN filtro de etiqueta. Medido el 2026-11-20 en la subcuenta de ARIA: 500
+ * funciona (~1 s por página) y 1000 devuelve 400.
+ */
+export const POR_PAGINA_SIN_ETIQUETA = 500;
+
+/** Una página de la búsqueda sin etiqueta: los contactos y el cursor para pedir la siguiente. */
+export interface PaginaConCursor {
+  contactos: ContactoDeGhl[];
+  /** El `searchAfter` del último contacto, o `null` si la página vino vacía o sin cursor. */
+  siguiente: unknown[] | null;
+}
+
+/**
+ * Una página de los contactos NUEVOS que cambiaron desde una fecha, sin filtro de etiqueta: creados desde
+ * `creadosDesde` y con `dateUpdated` desde `cambiadosDesde`, por `dateUpdated` ascendente, con el cursor `searchAfter`.
+ *
+ * Los dos filtros van juntos y GHL los combina con «y»: medido el 2026-11-20 en ARIA, 4.299 creados en 30 días, 217
+ * cambiados en el último día y 200 que cumplen las dos (todos con el alta dentro de los 30 días).
+ *
+ * ── POR QUÉ `searchAfter` Y NO `page` ────────────────────────────────────────
+ *
+ * `page` × `pageLimit` no puede pasar de 10.000 registros. El cursor no tiene techo: cada contacto trae el suyo y se
+ * manda el del último. No se mezclan —con `searchAfter` no va `page`—, así que la primera página lleva `page: 1`.
+ */
+export async function contactosNuevosCambiados(
+  acceso: { token: string; locationId: string },
+  opciones: { creadosDesde: Date; cambiadosDesde: Date; despuesDe?: readonly unknown[] | null },
+): Promise<ResultadoDeGhl<PaginaConCursor>> {
+  const r = await pedirExterno<{ contacts?: unknown }>(`${BASE}/contacts/search`, {
+    metodo: 'POST',
+    cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS),
+    cuerpo: {
+      locationId: acceso.locationId,
+      pageLimit: POR_PAGINA_SIN_ETIQUETA,
+      ...(opciones.despuesDe ? { searchAfter: opciones.despuesDe } : { page: 1 }),
+      filters: [
+        { field: 'dateAdded', operator: 'range', value: { gte: opciones.creadosDesde.toISOString() } },
+        { field: 'dateUpdated', operator: 'range', value: { gte: opciones.cambiadosDesde.toISOString() } },
+      ],
+      sort: [{ field: 'dateUpdated', direction: 'asc' }],
+    },
+  });
+
+  if (r.tipo !== 'datos') return { tipo: 'fallo', fallo: traducirFallo(r) };
+
+  const contactos = Array.isArray(r.datos?.contacts) ? (r.datos.contacts as ContactoDeGhl[]) : [];
+  const ultimo = contactos.at(-1);
+  const siguiente = Array.isArray(ultimo?.searchAfter) && ultimo.searchAfter.length > 0 ? ultimo.searchAfter : null;
+  return { tipo: 'datos', datos: { contactos, siguiente } };
 }
 
 /**
