@@ -2551,11 +2551,6 @@ export interface TablaCorridasDeAgente {
   ghl_contact_id: string | null;
   cita_id: string | null;
   llamada_id: string | null;
-  cliente_id: string | null;
-  /** La cuenta del vendedor cuando el agente trabaja para el comprador. Van juntas o no van. */
-  vendedor_org_id: string | null;
-  vendedor_cuenta_id: string | null;
-  vendedor_contacto_id: string | null;
   disparador: string | null;
   clave_de_idempotencia: string;
   motivo: Generated<'primera_vez' | 'datos_nuevos' | 'reintento' | 'manual' | 'reproceso'>;
@@ -2586,23 +2581,6 @@ export interface TablaCorridasDeAgente {
   identificado_por: Generated<'workflow' | 'correo' | 'persona'>;
 }
 
-/** Lo que el negocio sabe de sí mismo, versionado por tipo (110): ICP, oferta, guion… */
-export interface TablaConocimientoDeLaCuenta {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  /** Una clave de `catalogo.tipos_de_conocimiento`. */
-  tipo: string;
-  version: number;
-  contenido: Generated<unknown>;
-  contenido_texto: string | null;
-  origen: Generated<'manual' | 'entregable' | 'importado'>;
-  entregable_version_id: string | null;
-  aprobado_por: string | null;
-  aprobado_el: Date | null;
-  creado_el: Generated<Date>;
-}
-
 /** Lo que un agente leyó de fuentes públicas, con su extracto (110). */
 export interface TablaFuentesPublicas {
   org_id: ColumnaInquilino;
@@ -2610,7 +2588,6 @@ export interface TablaFuentesPublicas {
   id: Generated<string>;
   corrida_id: string | null;
   contacto_id: string | null;
-  cliente_id: string | null;
   /** Una clave de `catalogo.tipos_de_fuente_publica`. */
   tipo: string;
   url: string | null;
@@ -2635,51 +2612,6 @@ export interface TablaAccionesExternas {
   id_externo: string | null;
   ocurrio_el: Generated<Date>;
   registrada_el: Generated<Date>;
-}
-
-/** Las rutas de venta de cada cuenta (111): a dónde puede ir un lead. */
-export interface TablaRutasDeLaCuenta {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  clave: string;
-  nombre: string;
-  /** Una clave de `catalogo.clases_de_ruta`. */
-  clase: string;
-  precio_desde: string | null;
-  precio_hasta: string | null;
-  moneda: string | null;
-  requiere_llamada: Generated<boolean>;
-  descripcion: string | null;
-  activa: Generated<boolean>;
-  creada_el: Generated<Date>;
-}
-
-/** Cada triaje de un lead (111): cuadrante propuesto, prioridad y ruta. */
-export interface TablaTriajes {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  corrida_id: string;
-  contacto_id: string | null;
-  ghl_contact_id: string | null;
-  cuadrante_del_crm: string | null;
-  cuadrante_propuesto: string | null;
-  encaje: 'alto' | 'bajo' | null;
-  capacidad: 'alta' | 'baja' | null;
-  puntaje_encaje: string | null;
-  puntaje_capacidad: string | null;
-  knockouts: Generated<unknown>;
-  prioridad: number;
-  ruta: string | null;
-  ruta_clase: string;
-  razones: Generated<unknown>;
-  datos_dudosos: Generated<unknown>;
-  faltantes: Generated<string[]>;
-  confianza: 'alta' | 'media' | 'baja';
-  version_icp: number | null;
-  version_matriz: number | null;
-  aplicado: Generated<boolean>;
-  creado_el: Generated<Date>;
 }
 
 /** La transcripción de una llamada (111). */
@@ -2731,193 +2663,6 @@ export interface TablaRecepcionesDeFathom {
   ambiguo: Generated<boolean>;
   estado: 'guardada' | 'no_es_venta' | 'sin_correo_externo' | 'sin_lead' | 'sin_transcripcion' | 'error';
   motivo: string | null;
-}
-
-/** La ficha del lead para el closer, versionada (111). */
-export interface TablaFichasDelLead {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  contacto_id: string;
-  cita_id: string | null;
-  corrida_id: string;
-  version: number;
-  resumen: string;
-  quien_es: Generated<unknown>;
-  que_dijo: Generated<unknown>;
-  estrategia: Generated<unknown>;
-  alertas: Generated<unknown>;
-  faltantes: Generated<unknown>;
-  cuadrante_al_generar: string | null;
-  prioridad_al_generar: number | null;
-  degradados: Generated<number>;
-  leida_por: string | null;
-  leida_el: Date | null;
-  valoracion_del_closer: 'util' | 'poco_util' | null;
-  comentario_del_closer: string | null;
-  creada_el: Generated<Date>;
-}
-
-/** El resultado que un agente propone tras la llamada, hasta que una persona lo decide (112). */
-export interface TablaResultadosPropuestos {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  contacto_id: string;
-  cita_id: string | null;
-  llamada_id: string | null;
-  corrida_id: string;
-  closer_id: string | null;
-  compro: boolean;
-  salida:
-    | 'venta'
-    | 'acuerdo_sin_pago'
-    | 'seguimiento'
-    | 'no_interesa'
-    | 'no_show'
-    | 'nurture'
-    | 'agendo'
-    | 'venta_chica'
-    | 'no_califica';
-  salida_estandar: string | null;
-  ruta: string | null;
-  ruta_clase: string | null;
-  monto: string | null;
-  moneda: string | null;
-  monto_usd: string | null;
-  forma_pago: string | null;
-  motivo: string | null;
-  objeciones: Generated<unknown>;
-  next_steps: Generated<unknown>;
-  evidencia: Generated<unknown>;
-  datos_del_negocio: Generated<unknown>;
-  confianza: 'alta' | 'media' | 'baja';
-  estado: Generated<'propuesto' | 'confirmado' | 'corregido' | 'rechazado'>;
-  resultado_id: string | null;
-  decidido_por: string | null;
-  decidido_el: Date | null;
-  motivo_decision: string | null;
-  diferencias: unknown | null;
-  creado_el: Generated<Date>;
-}
-
-/** La evaluación de una llamada contra el guion (112). */
-export interface TablaEvaluacionesDeLlamada {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  llamada_id: string;
-  contacto_id: string;
-  closer_id: string | null;
-  corrida_id: string;
-  version_script: number | null;
-  puntaje: string;
-  fases: Generated<unknown>;
-  lo_que_hizo_bien: Generated<unknown>;
-  donde_se_perdio: unknown | null;
-  siguio_el_script: string | null;
-  vista_por_el_closer_el: Date | null;
-  creada_el: Generated<Date>;
-}
-
-/** Cada objeción que apareció en una llamada (112). */
-export interface TablaObjecionesDeLlamada {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  llamada_id: string;
-  contacto_id: string;
-  corrida_id: string;
-  categoria: 'precio' | 'momento' | 'decisor' | 'confianza' | 'encaje' | 'otra';
-  texto: string;
-  marca_de_tiempo_seg: string | null;
-  respuesta_del_closer: string | null;
-  resuelta: boolean | null;
-  cita_verificada: Generated<boolean>;
-  creada_el: Generated<Date>;
-}
-
-/** Un mensaje que un agente redactó y espera aprobación (112). */
-export interface TablaBorradoresDeMensaje {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  contacto_id: string;
-  corrida_id: string;
-  motivo: 'seguimiento_post_llamada' | 'nutricion' | 'no_show' | 'bienvenida' | 'otro';
-  /** Una clave de `catalogo.canales`. */
-  canal: string;
-  asunto: string | null;
-  cuerpo: string;
-  programar_para: Date | null;
-  estado: Generated<'borrador' | 'aprobado' | 'enviado' | 'descartado'>;
-  aprobado_por: string | null;
-  aprobado_el: Date | null;
-  enviado_el: Date | null;
-  mensaje_ghl_id: string | null;
-  creado_el: Generated<Date>;
-}
-
-/** El comprador: el lead que compró, y su camino hasta quedar instalado (112). */
-export interface TablaClientes {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  contacto_id: string;
-  resultado_id: string | null;
-  resultado_propuesto_id: string | null;
-  ruta: string | null;
-  ruta_clase: string | null;
-  /** Va junto con la cuenta del cliente: nulo = el cliente no tiene cuenta propia. */
-  nivel: 2 | 3 | null;
-  estado: Generated<
-    | 'vendido'
-    | 'pago_confirmado'
-    | 'contrato_firmado'
-    | 'en_onboarding'
-    | 'brief_enviado'
-    | 'research_aprobado'
-    | 'estrategia_aprobada'
-    | 'funnel_listo'
-    | 'instalado'
-    | 'activo'
-    | 'pausado'
-    | 'baja'
-  >;
-  nombre_del_negocio: string | null;
-  a_quien_vende: 'negocios' | 'consumidores' | null;
-  coach_id: string | null;
-  success_manager_id: string | null;
-  /** La organización y la cuenta propias del cliente. Van juntas o no van. */
-  organizacion_cliente_id: string | null;
-  cuenta_cliente_id: string | null;
-  vendido_el: Generated<Date>;
-  pago_confirmado_el: Date | null;
-  contrato_firmado_el: Date | null;
-  kickoff_el: Date | null;
-  instalado_el: Date | null;
-  creado_el: Generated<Date>;
-}
-
-/** Cada pago de un comprador, uno por id externo del proveedor (112). */
-export interface TablaPagos {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  id: Generated<string>;
-  contacto_id: string;
-  cliente_id: string | null;
-  /** Una clave de `catalogo.proveedores`. */
-  proveedor: string;
-  id_externo: string;
-  monto: string;
-  moneda: string;
-  monto_usd: string | null;
-  concepto: string | null;
-  cuota_numero: number | null;
-  cuotas_total: number | null;
-  estado: 'pendiente' | 'pagado' | 'fallido' | 'reembolsado';
-  pagado_el: Date | null;
-  registrado_el: Generated<Date>;
 }
 
 /** Un entregable del onboarding, uno por tipo y por cuenta (113). */
@@ -3069,7 +2814,6 @@ export interface TablaDecisionesDeKickoff {
   creada_el: Generated<Date>;
 }
 
-/** Las piezas de contenido que propone el funnel: anuncios, VSL, landings (114). */
 /**
  * Lo que deja cada managed agent en la fase 1 (118): una fila por lead y una columna por agente, en el orden del flujo.
  * La escriben sólo las funciones `agentes.guardar_respuesta` y `agentes.registrar_cuadrante`; la aplicación sólo la lee.
@@ -3088,6 +2832,7 @@ export interface TablaRespuestasDeLosAgentes {
   actualizado_el: Generated<Date>;
 }
 
+/** Las piezas de contenido que propone el funnel: anuncios, VSL, landings (114). */
 export interface TablaPiezasDeContenido {
   org_id: ColumnaInquilino;
   cuenta_id: ColumnaCuenta;
@@ -3209,20 +2954,10 @@ export interface BaseDeDatos {
   respuestas_del_lead_traducidas: VistaRespuestasDelLeadTraducidas;
   // Los agentes gestionados (110 a 114).
   corridas_de_agente: TablaCorridasDeAgente;
-  conocimiento_de_la_cuenta: TablaConocimientoDeLaCuenta;
   fuentes_publicas: TablaFuentesPublicas;
   acciones_externas: TablaAccionesExternas;
-  rutas_de_la_cuenta: TablaRutasDeLaCuenta;
-  triajes: TablaTriajes;
   transcripciones: TablaTranscripciones;
   recepciones_de_fathom: TablaRecepcionesDeFathom;
-  fichas_del_lead: TablaFichasDelLead;
-  resultados_propuestos: TablaResultadosPropuestos;
-  evaluaciones_de_llamada: TablaEvaluacionesDeLlamada;
-  objeciones_de_llamada: TablaObjecionesDeLlamada;
-  borradores_de_mensaje: TablaBorradoresDeMensaje;
-  clientes: TablaClientes;
-  pagos: TablaPagos;
   entregables: TablaEntregables;
   versiones_de_entregable: TablaVersionesDeEntregable;
   respuestas_del_brief: TablaRespuestasDelBrief;

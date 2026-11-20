@@ -283,18 +283,9 @@ test('toda tabla de negocio es accesible para el inquilino, con las cuatro opera
        aceptan cambios en algunas columnas (la lectura de la ficha, la decisión de una versión) no tienen UPDATE de
        tabla: tienen el de esas columnas. */
     corridas_de_agente: ['SELECT', 'INSERT', 'UPDATE'],
-    conocimiento_de_la_cuenta: ['SELECT', 'INSERT'],
     fuentes_publicas: ['SELECT', 'INSERT'],
     acciones_externas: ['SELECT', 'INSERT'],
-    triajes: ['SELECT', 'INSERT'],
     transcripciones: ['SELECT', 'INSERT'],
-    fichas_del_lead: ['SELECT', 'INSERT'],
-    resultados_propuestos: ['SELECT', 'INSERT'],
-    evaluaciones_de_llamada: ['SELECT', 'INSERT', 'UPDATE'],
-    objeciones_de_llamada: ['SELECT', 'INSERT'],
-    borradores_de_mensaje: ['SELECT', 'INSERT', 'UPDATE'],
-    clientes: ['SELECT', 'INSERT', 'UPDATE'],
-    pagos: ['SELECT', 'INSERT', 'UPDATE'],
     entregables: ['SELECT', 'INSERT', 'UPDATE'],
     versiones_de_entregable: ['SELECT', 'INSERT'],
     respuestas_del_brief: ['SELECT', 'INSERT'],
@@ -398,8 +389,8 @@ test('toda vista de negocio corre con los permisos de QUIEN LA INVOCA, y el inqu
   assert.deepEqual(
     vistas.map((v) => v.relname),
     [
-      'brief_vigente', 'conocimiento_vigente', 'embudo_por_dia', 'entregable_vigente', 'etapas_del_lead', 'expediente_del_lead', 'ficha_vigente',
-      'metricas_meta_del_dia', 'respuestas_del_lead_traducidas', 'respuestas_por_lead', 'triaje_vigente',
+      'brief_vigente', 'embudo_por_dia', 'entregable_vigente', 'etapas_del_lead', 'expediente_del_lead',
+      'metricas_meta_del_dia', 'respuestas_del_lead_traducidas', 'respuestas_por_lead',
     ],
     'apareció una vista nueva en negocio: tiene que declarar security_invoker y sumarse acá',
   );

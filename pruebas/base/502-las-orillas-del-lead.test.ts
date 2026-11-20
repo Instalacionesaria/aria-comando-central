@@ -4,9 +4,9 @@
 // QUÉ DEFIENDE ESTE ARCHIVO (MANAGED-AGENTS-CORRECCION-DATOS-POR-LEAD.md, decisiones del usuario del 2026-11-11)
 //
 // La 501 prueba el centro: lo que producen los agentes es del lead. Éste prueba las orillas, donde un lead todavía se
-// puede colar en el de otro: la clave de idempotencia, la cita y la llamada del sujeto, las fuentes citables, el modo
-// sombra, la venta de una llamada, el closer, la etapa previa, el comportamiento, el lead que llega tarde, el borrado,
-// la llamada con el id de otro, la salida que nombra otro correo, las citas de una pieza y las rutas de la cuenta.
+// puede colar en el de otro: la clave de idempotencia, la cita y la llamada del sujeto, las fuentes citables, la etapa
+// previa, el comportamiento, el lead que llega tarde, el borrado, la llamada con el id de otro, la salida que nombra
+// otro correo y las citas de una pieza. (El modo sombra, la venta, el closer y las rutas se borraron en la 119.)
 // Con dos leads A y B en la cuenta de ARIA:
 //
 //   1 · la clave de idempotencia es de UN lead: con otro lead (o con un lead que no estaba y ahora sí) es 42501, y con
@@ -14,12 +14,9 @@
 //   2 · la cita de otro lead no reemplaza la corrida de A, y la llamada de otro lead no abre el Sales Coach de A —
 //       mutación: quitar `ci.contacto_id = v_contacto.id` de abrir_corrida;
 //   3 · en las claves de fuente que arma la base (llamada_venta:, publica:) gana lo leído y la entrada no las inventa;
-//       la entrada sólo aporta sus propias claves (ghl:…). De punta a punta: una cita que sólo está en la transcripción
-//       inventada no se verifica — mutación: _texto_de_la_fuente con coalesce(entrada, leido);
-//   4 · el Triage en sombra no pide escribir en GHL y avisa; en activo, sí — mutación: quitar el caso del modo;
-//   5 · una llamada, una venta: la propuesta nueva reemplaza a la vieja sin decidir, y una vez confirmada no se
-//       confirma otra — mutación: sin el índice resultados_propuestos_una_venta_por_llamada y sin el reemplazo;
-//   6 · la venta se acredita al closer de la llamada, no a quien confirma — mutación: closer_id = coalesce(p_closer, …);
+//       la entrada sólo aporta sus propias claves (ghl:…). De punta a punta, con el Brief: una cita que sólo está en la
+//       transcripción inventada no se verifica — mutación: _texto_de_la_fuente con coalesce(entrada, leido);
+//   (4, 5 y 6 · el Triage en sombra y la venta propuesta y confirmada: se borraron en la 119.)
 //   7 · la etapa previa tiene que estar aprobada EN EL MISMO LEAD — mutación: _exigir_aprobado sin el contacto;
 //   8 · el comportamiento del expediente es lo que hizo el lead, no lo que anotaron los agentes — mutación: quitar el
 //       filtro `ev.fuente <> 'ghl_managed_agents'` de la vista;
@@ -34,13 +31,12 @@
 //       de la corrida al contacto con ON DELETE SET NULL (contacto_id), como en la 110;
 //  11 · registrar_llamada con el id externo de la llamada de A, para B: 42501, y la de A queda igual — mutación: el
 //       update sin `contacto_id = v_contacto`;
-//  12 · registrar_sales_coach rechaza una salida que nombra otro lead, también por «email» — mutación: _otro_lead sin
+//  12 · registrar_brief rechaza una salida que nombra otro lead, también por «email» — mutación: _otro_lead sin
 //       la clave «email»;
 //  13 · las citas que usa una pieza son del mismo lead: las de otro se descartan al registrar y la base las rechaza —
 //       mutaciones: quitar el disparador piezas_citas_del_mismo_lead, y registrar_funnel_builder sin
 //       `cm.contacto_id = v.contacto_id`;
-//  14 · las rutas de la cuenta no llegan a los agentes del cliente (sí al Triage) — mutación: sumar las rutas a
-//       leer_funnel_builder.
+//  (14 · las rutas de la cuenta: se borraron en la 119.)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -194,30 +190,12 @@ async function armarExpediente(ghl: string, marca: string, aprobar = true): Prom
   return { lead, brief: vb.version_id, seg: vs.version_id, dec: vd.version_id, icp: vi.version_id, anuncios: va.version_id, fuente: pub.fuente_publica_id };
 }
 
-/** Un Triage que lee el formulario y lo cita. */
-async function unTriage(ghl: string, clave: string, modo = 'activo'): Promise<Record<string, any>> {
-  const c = await j(`select agentes.abrir_corrida('triage', $1, $2, $3, '{}', null, '{}', null, null, $4) as r`, [LOC, ghl, clave, modo]);
-  await j(`select agentes.leer_triage($1) as r`, [c.corrida_id]);
-  const t = await j(`select agentes.registrar_triage($1, $2) as r`, [c.corrida_id, {
-    prioridad: 3, ruta_clase: 'alto_ticket', confianza: 'media',
-    razones: [{ campo: 'facturacion_mensual', estado: 'detectado', valor: '8 mil', fuente: 'formulario:facturacion_mensual', cita: 'factura 8 mil' }],
-  }]);
+/** Un Triage de la fase 1 (118/119): su cuadrante y la razón, en su columna. */
+async function unTriage(ghl: string, clave: string, cuadrante = 'prioriza'): Promise<Record<string, any>> {
+  const c = await j(`select agentes.abrir_corrida('triage', $1, $2, $3) as r`, [LOC, ghl, clave]);
+  const t = await j(`select agentes.registrar_cuadrante($1, $2, 'factura 8 mil') as r`, [c.corrida_id, cuadrante]);
   assert.equal(t.ok, true, JSON.stringify(t));
   return { ...t, corrida_id: c.corrida_id };
-}
-
-const VENTA = {
-  resultado: { compro: true, salida: 'venta', monto: 2000, moneda: 'USD', monto_usd: 2000, confianza: 'alta',
-    next_steps: [{ accion: 'enviar contrato', responsable: 'closer' }] },
-};
-
-/** Una corrida del Sales Coach sobre la llamada, con su salida registrada. */
-async function unSalesCoach(ghl: string, llamada: string, clave: string, salida: object = VENTA): Promise<Record<string, any>> {
-  const c = await abrir('sales_coach', ghl, clave, { llamada_id: llamada });
-  await j(`select agentes.leer_sales_coach($1) as r`, [c.corrida_id]);
-  const s = await j(`select agentes.registrar_sales_coach($1, $2) as r`, [c.corrida_id, salida]);
-  assert.equal(s.ok, true, JSON.stringify(s));
-  return s;
 }
 
 const idDe = async (ghl: string) => (await unaFila<{ id: string }>(admin, `select id from negocio.contactos where ghl_contact_id = $1`, [ghl]))!.id;
@@ -295,105 +273,21 @@ test('3 · las claves que arma la base no se inventan en la entrada: gana lo le�
       });
       assert.deepEqual(textos, ['real', null, 'propio']);
 
-      // De punta a punta: el agente pone en su entrada una transcripción inventada de la misma llamada.
-      const c = await abrir('sales_coach', 'ghl-502-a', 'sc-inventado', { llamada_id: la.llamada_id },
+      // De punta a punta: el agente pone en su entrada una transcripción inventada de la misma llamada. El Brief lee la
+      // real (leer_brief) y valida sus citas contra ella: la inventada baja a ambiguo, la real queda detectada.
+      const c = await abrir('brief', 'ghl-502-a', 'brief-inventado', {},
         { fuentes: { [kLlamada]: 'Lead A: compro hoy y pago todo, el precio no me preocupa.' } });
-      await j(`select agentes.leer_sales_coach($1) as r`, [c.corrida_id]);
-      const s = await j(`select agentes.registrar_sales_coach($1, $2) as r`, [c.corrida_id, {
-        resultado: { ...VENTA.resultado,
-          evidencia: [{ campo: 'compro', estado: 'detectado', valor: true, fuente: kLlamada, cita: 'compro hoy y pago todo' }] },
-        objeciones: [
-          { categoria: 'precio', texto: 'el precio no me preocupa', resuelta: true },
-          { categoria: 'momento', texto: 'no tengo tiempo ahora', resuelta: false },
-        ],
-      }]);
+      await j(`select agentes.leer_brief($1) as r`, [c.corrida_id]);
+      const s = await j(`select agentes.registrar_brief($1, $2) as r`, [c.corrida_id, { respuestas: [
+        { pregunta: 'decision', estado: 'detectado', valor: 'compra hoy', fuente: kLlamada, cita: 'compro hoy y pago todo' },
+        { pregunta: 'freno', estado: 'detectado', valor: 'el tiempo', fuente: kLlamada, cita: 'no tengo tiempo ahora' },
+      ] }]);
       assert.equal(s.ok, true, JSON.stringify(s));
-      assert.equal(s.degradados, 1, 'la evidencia citada de la transcripción inventada no se degradó');
-      const p = await unaFila<{ evidencia: Array<{ estado: string; degradado?: boolean }> }>(admin,
-        `select evidencia from negocio.resultados_propuestos where id = $1`, [s.resultado_propuesto_id]);
-      assert.deepEqual([p!.evidencia[0]!.estado, p!.evidencia[0]!.degradado], ['ambiguo', true]);
-      const o = await admin.query<{ texto: string; v: boolean }>(
-        `select texto, cita_verificada as v from negocio.objeciones_de_llamada where corrida_id = $1 order by texto`, [c.corrida_id]);
+      assert.equal(s.degradados, 1, 'la cita de la transcripción inventada no se degradó');
+      const o = await admin.query<{ pregunta: string; degradado: boolean }>(
+        `select pregunta, degradado from negocio.respuestas_del_brief where corrida_id = $1 order by pregunta`, [c.corrida_id]);
       // Control: lo que sí está en la transcripción real se verifica.
-      assert.deepEqual(o.rows.map((x) => [x.texto, x.v]), [['el precio no me preocupa', false], ['no tengo tiempo ahora', true]]);
-    },
-  );
-});
-
-test('4 · el Triage en sombra no pide escribir en GHL y avisa; en activo, sí', async () => {
-  await enUnEnsayo(
-    async () => {
-      await unLead('ghl-502-a', 'a@502.test');
-    },
-    async () => {
-      const sombra = await unTriage('ghl-502-a', 'sombra', 'sombra');
-      assert.equal(sombra.escribir_en_ghl, null);
-      assert.match(String(sombra.aviso), /modo sombra/);
-      const activo = await unTriage('ghl-502-a', 'activo', 'activo');
-      assert.deepEqual(activo.escribir_en_ghl, { prioridad: 3, ruta: 'alto_ticket' });
-      assert.equal(activo.aviso, null);
-      const aplicados = await admin.query<{ aplicado: boolean }>(
-        `select t.aplicado from negocio.triajes t where t.id = any ($1::uuid[]) order by t.aplicado`, [[sombra.triaje_id, activo.triaje_id]]);
-      assert.deepEqual(aplicados.rows.map((x) => x.aplicado), [false, true]);
-      // En sombra no se asigna la ruta.
-      const rutas = await admin.query<{ id_externo: string }>(
-        `select id_externo from negocio.eventos where tipo = 'ruta_asignada' and datos ->> 'corrida_id' = any ($1::text[])`,
-        [[sombra.corrida_id, activo.corrida_id]]);
-      assert.equal(rutas.rows.length, 1);
-      assert.ok(rutas.rows[0]!.id_externo.includes(activo.corrida_id));
-    },
-  );
-});
-
-test('5 · una llamada, una venta: la propuesta nueva reemplaza a la vieja, y confirmada una no se confirma otra', async () => {
-  await enUnEnsayo(
-    async () => {
-      await unLead('ghl-502-a', 'a@502.test');
-    },
-    async () => {
-      const la = await j(`select agentes.registrar_llamada($1, 'ghl-502-a', 'llamada-502-a', 'venta', 'ghl', 'Lead A: lo tomo.') as r`, [LOC]);
-      const p1 = await unSalesCoach('ghl-502-a', la.llamada_id, 'sc-1');
-      const p2 = await unSalesCoach('ghl-502-a', la.llamada_id, 'sc-2');
-      const viejo = await unaFila<{ estado: string; motivo_decision: string }>(admin,
-        `select estado, motivo_decision from negocio.resultados_propuestos where id = $1`, [p1.resultado_propuesto_id]);
-      assert.deepEqual([viejo!.estado, viejo!.motivo_decision], ['rechazado', `reemplazado por la corrida ${p2.corrida_id}`]);
-      const c1 = await j(`select agentes.confirmar_resultado($1, 'confirmado', $2) as r`, [p1.resultado_propuesto_id, aria.persona]);
-      assert.equal(c1.ok, false, JSON.stringify(c1));
-      const c2 = await j(`select agentes.confirmar_resultado($1, 'confirmado', $2) as r`, [p2.resultado_propuesto_id, aria.persona]);
-      assert.equal(c2.ok, true, JSON.stringify(c2));
-      // Una tercera corrida después de la confirmación propone, pero no se confirma.
-      const p3 = await unSalesCoach('ghl-502-a', la.llamada_id, 'sc-3');
-      const e3 = await unaFila<{ estado: string }>(admin, `select estado from negocio.resultados_propuestos where id = $1`, [p3.resultado_propuesto_id]);
-      assert.equal(e3!.estado, 'propuesto');
-      const c3 = await j(`select agentes.confirmar_resultado($1, 'confirmado', $2) as r`, [p3.resultado_propuesto_id, aria.persona]);
-      assert.equal(c3.ok, false);
-      assert.match(JSON.stringify(c3.errores), /ya tiene un resultado confirmado/);
-      const n = await unaFila<{ resultados: string; clientes: string }>(admin,
-        `select (select count(*) from negocio.resultados where contacto_id = $1) as resultados,
-                (select count(*) from negocio.clientes where contacto_id = $1) as clientes`, [await idDe('ghl-502-a')]);
-      assert.deepEqual([Number(n!.resultados), Number(n!.clientes)], [1, 1]);
-    },
-  );
-});
-
-test('6 · la venta se acredita al closer de la llamada, no a quien la confirma', async () => {
-  let closer = '';
-  await enUnEnsayo(
-    async () => {
-      await unLead('ghl-502-a', 'a@502.test');
-      closer = (await unaFila<{ id: string }>(admin,
-        `insert into identidad.usuarios (org_id, nombre) values ($1, 'Closer 502') returning id`, [aria.org]))!.id;
-    },
-    async () => {
-      assert.notEqual(closer, aria.persona);
-      const la = await j(`select agentes.registrar_llamada($1, 'ghl-502-a', 'llamada-502-a', 'venta', 'ghl', 'Lead A: lo tomo.',
-                                                            '[]', null, null, null, $2) as r`, [LOC, closer]);
-      const p = await unSalesCoach('ghl-502-a', la.llamada_id, 'sc-closer');
-      const c = await j(`select agentes.confirmar_resultado($1, 'confirmado', $2) as r`, [p.resultado_propuesto_id, aria.persona]);
-      assert.equal(c.ok, true, JSON.stringify(c));
-      const r = await unaFila<{ closer_id: string; registrado_por: string }>(admin,
-        `select closer_id, registrado_por from negocio.resultados where id = $1`, [c.resultado_id]);
-      assert.deepEqual(r, { closer_id: closer, registrado_por: aria.persona });
+      assert.deepEqual(o.rows.map((x) => [x.pregunta, x.degradado]), [['decision', true], ['freno', false]]);
     },
   );
 });
@@ -439,7 +333,7 @@ test('8 · el comportamiento del expediente es lo que hizo el lead, no lo que an
       await unTriage('ghl-502-a', 'tr');
       const comportamiento = async () => (await unaFila<{ c: Record<string, number> | null }>(admin,
         `select comportamiento as c from negocio.expediente_del_lead where contacto_id = $1`, [a.lead]))!.c ?? {};
-      const delAgente = ['entregable_propuesto', 'triaje_registrado', 'agente_corrida_lista', 'ruta_asignada'];
+      const delAgente = ['entregable_propuesto', 'agente_corrida_lista', 'respuesta_de_agente_guardada'];
       // Control: los agentes sí los anotaron (si no, que falten no probaría nada).
       const anotados = await admin.query<{ tipo: string }>(
         `select distinct tipo from negocio.eventos where contacto_id = $1 and fuente = 'ghl_managed_agents'`, [a.lead]);
@@ -511,7 +405,7 @@ test('9 · vincular_lo_del_agente como el inquilino: el lead que llega vincula l
 /** Las filas de un lead en cada tabla de los agentes. */
 const TABLAS_DEL_LEAD = ['entregables', 'versiones_de_entregable', 'respuestas_del_brief', 'segmentos_del_mercado', 'dolores_del_segmento',
   'referentes_del_mercado', 'citas_del_mercado', 'piezas_de_contenido', 'decisiones_de_kickoff', 'transcripciones', 'fuentes_publicas',
-  'corridas_de_agente', 'triajes'];
+  'corridas_de_agente', 'respuestas_de_los_agentes'];
 async function filasDe(lead: string): Promise<Record<string, number>> {
   const r = await unaFila<Record<string, string>>(admin,
     `select ${TABLAS_DEL_LEAD.map((t) => `(select count(*) from negocio.${t} where contacto_id = $1) as ${t}`).join(', ')}`, [lead]);
@@ -519,7 +413,7 @@ async function filasDe(lead: string): Promise<Record<string, number>> {
 }
 
 /** Un expediente con todo: el de armarExpediente, los dolores con su cita, un anuncio sobre el dolor, los referentes (con
- *  su evidencia pública, si se pide), una llamada con transcripción y un Triage. */
+ *  su evidencia pública, si se pide), una llamada con transcripción y el cuadrante del Triage (119). */
 async function expedienteCompleto(ghl: string, marca: string, referenteConEvidencia = false): Promise<string> {
   const e = await armarExpediente(ghl, marca);
   const dol = await abrir('research', ghl, `dol-${ghl}`, { paso: 'mr_dolores' });
@@ -624,26 +518,26 @@ test('11 · registrar_llamada con el id externo de la llamada de A, para B: 4250
   );
 });
 
-test('12 · registrar_sales_coach rechaza una salida que nombra otro lead, también por «email»', async () => {
+test('12 · registrar_brief rechaza una salida que nombra otro lead, también por «email»', async () => {
   await enUnEnsayo(
     async () => {
       await unLead('ghl-502-a', 'a@502.test');
       await unLead('ghl-502-b', 'b@502.test');
     },
     async () => {
-      const la = await j(`select agentes.registrar_llamada($1, 'ghl-502-a', 'llamada-502-a', 'venta', 'ghl', 'Lead A: lo tomo.') as r`, [LOC]);
-      const c = await abrir('sales_coach', 'ghl-502-a', 'sc-otro', { llamada_id: la.llamada_id });
-      await j(`select agentes.leer_sales_coach($1) as r`, [c.corrida_id]);
+      const c = await abrir('brief', 'ghl-502-a', 'brief-otro');
+      await j(`select agentes.leer_brief($1) as r`, [c.corrida_id]);
+      const base = { respuestas: [{ pregunta: 'facturacion_mensual', estado: 'vacio' }] };
       // Tres intentos (al quinto la corrida fallaría): el correo, el contact_id de GHL y el id de la base de B.
       for (const otro of [{ email: 'b@502.test' }, { contact_id: 'ghl-502-b' }, { contacto_id: await idDe('ghl-502-b') }]) {
-        const r = await j(`select agentes.registrar_sales_coach($1, $2) as r`, [c.corrida_id, { ...VENTA, ...otro }]);
+        const r = await j(`select agentes.registrar_brief($1, $2) as r`, [c.corrida_id, { ...base, ...otro }]);
         assert.equal(r.ok, false, JSON.stringify(otro));
         assert.match(JSON.stringify(r.errores), /nombra otro/, `rechazado por otra razón: ${JSON.stringify(r)}`);
       }
-      const n = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.resultados_propuestos where corrida_id = $1`, [c.corrida_id]);
-      assert.equal(Number(n!.n), 0, 'un intento rechazado escribió un resultado');
+      const n = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.respuestas_del_brief where corrida_id = $1`, [c.corrida_id]);
+      assert.equal(Number(n!.n), 0, 'un intento rechazado escribió una respuesta');
       // Control: el correo del mismo lead pasa.
-      const mismo = await j(`select agentes.registrar_sales_coach($1, $2) as r`, [c.corrida_id, { ...VENTA, email: ' A@502.test' }]);
+      const mismo = await j(`select agentes.registrar_brief($1, $2) as r`, [c.corrida_id, { ...base, email: ' A@502.test' }]);
       assert.equal(mismo.ok, true, JSON.stringify(mismo));
     },
   );
@@ -671,29 +565,6 @@ test('13 · las citas que usa una pieza son de su lead: las de otro se descartan
         `select id, citas_usadas from negocio.piezas_de_contenido where version_id = $1`, [v.version_id]);
       assert.deepEqual(pieza!.citas_usadas, [citaA]);
       await comoAdmin(() => fallaCon('23503', `update negocio.piezas_de_contenido set citas_usadas = $2 where id = $1`, [pieza!.id, [citaB]]));
-    },
-  );
-});
-
-test('14 · las rutas de la cuenta no llegan a los agentes del cliente (sí al Triage)', async () => {
-  await enUnEnsayo(
-    async () => {
-      await unLead('ghl-502-a', 'a@502.test');
-      await admin.query(`select agentes.cargar_rutas($1, '[{"clave": "ruta_aria", "nombre": "RUTA_DE_ARIA", "clase": "alto_ticket"}]', $2)`,
-        [aria.cuenta, aria.persona]);
-    },
-    async () => {
-      await armarExpediente('ghl-502-a', 'MARCA_A');
-      for (const [agente, sujeto] of [['brief', {}], ['research', { paso: 'mr_dolores' }], ['estratega', { etapa: 'precio_y_process_map' }],
-        ['funnel_builder', { pieza: 'guion_vsl' }]] as const) {
-        const c = await abrir(agente, 'ghl-502-a', `rutas-${agente}`, sujeto);
-        const p = await j(`select agentes.leer_${agente}($1) as r`, [c.corrida_id]);
-        const texto = JSON.stringify(p);
-        assert.ok(texto.includes('MARCA_A'), `el paquete de ${agente} viene vacío`);
-        assert.ok(!texto.includes('RUTA_DE_ARIA'), `${agente} leyó las rutas de la cuenta`);
-      }
-      const t = await j(`select agentes.abrir_corrida('triage', $1, 'ghl-502-a', 'rutas-triage') as r`, [LOC]);
-      assert.match(JSON.stringify(await j(`select agentes.leer_triage($1) as r`, [t.corrida_id])), /RUTA_DE_ARIA/);
     },
   );
 });

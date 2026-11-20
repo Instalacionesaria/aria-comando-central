@@ -12,17 +12,14 @@
 //       aunque B tenga además lo que trae GHL (un mensaje, una cita, una llamada con transcripción, un Triage y un Sales
 //       Coach) — mutación: quitar el filtro por contacto en _leer_del_cliente o en leer_brief;
 //   3 · escritura sólo del lead: cada fila escrita sobre A lleva el contacto de A;
-//   4 · el conocimiento de la cuenta (ICP de ARIA, matriz, script, manual, rutas) no cambia al aprobar el ICP de A y B —
-//       mutación: volver a publicar el ICP en _al_aprobar;
-//   5 · un conocimiento con origen «entregable» se rechaza en la base;
+//   (4, 5 y 8 · el conocimiento de la cuenta: se borró en la 119.)
 //   6 · aprobar y corregir las versiones de A no cambia ninguna fila de B ni de la cuenta;
 //  6b · «desactualizado» se calcula al leer y sólo con lo que el entregable DEPENDE (depende_de), sin contarse a sí mismo
 //       — mutación: quitar el join con depende_de o el `d.id <> e.id` de entregable_vigente;
 //   7 · los cuatro agentes del cliente corren sobre leads que no compraron;
-//   8 · los agentes del cliente no leen el conocimiento de la cuenta;
 //   9 · una salida que nombra otro lead (contact_id o correo) se rechaza;
 //  10 · el expediente de A es una fila con lo que llenaron los agentes y nada de B (tampoco lo que B trae de GHL);
-//  11 · el Triage sin el contacto todavía se vincula al llegar (también en la 500);
+//  11 · el Triage sin el contacto todavía se vincula al llegar (también en la 505);
 //   y agentes.buscar_contacto: una coincidencia, ninguna, varias; la corrida guarda identificado_por.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -199,21 +196,16 @@ async function mensajeYCita(lead: string, marca: string): Promise<string[]> {
 async function llamadaTriageYCoach(ghl: string, marca: string): Promise<string[]> {
   const l = await j(`select agentes.registrar_llamada($1, $2, $3, 'venta', 'ghl', $4) as r`,
     [LOC, ghl, `llamada-${marca}`, `Lead ${marca}: me interesa, pero lo pienso.`]);
+  // La fase 1 (118/119): el Triage guarda su cuadrante y el Sales Coach su ficha, en su columna.
   const t = await j(`select agentes.abrir_corrida('triage', $1, $2, $3) as r`, [LOC, ghl, `t-${marca}`]);
-  await j(`select agentes.leer_triage($1) as r`, [t.corrida_id]);
-  const tr = await j(`select agentes.registrar_triage($1, $2) as r`, [t.corrida_id, {
-    prioridad: 4, ruta_clase: 'alto_ticket', confianza: 'media',
-    razones: [{ campo: 'facturacion_mensual', estado: 'detectado', valor: `8 mil ${marca}`, fuente: 'formulario:facturacion_mensual', cita: 'factura 8 mil' }],
-  }]);
+  const tr = await j(`select agentes.registrar_cuadrante($1, 'valida', $2) as r`, [t.corrida_id, `factura 8 mil ${marca}`]);
   assert.equal(tr.ok, true, JSON.stringify(tr));
   const sc = await j(`select agentes.abrir_corrida('sales_coach', $1, $2, $3, '{}', null, $4) as r`, [LOC, ghl, `sc-${marca}`, { llamada_id: l.llamada_id }]);
-  await j(`select agentes.leer_sales_coach($1) as r`, [sc.corrida_id]);
-  const s = await j(`select agentes.registrar_sales_coach($1, $2) as r`, [sc.corrida_id, {
-    resultado: { compro: false, salida: 'seguimiento', confianza: 'media', next_steps: [{ accion: `llamar de nuevo ${marca}`, responsable: 'closer' }] },
-    objeciones: [{ categoria: 'momento', texto: 'lo pienso', resuelta: false }],
-  }]);
+  const ll = await j(`select agentes.leer_llamada($1) as r`, [sc.corrida_id]);
+  assert.equal(ll.llamada_id, l.llamada_id, JSON.stringify(ll));
+  const s = await j(`select agentes.guardar_respuesta($1, $2) as r`, [sc.corrida_id, `<p>Ficha 2 ${marca}: llamar de nuevo</p>`]);
   assert.equal(s.ok, true, JSON.stringify(s));
-  return [l.llamada_id, l.transcripcion_id, tr.triaje_id, s.resultado_propuesto_id];
+  return [l.llamada_id, l.transcripcion_id, t.corrida_id, sc.corrida_id];
 }
 
 test('1 · miles de entregables sin choque: los de B no cambian ninguna versión vigente de A (y 50 leads más)', async () => {
@@ -267,7 +259,11 @@ test('2 y 3 · lectura y escritura sólo del lead: ningún paquete de A trae nad
         ['sales_coach', 'lc', { llamada_id: la.llamada_id }],
       ] as const) {
         const c = await j(`select agentes.abrir_corrida($1, $2, 'ghl-501-a', $3, '{}', null, $4) as r`, [agente, LOC, clave, sujeto]);
-        paquetes.push([agente, await j(`select agentes.leer_${agente}($1) as r`, [c.corrida_id])]);
+        // Desde la 119, Triage, Sales Assistant y Sales Coach leen el expediente (y el Sales Coach, su llamada).
+        const leer = agente === 'sales_coach'
+          ? `select agentes.expediente($1) || jsonb_build_object('llamada', agentes.leer_llamada($1)) as r`
+          : ['triage', 'sales_assistant'].includes(agente) ? `select agentes.expediente($1) as r` : `select agentes.leer_${agente}($1) as r`;
+        paquetes.push([agente, await j(leer, [c.corrida_id])]);
       }
       const exp = await j(`select agentes.expediente((select id from negocio.corridas_de_agente where contacto_id = $1 limit 1)) as r`, [a.lead]);
       paquetes.push(['expediente', exp]);
@@ -278,9 +274,6 @@ test('2 y 3 · lectura y escritura sólo del lead: ningún paquete de A trae nad
         const deA = ['triage', 'sales_assistant', 'sales_coach'].includes(agente) ? 'factura 8 mil (ghl-501-a)' : 'MARCA_A';
         assert.ok(texto.includes(deA), `el paquete de ${agente} de A no trae «${deA}»`);
       }
-      // P-1: el Sales Assistant ya no recibe el conteo de objeciones de toda la cuenta.
-      const sa = paquetes.find(([agente]) => agente === 'sales_assistant')![1];
-      assert.ok(!JSON.stringify(sa).includes('objeciones_frecuentes'), 'leer_sales_assistant trae objeciones_frecuentes');
       // 3 · cada fila escrita sobre las corridas de A es de A.
       for (const t of ['entregables', 'versiones_de_entregable', 'respuestas_del_brief', 'segmentos_del_mercado', 'citas_del_mercado',
         'decisiones_de_kickoff', 'piezas_de_contenido', 'fuentes_publicas']) {
@@ -304,68 +297,11 @@ test('2 y 3 · lectura y escritura sólo del lead: ningún paquete de A trae nad
   );
 });
 
-test('4, 5 y 8 · el conocimiento de la cuenta no cambia, la base rechaza el de un entregable, y los agentes del cliente no lo leen', async () => {
+test('6 · aprobar y corregir lo de A no cambia nada de B ni de la cuenta', async () => {
   await enUnEnsayo(
     async () => {
       await unLead('ghl-501-a', 'a@501.test');
       await unLead('ghl-501-b', 'b@501.test');
-      for (const tipo of ['icp', 'matriz_de_scoring', 'script_de_ventas', 'manual_de_objeciones']) {
-        await admin.query(`select agentes.cargar_conocimiento($1, $2, '{"de": "ARIA"}', $3, true, $4)`, [aria.cuenta, tipo, `# ${tipo} de ARIA`, aria.persona]);
-      }
-      await admin.query(`select agentes.cargar_rutas($1, '[{"clave": "accelerator", "nombre": "Accelerator", "clase": "alto_ticket"}]', $2)`, [aria.cuenta, aria.persona]);
-    },
-    async () => {
-      const foto = async () => (await unaFila<{ h: string }>(admin,
-        `select md5(coalesce((select string_agg(tipo || version || contenido::text || coalesce(contenido_texto, ''), '|' order by tipo)
-                                from negocio.conocimiento_vigente where cuenta_id = $1), '') ||
-                    coalesce((select string_agg(clave || nombre || clase, '|' order by clave) from negocio.rutas_de_la_cuenta where cuenta_id = $1), '')) as h`,
-        [aria.cuenta]))!.h;
-      const antes = await foto();
-      await armarExpediente('ghl-501-a', 'MARCA_A');
-      await armarExpediente('ghl-501-b', 'MARCA_B');
-      assert.equal(await foto(), antes, 'el conocimiento de la cuenta cambió');
-      // 5 · la base rechaza un conocimiento que venga de un entregable, aunque lo intente el superusuario.
-      await admin.query('reset role');
-      await fallaCon('23514', `insert into negocio.conocimiento_de_la_cuenta (org_id, cuenta_id, tipo, version, contenido, origen)
-                               values ($1, $2, 'icp', 99, '{"x": 1}', 'entregable')`, [aria.org, aria.cuenta]);
-      await admin.query('set local role mcp_simulado');
-      // 8 · los paquetes de los agentes del cliente no traen conocimiento de la cuenta.
-      for (const [agente, sujeto] of [['brief', {}], ['research', { paso: 'mr_precio' }], ['estratega', { etapa: 'icp' }], ['funnel_builder', { pieza: 'prompt_landing' }]] as const) {
-        const c = await j(`select agentes.abrir_corrida($1, $2, 'ghl-501-a', $3, '{}', null, $4) as r`, [agente, LOC, `k-${agente}`, sujeto]);
-        const p = await j(`select agentes.leer_${agente}($1) as r`, [c.corrida_id]);
-        const claves = Object.keys(p.fuentes ?? {});
-        assert.deepEqual(claves.filter((k) => k.startsWith('conocimiento:')), [], `${agente} leyó conocimiento de la cuenta`);
-        assert.ok(!JSON.stringify(p).includes('de ARIA'), `${agente} trae el ICP o el script de ARIA`);
-        // Y si lo pide directo, tampoco.
-        const k = await j(`select agentes.leer_conocimiento($1) as r`, [c.corrida_id]);
-        assert.deepEqual([k.conocimiento, k.fuentes], [{}, {}], `${agente} recibió conocimiento con leer_conocimiento`);
-        // Aunque lo tuviera en lo leído, no le sirve como fuente de una cita.
-        await admin.query('reset role');
-        const t = await unaFila<{ t: string | null }>(admin,
-          `select agentes._texto_de_la_fuente(c, 'conocimiento:icp') as t from negocio.corridas_de_agente c where c.id = $1`, [c.corrida_id]);
-        await admin.query(`update negocio.corridas_de_agente set leido = jsonb_build_object('fuentes', jsonb_build_object('conocimiento:icp', '# icp de ARIA')) where id = $1`, [c.corrida_id]);
-        const t2 = await unaFila<{ t: string | null }>(admin,
-          `select agentes._texto_de_la_fuente(c, 'conocimiento:icp') as t from negocio.corridas_de_agente c where c.id = $1`, [c.corrida_id]);
-        assert.deepEqual([t!.t, t2!.t], [null, null], `${agente} podría citar el conocimiento de la cuenta`);
-        await admin.query('set local role mcp_simulado');
-      }
-      // Control: el Triage (agente de la cuenta) sí lo lee.
-      const tr = await j(`select agentes.abrir_corrida('triage', $1, 'ghl-501-a', 'k-triage') as r`, [LOC]);
-      const kt = await j(`select agentes.leer_conocimiento($1) as r`, [tr.corrida_id]);
-      assert.match(JSON.stringify(kt), /icp de ARIA/);
-    },
-  );
-});
-
-test('6 · aprobar y corregir lo de A no cambia nada de B ni de la cuenta', async () => {
-  await enUnEnsayo(
-    async () => {
-      // Los dos tienen su venta: así el envío del Brief de A tiene dónde copiar «a quién vende», y se ve que no toca la de B.
-      for (const [ghl, correo, quien] of [['ghl-501-a', 'a@501.test', null], ['ghl-501-b', 'b@501.test', 'consumidores']] as const) {
-        const id = await unLead(ghl, correo);
-        await admin.query(`insert into negocio.clientes (org_id, cuenta_id, contacto_id, a_quien_vende) values ($1, $2, $3, $4)`,
-          [aria.org, aria.cuenta, id, quien]);
-      }
     },
     async () => {
       // B también queda con una pieza PROPUESTA: si una decisión sobre A se escapara de su lead, la aprobaría.
@@ -379,8 +315,6 @@ test('6 · aprobar y corregir lo de A no cambia nada de B ni de la cuenta', asyn
            (select string_agg(id || coalesce(elegido::text, ''), ',' order by id) from negocio.segmentos_del_mercado where contacto_id = $1),
            (select string_agg(id || estado, ',' order by id) from negocio.piezas_de_contenido where contacto_id = $1),
            (select string_agg(id || estado || coalesce(terminada_el::text, '') || coalesce(reemplazada_por::text, ''), ',' order by id) from negocio.corridas_de_agente where contacto_id = $1),
-           (select string_agg(id || estado || coalesce(a_quien_vende, ''), ',' order by id) from negocio.clientes where contacto_id = $1),
-           (select count(*)::text from negocio.clientes), (select count(*)::text from negocio.conocimiento_de_la_cuenta),
            (select count(*)::text from identidad.organizaciones), (select count(*)::text from identidad.cuentas))) as h`, [b.lead]))!.h;
       const antes = await fotoDe();
       await j(`select agentes.decidir_entregable($1, 'aprobada', $2) as r`, [a.anuncios, aria.persona]);
@@ -389,11 +323,10 @@ test('6 · aprobar y corregir lo de A no cambia nada de B ni de la cuenta', asyn
       const e = await j(`select agentes.responder_brief($1, '[{"pregunta": "facturacion_mensual", "valor": "9 mil"}, {"pregunta": "a_quien_vende", "valor": "negocios"}]', true, $2) as r`, [a.lead, aria.persona]);
       assert.equal(e.enviado, true, JSON.stringify(e));
       assert.equal(await fotoDe(), antes, 'lo de A cambió algo de B o de la cuenta');
-      // Control positivo: lo de A sí cambió (la venta de A recibió «a quién vende» y su ICP corregido desactualiza la oferta).
-      const deA = await unaFila<{ quien: string; oferta: boolean }>(admin,
-        `select (select a_quien_vende from negocio.clientes where contacto_id = $1) as quien,
-                (select desactualizado from negocio.entregable_vigente where contacto_id = $1 and tipo = 'categoria_y_oferta') as oferta`, [a.lead]);
-      assert.deepEqual(deA, { quien: 'negocios', oferta: true });
+      // Control positivo: lo de A sí cambió (su ICP corregido desactualiza la oferta).
+      const deA = await unaFila<{ oferta: boolean }>(admin,
+        `select (select desactualizado from negocio.entregable_vigente where contacto_id = $1 and tipo = 'categoria_y_oferta') as oferta`, [a.lead]);
+      assert.deepEqual(deA, { oferta: true });
     },
   );
 });
@@ -438,8 +371,6 @@ test('7 y 9 · los cuatro agentes del cliente corren sobre leads que no compraro
       await unLead('ghl-501-b', 'b@501.test');
     },
     async () => {
-      const clientes = await unaFila<{ n: string }>(admin, `select count(*) as n from negocio.clientes`);
-      assert.equal(Number(clientes!.n), 0);
       for (const [agente, sujeto] of [['brief', {}], ['research', { paso: 'mr_segmentos' }], ['estratega', { etapa: 'icp' }], ['funnel_builder', { pieza: 'anuncios' }]] as const) {
         const c = await j(`select agentes.abrir_corrida($1, $2, 'ghl-501-a', $3, '{}', null, $4) as r`, [agente, LOC, `s-${agente}`, sujeto]);
         assert.equal(c.ok, true, agente);
@@ -457,8 +388,7 @@ test('7 y 9 · los cuatro agentes del cliente corren sobre leads que no compraro
       }
       // 9 · lo mismo en los demás registrar_: el rechazo es POR el otro lead, no por otro error de la salida.
       const contactoB = (await unaFila<{ id: string }>(admin, `select id from negocio.contactos where ghl_contact_id = 'ghl-501-b'`))!.id;
-      for (const [agente, sujeto] of [['research', { paso: 'mr_segmentos' }], ['estratega', { etapa: 'icp' }], ['funnel_builder', { pieza: 'anuncios' }],
-        ['triage', {}], ['sales_assistant', {}]] as const) {
+      for (const [agente, sujeto] of [['research', { paso: 'mr_segmentos' }], ['estratega', { etapa: 'icp' }], ['funnel_builder', { pieza: 'anuncios' }]] as const) {
         const c = await j(`select agentes.abrir_corrida($1, $2, 'ghl-501-a', $3, '{}', null, $4) as r`, [agente, LOC, `o-${agente}`, sujeto]);
         await j(`select agentes.leer_${agente}($1) as r`, [c.corrida_id]);
         for (const otro of [...loDelOtro, { contacto_id: contactoB }]) {
@@ -491,7 +421,7 @@ test('10 · el expediente: una fila del lead con lo que llenaron los agentes, na
       for (const c of ['identidad', 'formulario', 'brief', 'research', 'kickoff', 'icp_del_lead', 'categoria_y_oferta', 'precio_y_process_map', 'embudo', 'evidencia_publica', 'corridas']) {
         assert.ok(fila[c] !== null, `la sección ${c} está vacía`);
       }
-      for (const c of ['ficha', 'resultado', 'evaluacion', 'objeciones', 'seguimientos', 'agenda', 'llamadas']) {
+      for (const c of ['resultado', 'agenda', 'llamadas', 'respuestas_de_los_agentes']) {
         assert.equal(fila[c], null, `la sección ${c} debería ser null`);
       }
       const texto = JSON.stringify(fila);
@@ -547,21 +477,13 @@ test('11 y buscar_contacto · el Triage se vincula al llegar el lead; identifica
   );
 });
 
-test('12 · lo del barrido: pago, versiones, transcripciones y la llamada del Sales Coach no cruzan de lead', async () => {
+test('12 · lo del barrido: versiones, transcripciones y la llamada del Sales Coach no cruzan de lead', async () => {
   await enUnEnsayo(
     async () => {
       await unLead('ghl-501-a', 'a@501.test');
       await unLead('ghl-501-b', 'b@501.test');
     },
     async () => {
-      // Un pago con el id externo de otro lead no lo toca.
-      const pa = await j(`select agentes.registrar_pago($1, 'ghl-501-a', 'pasarela', 'pago-501', 1000, 'USD') as r`, [LOC]);
-      await fallaCon('42501', `select agentes.registrar_pago($1, 'ghl-501-b', 'pasarela', 'pago-501', 1, 'USD', 'reembolsado', now())`, [LOC]);
-      const pago = await unaFila<{ estado: string; monto: string; contacto: string }>(admin,
-        `select estado, monto::text as monto, (select ghl_contact_id from negocio.contactos k where k.id = p.contacto_id) as contacto
-           from negocio.pagos p where p.id = $1`, [pa.pago_id]);
-      assert.deepEqual([pago!.estado, Number(pago!.monto), pago!.contacto], [pa.estado, 1000, 'ghl-501-a']);
-
       // La transcripción lleva el lead de su llamada, y no se puede colgar de otro.
       const la = await j(`select agentes.registrar_llamada($1, 'ghl-501-a', 'ga', 'venta', 'ghl', 'Lead A: me interesa.') as r`, [LOC]);
       const lb = await j(`select agentes.registrar_llamada($1, 'ghl-501-b', 'gb', 'venta', 'ghl', 'Lead B: lo pienso.') as r`, [LOC]);
@@ -574,18 +496,15 @@ test('12 · lo del barrido: pago, versiones, transcripciones y la llamada del Sa
       await fallaCon('23503', `insert into negocio.transcripciones (org_id, cuenta_id, contacto_id, llamada_id, texto, proveedor)
                                values ($1, $2, $3, $4, 'ajena', 'ghl')`, [aria.org, aria.cuenta, contactoB, la.llamada_id]);
 
-      // El Sales Coach no evalúa una llamada de otro lead aunque alguien cambie la de su corrida.
+      // El Sales Coach lee sólo la llamada de su lead (leer_llamada, 119): la de B no se la da ni pidiéndola.
       await admin.query('set local role mcp_simulado');
       const c = await j(`select agentes.abrir_corrida('sales_coach', $1, 'ghl-501-a', 'sc', '{}', null, $2) as r`, [LOC, { llamada_id: la.llamada_id }]);
-      await j(`select agentes.leer_sales_coach($1) as r`, [c.corrida_id]);
-      await admin.query('reset role');
-      await admin.query(`update negocio.corridas_de_agente set llamada_id = $2 where id = $1`, [c.corrida_id, lb.llamada_id]);
-      await admin.query('set local role mcp_simulado');
-      const s = await j(`select agentes.registrar_sales_coach($1, $2) as r`, [c.corrida_id, {
-        resultado: { compro: false, salida: 'no_interesa', confianza: 'alta', next_steps: [{ accion: 'nada', responsable: 'sistema' }] },
-      }]);
-      assert.equal(s.ok, false, JSON.stringify(s));
-      assert.match(JSON.stringify(s), /no es de este lead/);
+      const propia = await j(`select agentes.leer_llamada($1) as r`, [c.corrida_id]);
+      assert.equal(propia.llamada_id, la.llamada_id);
+      assert.match(propia.transcripcion, /Lead A/);
+      const ajena = await j(`select agentes.leer_llamada($1, $2) as r`, [c.corrida_id, lb.llamada_id]);
+      assert.equal(ajena.llamada_id, null, JSON.stringify(ajena));
+      assert.match(ajena.motivo, /no es de este lead/);
 
       // El entregable de un lead no puede apuntar a la versión de otro.
       const a = await armarExpediente('ghl-501-a', 'MARCA_A');

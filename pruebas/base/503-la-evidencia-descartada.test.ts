@@ -11,8 +11,7 @@
 //       las de una corrida abierta o que espera aprobación — mutación: _leer_del_cliente de la 115;
 //   2 · por eso una cita del Research a la fuente de la corrida fallida se rechaza («no es una evidencia registrada»),
 //       y a la buena se acepta;
-//   3 · leer_brief y leer_sales_assistant (la lista y las claves) tampoco las entregan — mutación: sus versiones de
-//       la 115;
+//   3 · leer_brief tampoco las entrega — mutación: su versión de la 115 (leer_sales_assistant se borró en la 119);
 //   4 · la sección evidencia_publica del expediente tampoco — mutación: la vista de la 115;
 //   5 · la fuente que una corrida registra sigue siendo citable por ella misma;
 //   6 · los tipos de fuente nuevos (tiktok, youtube, facebook, empleo, google_trends) se aceptan;
@@ -178,7 +177,7 @@ test('1 y 2 · leer_research no entrega la evidencia de corridas descartadas, y 
   });
 });
 
-test('3 · leer_brief y leer_sales_assistant tampoco las entregan', async () => {
+test('3 · leer_brief tampoco las entrega', async () => {
   await enUnEnsayo(async () => {
     const { ghl, f } = await preparar();
     const b = await abrir('brief', ghl, `brief:${ghl}:2`);
@@ -186,16 +185,7 @@ test('3 · leer_brief y leer_sales_assistant tampoco las entregan', async () => 
     const kb = Object.keys(lb.fuentes ?? {});
     for (const k of SIN) assert.ok(!kb.includes(f[k]!), `leer_brief no entrega la de la corrida ${k}`);
     for (const k of CON) assert.ok(kb.includes(f[k]!), `leer_brief entrega la de la corrida ${k} (control)`);
-
-    const s = await abrir('sales_assistant', ghl, `sa:${ghl}`);
-    const ls = await j(`select agentes.leer_sales_assistant($1) as r`, [s.corrida_id]);
-    const ks = Object.keys(ls.fuentes ?? {});
-    const lista = JSON.stringify(ls);
-    for (const k of SIN) {
-      assert.ok(!ks.includes(f[k]!), `leer_sales_assistant no entrega la clave de la corrida ${k}`);
-      assert.ok(!lista.includes(`MARCA-${k.toUpperCase()}`), `ni su extracto en la lista (${k})`);
-    }
-    for (const k of CON) assert.ok(ks.includes(f[k]!), `leer_sales_assistant entrega la de la corrida ${k} (control)`);
+    // (leer_sales_assistant se borró en la 119: el Sales Assistant lee el expediente, que cubre el caso 4.)
   });
 });
 

@@ -24,9 +24,9 @@
  * los siete agentes. Todas de una cuenta: la del vendedor (los agentes del lead) o la del comprador (los del cliente).
  */
 export const AGENTES_GESTIONADOS = [
-  'corridas_de_agente', 'conocimiento_de_la_cuenta', 'fuentes_publicas', 'acciones_externas',
-  'rutas_de_la_cuenta', 'triajes', 'transcripciones', 'fichas_del_lead',
-  'resultados_propuestos', 'evaluaciones_de_llamada', 'objeciones_de_llamada', 'borradores_de_mensaje', 'clientes', 'pagos',
+  'corridas_de_agente', 'fuentes_publicas', 'acciones_externas', 'transcripciones',
+  // (119: se borraron conocimiento_de_la_cuenta, rutas_de_la_cuenta, triajes, fichas_del_lead, resultados_propuestos,
+  // evaluaciones_de_llamada, objeciones_de_llamada, borradores_de_mensaje, clientes y pagos.)
   'entregables', 'versiones_de_entregable', 'respuestas_del_brief',
   'segmentos_del_mercado', 'dolores_del_segmento', 'referentes_del_mercado', 'citas_del_mercado', 'decisiones_de_kickoff',
   'piezas_de_contenido',
