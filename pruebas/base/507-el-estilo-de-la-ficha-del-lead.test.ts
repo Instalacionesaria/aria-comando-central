@@ -16,8 +16,9 @@
 //   3 · un documento entero (con <html>) se guarda tal cual, como antes de la 120;
 //   4 · las reglas del HTML valen para lo que se guarda: un <script> en el contenido se rechaza, y el vacío también;
 //   5 · la ficha del Sales Coach (121) es la ficha del lead vigente entera más lo que él manda, con el mismo estilo y
-//       su propio título; sin ficha del lead (o con una que no envolvió la base) va sólo lo suyo; el Brief no tiene
-//       envoltura y guarda lo que manda — mutación: guardar_respuesta que no incluye la ficha 1;
+//       su propio título; sin ficha del lead (o con una que no envolvió la base) va sólo lo suyo; la ficha de cliente
+//       del Brief (122) tiene su propio estilo simple y no incluye ninguna ficha interna — mutación: guardar_respuesta
+//       que no incluye la ficha 1;
 //   6 · la envoltura es sólo de columnas HTML y pasa las reglas del HTML (CHECK) — mutación: sin el CHECK.
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -233,18 +234,24 @@ test('5 · el Sales Coach guarda envuelto con su propio título (121), y el Brie
     assert.equal(rc.incluye, null);
     assert.equal((await fila(c.id))!.sales_coach_ficha_de_lead_2, `${sc.envoltura}\n<div class="hoja" id="post-llamada">Sola</div>${FIN}`);
 
-    const br = await abrir('brief', a.ghl);
-    const rb = await guardar(br.corrida_id, '<section id="enlace_brief">Brief</section>');
+    // La ficha de cliente (122): su propio estilo simple, y NO incluye la ficha 2 (es interna: el cliente no la ve).
+    const env3 = (await comoAdmin(() => unaFila<{ envoltura: string }>(admin,
+      `select envoltura from catalogo.salidas_de_los_agentes where clave = 'brief_ficha_de_cliente_1'`)))!.envoltura;
+    assert.match(env3, /<title>Tu ficha de cliente/);
+    assert.doesNotMatch(env3, /@import|gradient/, 'la ficha de cliente tiene que ser simple para el PDF');
+    const br = await abrir('brief', b.ghl);
+    const rb = await guardar(br.corrida_id, '<div class="hoja" id="ficha-de-cliente">Brief</div>');
     assert.equal(rb.ok, true, JSON.stringify(rb));
-    assert.equal(rb.con_el_estilo_de_la_base, false);
-    assert.equal((await fila(a.id))!.brief_ficha_de_cliente_1, '<section id="enlace_brief">Brief</section>');
+    assert.equal(rb.con_el_estilo_de_la_base, true);
+    assert.equal(rb.incluye, null, 'la ficha de cliente incluyó otra ficha');
+    assert.equal((await fila(b.id))!.brief_ficha_de_cliente_1, `${env3}\n<div class="hoja" id="ficha-de-cliente">Brief</div>${FIN}`);
   });
 });
 
 test('6 · la envoltura es sólo de columnas HTML y pasa las reglas del HTML', async () => {
   const conEnvoltura = await unaFila<{ claves: string[] }>(admin,
     `select array_agg(clave::text order by orden) as claves from catalogo.salidas_de_los_agentes where envoltura is not null`);
-  assert.deepEqual(conEnvoltura!.claves, ['sales_assistant_ficha_de_lead_1', 'sales_coach_ficha_de_lead_2']);
+  assert.deepEqual(conEnvoltura!.claves, ['sales_assistant_ficha_de_lead_1', 'sales_coach_ficha_de_lead_2', 'brief_ficha_de_cliente_1']);
 
   const intentar = async (sql: string): Promise<string | null> => {
     await admin.query('begin');
