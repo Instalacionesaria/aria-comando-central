@@ -41,6 +41,7 @@ import { randomUUID } from 'node:crypto';
 import type { Client } from 'pg';
 import { cerrarTodo, conectar, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
+import { unResearchCompleto } from '../apoyo/research.ts';
 
 let admin: Client;
 let aria: { org: string; cuenta: string; persona: string };
@@ -157,7 +158,7 @@ async function expedienteCompleto(ghl: string, marca: string): Promise<string> {
   assert.equal(f2.ok, true, JSON.stringify(f2));
   const mr = await abrir('research', ghl, `mr-${ghl}`);
   const r = await j(`select agentes.guardar_secciones($1, $2::jsonb) as r`,
-    [mr.corrida_id, JSON.stringify([{ id: 'resumen', html: `<h2>Market research ${marca}</h2>` }])]);
+    [mr.corrida_id, JSON.stringify(unResearchCompleto(`<h2>Market research ${marca}</h2>`))]);
   assert.equal(r.ok, true, JSON.stringify(r));
   return lead;
 }

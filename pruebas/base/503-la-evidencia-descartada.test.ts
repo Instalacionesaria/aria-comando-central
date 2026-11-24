@@ -27,6 +27,7 @@ import { randomUUID } from 'node:crypto';
 import type { Client } from 'pg';
 import { cerrarTodo, conectar, unaFila } from '../apoyo/conexiones.ts';
 import { cerrarClientes } from '../../lib/datos/capa.ts';
+import { unResearchCompleto } from '../apoyo/research.ts';
 
 let admin: Client;
 let aria: { org: string; cuenta: string };
@@ -134,7 +135,7 @@ async function preparar(): Promise<{ ghl: string; contacto: string; f: Record<st
   const x5 = await abrir('research', ghl, `r:${ghl}:lista`);
   f.lista = await fuente(x5.corrida_id, 'MARCA-LISTA hay 75 inmobiliarias en Lima', 'google_maps');
   const r5 = await j(`select agentes.guardar_secciones($1, $2::jsonb) as r`, [x5.corrida_id,
-    JSON.stringify([{ id: 'resumen', html: '<p>Hay 75 inmobiliarias en Lima.</p>' }])]);
+    JSON.stringify(unResearchCompleto('<p>Hay 75 inmobiliarias en Lima.</p>'))]);
   assert.equal(r5.ok, true, JSON.stringify(r5));
   // esperando aprobación, rechazada y aprobada: estados que hoy ninguna función de la fase 1 deja, pero que la tabla
   // acepta; su evidencia sigue valiendo (el rechazo es del contenido, no de la evidencia).

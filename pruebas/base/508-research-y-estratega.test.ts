@@ -92,6 +92,10 @@ async function enUnEnsayo(comoElMcp: () => Promise<void>): Promise<void> {
       end if; end $$`);
     await admin.query('grant agente_mcp, pg_read_all_data to mcp_simulado');
     await admin.query(`update identidad.cuentas set crm_cuenta_id = $2 where id = $1`, [aria.cuenta, LOC]);
+    // Este archivo defiende el mecanismo de la 124 sin plantilla; la plantilla provisoria del Research (125) y las
+    // tandas los defiende la 509. Se quita dentro de la transacción (se deshace al final).
+    await admin.query(`update catalogo.salidas_de_los_agentes set plantilla = null, secciones_obligatorias = null
+                        where clave = 'research_market_research'`);
     await admin.query('set local role mcp_simulado');
     await comoElMcp();
   } finally {
@@ -262,7 +266,7 @@ test('3 · lo que no es una sección se rechaza diciendo qué falló, y ningún 
   const malos: Array<[string, unknown, RegExp]> = [
     ['nulo', null, /secciones: un arreglo/],
     ['no es un arreglo', { id: 'resumen', html: '<p>x</p>' }, /secciones: un arreglo/],
-    ['arreglo vacío', [], /con al menos una sección/],
+    ['arreglo vacío', [], /al menos una \(sólo la última tanda puede ir vacía/],
     ['más de 40', Array.from({ length: 41 }, (_, i) => ({ id: `s${i}`, html: '<p>x</p>' })), /secciones: hasta 40/],
     ['no es un objeto', ['<p>x</p>'], /cada sección es un objeto/],
     ['id con mayúscula', [{ id: 'Resumen', html: '<p>x</p>' }], /el id va en minúsculas/],
@@ -546,13 +550,13 @@ test('7b · leer_ficha_de_cliente_2 sin la tabla: el motivo, no un error', async
 });
 
 test('8 · abrir_corrida: el «siguiente» de Research y Estratega, el Funnel Builder sin salida no abre, y el catálogo', async () => {
-  const salidas = await filas<{ clave: string; agente: string; orden: number; tipo: string; plantilla: string | null;
-    secciones_obligatorias: string[] | null }>(admin,
-    `select clave, agente, orden, tipo, plantilla, secciones_obligatorias from catalogo.salidas_de_los_agentes
+  // (La plantilla del Research, desde la 125, la mira la 509.)
+  const salidas = await filas<{ clave: string; agente: string; orden: number; tipo: string; por_secciones: boolean }>(admin,
+    `select clave, agente, orden, tipo, por_secciones from catalogo.salidas_de_los_agentes
       where clave in ('research_market_research', 'estratega_oferta') order by orden`);
   assert.deepEqual(salidas, [
-    { clave: 'research_market_research', agente: 'research', orden: 5, tipo: 'html', plantilla: null, secciones_obligatorias: null },
-    { clave: 'estratega_oferta', agente: 'estratega', orden: 6, tipo: 'html', plantilla: null, secciones_obligatorias: null },
+    { clave: 'research_market_research', agente: 'research', orden: 5, tipo: 'html', por_secciones: true },
+    { clave: 'estratega_oferta', agente: 'estratega', orden: 6, tipo: 'html', por_secciones: true },
   ]);
   const vista = await filas<{ column_name: string }>(admin,
     `select column_name from information_schema.columns where table_schema = 'negocio' and table_name = 'respuestas_por_lead'
