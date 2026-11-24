@@ -23,7 +23,7 @@
 //   webhook-borrar [--llave admin]
 //   receptor [--puerto 8787]                 recibe los webhooks en esta máquina
 //   simular [--puerto 8787]                  manda al receptor un webhook falso firmado (sin Fathom)
-//   simular --url http://localhost:3000/api/fathom/webhook [--secreto whsec_…] [--titulo "HT_Prueba - ARIA"]
+//   simular --url http://localhost:3000/api/fathom/webhook [--secreto whsec_…] [--titulo "Lead de Prueba - ARIA"]
 //           [--correo lead@…] [--id 123]   manda a la ruta de Comando Central (secreto: --secreto o FATHOM_SECRETO_WEBHOOK)
 //   comparar --fathom <recording_id> --tldv <meeting_id> [--llave admin]
 //
@@ -448,7 +448,7 @@ async function simularHaciaLaRuta(o) {
     process.exitCode = 1;
     return;
   }
-  const titulo = typeof o.titulo === 'string' ? o.titulo : 'HT_Prueba - ARIA';
+  const titulo = typeof o.titulo === 'string' ? o.titulo : 'Lead de Prueba - ARIA';
   const correo = typeof o.correo === 'string' ? o.correo : 'prospecto@ejemplo-externo.com';
   const recordingId = o.id ? Number(o.id) : 900_000_000 + randomInt(1_000_000);
   const interno = typeof o.interno === 'string' ? o.interno : 'closer@ejemplo-interno.com';

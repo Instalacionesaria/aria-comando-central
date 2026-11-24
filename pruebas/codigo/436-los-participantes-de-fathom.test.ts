@@ -27,8 +27,8 @@ import {
 
 function reunion(parcial: Partial<FathomMeeting> = {}): FathomMeeting {
   return {
-    title: 'HT_Juan - ARIA',
-    meeting_title: 'HT_Juan - ARIA',
+    title: 'Juan - ARIA',
+    meeting_title: 'Juan - ARIA',
     recording_id: 1,
     recording_start_time: '2026-11-13T15:00:00Z',
     recording_end_time: '2026-11-13T15:30:00Z',

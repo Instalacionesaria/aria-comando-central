@@ -276,7 +276,7 @@ export async function guardarReunionDeFathom(e: EntradaDeFathom): Promise<Result
   let motivo: string | null = vinculo.motivo;
   if (!clasificacion.esVenta) {
     estado = 'no_es_venta';
-    motivo = `Ningún título empieza con HT (calendario: ${JSON.stringify(r.meeting_title ?? null)}, grabación: ${JSON.stringify(r.title ?? null)}).`;
+    motivo = `Ningún título tiene la forma «<nombre> - ARIA» (calendario: ${JSON.stringify(r.meeting_title ?? null)}, grabación: ${JSON.stringify(r.title ?? null)}).`;
   } else if (!vinculo.contactoId) {
     estado = candidatos.length > 0 ? 'sin_lead' : 'sin_correo_externo';
   } else if (!transcripcion) {

@@ -162,8 +162,8 @@ function grabacion(n: number, correo: string, parcial: Partial<FathomMeeting> = 
   inicio.setUTCHours(15, 0, 0, 0);
   const fin = new Date(inicio.getTime() + 30 * 60 * 1000);
   return {
-    title: 'HT_Lead - ARIA',
-    meeting_title: 'HT_Lead - ARIA',
+    title: 'Lead de Prueba - ARIA',
+    meeting_title: 'Lead de Prueba - ARIA',
     recording_id: siguienteId++,
     share_url: 'https://fathom.video/share/439',
     created_at: fin.toISOString(),

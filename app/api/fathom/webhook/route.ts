@@ -4,9 +4,10 @@
 // QUÉ HACE (la 116 y `lib/fathom/guardar.ts` tienen el porqué entero)
 //
 // Fathom manda UN envío por grabación, con la reunión completa y la transcripción. Esta ruta comprueba que lo mandó
-// Fathom, y `guardarReunionDeFathom` decide: si el título empieza con «HT» es una llamada de venta, busca al lead en la
-// subcuenta de ARIA y, si lo encuentra, guarda la llamada y su transcripción como datos de ese lead. Todo lo demás queda
-// sólo en `negocio.recepciones_de_fathom`, con su estado y su motivo. Es independiente de tl;dv, que sigue igual.
+// Fathom, y `guardarReunionDeFathom` decide: si el título es «<nombre> - ARIA» (la plantilla de venta de GHL) es una
+// llamada de venta, busca al lead en la subcuenta de ARIA y, si lo encuentra, guarda la llamada y su transcripción
+// como datos de ese lead. Todo lo demás queda sólo en `negocio.recepciones_de_fathom`, con su estado y su motivo. Es
+// independiente de tl;dv, que sigue igual.
 //
 // El webhook lo crea en Fathom un admin del plan Team con `triggered_for: shared_team_recordings` e
 // `include_transcript: true`, hacia `https://app.ariaia.com/api/fathom/webhook`. Su secreto `whsec_…` va en

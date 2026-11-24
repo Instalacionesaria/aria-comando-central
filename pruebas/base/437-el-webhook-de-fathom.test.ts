@@ -137,8 +137,8 @@ function grabacion(n: number, parcial: Partial<FathomMeeting> = {}): FathomMeeti
   const inicio = dia(n);
   const fin = new Date(inicio.getTime() + 30 * 60 * 1000);
   return {
-    title: 'HT_Lead - ARIA',
-    meeting_title: 'HT_Lead - ARIA',
+    title: 'Lead de Prueba - ARIA',
+    meeting_title: 'Lead de Prueba - ARIA',
     recording_id: siguienteId++,
     url: 'https://fathom.video/calls/1',
     share_url: 'https://fathom.video/share/abc',
@@ -237,7 +237,7 @@ test('una venta con lead por correo: la llamada y su transcripción quedan como 
   assert.equal(l.proveedor, 'fathom');
   assert.equal(l.contestada, true);
   assert.equal(l.persona_id, usuario.id);
-  assert.equal(l.titulo, 'HT_Lead - ARIA');
+  assert.equal(l.titulo, 'Lead de Prueba - ARIA');
   assert.equal(l.vinculada_por, 'correo');
   assert.equal(l.estado_de_transcripcion, 'lista');
   assert.equal(l.cuenta_id, cuentaAria);
@@ -294,7 +294,7 @@ test('el lead dado de baja en el CRM no cuenta, y uno de otra subcuenta tampoco:
 
 test('lo que no es de venta queda sólo en la recepción, aunque el lead exista', async () => {
   const lead = await contacto({ email: 'onboarding@ejemplo.test' });
-  const g = grabacion(5, { title: 'Onboarding Lead', meeting_title: 'Onboarding Lead', calendar_invitees: invitadoExterno('onboarding@ejemplo.test') });
+  const g = grabacion(5, { title: 'Fase 0: Onboarding Quantum - Lead', meeting_title: 'Fase 0: Onboarding Quantum - Lead', calendar_invitees: invitadoExterno('onboarding@ejemplo.test') });
   const r = await enviar(g);
   assert.deepEqual(r.cuerpo, { recibido: true, estado: 'no_es_venta', ya_estaba: false });
   const rec = await recepcion(g.recording_id!);
@@ -455,7 +455,7 @@ test('lo firmado pero ilegible es 200 sin reintento; lo enorme es 413', async ()
   assert.deepEqual((await enviar(null, { crudo: '{no es json' })).cuerpo, { recibido: false, porque: 'ilegible' });
   // Un cuerpo vacío es «sin cuerpo» para el lector acotado: se rechaza como lo sin firma (Fathom nunca lo manda).
   assert.deepEqual((await enviar(null, { crudo: '' })).cuerpo, { codigo: 'sin_permiso' });
-  assert.deepEqual((await enviar({ title: 'HT_x' })).cuerpo, { recibido: false, porque: 'ilegible' });
+  assert.deepEqual((await enviar({ title: 'x - ARIA' })).cuerpo, { recibido: false, porque: 'ilegible' });
   assert.deepEqual((await enviar({ recording_id: 'abc' })).cuerpo, { recibido: false, porque: 'ilegible' });
   const enorme = await enviar(null, { crudo: JSON.stringify({ relleno: 'x'.repeat(4 * 1024 * 1024) }) });
   assert.equal(enorme.estado, 413);
