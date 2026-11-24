@@ -20,17 +20,17 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Las de los managed agents (`110` a `114`, 2026-11-10): las corridas, el conocimiento de cada cuenta y las salidas de
- * los siete agentes. Todas de una cuenta: la del vendedor (los agentes del lead) o la del comprador (los del cliente).
+ * Las de los managed agents (`110` a `118`, desde el 2026-11-10): las corridas, lo que leyeron y lo que dejó cada
+ * agente. Todas de una cuenta: la de la location donde corre el agente, sobre su lead.
  */
 export const AGENTES_GESTIONADOS = [
   'corridas_de_agente', 'fuentes_publicas', 'acciones_externas', 'transcripciones',
   // (119: se borraron conocimiento_de_la_cuenta, rutas_de_la_cuenta, triajes, fichas_del_lead, resultados_propuestos,
   // evaluaciones_de_llamada, objeciones_de_llamada, borradores_de_mensaje, clientes y pagos.)
-  'entregables', 'versiones_de_entregable', 'respuestas_del_brief',
-  'segmentos_del_mercado', 'dolores_del_segmento', 'referentes_del_mercado', 'citas_del_mercado', 'decisiones_de_kickoff',
-  'piezas_de_contenido',
-  // 118: lo que deja cada agente en la fase 1, una fila por lead y una columna por agente.
+  // (123: se borraron entregables, versiones_de_entregable, respuestas_del_brief, segmentos_del_mercado,
+  // dolores_del_segmento, referentes_del_mercado, citas_del_mercado, decisiones_de_kickoff y piezas_de_contenido:
+  // el Research y el Estratega guardan su documento en una columna de respuestas_de_los_agentes.)
+  // 118: lo que deja cada agente, una fila por lead y una columna por salida (123: con el research y la oferta).
   'respuestas_de_los_agentes',
 ] as const;
 

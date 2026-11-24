@@ -19,7 +19,8 @@
 //       su propio título; sin ficha del lead (o con una que no envolvió la base) va sólo lo suyo; la ficha de cliente
 //       del Brief (122) tiene su propio estilo simple y no incluye ninguna ficha interna — mutación: guardar_respuesta
 //       que no incluye la ficha 1;
-//   6 · la envoltura es sólo de columnas HTML y pasa las reglas del HTML (CHECK) — mutación: sin el CHECK.
+//   6 · la envoltura es sólo de columnas HTML y pasa las reglas del HTML (CHECK); las cinco columnas HTML la tienen,
+//       también el market research y la oferta (124, con su envoltura provisoria y su título) — mutación: sin el CHECK.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -251,7 +252,14 @@ test('5 · el Sales Coach guarda envuelto con su propio título (121), y el Brie
 test('6 · la envoltura es sólo de columnas HTML y pasa las reglas del HTML', async () => {
   const conEnvoltura = await unaFila<{ claves: string[] }>(admin,
     `select array_agg(clave::text order by orden) as claves from catalogo.salidas_de_los_agentes where envoltura is not null`);
-  assert.deepEqual(conEnvoltura!.claves, ['sales_assistant_ficha_de_lead_1', 'sales_coach_ficha_de_lead_2', 'brief_ficha_de_cliente_1']);
+  assert.deepEqual(conEnvoltura!.claves, ['sales_assistant_ficha_de_lead_1', 'sales_coach_ficha_de_lead_2', 'brief_ficha_de_cliente_1',
+    'research_market_research', 'estratega_oferta']);
+  // Las dos de la 124 llevan, mientras no lleguen sus plantillas, una envoltura provisoria con su propio título.
+  const titulos = await unaFila<{ research: string; estratega: string }>(admin,
+    `select (select envoltura from catalogo.salidas_de_los_agentes where clave = 'research_market_research') as research,
+            (select envoltura from catalogo.salidas_de_los_agentes where clave = 'estratega_oferta') as estratega`);
+  assert.match(titulos!.research, /<title>Market research · ARIA IA<\/title>/);
+  assert.match(titulos!.estratega, /<title>Oferta · ARIA IA<\/title>/);
 
   const intentar = async (sql: string): Promise<string | null> => {
     await admin.query('begin');

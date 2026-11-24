@@ -2530,7 +2530,7 @@ export interface VistaRespuestasDelLeadTraducidas {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LOS AGENTES GESTIONADOS · migraciones `110` a `114`
+// LOS AGENTES GESTIONADOS · migraciones `110` a `118` (la `123` borró las de la `113` y la `114`)
 //
 // Todas de una cuenta (`cuenta_id not null`), como dice `AGENTES_GESTIONADOS` en
 // `pruebas/apoyo/regimenes-de-negocio.ts`. Los `jsonb` van como `unknown` (con su default,
@@ -2667,158 +2667,10 @@ export interface TablaRecepcionesDeFathom {
   resultado_en_ghl: string | null;
 }
 
-/** Un entregable del onboarding, uno por tipo y por cuenta (113). */
-export interface TablaEntregables {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  /** Una clave de `catalogo.tipos_de_entregable`. */
-  tipo: string;
-  cliente_id: string | null;
-  estado: Generated<'vacio' | 'propuesto' | 'en_revision' | 'aprobado' | 'desactualizado'>;
-  version_vigente_id: string | null;
-  version_aprobada_id: string | null;
-  creado_el: Generated<Date>;
-  actualizado_el: Generated<Date>;
-}
-
-/** Cada versión de un entregable, de un agente, una persona o el cliente (113). */
-export interface TablaVersionesDeEntregable {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  entregable_id: string;
-  numero: number;
-  autor_tipo: 'agente_ia' | 'persona' | 'cliente';
-  corrida_id: string | null;
-  autor_usuario_id: string | null;
-  contenido: Generated<unknown>;
-  contenido_texto: string | null;
-  fuentes: Generated<unknown>;
-  estado: Generated<'propuesta' | 'aprobada' | 'rechazada' | 'corregida'>;
-  decidida_por: string | null;
-  decidida_el: Date | null;
-  motivo: string | null;
-  creada_el: Generated<Date>;
-}
-
-/** Cada respuesta del brief, de sólo agregar: la vigente es la última (113). */
-export interface TablaRespuestasDelBrief {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  entregable_id: string;
-  version_del_brief: string;
-  pregunta: string;
-  valor_texto: string | null;
-  valor_json: unknown | null;
-  estado: 'prellenado_detectado' | 'prellenado_inferido' | 'vacio' | 'confirmado' | 'corregido' | 'completado';
-  autor_tipo: 'agente_ia' | 'cliente' | 'persona';
-  fuente: string | null;
-  cita: string | null;
-  confianza: 'alta' | 'media' | 'baja' | null;
-  texto_para_el_cliente: string | null;
-  degradado: Generated<boolean>;
-  corrida_id: string | null;
-  autor_usuario_id: string | null;
-  reemplaza_a: string | null;
-  registrada_el: Generated<Date>;
-}
-
-/** Los segmentos del mercado que propone el research (114). */
-export interface TablaSegmentosDelMercado {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  version_id: string;
-  nombre: string;
-  descripcion: string | null;
-  criterios: Generated<unknown>;
-  valor_del_cliente: string | null;
-  contrato_inicial: string | null;
-  senales_de_tamano: string | null;
-  elegido: Generated<boolean>;
-  creado_el: Generated<Date>;
-}
-
-/** Los dolores de cada segmento (114). */
-export interface TablaDoloresDelSegmento {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  version_id: string;
-  segmento_id: string | null;
-  segmento_nombre: string | null;
-  etapa_del_recorrido: string | null;
-  descripcion: string;
-  intensidad: number | null;
-  es_critico: Generated<boolean>;
-  /** Una clave de `catalogo.dolores_comunes`. */
-  dolor_comun: string | null;
-  creado_el: Generated<Date>;
-}
-
-/** Quién ya resolvió el dolor, o quién lo provee (114). */
-export interface TablaReferentesDelMercado {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  version_id: string;
-  segmento_id: string | null;
-  tipo: 'resolvio_el_dolor' | 'proveedor';
-  nombre: string;
-  url: string | null;
-  que_ofrece: string | null;
-  precio: string | null;
-  fuente_publica_id: string | null;
-  creado_el: Generated<Date>;
-}
-
-/** Las citas textuales del mercado, cada una con su fuente pública (114). */
-export interface TablaCitasDelMercado {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  version_id: string;
-  segmento_id: string | null;
-  dolor_id: string | null;
-  fuente_publica_id: string;
-  texto: string;
-  cita_verificada: Generated<boolean>;
-  creado_el: Generated<Date>;
-}
-
-/** Lo que se decidió en el kickoff (114). */
-export interface TablaDecisionesDeKickoff {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  sobre: 'research' | 'segmento' | 'oferta' | 'precio' | 'reglas_de_agentes' | 'otro';
-  decision: string;
-  autor: string | null;
-  cita_ghl_id: string | null;
-  creada_el: Generated<Date>;
-}
-
 /**
- * Lo que deja cada managed agent en la fase 1 (118): una fila por lead y una columna por agente, en el orden del flujo.
- * La escriben sólo las funciones `agentes.guardar_respuesta` y `agentes.registrar_cuadrante`; la aplicación sólo la lee.
+ * Lo que deja cada managed agent (118; 123 con Research y Estratega): una fila por lead y una columna por salida, en el
+ * orden del flujo. La escriben sólo las funciones `agentes.guardar_respuesta`, `agentes.guardar_secciones` y
+ * `agentes.registrar_cuadrante`; la aplicación sólo la lee.
  */
 export interface TablaRespuestasDeLosAgentes {
   org_id: ColumnaInquilino;
@@ -2828,37 +2680,14 @@ export interface TablaRespuestasDeLosAgentes {
   sales_assistant_ficha_de_lead_1: string | null;
   sales_coach_ficha_de_lead_2: string | null;
   brief_ficha_de_cliente_1: string | null;
+  /** El market research del Research (123), armado por secciones con `agentes.guardar_secciones`. */
+  research_market_research: string | null;
+  /** La oferta del Estratega (123), armada por secciones con `agentes.guardar_secciones`. */
+  estratega_oferta: string | null;
   /** Por columna: `{corrida_id, agente, guardado_el, version, bytes}` y, en el Triage, la razón. */
   procedencia: Generated<Record<string, unknown>>;
   creado_el: Generated<Date>;
   actualizado_el: Generated<Date>;
-}
-
-/** Las piezas de contenido que propone el funnel: anuncios, VSL, landings (114). */
-export interface TablaPiezasDeContenido {
-  org_id: ColumnaInquilino;
-  cuenta_id: ColumnaCuenta;
-  /** El lead dueño de la fila (115). */
-  contacto_id: string;
-  id: Generated<string>;
-  version_id: string;
-  tipo: 'anuncio' | 'vsl' | 'landing';
-  codigo_de_nomenclatura: string | null;
-  angulo: string | null;
-  segmento_id: string | null;
-  dolor_id: string | null;
-  dolor_del_creativo: string | null;
-  nivel_de_consciencia: string | null;
-  formato: string | null;
-  titular: string | null;
-  texto_principal: string | null;
-  guion: string | null;
-  llamado_a_la_accion: string | null;
-  /** Los ids de `citas_del_mercado` que usa la pieza. */
-  citas_usadas: Generated<string[]>;
-  estado: Generated<'propuesta' | 'aprobada' | 'publicada' | 'pausada' | 'descartada'>;
-  anuncio_id_externo: string | null;
-  creada_el: Generated<Date>;
 }
 
 /** Las tablas de identidad, la vista de permisos efectivos, y las de negocio. */
@@ -2954,21 +2783,14 @@ export interface BaseDeDatos {
   toques_de_marketing: TablaToquesDeMarketing;
   etapas_del_lead: VistaEtapasDelLead;
   respuestas_del_lead_traducidas: VistaRespuestasDelLeadTraducidas;
-  // Los agentes gestionados (110 a 114).
+  // Los agentes gestionados (110 a 112, 116 y 118). Los entregables, el Brief estructurado, el research en tablas, el
+  // kickoff y las piezas de contenido (113 y 114) se borraron en la 123: sus salidas son columnas de
+  // respuestas_de_los_agentes.
   corridas_de_agente: TablaCorridasDeAgente;
   fuentes_publicas: TablaFuentesPublicas;
   acciones_externas: TablaAccionesExternas;
   transcripciones: TablaTranscripciones;
   recepciones_de_fathom: TablaRecepcionesDeFathom;
-  entregables: TablaEntregables;
-  versiones_de_entregable: TablaVersionesDeEntregable;
-  respuestas_del_brief: TablaRespuestasDelBrief;
-  segmentos_del_mercado: TablaSegmentosDelMercado;
-  dolores_del_segmento: TablaDoloresDelSegmento;
-  referentes_del_mercado: TablaReferentesDelMercado;
-  citas_del_mercado: TablaCitasDelMercado;
-  decisiones_de_kickoff: TablaDecisionesDeKickoff;
-  piezas_de_contenido: TablaPiezasDeContenido;
   respuestas_de_los_agentes: TablaRespuestasDeLosAgentes;
 
   // El catálogo común (079): lo leen todos los roles y no lo escribe ninguno de la aplicación. Calificado, porque

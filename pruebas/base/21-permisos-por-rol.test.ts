@@ -278,25 +278,16 @@ test('toda tabla de negocio es accesible para el inquilino, con las cuatro opera
     clasificaciones: ['SELECT', 'INSERT'],
     respuestas_del_lead: ['SELECT', 'INSERT'],
     toques_de_marketing: ['SELECT', 'INSERT'],
-    /* Y los managed agents (`110` a `114`): lo que proponen y lo que decide una persona no se pisa ni se borra. Lo que
-       tiene estado (la corrida, el cliente, el pago, el entregable) se actualiza, pero no se borra. Las que sólo
-       aceptan cambios en algunas columnas (la lectura de la ficha, la decisión de una versión) no tienen UPDATE de
-       tabla: tienen el de esas columnas. */
+    /* Y los managed agents (`110` a `118`): lo que leyeron y lo que hicieron no se pisa ni se borra. Lo que tiene
+       estado (la corrida) se actualiza, pero no se borra. Las que sólo aceptan cambios en algunas columnas no tienen
+       UPDATE de tabla: tienen el de esas columnas. (La 123 borró los entregables, el Brief estructurado, el research
+       en tablas, la Kickoff y las piezas de contenido.) */
     corridas_de_agente: ['SELECT', 'INSERT', 'UPDATE'],
     fuentes_publicas: ['SELECT', 'INSERT'],
     acciones_externas: ['SELECT', 'INSERT'],
     transcripciones: ['SELECT', 'INSERT'],
-    entregables: ['SELECT', 'INSERT', 'UPDATE'],
-    versiones_de_entregable: ['SELECT', 'INSERT'],
-    respuestas_del_brief: ['SELECT', 'INSERT'],
-    segmentos_del_mercado: ['SELECT', 'INSERT', 'UPDATE'],
-    dolores_del_segmento: ['SELECT', 'INSERT'],
-    referentes_del_mercado: ['SELECT', 'INSERT'],
-    citas_del_mercado: ['SELECT', 'INSERT'],
-    decisiones_de_kickoff: ['SELECT', 'INSERT'],
-    piezas_de_contenido: ['SELECT', 'INSERT', 'UPDATE'],
     // 118: se inserta sólo la fila vacía del lead y se actualizan sólo las salidas (los dos, de columna, no de tabla);
-    // no se borra.
+    // no se borra. La 123 suma las columnas del Research y del Estratega.
     respuestas_de_los_agentes: ['SELECT'],
   };
 
@@ -389,7 +380,7 @@ test('toda vista de negocio corre con los permisos de QUIEN LA INVOCA, y el inqu
   assert.deepEqual(
     vistas.map((v) => v.relname),
     [
-      'brief_vigente', 'embudo_por_dia', 'entregable_vigente', 'etapas_del_lead', 'expediente_del_lead',
+      'embudo_por_dia', 'etapas_del_lead', 'expediente_del_lead',
       'metricas_meta_del_dia', 'respuestas_del_lead_traducidas', 'respuestas_por_lead',
     ],
     'apareció una vista nueva en negocio: tiene que declarar security_invoker y sumarse acá',

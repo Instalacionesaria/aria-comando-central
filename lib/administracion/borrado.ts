@@ -220,28 +220,21 @@ export const QUE_LO_IMPIDE: Readonly<Record<string, string>> = {
   reuniones_del_dia_org_id_fkey: 'tiene reuniones del día guardadas',
   control_aislamiento_org_id_fkey: 'participa en la comprobación de aislamiento',
 
-  // ── Los managed agents (`110` a `118`; la `119` borró lo de la fase 1 que quedó sin uso) ──
+  // ── Los managed agents (`110` a `118`; la `119` borró lo de la fase 1 que quedó sin uso, y la `123` los entregables,
+  //    el Brief estructurado, el research en tablas, la Kickoff y las piezas de contenido) ──
   /* Lo que referencia a una PERSONA: quien confirmó, aprobó, leyó o atiende. Frenan: soltarlas borraría quién decidió
      lo que propuso un agente, que es justo el dato con el que se mide al agente. */
   llamadas_persona_de_la_organizacion: 'hizo llamadas registradas',
   /* Lo que referencia a una EMPRESA: lo que sus agentes produjeron. */
   acciones_externas_org_id_fkey: 'tiene acciones de sus agentes registradas',
-  citas_del_mercado_org_id_fkey: 'tiene citas del mercado investigadas',
   corridas_de_agente_org_id_fkey: 'tiene corridas de sus agentes',
-  decisiones_de_kickoff_org_id_fkey: 'tiene decisiones de la Kickoff guardadas',
-  dolores_del_segmento_org_id_fkey: 'tiene dolores del mercado investigados',
-  entregables_org_id_fkey: 'tiene entregables de onboarding',
   fuentes_publicas_org_id_fkey: 'tiene evidencia pública investigada',
   /* Las grabaciones que mandó el webhook de Fathom (la 116). */
   recepciones_de_fathom_org_id_fkey: 'tiene grabaciones de Fathom recibidas',
-  piezas_de_contenido_org_id_fkey: 'tiene piezas de contenido',
-  referentes_del_mercado_org_id_fkey: 'tiene referentes del mercado investigados',
-  respuestas_del_brief_org_id_fkey: 'tiene respuestas del Brief',
-  /* Lo que deja cada managed agent en la fase 1 (la 118): el cuadrante y las fichas de sus leads. */
+  /* Lo que deja cada managed agent (la 118; la 123 suma el market research y la oferta): el cuadrante, las fichas y
+     los documentos de sus leads. */
   respuestas_de_los_agentes_org_id_fkey: 'tiene fichas y cuadrantes guardados por sus agentes',
-  segmentos_del_mercado_org_id_fkey: 'tiene segmentos del mercado investigados',
   transcripciones_org_id_fkey: 'tiene transcripciones de llamadas',
-  versiones_de_entregable_org_id_fkey: 'tiene versiones de entregables',
 };
 
 /** El `SQLSTATE` de una violación de clave foránea. */

@@ -1,14 +1,15 @@
-// LAS RESPUESTAS DE LOS AGENTES (la migración 118, fase 1). Tipo: Base.
+// LAS RESPUESTAS DE LOS AGENTES (la migración 118, fase 1; la 124 suma Research y Estratega). Tipo: Base.
 //
 // ═══════════════════════════════════════════════════════════════════════════════
-// QUÉ DEFIENDE ESTE ARCHIVO (decisiones del usuario del 2026-11-20)
+// QUÉ DEFIENDE ESTE ARCHIVO (decisiones del usuario del 2026-11-20 y del 2026-11-24)
 //
 // Cada managed agent deja UN output en negocio.respuestas_de_los_agentes: una fila por lead y una columna por
-// agente, en el orden del flujo (Triage, Sales Assistant, Sales Coach, Brief).
+// agente, en el orden del flujo (Triage, Sales Assistant, Sales Coach, Brief, Research, Estratega).
 //
 //   1 · cada agente escribe sólo su columna, y ninguno la de otro: el Sales Assistant no escribe la del Brief, el
-//       Research no tiene columna, el Triage no guarda fichas y el Sales Assistant no registra cuadrantes — mutación:
-//       _salida_del_agente sin mirar el agente;
+//       Research no escribe la del Brief ni el Estratega la del Research, el Triage no guarda documentos y el Sales
+//       Assistant no registra cuadrantes — mutación: _salida_del_agente sin mirar el agente. (Cómo guardan el Research
+//       y el Estratega su propia columna, por secciones, lo defiende la 508.);
 //   2 · el Sales Coach lee la ficha 1 y el Brief la ficha 2 (leer_respuesta), y la lectura queda en lo leído;
 //   3 · una corrida nueva del mismo agente reemplaza su columna, la anterior queda en la salida de su corrida y las
 //       demás columnas no cambian;
@@ -17,12 +18,15 @@
 //   5 · el HTML con contenido activo se rechaza con un error que dice qué falló, también disfrazado (mayúsculas,
 //       entidades, el evento pegado a la comilla, svg), y al quinto rechazo la corrida queda fallida — mutaciones:
 //       _reglas_del_html que no rechaza nada, y la regla vieja que buscaba la palabra «javascript:»; 5b · la regla es un
-//       CHECK de la tabla: un UPDATE directo por el MCP tampoco la saltea, y un INSERT sólo crea la fila vacía;
+//       CHECK de la tabla, en todas las columnas HTML (la 124 lo rehízo con las del Research y el Estratega): un UPDATE
+//       directo por el MCP tampoco la saltea, y un INSERT sólo crea la fila vacía — mutación: el CHECK sin una de ellas;
 //   6 · registrar_cuadrante valida el cuadrante y la razón, y no toca contactos.cuadrante;
 //   7 · sin lead en la base, guardar rechaza y leer devuelve vacío;
-//   8 · nadie borra, y sólo se actualizan las columnas de las salidas;
-//   9 · el expediente trae la sección nueva sin el HTML, y la vista para mirar tiene las columnas en el orden del
-//       flujo y filas para el inquilino — mutación: respuestas_por_lead sin security_invoker.
+//   8 · nadie borra, y sólo se actualizan las columnas de las salidas (las seis, con las dos de la 124); las funciones
+//       de guardar y leer (con guardar_secciones, leer_secciones y leer_ficha_de_cliente_2) existen, no son de PUBLIC
+//       y las ejecuta el rol de los agentes;
+//   9 · el expediente trae la sección nueva sin el HTML, y la vista para mirar y el catálogo tienen las seis columnas
+//       en el orden del flujo y filas para el inquilino — mutación: respuestas_por_lead sin security_invoker.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import test, { after, before } from 'node:test';
@@ -36,7 +40,7 @@ let admin: Client;
 let aria: { org: string; cuenta: string };
 const LOC = 'loc-504';
 const COLUMNAS = ['triage_cuadrante_de_clasificacion', 'sales_assistant_ficha_de_lead_1', 'sales_coach_ficha_de_lead_2',
-  'brief_ficha_de_cliente_1'];
+  'brief_ficha_de_cliente_1', 'research_market_research', 'estratega_oferta'];
 
 before(async () => {
   admin = await conectar('admin');
@@ -171,15 +175,25 @@ test('1 y 2 · cada agente escribe sólo su columna de la fila del lead, y el si
     assert.equal(rsa.version, 1);
     assert.equal((await estado(sa.corrida_id))!.estado, 'lista', 'en la fase 1 no espera aprobación');
 
-    // El Triage no guarda fichas, y el Research no tiene columna.
+    // El Triage no guarda documentos (ni con guardar_respuesta ni con guardar_secciones); el Research no escribe la
+    // columna del Brief, ni el Estratega la del Research. Su propia columna, por secciones, la defiende la 508.
     const t2 = await abrir('triage', a.ghl);
     const tFicha = await guardar(t2.corrida_id, '<p>ficha</p>');
     assert.equal(tFicha.ok, false);
     assert.match(JSON.stringify(tFicha.errores), /el agente triage no guarda una ficha/);
-    const re = await abrir('research', a.ghl, { paso: 'mr_segmentos' });
-    const rre = await guardar(re.corrida_id, '<p>research</p>');
+    const tSecciones = await j(`select agentes.guardar_secciones($1, $2::jsonb) as r`,
+      [t2.corrida_id, JSON.stringify([{ id: 'resumen', html: '<p>ficha</p>' }])]);
+    assert.equal(tSecciones.ok, false);
+    assert.match(JSON.stringify(tSecciones.errores), /el agente triage no guarda un documento/);
+    const re = await abrir('research', a.ghl);
+    const rre = await guardar(re.corrida_id, '<p>research</p>', 'brief_ficha_de_cliente_1');
     assert.equal(rre.ok, false);
-    assert.match(JSON.stringify(rre.errores), /el agente research no guarda una ficha/);
+    assert.match(JSON.stringify(rre.errores), /el agente research no guarda una ficha en «brief_ficha_de_cliente_1»/);
+    const es = await abrir('estratega', a.ghl);
+    const res = await j(`select agentes.guardar_secciones($1, $2::jsonb, 'research_market_research') as r`,
+      [es.corrida_id, JSON.stringify([{ id: 'resumen', html: '<p>no es mío</p>' }])]);
+    assert.equal(res.ok, false);
+    assert.match(JSON.stringify(res.errores), /el agente estratega no guarda un documento en «research_market_research»/);
 
     // Sales Coach: lee la ficha 1 y la anota en lo leído; guarda la ficha 2.
     const sc = await unSalesCoach(a.ghl);
@@ -203,7 +217,11 @@ test('1 y 2 · cada agente escribe sólo su columna de la fila del lead, y el si
     assert.equal(cuerpo(f!.sales_coach_ficha_de_lead_2, 2),
       '<section id="resumen"><h1>Ficha 1 de A</h1></section>\n<section id="analisis_de_llamada">Ficha 2 de A</section>');
     assert.match(f!.brief_ficha_de_cliente_1, /welcome\.ariaia\.com/);
-    assert.deepEqual(Object.keys(f!.procedencia).sort(), [...COLUMNAS].sort());
+    // Las cuatro que este caso escribe; las del Research y el Estratega quedan vacías (sus intentos se rechazaron).
+    assert.equal(f!.research_market_research, null, 'un rechazo escribió la columna del Research');
+    assert.equal(f!.estratega_oferta, null, 'un rechazo escribió la columna del Estratega');
+    assert.deepEqual(Object.keys(f!.procedencia).sort(), ['brief_ficha_de_cliente_1', 'sales_assistant_ficha_de_lead_1',
+      'sales_coach_ficha_de_lead_2', 'triage_cuadrante_de_clasificacion']);
     assert.equal(f!.procedencia.triage_cuadrante_de_clasificacion.razon, 'factura 8 mil al mes y quiere empezar ya');
     assert.equal(f!.procedencia.sales_coach_ficha_de_lead_2.corrida_id, sc);
 
@@ -340,10 +358,13 @@ test('5b · el chequeo del HTML es de la tabla: un UPDATE o un INSERT directo po
     const sa = await abrir('sales_assistant', a.ghl);
     assert.equal((await guardar(sa.corrida_id, '<p>bien</p>')).ok, true);
     await admin.query('savepoint s');
-    await assert.rejects(
-      admin.query(`update negocio.respuestas_de_los_agentes set brief_ficha_de_cliente_1 = '<script>alert(1)</script>' where contacto_id = $1`, [a.id]),
-      (e: { code?: string }) => e.code === '23514');
-    await admin.query('rollback to savepoint s');
+    // En cada columna HTML que el MCP puede actualizar: la 124 rehízo el CHECK con las del Research y el Estratega.
+    for (const columna of ['brief_ficha_de_cliente_1', 'research_market_research', 'estratega_oferta']) {
+      await assert.rejects(
+        admin.query(`update negocio.respuestas_de_los_agentes set ${columna} = '<script>alert(1)</script>' where contacto_id = $1`, [a.id]),
+        (e: { code?: string }) => e.code === '23514', `un UPDATE directo de ${columna} saltea el chequeo del HTML`);
+      await admin.query('rollback to savepoint s');
+    }
     // Insertar una fila con una salida adentro no se puede: sólo la fila vacía del lead.
     const b = await unLead('d2');
     await assert.rejects(
@@ -404,11 +425,18 @@ test('8 · nadie borra, y sólo se actualizan las columnas de las salidas', asyn
     assert.deepEqual(r!.columnas, salidas, `${rol} sólo actualiza las salidas`);
     assert.deepEqual(r!.insertables, ['contacto_id', 'cuenta_id', 'org_id'], `${rol} sólo inserta la fila vacía del lead`);
   }
-  const publicas = await filas<{ f: string }>(admin,
-    `select p.proname as f from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'agentes' and p.proname in ('guardar_respuesta', 'registrar_cuadrante', 'leer_respuesta')
-        and (has_function_privilege('public', p.oid, 'execute') or not has_function_privilege('agente_mcp', p.oid, 'execute'))`);
-  assert.deepEqual(publicas, [], 'las funciones nuevas: nada para PUBLIC y todo para el rol de los agentes');
+  // Se piden por nombre y se exige que estén las seis: si una no existiera, el filtro de los permisos pasaría en vacío.
+  const funciones = await filas<{ f: string; publica: boolean; mcp: boolean }>(admin,
+    `select p.proname as f, has_function_privilege('public', p.oid, 'execute') as publica,
+            has_function_privilege('agente_mcp', p.oid, 'execute') as mcp
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'agentes' and p.proname in ('guardar_respuesta', 'registrar_cuadrante', 'leer_respuesta',
+                                                    'guardar_secciones', 'leer_secciones', 'leer_ficha_de_cliente_2')
+      order by p.proname`);
+  assert.deepEqual(funciones.map((x) => x.f), ['guardar_respuesta', 'guardar_secciones', 'leer_ficha_de_cliente_2',
+    'leer_respuesta', 'leer_secciones', 'registrar_cuadrante'], 'falta una de las funciones de guardar o leer (o tiene dos firmas)');
+  assert.deepEqual(funciones.filter((x) => x.publica || !x.mcp).map((x) => x.f), [],
+    'las funciones nuevas: nada para PUBLIC y todo para el rol de los agentes');
 });
 
 test('9 · el expediente trae la sección sin el HTML, y la vista para mirar va en el orden del flujo', async () => {
