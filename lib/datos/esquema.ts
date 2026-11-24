@@ -2663,6 +2663,8 @@ export interface TablaRecepcionesDeFathom {
   ambiguo: Generated<boolean>;
   estado: 'guardada' | 'no_es_venta' | 'sin_correo_externo' | 'sin_lead' | 'sin_transcripcion' | 'error';
   motivo: string | null;
+  /** Qué pasó en GHL (123): el lead traído, la etiqueta «asistio» puesta o su fallo. Nula = no hizo falta ir a GHL. */
+  resultado_en_ghl: string | null;
 }
 
 /** Un entregable del onboarding, uno por tipo y por cuenta (113). */

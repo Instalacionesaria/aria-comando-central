@@ -56,14 +56,22 @@ import {
   type EntradaDeFathom,
   type MiembroDelEquipo,
 } from '../../../../lib/fathom/guardar.ts';
-import { porOmisionDe } from '../../../../lib/negocio/ambitoDelCliente.ts';
+import { porOmisionDe, type AmbitoDeUnCliente } from '../../../../lib/negocio/ambitoDelCliente.ts';
+import { resolverAccesoAGhl } from '../../../../lib/credenciales/resolver.ts';
+import {
+  anotarResultadoEnGhl,
+  etiquetarElLead,
+  traerElLeadDeGhl,
+  type AccesoListo,
+} from '../../../../lib/fathom/ghl.ts';
 
 /**
  * `maxDuration` declarado en la ruta (la 99 prohíbe `functions` en `vercel.json`) y bajo: es una ruta pública, y una
- * pública con 300 s multiplica el agotamiento. Treinta alcanzan para leer hasta 4 MiB, dos consultas a identidad y
- * una transacción de negocio con tres inserciones.
+ * pública con 300 s multiplica el agotamiento. Sesenta alcanzan para leer hasta 4 MiB, dos consultas a identidad, una
+ * transacción de negocio con tres inserciones y, desde la 123, hasta tres pedidos a GHL (buscar el correo, leer el
+ * contacto y poner la etiqueta).
  */
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /** El tope del cuerpo: una llamada de cuatro horas con transcripción ronda 1 MB. */
 const TOPE_DEL_CUERPO_DE_FATHOM = 4 * 1024 * 1024;
@@ -161,9 +169,14 @@ export async function POST(peticion: Request): Promise<Response> {
     });
     const ambito = await porOmisionDe(orgId);
     entrada = { cuentaId: ambito.cuentas[0], reunion, webhookId: id, equipo };
+    // El token de GHL de ESE cliente (la subcuenta de ARIA), para el paso 6: se pide con el cliente, nunca «la de la
+    // empresa» a secas (pruebas/codigo/277). Sólo lectura, salvo la auditoría que el resolver deja si no se descifra.
+    const acceso = await conIdentidad((db) => resolverAccesoAGhl(db, orgId, { id: ambito.cuentas[0], esPorOmision: true }));
 
     try {
-      const r = await conOrganizacion(ambito, () => guardarReunionDeFathom(entrada));
+      let r = await conOrganizacion(ambito, () => guardarReunionDeFathom(entrada));
+      // ── 6 · GoHighLevel (la 123): traer al lead que falta y poner la etiqueta ──
+      r = await pasoEnGhl(ambito, acceso, entrada, r);
       return ok({ recibido: true, estado: r.estado, ya_estaba: r.yaEstaba });
     } catch (e) {
       if (esFallaDeLaBase(e)) throw e;
@@ -182,4 +195,57 @@ export async function POST(peticion: Request): Promise<Response> {
     console.error(`fathom/webhook: no se pudo procesar la grabación ${String(reunion.recording_id)}: ${mensaje}`);
     return ok({ recibido: false, porque: 'configuracion' });
   }
+}
+
+/**
+ * El paso en GoHighLevel. Nunca lanza por GHL: lo que pasa queda en `resultado_en_ghl` y la respuesta sigue siendo 200.
+ * Sí deja pasar una falla de NUESTRA base al volver a procesar (la ruta decide qué hacer con ella).
+ *
+ *   · `sin_lead` (era venta, había correo y ningún contacto casó): busca los correos en GHL; si uno existe, lo trae y
+ *     vuelve a procesar la grabación, que ahora sí tiene lead.
+ *   · `guardada` (y no repetida): le pone «asistio» al contacto en GHL.
+ */
+async function pasoEnGhl(
+  ambito: AmbitoDeUnCliente,
+  acceso: Awaited<ReturnType<typeof resolverAccesoAGhl>>,
+  entrada: EntradaDeFathom,
+  r: Awaited<ReturnType<typeof guardarReunionDeFathom>>,
+): Promise<Awaited<ReturnType<typeof guardarReunionDeFathom>>> {
+  const recordingId = idDeLaGrabacion(entrada.reunion);
+  if (r.yaEstaba || !recordingId) return r;
+  if (r.estado !== 'sin_lead' && r.estado !== 'guardada') return r;
+  if (acceso.tipo !== 'listo') {
+    await anotarResultadoEnGhl(ambito, recordingId, `sin_acceso: ${acceso.que}`);
+    return r;
+  }
+  const listo: AccesoListo = { token: acceso.token, locationId: acceso.locationId };
+
+  let actual = r;
+  if (actual.estado === 'sin_lead' && actual.candidatos.length > 0) {
+    let traido;
+    try {
+      traido = await traerElLeadDeGhl(listo, ambito, actual.candidatos);
+    } catch (e) {
+      traido = { tipo: 'fallo' as const, texto: e instanceof Error ? e.message : String(e) };
+    }
+    if (traido.tipo === 'traido') {
+      actual = await conOrganizacion(ambito, () => guardarReunionDeFathom({ ...entrada, reprocesarSinLead: true }));
+      await anotarResultadoEnGhl(ambito, recordingId, `traido_de_ghl: ${traido.correo}`);
+    } else {
+      await anotarResultadoEnGhl(ambito, recordingId, traido.tipo === 'no_esta' ? 'no_esta_en_ghl' : `busqueda_fallo: ${traido.texto}`);
+      return actual;
+    }
+  }
+
+  if (actual.estado === 'guardada' && actual.contactoId) {
+    let texto: string;
+    try {
+      texto = await etiquetarElLead(listo, ambito, actual.contactoId);
+    } catch (e) {
+      texto = `etiqueta_fallo: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    if (texto.startsWith('etiqueta_fallo')) console.warn(`fathom/webhook: la grabación ${recordingId}: ${texto}`);
+    await anotarResultadoEnGhl(ambito, recordingId, texto);
+  }
+  return actual;
 }

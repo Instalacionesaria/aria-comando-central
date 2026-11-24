@@ -331,6 +331,42 @@ export async function contactosPorEtiqueta(
 }
 
 /**
+ * El contacto de la subcuenta que tiene ESE correo, o `null` si no hay ninguno.
+ *
+ * Lo usa el webhook de Fathom (`lib/fathom/ghl.ts`) cuando el correo del lead todavía no está en nuestra base: si GHL lo
+ * tiene, se trae y se guarda la llamada. Es sólo lectura.
+ *
+ * ── `eq` Y, DESPUÉS, LA MISMA COMPARACIÓN EN CASA ───────────────────────────
+ *
+ * El filtro va con `eq` por la misma razón que el de etiquetas (`contains` es por subcadena: «ana@x.com» traería a
+ * «juana@x.com»). Y como el proveedor no documenta si `eq` distingue mayúsculas, cada resultado se vuelve a comparar acá
+ * sin mayúsculas ni espacios: un contacto que no tiene exactamente ese correo no se devuelve, aunque GHL lo mande.
+ * Si hay varios con el mismo correo (GHL permite duplicados), gana el de alta más reciente.
+ */
+export async function contactoPorCorreo(
+  acceso: { token: string; locationId: string },
+  correo: string,
+): Promise<ResultadoDeGhl<ContactoDeGhl | null>> {
+  const buscado = correo.trim().toLowerCase();
+  if (!buscado.includes('@')) return { tipo: 'datos', datos: null };
+  const r = await pedirExterno<{ contacts?: unknown }>(`${BASE}/contacts/search`, {
+    metodo: 'POST',
+    cabeceras: cabeceras(acceso.token, VERSION_CONTACTOS),
+    cuerpo: {
+      locationId: acceso.locationId,
+      page: 1,
+      pageLimit: 10,
+      filters: [{ field: 'email', operator: 'eq', value: buscado }],
+      sort: [{ field: 'dateAdded', direction: 'desc' }],
+    },
+  });
+  if (r.tipo !== 'datos') return { tipo: 'fallo', fallo: traducirFallo(r) };
+  const contactos = Array.isArray(r.datos?.contacts) ? (r.datos.contacts as ContactoDeGhl[]) : [];
+  const igual = contactos.find((c) => typeof c.email === 'string' && c.email.trim().toLowerCase() === buscado && c.id);
+  return { tipo: 'datos', datos: igual ?? null };
+}
+
+/**
  * TODOS los contactos con una etiqueta, paginando.
  *
  * Devuelve `truncado: true` si se llegó al tope sin agotar la etiqueta. Quien llama tiene que

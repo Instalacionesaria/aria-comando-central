@@ -57,6 +57,11 @@ export interface EntradaDeFathom {
   reunion: FathomMeeting;
   webhookId: string | null;
   equipo: readonly MiembroDelEquipo[];
+  /**
+   * Volver a procesar una grabación que quedó `sin_lead` (la 123): la ruta trajo al lead de GHL y la llamada ahora
+   * tiene a quién pertenecer. Sin esto, una recepción que no está en `error` no se vuelve a procesar.
+   */
+  reprocesarSinLead?: boolean;
 }
 
 export interface ResultadoDeFathom {
@@ -65,6 +70,10 @@ export interface ResultadoDeFathom {
   yaEstaba: boolean;
   recepcionId: string | null;
   llamadaId: string | null;
+  /** El lead de la base, si se encontró (también en las que no se guardaron). */
+  contactoId: string | null;
+  /** Los correos candidatos a lead, en orden (los externos primero): la ruta los busca en GHL si quedó `sin_lead`. */
+  candidatos: string[];
 }
 
 interface Vinculo {
@@ -227,7 +236,7 @@ function columnasDeLaRecepcion(
  * Inserta la recepción. Si ya estaba en `error`, la borra y la vuelve a crear con un intento más; si ya estaba en otro
  * estado, devuelve `null` (ya estaba). Un envío simultáneo lo resuelve el `unique`: el segundo no inserta nada.
  */
-async function insertarRecepcion(valores: ValoresDeRecepcion): Promise<string | null> {
+async function insertarRecepcion(valores: ValoresDeRecepcion, reprocesarSinLead = false): Promise<string | null> {
   const previa = await datos()
     .selectFrom('recepciones_de_fathom')
     .select(['id', 'estado', 'intentos'])
@@ -236,7 +245,7 @@ async function insertarRecepcion(valores: ValoresDeRecepcion): Promise<string | 
     .executeTakeFirst();
   let intentos = 1;
   if (previa) {
-    if (previa.estado !== 'error') return null;
+    if (previa.estado !== 'error' && !(reprocesarSinLead && previa.estado === 'sin_lead')) return null;
     intentos = previa.intentos + 1;
     await datos().deleteFrom('recepciones_de_fathom').where('id', '=', previa.id).execute();
   }
@@ -287,10 +296,11 @@ export async function guardarReunionDeFathom(e: EntradaDeFathom): Promise<Result
     ambiguo: vinculo.ambiguo,
     estado,
     motivo: motivo ? motivo.slice(0, 2000) : null,
-  });
-  if (!recepcionId) return { estado, yaEstaba: true, recepcionId: null, llamadaId: null };
+  }, e.reprocesarSinLead === true);
+  const base = { contactoId: vinculo.contactoId, candidatos };
+  if (!recepcionId) return { estado, yaEstaba: true, recepcionId: null, llamadaId: null, ...base };
   if (estado !== 'guardada' || !vinculo.contactoId || !transcripcion) {
-    return { estado, yaEstaba: false, recepcionId, llamadaId: null };
+    return { estado, yaEstaba: false, recepcionId, llamadaId: null, ...base };
   }
 
   // ── La llamada y su transcripción ──
@@ -347,7 +357,7 @@ export async function guardarReunionDeFathom(e: EntradaDeFathom): Promise<Result
   }
 
   await datos().updateTable('recepciones_de_fathom').set({ llamada_id: llamadaId }).where('id', '=', recepcionId).execute();
-  return { estado, yaEstaba: false, recepcionId, llamadaId };
+  return { estado, yaEstaba: false, recepcionId, llamadaId, ...base };
 }
 
 /**
