@@ -8,7 +8,7 @@
 // entero en la columna, con la plantilla provisoria que fija el orden.
 //
 //   1 · el catálogo: el Research tiene la plantilla provisoria con sus ocho marcadores en orden, todos obligatorios, y
-//       «Cómo se hizo» fijo; el Estratega, sin plantilla; la firma vieja de tres argumentos ya no existe y la nueva no es
+//       «Cómo se hizo» fijo; la firma vieja de tres argumentos ya no existe y la nueva no es
 //       de PUBLIC — mutación: sin la plantilla, o con la firma vieja sin borrar;
 //   2 · tres tandas: las dos primeras quedan en la corrida (abierta, la columna sin tocar) y dicen qué falta; la última
 //       junta todo y escribe el documento en el orden de la plantilla, aunque las tandas lleguen en otro; una sección
@@ -74,6 +74,9 @@ async function enUnEnsayo(comoElMcp: () => Promise<void>): Promise<void> {
       end if; end $$`);
     await admin.query('grant agente_mcp, pg_read_all_data to mcp_simulado');
     await admin.query(`update identidad.cuentas set crm_cuenta_id = $2 where id = $1`, [aria.cuenta, LOC]);
+    // Los casos 6 y 7 usan al Estratega sin plantilla; la suya (126) la defiende la 510.
+    await admin.query(`update catalogo.salidas_de_los_agentes set plantilla = null, secciones_obligatorias = null
+                        where clave = 'estratega_oferta'`);
     await admin.query('set local role mcp_simulado');
     await comoElMcp();
   } finally {
@@ -141,14 +144,13 @@ function conLaPlantilla(secciones: Record<string, string>): string {
 
 const s = (id: string, html: string): Seccion => ({ id, html });
 
-test('1 · el catálogo: la plantilla provisoria del Research, el Estratega sin plantilla, y la firma nueva', async () => {
+test('1 · el catálogo: la plantilla provisoria del Research y la firma nueva', async () => {
   const marcas = [...PLANTILLA.matchAll(/\{\{seccion:([a-z][a-z0-9_]*)\}\}/g)].map((m) => m[1]);
   assert.deepEqual(marcas, [...SECCIONES_DEL_RESEARCH], 'los marcadores no son los ocho, en orden');
-  const cat = await unaFila<{ oblig: string[]; est_plantilla: string | null }>(admin,
-    `select (select secciones_obligatorias from catalogo.salidas_de_los_agentes where clave = 'research_market_research') as oblig,
-            (select plantilla from catalogo.salidas_de_los_agentes where clave = 'estratega_oferta') as est_plantilla`);
+  const cat = await unaFila<{ oblig: string[] }>(admin,
+    `select secciones_obligatorias as oblig from catalogo.salidas_de_los_agentes where clave = 'research_market_research'`);
   assert.deepEqual(cat!.oblig, [...SECCIONES_DEL_RESEARCH]);
-  assert.equal(cat!.est_plantilla, null, 'el Estratega tiene plantilla y todavía no se definió qué hace');
+  // (La plantilla del Estratega, desde la 126, la mira la 510.)
   assert.match(PLANTILLA, /<section id="metodo" class="bloque"><h2>Cómo se hizo<\/h2>/, 'falta «Cómo se hizo», fijo en la plantilla');
   assert.match(PLANTILLA, /las 4 R: Retorno, Repetible, Recursos y Rápido de encontrar/);
   assert.match(ENV, /^<!DOCTYPE html>/);

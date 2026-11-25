@@ -93,9 +93,9 @@ async function enUnEnsayo(comoElMcp: () => Promise<void>): Promise<void> {
     await admin.query('grant agente_mcp, pg_read_all_data to mcp_simulado');
     await admin.query(`update identidad.cuentas set crm_cuenta_id = $2 where id = $1`, [aria.cuenta, LOC]);
     // Este archivo defiende el mecanismo de la 124 sin plantilla; la plantilla provisoria del Research (125) y las
-    // tandas los defiende la 509. Se quita dentro de la transacción (se deshace al final).
+    // tandas los defiende la 509, y la del Estratega (126), la 510. Se quitan dentro de la transacción (se deshace).
     await admin.query(`update catalogo.salidas_de_los_agentes set plantilla = null, secciones_obligatorias = null
-                        where clave = 'research_market_research'`);
+                        where clave in ('research_market_research', 'estratega_oferta')`);
     await admin.query('set local role mcp_simulado');
     await comoElMcp();
   } finally {
